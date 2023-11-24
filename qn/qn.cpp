@@ -31,26 +31,14 @@ static struct QnRuntime
 	NULL,
 	NULL
 };
-static void qn_dispose(void);
 
 //
-static void qn_init(void)
+static void _qn_dispose(void)
 {
-	_qn_rt.inited = TRUE;
-
-#if _LIB
-	(void)atexit(qn_dispose);
-#endif
-}
-
-//
-static void qn_dispose(void)
-{
-	if (!_qn_rt.inited)
-		return;
+	qn_ret_if_fail(_qn_rt.inited);
 
 	struct Closure* node;
-	struct Closure* prev;
+	struct Closure* prev = NULL;
 
 	for (node = _qn_rt.closures; node; node = prev)
 	{
@@ -59,15 +47,25 @@ static void qn_dispose(void)
 			node->data.func();
 		else
 			((func_closure_param)node->data.func)(node->data.data);
-		free(node);
+		qn_free(node);
 	}
 
 	for (node = _qn_rt.preclosures; node; node = prev)
 	{
 		prev = node->prev;
 		((func_closure_param)node->data.func)(node->data.data);
-		free(node);
+		qn_free(node);
 	}
+}
+
+//
+static void _qn_init(void)
+{
+	_qn_rt.inited = TRUE;
+
+#if _LIB
+	(void)atexit(_qn_dispose);
+#endif
 }
 
 //
@@ -75,7 +73,7 @@ void qn_runtime(int32_t v[])
 {
 #if _LIB
 	if (!_qn_rt.inited)
-		qn_init();
+		_qn_init();
 #endif
 
 	if (v)
@@ -91,4 +89,46 @@ void qn_runtime(int32_t v[])
 _Noreturn void qn_exit(const int exitcode)
 {
 	exit(exitcode);
+}
+
+//
+void qn_atexit(void(*func)(pointer_t), pointer_t data)
+{
+	qn_ret_if_fail(func);
+
+	struct Closure* node = qn_alloc_1(struct Closure);
+	qn_ret_if_fail(node);
+	node->zero = FALSE;
+	node->data.func = func;
+	node->data.data = data;
+	node->prev = _qn_rt.closures;
+	_qn_rt.closures = node;
+}
+
+//
+void qn_atexit0(void(*func)(void))
+{
+	qn_ret_if_fail(func);
+
+	struct Closure* node = qn_alloc_1(struct Closure);
+	qn_ret_if_fail(node);
+	node->zero = TRUE;
+	node->data.func = func;
+	node->data.data = NULL;
+	node->prev = _qn_rt.closures;
+	_qn_rt.closures = node;
+}
+
+//
+void qn_atexitp(void(*func)(pointer_t), pointer_t data)
+{
+	qn_ret_if_fail(func);
+
+	struct Closure* node = qn_alloc_1(struct Closure);
+	qn_ret_if_fail(node);
+	node->zero = FALSE;
+	node->data.func = func;
+	node->data.data = data;
+	node->prev = _qn_rt.preclosures;
+	_qn_rt.preclosures = node;
 }

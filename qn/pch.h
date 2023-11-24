@@ -16,7 +16,8 @@
 
 // GCC
 #if __GNUC__
-#define _GNU_SOURCE		1		// GNU 라이브러리
+#define _GNU_SOURCE				1		// GNU 라이브러리
+#define __STDC_WANT_LIB_EXT1__	1
 #include <unistd.h>
 #endif
 

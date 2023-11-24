@@ -1,0 +1,349 @@
+#include "pch.h"
+#include "qn.h"
+
+//////////////////////////////////////////////////////////////////////////
+// 퀵 소트
+
+#define _QSORT_STACK_SIZE (8 * sizeof(pointer_t) - 2)
+
+static void _qn_qsort_swap(uint8_t* a, uint8_t* b, size_t stride)
+{
+	if (a != b)
+	{
+		while (stride--)
+		{
+			uint8_t n = *a;
+			*a++ = *b;
+			*b++ = n;
+		}
+	}
+}
+
+static void _qn_qsort_shortsort_context(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(pointer_t, const pointer_t, const pointer_t), pointer_t context)
+{
+	while (hi > lo)
+	{
+		uint8_t* max = lo;
+
+		for (uint8_t* p = lo + stride; p <= hi; p += stride)
+		{
+			if ((*func)(context, p, max) > 0)
+				max = p;
+		}
+
+		_qn_qsort_swap(max, hi, stride);
+		hi -= stride;
+	}
+}
+
+/**
+ * 콘텍스트 입력 받는 퀵정렬.
+ * @param	ptr				정렬할 데이터의 포인터.
+ * @param	count			데이터의 갯수.
+ * @param	stride			데이터의 폭.
+ * @param [입력]	compfunc	비교 연산 콜백 함수.
+ * @param	context			콜백 함수용 콘텍스트.
+ */
+void qn_qsort_context(pointer_t ptr, size_t count, size_t stride, int(*compfunc)(pointer_t, const pointer_t, const pointer_t), pointer_t context)
+{
+	uint8_t* lo, *hi, *mid;
+	uint8_t* lopos, *hipos;
+	uint8_t* lostk[_QSORT_STACK_SIZE], *histk[_QSORT_STACK_SIZE];
+	size_t size;
+	int stkptr;
+
+	// 검사
+	if (ptr == NULL || count == 0 || stride == 0 || compfunc == NULL)
+		return;
+
+	// 개수가 1개 이하면 안함
+	if (count < 2) return;
+
+	// 스택 초기화
+	stkptr = 0;
+	// 리미트 초기화
+	lo = (uint8_t*)ptr;
+	hi = (uint8_t*)ptr + stride * (count - 1);
+
+pos_recursive:
+	size = (hi - lo) / stride + 1;
+
+	// 중간값처리를 사용해서 O(n^2) 알고리즘으로 전환
+	if (size <= 8)  // 최적화된 값을 사용해야 할 것이다 -> Cut off value
+		_qn_qsort_shortsort_context(lo, hi, stride, compfunc, context);
+	else
+	{
+		mid = lo + (size / 2) * stride;
+
+		// 처음, 중간, 끝 부터 정렬 시작
+		if (compfunc(context, lo, mid) > 0)
+			_qn_qsort_swap(lo, mid, stride);
+
+		if (compfunc(context, lo, hi) > 0)
+			_qn_qsort_swap(lo, hi, stride);
+
+		if (compfunc(context, mid, hi) > 0)
+			_qn_qsort_swap(mid, hi, stride);
+
+		// 부분 정렬
+		lopos = lo;
+		hipos = hi;
+
+		for (;;)
+		{
+			if (mid > lopos)
+			{
+				do
+				{
+					lopos += stride;
+				} while (lopos < mid && compfunc(context, lopos, mid) <= 0);
+			}
+
+			if (mid <= lopos)
+			{
+				do
+				{
+					lopos += stride;
+				} while (lopos <= hi && compfunc(context, lopos, mid) <= 0);
+			}
+
+			do
+			{
+				hipos -= stride;
+			} while (hipos > mid && compfunc(context, hipos, mid) > 0);
+
+			if (hipos < lopos)
+				break;
+
+			_qn_qsort_swap(lopos, hipos, stride);
+
+			if (mid == hipos)
+				mid = lopos;
+		}
+
+		hipos += stride;
+
+		if (mid < hipos)
+		{
+			do
+			{
+				hipos -= stride;
+			} while (hipos > mid && compfunc(context, hipos, mid) == 0);
+		}
+
+		if (mid >= hipos)
+		{
+			do
+			{
+				hipos -= stride;
+			} while (hipos > lo && compfunc(context, hipos, mid) == 0);
+		}
+
+		if (hipos - lo >= hi - lopos)
+		{
+			if (lo < hipos)
+			{
+				lostk[stkptr] = lo;
+				histk[stkptr] = hipos;
+				++stkptr;
+			}
+
+			if (lopos < hi)
+			{
+				lo = lopos;
+				goto pos_recursive;
+			}
+		}
+		else
+		{
+			if (lopos < hi)
+			{
+				lostk[stkptr] = lopos;
+				histk[stkptr] = hi;
+				++stkptr;
+			}
+
+			if (lo < hipos)
+			{
+				hi = hipos;
+				goto pos_recursive;
+			}
+		}
+	}
+
+	--stkptr;
+
+	if (stkptr >= 0)
+	{
+		lo = lostk[stkptr];
+		hi = histk[stkptr];
+		goto pos_recursive;
+	}
+	else
+		return;
+}
+
+static void _qn_qsort_shortsort(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(const pointer_t, const pointer_t))
+{
+	uint8_t* p, *max;
+
+	while (hi > lo)
+	{
+		max = lo;
+
+		for (p = lo + stride; p <= hi; p += stride)
+		{
+			if ((*func)(p, max) > 0)
+				max = p;
+		}
+
+		_qn_qsort_swap(max, hi, stride);
+		hi -= stride;
+	}
+}
+
+/**
+ * 퀵정렬.
+ * @param	ptr				정렬할 데이터의 포인터.
+ * @param	count			데이터의 갯수.
+ * @param	stride			데이터의 폭.
+ * @param [입력]	compfunc	비교 연산 콜백 함수.
+ */
+void qn_qsort(pointer_t ptr, size_t count, size_t stride, int(*compfunc)(const pointer_t, const pointer_t))
+{
+	uint8_t* lo, *hi, *mid;
+	uint8_t* lopos, *hipos;
+	uint8_t* lostk[_QSORT_STACK_SIZE], *histk[_QSORT_STACK_SIZE];
+	size_t size;
+	int stkptr;
+
+	// 검사
+	if (ptr == NULL || count == 0 || stride == 0 || compfunc == NULL)
+		return;
+
+	// 개수가 1개 이하면 안함
+	if (count < 2) return;
+
+	// 스택 초기화
+	stkptr = 0;
+	// 리미트 초기화
+	lo = (uint8_t*)ptr;
+	hi = (uint8_t*)ptr + stride * (count - 1);
+
+pos_recursive:
+	size = (hi - lo) / stride + 1;
+
+	// 중간값처리를 사용해서 O(n^2) 알고리즘으로 전환
+	if (size <= 8)  // 최적화된 값을 사용해야 할 것이다 -> Cut off value
+		_qn_qsort_shortsort(lo, hi, stride, compfunc);
+	else
+	{
+		mid = lo + (size / 2) * stride;
+
+		// 처음, 중간, 끝 부터 정렬 시작
+		if (compfunc(lo, mid) > 0)
+			_qn_qsort_swap(lo, mid, stride);
+
+		if (compfunc(lo, hi) > 0)
+			_qn_qsort_swap(lo, hi, stride);
+
+		if (compfunc(mid, hi) > 0)
+			_qn_qsort_swap(mid, hi, stride);
+
+		// 부분 정렬
+		lopos = lo;
+		hipos = hi;
+
+		for (;;)
+		{
+			if (mid > lopos)
+			{
+				do
+				{
+					lopos += stride;
+				} while (lopos < mid && compfunc(lopos, mid) <= 0);
+			}
+
+			if (mid <= lopos)
+			{
+				do
+				{
+					lopos += stride;
+				} while (lopos <= hi && compfunc(lopos, mid) <= 0);
+			}
+
+			do
+			{
+				hipos -= stride;
+			} while (hipos > mid && compfunc(hipos, mid) > 0);
+
+			if (hipos < lopos)
+				break;
+
+			_qn_qsort_swap(lopos, hipos, stride);
+
+			if (mid == hipos)
+				mid = lopos;
+		}
+
+		hipos += stride;
+
+		if (mid < hipos)
+		{
+			do
+			{
+				hipos -= stride;
+			} while (hipos > mid && compfunc(hipos, mid) == 0);
+		}
+
+		if (mid >= hipos)
+		{
+			do
+			{
+				hipos -= stride;
+			} while (hipos > lo && compfunc(hipos, mid) == 0);
+		}
+
+		if (hipos - lo >= hi - lopos)
+		{
+			if (lo < hipos)
+			{
+				lostk[stkptr] = lo;
+				histk[stkptr] = hipos;
+				++stkptr;
+			}
+
+			if (lopos < hi)
+			{
+				lo = lopos;
+				goto pos_recursive;
+			}
+		}
+		else
+		{
+			if (lopos < hi)
+			{
+				lostk[stkptr] = lopos;
+				histk[stkptr] = hi;
+				++stkptr;
+			}
+
+			if (lo < hipos)
+			{
+				hi = hipos;
+				goto pos_recursive;
+			}
+		}
+	}
+
+	--stkptr;
+
+	if (stkptr >= 0)
+	{
+		lo = lostk[stkptr];
+		hi = histk[stkptr];
+		goto pos_recursive;
+	}
+	else
+		return;
+}
