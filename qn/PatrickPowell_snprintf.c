@@ -1,8 +1,6 @@
 ﻿#include "pch.h"
 #include "qn.h"
 #include "PatrickPowell_snprintf.h"
-#include <ctype.h>
-#include <wctype.h>
 #include <locale.h>
 
 /*

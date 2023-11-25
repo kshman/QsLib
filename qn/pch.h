@@ -4,10 +4,10 @@
 #if defined(_WIN32)
 #define STRICT
 #define WIN32_LEAN_AND_MEAN
-#include <sdkddkver.h>
-#include <windows.h>
 #include <excpt.h>
 #include <mmsystem.h>
+#include <sdkddkver.h>
+#include <windows.h>
 #if _MSC_VER
 #include <intrin.h>
 #include <crtdbg.h>
@@ -30,7 +30,9 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+#include <ctype.h>
 #include <wchar.h>
+#include <wctype.h>
 #include <math.h>
 
 //
@@ -45,4 +47,7 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #pragma GCC diagnostic ignored "-Wmissing-braces"
+
+// 함수 이름 호환 안되는거
+#define _strdup			strdup
 #endif

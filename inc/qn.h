@@ -209,7 +209,7 @@ typedef void*							pointer_t;
 #if _MSC_VER
 typedef uint32_t						uchar4_t;
 typedef wchar_t							uchar2_t;
-#elif _SB_UNIX_
+#elif _QN_UNIX_
 typedef wchar_t							uchar4_t;
 typedef uint16_t						uchar2_t;
 #else
@@ -333,7 +333,7 @@ QNAPI int qn_debug_halt(const char* cls, const char* msg);
 #define qn_alloca(cnt,type)				(type*)_malloca((cnt)*sizeof(type))
 #define qn_freea(ptr)					_freea(ptr)
 #else
-#define qn_alloca(cnt,type)				(type*)_alloca((cnt)*sizeof(type))
+#define qn_alloca(cnt,type)				(type*)alloca((cnt)*sizeof(type))
 #define qn_freea(ptr)					((void)0)
 #endif
 

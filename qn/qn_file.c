@@ -1,8 +1,6 @@
 ﻿#include "pch.h"
 #include "qn.h"
 #include <fcntl.h>
-#include <ctype.h>
-#include <wctype.h>
 #if _QN_UNIX_
 #include <dirent.h>
 #include <sys/types.h>
@@ -199,7 +197,7 @@ void qn_file_access_parse(const char* mode, qnFileAccess* self, int* flag)
 						if ((p - (mode + 1)) < 63)
 						{
 							char sz[64], * stop;
-							strncpy_s(sz, 64 - 1, (mode + 1), p - (mode + 1));
+							strncpy(sz, (mode + 1), p - (mode + 1));
 							self->access = strtol(sz, &stop, 8);
 						}
 
@@ -396,7 +394,7 @@ void qn_file_access_parse_l(const wchar_t* mode, qnFileAccess* self, int* flag)
 						if ((p - (mode + 1)) < 63)
 						{
 							wchar_t sz[64], * stop;
-							wcsncpy_s(sz, 64 - 1, (mode + 1), p - (mode + 1));
+							wcsncpy(sz, (mode + 1), p - (mode + 1));
 							self->access = wcstol(sz, &stop, 8);
 						}
 
@@ -832,14 +830,13 @@ bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir)
 			*isdir = (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
 		return true;
-	}
+	}	
 #else
-	struct stat s;
-	char asc[260];
-	kint n;
+	char u8[260];
+	qn_utf32to8(u8, 260-1, filename, 0);
 
-	k_conv_uni_to_utf8(asc, 260 - 1, filename, 0);
-	n = stat(asc, &s);
+	struct stat s;
+	int n = stat(u8, &s);
 
 	if (n < 0)
 		return false;
@@ -1022,10 +1019,10 @@ qnDir* qn_dir_new(const char* path)
 #else
 	DIR* pd;
 
-	qn_value_if_fail(path, NULL);
+	qn_retval_if_fail(path, NULL);
 
 	pd = opendir(path);
-	qn_value_if_fail(pd != NULL, NULL);
+	qn_retval_if_fail(pd != NULL, NULL);
 
 	self = qn_alloc_zero_1(qnDir);
 	self->pd = pd;
@@ -1090,13 +1087,13 @@ qnDir* qn_dir_new_l(const wchar_t* path)
 	DIR* pd;
 	char asc[260];
 
-	qn_value_if_fail(path, NULL);
+	qn_retval_if_fail(path, NULL);
 
 	qn_utf32to8(asc, 260 - 1, path, 0);
 	pd = opendir(asc);
-	qn_value_if_fail(pd != NULL, NULL);
+	qn_retval_if_fail(pd != NULL, NULL);
 
-	self = qn_alloc_0(qnDir);
+	self = qn_alloc_zero_1(qnDir);
 	self->pd = pd;
 #endif
 
@@ -1166,7 +1163,7 @@ const char* qn_dir_read(qnDir* self)
 
 	ent = readdir(self->pd);
 
-	while (ent && (_strcmp(ent->d_name, ".") == 0 || _strcmp(ent->d_name, "..") == 0))
+	while (ent && (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0))
 		ent = readdir(self->pd);
 
 	return ent ? ent->d_name : NULL;
@@ -1216,7 +1213,7 @@ const wchar_t* qn_dir_read_l(qnDir* self)
 
 	ent = readdir(self->pd);
 
-	while (ent && (_strcmp(ent->d_name, ".") == 0 || _strcmp(ent->d_name, "..") == 0))
+	while (ent && (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0))
 		ent = readdir(self->pd);
 
 	if (!ent)
@@ -1255,7 +1252,7 @@ int qn_dir_tell(qnDir* self)
 {
 #if _QN_WINDOWS_
 	return self->stat;
-#elif _SB_ANDROID_
+#elif _QN_ANDROID_
 	return -1;
 #else
 	return (int)telldir(self->pd);
@@ -1285,7 +1282,7 @@ void qn_dir_seek(qnDir* self, int pos)
 		while ((self->stat < pos) && qn_dir_read(self))
 			;
 	}
-#elif _SB_ANDROID_
+#elif _QN_ANDROID_
 	int cnt = 0;
 	rewinddir(self->pd);
 

@@ -277,7 +277,7 @@ void qn_msleep(uint64_t microseconds)
 			QueryPerformanceCounter(&t2);
 		} while (((double)(t2.QuadPart - t1.QuadPart) / freq.QuadPart * 1000000) < dms);
 	}
-#elif _SB_UNIX_
+#elif _QN_UNIX_
 	struct timespec ts;
 	ts.tv_sec = microseconds / 1000000;
 	ts.tv_nsec = (microseconds % 1000000) * 1000;
