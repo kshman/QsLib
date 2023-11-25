@@ -39,8 +39,8 @@ pointer_t qn_memdec(pointer_t dest, const pointer_t src, size_t size)
 //
 pointer_t qn_memzcpr(const pointer_t src, size_t srcsize, /*RET_NULLABLE*/size_t* destsize)
 {
-	qn_value_if_fail(src != NULL, NULL);
-	qn_value_if_fail(srcsize > 0, NULL);
+	qn_retval_if_fail(src != NULL, NULL);
+	qn_retval_if_fail(srcsize > 0, NULL);
 
 	uLong tmp = ((uLong)srcsize + 12) / 1000;
 	tmp += tmp == 0 ? (uLong)srcsize + 13 : (uLong)srcsize + 12;
@@ -61,8 +61,8 @@ pointer_t qn_memzcpr(const pointer_t src, size_t srcsize, /*RET_NULLABLE*/size_t
 //
 pointer_t qn_memzucp(const pointer_t src, size_t srcsize, size_t bufsize, /*RET_NULLABLE*/size_t* destsize)
 {
-	qn_value_if_fail(src != NULL, NULL);
-	qn_value_if_fail(srcsize > 0, NULL);
+	qn_retval_if_fail(src != NULL, NULL);
+	qn_retval_if_fail(srcsize > 0, NULL);
 
 	uLong size = bufsize == 0 ? (uLong)srcsize * 5 + 12 : (uLong)bufsize;
 	uint8_t* p = qn_alloc(size, uint8_t);
@@ -91,7 +91,7 @@ size_t qn_memagn(size_t size)
 //
 char qn_memhrd(size_t size, double* out)
 {
-	qn_value_if_fail(out != NULL, ' ');
+	qn_retval_if_fail(out != NULL, ' ');
 	if (size > 1024ULL * 1024ULL * 1024ULL)
 	{
 		*out = (double)size / (double)(1024ULL * 1024ULL * 1024ULL);
@@ -114,8 +114,8 @@ char qn_memhrd(size_t size, double* out)
 //
 char* qn_memdmp(const pointer_t ptr, size_t size, char* outbuf, size_t buflen)
 {
-	qn_value_if_fail(ptr != NULL, NULL);
-	qn_value_if_fail(outbuf != NULL, NULL);
+	qn_retval_if_fail(ptr != NULL, NULL);
+	qn_retval_if_fail(outbuf != NULL, NULL);
 
 	if (size = 0 || buflen == 0)
 	{

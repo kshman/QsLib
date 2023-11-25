@@ -2028,17 +2028,19 @@ typedef struct qnHash
 		/* keyptr: pointer of key */\
 		/* retnode: pointer's pointer of Node */\
 		/* rethash: pointer of kuint */\
-		size_t __lh=name##_Hash_Cb_Hash(keyptr);\
-		struct name##Node** __ln=&(p)->nodes[__lh%(p)->bucket];\
-		struct name##Node* __lnn;\
-		while ((__lnn=*__ln)!=NULL)\
-		{\
-			if (__lnn->hash==__lh && name##_Hash_Cb_Eq(&__lnn->key, keyptr))\
-				break;\
-			__ln=&__lnn->sib;\
+		if ((p)->nodes) {\
+			size_t __lh=name##_Hash_Cb_Hash(keyptr);\
+			struct name##Node** __ln=&(p)->nodes[__lh%(p)->bucket];\
+			struct name##Node* __lnn;\
+			while ((__lnn=*__ln)!=NULL)\
+			{\
+				if (__lnn->hash==__lh && name##_Hash_Cb_Eq(&__lnn->key, keyptr))\
+					break;\
+				__ln=&__lnn->sib;\
+			}\
+			(retnode)=__ln;\
+			*(rethash)=__lh;\
 		}\
-		(retnode)=__ln;\
-		*(rethash)=__lh;\
 	}QN_STMT_END
 
 #define _qn_inl_hash_set(name,p,keyptr,valueptr,replace)\
@@ -2047,47 +2049,50 @@ typedef struct qnHash
 		/* valuedata : data of value */\
 		/* replace: true=replace original key, false=discard given key */\
 		size_t __ah;\
-		struct name##Node** __an;\
-		struct name##Node* __ann;\
+		struct name##Node** __an=NULL;\
 		_qn_inl_hash_lookup_hash(name,p,keyptr,__an,&__ah);\
-		__ann=*__an;\
-		if (__ann)\
-		{\
-			if (replace)\
+		if (__an) {\
+			struct name##Node* __ann=*__an;\
+			if (__ann)\
 			{\
-				name##_Hash_Cb_Key(&__ann->key);\
-				__ann->key=*(keyptr);\
-				name##_Hash_Cb_Value(&__ann->value);\
-				__ann->value=*(valueptr);\
+				if (replace)\
+				{\
+					name##_Hash_Cb_Key(&__ann->key);\
+					__ann->key=*(keyptr);\
+					name##_Hash_Cb_Value(&__ann->value);\
+					__ann->value=*(valueptr);\
+				}\
+				else\
+				{\
+					name##_Hash_Cb_Key(keyptr);\
+					name##_Hash_Cb_Value(valueptr);\
+				}\
 			}\
 			else\
 			{\
-				name##_Hash_Cb_Key(keyptr);\
-				name##_Hash_Cb_Value(valueptr);\
+				/* step 1*/\
+				__ann=qn_alloc_1(struct name##Node);\
+				if (__ann) {\
+					__ann->sib=NULL;\
+					__ann->hash=__ah;\
+					__ann->key=*(keyptr);\
+					__ann->value=*(valueptr);\
+					/* step 2*/\
+					if ((p)->frst)\
+						(p)->frst->prev=__ann;\
+					else\
+						(p)->last=__ann;\
+					__ann->next=(p)->frst;\
+					__ann->prev=NULL;\
+				}\
+				(p)->frst=__ann;\
+				/* step 3 */\
+				*__an=__ann;\
+				(p)->revision++;\
+				(p)->count++;\
+				/* step 4 */\
+				_qn_inl_hash_test_size(name,p);\
 			}\
-		}\
-		else\
-		{\
-			/* step 1*/\
-			__ann=qn_alloc_1(struct name##Node);\
-			__ann->sib=NULL;\
-			__ann->hash=__ah;\
-			__ann->key=*(keyptr);\
-			__ann->value=*(valueptr);\
-			/* step 2*/\
-			if ((p)->frst)\
-				(p)->frst->prev=__ann;\
-			else\
-				(p)->last=__ann;\
-			__ann->next=(p)->frst;\
-			__ann->prev=NULL;\
-			(p)->frst=__ann;\
-			/* step 3 */\
-			*__an=__ann;\
-			(p)->revision++;\
-			(p)->count++;\
-			/* step 4 */\
-			_qn_inl_hash_test_size(name,p);\
 		}\
 	}QN_STMT_END
 
@@ -3279,11 +3284,11 @@ QN_INLINE int qn_bstr_find_char(const pointer_t p, size_t at, char ch)
 	_qn_inl_bstr_sub_bstr(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, (const qnBstr*)(s), pos, len)
 QN_INLINE bool _qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, size_t pos, size_t len)
 {
-	qn_value_if_fail(pos >= 0, FALSE);
-	qn_value_if_fail(s->len >= pos, FALSE);
+	qn_retval_if_fail(pos >= 0, FALSE);
+	qn_retval_if_fail(s->len >= pos, FALSE);
 
 	if (len > 0)
-		qn_value_if_fail(s->len >= (pos + len), FALSE);
+		qn_retval_if_fail(s->len >= (pos + len), FALSE);
 	else
 		len = s->len - pos;
 
@@ -3513,11 +3518,11 @@ QN_INLINE int qn_bwcs_find_char(const pointer_t p, size_t at, wchar_t ch)
 	_qn_inl_bstr_sub_bstr(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, ((qnBwcs*)(s)), pos, len)
 QN_INLINE bool _qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, size_t pos, size_t len)
 {
-	qn_value_if_fail(pos>=0, FALSE);
-	qn_value_if_fail(s->len>=pos, FALSE);
+	qn_retval_if_fail(pos>=0, FALSE);
+	qn_retval_if_fail(s->len>=pos, FALSE);
 
 	if (len>0)
-		qn_value_if_fail(s->len>=(pos+len), FALSE);
+		qn_retval_if_fail(s->len>=(pos+len), FALSE);
 	else
 		len=s->len-pos;
 

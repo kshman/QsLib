@@ -434,10 +434,10 @@ qnFile* qn_file_new(const char* filename, const char* mode)
 	wchar_t uni[QN_MAX_PATH];
 #endif
 
-	qn_value_if_fail(filename, NULL);
+	qn_retval_if_fail(filename, NULL);
 
 	self = qn_alloc_1(qnFile);
-	qn_value_if_fail(self, NULL);
+	qn_retval_if_fail(self, NULL);
 
 	qn_file_access_parse(mode, &self->acs, &self->flag);
 
@@ -472,10 +472,10 @@ qnFile* qn_file_new_l(const wchar_t* filename, const wchar_t* mode)
 	qnFile* self;
 	char asc[QN_MAX_PATH];
 
-	qn_value_if_fail(filename, NULL);
+	qn_retval_if_fail(filename, NULL);
 
 	self = qn_alloc_1(qnFile);
-	qn_value_if_fail(self, NULL);
+	qn_retval_if_fail(self, NULL);
 
 	qn_file_access_parse_l(mode, &self->acs, &self->flag);
 
@@ -508,7 +508,7 @@ qnFile* qn_file_new_l(const wchar_t* filename, const wchar_t* mode)
 qnFile* qn_file_new_dup(qnFile* src)
 {
 	qnFile* self = qn_alloc_1(qnFile);
-	qn_value_if_fail(self, NULL);
+	qn_retval_if_fail(self, NULL);
 
 	memcpy(self, src, sizeof(qnFile));
 
@@ -589,8 +589,8 @@ int qn_file_read(qnFile* self, pointer_t buffer, int offset, int size)
 {
 	uint8_t* ptr;
 
-	qn_value_if_fail(buffer != NULL, -1);
-	qn_value_if_fail(size >= 0, 0);
+	qn_retval_if_fail(buffer != NULL, -1);
+	qn_retval_if_fail(size >= 0, 0);
 
 	ptr = (uint8_t*)buffer;
 
@@ -614,8 +614,8 @@ int qn_file_write(qnFile* self, const pointer_t buffer, int offset, int size)
 {
 	const uint8_t* ptr;
 
-	qn_value_if_fail(buffer != NULL, -1);
-	qn_value_if_fail(size >= 0, 0);
+	qn_retval_if_fail(buffer != NULL, -1);
+	qn_retval_if_fail(size >= 0, 0);
 
 	ptr = (const uint8_t*)buffer;
 
@@ -766,7 +766,7 @@ int qn_file_vprintf(qnFile* self, const char* fmt, va_list va)
  */
 bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 {
-	qn_value_if_fail(filename, FALSE);
+	qn_retval_if_fail(filename, FALSE);
 
 #if _QN_WINDOWS_
 	WIN32_FIND_DATA ffd;
@@ -814,7 +814,7 @@ bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
  */
 bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir)
 {
-	qn_value_if_fail(filename, FALSE);
+	qn_retval_if_fail(filename, FALSE);
 
 #if _QN_WINDOWS_
 	WIN32_FIND_DATA ffd;
@@ -883,7 +883,7 @@ pointer_t qn_file_alloc(const char* filename, int* size)
 	pointer_t buf;
 	int64_t len;
 
-	qn_value_if_fail(filename != NULL, NULL);
+	qn_retval_if_fail(filename != NULL, NULL);
 
 	file = qn_file_new(filename, "rb");
 
@@ -921,10 +921,10 @@ pointer_t qn_file_alloc_l(const wchar_t* filename, int* size)
 	pointer_t buf;
 	uint64_t len;
 
-	qn_value_if_fail(filename, NULL);
+	qn_retval_if_fail(filename, NULL);
 
 	file = qn_file_new_l(filename, L"rb");
-	qn_value_if_fail(file, NULL);
+	qn_retval_if_fail(file, NULL);
 
 	len = qn_file_size(file);
 
@@ -981,7 +981,7 @@ qnDir* qn_dir_new(const char* path)
 	wchar_t uni[MAX_PATH];
 	WIN32_FILE_ATTRIBUTE_DATA fad;
 
-	qn_value_if_fail(path != NULL, NULL);
+	qn_retval_if_fail(path != NULL, NULL);
 
 	qn_utf8to16(uni, MAX_PATH - 1, path, 0);
 
@@ -995,7 +995,7 @@ qnDir* qn_dir_new(const char* path)
 
 	len = wcslen(fpath) + 1/*슬래시*/ + 1/*서픽스*/ + 1/*널*/;
 	suffix = qn_alloc(len, wchar_t);
-	qn_value_if_fail(suffix, NULL);
+	qn_retval_if_fail(suffix, NULL);
 
 	wcscpy_s(suffix, len, fpath);
 	len = wcslen(suffix);
@@ -1050,7 +1050,7 @@ qnDir* qn_dir_new_l(const wchar_t* path)
 	wchar_t fpath[MAX_PATH];
 	WIN32_FILE_ATTRIBUTE_DATA fad;
 
-	qn_value_if_fail(path != NULL, NULL);
+	qn_retval_if_fail(path != NULL, NULL);
 
 	if (!GetFileAttributesEx(path, GetFileExInfoStandard, &fad))
 		return NULL;
@@ -1062,7 +1062,7 @@ qnDir* qn_dir_new_l(const wchar_t* path)
 
 	len = wcslen(fpath) + 1/*슬래시*/ + 1/*서픽스*/ + 1/*널*/;
 	suffix = qn_alloc(len, wchar_t);
-	qn_value_if_fail(suffix, NULL);
+	qn_retval_if_fail(suffix, NULL);
 
 	wcscpy_s(suffix, len, fpath);
 	len = wcslen(suffix);

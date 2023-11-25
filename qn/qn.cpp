@@ -99,7 +99,7 @@ void qn_atexit(void(*func)(pointer_t), pointer_t data)
 	struct Closure* node = qn_alloc_1(struct Closure);
 	qn_ret_if_fail(node);
 	node->zero = FALSE;
-	node->data.func = func;
+	node->data.func = (func_t)func;
 	node->data.data = data;
 	node->prev = _qn_rt.closures;
 	_qn_rt.closures = node;
@@ -113,7 +113,7 @@ void qn_atexit0(void(*func)(void))
 	struct Closure* node = qn_alloc_1(struct Closure);
 	qn_ret_if_fail(node);
 	node->zero = TRUE;
-	node->data.func = func;
+	node->data.func = (func_t)func;
 	node->data.data = NULL;
 	node->prev = _qn_rt.closures;
 	_qn_rt.closures = node;
@@ -127,7 +127,7 @@ void qn_atexitp(void(*func)(pointer_t), pointer_t data)
 	struct Closure* node = qn_alloc_1(struct Closure);
 	qn_ret_if_fail(node);
 	node->zero = FALSE;
-	node->data.func = func;
+	node->data.func = (func_t)func;
 	node->data.data = data;
 	node->prev = _qn_rt.preclosures;
 	_qn_rt.preclosures = node;

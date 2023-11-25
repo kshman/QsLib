@@ -43,7 +43,7 @@
 
 // api
 #ifndef QNAPI
-#	ifdef _LIB
+#	if defined(_LIB) || defined(_STATIC)
 #		define QNAPI					extern
 #	else
 #		if _QN_WINDOWS_
@@ -119,6 +119,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 // includes
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -309,8 +310,8 @@ typedef struct funcparam_t
 // conditions
 #define qn_ret_if_fail(x)				QN_STMT_BEGIN{ if (!(x)) return; }QN_STMT_END
 #define qn_ret_if_ok(x)					QN_STMT_BEGIN{ if ((x)) return; }QN_STMT_END
-#define qn_value_if_fail(x,r)			QN_STMT_BEGIN{ if (!(x)) return (r); }QN_STMT_END
-#define qn_value_if_ok(x,r)				QN_STMT_BEGIN{ if ((x)) return (r); }QN_STMT_END
+#define qn_retval_if_fail(x,r)			QN_STMT_BEGIN{ if (!(x)) return (r); }QN_STMT_END
+#define qn_retval_if_ok(x,r)			QN_STMT_BEGIN{ if ((x)) return (r); }QN_STMT_END
 
 #if _DEBUG
 #define qn_assert(expr,mesg)			QN_STMT_BEGIN{if (!(expr)) qn_debug_assert(#expr, mesg, __FILE__, __LINE__);}QN_STMT_END
@@ -340,7 +341,7 @@ QNAPI int qn_debug_halt(const char* cls, const char* msg);
 #define qn_alloc_zero_1(type)			(type*)calloc(1, sizeof(type))
 #define qn_realloc(ptr,cnt,type)		(type*)realloc((pointer_t)(ptr), (cnt)*sizeof(type))
 #define qn_free(ptr)					free((pointer_t)(ptr))
-#define qn_ptrfree(pptr)				QN_STMT_BEGIN{ free((pointer_t)*(pptr)); *(pptr)=NULL; }QN_STMT_END
+#define qn_free_ptr(pptr)				QN_STMT_BEGIN{ free((pointer_t)*(pptr)); *(pptr)=NULL; }QN_STMT_END
 #define qn_zero(ptr,cnt,type)			memset((ptr), 0, sizeof(type)*(cnt))
 #define qn_zero_1(ptr)					memset((ptr), 0, sizeof(*(ptr)))
 #if _MSC_VER
@@ -581,14 +582,14 @@ QNAPI void qn_file_access_parse(const char* mode, qnFileAccess* self, int* flag)
 QNAPI void qn_file_access_parse_l(const wchar_t* mode, qnFileAccess* self, int* flag);
 
 // directory
-QNAPI qnDir* k_dir_new(const char* path);
-QNAPI void k_dir_delete(qnDir* self);
-QNAPI const char* k_dir_read(qnDir* self);
-QNAPI void k_dir_rewind(qnDir* self);
-QNAPI void k_dir_seek(qnDir* self, int pos);
-QNAPI int k_dir_tell(qnDir* self);
-QNAPI qnDir* k_dir_new_l(const wchar_t* path);
-QNAPI const wchar_t* k_dir_read_l(qnDir* self);
+QNAPI qnDir* qn_dir_new(const char* path);
+QNAPI void qn_dir_delete(qnDir* self);
+QNAPI const char* qn_dir_read(qnDir* self);
+QNAPI void qn_dir_rewind(qnDir* self);
+QNAPI void qn_dir_seek(qnDir* self, int pos);
+QNAPI int qn_dir_tell(qnDir* self);
+QNAPI qnDir* qn_dir_new_l(const wchar_t* path);
+QNAPI const wchar_t* qn_dir_read_l(qnDir* self);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -678,29 +679,5 @@ QNAPI void qn_mltag_loopeach_arg(qnMlTag* ptr, void(*func)(const char* name, con
 
 QNAPI void qn_mltag_set_arg(qnMlTag* ptr, const char* name, const char* value);
 QNAPI bool qn_mltag_remove_arg(qnMlTag* ptr, const char* name);
-
-
-#if 0
-
-
-
-//////////////////////////////////////////////////////////////////////////
-// win32 registry
-#if _SB_WINDOWS_DESKTOP_
-/** Defines an alias representing registry. */
-typedef struct kRegistry				kRegistry;
-
-QNAPI kRegistry* k_regi_new(const char* container, const char* name, bool canwrite);
-QNAPI void k_regi_delete(kRegistry* key);
-QNAPI bool k_regi_enum(kRegistry* key, int index, char* buffer, int size);
-QNAPI bool k_regi_query_type(kRegistry* key, const char* name, int* rettype, int* retsize);
-QNAPI uint8_t* k_regi_get_unknown(kRegistry* key, const char* name, int* rettype, int* retsize);
-QNAPI uint8_t* k_regi_get_binary(kRegistry* key, const char* name, int* retsize);
-QNAPI kchar* k_regi_get_multi_string(kRegistry* key, const char* name, int* retsize);
-QNAPI bool k_regi_get_string(kRegistry* key, const char* name, char* buffer, int size);
-QNAPI bool k_regi_get_int(kRegistry* key, const char* name, int* value);
-QNAPI bool k_regi_get_long(kRegistry* key, const char* name, int64_t* value);
-#endif
-#endif
 
 QN_EXTC_END

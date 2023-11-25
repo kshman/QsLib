@@ -324,6 +324,7 @@ typedef struct qnRealTimer
 qnTimer* qn_timer_new(void)
 {
 	qnRealTimer* self = qn_alloc_1(qnRealTimer);
+	qn_retval_if_fail(self, NULL);
 
 #if _QN_WINDOWS_
 	LARGE_INTEGER ll;

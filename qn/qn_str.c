@@ -29,7 +29,7 @@ int qn_vsnprintf(char* out, size_t len, const char* fmt, va_list va)
 {
 	size_t res;
 
-	qn_value_if_fail(fmt != NULL, -1);
+	qn_retval_if_fail(fmt != NULL, -1);
 
 	res = dopr(_asc_output, _asc_output_closure, out, len, fmt, va);
 
@@ -44,8 +44,8 @@ int qn_vasprintf(char** out, const char* fmt, va_list va)
 {
 	size_t len;
 
-	qn_value_if_fail(out != NULL, -2);
-	qn_value_if_fail(fmt != NULL, -1);
+	qn_retval_if_fail(out != NULL, -2);
+	qn_retval_if_fail(fmt != NULL, -1);
 
 	len = dopr(_asc_output, _asc_output_closure, NULL, 0, fmt, va);
 	if (len <= 0)
@@ -66,7 +66,7 @@ char* qn_vapsprintf(const char* fmt, va_list va)
 	size_t len;
 	char* ret;
 
-	qn_value_if_fail(fmt != NULL, NULL);
+	qn_retval_if_fail(fmt != NULL, NULL);
 
 	len = dopr(_asc_output, _asc_output_closure, NULL, 0, fmt, va);
 	if (len <= 0)
@@ -350,7 +350,7 @@ int qn_vsnwprintf(wchar_t* out, size_t len, const wchar_t* fmt, va_list va)
 {
 	size_t res;
 
-	qn_value_if_fail(fmt != NULL, -1);
+	qn_retval_if_fail(fmt != NULL, -1);
 
 	res = doprw(_wcs_output, _wcs_output_closure, out, len, fmt, va);
 
@@ -365,8 +365,8 @@ int qn_vaswprintf(wchar_t** out, const wchar_t* fmt, va_list va)
 {
 	size_t len;
 
-	qn_value_if_fail(out != NULL, -2);
-	qn_value_if_fail(fmt != NULL, -1);
+	qn_retval_if_fail(out != NULL, -2);
+	qn_retval_if_fail(fmt != NULL, -1);
 
 	len = doprw(_wcs_output, _wcs_output_closure, NULL, 0, fmt, va);
 	if (len <= 0)
@@ -387,7 +387,7 @@ wchar_t* qn_vapswprintf(const wchar_t* fmt, va_list va)
 	size_t len;
 	wchar_t* ret;
 
-	qn_value_if_fail(fmt != NULL, NULL);
+	qn_retval_if_fail(fmt != NULL, NULL);
 
 	len = doprw(_wcs_output, _wcs_output_closure, NULL, 0, fmt, va);
 	if (len <= 0)
@@ -874,7 +874,7 @@ size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar_t* inwcs, size_t in
  */
 size_t qn_utf8to32(uchar4_t* dest, size_t destsize, const char* src, size_t srclen)
 {
-	qn_value_if_fail(src, 0);
+	qn_retval_if_fail(src, 0);
 
 	if (destsize == 0 || !dest)
 	{
@@ -914,7 +914,7 @@ size_t qn_utf8to32(uchar4_t* dest, size_t destsize, const char* src, size_t srcl
  */
 size_t qn_utf8to16(uchar2_t* dest, size_t destsize, const char* src, size_t srclen)
 {
-	qn_value_if_fail(src, 0);
+	qn_retval_if_fail(src, 0);
 
 	if (destsize == 0 || !dest)
 	{
@@ -968,7 +968,7 @@ size_t qn_utf32to8(char* dest, size_t destsize, const uchar4_t* src, size_t srcl
 	intptr_t i, srclen;
 	uchar4_t uc;
 
-	qn_value_if_fail(src, 0);
+	qn_retval_if_fail(src, 0);
 
 	srclen = (intptr_t)srclen_org;
 
@@ -1060,7 +1060,7 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
 	uchar2_t ch;
 	size_t size, n, z;
 
-	qn_value_if_fail(src, 0);
+	qn_retval_if_fail(src, 0);
 
 	cp = src;
 	hsg = 0;
@@ -1235,7 +1235,7 @@ size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t
 	uchar2_t ch;
 	size_t size, z;
 
-	qn_value_if_fail(src, 0);
+	qn_retval_if_fail(src, 0);
 
 	cp = src;
 	hsg = 0;
@@ -1397,7 +1397,7 @@ size_t qn_utf32to16(uchar2_t* dest, size_t destsize, const uchar4_t* src, size_t
 	size_t size, z;
 	intptr_t i, srclen;
 
-	qn_value_if_fail(src, 0);
+	qn_retval_if_fail(src, 0);
 
 	size = 0;
 	srclen = (intptr_t)srclen_org;
