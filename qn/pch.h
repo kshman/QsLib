@@ -5,9 +5,9 @@
 #define STRICT
 #define WIN32_LEAN_AND_MEAN
 #include <excpt.h>
-#include <mmsystem.h>
 #include <sdkddkver.h>
 #include <windows.h>
+#include <mmsystem.h>
 #if _MSC_VER
 #include <intrin.h>
 #include <crtdbg.h>
