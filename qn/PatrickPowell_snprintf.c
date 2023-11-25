@@ -629,7 +629,7 @@ pos_exp_again:
 	intpart = pp_intpart(uvalue);
 
 	// 오버플로우, 현재 사용 안함
-	//if (intpart==UINT_FAST64_MAX) return FALSE;
+	//if (intpart==UINT_FAST64_MAX) return false;
 
 	//
 	mask = (uint64_t)pp_pow10(max);
@@ -669,7 +669,7 @@ pos_exp_again:
 			esignvalue = '+';
 		}
 
-		eplace = _conv_int_to_str(exponent, econvert, 2, 10, FALSE);
+		eplace = _conv_int_to_str(exponent, econvert, 2, 10, false);
 
 		if (eplace == 1)
 		{
@@ -689,11 +689,11 @@ pos_exp_again:
 	}
 
 	// 정수부 처리
-	iplace = _conv_long_to_str(intpart, iconvert, 311 - 1, 10, FALSE);
+	iplace = _conv_long_to_str(intpart, iconvert, 311 - 1, 10, false);
 
 	// 실수부 처리
 	// iplace=1 이면 fracpart==0 임.
-	fplace = fracpart == 0 ? 0 : _conv_long_to_str(fracpart, fconvert, 311 - 1, 10, FALSE);
+	fplace = fracpart == 0 ? 0 : _conv_long_to_str(fracpart, fconvert, 311 - 1, 10, false);
 
 	// 지수부 처리
 	zleadfrac = max - fplace;
@@ -1961,7 +1961,7 @@ pos_exp_again:
 	intpart = pp_intpart(uvalue);
 
 	// 오버플로우, 현재 사용 안함
-	//if (intpart==UINT_FAST64_MAX) return FALSE;
+	//if (intpart==UINT_FAST64_MAX) return false;
 
 	//
 	mask = (uint64_t)pp_pow10(max);
@@ -2001,7 +2001,7 @@ pos_exp_again:
 			esignvalue = L'+';
 		}
 
-		eplace = _conv_int_to_wcs(exponent, econvert, 2, 10, FALSE);
+		eplace = _conv_int_to_wcs(exponent, econvert, 2, 10, false);
 
 		if (eplace == 1)
 		{
@@ -2021,11 +2021,11 @@ pos_exp_again:
 	}
 
 	// 정수부 처리
-	iplace = _conv_long_to_wcs(intpart, iconvert, 311 - 1, 10, FALSE);
+	iplace = _conv_long_to_wcs(intpart, iconvert, 311 - 1, 10, false);
 
 	// 실수부 처리
 	// iplace=1 이면 fracpart==0 임.
-	fplace = fracpart == 0 ? 0 : _conv_long_to_wcs(fracpart, fconvert, 311 - 1, 10, FALSE);
+	fplace = fracpart == 0 ? 0 : _conv_long_to_wcs(fracpart, fconvert, 311 - 1, 10, false);
 
 	// 지수부 처리
 	zleadfrac = max - fplace;

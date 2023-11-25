@@ -55,6 +55,25 @@
 
 
 //////////////////////////////////////////////////////////////////////////
+// includes
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <wchar.h>
+#include <time.h>
+#include <signal.h>
+#if _QN_BSD_ || _QN_LINUX_
+#include <sys/time.h>
+#if _QN_LINUX_
+#include <linux/limits.h>
+#endif
+#endif
+
+
+//////////////////////////////////////////////////////////////////////////
 // compiler dependancies
 
 // basic definition
@@ -115,35 +134,9 @@
 
 
 //////////////////////////////////////////////////////////////////////////
-// includes
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <wchar.h>
-#include <time.h>
-#include <signal.h>
-#if _QN_BSD_ || _QN_LINUX_
-#include <sys/time.h>
-#if _QN_LINUX_
-#include <linux/limits.h>
-#endif
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////
 // definition
 
 QN_EXTC_BEGIN
-
-#ifndef FALSE
-#define FALSE							0
-#endif
-
-#ifndef TRUE
-#define TRUE							1
-#endif
 
 #define QN_NOUSE(v)						(void)(v)
 #define QN_GET_MACRO_3(_1,_2,_3,N, ...)	N
@@ -222,11 +215,6 @@ typedef uint16_t						uchar2_t;
 #else
 typedef uint32_t						uchar4_t;
 typedef uint16_t						uchar2_t;
-#endif
-
-// bool
-#if !__cplusplus && (_MSC_VER || __STDC_VERSION__ < 201710L) && !defined(bool)
-typedef _Bool							bool;
 #endif
 
 // specific

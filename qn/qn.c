@@ -27,7 +27,7 @@ static struct QnRuntime
 	struct Closure* closures;
 	struct Closure* preclosures;
 } _qn_rt = {
-	FALSE,
+	false,
 	NULL,
 	NULL
 };
@@ -61,7 +61,7 @@ static void _qn_dispose(void)
 //
 static void _qn_init(void)
 {
-	_qn_rt.inited = TRUE;
+	_qn_rt.inited = true;
 
 #if _LIB
 	(void)atexit(_qn_dispose);
@@ -98,7 +98,7 @@ void qn_atexit(void(*func)(pointer_t), pointer_t data)
 
 	struct Closure* node = qn_alloc_1(struct Closure);
 	qn_ret_if_fail(node);
-	node->zero = FALSE;
+	node->zero = false;
 	node->data.func = (func_t)func;
 	node->data.data = data;
 	node->prev = _qn_rt.closures;
@@ -112,7 +112,7 @@ void qn_atexit0(void(*func)(void))
 
 	struct Closure* node = qn_alloc_1(struct Closure);
 	qn_ret_if_fail(node);
-	node->zero = TRUE;
+	node->zero = true;
 	node->data.func = (func_t)func;
 	node->data.data = NULL;
 	node->prev = _qn_rt.closures;
@@ -126,7 +126,7 @@ void qn_atexitp(void(*func)(pointer_t), pointer_t data)
 
 	struct Closure* node = qn_alloc_1(struct Closure);
 	qn_ret_if_fail(node);
-	node->zero = FALSE;
+	node->zero = false;
 	node->data.func = (func_t)func;
 	node->data.data = data;
 	node->prev = _qn_rt.preclosures;

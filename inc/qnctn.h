@@ -959,11 +959,11 @@ typedef struct qnNodeList
 #define qn_nodelist_contains(name,p,item,retbool)\
 	QN_STMT_BEGIN{\
 		name##Type* __node;\
-		for (*(retbool)=FALSE, __node=(p)->frst; __node; __node=__node->next)\
+		for (*(retbool)=false, __node=(p)->frst; __node; __node=__node->next)\
 		{\
 			if (__node==(item))\
 			{\
-				*(retbool)=TRUE;\
+				*(retbool)=true;\
 				break;\
 			}\
 		}\
@@ -972,11 +972,11 @@ typedef struct qnNodeList
 #define qn_nodelist_find(name,p,predicate_user_node,userdata,retbool)\
 	QN_STMT_BEGIN{\
 		name##Type* __node;\
-		for (*(retbool)=FALSE, __node=(p)->last; __node; __node=__node->prev)\
+		for (*(retbool)=false, __node=(p)->last; __node; __node=__node->prev)\
 		{\
 			if (predicate_user_node(userdata,__node))\
 			{\
-				*(retbool)=TRUE;\
+				*(retbool)=true;\
 				break;\
 			}\
 		}\
@@ -1580,11 +1580,11 @@ typedef struct qnSlice
 		bool* __r=(retboolref);\
 		if ((p)->count==(p)->max)\
 		{\
-			if (__r) *__r=FALSE;\
+			if (__r) *__r=false;\
 		}\
 		else\
 		{\
-			if (__r) *__r=TRUE;\
+			if (__r) *__r=true;\
 			(p)->data[(p)->count]=*(itemref);\
 			(p)->count++;\
 		}\
@@ -1595,16 +1595,16 @@ typedef struct qnSlice
 		bool* __r=(retboolref);\
 		if ((p)->count==0)\
 		{\
-			if (__r) *__r=FALSE;\
+			if (__r) *__r=false;\
 		}\
 		else if ((p)->count==1)\
 		{\
-			if (__r) *__r=TRUE;\
+			if (__r) *__r=true;\
 			(p)->count=0;\
 		}\
 		else\
 		{\
-			if (__r) *__r=TRUE;\
+			if (__r) *__r=true;\
 			(p)->count--;\
 			(p)->data[0]=(p)->data[(p)->count];\
 		}\
@@ -1615,17 +1615,17 @@ typedef struct qnSlice
 		bool* __r=(retboolref);\
 		if ((p)->count==0)\
 		{\
-			if (__r) *__r=FALSE;\
+			if (__r) *__r=false;\
 		}\
 		else if ((p)->count==1)\
 		{\
-			if (__r) *__r=TRUE;\
+			if (__r) *__r=true;\
 			*(retvalueref)=(p)->data[0];\
 			(p)->count=0;\
 		}\
 		else\
 		{\
-			if (__r) *__r=TRUE;\
+			if (__r) *__r=true;\
 			*(retvalueref)=(p)->data[0];\
 			(p)->count--;\
 			(p)->data[0]=(p)->data[(p)->count];\
@@ -1690,11 +1690,11 @@ typedef struct qnSlice
 		bool* __r=(retboolref);\
 		if ((p)->count==(p)->max)\
 		{\
-			if (__r) *__r=FALSE;\
+			if (__r) *__r=false;\
 		}\
 		else\
 		{\
-			if (__r) *__r=TRUE;\
+			if (__r) *__r=true;\
 			(p)->data[(p)->count]=(item);\
 			(p)->count++;\
 		}\
@@ -1980,10 +1980,10 @@ typedef struct qnHash
 	}QN_STMT_END
 
 #define qn_hash_add(name,p,keyptr,valueptr)\
-	_qn_inl_hash_set(name,p,keyptr,valueptr,FALSE)
+	_qn_inl_hash_set(name,p,keyptr,valueptr,false)
 
 #define qn_hash_set(name,p,keyptr,valueptr)\
-	_qn_inl_hash_set(name,p,keyptr,valueptr,TRUE);
+	_qn_inl_hash_set(name,p,keyptr,valueptr,true);
 
 #define qn_hash_remove(name,p,keyptr,retbool_can_be_null)\
 	QN_STMT_BEGIN{\
@@ -2105,7 +2105,7 @@ typedef struct qnHash
 			if (retbool)\
 			{\
 				bool* __c=retbool;\
-				*__c=FALSE;\
+				*__c=false;\
 			}\
 		}\
 		else\
@@ -2114,7 +2114,7 @@ typedef struct qnHash
 			if (retbool)\
 			{\
 				bool* __c=retbool;\
-				*__c=TRUE;\
+				*__c=true;\
 			}\
 		}\
 	}QN_STMT_END
@@ -2245,10 +2245,10 @@ typedef struct qnHash
 	}QN_STMT_END
 
 #define qn_hash_ptr_add(name,p,keyptr,valueptr)\
-	_qn_inl_hash_ptr_set(name,p,keyptr,valueptr,FALSE)
+	_qn_inl_hash_ptr_set(name,p,keyptr,valueptr,false)
 
 #define qn_hash_ptr_set(name,p,keyptr,valueptr)\
-	_qn_inl_hash_ptr_set(name,p,keyptr,valueptr,TRUE);
+	_qn_inl_hash_ptr_set(name,p,keyptr,valueptr,true);
 
 #define qn_hash_ptr_remove(name,p,keyptr,retbool_can_be_null)\
 	QN_STMT_BEGIN{\
@@ -2350,7 +2350,7 @@ typedef struct qnHash
 			if (retbool)\
 			{\
 				bool* __c=retbool;\
-				*__c=FALSE;\
+				*__c=false;\
 			}\
 		}\
 		else\
@@ -2359,7 +2359,7 @@ typedef struct qnHash
 			if (retbool)\
 			{\
 				bool* __c=retbool;\
-				*__c=TRUE;\
+				*__c=true;\
 			}\
 		}\
 	}QN_STMT_END
@@ -2614,10 +2614,10 @@ typedef struct qnMukum
 	}QN_STMT_END
 
 #define qn_mukum_add(name,p,keyptr,valueptr)\
-	_qn_inl_mukum_set(name,p,keyptr,valueptr,FALSE);
+	_qn_inl_mukum_set(name,p,keyptr,valueptr,false);
 
 #define qn_mukum_set(name,p,keyptr,valueptr)\
-	_qn_inl_mukum_set(name,p,keyptr,valueptr,TRUE);\
+	_qn_inl_mukum_set(name,p,keyptr,valueptr,true);\
 
 #define qn_mukum_remove(name,p,keyptr,retbool_can_be_null)\
 	QN_STMT_BEGIN{\
@@ -2730,7 +2730,7 @@ typedef struct qnMukum
 			if (retbool)\
 			{\
 				bool* __c=retbool;\
-				*__c=FALSE;\
+				*__c=false;\
 			}\
 		}\
 		else\
@@ -2739,7 +2739,7 @@ typedef struct qnMukum
 			if (retbool)\
 			{\
 				bool* __c=retbool;\
-				*__c=TRUE;\
+				*__c=true;\
 			}\
 		}\
 	}QN_STMT_END
@@ -2861,10 +2861,10 @@ typedef struct qnMukum
 	}QN_STMT_END
 
 #define qn_mukum_ptr_add(name,p,keyptr,valueptr)\
-	_qn_inl_mukum_ptr_set(name,p,keyptr,valueptr,FALSE)
+	_qn_inl_mukum_ptr_set(name,p,keyptr,valueptr,false)
 
 #define qn_mukum_ptr_set(name,p,keyptr,valueptr)\
-	_qn_inl_mukum_ptr_set(name,p,keyptr,valueptr,TRUE)
+	_qn_inl_mukum_ptr_set(name,p,keyptr,valueptr,true)
 
 #define qn_mukum_ptr_remove(name,p,keyptr,retbool_can_be_null)\
 	QN_STMT_BEGIN{\
@@ -2977,7 +2977,7 @@ typedef struct qnMukum
 			if (retbool)\
 			{\
 				bool* __c=retbool;\
-				*__c=FALSE;\
+				*__c=false;\
 			}\
 		}\
 		else\
@@ -2986,7 +2986,7 @@ typedef struct qnMukum
 			if (retbool)\
 			{\
 				bool* __c=retbool;\
-				*__c=TRUE;\
+				*__c=true;\
 			}\
 		}\
 	}QN_STMT_END
@@ -3284,17 +3284,17 @@ QN_INLINE int qn_bstr_find_char(const pointer_t p, size_t at, char ch)
 	_qn_inl_bstr_sub_bstr(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, (const qnBstr*)(s), pos, len)
 QN_INLINE bool _qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, size_t pos, size_t len)
 {
-	qn_retval_if_fail(pos >= 0, FALSE);
-	qn_retval_if_fail(s->len >= pos, FALSE);
+	qn_retval_if_fail(pos >= 0, false);
+	qn_retval_if_fail(s->len >= pos, false);
 
 	if (len > 0)
-		qn_retval_if_fail(s->len >= (pos + len), FALSE);
+		qn_retval_if_fail(s->len >= (pos + len), false);
 	else
 		len = s->len - pos;
 
 	qn_strmid(p->data, psize, s->data, pos, len);
 	p->len = len;
-	return TRUE;
+	return true;
 }
 
 
@@ -3518,17 +3518,17 @@ QN_INLINE int qn_bwcs_find_char(const pointer_t p, size_t at, wchar_t ch)
 	_qn_inl_bstr_sub_bstr(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, ((qnBwcs*)(s)), pos, len)
 QN_INLINE bool _qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, size_t pos, size_t len)
 {
-	qn_retval_if_fail(pos>=0, FALSE);
-	qn_retval_if_fail(s->len>=pos, FALSE);
+	qn_retval_if_fail(pos>=0, false);
+	qn_retval_if_fail(s->len>=pos, false);
 
 	if (len>0)
-		qn_retval_if_fail(s->len>=(pos+len), FALSE);
+		qn_retval_if_fail(s->len>=(pos+len), false);
 	else
 		len=s->len-pos;
 
 	qn_wcsmid(p->data, psize, s->data, pos, len);
 	p->len=len;
-	return TRUE;
+	return true;
 }
 
 QN_EXTC_END

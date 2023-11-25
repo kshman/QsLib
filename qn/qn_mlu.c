@@ -230,8 +230,8 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 	char* cd;
 	char* psz;
 
-	qn_retval_if_fail(data, FALSE);
-	qn_retval_if_fail(size > 0, FALSE);
+	qn_retval_if_fail(data, false);
+	qn_retval_if_fail(size > 0, false);
 
 	qn_mlu_clean_tags(self);
 	qn_mlu_clean_errs(self);
@@ -254,19 +254,19 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 		{
 			// 이건 32비트 유니코드, 아마 UTF32 BE(0x0000FEFF)
 			// 처리할 수 없다
-			return FALSE;
+			return false;
 		}
 		else if (i == 0xFEFF)
 		{
 			// 이건 UTF16 LE
 			// 처리하지 않음
-			return FALSE;
+			return false;
 		}
 		else if (i == 0xFFFE)
 		{
 			// 이건 UTF16 BE, 또는 UTF32 LE(0xFFFE0000)
 			// 처리 안할래
-			return FALSE;
+			return false;
 		}
 
 		// 사인 없음
@@ -274,8 +274,8 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 	}
 
 	//
-	bool ret = FALSE;
-	bool iscmt = FALSE;
+	bool ret = false;
+	bool iscmt = false;
 	int line = 1;
 	int cdsize = 0;
 
@@ -298,7 +298,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 			line++;
 
 			if (iscmt)
-				iscmt = FALSE;
+				iscmt = false;
 
 #if 0
 			// 옛날 방식 주석 '#' 또는 "//"
@@ -307,13 +307,13 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 			if (n < size)
 			{
 				if (pos[n] == '#')
-					iscmt = TRUE;
+					iscmt = true;
 				else if (pos[n] == '/')
 				{
 					n++;
 
 					if (n < size && pos[n] == '/')
-						iscmt = TRUE;
+						iscmt = true;
 				}
 			}
 #endif
@@ -325,9 +325,9 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 		if (ch == '<')
 		{
 			// 태그 들어가기
-			bool hasclosure = FALSE;
-			bool hasintern = FALSE;
-			bool hassingle = FALSE;
+			bool hasclosure = false;
+			bool hasintern = false;
+			bool hassingle = false;
 
 			i++;
 
@@ -335,13 +335,13 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 			{
 				if (pos[i] == '/')
 				{
-					hasclosure = TRUE;
+					hasclosure = true;
 					i++;
 				}
 				else if (pos[i] == '?')
 				{
-					hasclosure = TRUE;
-					hasintern = TRUE;
+					hasclosure = true;
+					hasintern = true;
 					i++;
 				}
 				else if (pos[i] == '!' && (i + 2) < size && pos[i + 1] == '-' && pos[i + 2] == '-')
@@ -355,7 +355,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 						if (pos[i] == '-' && pos[i + 1] == '-' && pos[i + 2] == '>')
 						{
 							i += 3;
-							hasintern = TRUE;
+							hasintern = true;
 							break;
 						}
 
@@ -382,7 +382,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 					line++;
 				/*
 				else if (pos[i]=='/')
-				hassingle=TRUE;
+				hassingle=true;
 				*/
 				else if (pos[i] == '>')
 				{
@@ -391,7 +391,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 						n = (int)btag->len - 1;
 						btag->data[n] = '\0';
 						btag->len = n;
-						hassingle = TRUE;
+						hassingle = true;
 					}
 
 					break;
@@ -550,7 +550,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 					else
 					{
 						// 하부로 넣기
-						tmptag->cls = TRUE;
+						tmptag->cls = true;
 
 						curtag = stack->data;
 						qn_arr_add(SubArray, &curtag->subs, tmptag);
@@ -584,7 +584,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 	else
 	{
 		// 성공
-		ret = TRUE;
+		ret = true;
 	}
 
 pos_exit:
@@ -625,11 +625,11 @@ bool qn_mlu_write_file(qnMlu* self, const char* filename)
 {
 	qnFile* file;
 
-	qn_retval_if_fail(filename, FALSE);
-	qn_retval_if_fail(qn_arr_count(&self->tags) > 0, FALSE);
+	qn_retval_if_fail(filename, false);
+	qn_retval_if_fail(qn_arr_count(&self->tags) > 0, false);
 
 	file = qn_file_new(filename, "w");
-	qn_retval_if_fail(file, FALSE);
+	qn_retval_if_fail(file, false);
 
 	// UTF8 BOM
 	int bom = 0x00BFBBEF;
@@ -646,7 +646,7 @@ bool qn_mlu_write_file(qnMlu* self, const char* filename)
 
 	qn_file_delete(file);
 
-	return TRUE;
+	return true;
 }
 
 /**
@@ -861,13 +861,13 @@ bool qn_mlu_remove_nth(qnMlu* self, int at)
 	qnRealTag* tag;
 
 	if (at < 0 || at >= (int)qn_arr_count(&self->tags))
-		return FALSE;
+		return false;
 
 	tag = qn_arr_nth(&self->tags, at);
 	qn_arr_remove_nth(SubArray, &self->tags, at);
 	qn_mltag_delete((qnMlTag*)tag);
 
-	return TRUE;
+	return true;
 }
 
 /**
@@ -881,7 +881,7 @@ bool qn_mlu_remove_tag(qnMlu* self, qnMlTag* tag, bool isdelete)
 {
 	qnRealTag* mt = (qnRealTag*)tag;
 
-	qn_retval_if_fail(tag, FALSE);
+	qn_retval_if_fail(tag, false);
 
 	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
@@ -892,11 +892,11 @@ bool qn_mlu_remove_tag(qnMlu* self, qnMlTag* tag, bool isdelete)
 			if (isdelete)
 				qn_mltag_delete(tag);
 
-			return TRUE;
+			return true;
 		}
 	}
 
-	return FALSE;
+	return false;
 }
 
 
@@ -1014,7 +1014,7 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 	int at, eq;
 	qnBstr1k k, v;   // 키와 값은 각각 1k
 
-	qn_retval_if_fail(bs->len > 0, TRUE);
+	qn_retval_if_fail(bs->len > 0, true);
 
 	for (;;)
 	{
@@ -1028,7 +1028,7 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 			if (bs->len > 0)
 			{
 				// 값이 없는데 키만 있으면 안됨
-				return FALSE;
+				return false;
 			}
 
 			break;
@@ -1044,7 +1044,7 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 		if (bs->len == 0)
 		{
 			// 아마도 '='뒤에 값이 없는 듯
-			return FALSE;
+			return false;
 		}
 		else if (qn_bstr_nth(bs, 0) == '"')
 		{
@@ -1054,7 +1054,7 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 			if (at < 0)
 			{
 				// 없으면 오류
-				return FALSE;
+				return false;
 			}
 
 			qn_bstr_sub_bstr(&v, bs, 1, at - 1);
@@ -1068,7 +1068,7 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 			if (at < 0)
 			{
 				// 없으면 오류
-				return FALSE;
+				return false;
 			}
 
 			qn_bstr_sub_bstr(&v, bs, 1, at - 1);
@@ -1088,7 +1088,7 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 				if (v.len == 0)
 				{
 					// 아마도 마지막에 '='만 있는 듯
-					return FALSE;
+					return false;
 				}
 
 				qn_bstr_clear(bs);
@@ -1104,7 +1104,7 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 		qn_mltag_set_arg((qnMlTag*)self, k.data, v.data);
 	}
 
-	return TRUE;
+	return true;
 }
 
 // 인수 파일에 쓰기
@@ -1129,7 +1129,7 @@ static void _qn_realtag_write_file_arg(qnFile* file, char** pk, char** pv)
 // 파일에 쓰기
 static bool _qn_realtag_write_file(qnRealTag* self, qnFile* file, int ident)
 {
-	bool isbody = FALSE;
+	bool isbody = false;
 	char ch;
 	char szident[260];
 	qnBstr2k bs;
@@ -1138,7 +1138,7 @@ static bool _qn_realtag_write_file(qnRealTag* self, qnFile* file, int ident)
 	szident[ident] = '\0';
 
 	// 아래 많다. 또는 내용 길다
-	isbody = qn_arr_count(&self->subs) > 0 || self->base.clen > 64 ? TRUE : FALSE;
+	isbody = qn_arr_count(&self->subs) > 0 || self->base.clen > 64 ? true : false;
 
 	if (!isbody)
 	{
@@ -1227,7 +1227,7 @@ static bool _qn_realtag_write_file(qnRealTag* self, qnFile* file, int ident)
 		qn_file_write(file, bs.data, 0, (int)bs.len);
 	}
 
-	return TRUE;
+	return true;
 }
 
 /**
@@ -1450,13 +1450,13 @@ bool qn_mltag_remove_sub_nth(qnMlTag* ptr, int at)
 	qnRealTag* mt;
 
 	if (at < 0 || at >= (int)qn_arr_count(&self->subs))
-		return FALSE;
+		return false;
 
 	mt = qn_arr_nth(&self->subs, at);
 	qn_arr_remove_nth(SubArray, &self->subs, at);
 	qn_mltag_delete((qnMlTag*)mt);
 
-	return TRUE;
+	return true;
 }
 
 /**
@@ -1471,7 +1471,7 @@ bool qn_mltag_remove_sub_tag(qnMlTag* ptr, qnMlTag* tag, bool isdelete)
 	qnRealTag* self = (qnRealTag*)ptr;
 	qnRealTag* mt = (qnRealTag*)tag;
 
-	qn_retval_if_fail(tag, FALSE);
+	qn_retval_if_fail(tag, false);
 
 	for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
 	{
@@ -1482,11 +1482,11 @@ bool qn_mltag_remove_sub_tag(qnMlTag* ptr, qnMlTag* tag, bool isdelete)
 			if (isdelete)
 				qn_mltag_delete(tag);
 
-			return TRUE;
+			return true;
 		}
 	}
 
-	return FALSE;
+	return false;
 }
 
 /**
@@ -1534,10 +1534,10 @@ bool qn_mltag_next_arg(qnMlTag* ptr, pointer_t* index, const char** name, const 
 	qnRealTag* self = (qnRealTag*)ptr;
 	ArgHashNode* node;
 
-	qn_retval_if_fail(index, FALSE);
+	qn_retval_if_fail(index, false);
 
 	if (*index == (pointer_t)(intptr_t)-1)
-		return FALSE;
+		return false;
 
 	node = !*index ? self->harg.frst : (ArgHashNode*)*index;
 
@@ -1547,7 +1547,7 @@ bool qn_mltag_next_arg(qnMlTag* ptr, pointer_t* index, const char** name, const 
 
 	*index = node->next ? node->next : (pointer_t)(intptr_t)-1;
 
-	return TRUE;
+	return true;
 }
 
 /**
@@ -1619,7 +1619,7 @@ void qn_mltag_set_arg(qnMlTag* ptr, const char* name, const char* value)
  */
 bool qn_mltag_remove_arg(qnMlTag* ptr, const char* name)
 {
-	qn_retval_if_fail(name, FALSE);
+	qn_retval_if_fail(name, false);
 
 	qnRealTag* self = (qnRealTag*)ptr;
 #if !__GNUC__
@@ -1631,6 +1631,6 @@ bool qn_mltag_remove_arg(qnMlTag* ptr, const char* name)
 #else
 	qn_hash_remove(ArgHash, &self->harg, &name, NULL);
 
-	return TRUE;
+	return true;
 #endif
 }

@@ -187,7 +187,7 @@ double qn_stick(void)
 	static double s_cycle_per_tick = 0.001;
 
 #if _QN_WINDOWS_
-	static bool s_init = FALSE;
+	static bool s_init = false;
 
 	if (!s_init)
 	{
@@ -196,7 +196,7 @@ double qn_stick(void)
 		if (QueryPerformanceFrequency(&ll))
 			s_cycle_per_tick = 1.0 / (double)ll.QuadPart;
 
-		s_init = TRUE;
+		s_init = true;
 	}
 #endif
 
@@ -376,7 +376,7 @@ void qn_timer_reset(qnTimer* self)
 	impl->stoptime.q = 0;
 	impl->count = impl->curtime.dw.l;
 
-	impl->stop = FALSE;
+	impl->stop = false;
 }
 
 /**
@@ -396,7 +396,7 @@ void qn_timer_start(qnTimer* self)
 	impl->stoptime.q = 0;
 	impl->count = impl->curtime.dw.l;
 
-	impl->stop = FALSE;
+	impl->stop = false;
 }
 
 /**
@@ -412,7 +412,7 @@ void qn_timer_stop(qnTimer* self)
 	impl->stoptime.q = impl->curtime.q;
 	impl->count = impl->curtime.dw.l;
 
-	impl->stop = TRUE;
+	impl->stop = true;
 }
 
 /**
@@ -448,12 +448,12 @@ bool qn_timer_update(qnTimer* self)
 	if (impl->base.fps < impl->cut)
 	{
 		impl->base.advance = (double)(impl->curtime.q - impl->lasttime.q) * impl->tick;
-		ret = TRUE;
+		ret = true;
 	}
 	else
 	{
 		impl->base.advance = impl->cut * 0.001;
-		ret = FALSE;
+		ret = false;
 	}
 
 	impl->lasttime.q = impl->curtime.q;

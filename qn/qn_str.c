@@ -256,13 +256,13 @@ char* qn_strrem(char* p, const char* rmlist)
 	while (*p1)
 	{
 		const char* ps = (const char*)rmlist;
-		bool b = FALSE;
+		bool b = false;
 
 		while (*ps)
 		{
 			if (*p1 == *ps)
 			{
-				b = TRUE;
+				b = true;
 				break;
 			}
 			++ps;
@@ -555,13 +555,13 @@ wchar_t* qn_wcsrem(wchar_t* p, const wchar_t* rmlist)
 	while (*p1)
 	{
 		const wchar_t* ps = rmlist;
-		bool b = FALSE;
+		bool b = false;
 
 		while (*ps)
 		{
 			if (*p1 == *ps)
 			{
-				b = TRUE;
+				b = true;
 				break;
 			}
 			++ps;

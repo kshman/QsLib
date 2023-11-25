@@ -514,7 +514,7 @@ qnFile* qn_file_new_dup(qnFile* src)
 
 #if _QN_WINDOWS_
 	HANDLE d, p = GetCurrentProcess();
-	if (!DuplicateHandle(p, self->fd, p, &d, 0, FALSE, DUPLICATE_SAME_ACCESS))
+	if (!DuplicateHandle(p, self->fd, p, &d, 0, false, DUPLICATE_SAME_ACCESS))
 	{
 		qn_free(self);
 
@@ -702,7 +702,7 @@ bool qn_file_flush(qnFile* self)
 #if 0
 	sync();
 #endif
-	return TRUE;
+	return true;
 #endif
 }
 
@@ -766,7 +766,7 @@ int qn_file_vprintf(qnFile* self, const char* fmt, va_list va)
  */
 bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 {
-	qn_retval_if_fail(filename, FALSE);
+	qn_retval_if_fail(filename, false);
 
 #if _QN_WINDOWS_
 	WIN32_FIND_DATA ffd;
@@ -778,7 +778,7 @@ bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 	h = FindFirstFileEx(uni, FindExInfoStandard, &ffd, FindExSearchNameMatch, NULL, 0);
 
 	if (h == INVALID_HANDLE_VALUE)
-		return FALSE;
+		return false;
 	else
 	{
 		FindClose(h);
@@ -786,7 +786,7 @@ bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 		if (isdir != NULL)
 			*isdir = (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
-		return TRUE;
+		return true;
 	}
 #else
 	struct stat s;
@@ -795,13 +795,13 @@ bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 	n = stat(filename, &s);
 
 	if (n < 0)
-		return FALSE;
+		return false;
 	else
 	{
 		if (isdir != NULL)
 			*isdir = (s.st_mode & 0x4000) != 0;
 
-		return TRUE;
+		return true;
 	}
 #endif
 }
@@ -814,7 +814,7 @@ bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
  */
 bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir)
 {
-	qn_retval_if_fail(filename, FALSE);
+	qn_retval_if_fail(filename, false);
 
 #if _QN_WINDOWS_
 	WIN32_FIND_DATA ffd;
@@ -823,7 +823,7 @@ bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir)
 	h = FindFirstFileEx(filename, FindExInfoStandard, &ffd, FindExSearchNameMatch, NULL, 0);
 
 	if (h == INVALID_HANDLE_VALUE)
-		return FALSE;
+		return false;
 	else
 	{
 		FindClose(h);
@@ -831,7 +831,7 @@ bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir)
 		if (isdir != NULL)
 			*isdir = (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
-		return TRUE;
+		return true;
 	}
 #else
 	struct stat s;
@@ -842,13 +842,13 @@ bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir)
 	n = stat(asc, &s);
 
 	if (n < 0)
-		return FALSE;
+		return false;
 	else
 	{
 		if (isdir != NULL)
 			*isdir = (s.st_mode & 0x4000) != 0;
 
-		return TRUE;
+		return true;
 	}
 #endif
 }
