@@ -62,8 +62,8 @@ static int pp_exponent(double value)
 
 static uint64_t pp_intpart(double value)
 {
-	if (value >= UINT_FAST64_MAX)
-		return UINT_FAST64_MAX;
+	if (value >= (double)UINT64_MAX)
+		return UINT64_MAX;
 	uint64_t res = (uint64_t)value;
 	return res <= value ? res : res - 1;
 }
@@ -623,7 +623,7 @@ pos_exp_again:
 	intpart = pp_intpart(uvalue);
 
 	// 오버플로우, 현재 사용 안함
-	//if (intpart==UINT_FAST64_MAX) return false;
+	//if (intpart==UINT64_MAX) return false;
 
 	//
 	mask = (uint64_t)pp_pow10(max);
@@ -1955,7 +1955,7 @@ pos_exp_again:
 	intpart = pp_intpart(uvalue);
 
 	// 오버플로우, 현재 사용 안함
-	//if (intpart==UINT_FAST64_MAX) return false;
+	//if (intpart==UINT64_MAX) return false;
 
 	//
 	mask = (uint64_t)pp_pow10(max);

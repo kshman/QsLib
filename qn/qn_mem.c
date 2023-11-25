@@ -117,7 +117,7 @@ char* qn_memdmp(const pointer_t ptr, size_t size, char* outbuf, size_t buflen)
 	qn_retval_if_fail(ptr != NULL, NULL);
 	qn_retval_if_fail(outbuf != NULL, NULL);
 
-	if (size = 0 || buflen == 0)
+	if (size == 0 || buflen == 0)
 	{
 		*outbuf = '\0';
 		return outbuf;

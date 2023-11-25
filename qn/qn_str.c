@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 #include "qn.h"
+#include "qnctn.h"
 #include "PatrickPowell_snprintf.h"
 
 //////////////////////////////////////////////////////////////////////////

@@ -16,6 +16,58 @@
 QN_EXTC_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
+// inlines
+#if _MSC_VER
+#define _qn_inl_strupr		_strupr_s
+#define _qn_inl_strlwr		_strlwr_s
+#define _qn_inl_wcsupr		_wcsupr_s
+#define _qn_inl_wcslwr		_wcslwr_s
+#else
+#define _strdup				strdup
+#define strcpy_s(a,b,c)		strcpy(a,c)
+#define strncpy_s(a,b,c,d)	strncpy(a,c,d)
+#define wcscpy_s(a,b,c)		wcscpy(a,c)
+#define wcsncpy_s(a,b,c,d)	wcsncpy(a,c,d)
+
+QN_INLINE char* _qn_inl_strupr(char* p, size_t size)
+{
+	char* s = p;
+	for (; *s; ++s)
+		if ((*s >= 'a') && (*s <= 'z'))
+			*s -= 'a' - 'A';
+	return p;
+}
+
+QN_INLINE char* _qn_inl_strlwr(char* p, size_t size)
+{
+	char* s = p;
+	for (; *s; ++s)
+		if ((*s >= 'A') && (*s <= 'Z'))
+			*s += 'a' - 'A';
+	return p;
+}
+
+QN_INLINE wchar_t* _qn_inl_wcsupr(wchar_t* p, size_t size)
+{
+	wchar_t* s = p;
+	for (; *s; ++s)
+		if ((*s >= L'a') && (*s <= L'z'))
+			*s -= (wchar_t)(L'a' - L'A');
+	return p;
+}
+
+QN_INLINE wchar_t* _qn_inl_wcslwr(wchar_t* p, size_t size)
+{
+	wchar_t* s = p;
+	for (; *s; ++s)
+		if ((*s >= L'A') && (*s <= L'Z'))
+			*s += (wchar_t)(L'a' - L'A');
+	return p;
+}
+#endif
+
+
+//////////////////////////////////////////////////////////////////////////
 // array
 typedef struct qnArr
 {
@@ -3240,10 +3292,10 @@ QN_INLINE void _qn_inl_bstr_append_format(qnBstr* p, size_t size, const char* fm
 }
 
 #define qn_bstr_upper(p)\
-	_strupr_s(((qnBstr*)p)->data, ((qnBstr*)p)->len);
+	_qn_inl_strupr(((qnBstr*)p)->data, ((qnBstr*)p)->len);
 
 #define qn_bstr_lower(p)\
-	_strlwr_s(((qnBstr*)p)->data, ((qnBstr*)p)->len);
+	_qn_inl_strlwr(((qnBstr*)p)->data, ((qnBstr*)p)->len);
 
 #define qn_bstr_trim(p)\
 	QN_STMT_BEGIN{\

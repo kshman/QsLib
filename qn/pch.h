@@ -47,7 +47,5 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #pragma GCC diagnostic ignored "-Wmissing-braces"
-
-// 함수 이름 호환 안되는거
-#define _strdup			strdup
 #endif
+

@@ -81,6 +81,9 @@ qnMlu* qn_mlu_new_file(const char* filename)
 
 	qn_free(data);
 
+	if (!ret)
+		qn_free_ptr(&self);
+
 	return self;
 }
 
@@ -99,6 +102,9 @@ qnMlu* qn_mlu_new_file_l(const wchar_t* filename)
 	bool ret = qn_mlu_load_buffer(self, data, size);
 
 	qn_free(data);
+
+	if (!ret)
+		qn_free_ptr(&self);
 
 	return self;
 }
@@ -915,7 +921,7 @@ qnMlTag* qn_mltag_new(const char* name)
 
 	self->base.name = _strdup(name);
 
-	_strupr_s(self->base.name, strlen(self->base.name));
+	_qn_inl_strupr(self->base.name, strlen(self->base.name));
 
 	self->base.nlen = (int)strlen(self->base.name);
 	self->nhash = qn_strhash(self->base.name);
@@ -1603,7 +1609,7 @@ void qn_mltag_set_arg(qnMlTag* ptr, const char* name, const char* value)
 	dn = _strdup(name);
 	dv = _strdup(value);
 
-	_strupr_s(dn, strlen(dn));
+	_qn_inl_strupr(dn, strlen(dn));
 
 	if (!self->harg.bucket)
 		qn_hash_init(ArgHash, &self->harg);

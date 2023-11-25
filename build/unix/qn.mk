@@ -36,8 +36,8 @@ clean:
 rebuild: clean all
 
 install: all
-	install $(DEST) /usr/local/lib
-	ln -sf /usr/local/lib/$(DEST) /usr/local/lib/$(SOST)
+	install $(DEST) /usr/lib
+	ln -sf /usr/lib/$(DEST) /usr/lib/$(SOST)
 
 %.o: %.c
 	$(CC) -c $(CFLAG) -o "$(*F).o" "$<"

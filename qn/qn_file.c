@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 #include "qn.h"
+#include "qnctn.h"
 #include <fcntl.h>
 #if _QN_UNIX_
 #include <dirent.h>

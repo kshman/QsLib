@@ -59,7 +59,7 @@ void qn_now(qnDateTime* dt)
 	struct timeval tv;
 	struct tm tm;
 	gettimeofday(&tv, NULL);
-	k_localtime(&tm, tv.tv_sec);
+	qn_localtime(&tm, tv.tv_sec);
 
 	dt->year = tm.tm_year + 1900;
 	dt->month = tm.tm_mon + 1;
@@ -96,7 +96,7 @@ void qn_utc(qnDateTime* dt)
 	struct timeval tv;
 	struct tm tm;
 	gettimeofday(&tv, NULL);
-	k_gmtime(&tm, tv.tv_sec);
+	qn_gmtime(&tm, tv.tv_sec);
 
 	dt->year = tm.tm_year + 1900;
 	dt->month = tm.tm_mon + 1;
