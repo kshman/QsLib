@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "qn.h"
 #include <fcntl.h>
+#include <ctype.h>
+#include <wctype.h>
 #if _QN_UNIX_
 #include <dirent.h>
 #include <sys/types.h>
@@ -388,7 +390,7 @@ void qn_file_access_parse_l(const wchar_t* mode, qnFileAccess* self, int* flag)
 					{
 						const wchar_t* p = mode + 2;
 
-						while (_k_iswdigit(*p))
+						while (iswdigit(*p))
 							p++;
 
 						if ((p - (mode + 1)) < 63)
@@ -790,9 +792,7 @@ bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 	}
 #else
 	struct stat s;
-	kint n;
-
-	n = stat(filename, &s);
+	int n = stat(filename, &s);
 
 	if (n < 0)
 		return false;

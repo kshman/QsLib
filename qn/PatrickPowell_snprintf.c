@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "qn.h"
 #include "PatrickPowell_snprintf.h"
+#include <ctype.h>
+#include <wctype.h>
 #include <locale.h>
 
 /*
@@ -39,12 +41,6 @@ static double pp_round(double value)
 	uint64_t intpart = (uint64_t)value;
 	value = value - intpart;
 	return (double)(value >= 0.5 ? intpart + 1 : intpart);
-}
-
-static uint64_t pp_floor(double value)
-{
-	uint64_t intpart = (uint64_t)value;
-	return intpart;
 }
 
 static bool pp_is_nan(double value)
@@ -990,7 +986,7 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 					case 'l':
 						ch = *format++;
 
-						if (ch == 'l')      // long long, int64_t, 64비트 정수
+						if (ch == 'l')      // long long
 						{
 							cflags = DP_C_LLONG;
 							ch = *format++;
@@ -1373,8 +1369,8 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 								break;
 
 							case DP_C_LLONG:
-								value.pl = va_arg(args, long long*);
-								*value.pl = (int64_t)currlen;
+								value.pl = (int64_t*)va_arg(args, long long*);
+								*value.pl = currlen;
 								break;
 
 #if 0
@@ -2313,7 +2309,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 					case L'l':
 						ch = *format++;
 
-						if (ch == L'l')     // long long, int64_t, 64비트 정수
+						if (ch == L'l')     // long long
 						{
 							cflags = DP_C_LLONG;
 							ch = *format++;
@@ -2696,8 +2692,8 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 								break;
 
 							case DP_C_LLONG:
-								value.pl = va_arg(args, long long*);
-								*value.pl = (long long)currlen;
+								value.pl = (int64_t*)va_arg(args, long long*);
+								*value.pl = currlen;
 								break;
 
 #if 0
