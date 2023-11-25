@@ -155,11 +155,16 @@ QN_EXTC_BEGIN
 #define QN_STMT_END						while(0)
 
 // string & array & structure && etc
-#define QN_CONCAT_2(x,y)				x##y
-#define QN_CONCAT_3(x,y,z)				x##y##z
+#define _QN_CONCAT_2(x,y)				x##y
+#define _QN_CONCAT_3(x,y,z)				x##y##z
+#define _QN_STRING(x)					#x
+#define _QN_UNICODE(x)					L##x
+
+#define QN_STRING(x)					_QN_STRING(x)
+#define QN_UNICODE(x)					_QN_UNICODE(x)
+#define QN_CONCAT_2(x,y)				_QN_CONCAT_2(x, y)
+#define QN_CONCAT_3(x,y,z)				_QN_CONCAT_3(x, y, z)
 #define QN_CONCAT(...)					QN_GET_MACRO_3(__VA_ARGS__, QN_CONCAT_3, QN_CONCAT_2)(__VA_ARGS__)
-#define QN_STRING(x)					#x
-#define QN_UNICODE(x)					L##x
 #define QN_BIT(n)						(1<<(n))
 
 #define QN_COUNTOF(arr)					(sizeof(arr)/sizeof((arr)[0]))
@@ -318,7 +323,7 @@ typedef struct funcparam_t
 
 //////////////////////////////////////////////////////////////////////////
 // runtime
-QNAPI void qn_runtime(int32_t /*nullable*/v[]);
+QNAPI void qn_runtime(int /*nullable*/v[]);
 QNAPI _Noreturn void qn_exit(const int exitcode);
 QNAPI void qn_atexit(void(*func)(pointer_t), pointer_t data);
 QNAPI void qn_atexit0(void(*func)(void));
@@ -451,6 +456,7 @@ QNAPI char* qn_strltrim(char* dest);
 QNAPI char* qn_strrtrim(char* dest);
 QNAPI char* qn_strtrim(char* dest);
 QNAPI char* qn_strrem(char* p, const char* rmlist);
+QNAPI char* qn_strcat(const char* p, ...);
 
 QNAPI int qn_vsnwprintf(wchar_t* out, size_t len, const wchar_t* fmt, va_list va);
 QNAPI int qn_vaswprintf(wchar_t** out, const wchar_t* fmt, va_list va);
@@ -467,8 +473,122 @@ QNAPI wchar_t* qn_wcsltrim(wchar_t* dest);
 QNAPI wchar_t* qn_wcsrtrim(wchar_t* dest);
 QNAPI wchar_t* qn_wcstrim(wchar_t* dest);
 QNAPI wchar_t* qn_wcsrem(wchar_t* p, const wchar_t* rmlist);
+QNAPI wchar_t* qn_wcscat(const wchar_t* p, ...);
 
-#if 0
+QNAPI size_t qn_utf8len(const char* s);
+QNAPI uchar4_t qn_utf8ccnc(const char* p);
+QNAPI char* qn_utf8chn(const char* s);
+QNAPI int qn_utf8cunc(uchar4_t c, char* out);
+
+QNAPI size_t qn_mbstowcs(wchar_t* outwcs, size_t outsize, const char* inmbs, size_t insize);
+QNAPI size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar_t* inwcs, size_t insize);
+QNAPI size_t qn_utf8to32(uchar4_t* dest, size_t destsize, const char* src, size_t srclen);
+QNAPI size_t qn_utf8to16(uchar2_t* dest, size_t destsize, const char* src, size_t srclen);
+QNAPI size_t qn_utf32to8(char* dest, size_t destsize, const uchar4_t* src, size_t srclen);
+QNAPI size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srclen);
+QNAPI size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t srclen);
+QNAPI size_t qn_utf32to16(uchar2_t* dest, size_t destsize, const uchar4_t* src, size_t srclen);
+
+
+//////////////////////////////////////////////////////////////////////////
+// i/o
+
+/** file io. */
+typedef struct qnIoFuncDesc
+{
+	int(*read)(pointer_t handle, pointer_t buffer, int offset, int size);
+	int(*write)(pointer_t handle, const pointer_t buffer, int offset, int size);
+	int64_t(*tell)(pointer_t handle);
+	int64_t(*seek)(pointer_t handle, int64_t offset, int org);
+} qnIoFuncDesc;
+
+
+//////////////////////////////////////////////////////////////////////////
+// disk i/o
+
+/** directory. */
+typedef struct qnDir qnDir;
+
+/** file. */
+typedef struct qnFile qnFile;
+
+/** file info. */
+typedef struct qnFileInfo
+{
+	int16_t				type;
+	uint16_t			len;
+	int64_t				size;
+	int64_t				cmpr;
+	uint64_t			stc;			// creation stamp
+	uint64_t			stw;			// last written stamp
+	char				name[256];
+} qnFileInfo;
+
+/** file access */
+typedef struct qnFileAccess
+{
+#if _QN_WINDOWS_
+	uint32_t			mode;
+	uint32_t			share;
+	uint32_t			access;
+	uint32_t			attr;
+#else
+	int					mode;
+	int					access;
+#endif
+} qnFileAccess;
+
+// seek
+typedef enum qnSeek
+{
+	QN_SEEK_BEGIN	= 0,
+	QN_SEEK_CUR		= 1,
+	QN_SEEK_END		= 2,
+} qnSeek;
+
+// file flag
+typedef enum qnFileFlag
+{
+	QN_FF_READ		= 0x1,
+	QN_FF_WRITE		= 0x2,
+	QN_FF_SEEK		= 0x4,
+	QN_FF_ALL		= QN_FF_READ | QN_FF_WRITE | QN_FF_SEEK,
+	QN_FF_RDONLY	= QN_FF_READ | QN_FF_SEEK,
+} qnFileFlag;
+
+// file
+QNAPI qnFile* qn_file_new(const char* filename, const char* mode);
+QNAPI qnFile* qn_file_new_dup(qnFile* org);
+QNAPI void qn_file_delete(qnFile* self);
+QNAPI int qn_file_flags(qnFile* self, int mask);
+QNAPI const char* qn_file_name(qnFile* self);
+QNAPI int qn_file_read(qnFile* self, pointer_t buffer, int offset, int size);
+QNAPI int qn_file_write(qnFile* self, const pointer_t buffer, int offset, int size);
+QNAPI int64_t qn_file_size(qnFile* self);
+QNAPI int64_t qn_file_tell(qnFile* self);
+QNAPI int64_t qn_file_seek(qnFile* self, int64_t offset, int org);
+QNAPI bool qn_file_flush(qnFile* self);
+QNAPI int qn_file_printf(qnFile* self, const char* fmt, ...);
+QNAPI int qn_file_vprintf(qnFile* self, const char* fmt, va_list va);
+QNAPI bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir);
+QNAPI pointer_t qn_file_alloc(const char* filename, int* size);
+QNAPI qnFile* qn_file_new_l(const wchar_t* filename, const wchar_t* mode);
+QNAPI bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir);
+QNAPI pointer_t qn_file_alloc_l(const wchar_t* filename, int* size);
+QNAPI size_t qn_file_get_max_alloc_size(void);
+QNAPI void qn_file_set_max_alloc_size(size_t n);
+QNAPI void qn_file_access_parse(const char* mode, qnFileAccess* self, int* flag);
+QNAPI void qn_file_access_parse_l(const wchar_t* mode, qnFileAccess* self, int* flag);
+
+// directory
+QNAPI qnDir* k_dir_new(const char* path);
+QNAPI void k_dir_delete(qnDir* self);
+QNAPI const char* k_dir_read(qnDir* self);
+QNAPI void k_dir_rewind(qnDir* self);
+QNAPI void k_dir_seek(qnDir* self, int pos);
+QNAPI int k_dir_tell(qnDir* self);
+QNAPI qnDir* k_dir_new_l(const wchar_t* path);
+QNAPI const wchar_t* k_dir_read_l(qnDir* self);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -486,11 +606,6 @@ typedef struct qnMlTag
 	int					nlen;
 	int					clen;
 	int					line;
-#if _QN_WINDOWS_ && _DEBUG
-	// only for windows in debug mode. do not use
-	wchar_t*			uname;
-	wchar_t*			ucntx;
-#endif
 } qnMlTag;
 
 // ml unit
@@ -506,7 +621,6 @@ QNAPI bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size);
 QNAPI bool qn_mlu_write_file(qnMlu* self, const char* filename);
 
 QNAPI int qn_mlu_get_count(qnMlu* self);
-QNAPI const char* qn_mlu_get_filename(qnMlu* self);
 QNAPI const char* qn_mlu_get_err(qnMlu* self, int at);
 QNAPI qnMlTag* qn_mlu_get_tag(qnMlu* self, const char* name);
 QNAPI qnMlTag* qn_mlu_get_tag_nth(qnMlu* self, int at);
@@ -566,6 +680,10 @@ QNAPI void qn_mltag_set_arg(qnMlTag* ptr, const char* name, const char* value);
 QNAPI bool qn_mltag_remove_arg(qnMlTag* ptr, const char* name);
 
 
+#if 0
+
+
+
 //////////////////////////////////////////////////////////////////////////
 // win32 registry
 #if _SB_WINDOWS_DESKTOP_
@@ -581,7 +699,7 @@ QNAPI uint8_t* k_regi_get_binary(kRegistry* key, const char* name, int* retsize)
 QNAPI kchar* k_regi_get_multi_string(kRegistry* key, const char* name, int* retsize);
 QNAPI bool k_regi_get_string(kRegistry* key, const char* name, char* buffer, int size);
 QNAPI bool k_regi_get_int(kRegistry* key, const char* name, int* value);
-QNAPI bool k_regi_get_long(kRegistry* key, const char* name, klong* value);
+QNAPI bool k_regi_get_long(kRegistry* key, const char* name, int64_t* value);
 #endif
 #endif
 

@@ -69,7 +69,7 @@ static void _qn_init(void)
 }
 
 //
-void qn_runtime(int32_t v[])
+void qn_runtime(int v[])
 {
 #if _LIB
 	if (!_qn_rt.inited)

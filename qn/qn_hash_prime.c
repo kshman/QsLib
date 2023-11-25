@@ -249,7 +249,7 @@ static uint64_t qn_crc64(const uint8_t* data, size_t size)
 //
 size_t qn_hashdata(const uint8_t* data, size_t size)
 {
-	return k_crc64(data, size);
+	return qn_crc64(data, size);
 }
 
 /**
@@ -296,7 +296,7 @@ uint32_t qn_primeshift(uint32_t value, uint32_t min, uint32_t* shift)
 	for (ts = 0; value; ts++)
 		value >>= 1;
 
-	ts = K_MAX(min, ts);
+	ts = QN_MAX(min, ts);
 
 	if (shift) *shift = ts;
 
