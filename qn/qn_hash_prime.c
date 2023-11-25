@@ -1,13 +1,13 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "qn.h"
 
 //////////////////////////////////////////////////////////////////////////
-// ÇØ½Ã
+// í•´ì‹œ
 
 /**
- * Æ÷ÀÎÅÍ ÇØ½Ã. ÀÏ¹İÀûÀÎ size_t ÇØ½Ã¸¦ ÀÇ¹ÌÇÔ.
- * @param	p	ÀÔ·Â º¯¼ö.
- * @return	ÇØ½Ã °ª.
+ * í¬ì¸í„° í•´ì‹œ. ì¼ë°˜ì ì¸ size_t í•´ì‹œë¥¼ ì˜ë¯¸í•¨.
+ * @param	p	ì…ë ¥ ë³€ìˆ˜.
+ * @return	í•´ì‹œ ê°’.
  */
 size_t qn_hashptr(const pointer_t p)
 {
@@ -21,8 +21,8 @@ size_t qn_hashptr(const pointer_t p)
 }
 
 /**
- * ½Ã°£ ÇØ½Ã. ÇöÀç ½Ã°¢À» ÀÌ¿ëÇÏ¿© ÇØ½Ã°ªÀ» ¸¸µç´Ù.
- * @return	ÇØ½Ã °ª.
+ * ì‹œê°„ í•´ì‹œ. í˜„ì¬ ì‹œê°ì„ ì´ìš©í•˜ì—¬ í•´ì‹œê°’ì„ ë§Œë“ ë‹¤.
+ * @return	í•´ì‹œ ê°’.
  */
 size_t qn_hashtime(void)
 {
@@ -57,11 +57,11 @@ size_t qn_hashtime(void)
 }
 
 /**
- * Äİ¹é ÇØ½Ã. ÇÔ¼ö Äİ¹éÀ» ÇØ½Ã°ªÀ¸·Î ¸¸µé¾î ÁØ´Ù.
- * @param	prime8	8ºñÆ® ¼Ò¼ö °ª.
- * @param	func  	Äİ¹é ÇÔ¼ö.
- * @param	data  	Äİ¹é µ¥ÀÌÅÍ.
- * @return	ÇØ½Ã °ª.
+ * ì½œë°± í•´ì‹œ. í•¨ìˆ˜ ì½œë°±ì„ í•´ì‹œê°’ìœ¼ë¡œ ë§Œë“¤ì–´ ì¤€ë‹¤.
+ * @param	prime8	8ë¹„íŠ¸ ì†Œìˆ˜ ê°’.
+ * @param	func  	ì½œë°± í•¨ìˆ˜.
+ * @param	data  	ì½œë°± ë°ì´í„°.
+ * @return	í•´ì‹œ ê°’.
  */
 size_t qn_hashfunc(int32_t prime8, func_t func, pointer_t data)
 {
@@ -74,11 +74,11 @@ size_t qn_hashfunc(int32_t prime8, func_t func, pointer_t data)
 }
 
 /**
- * ÁöÁ¤ÇÑ µ¥ÀÌÅÍ·Î CRC32¸¦ ¸¸µç´Ù.
+ * ì§€ì •í•œ ë°ì´í„°ë¡œ CRC32ë¥¼ ë§Œë“ ë‹¤.
  * @date 2013-12-22
- * @param data ÀÚ·á.
- * @param size Å©±â.
- * @return Á¤¼ö °ª.
+ * @param data ìë£Œ.
+ * @param size í¬ê¸°.
+ * @return ì •ìˆ˜ ê°’.
  */
 static uint32_t qn_crc32(const uint8_t* data, size_t size)
 {
@@ -124,11 +124,11 @@ static uint32_t qn_crc32(const uint8_t* data, size_t size)
 }
 
 /**
- * ÁöÁ¤ÇÑ µ¥ÀÌÅÍ·Î CRC64¸¦ ¸¸µç´Ù.
+ * ì§€ì •í•œ ë°ì´í„°ë¡œ CRC64ë¥¼ ë§Œë“ ë‹¤.
  * @date 2013-12-22
- * @param data ÀÚ·á.
- * @param size Å©±â.
- * @return Á¤¼ö °ª.
+ * @param data ìë£Œ.
+ * @param size í¬ê¸°.
+ * @return ì •ìˆ˜ ê°’.
  */
 static uint64_t qn_crc64(const uint8_t* data, size_t size)
 {
@@ -255,9 +255,9 @@ size_t qn_hashdata(const uint8_t* data, size_t size)
 }
 
 /**
- * °¡±î¿î ¼Ò¼ö ¾ò±â. Ã³¸®ÇÒ ¼ö ÀÖ´Â ÃÖ¼Ò ¼Ò¼ö´Â 11, ÃÖ´ë ¼Ò¼ö´Â 13845163.
- * @param	value	ÀÔ·Â °ª.
- * @return	¼Ò¼ö °ª.
+ * ê°€ê¹Œìš´ ì†Œìˆ˜ ì–»ê¸°. ì²˜ë¦¬í•  ìˆ˜ ìˆëŠ” ìµœì†Œ ì†Œìˆ˜ëŠ” 11, ìµœëŒ€ ì†Œìˆ˜ëŠ” 13845163.
+ * @param	value	ì…ë ¥ ê°’.
+ * @return	ì†Œìˆ˜ ê°’.
  */
 uint32_t qn_primenear(uint32_t value)
 {
@@ -275,11 +275,11 @@ uint32_t qn_primenear(uint32_t value)
 }
 
 /**
- * Á¦°ö ¼Ò¼ö ¾ò±â. ±Ù°Å¸®¿¡ ÇØ´çÇÏ´Â Á¦°ö ¼Ò¼ö¸¦ °è»êÇØÁØ´Ù.
- * @param	value	 	ÀÔ·Â °ª.
- * @param	min		 	ÃÖ¼Ò °ª.
- * @param [¹İÈ¯]	shift	³ÎÀÌ ¾Æ´Ï¸é ½¬ÇÁÆ® Å©±â.
- * @return	¼Ò¼ö °ª.
+ * ì œê³± ì†Œìˆ˜ ì–»ê¸°. ê·¼ê±°ë¦¬ì— í•´ë‹¹í•˜ëŠ” ì œê³± ì†Œìˆ˜ë¥¼ ê³„ì‚°í•´ì¤€ë‹¤.
+ * @param	value	 	ì…ë ¥ ê°’.
+ * @param	min		 	ìµœì†Œ ê°’.
+ * @param [ë°˜í™˜]	shift	ë„ì´ ì•„ë‹ˆë©´ ì‰¬í”„íŠ¸ í¬ê¸°.
+ * @return	ì†Œìˆ˜ ê°’.
  */
 uint32_t qn_primeshift(uint32_t value, uint32_t min, uint32_t* shift)
 {

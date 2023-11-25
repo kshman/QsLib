@@ -1,10 +1,10 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "qn.h"
 
 /**
- * ·ÎÄÃ ½Ã°£À¸·Î º¯È­.
- * @param [¹İÈ¯]	ptm	½Ã°£ ±¸Á¶Ã¼.
- * @param	tt	   	time_t Çü½ÄÀÇ ½Ã°£.
+ * ë¡œì»¬ ì‹œê°„ìœ¼ë¡œ ë³€í™”.
+ * @param [ë°˜í™˜]	ptm	ì‹œê°„ êµ¬ì¡°ì²´.
+ * @param	tt	   	time_t í˜•ì‹ì˜ ì‹œê°„.
  */
 void qn_localtime(struct tm* ptm, const time_t tt)
 {
@@ -19,9 +19,9 @@ void qn_localtime(struct tm* ptm, const time_t tt)
 }
 
 /**
- * UTC ½Ã°£À¸·Î º¯È­.
- * @param [¹İÈ¯]	ptm	½Ã°£ ±¸Á¶Ã¼.
- * @param	tt	   	time_t Çü½ÄÀÇ ½Ã°£.
+ * UTC ì‹œê°„ìœ¼ë¡œ ë³€í™”.
+ * @param [ë°˜í™˜]	ptm	ì‹œê°„ êµ¬ì¡°ì²´.
+ * @param	tt	   	time_t í˜•ì‹ì˜ ì‹œê°„.
  */
 void qn_gmtime(struct tm* ptm, const time_t tt)
 {
@@ -36,8 +36,8 @@ void qn_gmtime(struct tm* ptm, const time_t tt)
 }
 
 /**
- * ÇöÀç ³¯Â¥ ½Ã°£.
- * @param [¹İÈ¯]	dt	(³Î°ªÀÌ ¾Æ´Ï¸é) ÇöÀç ³¯Â¥ ½Ã°£.
+ * í˜„ì¬ ë‚ ì§œ ì‹œê°„.
+ * @param [ë°˜í™˜]	dt	(ë„ê°’ì´ ì•„ë‹ˆë©´) í˜„ì¬ ë‚ ì§œ ì‹œê°„.
  */
 void qn_now(qnDateTime* dt)
 {
@@ -73,8 +73,8 @@ void qn_now(qnDateTime* dt)
 }
 
 /**
- * ÇöÀçÀÇ UTC ³¯Â¥ ½Ã°£.
- * @param [¹İÈ¯]	dt	(³Î°ªÀÌ ¾Æ´Ï¸é) ÇöÀç ³¯Â¥ ½Ã°£.
+ * í˜„ì¬ì˜ UTC ë‚ ì§œ ì‹œê°„.
+ * @param [ë°˜í™˜]	dt	(ë„ê°’ì´ ì•„ë‹ˆë©´) í˜„ì¬ ë‚ ì§œ ì‹œê°„.
  */
 void qn_utc(qnDateTime* dt)
 {
@@ -110,9 +110,9 @@ void qn_utc(qnDateTime* dt)
 }
 
 /**
- * ÃÊ¸¦ ½Ã°£À¸·Î.
- * @param	sec   	ÃÊ.
- * @param [¹İÈ¯]	dt	(³Î°ªÀÌ ¾Æ´Ï¸é) º¯È¯µÈ ½Ã°£.
+ * ì´ˆë¥¼ ì‹œê°„ìœ¼ë¡œ.
+ * @param	sec   	ì´ˆ.
+ * @param [ë°˜í™˜]	dt	(ë„ê°’ì´ ì•„ë‹ˆë©´) ë³€í™˜ëœ ì‹œê°„.
  */
 void qn_stod(double sec, qnDateTime* dt)
 {
@@ -130,9 +130,9 @@ void qn_stod(double sec, qnDateTime* dt)
 }
 
 /**
- * ¹Ğ¸®ÃÊ¸¦ ½Ã°£À¸·Î.
- * @param	msec  	¹Ğ¸®ÃÊ.
- * @param [¹İÈ¯]	dt	(³Î°ªÀÌ ¾Æ´Ï¸é) º¯È¯µÈ ½Ã°£.
+ * ë°€ë¦¬ì´ˆë¥¼ ì‹œê°„ìœ¼ë¡œ.
+ * @param	msec  	ë°€ë¦¬ì´ˆ.
+ * @param [ë°˜í™˜]	dt	(ë„ê°’ì´ ì•„ë‹ˆë©´) ë³€í™˜ëœ ì‹œê°„.
  */
 void qn_mstod(uint32_t msec, qnDateTime* dt)
 {
@@ -146,8 +146,8 @@ void qn_mstod(uint32_t msec, qnDateTime* dt)
 }
 
 /**
- * »çÀÌÅ¬ 64ºñÆ®.
- * @return	ÇöÀçÀÇ »çÀÌÅ¬ TICK.
+ * ì‚¬ì´í´ 64ë¹„íŠ¸.
+ * @return	í˜„ì¬ì˜ ì‚¬ì´í´ TICK.
  */
 uint64_t qn_cycle(void)
 {
@@ -179,8 +179,8 @@ uint64_t qn_cycle(void)
 }
 
 /**
- * ÃÊ´ÜÀ§ TICK.
- * @return	ÇöÀçÀÇ TICK.
+ * ì´ˆë‹¨ìœ„ TICK.
+ * @return	í˜„ì¬ì˜ TICK.
  */
 double qn_stick(void)
 {
@@ -205,8 +205,8 @@ double qn_stick(void)
 }
 
 /**
- * ¹Ğ¸®ÃÊ ´ÜÀ§ÀÇ TICK.
- * @return	ÇöÀçÀÇ TICK.
+ * ë°€ë¦¬ì´ˆ ë‹¨ìœ„ì˜ TICK.
+ * @return	í˜„ì¬ì˜ TICK.
  */
 uint64_t qn_tick(void)
 {
@@ -218,8 +218,8 @@ uint64_t qn_tick(void)
 }
 
 /**
- * ¹Ğ¸®ÃÊ ½½¸³.
- * @param	milliseconds	¹Ğ¸®ÃÊ ´ÜÀ§·Î Ã³¸®µÇ´Â millisecond.
+ * ë°€ë¦¬ì´ˆ ìŠ¬ë¦½.
+ * @param	milliseconds	ë°€ë¦¬ì´ˆ ë‹¨ìœ„ë¡œ ì²˜ë¦¬ë˜ëŠ” millisecond.
  */
 void qn_sleep(uint32_t milliseconds)
 {
@@ -234,8 +234,8 @@ void qn_sleep(uint32_t milliseconds)
 }
 
 /**
- * ¸¶ÀÌÅ©·ÎÃÊ ½½¸³.
- * @param	microseconds	¸¶ÀÌÅ©·ÎÃÊ ´ÜÀ§·Î Ã³¸®µÇ´Â microsecond.
+ * ë§ˆì´í¬ë¡œì´ˆ ìŠ¬ë¦½.
+ * @param	microseconds	ë§ˆì´í¬ë¡œì´ˆ ë‹¨ìœ„ë¡œ ì²˜ë¦¬ë˜ëŠ” microsecond.
  */
 void qn_usleep(uint32_t microseconds)
 {
@@ -247,8 +247,8 @@ void qn_usleep(uint32_t microseconds)
 }
 
 /**
- * ÃÊ ½½¸³.
- * @param	seconds	ÃÊ ´ÜÀ§·Î Ã³¸®µÇ´Â second.
+ * ì´ˆ ìŠ¬ë¦½.
+ * @param	seconds	ì´ˆ ë‹¨ìœ„ë¡œ ì²˜ë¦¬ë˜ëŠ” second.
  */
 void qn_ssleep(uint32_t seconds)
 {
@@ -256,8 +256,8 @@ void qn_ssleep(uint32_t seconds)
 }
 
 /**
- * ¸¶ÀÌÅ©·Î ½½¸³, Á¤¹Ğ ½Ã°è¸¦ ÀÌ¿ëÇÏ¸ç ½º·¹µå ÄÜÅØ½ºÆ®°¡ ÀÏ¹İ ½½¸³º¸´Ù Á¦ÇÑµÈ´Ù.
- * @param	microseconds	¸¶ÀÌÅ©·ÎÃÊ ´ÜÀ§·Î Ã³¸®µÇ´Â microsecond.
+ * ë§ˆì´í¬ë¡œ ìŠ¬ë¦½, ì •ë°€ ì‹œê³„ë¥¼ ì´ìš©í•˜ë©° ìŠ¤ë ˆë“œ ì½˜í…ìŠ¤íŠ¸ê°€ ì¼ë°˜ ìŠ¬ë¦½ë³´ë‹¤ ì œí•œëœë‹¤.
+ * @param	microseconds	ë§ˆì´í¬ë¡œì´ˆ ë‹¨ìœ„ë¡œ ì²˜ë¦¬ë˜ëŠ” microsecond.
  */
 void qn_msleep(uint64_t microseconds)
 {
@@ -292,7 +292,7 @@ void qn_msleep(uint64_t microseconds)
 #endif
 }
 
-// Å¸ÀÌ¸Ó
+// íƒ€ì´ë¨¸
 typedef struct qnRealTimer
 {
 	qnTimer				base;
@@ -318,8 +318,8 @@ typedef struct qnRealTimer
 } qnRealTimer;
 
 /**
- * Å¸ÀÌ¸Ó ¸¸µé±â.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº ¸¸µé¾îÁø Å¸ÀÌ¸Ó.
+ * íƒ€ì´ë¨¸ ë§Œë“¤ê¸°.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ ë§Œë“¤ì–´ì§„ íƒ€ì´ë¨¸.
  */
 qnTimer* qn_timer_new(void)
 {
@@ -354,8 +354,8 @@ qnTimer* qn_timer_new(void)
 }
 
 /**
- * Å¸ÀÌ¸Ó Á¦°Å.
- * @param [ÀÔ·Â]	self	Å¸ÀÌ¸Ó °³Ã¼
+ * íƒ€ì´ë¨¸ ì œê±°.
+ * @param [ì…ë ¥]	self	íƒ€ì´ë¨¸ ê°œì²´
  */
 void qn_timer_delete(qnTimer* self)
 {
@@ -363,8 +363,8 @@ void qn_timer_delete(qnTimer* self)
 }
 
 /**
- * Å¸ÀÌ¸Ó ¸®¼Â.
- * @param [ÀÔ·Â]	self	Å¸ÀÌ¸Ó °³Ã¼
+ * íƒ€ì´ë¨¸ ë¦¬ì…‹.
+ * @param [ì…ë ¥]	self	íƒ€ì´ë¨¸ ê°œì²´
  */
 void qn_timer_reset(qnTimer* self)
 {
@@ -380,8 +380,8 @@ void qn_timer_reset(qnTimer* self)
 }
 
 /**
- * Å¸ÀÌ¸Ó ½ÃÀÛ.
- * @param [ÀÔ·Â]	self	Å¸ÀÌ¸Ó °³Ã¼
+ * íƒ€ì´ë¨¸ ì‹œì‘.
+ * @param [ì…ë ¥]	self	íƒ€ì´ë¨¸ ê°œì²´
  */
 void qn_timer_start(qnTimer* self)
 {
@@ -400,8 +400,8 @@ void qn_timer_start(qnTimer* self)
 }
 
 /**
- * Å¸ÀÌ¸Ó Á¤Áö.
- * @param [ÀÔ·Â]	self	Å¸ÀÌ¸Ó °³Ã¼
+ * íƒ€ì´ë¨¸ ì •ì§€.
+ * @param [ì…ë ¥]	self	íƒ€ì´ë¨¸ ê°œì²´
  */
 void qn_timer_stop(qnTimer* self)
 {
@@ -416,9 +416,9 @@ void qn_timer_stop(qnTimer* self)
 }
 
 /**
- * Å¸ÀÌ¸Ó °»½Å.
- * @param [ÀÔ·Â]	self	Å¸ÀÌ¸Ó °³Ã¼
- * @return	¼º°øÇÏ¸é Âü, ½ÇÆĞÇÏ¸é °ÅÁş.
+ * íƒ€ì´ë¨¸ ê°±ì‹ .
+ * @param [ì…ë ¥]	self	íƒ€ì´ë¨¸ ê°œì²´
+ * @return	ì„±ê³µí•˜ë©´ ì°¸, ì‹¤íŒ¨í•˜ë©´ ê±°ì§“.
  */
 bool qn_timer_update(qnTimer* self)
 {
@@ -462,8 +462,8 @@ bool qn_timer_update(qnTimer* self)
 }
 
 /**
- * Å¸ÀÌ¸ÓÀÇ Àı´ë ½Ã°£.
- * @param [ÀÔ·Â]	self	Å¸ÀÌ¸Ó °³Ã¼
+ * íƒ€ì´ë¨¸ì˜ ì ˆëŒ€ ì‹œê°„.
+ * @param [ì…ë ¥]	self	íƒ€ì´ë¨¸ ê°œì²´
  * @return	double.
  */
 double qn_timer_get_abs(qnTimer* self)
@@ -472,8 +472,8 @@ double qn_timer_get_abs(qnTimer* self)
 }
 
 /**
- * Å¸ÀÌ¸ÓÀÇ ½ÃÀÛ ºÎÅÍÀÇ ½ÇÇà ½Ã°£.
- * @param [ÀÔ·Â]	self	Å¸ÀÌ¸Ó °³Ã¼
+ * íƒ€ì´ë¨¸ì˜ ì‹œì‘ ë¶€í„°ì˜ ì‹¤í–‰ ì‹œê°„.
+ * @param [ì…ë ¥]	self	íƒ€ì´ë¨¸ ê°œì²´
  * @return	double.
  */
 double qn_timer_get_run(qnTimer* self)
@@ -482,8 +482,8 @@ double qn_timer_get_run(qnTimer* self)
 }
 
 /**
- * Å¸ÀÌ¸Ó °»½ÅÀÇ ½Ã°£ ÁÖ±â(Frame Per Second)
- * @param [ÀÔ·Â]	self	Å¸ÀÌ¸Ó °³Ã¼
+ * íƒ€ì´ë¨¸ ê°±ì‹ ì˜ ì‹œê°„ ì£¼ê¸°(Frame Per Second)
+ * @param [ì…ë ¥]	self	íƒ€ì´ë¨¸ ê°œì²´
  * @return	double.
  */
 double qn_timer_get_fps(qnTimer* self)
@@ -492,8 +492,8 @@ double qn_timer_get_fps(qnTimer* self)
 }
 
 /**
- * Å¸ÀÌ¸Ó °»½Å¿¡ µû¸¥ °æ°ú °ª.
- * @param [ÀÔ·Â]	self	Å¸ÀÌ¸Ó °³Ã¼
+ * íƒ€ì´ë¨¸ ê°±ì‹ ì— ë”°ë¥¸ ê²½ê³¼ ê°’.
+ * @param [ì…ë ¥]	self	íƒ€ì´ë¨¸ ê°œì²´
  * @return	double.
  */
 double qn_timer_get_adv(qnTimer* self)
@@ -502,8 +502,8 @@ double qn_timer_get_adv(qnTimer* self)
 }
 
 /**
- * Å¸ÀÌ¸ÓÀÇ °ú´Ù ¼öÇà¿¡ µû¸¥ °»½Å °æ°úÀÇ Á¦ÇÑ °ª.
- * @param [ÀÔ·Â]	self	Å¸ÀÌ¸Ó °³Ã¼
+ * íƒ€ì´ë¨¸ì˜ ê³¼ë‹¤ ìˆ˜í–‰ì— ë”°ë¥¸ ê°±ì‹  ê²½ê³¼ì˜ ì œí•œ ê°’.
+ * @param [ì…ë ¥]	self	íƒ€ì´ë¨¸ ê°œì²´
  * @return	double.
  */
 double qn_timer_get_cut(qnTimer* self)
@@ -513,9 +513,9 @@ double qn_timer_get_cut(qnTimer* self)
 }
 
 /**
- * Å¸ÀÌ¸Ó °ú´Ù ¼öÇà¿¡ µû¸¥ °»½Å °æ°ú°ªÀÇ ¼³Á¤.
- * @param [ÀÔ·Â]	self	Å¸ÀÌ¸Ó °³Ã¼
- * @param	cut			Á¦ÇÑ °ª.
+ * íƒ€ì´ë¨¸ ê³¼ë‹¤ ìˆ˜í–‰ì— ë”°ë¥¸ ê°±ì‹  ê²½ê³¼ê°’ì˜ ì„¤ì •.
+ * @param [ì…ë ¥]	self	íƒ€ì´ë¨¸ ê°œì²´
+ * @param	cut			ì œí•œ ê°’.
  */
 void qn_timer_set_cut(qnTimer* self, double cut)
 {
@@ -524,9 +524,9 @@ void qn_timer_set_cut(qnTimer* self, double cut)
 }
 
 /**
- * Å¸ÀÌ¸Ó ¸Å´º¾ó Å¸ÀÔ FPS ÃøÁ¤.
- * @param [ÀÔ·Â]	self	Å¸ÀÌ¸Ó °³Ã¼
- * @param	value   	±â´ÉÀ» ¾²·Á¸é ÂüÀ¸·Î ³Ö´Â´Ù.
+ * íƒ€ì´ë¨¸ ë§¤ë‰´ì–¼ íƒ€ì… FPS ì¸¡ì •.
+ * @param [ì…ë ¥]	self	íƒ€ì´ë¨¸ ê°œì²´
+ * @param	value   	ê¸°ëŠ¥ì„ ì“°ë ¤ë©´ ì°¸ìœ¼ë¡œ ë„£ëŠ”ë‹¤.
  */
 void qn_timer_set_manual(qnTimer* self, bool value)
 {

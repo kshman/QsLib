@@ -1,12 +1,12 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "qn.h"
 
 /**
- * ¿À·ùÃ³¸®¿ë assert.
- * @param	expr		Ç¥Çö.
- * @param	mesg		¿À·ù ³»¿ë.
- * @param	filename	ÆÄÀÏÀÇ ÆÄÀÏ ÀÌ¸§.
- * @param	line		ÆÄÀÏÀÇ ÁÙ ¹øÈ£.
+ * ì˜¤ë¥˜ì²˜ë¦¬ìš© assert.
+ * @param	expr		í‘œí˜„.
+ * @param	mesg		ì˜¤ë¥˜ ë‚´ìš©.
+ * @param	filename	íŒŒì¼ì˜ íŒŒì¼ ì´ë¦„.
+ * @param	line		íŒŒì¼ì˜ ì¤„ ë²ˆí˜¸.
  * @return	int.
  */
 int qn_debug_assert(const char* expr, const char* mesg, const char* filename, int line)
@@ -36,9 +36,9 @@ int qn_debug_assert(const char* expr, const char* mesg, const char* filename, in
 }
 
 /**
- * HALT ¸Ş½ÃÁö.
- * @param	cls	Å¬·¡½º ÀÌ¸§.
- * @param	msg	Ãâ·ÂÇÒ ¸Ş½ÃÁö.
+ * HALT ë©”ì‹œì§€.
+ * @param	cls	í´ë˜ìŠ¤ ì´ë¦„.
+ * @param	msg	ì¶œë ¥í•  ë©”ì‹œì§€.
  */
 int qn_debug_halt(const char* cls, const char* msg)
 {

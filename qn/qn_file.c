@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "qn.h"
 #include <fcntl.h>
 #if _QN_UNIX_
@@ -8,9 +8,9 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-// ÆÄÀÏ
+// íŒŒì¼
 
-// ÆÄÀÏ ±¸Á¶Ã¼
+// íŒŒì¼ êµ¬ì¡°ì²´
 struct qnFile
 {
 	char* name;
@@ -23,10 +23,10 @@ struct qnFile
 #endif
 };
 
-// ÃÖ´ë ÇÒ´ç Å©±â
+// ìµœëŒ€ í• ë‹¹ í¬ê¸°
 static size_t _max_file_alloc_size = 512 * 1024 * 1024;
 
-// ºĞ¼®
+// ë¶„ì„
 void qn_file_access_parse(const char* mode, qnFileAccess* self, int* flag)
 {
 #if _QN_WINDOWS_
@@ -422,10 +422,10 @@ void qn_file_access_parse_l(const wchar_t* mode, qnFileAccess* self, int* flag)
 }
 
 /**
- * »õ ÆÄÀÏ Ã³¸® ±¸Á¶¸¦ ¸¸µç´Ù.
- * @param	filename	ÆÄÀÏÀÇ ÀÌ¸§.
- * @param	mode		ÆÄÀÏ Ã³¸® ¸ğµå.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnFile*.
+ * ìƒˆ íŒŒì¼ ì²˜ë¦¬ êµ¬ì¡°ë¥¼ ë§Œë“ ë‹¤.
+ * @param	filename	íŒŒì¼ì˜ ì´ë¦„.
+ * @param	mode		íŒŒì¼ ì²˜ë¦¬ ëª¨ë“œ.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnFile*.
  */
 qnFile* qn_file_new(const char* filename, const char* mode)
 {
@@ -462,10 +462,10 @@ qnFile* qn_file_new(const char* filename, const char* mode)
 }
 
 /**
- * À¯´ÏÄÚµå¿ë »õ ÆÄÀÏ ±¸Á¶¸¦ ¸¸µç´Ù.
- * @param	filename	ÆÄÀÏÀÇ ÀÌ¸§.
- * @param	mode		ÆÄÀÏ Ã³¸® ¸ğµå.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnFile*.
+ * ìœ ë‹ˆì½”ë“œìš© ìƒˆ íŒŒì¼ êµ¬ì¡°ë¥¼ ë§Œë“ ë‹¤.
+ * @param	filename	íŒŒì¼ì˜ ì´ë¦„.
+ * @param	mode		íŒŒì¼ ì²˜ë¦¬ ëª¨ë“œ.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnFile*.
  */
 qnFile* qn_file_new_l(const wchar_t* filename, const wchar_t* mode)
 {
@@ -501,9 +501,9 @@ qnFile* qn_file_new_l(const wchar_t* filename, const wchar_t* mode)
 }
 
 /**
- * ÆÄÀÏ º¹Á¦. ÇÚµéÀ» º¹Á¦ÇÏ¿© µû·Î »ç¿ëÇÒ ¼ö ÀÖµµ·Ï ÇÑ´Ù.
- * @param [ÀÔ·Â,¹İÈ¯]	src	(³Î°ªÀÌ ¾Æ´Ñ) ¿øº».
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnFile*.
+ * íŒŒì¼ ë³µì œ. í•¸ë“¤ì„ ë³µì œí•˜ì—¬ ë”°ë¡œ ì‚¬ìš©í•  ìˆ˜ ìˆë„ë¡ í•œë‹¤.
+ * @param [ì…ë ¥,ë°˜í™˜]	src	(ë„ê°’ì´ ì•„ë‹Œ) ì›ë³¸.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnFile*.
  */
 qnFile* qn_file_new_dup(qnFile* src)
 {
@@ -539,8 +539,8 @@ qnFile* qn_file_new_dup(qnFile* src)
 }
 
 /**
- * ÆÄÀÏ ±¸Á¶¸¦ Á¦°ÅÇÑ´Ù. ´õ ÀÌ»ó ÆÄÀÏ °ü¸®¸¦ ÇÏÁö ¾ÊÀ» ¶§ »ç¿ëÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
+ * íŒŒì¼ êµ¬ì¡°ë¥¼ ì œê±°í•œë‹¤. ë” ì´ìƒ íŒŒì¼ ê´€ë¦¬ë¥¼ í•˜ì§€ ì•Šì„ ë•Œ ì‚¬ìš©í•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
  */
 void qn_file_delete(qnFile* self)
 {
@@ -557,10 +557,10 @@ void qn_file_delete(qnFile* self)
 }
 
 /**
- * ÆÄÀÏ ÇÃ·¡±×¸¦ °¡Á®¿Â´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	mask		ÇÃ·¡±×ÀÇ ¸¶½ºÅ©.
- * @return	ÆÄÀÏ ÇÃ·¡±×.
+ * íŒŒì¼ í”Œë˜ê·¸ë¥¼ ê°€ì ¸ì˜¨ë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	mask		í”Œë˜ê·¸ì˜ ë§ˆìŠ¤í¬.
+ * @return	íŒŒì¼ í”Œë˜ê·¸.
  */
 int qn_file_flags(qnFile* self, int mask)
 {
@@ -568,9 +568,9 @@ int qn_file_flags(qnFile* self, int mask)
 }
 
 /**
- * ÆÄÀÏ ÀÌ¸§À» ¾ò´Â´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @return	ÆÄÀÏÀÇ ÀÌ¸§.
+ * íŒŒì¼ ì´ë¦„ì„ ì–»ëŠ”ë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @return	íŒŒì¼ì˜ ì´ë¦„.
  */
 const char* qn_file_name(qnFile* self)
 {
@@ -578,12 +578,12 @@ const char* qn_file_name(qnFile* self)
 }
 
 /**
- * ÆÄÀÏ¿¡¼­ ÀĞ´Â´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	buffer  	ÀĞÀº µ¥ÀÌÅÍ¸¦ ÀúÀåÇÒ ¹öÆÛ.
- * @param	offset  	¹öÆÛÀÇ ¿É¼Â.
- * @param	size		ÀĞÀ» Å©±â.
- * @return	½ÇÁ¦ ÀĞÀº ±æÀÌ¸¦ ¹İÈ¯.
+ * íŒŒì¼ì—ì„œ ì½ëŠ”ë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	buffer  	ì½ì€ ë°ì´í„°ë¥¼ ì €ì¥í•  ë²„í¼.
+ * @param	offset  	ë²„í¼ì˜ ì˜µì…‹.
+ * @param	size		ì½ì„ í¬ê¸°.
+ * @return	ì‹¤ì œ ì½ì€ ê¸¸ì´ë¥¼ ë°˜í™˜.
  */
 int qn_file_read(qnFile* self, pointer_t buffer, int offset, int size)
 {
@@ -603,12 +603,12 @@ int qn_file_read(qnFile* self, pointer_t buffer, int offset, int size)
 }
 
 /**
- * ÆÄÀÏ¿¡ ¾´´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	buffer  	¾µ µ¥ÀÌÅÍ°¡ µé¾î ÀÖ´Â ¹öÆÛ.
- * @param	offset  	¹öÆÛÀÇ ¿É¼Â.
- * @param	size		¾µ Å©±â.
- * @return	½ÇÁ¦ ¾´ ±æÀÌ¸¦ ¹İÈ¯.
+ * íŒŒì¼ì— ì“´ë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	buffer  	ì“¸ ë°ì´í„°ê°€ ë“¤ì–´ ìˆëŠ” ë²„í¼.
+ * @param	offset  	ë²„í¼ì˜ ì˜µì…‹.
+ * @param	size		ì“¸ í¬ê¸°.
+ * @return	ì‹¤ì œ ì“´ ê¸¸ì´ë¥¼ ë°˜í™˜.
  */
 int qn_file_write(qnFile* self, const pointer_t buffer, int offset, int size)
 {
@@ -628,9 +628,9 @@ int qn_file_write(qnFile* self, const pointer_t buffer, int offset, int size)
 }
 
 /**
- * ÆÄÀÏ Å©±â¸¦ ¾ò´Â´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @return	ÆÄÀÏÀÇ ±æÀÌ.
+ * íŒŒì¼ í¬ê¸°ë¥¼ ì–»ëŠ”ë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @return	íŒŒì¼ì˜ ê¸¸ì´.
  */
 int64_t qn_file_size(qnFile* self)
 {
@@ -653,9 +653,9 @@ int64_t qn_file_size(qnFile* self)
 }
 
 /**
- * ÆÄÀÏ À§Ä¡ ¾ò±â.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @return	ÇöÀç ÆÄÀÏÀÇ ÀĞ°í ¾²´Â À§Ä¡.
+ * íŒŒì¼ ìœ„ì¹˜ ì–»ê¸°.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @return	í˜„ì¬ íŒŒì¼ì˜ ì½ê³  ì“°ëŠ” ìœ„ì¹˜.
  */
 int64_t qn_file_tell(qnFile* self)
 {
@@ -669,11 +669,11 @@ int64_t qn_file_tell(qnFile* self)
 }
 
 /**
- * ÆÄÀÏ À§Ä¡ º¯°æ.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	offset  	ÀÌµ¿ÇÒ À§Ä¡.
- * @param	org			¹æ½Ä (CÇü½Ä SEEK¿Í µ¿ÀÏ).
- * @return	º¯°æµÈ À§Ä¡.
+ * íŒŒì¼ ìœ„ì¹˜ ë³€ê²½.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	offset  	ì´ë™í•  ìœ„ì¹˜.
+ * @param	org			ë°©ì‹ (Cí˜•ì‹ SEEKì™€ ë™ì¼).
+ * @return	ë³€ê²½ëœ ìœ„ì¹˜.
  */
 int64_t qn_file_seek(qnFile* self, int64_t offset, int org)
 {
@@ -690,9 +690,9 @@ int64_t qn_file_seek(qnFile* self, int64_t offset, int org)
 }
 
 /**
- * ÆÄÀÏ °»½Å. ÆÄÀÏ ³»¿ëÀ» °»½ÅÇÑ´Ù. ¾²±â ¹öÆÛÀÇ ³²Àº µ¥ÀÌÅÍ¸¦ ¸ğµÎ ¾´´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @return	¼º°øÇÏ¸é Âü, ½ÇÆĞÇÏ¸é °ÅÁş.
+ * íŒŒì¼ ê°±ì‹ . íŒŒì¼ ë‚´ìš©ì„ ê°±ì‹ í•œë‹¤. ì“°ê¸° ë²„í¼ì˜ ë‚¨ì€ ë°ì´í„°ë¥¼ ëª¨ë‘ ì“´ë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @return	ì„±ê³µí•˜ë©´ ì°¸, ì‹¤íŒ¨í•˜ë©´ ê±°ì§“.
  */
 bool qn_file_flush(qnFile* self)
 {
@@ -707,10 +707,10 @@ bool qn_file_flush(qnFile* self)
 }
 
 /**
- * ÆÄÀÏ¿¡ ¾²±â. Æ÷¸Ë ¹æ½Ä.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	fmt			Æ÷¸Ë ¹®ÀÚ¿­.
- * @return	½ÇÁ¦ ¾´ ±æÀÌ.
+ * íŒŒì¼ì— ì“°ê¸°. í¬ë§· ë°©ì‹.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	fmt			í¬ë§· ë¬¸ìì—´.
+ * @return	ì‹¤ì œ ì“´ ê¸¸ì´.
  */
 int qn_file_printf(qnFile* self, const char* fmt, ...)
 {
@@ -735,11 +735,11 @@ int qn_file_printf(qnFile* self, const char* fmt, ...)
 }
 
 /**
- * ÆÄÀÏ¿¡ ¾²±â, Æ÷¸Ë ¹æ½Ä.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	fmt			Æ÷¸Ë ¹®ÀÚ¿­.
- * @param	va			°¡º¯ ÀÎ¼ö.
- * @return	½ÇÁ¦ ¾´ ±æÀÌ.
+ * íŒŒì¼ì— ì“°ê¸°, í¬ë§· ë°©ì‹.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	fmt			í¬ë§· ë¬¸ìì—´.
+ * @param	va			ê°€ë³€ ì¸ìˆ˜.
+ * @return	ì‹¤ì œ ì“´ ê¸¸ì´.
  */
 int qn_file_vprintf(qnFile* self, const char* fmt, va_list va)
 {
@@ -759,10 +759,10 @@ int qn_file_vprintf(qnFile* self, const char* fmt, va_list va)
 }
 
 /**
- * ÆÄÀÏÀÌ ÀÖ³ª Á¶»çÇÑ´Ù.
- * @param	filename	ÆÄÀÏÀÇ ÀÌ¸§.
- * @param [¹İÈ¯]	res 	(³Î°ªÀÌ ¾Æ´Ï¸é) ÆÄÀÏ Ã³¸® ÇÃ·¡±×·Î KFAS_·Î ½ÃÀÛÇÏ´Â ¸¶½ºÅ© ÇÃ·¡±×.
- * @return	¼º°øÇÏ¸é Âü, ½ÇÆĞÇÏ¸é °ÅÁş.
+ * íŒŒì¼ì´ ìˆë‚˜ ì¡°ì‚¬í•œë‹¤.
+ * @param	filename	íŒŒì¼ì˜ ì´ë¦„.
+ * @param [ë°˜í™˜]	res 	(ë„ê°’ì´ ì•„ë‹ˆë©´) íŒŒì¼ ì²˜ë¦¬ í”Œë˜ê·¸ë¡œ KFAS_ë¡œ ì‹œì‘í•˜ëŠ” ë§ˆìŠ¤í¬ í”Œë˜ê·¸.
+ * @return	ì„±ê³µí•˜ë©´ ì°¸, ì‹¤íŒ¨í•˜ë©´ ê±°ì§“.
  */
 bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 {
@@ -807,10 +807,10 @@ bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 }
 
 /**
- * ÆÄÀÏÀÌ ÀÖ³ª Á¶»çÇÑ´Ù. À¯´ÏÄÚµå ¹öÀü.
- * @param	filename	ÆÄÀÏÀÇ ÀÌ¸§.
- * @param [¹İÈ¯]	res 	(³Î°ªÀÌ ¾Æ´Ï¸é) ÆÄÀÏ Ã³¸® ÇÃ·¡±×·Î KFAS_·Î ½ÃÀÛÇÏ´Â ¸¶½ºÅ© ÇÃ·¡±×.
- * @return	¼º°øÇÏ¸é Âü, ½ÇÆĞÇÏ¸é °ÅÁş.
+ * íŒŒì¼ì´ ìˆë‚˜ ì¡°ì‚¬í•œë‹¤. ìœ ë‹ˆì½”ë“œ ë²„ì „.
+ * @param	filename	íŒŒì¼ì˜ ì´ë¦„.
+ * @param [ë°˜í™˜]	res 	(ë„ê°’ì´ ì•„ë‹ˆë©´) íŒŒì¼ ì²˜ë¦¬ í”Œë˜ê·¸ë¡œ KFAS_ë¡œ ì‹œì‘í•˜ëŠ” ë§ˆìŠ¤í¬ í”Œë˜ê·¸.
+ * @return	ì„±ê³µí•˜ë©´ ì°¸, ì‹¤íŒ¨í•˜ë©´ ê±°ì§“.
  */
 bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir)
 {
@@ -854,8 +854,8 @@ bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir)
 }
 
 /**
- * qn_file_alloc ÇÔ¼ö¿¡¼­ »ç¿ëÇÏ´Â ÆÄÀÏ ÀĞ±â ÃÖ´ë ÇÒ´ç Å©±â.
- * @return	ÃÖ´ë ÇÒ´ç Å©±â.
+ * qn_file_alloc í•¨ìˆ˜ì—ì„œ ì‚¬ìš©í•˜ëŠ” íŒŒì¼ ì½ê¸° ìµœëŒ€ í• ë‹¹ í¬ê¸°.
+ * @return	ìµœëŒ€ í• ë‹¹ í¬ê¸°.
  */
 size_t qn_file_get_max_alloc_size(void)
 {
@@ -863,8 +863,8 @@ size_t qn_file_get_max_alloc_size(void)
 }
 
 /**
- * qn_file_alloc ÇÔ¼ö¿¡¼­ »ç¿ëÇÒ ÆÄÀÏ ÀĞ±â ÃÖ´ë ÇÒ´ç Å©±â ¼³Á¤.
- * @param	n	ÇÒ´çÇÒ Å©±â.
+ * qn_file_alloc í•¨ìˆ˜ì—ì„œ ì‚¬ìš©í•  íŒŒì¼ ì½ê¸° ìµœëŒ€ í• ë‹¹ í¬ê¸° ì„¤ì •.
+ * @param	n	í• ë‹¹í•  í¬ê¸°.
  */
 void qn_file_set_max_alloc_size(size_t n)
 {
@@ -872,10 +872,10 @@ void qn_file_set_max_alloc_size(size_t n)
 }
 
 /**
- * ÆÄÀÏ ÇÒ´ç. Áï ÆÄÀÏ ÀüÃ¼¸¦ ÀĞ¾î ¸Ş¸ğ¸®¿¡ ÇÒ´çÇÑ ÈÄ ¹İÈ¯ÇÑ´Ù.
- * @param	filename	ÆÄÀÏÀÇ ÀÌ¸§.
- * @param [¹İÈ¯]	size	(³Î°ªÀÌ ¾Æ´Ï¸é) ÀĞÀº ÆÄÀÏÀÇ Å©±â.
- * @return	ÀĞÀº ¹öÆÛ. »ç¿ëÇÑ ´ÙÀ½ k_free ÇÔ¼ö·Î ÇØÁ¦ÇØ¾ßÇÑ´Ù.
+ * íŒŒì¼ í• ë‹¹. ì¦‰ íŒŒì¼ ì „ì²´ë¥¼ ì½ì–´ ë©”ëª¨ë¦¬ì— í• ë‹¹í•œ í›„ ë°˜í™˜í•œë‹¤.
+ * @param	filename	íŒŒì¼ì˜ ì´ë¦„.
+ * @param [ë°˜í™˜]	size	(ë„ê°’ì´ ì•„ë‹ˆë©´) ì½ì€ íŒŒì¼ì˜ í¬ê¸°.
+ * @return	ì½ì€ ë²„í¼. ì‚¬ìš©í•œ ë‹¤ìŒ k_free í•¨ìˆ˜ë¡œ í•´ì œí•´ì•¼í•œë‹¤.
  */
 pointer_t qn_file_alloc(const char* filename, int* size)
 {
@@ -910,10 +910,10 @@ pointer_t qn_file_alloc(const char* filename, int* size)
 }
 
 /**
- * ÆÄÀÏ ÇÒ´ç. Áï ÆÄÀÏ ÀüÃ¼¸¦ ÀĞ¾î ¸Ş¸ğ¸®¿¡ ÇÒ´çÇÑ ÈÄ ¹İÈ¯ÇÑ´Ù. À¯´ÏÄÚµå ¹öÀü.
- * @param	filename	ÆÄÀÏÀÇ ÀÌ¸§.
- * @param [¹İÈ¯]	size	(³Î°ªÀÌ ¾Æ´Ï¸é) ÀĞÀº ÆÄÀÏÀÇ Å©±â.
- * @return	ÀĞÀº ¹öÆÛ. »ç¿ëÇÑ ´ÙÀ½ k_free ÇÔ¼ö·Î ÇØÁ¦ÇØ¾ßÇÑ´Ù.
+ * íŒŒì¼ í• ë‹¹. ì¦‰ íŒŒì¼ ì „ì²´ë¥¼ ì½ì–´ ë©”ëª¨ë¦¬ì— í• ë‹¹í•œ í›„ ë°˜í™˜í•œë‹¤. ìœ ë‹ˆì½”ë“œ ë²„ì „.
+ * @param	filename	íŒŒì¼ì˜ ì´ë¦„.
+ * @param [ë°˜í™˜]	size	(ë„ê°’ì´ ì•„ë‹ˆë©´) ì½ì€ íŒŒì¼ì˜ í¬ê¸°.
+ * @return	ì½ì€ ë²„í¼. ì‚¬ìš©í•œ ë‹¤ìŒ k_free í•¨ìˆ˜ë¡œ í•´ì œí•´ì•¼í•œë‹¤.
  */
 pointer_t qn_file_alloc_l(const wchar_t* filename, int* size)
 {
@@ -947,9 +947,9 @@ pointer_t qn_file_alloc_l(const wchar_t* filename, int* size)
 
 
 //////////////////////////////////////////////////////////////////////////
-// µğ·ºÅÍ¸®
+// ë””ë ‰í„°ë¦¬
 
-// µğ·ºÅÍ¸® ±¸Á¶Ã¼.
+// ë””ë ‰í„°ë¦¬ êµ¬ì¡°ì²´.
 struct qnDir
 {
 #if _QN_WINDOWS_
@@ -965,10 +965,10 @@ struct qnDir
 };
 
 /**
- * µğ·ºÅÍ¸®¸¦ »õ·Î ¸¸µç´Ù.
- * @param	path 	µğ·ºÅÍ¸®ÀÇ ¿ÏÀüÇÑ °æ·Î ÀÌ¸§.
- * @param	flags	»ç¿ëÇÏÁö ¾ÊÀ½.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº ¸¸µé¾îÁø °³Ã¼.
+ * ë””ë ‰í„°ë¦¬ë¥¼ ìƒˆë¡œ ë§Œë“ ë‹¤.
+ * @param	path 	ë””ë ‰í„°ë¦¬ì˜ ì™„ì „í•œ ê²½ë¡œ ì´ë¦„.
+ * @param	flags	ì‚¬ìš©í•˜ì§€ ì•ŠìŒ.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ ë§Œë“¤ì–´ì§„ ê°œì²´.
  */
 qnDir* qn_dir_new(const char* path)
 {
@@ -993,7 +993,7 @@ qnDir* qn_dir_new(const char* path)
 
 	(void)_wfullpath(fpath, uni, MAX_PATH);
 
-	len = wcslen(fpath) + 1/*½½·¡½Ã*/ + 1/*¼­ÇÈ½º*/ + 1/*³Î*/;
+	len = wcslen(fpath) + 1/*ìŠ¬ë˜ì‹œ*/ + 1/*ì„œí”½ìŠ¤*/ + 1/*ë„*/;
 	suffix = qn_alloc(len, wchar_t);
 	qn_retval_if_fail(suffix, NULL);
 
@@ -1035,10 +1035,10 @@ qnDir* qn_dir_new(const char* path)
 }
 
 /**
- * µğ·ºÅÍ¸®¸¦ »õ·Î ¸¸µç´Ù. (À¯´ÏÄÚµå »ç¿ë)
- * @param	path 	µğ·ºÅÍ¸®ÀÇ ¿ÏÀüÇÑ °æ·Î ÀÌ¸§.
- * @param	flags	»ç¿ëÇÏÁö ¾ÊÀ½.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº ¸¸µé¾îÁø °³Ã¼.
+ * ë””ë ‰í„°ë¦¬ë¥¼ ìƒˆë¡œ ë§Œë“ ë‹¤. (ìœ ë‹ˆì½”ë“œ ì‚¬ìš©)
+ * @param	path 	ë””ë ‰í„°ë¦¬ì˜ ì™„ì „í•œ ê²½ë¡œ ì´ë¦„.
+ * @param	flags	ì‚¬ìš©í•˜ì§€ ì•ŠìŒ.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ ë§Œë“¤ì–´ì§„ ê°œì²´.
  */
 qnDir* qn_dir_new_l(const wchar_t* path)
 {
@@ -1060,7 +1060,7 @@ qnDir* qn_dir_new_l(const wchar_t* path)
 
 	(void)_wfullpath(fpath, path, MAX_PATH);
 
-	len = wcslen(fpath) + 1/*½½·¡½Ã*/ + 1/*¼­ÇÈ½º*/ + 1/*³Î*/;
+	len = wcslen(fpath) + 1/*ìŠ¬ë˜ì‹œ*/ + 1/*ì„œí”½ìŠ¤*/ + 1/*ë„*/;
 	suffix = qn_alloc(len, wchar_t);
 	qn_retval_if_fail(suffix, NULL);
 
@@ -1104,8 +1104,8 @@ qnDir* qn_dir_new_l(const wchar_t* path)
 }
 
 /**
- * µğ·ºÅÍ¸® °³Ã¼ Á¦°Å.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
+ * ë””ë ‰í„°ë¦¬ ê°œì²´ ì œê±°.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
  */
 void qn_dir_delete(qnDir* self)
 {
@@ -1122,9 +1122,9 @@ void qn_dir_delete(qnDir* self)
 }
 
 /**
- * µğ·ºÅÍ¸®¿¡¼­ Ç×¸ñ ÀĞ±â.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº ÆÄÀÏ ÀÌ¸§.
+ * ë””ë ‰í„°ë¦¬ì—ì„œ í•­ëª© ì½ê¸°.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ íŒŒì¼ ì´ë¦„.
  */
 const char* qn_dir_read(qnDir* self)
 {
@@ -1135,13 +1135,13 @@ const char* qn_dir_read(qnDir* self)
 			return NULL;
 		else if (self->stat == 0)
 		{
-			// Ã³À½
+			// ì²˜ìŒ
 			self->handle = FindFirstFileEx(self->name, FindExInfoStandard, &self->ffd, FindExSearchNameMatch, NULL, 0);
 			self->stat = self->handle == INVALID_HANDLE_VALUE ? -1 : 1;
 		}
 		else
 		{
-			// °è¼Ó
+			// ê³„ì†
 			if (FindNextFile(self->handle, &self->ffd))
 				self->stat++;
 			else
@@ -1174,9 +1174,9 @@ const char* qn_dir_read(qnDir* self)
 }
 
 /**
- * µğ·ºÅÍ¸®¿¡¼­ Ç×¸ñ ÀĞ±â. (À¯´ÏÄÚµå)
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº ÆÄÀÏ ÀÌ¸§.
+ * ë””ë ‰í„°ë¦¬ì—ì„œ í•­ëª© ì½ê¸°. (ìœ ë‹ˆì½”ë“œ)
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ íŒŒì¼ ì´ë¦„.
  */
 const wchar_t* qn_dir_read_l(qnDir* self)
 {
@@ -1187,13 +1187,13 @@ const wchar_t* qn_dir_read_l(qnDir* self)
 			return NULL;
 		else if (self->stat == 0)
 		{
-			// Ã³À½
+			// ì²˜ìŒ
 			self->handle = FindFirstFileEx(self->name, FindExInfoStandard, &self->ffd, FindExSearchNameMatch, NULL, 0);
 			self->stat = self->handle == INVALID_HANDLE_VALUE ? -1 : 1;
 		}
 		else
 		{
-			// °è¼Ó
+			// ê³„ì†
 			if (FindNextFile(self->handle, &self->ffd))
 				self->stat++;
 			else
@@ -1230,8 +1230,8 @@ const wchar_t* qn_dir_read_l(qnDir* self)
 }
 
 /**
- * µğ·ºÅÍ¸®¸¦ Ã¹ Ç×¸ñÀ¸·Î °¨±â.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
+ * ë””ë ‰í„°ë¦¬ë¥¼ ì²« í•­ëª©ìœ¼ë¡œ ê°ê¸°.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
  */
 void qn_dir_rewind(qnDir* self)
 {
@@ -1247,9 +1247,9 @@ void qn_dir_rewind(qnDir* self)
 }
 
 /**
- * µğ·ºÅÍ¸®¿¡¼­ ¸î¹øÂ° Ç×¸ñÀÎÁö ¾ò±â.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @return	Ç×¸ñ ¼ø¼­.
+ * ë””ë ‰í„°ë¦¬ì—ì„œ ëª‡ë²ˆì§¸ í•­ëª©ì¸ì§€ ì–»ê¸°.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @return	í•­ëª© ìˆœì„œ.
  */
 int qn_dir_tell(qnDir* self)
 {
@@ -1263,9 +1263,9 @@ int qn_dir_tell(qnDir* self)
 }
 
 /**
- * µğ·ºÅÍ¸®¿¡¼­ ¼ø¼­ Ç×¸ñÀ¸·Î Ã£¾Æ°¡Áö.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	pos			Ã£¾Æ°¥ À§Ä¡.
+ * ë””ë ‰í„°ë¦¬ì—ì„œ ìˆœì„œ í•­ëª©ìœ¼ë¡œ ì°¾ì•„ê°€ì§€.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	pos			ì°¾ì•„ê°ˆ ìœ„ì¹˜.
  */
 void qn_dir_seek(qnDir* self, int pos)
 {

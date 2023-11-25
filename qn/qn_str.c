@@ -1,9 +1,9 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "qn.h"
 #include "PatrickPowell_snprintf.h"
 
 //////////////////////////////////////////////////////////////////////////
-// ±×³É ¹®ÀÚ¿­
+// ê·¸ëƒ¥ ë¬¸ìì—´
 
 //
 static void _asc_output(pointer_t ptr, size_t* currlen, size_t maxlen, int c)
@@ -117,7 +117,7 @@ char* qn_apsprintf(const char* fmt, ...)
 	return ret;
 }
 
-/** ±ÛÀÚ·Î Ã¤¿ì±â */
+/** ê¸€ìë¡œ ì±„ìš°ê¸° */
 size_t qn_strfll(char* dest, size_t pos, size_t end, int ch)
 {
 	size_t i, cnt;
@@ -129,7 +129,7 @@ size_t qn_strfll(char* dest, size_t pos, size_t end, int ch)
 	return pos + cnt;
 }
 
-/** ¹®ÀÚ¿­ ÇØ½Ã */
+/** ë¬¸ìì—´ í•´ì‹œ */
 size_t qn_strhash(const char* p)
 {
 	const char* sz = p;
@@ -146,7 +146,7 @@ size_t qn_strhash(const char* p)
 	}
 }
 
-/** ¹®ÀÚ¿­ ÇØ½Ã (´ë¼Ò¹®ÀÚ±¸º°¾ÈÇÔ) */
+/** ë¬¸ìì—´ í•´ì‹œ (ëŒ€ì†Œë¬¸ìêµ¬ë³„ì•ˆí•¨) */
 size_t qn_strihash(const char* p)
 {
 	const char* sz = p;
@@ -289,7 +289,7 @@ static char* _strpcpy(char* dest, const char* src)
 	return dest - 1;
 }
 
-/** ¿©·¯ ¹®ÀÚ¿­ÀÇ strdup */
+/** ì—¬ëŸ¬ ë¬¸ìì—´ì˜ strdup */
 char* qn_strcat(const char* p, ...)
 {
 	va_list va;
@@ -325,7 +325,7 @@ char* qn_strcat(const char* p, ...)
 
 
 //////////////////////////////////////////////////////////////////////////
-// À¯´ÏÄÚµå ¹®ÀÚ¿­
+// ìœ ë‹ˆì½”ë“œ ë¬¸ìì—´
 //
 static void _wcs_output(pointer_t ptr, size_t* currlen, size_t maxlen, int c)
 {
@@ -438,7 +438,7 @@ wchar_t* qn_apswprintf(const wchar_t* fmt, ...)
 	return ret;
 }
 
-/** ºóÄ­À¸·Î Ã¤¿ì±â */
+/** ë¹ˆì¹¸ìœ¼ë¡œ ì±„ìš°ê¸° */
 size_t qn_wcsfll(wchar_t* dest, size_t pos, size_t end, int ch)
 {
 	size_t i, cnt;
@@ -450,7 +450,7 @@ size_t qn_wcsfll(wchar_t* dest, size_t pos, size_t end, int ch)
 	return pos + cnt;
 }
 
-/** ¹®ÀÚ¿­ ÇØ½Ã */
+/** ë¬¸ìì—´ í•´ì‹œ */
 size_t qn_wcshash(const wchar_t* p)
 {
 	const wchar_t* sz = p;
@@ -467,7 +467,7 @@ size_t qn_wcshash(const wchar_t* p)
 	}
 }
 
-/** ¹®ÀÚ¿­ ÇØ½Ã (´ë¼Ò¹®ÀÚ±¸º°¾ÈÇÔ) */
+/** ë¬¸ìì—´ í•´ì‹œ (ëŒ€ì†Œë¬¸ìêµ¬ë³„ì•ˆí•¨) */
 size_t qn_wcsihash(const wchar_t* p)
 {
 	const wchar_t* sz = p;
@@ -589,7 +589,7 @@ static wchar_t* _wcspcpy(wchar_t* dest, const wchar_t*  src)
 	return dest - 1;
 }
 
-/** ¿©·¯ ¹®ÀÚ¿­ÀÇ strdup */
+/** ì—¬ëŸ¬ ë¬¸ìì—´ì˜ strdup */
 wchar_t* qn_wcscat(const wchar_t* p, ...)
 {
 	va_list va;
@@ -625,10 +625,10 @@ wchar_t* qn_wcscat(const wchar_t* p, ...)
 
 
 //////////////////////////////////////////////////////////////////////////
-// À¯´ÏÄÚµå
+// ìœ ë‹ˆì½”ë“œ
 
 /**
- * UTF-8 ±ÛÀÚ ±æÀÌ
+ * UTF-8 ê¸€ì ê¸¸ì´
  * cp_strlen_utf8 (http://www.daemonology.net/blog/2008-06-05-faster-utf8-strlen.html)
  */
 size_t qn_utf8len(const char* s)
@@ -639,7 +639,7 @@ size_t qn_utf8len(const char* s)
 	size_t i;
 	uint8_t b;
 
-	// ÃÊ±â Á¤·ÄµÇÁö ¾ÊÀº ¾Æ¹« ¹ÙÀÌÆ® °è»ê
+	// ì´ˆê¸° ì •ë ¬ë˜ì§€ ì•Šì€ ì•„ë¬´ ë°”ì´íŠ¸ ê³„ì‚°
 	for (t = s; (uintptr_t)t & (sizeof(size_t) - 1); t++)
 	{
 		b = *t;
@@ -650,7 +650,7 @@ size_t qn_utf8len(const char* s)
 		cnt += (b >> 7) & ((~b) >> 6);
 	}
 
-	// ¿ÏÀüÇÑ ºí·° °è»ê
+	// ì™„ì „í•œ ë¸”ëŸ­ ê³„ì‚°
 	for (;; t += sizeof(size_t))
 	{
 #ifdef __GNUC__
@@ -683,9 +683,9 @@ pos_done:
 }
 
 /**
- * UTF-8 ¹®ÀÚ¸¦ UCS-4 ¹®ÀÚ·Î.
- * @param	p	utf8 ¹®ÀÚ.
- * @return	ucs4 ¹®ÀÚ.
+ * UTF-8 ë¬¸ìë¥¼ UCS-4 ë¬¸ìë¡œ.
+ * @param	p	utf8 ë¬¸ì.
+ * @return	ucs4 ë¬¸ì.
  */
 uchar4_t qn_utf8ccnc(const char* p)
 {
@@ -730,13 +730,13 @@ uchar4_t qn_utf8ccnc(const char* p)
 
 	if (len < 0)
 	{
-		// »ç¿ëÇÏÁö ¾Ê´Â ¹®ÀÚ ÄÚµå
+		// ì‚¬ìš©í•˜ì§€ ì•ŠëŠ” ë¬¸ì ì½”ë“œ
 		// 0xFFFFFFFF
 		return (uchar4_t)-1;
 	}
 	else
 	{
-		// UCS4·Î º¯È¯
+		// UCS4ë¡œ ë³€í™˜
 		uchar4_t ret = p[0] & mask;
 		for (int i = 1; i < len; i++)
 		{
@@ -754,7 +754,7 @@ uchar4_t qn_utf8ccnc(const char* p)
 	}
 }
 
-/** UTF-8 ´ÙÀ½ ±ÛÀÚ */
+/** UTF-8 ë‹¤ìŒ ê¸€ì */
 char* qn_utf8chn(const char* s)
 {
 	static const char s_skips[256] =
@@ -772,10 +772,10 @@ char* qn_utf8chn(const char* s)
 }
 
 /**
- * UCS-4 ¹®ÀÚ¸¦ UTF-8 ¹®ÀÚ·Î
- * @param	c		   	ucs4 ¹®ÀÚ.
- * @param [¹İÈ¯]	out	utf8 ¹®ÀÚ°¡ µé¾î°¥ ¹è¿­. ÃÖ¼Ò 6°³ Ç×¸ñÀÇ ¹è¿­ÀÌ¾î¾ß ÇÑ´Ù
- * @return	utf8¹®ÀÚ¸¦ ±¸¼ºÇÏ´Â ¹®ÀÚ¿­ÀÇ ±æÀÌ.
+ * UCS-4 ë¬¸ìë¥¼ UTF-8 ë¬¸ìë¡œ
+ * @param	c		   	ucs4 ë¬¸ì.
+ * @param [ë°˜í™˜]	out	utf8 ë¬¸ìê°€ ë“¤ì–´ê°ˆ ë°°ì—´. ìµœì†Œ 6ê°œ í•­ëª©ì˜ ë°°ì—´ì´ì–´ì•¼ í•œë‹¤
+ * @return	utf8ë¬¸ìë¥¼ êµ¬ì„±í•˜ëŠ” ë¬¸ìì—´ì˜ ê¸¸ì´.
  */
 int qn_utf8cunc(uchar4_t c, char* out)
 {
@@ -826,7 +826,7 @@ int qn_utf8cunc(uchar4_t c, char* out)
 	return len;
 }
 
-// utf16 ¼­·Î°ÔÀÌÆ®¸¦ ucs4·Î ¹Ù²Ş
+// utf16 ì„œë¡œê²Œì´íŠ¸ë¥¼ ucs4ë¡œ ë°”ê¿ˆ
 static uchar4_t _utf16_surrogate(uchar2_t h, uchar2_t l)
 {
 	return (((uchar4_t)h - 0xD800) * 0x0400 + (uchar4_t)l - 0xDC00 + 0x010000);
@@ -834,7 +834,7 @@ static uchar4_t _utf16_surrogate(uchar2_t h, uchar2_t l)
 
 
 //////////////////////////////////////////////////////////////////////////
-// ¹®ÀÚ¿­ º¯È¯
+// ë¬¸ìì—´ ë³€í™˜
 
 //
 size_t qn_mbstowcs(wchar_t* outwcs, size_t outsize, const char* inmbs, size_t insize)
@@ -865,12 +865,12 @@ size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar_t* inwcs, size_t in
 
 /**
  * utf8 -> ucs4.
- * ´ë»ó ¹öÆÛ°¡ ³Î°ªÀÌ¸é º¯È¯¿¡ ÇÊ¿äÇÑ ±æÀÌ¸¦ ¹İÈ¯
- * @param [¹İÈ¯]	dest	(³Î°ªÀÌ ¾Æ´Ï¸é) ´ë»ó ¹öÆÛ (ucs4).
- * @param	destsize		´ë»ó ¹öÆÛ Å©±â.
- * @param	src				¿øº» (utf8).
- * @param	srclen			¿øº» ±æÀÌ. 0À¸·Î ÁöÁ¤ÇÒ ¼ö ÀÖÀ½.
- * @return	º¯È¯ÇÑ ±æÀÌ ¶Ç´Â º¯È¯¿¡ ÇÊ¿äÇÑ ±æÀÌ.
+ * ëŒ€ìƒ ë²„í¼ê°€ ë„ê°’ì´ë©´ ë³€í™˜ì— í•„ìš”í•œ ê¸¸ì´ë¥¼ ë°˜í™˜
+ * @param [ë°˜í™˜]	dest	(ë„ê°’ì´ ì•„ë‹ˆë©´) ëŒ€ìƒ ë²„í¼ (ucs4).
+ * @param	destsize		ëŒ€ìƒ ë²„í¼ í¬ê¸°.
+ * @param	src				ì›ë³¸ (utf8).
+ * @param	srclen			ì›ë³¸ ê¸¸ì´. 0ìœ¼ë¡œ ì§€ì •í•  ìˆ˜ ìˆìŒ.
+ * @return	ë³€í™˜í•œ ê¸¸ì´ ë˜ëŠ” ë³€í™˜ì— í•„ìš”í•œ ê¸¸ì´.
  */
 size_t qn_utf8to32(uchar4_t* dest, size_t destsize, const char* src, size_t srclen)
 {
@@ -878,7 +878,7 @@ size_t qn_utf8to32(uchar4_t* dest, size_t destsize, const char* src, size_t srcl
 
 	if (destsize == 0 || !dest)
 	{
-		// utf-8 -> ucs-4ÀÇ ±æÀÌ´Â.... ±×³É utf-8ÀÇ ±æÀÌ.
+		// utf-8 -> ucs-4ì˜ ê¸¸ì´ëŠ”.... ê·¸ëƒ¥ utf-8ì˜ ê¸¸ì´.
 		return qn_utf8len(src);
 	}
 	else
@@ -905,12 +905,12 @@ size_t qn_utf8to32(uchar4_t* dest, size_t destsize, const char* src, size_t srcl
 
 /**
  * utf8 -> utf16.
- * ´ë»ó ¹öÆÛ°¡ ³Î°ªÀÌ¸é º¯È¯¿¡ ÇÊ¿äÇÑ ±æÀÌ¸¦ ¹İÈ¯
- * @param [¹İÈ¯]	dest	(³Î°ªÀÌ ¾Æ´Ï¸é) ´ë»ó ¹öÆÛ (utf16).
- * @param	destsize		´ë»ó ¹öÆÛ Å©±â.
- * @param	src				¿øº» (utf8).
- * @param	srclen			¿øº» ±æÀÌ. 0À¸·Î ÁöÁ¤ÇÒ ¼ö ÀÖÀ½.
- * @return	º¯È¯ÇÑ ±æÀÌ ¶Ç´Â º¯È¯¿¡ ÇÊ¿äÇÑ ±æÀÌ.
+ * ëŒ€ìƒ ë²„í¼ê°€ ë„ê°’ì´ë©´ ë³€í™˜ì— í•„ìš”í•œ ê¸¸ì´ë¥¼ ë°˜í™˜
+ * @param [ë°˜í™˜]	dest	(ë„ê°’ì´ ì•„ë‹ˆë©´) ëŒ€ìƒ ë²„í¼ (utf16).
+ * @param	destsize		ëŒ€ìƒ ë²„í¼ í¬ê¸°.
+ * @param	src				ì›ë³¸ (utf8).
+ * @param	srclen			ì›ë³¸ ê¸¸ì´. 0ìœ¼ë¡œ ì§€ì •í•  ìˆ˜ ìˆìŒ.
+ * @return	ë³€í™˜í•œ ê¸¸ì´ ë˜ëŠ” ë³€í™˜ì— í•„ìš”í•œ ê¸¸ì´.
  */
 size_t qn_utf8to16(uchar2_t* dest, size_t destsize, const char* src, size_t srclen)
 {
@@ -918,8 +918,8 @@ size_t qn_utf8to16(uchar2_t* dest, size_t destsize, const char* src, size_t srcl
 
 	if (destsize == 0 || !dest)
 	{
-		// utf-8 -> ucs-4ÀÇ ±æÀÌ´Â.... ±×³É utf-8ÀÇ ±æÀÌ.
-		// ´Ù¸¸ ¼­·Î°ÔÀÌÆ® ¹®Á¦´Â ¾î¶»°Ô ÇÏ³ª... ÀÏ´Ü ÀÌ°É·Î ÇÏ°í ³ªÁß¿¡ °íÄ¡ÀÚ
+		// utf-8 -> ucs-4ì˜ ê¸¸ì´ëŠ”.... ê·¸ëƒ¥ utf-8ì˜ ê¸¸ì´.
+		// ë‹¤ë§Œ ì„œë¡œê²Œì´íŠ¸ ë¬¸ì œëŠ” ì–´ë–»ê²Œ í•˜ë‚˜... ì¼ë‹¨ ì´ê±¸ë¡œ í•˜ê³  ë‚˜ì¤‘ì— ê³ ì¹˜ì
 		return qn_utf8len(src);
 	}
 	else
@@ -955,12 +955,12 @@ size_t qn_utf8to16(uchar2_t* dest, size_t destsize, const char* src, size_t srcl
 
 /**
  * ucs4 -> utf8.
- * ´ë»ó ¹öÆÛ°¡ ³Î°ªÀÌ¸é º¯È¯¿¡ ÇÊ¿äÇÑ ±æÀÌ¸¦ ¹İÈ¯
- * @param [¹İÈ¯]	dest	(³Î°ªÀÌ ¾Æ´Ï¸é) ´ë»ó ¹öÆÛ (utf8).
- * @param	destsize		´ë»ó ¹öÆÛ Å©±â.
- * @param	src				¿øº» (ucs4).
- * @param	srclen			¿øº» ±æÀÌ. 0À¸·Î ÁöÁ¤ÇÒ ¼ö ÀÖÀ½.
- * @return	º¯È¯ÇÑ ±æÀÌ ¶Ç´Â º¯È¯¿¡ ÇÊ¿äÇÑ ±æÀÌ.
+ * ëŒ€ìƒ ë²„í¼ê°€ ë„ê°’ì´ë©´ ë³€í™˜ì— í•„ìš”í•œ ê¸¸ì´ë¥¼ ë°˜í™˜
+ * @param [ë°˜í™˜]	dest	(ë„ê°’ì´ ì•„ë‹ˆë©´) ëŒ€ìƒ ë²„í¼ (utf8).
+ * @param	destsize		ëŒ€ìƒ ë²„í¼ í¬ê¸°.
+ * @param	src				ì›ë³¸ (ucs4).
+ * @param	srclen			ì›ë³¸ ê¸¸ì´. 0ìœ¼ë¡œ ì§€ì •í•  ìˆ˜ ìˆìŒ.
+ * @return	ë³€í™˜í•œ ê¸¸ì´ ë˜ëŠ” ë³€í™˜ì— í•„ìš”í•œ ê¸¸ì´.
  */
 size_t qn_utf32to8(char* dest, size_t destsize, const uchar4_t* src, size_t srclen_org)
 {
@@ -983,8 +983,8 @@ size_t qn_utf32to8(char* dest, size_t destsize, const uchar4_t* src, size_t srcl
 
 			if ((uc & 0x80000000) != 0)	// if (uc >= 0x80000000)
 			{
-				// º¯°æÇÒ ¼ö ¾ø´Â ¹®ÀÚ°¡ Æ÷ÇÔµÊ..
-				// ÀÏ´Ü ±×³É ¸øÇÑ´Ù°í º¸³»ÀÚ
+				// ë³€ê²½í•  ìˆ˜ ì—†ëŠ” ë¬¸ìê°€ í¬í•¨ë¨..
+				// ì¼ë‹¨ ê·¸ëƒ¥ ëª»í•œë‹¤ê³  ë³´ë‚´ì
 				return 0;
 			}
 
@@ -1014,8 +1014,8 @@ size_t qn_utf32to8(char* dest, size_t destsize, const uchar4_t* src, size_t srcl
 
 			if ((uc & 0x80000000) != 0)	// if (uc >= 0x80000000)
 			{
-				// º¯°æÇÒ ¼ö ¾ø´Â ¹®ÀÚ°¡ Æ÷ÇÔµÊ..
-				// ÀÏ´Ü ±×³É ¸øÇÑ´Ù°í º¸³»ÀÚ
+				// ë³€ê²½í•  ìˆ˜ ì—†ëŠ” ë¬¸ìê°€ í¬í•¨ë¨..
+				// ì¼ë‹¨ ê·¸ëƒ¥ ëª»í•œë‹¤ê³  ë³´ë‚´ì
 				return 0;
 			}
 
@@ -1045,12 +1045,12 @@ size_t qn_utf32to8(char* dest, size_t destsize, const uchar4_t* src, size_t srcl
 
 /**
  * utf16 -> utf8.
- * ´ë»ó ¹öÆÛ°¡ ³Î°ªÀÌ¸é º¯È¯¿¡ ÇÊ¿äÇÑ ±æÀÌ¸¦ ¹İÈ¯
- * @param [¹İÈ¯]	dest	(³Î°ªÀÌ ¾Æ´Ï¸é) ´ë»ó ¹öÆÛ (utf8).
- * @param	destsize		´ë»ó ¹öÆÛ Å©±â.
- * @param	src				¿øº» (utf16).
- * @param	srclen			¿øº» ±æÀÌ. 0À¸·Î ÁöÁ¤ÇÒ ¼ö ÀÖÀ½.
- * @return	º¯È¯ÇÑ ±æÀÌ ¶Ç´Â º¯È¯¿¡ ÇÊ¿äÇÑ ±æÀÌ.
+ * ëŒ€ìƒ ë²„í¼ê°€ ë„ê°’ì´ë©´ ë³€í™˜ì— í•„ìš”í•œ ê¸¸ì´ë¥¼ ë°˜í™˜
+ * @param [ë°˜í™˜]	dest	(ë„ê°’ì´ ì•„ë‹ˆë©´) ëŒ€ìƒ ë²„í¼ (utf8).
+ * @param	destsize		ëŒ€ìƒ ë²„í¼ í¬ê¸°.
+ * @param	src				ì›ë³¸ (utf16).
+ * @param	srclen			ì›ë³¸ ê¸¸ì´. 0ìœ¼ë¡œ ì§€ì •í•  ìˆ˜ ìˆìŒ.
+ * @return	ë³€í™˜í•œ ê¸¸ì´ ë˜ëŠ” ë³€í™˜ì— í•„ìš”í•œ ê¸¸ì´.
  */
 size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srclen)
 {
@@ -1074,7 +1074,7 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
 
 			if (ch >= 0xDC00 && ch < 0xE000)
 			{
-				// ÇÏÀ§ ¼­·Î°ÔÀÌÆ®
+				// í•˜ìœ„ ì„œë¡œê²Œì´íŠ¸
 				if (hsg)
 				{
 					uc = _utf16_surrogate((uchar2_t)hsg, ch);
@@ -1082,24 +1082,24 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
 				}
 				else
 				{
-					// À½... º¯°æÇÒ ¼ö ¾ø´Â ¹®ÀÚ°¡ ÀÖ³×...
-					// ÀÏ´Ü ¸øÇÑ´Ù°í º¸³»ÀÚ
+					// ìŒ... ë³€ê²½í•  ìˆ˜ ì—†ëŠ” ë¬¸ìê°€ ìˆë„¤...
+					// ì¼ë‹¨ ëª»í•œë‹¤ê³  ë³´ë‚´ì
 					return 0;
 				}
 			}
 			else
 			{
-				// ÀÏ¹İ
+				// ì¼ë°˜
 				if (hsg)
 				{
-					// »óÀ§ ¼­·Î°ÔÀÌÆ®°¡ ÀÖ³×?
-					// ÀÏ´Ü.. ¹®Á¦°¡ ÀÖ´Ù°í ÆÇ´Ü
+					// ìƒìœ„ ì„œë¡œê²Œì´íŠ¸ê°€ ìˆë„¤?
+					// ì¼ë‹¨.. ë¬¸ì œê°€ ìˆë‹¤ê³  íŒë‹¨
 					return 0;
 				}
 
 				if (ch >= 0xD800 && ch < 0xDC00)
 				{
-					// »óÀ§ ¼­·Î°ÔÀÌÆ®
+					// ìƒìœ„ ì„œë¡œê²Œì´íŠ¸
 					hsg = ch;
 					continue;
 				}
@@ -1130,7 +1130,7 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
 
 			if (ch >= 0xDC00 && ch < 0xE000)
 			{
-				// ÇÏÀ§ ¼­·Î°ÔÀÌÆ®
+				// í•˜ìœ„ ì„œë¡œê²Œì´íŠ¸
 				if (hsg)
 				{
 					uc = _utf16_surrogate((uchar2_t)hsg, ch);
@@ -1138,24 +1138,24 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
 				}
 				else
 				{
-					// À½... º¯°æÇÒ ¼ö ¾ø´Â ¹®ÀÚ°¡ ÀÖ³×...
-					// ÀÏ´Ü ¸øÇÑ´Ù°í º¸³»ÀÚ
+					// ìŒ... ë³€ê²½í•  ìˆ˜ ì—†ëŠ” ë¬¸ìê°€ ìˆë„¤...
+					// ì¼ë‹¨ ëª»í•œë‹¤ê³  ë³´ë‚´ì
 					return 0;
 				}
 			}
 			else
 			{
-				// ÀÏ¹İ
+				// ì¼ë°˜
 				if (hsg)
 				{
-					// »óÀ§ ¼­·Î°ÔÀÌÆ®°¡ ÀÖ³×?
-					// ÀÏ´Ü.. ¹®Á¦°¡ ÀÖ´Ù°í ÆÇ´Ü
+					// ìƒìœ„ ì„œë¡œê²Œì´íŠ¸ê°€ ìˆë„¤?
+					// ì¼ë‹¨.. ë¬¸ì œê°€ ìˆë‹¤ê³  íŒë‹¨
 					return 0;
 				}
 
 				if (ch >= 0xD800 && ch < 0xDC00)
 				{
-					// »óÀ§ ¼­·Î°ÔÀÌÆ®
+					// ìƒìœ„ ì„œë¡œê²Œì´íŠ¸
 					hsg = ch;
 					continue;
 				}
@@ -1176,8 +1176,8 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
 
 	if (hsg)
 	{
-		// ÇÏÀ§ ¼­·Î°ÔÀÌÆ®°¡ ³²À½...
-		// ¸øÇÔ
+		// í•˜ìœ„ ì„œë¡œê²Œì´íŠ¸ê°€ ë‚¨ìŒ...
+		// ëª»í•¨
 		return 0;
 	}
 
@@ -1193,19 +1193,19 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
 
 			if (ch >= 0xDC00 && ch < 0xE000)
 			{
-				// ÇÏÀ§ ¼­·Î°ÔÀÌÆ®
+				// í•˜ìœ„ ì„œë¡œê²Œì´íŠ¸
 				uc = _utf16_surrogate((uchar2_t)hsg, ch);
 				hsg = 0;
 			}
 			else if (ch >= 0xD800 && ch < 0xDC00)
 			{
-				// »óÀ§ ¼­·Î°ÔÀÌÆ®
+				// ìƒìœ„ ì„œë¡œê²Œì´íŠ¸
 				hsg = ch;
 				continue;
 			}
 			else
 			{
-				// ÀÏ¹İ ±ÛÀÚ
+				// ì¼ë°˜ ê¸€ì
 				uc = ch;
 			}
 
@@ -1220,12 +1220,12 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
 
 /**
  * utf16 -> ucs4.
- * ´ë»ó ¹öÆÛ°¡ ³Î°ªÀÌ¸é º¯È¯¿¡ ÇÊ¿äÇÑ ±æÀÌ¸¦ ¹İÈ¯
- * @param [¹İÈ¯]	dest	(³Î°ªÀÌ ¾Æ´Ï¸é) ´ë»ó ¹öÆÛ (ucs4).
- * @param	destsize		´ë»ó ¹öÆÛ Å©±â.
- * @param	src				¿øº» (utf16).
- * @param	srclen			¿øº» ±æÀÌ. 0À¸·Î ÁöÁ¤ÇÒ ¼ö ÀÖÀ½.
- * @return	º¯È¯ÇÑ ±æÀÌ ¶Ç´Â º¯È¯¿¡ ÇÊ¿äÇÑ ±æÀÌ.
+ * ëŒ€ìƒ ë²„í¼ê°€ ë„ê°’ì´ë©´ ë³€í™˜ì— í•„ìš”í•œ ê¸¸ì´ë¥¼ ë°˜í™˜
+ * @param [ë°˜í™˜]	dest	(ë„ê°’ì´ ì•„ë‹ˆë©´) ëŒ€ìƒ ë²„í¼ (ucs4).
+ * @param	destsize		ëŒ€ìƒ ë²„í¼ í¬ê¸°.
+ * @param	src				ì›ë³¸ (utf16).
+ * @param	srclen			ì›ë³¸ ê¸¸ì´. 0ìœ¼ë¡œ ì§€ì •í•  ìˆ˜ ìˆìŒ.
+ * @return	ë³€í™˜í•œ ê¸¸ì´ ë˜ëŠ” ë³€í™˜ì— í•„ìš”í•œ ê¸¸ì´.
  */
 size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t srclen)
 {
@@ -1249,7 +1249,7 @@ size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t
 
 			if (ch >= 0xDC00 && ch < 0xE000)
 			{
-				// ÇÏÀ§ ¼­·Î°ÔÀÌÆ®
+				// í•˜ìœ„ ì„œë¡œê²Œì´íŠ¸
 				if (hsg)
 				{
 					uc = _utf16_surrogate((uchar2_t)hsg, ch);
@@ -1257,24 +1257,24 @@ size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t
 				}
 				else
 				{
-					// À½... º¯°æÇÒ ¼ö ¾ø´Â ¹®ÀÚ°¡ ÀÖ³×...
-					// ÀÏ´Ü ¸øÇÑ´Ù°í º¸³»ÀÚ
+					// ìŒ... ë³€ê²½í•  ìˆ˜ ì—†ëŠ” ë¬¸ìê°€ ìˆë„¤...
+					// ì¼ë‹¨ ëª»í•œë‹¤ê³  ë³´ë‚´ì
 					return 0;
 				}
 			}
 			else
 			{
-				// ÀÏ¹İ
+				// ì¼ë°˜
 				if (hsg)
 				{
-					// »óÀ§ ¼­·Î°ÔÀÌÆ®°¡ ÀÖ³×?
-					// ÀÏ´Ü.. ¹®Á¦°¡ ÀÖ´Ù°í ÆÇ´Ü
+					// ìƒìœ„ ì„œë¡œê²Œì´íŠ¸ê°€ ìˆë„¤?
+					// ì¼ë‹¨.. ë¬¸ì œê°€ ìˆë‹¤ê³  íŒë‹¨
 					return 0;
 				}
 
 				if (ch >= 0xD800 && ch < 0xDC00)
 				{
-					// »óÀ§ ¼­·Î°ÔÀÌÆ®
+					// ìƒìœ„ ì„œë¡œê²Œì´íŠ¸
 					hsg = ch;
 					continue;
 				}
@@ -1298,7 +1298,7 @@ size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t
 
 			if (ch >= 0xDC00 && ch < 0xE000)
 			{
-				// ÇÏÀ§ ¼­·Î°ÔÀÌÆ®
+				// í•˜ìœ„ ì„œë¡œê²Œì´íŠ¸
 				if (hsg)
 				{
 					uc = _utf16_surrogate((uchar2_t)hsg, ch);
@@ -1306,24 +1306,24 @@ size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t
 				}
 				else
 				{
-					// À½... º¯°æÇÒ ¼ö ¾ø´Â ¹®ÀÚ°¡ ÀÖ³×...
-					// ÀÏ´Ü ¸øÇÑ´Ù°í º¸³»ÀÚ
+					// ìŒ... ë³€ê²½í•  ìˆ˜ ì—†ëŠ” ë¬¸ìê°€ ìˆë„¤...
+					// ì¼ë‹¨ ëª»í•œë‹¤ê³  ë³´ë‚´ì
 					return 0;
 				}
 			}
 			else
 			{
-				// ÀÏ¹İ
+				// ì¼ë°˜
 				if (hsg)
 				{
-					// »óÀ§ ¼­·Î°ÔÀÌÆ®°¡ ÀÖ³×?
-					// ÀÏ´Ü.. ¹®Á¦°¡ ÀÖ´Ù°í ÆÇ´Ü
+					// ìƒìœ„ ì„œë¡œê²Œì´íŠ¸ê°€ ìˆë„¤?
+					// ì¼ë‹¨.. ë¬¸ì œê°€ ìˆë‹¤ê³  íŒë‹¨
 					return 0;
 				}
 
 				if (ch >= 0xD800 && ch < 0xDC00)
 				{
-					// »óÀ§ ¼­·Î°ÔÀÌÆ®
+					// ìƒìœ„ ì„œë¡œê²Œì´íŠ¸
 					hsg = ch;
 					continue;
 				}
@@ -1338,8 +1338,8 @@ size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t
 
 	if (hsg)
 	{
-		// ÇÏÀ§ ¼­·Î°ÔÀÌÆ®°¡ ³²À½...
-		// ¸øÇÔ
+		// í•˜ìœ„ ì„œë¡œê²Œì´íŠ¸ê°€ ë‚¨ìŒ...
+		// ëª»í•¨
 		return 0;
 	}
 
@@ -1355,19 +1355,19 @@ size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t
 
 			if (ch >= 0xDC00 && ch < 0xE000)
 			{
-				// ÇÏÀ§ ¼­·Î°ÔÀÌÆ®
+				// í•˜ìœ„ ì„œë¡œê²Œì´íŠ¸
 				uc = _utf16_surrogate((uchar2_t)hsg, ch);
 				hsg = 0;
 			}
 			else if (ch >= 0xD800 && ch < 0xDC00)
 			{
-				// »óÀ§ ¼­·Î°ÔÀÌÆ®
+				// ìƒìœ„ ì„œë¡œê²Œì´íŠ¸
 				hsg = ch;
 				continue;
 			}
 			else
 			{
-				// ÀÏ¹İ ±ÛÀÚ
+				// ì¼ë°˜ ê¸€ì
 				uc = ch;
 			}
 
@@ -1383,12 +1383,12 @@ size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t
 
 /**
  * utf16 -> ucs4.
- * ´ë»ó ¹öÆÛ°¡ ³Î°ªÀÌ¸é º¯È¯¿¡ ÇÊ¿äÇÑ ±æÀÌ¸¦ ¹İÈ¯
- * @param [¹İÈ¯]	dest	(³Î°ªÀÌ ¾Æ´Ï¸é) ´ë»ó ¹öÆÛ (utf16).
- * @param	destsize		´ë»ó ¹öÆÛ Å©±â.
- * @param	src				¿øº» (ucs4).
- * @param	srclen_org		¿øº» ±æÀÌ. 0À¸·Î ÁöÁ¤ÇÒ ¼ö ÀÖÀ½.
- * @return	º¯È¯ÇÑ ±æÀÌ ¶Ç´Â º¯È¯¿¡ ÇÊ¿äÇÑ ±æÀÌ.
+ * ëŒ€ìƒ ë²„í¼ê°€ ë„ê°’ì´ë©´ ë³€í™˜ì— í•„ìš”í•œ ê¸¸ì´ë¥¼ ë°˜í™˜
+ * @param [ë°˜í™˜]	dest	(ë„ê°’ì´ ì•„ë‹ˆë©´) ëŒ€ìƒ ë²„í¼ (utf16).
+ * @param	destsize		ëŒ€ìƒ ë²„í¼ í¬ê¸°.
+ * @param	src				ì›ë³¸ (ucs4).
+ * @param	srclen_org		ì›ë³¸ ê¸¸ì´. 0ìœ¼ë¡œ ì§€ì •í•  ìˆ˜ ìˆìŒ.
+ * @return	ë³€í™˜í•œ ê¸¸ì´ ë˜ëŠ” ë³€í™˜ì— í•„ìš”í•œ ê¸¸ì´.
  */
 size_t qn_utf32to16(uchar2_t* dest, size_t destsize, const uchar4_t* src, size_t srclen_org)
 {
@@ -1412,7 +1412,7 @@ size_t qn_utf32to16(uchar2_t* dest, size_t destsize, const uchar4_t* src, size_t
 				z = 1;
 			else if (uc < 0xE000)
 			{
-				// À½..
+				// ìŒ..
 				return 0;
 			}
 			else if (uc < 0x010000)
@@ -1421,7 +1421,7 @@ size_t qn_utf32to16(uchar2_t* dest, size_t destsize, const uchar4_t* src, size_t
 				z = 2;
 			else
 			{
-				// À½...
+				// ìŒ...
 				return 0;
 			}
 
@@ -1443,7 +1443,7 @@ size_t qn_utf32to16(uchar2_t* dest, size_t destsize, const uchar4_t* src, size_t
 				size++;
 			else if (uc < 0xE000)
 			{
-				// À½..
+				// ìŒ..
 				return 0;
 			}
 			else if (uc < 0x010000)
@@ -1452,7 +1452,7 @@ size_t qn_utf32to16(uchar2_t* dest, size_t destsize, const uchar4_t* src, size_t
 				size += 2;
 			else
 			{
-				// À½...
+				// ìŒ...
 				return 0;
 			}
 		}

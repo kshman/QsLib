@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "qn.h"
 #include "PatrickPowell_snprintf.h"
 #include <locale.h>
@@ -16,7 +16,7 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-// ÀÎ¶óÀÎ µµ±¸
+// ì¸ë¼ì¸ ë„êµ¬
 
 static double pp_pow10(int exp)
 {
@@ -100,19 +100,19 @@ static size_t pp_getuni(wchar_t* outuni, size_t outsize, const char* inasc)
 
 
 //////////////////////////////////////////////////////////////////////////
-// ¾Æ½ºÅ° ¹öÀü
+// ì•„ìŠ¤í‚¤ ë²„ì „
 
-// ¹®ÀÚ¸¦ ¼ıÀÚ·Î
+// ë¬¸ìë¥¼ ìˆ«ìë¡œ
 #define char_to_int(p)	((p) - '0')
 
-// Áø¼öº° Ã³¸®
+// ì§„ìˆ˜ë³„ ì²˜ë¦¬
 static const char* _base_to_str[2] =
 {
 	"0123456789abcdef",
 	"0123456789ABCDEF",
 };
 
-// ¼ıÀÚ¸¦ ¹®ÀÚ¿­·Î
+// ìˆ«ìë¥¼ ë¬¸ìì—´ë¡œ
 static int _conv_int_to_str(uint32_t value, char* buf, int size, int base, bool isup)
 {
 	const char* bts = _base_to_str[isup ? 1 : 0];
@@ -129,7 +129,7 @@ static int _conv_int_to_str(uint32_t value, char* buf, int size, int base, bool 
 	return pos;
 }
 
-// ¼ıÀÚ¸¦ ¹®ÀÚ¿­·Î
+// ìˆ«ìë¥¼ ë¬¸ìì—´ë¡œ
 static int _conv_long_to_str(uint64_t value, char* buf, int size, int base, bool isup)
 {
 	const char* bts = _base_to_str[isup ? 1 : 0];
@@ -146,7 +146,7 @@ static int _conv_long_to_str(uint64_t value, char* buf, int size, int base, bool
 	return pos;
 }
 
-// ¼ıÀÚ ºĞ¸® (º¸Åë Ãµ´ÜÀ§ ÅëÈ­ ºĞ¸®ÀÚ, ÇÑÀÚ ¹®È­±ÇÀº ¸¸´ÜÀ§°¡ ÁÁÀºµ¥)
+// ìˆ«ì ë¶„ë¦¬ (ë³´í†µ ì²œë‹¨ìœ„ í†µí™” ë¶„ë¦¬ì, í•œì ë¬¸í™”ê¶Œì€ ë§Œë‹¨ìœ„ê°€ ì¢‹ì€ë°)
 static int _get_quote_seps_str(int value, int flags
 #if USE_LOCALE_INFO
 	, struct lconv* lc
@@ -170,7 +170,7 @@ static int _get_quote_seps_str(int value, int flags
 	return ret;
 }
 
-// ¹®ÀÚ¿­
+// ë¬¸ìì—´
 static void _str_fmt_str(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_t maxlen,
 	const char* value, int flags, int min, int max)
 {
@@ -186,7 +186,7 @@ static void _str_fmt_str(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 		padlen = 0;
 
 	if (flags & DP_F_MINUS)
-		padlen = -padlen; // ¿ŞÂÊ Á¤·Ä
+		padlen = -padlen; // ì™¼ìª½ ì •ë ¬
 
 	cnt = 0;
 
@@ -211,7 +211,7 @@ static void _str_fmt_str(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 	}
 }
 
-// 32ºñÆ® Á¤¼ö
+// 32ë¹„íŠ¸ ì •ìˆ˜
 static void _str_fmt_int(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_t maxlen, _sn_anyval* value, uint32_t base, int min, int max, int flags)
 {
 #define MAX_CONVERT_PLACES 40
@@ -224,7 +224,7 @@ static void _str_fmt_int(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 	int zpadlen;
 	int quote;
 #if USE_LOCALE_INFO
-	struct lconv* lc = localeconv();	// CRT ·ÎÄ¶
+	struct lconv* lc = localeconv();	// CRT ë¡œìº˜
 #endif
 
 	//
@@ -248,7 +248,7 @@ static void _str_fmt_int(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 		{
 			uvalue = value->i;
 
-			if (flags & DP_F_PLUS)  // ºÎÈ£Ãß°¡ (+/i)
+			if (flags & DP_F_PLUS)  // ë¶€í˜¸ì¶”ê°€ (+/i)
 				signvalue = '+';
 			else if (flags & DP_F_SPACE)
 				signvalue = ' ';
@@ -260,7 +260,7 @@ static void _str_fmt_int(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 	//
 	place = _conv_int_to_str(uvalue, convert, MAX_CONVERT_PLACES - 1, base, flags & DP_F_UP);
 
-	// '#'ÀÌ ÀÖÀ»¶§ Á¢µÎ»ç Ã³¸®
+	// '#'ì´ ìˆì„ë•Œ ì ‘ë‘ì‚¬ ì²˜ë¦¬
 	if ((flags & DP_F_NUM) && uvalue != 0)
 	{
 		if (base == 16)
@@ -302,34 +302,34 @@ static void _str_fmt_int(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 	}
 
 	if (flags & DP_F_MINUS)
-		spadlen = -spadlen; // ¿ŞÂÊ Á¤·Ä
+		spadlen = -spadlen; // ì™¼ìª½ ì •ë ¬
 
-	// ¼±µÎ °ø¹é
+	// ì„ ë‘ ê³µë°±
 	while (spadlen > 0)
 	{
 		outfn(ptr, currlen, maxlen, ' ');
 		--spadlen;
 	}
 
-	// ºÎÈ£
+	// ë¶€í˜¸
 	if (signvalue)
 		outfn(ptr, currlen, maxlen, signvalue);
 
-	// 16Áø¼ö Á¢µÎ»ç
+	// 16ì§„ìˆ˜ ì ‘ë‘ì‚¬
 	if (hexprefix)
 	{
 		outfn(ptr, currlen, maxlen, '0');
 		outfn(ptr, currlen, maxlen, hexprefix);
 	}
 
-	// '0' »ğÀÔ
+	// '0' ì‚½ì…
 	while (zpadlen > 0)
 	{
 		outfn(ptr, currlen, maxlen, '0');
 		--zpadlen;
 	}
 
-	// ¼ıÀÚ
+	// ìˆ«ì
 	while (place > 0)
 	{
 		--place;
@@ -352,7 +352,7 @@ static void _str_fmt_int(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 		}
 	}
 
-	// ¿ŞÂÊ Á¤·Ä¿¡ µû¸¥ °ø¹é
+	// ì™¼ìª½ ì •ë ¬ì— ë”°ë¥¸ ê³µë°±
 	while (spadlen < 0)
 	{
 		outfn(ptr, currlen, maxlen, ' ');
@@ -361,7 +361,7 @@ static void _str_fmt_int(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 #undef MAX_CONVERT_PLACES
 }
 
-// 64ºñÆ® Á¤¼ö
+// 64ë¹„íŠ¸ ì •ìˆ˜
 static void _str_fmt_long(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_t maxlen, _sn_anyval* value, uint32_t base, int min, int max, int flags)
 {
 #define MAX_CONVERT_PLACES 80
@@ -398,7 +398,7 @@ static void _str_fmt_long(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, siz
 		{
 			uvalue = value->l;
 
-			if (flags & DP_F_PLUS)  // ºÎÈ£Ãß°¡ (+/i)
+			if (flags & DP_F_PLUS)  // ë¶€í˜¸ì¶”ê°€ (+/i)
 				signvalue = '+';
 			else if (flags & DP_F_SPACE)
 				signvalue = ' ';
@@ -410,7 +410,7 @@ static void _str_fmt_long(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, siz
 	//
 	place = _conv_long_to_str(uvalue, convert, MAX_CONVERT_PLACES - 1, base, flags & DP_F_UP);
 
-	// '#'ÀÌ ÀÖÀ»¶§ Á¢µÎ»ç Ã³¸®
+	// '#'ì´ ìˆì„ë•Œ ì ‘ë‘ì‚¬ ì²˜ë¦¬
 	if ((flags & DP_F_NUM) && uvalue != 0)
 	{
 		if (base == 16)
@@ -452,27 +452,27 @@ static void _str_fmt_long(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, siz
 	}
 
 	if (flags & DP_F_MINUS)
-		spadlen = -spadlen; // ¿ŞÂÊ Á¤·Ä
+		spadlen = -spadlen; // ì™¼ìª½ ì •ë ¬
 
-	// °ø¹é
+	// ê³µë°±
 	while (spadlen > 0)
 	{
 		outfn(ptr, currlen, maxlen, ' ');
 		--spadlen;
 	}
 
-	// ºÎÈ£
+	// ë¶€í˜¸
 	if (signvalue)
 		outfn(ptr, currlen, maxlen, signvalue);
 
-	// 16Áø¼ö Á¢µÎ»ç
+	// 16ì§„ìˆ˜ ì ‘ë‘ì‚¬
 	if (hexprefix)
 	{
 		outfn(ptr, currlen, maxlen, '0');
 		outfn(ptr, currlen, maxlen, hexprefix);
 	}
 
-	// '0' »ğÀÔ
+	// '0' ì‚½ì…
 	if (zpadlen > 0)
 	{
 		while (zpadlen > 0)
@@ -482,7 +482,7 @@ static void _str_fmt_long(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, siz
 		}
 	}
 
-	// ¼ıÀÚ
+	// ìˆ«ì
 	while (place > 0)
 	{
 		--place;
@@ -505,7 +505,7 @@ static void _str_fmt_long(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, siz
 		}
 	}
 
-	// ¿ŞÂÊ Á¤·Ä¿¡ µû¸¥ °ø¹é
+	// ì™¼ìª½ ì •ë ¬ì— ë”°ë¥¸ ê³µë°±
 	while (spadlen < 0)
 	{
 		outfn(ptr, currlen, maxlen, ' ');
@@ -514,7 +514,7 @@ static void _str_fmt_long(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, siz
 #undef MAX_CONVERT_PLACES
 }
 
-// 64ºñÆ® ½Ç¼ö(double)
+// 64ë¹„íŠ¸ ì‹¤ìˆ˜(double)
 static void _str_fmt_fp(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_t maxlen, _sn_anyval* value, int min, int max, int flags)
 {
 	double fvalue;
@@ -555,14 +555,14 @@ static void _str_fmt_fp(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_
 
 	if (fvalue < 0)
 		signvalue = '-';
-	else if (flags & DP_F_PLUS) // ºÎÈ£Ãß°¡ (+/i)
+	else if (flags & DP_F_PLUS) // ë¶€í˜¸ì¶”ê°€ (+/i)
 		signvalue = '+';
 	else if (flags & DP_F_SPACE)
 		signvalue = ' ';
 	else
 		signvalue = 0;
 
-	// NAN, INF Ã³¸®
+	// NAN, INF ì²˜ë¦¬
 	if (pp_is_nan(fvalue))
 		psz = flags & DP_F_UP ? "NAN" : "nan";
 	else if (pp_is_inf(fvalue))
@@ -584,11 +584,11 @@ static void _str_fmt_fp(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_
 
 		_str_fmt_str(outfn, ptr, currlen, maxlen, iconvert, flags, min, iplace);
 
-		// ¿©±â¼­ ³¡³¿
+		// ì—¬ê¸°ì„œ ëëƒ„
 		return;
 	}
 
-	// Áö¼ö ¸ğ¾ç Ã³¸®
+	// ì§€ìˆ˜ ëª¨ì–‘ ì²˜ë¦¬
 	if (flags & (DP_F_E | DP_F_G))
 	{
 		if (flags & DP_F_G)
@@ -612,15 +612,15 @@ static void _str_fmt_fp(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_
 	}
 
 pos_exp_again:
-	// ÀÌ ·çÇÁ´Â È®½ÇÇÑ ¹İ¿Ã¸² Áö¼ö¸¦ ¾ò±â À§ÇÔ -> '%g'
+	// ì´ ë£¨í”„ëŠ” í™•ì‹¤í•œ ë°˜ì˜¬ë¦¼ ì§€ìˆ˜ë¥¼ ì–»ê¸° ìœ„í•¨ -> '%g'
 
-	// ¿ÀÁ÷ 16ÀÚ¸® Á¤¼ö¸¸ Áö¿ø
-	// ¿Ö³È½Ã·Õ ¿©±â¼­´Â ±×°Í¸¸ Áö¿ø
-	// ¿ø·¡´Â 9, 19, 38 ÀÚ¸®¼ö, °¢°¢ 32, 64, 128ºñÆ®¿ë
+	// ì˜¤ì§ 16ìë¦¬ ì •ìˆ˜ë§Œ ì§€ì›
+	// ì™œëƒ ì‹œë¡± ì—¬ê¸°ì„œëŠ” ê·¸ê²ƒë§Œ ì§€ì›
+	// ì›ë˜ëŠ” 9, 19, 38 ìë¦¬ìˆ˜, ê°ê° 32, 64, 128ë¹„íŠ¸ìš©
 	if (max > 16)
 		max = 16;
 
-	// Á¤¼ö·Î º¯È¯
+	// ì •ìˆ˜ë¡œ ë³€í™˜
 	uvalue = QN_ABS(fvalue);
 
 	if (etype)
@@ -628,7 +628,7 @@ pos_exp_again:
 
 	intpart = pp_intpart(uvalue);
 
-	// ¿À¹öÇÃ·Î¿ì, ÇöÀç »ç¿ë ¾ÈÇÔ
+	// ì˜¤ë²„í”Œë¡œìš°, í˜„ì¬ ì‚¬ìš© ì•ˆí•¨
 	//if (intpart==UINT_FAST64_MAX) return false;
 
 	//
@@ -637,8 +637,8 @@ pos_exp_again:
 
 	if (fracpart >= mask)
 	{
-		// ¿¹¸¦ µé¸é uvalue=1.99952, intpart=2, temp=1000 (max=3 ÀÌ¹Ç·Î)
-		// SNP_ROUND(1000*0.99952)=1000. ±×¸®ÇÏ¿©, Á¤¼öºÎ´Â 1Áõ°¡, ½Ç¼öºÎ´Â 0À¸·Î ÇÔ.
+		// ì˜ˆë¥¼ ë“¤ë©´ uvalue=1.99952, intpart=2, temp=1000 (max=3 ì´ë¯€ë¡œ)
+		// SNP_ROUND(1000*0.99952)=1000. ê·¸ë¦¬í•˜ì—¬, ì •ìˆ˜ë¶€ëŠ” 1ì¦ê°€, ì‹¤ìˆ˜ë¶€ëŠ” 0ìœ¼ë¡œ í•¨.
 		intpart++;
 		fracpart = 0;
 
@@ -649,7 +649,7 @@ pos_exp_again:
 		}
 	}
 
-	// Á¤È®ÇÑ Áö¼ö¸¦ ¾òÀ½. '%g'¸¦ À§ÇÑ Áö¼ö¸¦ Àç°è»ê
+	// ì •í™•í•œ ì§€ìˆ˜ë¥¼ ì–»ìŒ. '%g'ë¥¼ ìœ„í•œ ì§€ìˆ˜ë¥¼ ì¬ê³„ì‚°
 	if (etype && (flags & DP_F_G) && (max + 1) > exponent && exponent >= -4)
 	{
 		max -= exponent;
@@ -673,8 +673,8 @@ pos_exp_again:
 
 		if (eplace == 1)
 		{
-			// MSVC´Â ÀÚ¸®¼ö¸¦ 3ÀÚ¸® ¾¸. (001+E)
-			// ¿©±â¼­´Â 2ÀÚ¸®¸¸. (01+E)
+			// MSVCëŠ” ìë¦¬ìˆ˜ë¥¼ 3ìë¦¬ ì”€. (001+E)
+			// ì—¬ê¸°ì„œëŠ” 2ìë¦¬ë§Œ. (01+E)
 			econvert[eplace++] = '0';
 		}
 
@@ -688,14 +688,14 @@ pos_exp_again:
 		eplace = 0;
 	}
 
-	// Á¤¼öºÎ Ã³¸®
+	// ì •ìˆ˜ë¶€ ì²˜ë¦¬
 	iplace = _conv_long_to_str(intpart, iconvert, 311 - 1, 10, false);
 
-	// ½Ç¼öºÎ Ã³¸®
-	// iplace=1 ÀÌ¸é fracpart==0 ÀÓ.
+	// ì‹¤ìˆ˜ë¶€ ì²˜ë¦¬
+	// iplace=1 ì´ë©´ fracpart==0 ì„.
 	fplace = fracpart == 0 ? 0 : _conv_long_to_str(fracpart, fconvert, 311 - 1, 10, false);
 
-	// Áö¼öºÎ Ã³¸®
+	// ì§€ìˆ˜ë¶€ ì²˜ë¦¬
 	zleadfrac = max - fplace;
 
 	omitcount = 0;
@@ -709,7 +709,7 @@ pos_exp_again:
 		}
 		else
 		{
-			// ½Ç¼öºÎ°¡ 0, °Á ¹«½ÃÇÔ
+			// ì‹¤ìˆ˜ë¶€ê°€ 0, ê± ë¬´ì‹œí•¨
 			omitcount = max;
 			zleadfrac = 0;
 		}
@@ -717,7 +717,7 @@ pos_exp_again:
 		max -= omitcount;
 	}
 
-	// ½Ç¼öºÎ°¡ 0ÀÌ ¾Æ´Ï°í, '#' ÇÃ·¡±×°¡ ÀÖÀ¸¸é Á¤¼ö Æ÷ÀÎÆ® Ãâ·Â
+	// ì‹¤ìˆ˜ë¶€ê°€ 0ì´ ì•„ë‹ˆê³ , '#' í”Œë˜ê·¸ê°€ ìˆìœ¼ë©´ ì •ìˆ˜ í¬ì¸íŠ¸ ì¶œë ¥
 	dotpoint = max > 0 || (flags & DP_F_NUM);
 
 	//
@@ -727,16 +727,16 @@ pos_exp_again:
 	quote = _get_quote_seps_str(iplace, flags);
 #endif
 
-	// -1Àº Á¤¼ö Æ÷ÀÎÆ®¿ë, ºÎÈ£¸¦ Ãâ·ÂÇÏ¸é Ãß°¡·Î -1;
+	// -1ì€ ì •ìˆ˜ í¬ì¸íŠ¸ìš©, ë¶€í˜¸ë¥¼ ì¶œë ¥í•˜ë©´ ì¶”ê°€ë¡œ -1;
 	padlen = min - iplace - eplace - max - quote - (dotpoint ? 1 : 0) - (signvalue ? 1 : 0);
 
 	if (padlen < 0)
 		padlen = 0;
 
 	if (flags & DP_F_MINUS)
-		padlen = -padlen; // ¿ŞÂÊ Á¤·Ä
+		padlen = -padlen; // ì™¼ìª½ ì •ë ¬
 
-	// ºÎÈ£ ¹× ÆĞµù ¼ıÀÚ Ãâ·Â
+	// ë¶€í˜¸ ë° íŒ¨ë”© ìˆ«ì ì¶œë ¥
 	if ((flags & DP_F_ZERO) && padlen > 0)
 	{
 		if (signvalue)
@@ -752,18 +752,18 @@ pos_exp_again:
 		}
 	}
 
-	// ³²Àº ÆĞµù °ø¹é Ãâ·Â
+	// ë‚¨ì€ íŒ¨ë”© ê³µë°± ì¶œë ¥
 	while (padlen > 0)
 	{
 		outfn(ptr, currlen, maxlen, ' ');
 		--padlen;
 	}
 
-	// ÆĞµù¿¡¼­ ºÎÈ£ Ãâ·Â ¾ÈÇßÀ¸¸é ºÎÈ£ Ãâ·Â
+	// íŒ¨ë”©ì—ì„œ ë¶€í˜¸ ì¶œë ¥ ì•ˆí–ˆìœ¼ë©´ ë¶€í˜¸ ì¶œë ¥
 	if (signvalue)
 		outfn(ptr, currlen, maxlen, signvalue);
 
-	// Á¤¼öºÎ Ãâ·Â
+	// ì •ìˆ˜ë¶€ ì¶œë ¥
 	while (iplace > 0)
 	{
 		--iplace;
@@ -785,7 +785,7 @@ pos_exp_again:
 		}
 	}
 
-	// ¼Ò¼öÁ¡
+	// ì†Œìˆ˜ì 
 	if (dotpoint)
 	{
 #if USE_LOCALE_INFO
@@ -801,22 +801,22 @@ pos_exp_again:
 #endif
 	}
 
-	// ½Ç¼öºÎ ¾ÕÂÊ ÆĞµù
+	// ì‹¤ìˆ˜ë¶€ ì•ìª½ íŒ¨ë”©
 	while (zleadfrac > 0)
 	{
 		outfn(ptr, currlen, maxlen, '0');
 		--zleadfrac;
 	}
 
-	// ½Ç¼öºÎ
+	// ì‹¤ìˆ˜ë¶€
 	while (fplace > omitcount)
 		outfn(ptr, currlen, maxlen, fconvert[--fplace]);
 
-	// Áö¼ö°ª
+	// ì§€ìˆ˜ê°’
 	while (eplace > 0)
 		outfn(ptr, currlen, maxlen, econvert[--eplace]);
 
-	// ³²Àº ÆĞÆÃ
+	// ë‚¨ì€ íŒ¨íŒ…
 	while (padlen < 0)
 	{
 		outfn(ptr, currlen, maxlen, ' ');
@@ -824,7 +824,7 @@ pos_exp_again:
 	}
 }
 
-// ¿©±â°¡ ÁøÂ¥ asc¿ë Ã³¸®
+// ì—¬ê¸°ê°€ ì§„ì§œ ascìš© ì²˜ë¦¬
 size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, const char* format, va_list args)
 {
 	char ch;
@@ -975,7 +975,7 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 					case 'h':
 						ch = *format++;
 
-						if (ch == 'h')      // C99 %hh? ¹®ÀÚÄÚµå Ãâ·Â
+						if (ch == 'h')      // C99 %hh? ë¬¸ìì½”ë“œ ì¶œë ¥
 						{
 							cflags = DP_C_CHAR;
 							ch = *format++;
@@ -990,7 +990,7 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 					case 'l':
 						ch = *format++;
 
-						if (ch == 'l')      // long long, int64_t, 64ºñÆ® Á¤¼ö
+						if (ch == 'l')      // long long, int64_t, 64ë¹„íŠ¸ ì •ìˆ˜
 						{
 							cflags = DP_C_LLONG;
 							ch = *format++;
@@ -1002,7 +1002,7 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 
 						break;
 
-					case 'L':               // long double, Áö¿ø ¾ÈÇÔ. ¶Ç´Â size_t
+					case 'L':               // long double, ì§€ì› ì•ˆí•¨. ë˜ëŠ” size_t
 						cflags = DP_C_LDOUBLE;
 						ch = *format++;
 						break;
@@ -1033,7 +1033,7 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 				switch (ch)
 				{
 					case 'd':
-					case 'i':       // ºÎÈ£ÀÖ´Â ½ÊÁø¼ö
+					case 'i':       // ë¶€í˜¸ìˆëŠ” ì‹­ì§„ìˆ˜
 						switch (cflags)
 						{
 							case DP_C_SHORT:
@@ -1062,7 +1062,7 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 								_str_fmt_size(outfn, ptr, &currlen, maxlen, &value, 10, min, max, flags);
 								break;
 
-							case DP_C_INTMAX:   // 64ºñÆ®
+							case DP_C_INTMAX:   // 64ë¹„íŠ¸
 								value.im = va_arg(args, intmax_t);
 								_str_fmt_long(outfn, ptr, &currlen, maxlen, &value, 10, min, max, flags);
 								break;
@@ -1085,21 +1085,21 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 
 						break;
 
-					case 'X':       // ´ë¹®ÀÚ ºÎÈ£¾ø´Â 16Áø¼ö
+					case 'X':       // ëŒ€ë¬¸ì ë¶€í˜¸ì—†ëŠ” 16ì§„ìˆ˜
 						flags |= DP_F_UP;
 
-					case 'x':       // ¼Ò¹®ÀÚ ºÎÈ£¾ø´Â 16Áø¼ö
+					case 'x':       // ì†Œë¬¸ì ë¶€í˜¸ì—†ëŠ” 16ì§„ìˆ˜
 						base = 16;
 
-					case 'o':       // ºÎÈ£¾ø´Â 8Áø¼ö
+					case 'o':       // ë¶€í˜¸ì—†ëŠ” 8ì§„ìˆ˜
 						if (base == 0)
 							base = 8;
 
-					case 'b':       // ºÎÈ£¾ø´Â 2Áø¼ö
+					case 'b':       // ë¶€í˜¸ì—†ëŠ” 2ì§„ìˆ˜
 						if (base == 0)
 							base = 2;
 
-					case 'u':       // ºÎÈ£¾ø´Â ½ÊÁø¼ö
+					case 'u':       // ë¶€í˜¸ì—†ëŠ” ì‹­ì§„ìˆ˜
 						if (base == 0)
 							base = 10;
 
@@ -1133,7 +1133,7 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 								_str_fmt_size(outfn, ptr, &currlen, maxlen, &value, base, min, max, flags);
 								break;
 
-							case DP_C_INTMAX:   // 64ºñÆ®
+							case DP_C_INTMAX:   // 64ë¹„íŠ¸
 								value.im = va_arg(args, intmax_t);
 								_str_fmt_long(outfn, ptr, &currlen, maxlen, &value, base, min, max, flags);
 								break;
@@ -1156,18 +1156,18 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 
 						break;
 
-					case 'A':       // ½Ç¼öÀÇ ´ë¹®ÀÚ 16Áø¼ö Ç¥½Ã (¹Ì±¸Çö '%F'·Î)
+					case 'A':       // ì‹¤ìˆ˜ì˜ ëŒ€ë¬¸ì 16ì§„ìˆ˜ í‘œì‹œ (ë¯¸êµ¬í˜„ '%F'ë¡œ)
 
-					case 'F':       // ½Ç¼ö ´ë¹®ÀÚ
+					case 'F':       // ì‹¤ìˆ˜ ëŒ€ë¬¸ì
 						flags |= DP_F_UP;
 
-					case 'a':       // ½Ç¼öÀÇ ¼Ò¹®ÀÚ 16Áø¼ö Ç¥½Ã (¹Ì±¸Çö '%f'·Î)
+					case 'a':       // ì‹¤ìˆ˜ì˜ ì†Œë¬¸ì 16ì§„ìˆ˜ í‘œì‹œ (ë¯¸êµ¬í˜„ '%f'ë¡œ)
 
-					case 'f':       // ½Ç¼ö
+					case 'f':       // ì‹¤ìˆ˜
 						if (cflags == DP_C_LDOUBLE)
 						{
 #if 0
-							// long doubleÀº º¸Åë Áö¿ø ¾ÈÇÔ...
+							// long doubleì€ ë³´í†µ ì§€ì› ì•ˆí•¨...
 							value.ld = va_arg(args, long double);
 							_str_fmt_fplong(outfn, ptr, &currlen, maxlen, &value, min, max, flags);
 #else
@@ -1183,10 +1183,10 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 
 						break;
 
-					case 'E':       // Áö¼ö Ç¥½Ã (´ë¹®ÀÚ)
+					case 'E':       // ì§€ìˆ˜ í‘œì‹œ (ëŒ€ë¬¸ì)
 						flags |= DP_F_UP;
 
-					case 'e':       // Áö¼ö Ç¥½Ã
+					case 'e':       // ì§€ìˆ˜ í‘œì‹œ
 						flags |= DP_F_E;
 
 						if (cflags == DP_C_LDOUBLE)
@@ -1207,10 +1207,10 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 
 						break;
 
-					case 'G':       // Áö¼ö Ç¥½Ã (´ë¹®ÀÚ)
+					case 'G':       // ì§€ìˆ˜ í‘œì‹œ (ëŒ€ë¬¸ì)
 						flags |= DP_F_UP;
 
-					case 'g':       // Áö¼ö Ç¥½Ã
+					case 'g':       // ì§€ìˆ˜ í‘œì‹œ
 						flags |= DP_F_G;
 
 						if (max == 0) // C99
@@ -1379,16 +1379,16 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 
 #if 0
 
-							case DP_C_LDOUBLE:  // ±â´É ¾øÀ½
+							case DP_C_LDOUBLE:  // ê¸°ëŠ¥ ì—†ìŒ
 								break;
 #endif
 
-							case DP_C_SIZE:     // C99¿¡¼­ ¿ø·¡ ºÎÈ£ ÀÖ´Â Å©±â(ssize_t)¸¦ ¿ä±¸ÇÔ
+							case DP_C_SIZE:     // C99ì—ì„œ ì›ë˜ ë¶€í˜¸ ìˆëŠ” í¬ê¸°(ssize_t)ë¥¼ ìš”êµ¬í•¨
 								value.psz = va_arg(args, size_t*);
 								*value.psz = (size_t)currlen;
 								break;
 
-							case DP_C_INTMAX:   // 64ºñÆ®
+							case DP_C_INTMAX:   // 64ë¹„íŠ¸
 								value.pim = va_arg(args, intmax_t*);
 								*value.pim = (intmax_t)currlen;
 								break;
@@ -1415,7 +1415,7 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 						outfn(ptr, &currlen, maxlen, ch);
 						break;
 
-					default:    // ¾Ë¼ö¾øÀ½, ³Ñ±è
+					default:    // ì•Œìˆ˜ì—†ìŒ, ë„˜ê¹€
 						break;
 				}   // switch - ch
 
@@ -1428,8 +1428,8 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 			case DP_S_DONE:
 				break;
 
-			default:    // À½?
-				break; // ÀÏºÎ ¾û¶×ÇÑ ÄÄÆÄÀÏ·¯´Â break¸¦ ¿ä±¸ÇÔ... ÀÌ¶ó°í ½áÀÖ¾úÀ½
+			default:    // ìŒ?
+				break; // ì¼ë¶€ ì—‰ëš±í•œ ì»´íŒŒì¼ëŸ¬ëŠ” breakë¥¼ ìš”êµ¬í•¨... ì´ë¼ê³  ì¨ìˆì—ˆìŒ
 		}   // switch - state
 	}   // while
 
@@ -1441,19 +1441,19 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 
 
 //////////////////////////////////////////////////////////////////////////
-// À¯´ÏÄÚµå ¹öÀü
+// ìœ ë‹ˆì½”ë“œ ë²„ì „
 
-// ¹®ÀÚ¸¦ ¼ıÀÚ·Î
+// ë¬¸ìë¥¼ ìˆ«ìë¡œ
 #define wch_to_int(p)	((p) - L'0')
 
-// Áø¼öº° Ã³¸®
+// ì§„ìˆ˜ë³„ ì²˜ë¦¬
 static const wchar_t* _base_to_wcs[2] =
 {
 	L"0123456789abcdef",
 	L"0123456789ABCDEF",
 };
 
-// ¼ıÀÚ¸¦ ¹®ÀÚ¿­·Î
+// ìˆ«ìë¥¼ ë¬¸ìì—´ë¡œ
 static int _conv_int_to_wcs(uint32_t value, wchar_t* buf, int size, int base, bool isup)
 {
 	const wchar_t* bts = _base_to_wcs[isup ? 1 : 0];
@@ -1470,7 +1470,7 @@ static int _conv_int_to_wcs(uint32_t value, wchar_t* buf, int size, int base, bo
 	return pos;
 }
 
-// ¼ıÀÚ¸¦ ¹®ÀÚ¿­·Î
+// ìˆ«ìë¥¼ ë¬¸ìì—´ë¡œ
 static int _conv_long_to_wcs(uint64_t value, wchar_t* buf, int size, int base, bool isup)
 {
 	const wchar_t* bts = _base_to_wcs[isup ? 1 : 0];
@@ -1487,7 +1487,7 @@ static int _conv_long_to_wcs(uint64_t value, wchar_t* buf, int size, int base, b
 	return pos;
 }
 
-// ¼ıÀÚ ºĞ¸® (º¸Åë Ãµ´ÜÀ§ ÅëÈ­ ºĞ¸®ÀÚ)
+// ìˆ«ì ë¶„ë¦¬ (ë³´í†µ ì²œë‹¨ìœ„ í†µí™” ë¶„ë¦¬ì)
 static int _get_quote_seps_wcs(int value, int flags
 #if USE_LOCALE_INFO
 	, struct lconv* lc
@@ -1511,7 +1511,7 @@ static int _get_quote_seps_wcs(int value, int flags
 	return ret;
 }
 
-// ¹®ÀÚ¿­
+// ë¬¸ìì—´
 static void _wcs_fmt_wcs(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_t maxlen,
 	const wchar_t* value, int flags, int min, int max)
 {
@@ -1527,7 +1527,7 @@ static void _wcs_fmt_wcs(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 		padlen = 0;
 
 	if (flags & DP_F_MINUS)
-		padlen = -padlen; // ¿ŞÂÊ Á¤·Ä
+		padlen = -padlen; // ì™¼ìª½ ì •ë ¬
 
 	cnt = 0;
 
@@ -1552,7 +1552,7 @@ static void _wcs_fmt_wcs(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 	}
 }
 
-// 32ºñÆ® Á¤¼ö
+// 32ë¹„íŠ¸ ì •ìˆ˜
 static void _wcs_fmt_int(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_t maxlen, _sn_anyval* value, uint32_t base, int min, int max, int flags)
 {
 #define MAX_CONVERT_PLACES 40
@@ -1587,7 +1587,7 @@ static void _wcs_fmt_int(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 		{
 			uvalue = value->i;
 
-			if (flags & DP_F_PLUS)  // ºÎÈ£Ãß°¡ (+/i)
+			if (flags & DP_F_PLUS)  // ë¶€í˜¸ì¶”ê°€ (+/i)
 				signvalue = L'+';
 			else if (flags & DP_F_SPACE)
 				signvalue = L' ';
@@ -1637,34 +1637,34 @@ static void _wcs_fmt_int(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 	}
 
 	if (flags & DP_F_MINUS)
-		spadlen = -spadlen; // ¿ŞÂÊ Á¤·Ä
+		spadlen = -spadlen; // ì™¼ìª½ ì •ë ¬
 
-	// °ø¹é
+	// ê³µë°±
 	while (spadlen > 0)
 	{
 		outfn(ptr, currlen, maxlen, L' ');
 		--spadlen;
 	}
 
-	// ºÎÈ£
+	// ë¶€í˜¸
 	if (signvalue)
 		outfn(ptr, currlen, maxlen, signvalue);
 
-	// 16Áø¼ö Á¢µÎ»ç
+	// 16ì§„ìˆ˜ ì ‘ë‘ì‚¬
 	if (hexprefix)
 	{
 		outfn(ptr, currlen, maxlen, L'0');
 		outfn(ptr, currlen, maxlen, hexprefix);
 	}
 
-	// '0' »ğÀÔ
+	// '0' ì‚½ì…
 	while (zpadlen > 0)
 	{
 		outfn(ptr, currlen, maxlen, L'0');
 		--zpadlen;
 	}
 
-	// ¼ıÀÚ
+	// ìˆ«ì
 	while (place > 0)
 	{
 		--place;
@@ -1682,13 +1682,13 @@ static void _wcs_fmt_int(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 					outfn(ptr, currlen, maxlen, *pwz);
 			}
 #else
-			// ¾Æ¶ì... À¯´ÏÄÚµå°¡ ¾ö¾¸
+			// ì•„ë ... ìœ ë‹ˆì½”ë“œê°€ ì—„ì”€
 			outfn(ptr, currlen, maxlen, L',');
 #endif
 		}
 	}
 
-	// ¿ŞÂÊ Á¤·Ä¿¡ µû¸¥ °ø¹é
+	// ì™¼ìª½ ì •ë ¬ì— ë”°ë¥¸ ê³µë°±
 	while (spadlen < 0)
 	{
 		outfn(ptr, currlen, maxlen, L' ');
@@ -1698,7 +1698,7 @@ static void _wcs_fmt_int(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size
 #undef MAX_CONVERT_PLACES
 }
 
-// 64ºñÆ® Á¤¼ö
+// 64ë¹„íŠ¸ ì •ìˆ˜
 static void _wcs_fmt_long(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_t maxlen, _sn_anyval* value, uint32_t base, int min, int max, int flags)
 {
 #define MAX_CONVERT_PLACES 80
@@ -1733,7 +1733,7 @@ static void _wcs_fmt_long(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, siz
 		{
 			uvalue = value->l;
 
-			if (flags & DP_F_PLUS)  // ºÎÈ£Ãß°¡ (+/i)
+			if (flags & DP_F_PLUS)  // ë¶€í˜¸ì¶”ê°€ (+/i)
 				signvalue = L'+';
 			else if (flags & DP_F_SPACE)
 				signvalue = L' ';
@@ -1783,27 +1783,27 @@ static void _wcs_fmt_long(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, siz
 	}
 
 	if (flags & DP_F_MINUS)
-		spadlen = -spadlen; // ¿ŞÂÊ Á¤·Ä
+		spadlen = -spadlen; // ì™¼ìª½ ì •ë ¬
 
-	// °ø¹é
+	// ê³µë°±
 	while (spadlen > 0)
 	{
 		outfn(ptr, currlen, maxlen, L' ');
 		--spadlen;
 	}
 
-	// ºÎÈ£
+	// ë¶€í˜¸
 	if (signvalue)
 		outfn(ptr, currlen, maxlen, signvalue);
 
-	// 16Áø¼ö Á¢µÎ»ç
+	// 16ì§„ìˆ˜ ì ‘ë‘ì‚¬
 	if (hexprefix)
 	{
 		outfn(ptr, currlen, maxlen, L'0');
 		outfn(ptr, currlen, maxlen, hexprefix);
 	}
 
-	// '0' »ğÀÔ
+	// '0' ì‚½ì…
 	if (zpadlen > 0)
 	{
 		while (zpadlen > 0)
@@ -1813,7 +1813,7 @@ static void _wcs_fmt_long(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, siz
 		}
 	}
 
-	// ¼ıÀÚ
+	// ìˆ«ì
 	while (place > 0)
 	{
 		--place;
@@ -1831,13 +1831,13 @@ static void _wcs_fmt_long(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, siz
 					outfn(ptr, currlen, maxlen, *pwz);
 			}
 #else
-			// Å©Èæ.. À¯´ÏÄÚµå
+			// í¬í‘.. ìœ ë‹ˆì½”ë“œ
 			outfn(ptr, currlen, maxlen, L',');
 #endif
 		}
 	}
 
-	// ¿ŞÂÊ Á¤·Ä¿¡ µû¸¥ °ø¹é
+	// ì™¼ìª½ ì •ë ¬ì— ë”°ë¥¸ ê³µë°±
 	while (spadlen < 0)
 	{
 		outfn(ptr, currlen, maxlen, L' ');
@@ -1847,7 +1847,7 @@ static void _wcs_fmt_long(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, siz
 #undef MAX_CONVERT_PLACES
 }
 
-// 64ºñÆ® ½Ç¼ö(double)
+// 64ë¹„íŠ¸ ì‹¤ìˆ˜(double)
 static void _wcs_fmt_fp(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_t maxlen, _sn_anyval* value, int min, int max, int flags)
 {
 	double fvalue;
@@ -1887,14 +1887,14 @@ static void _wcs_fmt_fp(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_
 
 	if (fvalue < 0)
 		signvalue = L'-';
-	else if (flags & DP_F_PLUS) // ºÎÈ£Ãß°¡ (+/i)
+	else if (flags & DP_F_PLUS) // ë¶€í˜¸ì¶”ê°€ (+/i)
 		signvalue = L'+';
 	else if (flags & DP_F_SPACE)
 		signvalue = L' ';
 	else
 		signvalue = 0;
 
-	// NAN, INF Ã³¸®
+	// NAN, INF ì²˜ë¦¬
 	if (pp_is_nan(fvalue))
 		pwz = flags & DP_F_UP ? L"NAN" : L"nan";
 	else if (pp_is_inf(fvalue))
@@ -1916,11 +1916,11 @@ static void _wcs_fmt_fp(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_
 
 		_wcs_fmt_wcs(outfn, ptr, currlen, maxlen, iconvert, flags, min, iplace);
 
-		// ¿©±â¼­ ³¡³¿
+		// ì—¬ê¸°ì„œ ëëƒ„
 		return;
 	}
 
-	// Áö¼ö ¸ğ¾ç Ã³¸®
+	// ì§€ìˆ˜ ëª¨ì–‘ ì²˜ë¦¬
 	if (flags & (DP_F_E | DP_F_G))
 	{
 		if (flags & DP_F_G)
@@ -1944,15 +1944,15 @@ static void _wcs_fmt_fp(_sn_outfunc outfn, pointer_t ptr, size_t* currlen, size_
 	}
 
 pos_exp_again:
-	// ÀÌ ·çÇÁ´Â È®½ÇÇÑ ¹İ¿Ã¸² Áö¼ö¸¦ ¾ò±â À§ÇÔ -> '%g'
+	// ì´ ë£¨í”„ëŠ” í™•ì‹¤í•œ ë°˜ì˜¬ë¦¼ ì§€ìˆ˜ë¥¼ ì–»ê¸° ìœ„í•¨ -> '%g'
 
-	// ¿ÀÁ÷ 16ÀÚ¸® Á¤¼ö¸¸ Áö¿ø
-	// ¿Ö³È½Ã·Õ ¿©±â¼­´Â ±×°Í¸¸ Áö¿ø
-	// ¿ø·¡´Â 9, 19, 38 ÀÚ¸®¼ö, °¢°¢ 32, 64, 128ºñÆ®¿ë
+	// ì˜¤ì§ 16ìë¦¬ ì •ìˆ˜ë§Œ ì§€ì›
+	// ì™œëƒ ì‹œë¡± ì—¬ê¸°ì„œëŠ” ê·¸ê²ƒë§Œ ì§€ì›
+	// ì›ë˜ëŠ” 9, 19, 38 ìë¦¬ìˆ˜, ê°ê° 32, 64, 128ë¹„íŠ¸ìš©
 	if (max > 16)
 		max = 16;
 
-	// Á¤¼ö·Î º¯È¯
+	// ì •ìˆ˜ë¡œ ë³€í™˜
 	uvalue = QN_ABS(fvalue);
 
 	if (etype)
@@ -1960,7 +1960,7 @@ pos_exp_again:
 
 	intpart = pp_intpart(uvalue);
 
-	// ¿À¹öÇÃ·Î¿ì, ÇöÀç »ç¿ë ¾ÈÇÔ
+	// ì˜¤ë²„í”Œë¡œìš°, í˜„ì¬ ì‚¬ìš© ì•ˆí•¨
 	//if (intpart==UINT_FAST64_MAX) return false;
 
 	//
@@ -1969,8 +1969,8 @@ pos_exp_again:
 
 	if (fracpart >= mask)
 	{
-		// ¿¹¸¦ µé¸é uvalue=1.99952, intpart=2, temp=1000 (max=3 ÀÌ¹Ç·Î)
-		// SNP_ROUND(1000*0.99952)=1000. ±×¸®ÇÏ¿©, Á¤¼öºÎ´Â 1Áõ°¡, ½Ç¼öºÎ´Â 0À¸·Î ÇÔ.
+		// ì˜ˆë¥¼ ë“¤ë©´ uvalue=1.99952, intpart=2, temp=1000 (max=3 ì´ë¯€ë¡œ)
+		// SNP_ROUND(1000*0.99952)=1000. ê·¸ë¦¬í•˜ì—¬, ì •ìˆ˜ë¶€ëŠ” 1ì¦ê°€, ì‹¤ìˆ˜ë¶€ëŠ” 0ìœ¼ë¡œ í•¨.
 		intpart++;
 		fracpart = 0;
 
@@ -1981,7 +1981,7 @@ pos_exp_again:
 		}
 	}
 
-	// Á¤È®ÇÑ Áö¼ö¸¦ ¾òÀ½. '%g'¸¦ À§ÇÑ Áö¼ö¸¦ Àç°è»ê
+	// ì •í™•í•œ ì§€ìˆ˜ë¥¼ ì–»ìŒ. '%g'ë¥¼ ìœ„í•œ ì§€ìˆ˜ë¥¼ ì¬ê³„ì‚°
 	if (etype && (flags & DP_F_G) && (max + 1) > exponent && exponent >= -4)
 	{
 		max -= exponent;
@@ -2005,8 +2005,8 @@ pos_exp_again:
 
 		if (eplace == 1)
 		{
-			// MSVC´Â ÀÚ¸®¼ö¸¦ 3ÀÚ¸® ¾¸. (001+E)
-			// ¿©±â¼­´Â 2ÀÚ¸®¸¸. (01+E)
+			// MSVCëŠ” ìë¦¬ìˆ˜ë¥¼ 3ìë¦¬ ì”€. (001+E)
+			// ì—¬ê¸°ì„œëŠ” 2ìë¦¬ë§Œ. (01+E)
 			econvert[eplace++] = L'0';
 		}
 
@@ -2020,14 +2020,14 @@ pos_exp_again:
 		eplace = 0;
 	}
 
-	// Á¤¼öºÎ Ã³¸®
+	// ì •ìˆ˜ë¶€ ì²˜ë¦¬
 	iplace = _conv_long_to_wcs(intpart, iconvert, 311 - 1, 10, false);
 
-	// ½Ç¼öºÎ Ã³¸®
-	// iplace=1 ÀÌ¸é fracpart==0 ÀÓ.
+	// ì‹¤ìˆ˜ë¶€ ì²˜ë¦¬
+	// iplace=1 ì´ë©´ fracpart==0 ì„.
 	fplace = fracpart == 0 ? 0 : _conv_long_to_wcs(fracpart, fconvert, 311 - 1, 10, false);
 
-	// Áö¼öºÎ Ã³¸®
+	// ì§€ìˆ˜ë¶€ ì²˜ë¦¬
 	zleadfrac = max - fplace;
 
 	omitcount = 0;
@@ -2041,7 +2041,7 @@ pos_exp_again:
 		}
 		else
 		{
-			// ½Ç¼öºÎ°¡ 0, °Á ¹«½ÃÇÔ
+			// ì‹¤ìˆ˜ë¶€ê°€ 0, ê± ë¬´ì‹œí•¨
 			omitcount = max;
 			zleadfrac = 0;
 		}
@@ -2049,7 +2049,7 @@ pos_exp_again:
 		max -= omitcount;
 	}
 
-	// ½Ç¼öºÎ°¡ 0ÀÌ ¾Æ´Ï°í, '#' ÇÃ·¡±×°¡ ÀÖÀ¸¸é Á¤¼ö Æ÷ÀÎÆ® Ãâ·Â
+	// ì‹¤ìˆ˜ë¶€ê°€ 0ì´ ì•„ë‹ˆê³ , '#' í”Œë˜ê·¸ê°€ ìˆìœ¼ë©´ ì •ìˆ˜ í¬ì¸íŠ¸ ì¶œë ¥
 	dotpoint = max > 0 || (flags & DP_F_NUM);
 
 	//
@@ -2059,14 +2059,14 @@ pos_exp_again:
 	quote = _get_quote_seps_wcs(iplace, flags);
 #endif
 
-	// -1Àº Á¤¼ö Æ÷ÀÎÆ®¿ë, ºÎÈ£¸¦ Ãâ·ÂÇÏ¸é Ãß°¡·Î -1;
+	// -1ì€ ì •ìˆ˜ í¬ì¸íŠ¸ìš©, ë¶€í˜¸ë¥¼ ì¶œë ¥í•˜ë©´ ì¶”ê°€ë¡œ -1;
 	padlen = min - iplace - eplace - max - quote - (dotpoint ? 1 : 0) - (signvalue ? 1 : 0);
 
 	if (padlen < 0)
 		padlen = 0;
 
 	if (flags & DP_F_MINUS)
-		padlen = -padlen; // ¿ŞÂÊ Á¤·Ä
+		padlen = -padlen; // ì™¼ìª½ ì •ë ¬
 
 	if ((flags & DP_F_ZERO) && padlen > 0)
 	{
@@ -2147,7 +2147,7 @@ pos_exp_again:
 	}
 }
 
-// ¿©±â°¡ ÁøÂ¥ asc¿ë Ã³¸®
+// ì—¬ê¸°ê°€ ì§„ì§œ ascìš© ì²˜ë¦¬
 size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, const wchar_t* format, va_list args)
 {
 	wchar_t ch;
@@ -2313,7 +2313,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 					case L'l':
 						ch = *format++;
 
-						if (ch == L'l')     // long long, int64_t, 64ºñÆ® Á¤¼ö
+						if (ch == L'l')     // long long, int64_t, 64ë¹„íŠ¸ ì •ìˆ˜
 						{
 							cflags = DP_C_LLONG;
 							ch = *format++;
@@ -2325,7 +2325,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 
 						break;
 
-					case L'L':              // long double, Áö¿ø ¾ÈÇÔ. ¶Ç´Â size_t
+					case L'L':              // long double, ì§€ì› ì•ˆí•¨. ë˜ëŠ” size_t
 						cflags = DP_C_LDOUBLE;
 						ch = *format++;
 						break;
@@ -2356,7 +2356,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 				switch (ch)
 				{
 					case L'd':
-					case L'i':      // ºÎÈ£ÀÖ´Â ½ÊÁø¼ö
+					case L'i':      // ë¶€í˜¸ìˆëŠ” ì‹­ì§„ìˆ˜
 						switch (cflags)
 						{
 							case DP_C_SHORT:
@@ -2385,7 +2385,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 								_wcs_fmt_size(outfn, ptr, &currlen, maxlen, &value, 10, min, max, flags);
 								break;
 
-							case DP_C_INTMAX:   // 64ºñÆ®
+							case DP_C_INTMAX:   // 64ë¹„íŠ¸
 								value.im = va_arg(args, intmax_t);
 								_wcs_fmt_long(outfn, ptr, &currlen, maxlen, &value, 10, min, max, flags);
 								break;
@@ -2408,21 +2408,21 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 
 						break;
 
-					case L'X':       // ´ë¹®ÀÚ ºÎÈ£¾ø´Â 16Áø¼ö
+					case L'X':       // ëŒ€ë¬¸ì ë¶€í˜¸ì—†ëŠ” 16ì§„ìˆ˜
 						flags |= DP_F_UP;
 
-					case L'x':       // ¼Ò¹®ÀÚ ºÎÈ£¾ø´Â 16Áø¼ö
+					case L'x':       // ì†Œë¬¸ì ë¶€í˜¸ì—†ëŠ” 16ì§„ìˆ˜
 						base = 16;
 
-					case L'o':       // ºÎÈ£¾ø´Â 8Áø¼ö
+					case L'o':       // ë¶€í˜¸ì—†ëŠ” 8ì§„ìˆ˜
 						if (base == 0)
 							base = 8;
 
-					case L'b':       // ºÎÈ£¾ø´Â 2Áø¼ö
+					case L'b':       // ë¶€í˜¸ì—†ëŠ” 2ì§„ìˆ˜
 						if (base == 0)
 							base = 2;
 
-					case L'u':       // ºÎÈ£¾ø´Â ½ÊÁø¼ö
+					case L'u':       // ë¶€í˜¸ì—†ëŠ” ì‹­ì§„ìˆ˜
 						if (base == 0)
 							base = 10;
 
@@ -2456,7 +2456,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 								_wcs_fmt_size(outfn, ptr, &currlen, maxlen, &value, base, min, max, flags);
 								break;
 
-							case DP_C_INTMAX:   // 64ºñÆ®
+							case DP_C_INTMAX:   // 64ë¹„íŠ¸
 								value.im = va_arg(args, intmax_t);
 								_wcs_fmt_long(outfn, ptr, &currlen, maxlen, &value, base, min, max, flags);
 								break;
@@ -2479,18 +2479,18 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 
 						break;
 
-					case L'A':       // ½Ç¼öÀÇ ´ë¹®ÀÚ 16Áø¼ö Ç¥½Ã (¹Ì±¸Çö '%F'·Î)
+					case L'A':       // ì‹¤ìˆ˜ì˜ ëŒ€ë¬¸ì 16ì§„ìˆ˜ í‘œì‹œ (ë¯¸êµ¬í˜„ '%F'ë¡œ)
 
-					case L'F':       // ½Ç¼ö ´ë¹®ÀÚ
+					case L'F':       // ì‹¤ìˆ˜ ëŒ€ë¬¸ì
 						flags |= DP_F_UP;
 
-					case L'a':       // ½Ç¼öÀÇ ¼Ò¹®ÀÚ 16Áø¼ö Ç¥½Ã (¹Ì±¸Çö '%f'·Î)
+					case L'a':       // ì‹¤ìˆ˜ì˜ ì†Œë¬¸ì 16ì§„ìˆ˜ í‘œì‹œ (ë¯¸êµ¬í˜„ '%f'ë¡œ)
 
-					case L'f':       // ½Ç¼ö
+					case L'f':       // ì‹¤ìˆ˜
 						if (cflags == DP_C_LDOUBLE)
 						{
 #if 0
-							// long doubleÀº º¸Åë Áö¿ø ¾ÈÇÔ...
+							// long doubleì€ ë³´í†µ ì§€ì› ì•ˆí•¨...
 							value.ld = va_arg(args, long double);
 							_wcs_fmt_fplong(outfn, ptr, &currlen, maxlen, &value, min, max, flags);
 #else
@@ -2506,10 +2506,10 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 
 						break;
 
-					case L'E':      // Áö¼ö Ç¥½Ã (´ë¹®ÀÚ)
+					case L'E':      // ì§€ìˆ˜ í‘œì‹œ (ëŒ€ë¬¸ì)
 						flags |= DP_F_UP;
 
-					case L'e':      // Áö¼ö Ç¥½Ã
+					case L'e':      // ì§€ìˆ˜ í‘œì‹œ
 						flags |= DP_F_E;
 
 						if (cflags == DP_C_LDOUBLE)
@@ -2530,10 +2530,10 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 
 						break;
 
-					case L'G':      // Áö¼ö Ç¥½Ã (´ë¹®ÀÚ)
+					case L'G':      // ì§€ìˆ˜ í‘œì‹œ (ëŒ€ë¬¸ì)
 						flags |= DP_F_UP;
 
-					case L'g':      // Áö¼ö Ç¥½Ã
+					case L'g':      // ì§€ìˆ˜ í‘œì‹œ
 						flags |= DP_F_G;
 
 						if (max == 0) // C99
@@ -2559,7 +2559,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 
 					case L'c':
 						if (cflags != DP_C_SHORT)
-							outfn(ptr, &currlen, maxlen, va_arg(args, int));        // ÀÌ°Å wchar_t·Î ÇØ¾ßÇÏ³ª?
+							outfn(ptr, &currlen, maxlen, va_arg(args, int));        // ì´ê±° wchar_të¡œ í•´ì•¼í•˜ë‚˜?
 						else
 						{
 							stmp[0] = (char)va_arg(args, int);
@@ -2572,7 +2572,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 
 					case L'C':
 						if (cflags != DP_C_SHORT)
-							outfn(ptr, &currlen, maxlen, va_arg(args, int));        // ÀÌ°Íµµ
+							outfn(ptr, &currlen, maxlen, va_arg(args, int));        // ì´ê²ƒë„
 						else
 						{
 							stmp[0] = (char)va_arg(args, int);
@@ -2702,16 +2702,16 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 
 #if 0
 
-							case DP_C_LDOUBLE:  // ±â´É ¾øÀ½
+							case DP_C_LDOUBLE:  // ê¸°ëŠ¥ ì—†ìŒ
 								break;
 #endif
 
-							case DP_C_SIZE:     // C99¿¡¼­ ¿ø·¡ ºÎÈ£ ÀÖ´Â Å©±â(ssize_t)¸¦ ¿ä±¸ÇÔ
+							case DP_C_SIZE:     // C99ì—ì„œ ì›ë˜ ë¶€í˜¸ ìˆëŠ” í¬ê¸°(ssize_t)ë¥¼ ìš”êµ¬í•¨
 								value.psz = va_arg(args, size_t*);
 								*value.psz = (size_t)currlen;
 								break;
 
-							case DP_C_INTMAX:   // 64ºñÆ®
+							case DP_C_INTMAX:   // 64ë¹„íŠ¸
 								value.pim = va_arg(args, intmax_t*);
 								*value.pim = (intmax_t)currlen;
 								break;
@@ -2739,7 +2739,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 						break;
 
 					default:
-						// ¾Ë¼ö¾øÀ½, ³Ñ±è
+						// ì•Œìˆ˜ì—†ìŒ, ë„˜ê¹€
 						break;
 				}   // switch - ch
 
@@ -2752,8 +2752,8 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 			case DP_S_DONE:
 				break;
 
-			default:	// À½?
-				break; // ÀÏºÎ ¾û¶×ÇÑ ÄÄÆÄÀÏ·¯´Â break¸¦ ¿ä±¸ÇÔ
+			default:	// ìŒ?
+				break; // ì¼ë¶€ ì—‰ëš±í•œ ì»´íŒŒì¼ëŸ¬ëŠ” breakë¥¼ ìš”êµ¬í•¨
 		}   // switch - state
 	}   // while
 

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 /*
 * Copyright Patrick Powell 1995
@@ -144,13 +144,13 @@ typedef union _sn_anyval
 extern size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, const char* format, va_list args);
 extern size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, const wchar_t* format, va_list args);
 
-#if !_QN_ANDROID_ && !_QN_IOS_		// [2014-10-15 ksh] ¾Èµå·ÎÀÌµå¶û IOS´Â ·ÎÄ¶ÀÌ ¾ÈµÊ
+#if !_QN_ANDROID_ && !_QN_IOS_		// [2014-10-15 ksh] ì•ˆë“œë¡œì´ë“œë‘ IOSëŠ” ë¡œìº˜ì´ ì•ˆë¨
 #define USE_LOCALE_INFO	1
 #else
 #define USE_LOCALE_INFO	0
 #endif
 
-#if _MSC_VER						// [2014-12-15 ksh] À©µµ¿ì¸¸ À¯´ÏÄÚµå ·ÎÄ¶ Áö¿ø
+#if _MSC_VER						// [2014-12-15 ksh] ìœˆë„ìš°ë§Œ ìœ ë‹ˆì½”ë“œ ë¡œìº˜ ì§€ì›
 #define USE_WIDE_LOCALE	1
 #else
 #define USE_WIDE_LOCALE	0

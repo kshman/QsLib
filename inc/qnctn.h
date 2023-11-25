@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #if _MSC_VER
 #pragma warning(push)

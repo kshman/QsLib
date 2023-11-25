@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "qn.h"
 #ifdef _MSC_VER
 #include "zlib/zlib.h"

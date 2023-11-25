@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <qn.h>
 #include <qnctn.h>

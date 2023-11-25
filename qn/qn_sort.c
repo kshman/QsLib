@@ -1,8 +1,8 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "qn.h"
 
 //////////////////////////////////////////////////////////////////////////
-// Äü ¼ÒÆ®
+// í€µ ì†ŒíŠ¸
 
 #define _QSORT_STACK_SIZE (8 * sizeof(pointer_t) - 2)
 
@@ -37,12 +37,12 @@ static void _qn_qsort_shortsort_context(uint8_t* lo, uint8_t* hi, size_t stride,
 }
 
 /**
- * ÄÜÅØ½ºÆ® ÀÔ·Â ¹Ş´Â ÄüÁ¤·Ä.
- * @param	ptr				Á¤·ÄÇÒ µ¥ÀÌÅÍÀÇ Æ÷ÀÎÅÍ.
- * @param	count			µ¥ÀÌÅÍÀÇ °¹¼ö.
- * @param	stride			µ¥ÀÌÅÍÀÇ Æø.
- * @param [ÀÔ·Â]	compfunc	ºñ±³ ¿¬»ê Äİ¹é ÇÔ¼ö.
- * @param	context			Äİ¹é ÇÔ¼ö¿ë ÄÜÅØ½ºÆ®.
+ * ì½˜í…ìŠ¤íŠ¸ ì…ë ¥ ë°›ëŠ” í€µì •ë ¬.
+ * @param	ptr				ì •ë ¬í•  ë°ì´í„°ì˜ í¬ì¸í„°.
+ * @param	count			ë°ì´í„°ì˜ ê°¯ìˆ˜.
+ * @param	stride			ë°ì´í„°ì˜ í­.
+ * @param [ì…ë ¥]	compfunc	ë¹„êµ ì—°ì‚° ì½œë°± í•¨ìˆ˜.
+ * @param	context			ì½œë°± í•¨ìˆ˜ìš© ì½˜í…ìŠ¤íŠ¸.
  */
 void qn_qsort_context(pointer_t ptr, size_t count, size_t stride, int(*compfunc)(pointer_t, const pointer_t, const pointer_t), pointer_t context)
 {
@@ -52,30 +52,30 @@ void qn_qsort_context(pointer_t ptr, size_t count, size_t stride, int(*compfunc)
 	size_t size;
 	int stkptr;
 
-	// °Ë»ç
+	// ê²€ì‚¬
 	if (ptr == NULL || count == 0 || stride == 0 || compfunc == NULL)
 		return;
 
-	// °³¼ö°¡ 1°³ ÀÌÇÏ¸é ¾ÈÇÔ
+	// ê°œìˆ˜ê°€ 1ê°œ ì´í•˜ë©´ ì•ˆí•¨
 	if (count < 2) return;
 
-	// ½ºÅÃ ÃÊ±âÈ­
+	// ìŠ¤íƒ ì´ˆê¸°í™”
 	stkptr = 0;
-	// ¸®¹ÌÆ® ÃÊ±âÈ­
+	// ë¦¬ë¯¸íŠ¸ ì´ˆê¸°í™”
 	lo = (uint8_t*)ptr;
 	hi = (uint8_t*)ptr + stride * (count - 1);
 
 pos_recursive:
 	size = (hi - lo) / stride + 1;
 
-	// Áß°£°ªÃ³¸®¸¦ »ç¿ëÇØ¼­ O(n^2) ¾Ë°í¸®ÁòÀ¸·Î ÀüÈ¯
-	if (size <= 8)  // ÃÖÀûÈ­µÈ °ªÀ» »ç¿ëÇØ¾ß ÇÒ °ÍÀÌ´Ù -> Cut off value
+	// ì¤‘ê°„ê°’ì²˜ë¦¬ë¥¼ ì‚¬ìš©í•´ì„œ O(n^2) ì•Œê³ ë¦¬ì¦˜ìœ¼ë¡œ ì „í™˜
+	if (size <= 8)  // ìµœì í™”ëœ ê°’ì„ ì‚¬ìš©í•´ì•¼ í•  ê²ƒì´ë‹¤ -> Cut off value
 		_qn_qsort_shortsort_context(lo, hi, stride, compfunc, context);
 	else
 	{
 		mid = lo + (size / 2) * stride;
 
-		// Ã³À½, Áß°£, ³¡ ºÎÅÍ Á¤·Ä ½ÃÀÛ
+		// ì²˜ìŒ, ì¤‘ê°„, ë ë¶€í„° ì •ë ¬ ì‹œì‘
 		if (compfunc(context, lo, mid) > 0)
 			_qn_qsort_swap(lo, mid, stride);
 
@@ -85,7 +85,7 @@ pos_recursive:
 		if (compfunc(context, mid, hi) > 0)
 			_qn_qsort_swap(mid, hi, stride);
 
-		// ºÎºĞ Á¤·Ä
+		// ë¶€ë¶„ ì •ë ¬
 		lopos = lo;
 		hipos = hi;
 
@@ -203,11 +203,11 @@ static void _qn_qsort_shortsort(uint8_t* lo, uint8_t* hi, size_t stride, int(*fu
 }
 
 /**
- * ÄüÁ¤·Ä.
- * @param	ptr				Á¤·ÄÇÒ µ¥ÀÌÅÍÀÇ Æ÷ÀÎÅÍ.
- * @param	count			µ¥ÀÌÅÍÀÇ °¹¼ö.
- * @param	stride			µ¥ÀÌÅÍÀÇ Æø.
- * @param [ÀÔ·Â]	compfunc	ºñ±³ ¿¬»ê Äİ¹é ÇÔ¼ö.
+ * í€µì •ë ¬.
+ * @param	ptr				ì •ë ¬í•  ë°ì´í„°ì˜ í¬ì¸í„°.
+ * @param	count			ë°ì´í„°ì˜ ê°¯ìˆ˜.
+ * @param	stride			ë°ì´í„°ì˜ í­.
+ * @param [ì…ë ¥]	compfunc	ë¹„êµ ì—°ì‚° ì½œë°± í•¨ìˆ˜.
  */
 void qn_qsort(pointer_t ptr, size_t count, size_t stride, int(*compfunc)(const pointer_t, const pointer_t))
 {
@@ -217,30 +217,30 @@ void qn_qsort(pointer_t ptr, size_t count, size_t stride, int(*compfunc)(const p
 	size_t size;
 	int stkptr;
 
-	// °Ë»ç
+	// ê²€ì‚¬
 	if (ptr == NULL || count == 0 || stride == 0 || compfunc == NULL)
 		return;
 
-	// °³¼ö°¡ 1°³ ÀÌÇÏ¸é ¾ÈÇÔ
+	// ê°œìˆ˜ê°€ 1ê°œ ì´í•˜ë©´ ì•ˆí•¨
 	if (count < 2) return;
 
-	// ½ºÅÃ ÃÊ±âÈ­
+	// ìŠ¤íƒ ì´ˆê¸°í™”
 	stkptr = 0;
-	// ¸®¹ÌÆ® ÃÊ±âÈ­
+	// ë¦¬ë¯¸íŠ¸ ì´ˆê¸°í™”
 	lo = (uint8_t*)ptr;
 	hi = (uint8_t*)ptr + stride * (count - 1);
 
 pos_recursive:
 	size = (hi - lo) / stride + 1;
 
-	// Áß°£°ªÃ³¸®¸¦ »ç¿ëÇØ¼­ O(n^2) ¾Ë°í¸®ÁòÀ¸·Î ÀüÈ¯
-	if (size <= 8)  // ÃÖÀûÈ­µÈ °ªÀ» »ç¿ëÇØ¾ß ÇÒ °ÍÀÌ´Ù -> Cut off value
+	// ì¤‘ê°„ê°’ì²˜ë¦¬ë¥¼ ì‚¬ìš©í•´ì„œ O(n^2) ì•Œê³ ë¦¬ì¦˜ìœ¼ë¡œ ì „í™˜
+	if (size <= 8)  // ìµœì í™”ëœ ê°’ì„ ì‚¬ìš©í•´ì•¼ í•  ê²ƒì´ë‹¤ -> Cut off value
 		_qn_qsort_shortsort(lo, hi, stride, compfunc);
 	else
 	{
 		mid = lo + (size / 2) * stride;
 
-		// Ã³À½, Áß°£, ³¡ ºÎÅÍ Á¤·Ä ½ÃÀÛ
+		// ì²˜ìŒ, ì¤‘ê°„, ë ë¶€í„° ì •ë ¬ ì‹œì‘
 		if (compfunc(lo, mid) > 0)
 			_qn_qsort_swap(lo, mid, stride);
 
@@ -250,7 +250,7 @@ pos_recursive:
 		if (compfunc(mid, hi) > 0)
 			_qn_qsort_swap(mid, hi, stride);
 
-		// ºÎºĞ Á¤·Ä
+		// ë¶€ë¶„ ì •ë ¬
 		lopos = lo;
 		hipos = hi;
 

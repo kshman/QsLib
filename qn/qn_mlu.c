@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "qn.h"
 #include "qnctn.h"
 
@@ -13,19 +13,19 @@ QN_HASH_HASHER_CHAR_PTR(ArgHash);
 QN_HASH_KEY_DELETE(ArgHash);
 QN_HASH_VALUE_DELETE(ArgHash);
 
-// ½ºÆ®¸µ Á¦°Å
+// ìŠ¤íŠ¸ë§ ì œê±°
 static void _error_array_delete_ptr(char** ptr)
 {
 	char* s = *ptr;
 	qn_free(s);
 }
 
-// xml ¹öÀü
+// xml ë²„ì „
 static const char* _ml_header_desc = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
 
 
 //////////////////////////////////////////////////////////////////////////
-// ½ÇÁ¦ ³ëµå
+// ì‹¤ì œ ë…¸ë“œ
 struct qnRealTag
 {
 	qnMlTag				base;
@@ -56,8 +56,8 @@ struct qnMlu
 };
 
 /**
- * RMLÀ» ¸¸µç´Ù.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnMlu*.
+ * RMLì„ ë§Œë“ ë‹¤.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnMlu*.
  */
 qnMlu* qn_mlu_new(void)
 {
@@ -66,9 +66,9 @@ qnMlu* qn_mlu_new(void)
 }
 
 /**
- * ÆÄÀÏ¿¡¼­ RMLÀ» ¸¸µç´Ù.
- * @param	filename	ÆÄÀÏÀÇ ÀÌ¸§.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnMlu*.
+ * íŒŒì¼ì—ì„œ RMLì„ ë§Œë“ ë‹¤.
+ * @param	filename	íŒŒì¼ì˜ ì´ë¦„.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnMlu*.
  */
 qnMlu* qn_mlu_new_file(const char* filename)
 {
@@ -85,9 +85,9 @@ qnMlu* qn_mlu_new_file(const char* filename)
 }
 
 /**
- * ÆÄÀÏ¿¡¼­ RMLÀ» ¸¸µç´Ù. À¯´ÏÄÚµå ÆÄÀÏ ÀÌ¸§À» »ç¿ëÇÑ´Ù.
- * @param	filename	ÆÄÀÏÀÇ ÀÌ¸§.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnMlu*.
+ * íŒŒì¼ì—ì„œ RMLì„ ë§Œë“ ë‹¤. ìœ ë‹ˆì½”ë“œ íŒŒì¼ ì´ë¦„ì„ ì‚¬ìš©í•œë‹¤.
+ * @param	filename	íŒŒì¼ì˜ ì´ë¦„.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnMlu*.
  */
 qnMlu* qn_mlu_new_file_l(const wchar_t* filename)
 {
@@ -104,10 +104,10 @@ qnMlu* qn_mlu_new_file_l(const wchar_t* filename)
 }
 
 /**
- * ¹öÆÛ¿¡¼­ RMLÀ» ¸¸µç´Ù.
- * @param	data	¹öÆÛ.
- * @param	size	¹öÆÛ Å©±â.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnMlu*.
+ * ë²„í¼ì—ì„œ RMLì„ ë§Œë“ ë‹¤.
+ * @param	data	ë²„í¼.
+ * @param	size	ë²„í¼ í¬ê¸°.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnMlu*.
  */
 qnMlu* qn_mlu_new_buffer(const pointer_t data, int size)
 {
@@ -123,8 +123,8 @@ qnMlu* qn_mlu_new_buffer(const pointer_t data, int size)
 }
 
 /**
- * RMLÀ» Á¦°ÅÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
+ * RMLì„ ì œê±°í•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
  */
 void qn_mlu_delete(qnMlu* self)
 {
@@ -138,8 +138,8 @@ void qn_mlu_delete(qnMlu* self)
 }
 
 /**
- * ¸ğµç RML ÅÂ±×¸¦ »èÁ¦ÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
+ * ëª¨ë“  RML íƒœê·¸ë¥¼ ì‚­ì œí•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
  */
 void qn_mlu_clean_tags(qnMlu* self)
 {
@@ -148,8 +148,8 @@ void qn_mlu_clean_tags(qnMlu* self)
 }
 
 /**
- * ¸ğµç RML ¿À·ù¸¦ »èÁ¦ÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
+ * ëª¨ë“  RML ì˜¤ë¥˜ë¥¼ ì‚­ì œí•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
  */
 void qn_mlu_clean_errs(qnMlu* self)
 {
@@ -158,9 +158,9 @@ void qn_mlu_clean_errs(qnMlu* self)
 }
 
 /**
- * ¿À·ù°ªÀ» Ãß°¡ÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	msg			¸Ş½ÃÁö.
+ * ì˜¤ë¥˜ê°’ì„ ì¶”ê°€í•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	msg			ë©”ì‹œì§€.
  */
 void qn_mlu_add_err(qnMlu* self, const char* msg)
 {
@@ -173,9 +173,9 @@ void qn_mlu_add_err(qnMlu* self, const char* msg)
 }
 
 /**
- * ¿À·ù°ªÀ» Æ÷¸Ë ¹æ½ÄÀ¸·Î Ãß°¡ÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	fmt			Æ÷¸Ë ¹®ÀÚ¿­.
+ * ì˜¤ë¥˜ê°’ì„ í¬ë§· ë°©ì‹ìœ¼ë¡œ ì¶”ê°€í•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	fmt			í¬ë§· ë¬¸ìì—´.
  */
 void qn_mlu_add_errf(qnMlu* self, const char* fmt, ...)
 {
@@ -190,8 +190,8 @@ void qn_mlu_add_errf(qnMlu* self, const char* fmt, ...)
 }
 
 /**
- * °®°í ÀÖ´Â ¿À·ù¸¦ µğ¹ö±× ÄÜ¼Ö·Î Ãâ·ÂÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
+ * ê°–ê³  ìˆëŠ” ì˜¤ë¥˜ë¥¼ ë””ë²„ê·¸ ì½˜ì†”ë¡œ ì¶œë ¥í•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
  */
 void qn_mlu_print_err(qnMlu* self)
 {
@@ -207,8 +207,8 @@ void qn_mlu_print_err(qnMlu* self)
 }
 
 /**
- * RML Á¤º¸ ±¸¼º ³»¿ëÀ» µğ¹ö±× ÄÜ¼Ö·Î Ãâ·ÂÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
+ * RML ì •ë³´ êµ¬ì„± ë‚´ìš©ì„ ë””ë²„ê·¸ ì½˜ì†”ë¡œ ì¶œë ¥í•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
  */
 void qn_mlu_print(qnMlu* self)
 {
@@ -216,11 +216,11 @@ void qn_mlu_print(qnMlu* self)
 }
 
 /**
- * ¹öÆÛ¿¡¼­ RMLÀ» ºĞ¼®ÇÏ¿© ÀĞ´Â´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	data		¹öÆÛ.
- * @param	size		¹öÆÛ Å©±â.
- * @return	¼º°øÇÏ¸é ÂüÀ», ½ÇÆĞÇÏ¸é °ÅÁşÀ» ¹İÈ¯ÇÑ´Ù.
+ * ë²„í¼ì—ì„œ RMLì„ ë¶„ì„í•˜ì—¬ ì½ëŠ”ë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	data		ë²„í¼.
+ * @param	size		ë²„í¼ í¬ê¸°.
+ * @return	ì„±ê³µí•˜ë©´ ì°¸ì„, ì‹¤íŒ¨í•˜ë©´ ê±°ì§“ì„ ë°˜í™˜í•œë‹¤.
  */
 bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 {
@@ -236,40 +236,40 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 	qn_mlu_clean_tags(self);
 	qn_mlu_clean_errs(self);
 
-	// UTF8 »çÀÎ Ã£±â
+	// UTF8 ì‚¬ì¸ ì°¾ê¸°
 	i = (*(const int*)data) & 0x00FFFFFF;
 
 	if (i == 0x00BFBBEF)
 	{
-		// Çì´õ ¸¸Å­ ¶¼±â
+		// í—¤ë” ë§Œí¼ ë–¼ê¸°
 		pos = (const char*)data + 3;
 		size -= 3;
 	}
 	else
 	{
-		// È¤½Ã 16ºñÆ® À¯´ÏÄÚµåÀÎ°¡?
+		// í˜¹ì‹œ 16ë¹„íŠ¸ ìœ ë‹ˆì½”ë“œì¸ê°€?
 		i = (*(const uint16_t*)data);
 
 		if (i == 0)
 		{
-			// ÀÌ°Ç 32ºñÆ® À¯´ÏÄÚµå, ¾Æ¸¶ UTF32 BE(0x0000FEFF)
-			// Ã³¸®ÇÒ ¼ö ¾ø´Ù
+			// ì´ê±´ 32ë¹„íŠ¸ ìœ ë‹ˆì½”ë“œ, ì•„ë§ˆ UTF32 BE(0x0000FEFF)
+			// ì²˜ë¦¬í•  ìˆ˜ ì—†ë‹¤
 			return false;
 		}
 		else if (i == 0xFEFF)
 		{
-			// ÀÌ°Ç UTF16 LE
-			// Ã³¸®ÇÏÁö ¾ÊÀ½
+			// ì´ê±´ UTF16 LE
+			// ì²˜ë¦¬í•˜ì§€ ì•ŠìŒ
 			return false;
 		}
 		else if (i == 0xFFFE)
 		{
-			// ÀÌ°Ç UTF16 BE, ¶Ç´Â UTF32 LE(0xFFFE0000)
-			// Ã³¸® ¾ÈÇÒ·¡
+			// ì´ê±´ UTF16 BE, ë˜ëŠ” UTF32 LE(0xFFFE0000)
+			// ì²˜ë¦¬ ì•ˆí• ë˜
 			return false;
 		}
 
-		// »çÀÎ ¾øÀ½
+		// ì‚¬ì¸ ì—†ìŒ
 		pos = (const char*)data;
 	}
 
@@ -285,9 +285,9 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 
 	cd = qn_alloc(size, char);
 
-	qnBstr4k* btag = qn_alloc_1(qnBstr4k);     // ÅÂ±×´Â 4k
-	qnBstr4k* bname = qn_alloc_1(qnBstr4k);    // ÀÌ¸§Àº 4k
-	qnBstr4k* barg = qn_alloc_1(qnBstr4k);     // ÀÎ¼ö´Â 4k
+	qnBstr4k* btag = qn_alloc_1(qnBstr4k);     // íƒœê·¸ëŠ” 4k
+	qnBstr4k* bname = qn_alloc_1(qnBstr4k);    // ì´ë¦„ì€ 4k
+	qnBstr4k* barg = qn_alloc_1(qnBstr4k);     // ì¸ìˆ˜ëŠ” 4k
 
 	for (i = 0; i < size; i++)
 	{
@@ -301,7 +301,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 				iscmt = false;
 
 #if 0
-			// ¿¾³¯ ¹æ½Ä ÁÖ¼® '#' ¶Ç´Â "//"
+			// ì˜›ë‚  ë°©ì‹ ì£¼ì„ '#' ë˜ëŠ” "//"
 			n = i + 1;
 
 			if (n < size)
@@ -324,7 +324,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 
 		if (ch == '<')
 		{
-			// ÅÂ±× µé¾î°¡±â
+			// íƒœê·¸ ë“¤ì–´ê°€ê¸°
 			bool hasclosure = false;
 			bool hasintern = false;
 			bool hassingle = false;
@@ -346,7 +346,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 				}
 				else if (pos[i] == '!' && (i + 2) < size && pos[i + 1] == '-' && pos[i + 2] == '-')
 				{
-					// ÁÖ¼®
+					// ì£¼ì„
 					i += 3;
 					n = size - 2;
 
@@ -373,7 +373,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 				}
 			}
 
-			// ÀÌ¸§ + ÀÎ¼ö
+			// ì´ë¦„ + ì¸ìˆ˜
 			qn_bstr_init(btag, NULL);
 
 			for (; i < size; i++)
@@ -400,10 +400,10 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 					qn_bstr_append_char(btag, pos[i]);
 			}
 
-			// ÀÎ¼ö °Ë»ç
+			// ì¸ìˆ˜ ê²€ì‚¬
 			if (hasclosure)
 			{
-				// ´İ´Â¾Ö´Â ÀÎ¼ö°¡ ¾øÀ¸¹Ç·Î
+				// ë‹«ëŠ”ì• ëŠ” ì¸ìˆ˜ê°€ ì—†ìœ¼ë¯€ë¡œ
 				qn_bstr_init(barg, NULL);
 				qn_bstr_set_bstr(bname, btag);
 				qn_bstr_upper(bname);
@@ -417,21 +417,21 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 
 				if (at < 0)
 				{
-					// ÀÌ¸§¸¸ ÀÖÀ½
+					// ì´ë¦„ë§Œ ìˆìŒ
 					qn_bstr_init(barg, NULL);
 					qn_bstr_set_bstr(bname, btag);
 					qn_bstr_upper(bname);
 				}
 				else
 				{
-					// ÀÌ¸§°ú ÀÎ¼ö°¡ ÀÖÀ½
+					// ì´ë¦„ê³¼ ì¸ìˆ˜ê°€ ìˆìŒ
 					qn_bstr_sub_bstr(barg, btag, at + 1, -1);
 					qn_bstr_sub_bstr(bname, btag, 0, at);
 					qn_bstr_upper(bname);
 				}
 			}
 
-			// ÀÌ¸§ °Ë»ç
+			// ì´ë¦„ ê²€ì‚¬
 			if (bname->len == 0)
 			{
 				qn_mlu_add_errf(self, "line#%d, invalid tag name.", line);
@@ -446,14 +446,14 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 					goto pos_exit;
 				}
 
-				// ÀÎÅÏÀº ±×³É ¹«½Ã
+				// ì¸í„´ì€ ê·¸ëƒ¥ ë¬´ì‹œ
 				continue;
 			}
 
-			// ´İ±â ¿­±â µû·Î
+			// ë‹«ê¸° ì—´ê¸° ë”°ë¡œ
 			if (hasclosure)
 			{
-				// ¿©±â´Â ´İ±â
+				// ì—¬ê¸°ëŠ” ë‹«ê¸°
 				if (!stack)
 				{
 					qn_mlu_add_errf(self, "line#%d, invalid tag closure.", line);
@@ -469,7 +469,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 					goto pos_exit;
 				}
 
-				// ¼º°ø
+				// ì„±ê³µ
 				if (cdsize > 0)
 				{
 					cd[cdsize] = '\0';
@@ -483,25 +483,25 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 					cdsize = 0;
 				}
 
-				// Ãß°¡
+				// ì¶”ê°€
 				if (!stack)
 				{
-					// »õ·Î ³Ö±â
+					// ìƒˆë¡œ ë„£ê¸°
 					curtag = NULL;
 					qn_arr_add(SubArray, &self->tags, tmptag);
 				}
 				else
 				{
-					// ÇÏºÎ·Î ³Ö±â
+					// í•˜ë¶€ë¡œ ë„£ê¸°
 					curtag = stack->data;
 					qn_arr_add(SubArray, &curtag->subs, tmptag);
 				}
 			}
 			else
 			{
-				// ¿©±â´Â ¿­±â
+				// ì—¬ê¸°ëŠ” ì—´ê¸°
 
-				// ÇöÀç ¿­·ÁÀÖ´Â ÅÂ±×¿Í ÀÚ·á°¡ ÀÖÀ¸¸é ³Ö´Â´Ù
+				// í˜„ì¬ ì—´ë ¤ìˆëŠ” íƒœê·¸ì™€ ìë£Œê°€ ìˆìœ¼ë©´ ë„£ëŠ”ë‹¤
 				if (curtag && cdsize > 0)
 				{
 					cd[cdsize] = '\0';
@@ -513,7 +513,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 						qn_mltag_add_context((qnMlTag*)curtag, cd, cdsize);
 				}
 
-				// ¿­±â
+				// ì—´ê¸°
 				curtag = (qnRealTag*)qn_mltag_new(bname->data);
 				if (!curtag)
 				{
@@ -523,33 +523,33 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 				curtag->base.line = line;
 				curtag->idn = idn++;
 
-				// ÀÎ¼ö
+				// ì¸ìˆ˜
 				if (!_qn_realtag_parse_args(curtag, (qnBstr4k*)barg))
 				{
 					qn_mlu_add_errf(self, "line#%d, invalid argument.", line);
 					goto pos_exit;
 				}
 
-				// ÁØºñ
+				// ì¤€ë¹„
 				if (!hassingle)
 				{
-					// ´ÜÀÏ ÅÂ±×°¡ ¾Æ´Ï¸é ³Ö°í ÁØºñ
+					// ë‹¨ì¼ íƒœê·¸ê°€ ì•„ë‹ˆë©´ ë„£ê³  ì¤€ë¹„
 					qn_slist_prepend(StackList, stack, curtag, &stack);
 				}
 				else
 				{
-					// ´ÜÀÏ ÅÂ±×ÀÌ¸é ±×³É ³ÖÀÚ
+					// ë‹¨ì¼ íƒœê·¸ì´ë©´ ê·¸ëƒ¥ ë„£ì
 					tmptag = curtag;
 
 					if (!stack)
 					{
-						// »õ·Î ³Ö±â
+						// ìƒˆë¡œ ë„£ê¸°
 						curtag = NULL;
 						qn_arr_add(SubArray, &self->tags, tmptag);
 					}
 					else
 					{
-						// ÇÏºÎ·Î ³Ö±â
+						// í•˜ë¶€ë¡œ ë„£ê¸°
 						tmptag->cls = true;
 
 						curtag = stack->data;
@@ -557,20 +557,20 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 					}
 				}
 
-				// ³»¿ë ±æÀÌ ÀÚ¸§
+				// ë‚´ìš© ê¸¸ì´ ìë¦„
 				cdsize = 0;
 			}
 		}   // ch=='<'
 		else if (ch == '>')
 		{
-			// ÅÂ±× ´İ±â
+			// íƒœê·¸ ë‹«ê¸°
 			psz = curtag && curtag->base.name ? curtag->base.name : "unknown";
 			qn_mlu_add_errf(self, "line#%d, invalid tag '%d'.", line, psz);
 			goto pos_exit;
 		}   // ch=='>'
 		else
 		{
-			// ÅÂ±× µ¥ÀÌÅÍ
+			// íƒœê·¸ ë°ì´í„°
 			if (curtag)
 				cd[cdsize++] = ch;
 		}
@@ -578,12 +578,12 @@ bool qn_mlu_load_buffer(qnMlu* self, const pointer_t data, int size)
 
 	if (stack)
 	{
-		// ¿ò...
+		// ì›€...
 		qn_mlu_add_errf(self, "stack has left! (count:%d)", qn_slist_count(stack));
 	}
 	else
 	{
-		// ¼º°ø
+		// ì„±ê³µ
 		ret = true;
 	}
 
@@ -616,10 +616,10 @@ pos_exit:
 }
 
 /**
- * RML ³»¿ëÀ» ÆÄÀÏ·Î ÀúÀåÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	filename	ÆÄÀÏÀÇ ÀÌ¸§.
- * @return	¼º°øÇÏ¸é ÂüÀ», ½ÇÆĞÇÏ¸é °ÅÁşÀ» ¹İÈ¯ÇÑ´Ù.
+ * RML ë‚´ìš©ì„ íŒŒì¼ë¡œ ì €ì¥í•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	filename	íŒŒì¼ì˜ ì´ë¦„.
+ * @return	ì„±ê³µí•˜ë©´ ì°¸ì„, ì‹¤íŒ¨í•˜ë©´ ê±°ì§“ì„ ë°˜í™˜í•œë‹¤.
  */
 bool qn_mlu_write_file(qnMlu* self, const char* filename)
 {
@@ -635,7 +635,7 @@ bool qn_mlu_write_file(qnMlu* self, const char* filename)
 	int bom = 0x00BFBBEF;
 	qn_file_write(file, &bom, 0, 3);
 
-	// xml ºÎÈ£
+	// xml ë¶€í˜¸
 	qn_file_write(file, (const pointer_t)_ml_header_desc, 0, (int)strlen(_ml_header_desc));
 
 	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
@@ -650,9 +650,9 @@ bool qn_mlu_write_file(qnMlu* self, const char* filename)
 }
 
 /**
- * °®°í ÀÖ´Â ÃÖ»óÀ§ ÅÂ±×ÀÇ °¹¼ö¸¦ ¹İÈ¯ÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @return	ÃÖ»óÀ§ ÅÂ±× °¹¼ö.
+ * ê°–ê³  ìˆëŠ” ìµœìƒìœ„ íƒœê·¸ì˜ ê°¯ìˆ˜ë¥¼ ë°˜í™˜í•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @return	ìµœìƒìœ„ íƒœê·¸ ê°¯ìˆ˜.
  */
 int qn_mlu_get_count(qnMlu* self)
 {
@@ -660,10 +660,10 @@ int qn_mlu_get_count(qnMlu* self)
 }
 
 /**
- * °®°í ÀÖ´Â ¿À·ù¸¦ ¼ø¹øÀ¸·Î ¾ò´Â´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	at			¿À·ù ¼ø¹ø.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº char*.
+ * ê°–ê³  ìˆëŠ” ì˜¤ë¥˜ë¥¼ ìˆœë²ˆìœ¼ë¡œ ì–»ëŠ”ë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	at			ì˜¤ë¥˜ ìˆœë²ˆ.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ char*.
  */
 const char* qn_mlu_get_err(qnMlu* self, int at)
 {
@@ -671,10 +671,10 @@ const char* qn_mlu_get_err(qnMlu* self, int at)
 }
 
 /**
- * ÃÖ»óÀ§ ÅÂ±×¸¦ Ã£´Â´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	name		ÅÂ±× ÀÌ¸§.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnMlTag*.
+ * ìµœìƒìœ„ íƒœê·¸ë¥¼ ì°¾ëŠ”ë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	name		íƒœê·¸ ì´ë¦„.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnMlTag*.
  */
 qnMlTag* qn_mlu_get_tag(qnMlu* self, const char* name)
 {
@@ -693,10 +693,10 @@ qnMlTag* qn_mlu_get_tag(qnMlu* self, const char* name)
 }
 
 /**
- * ÃÖ»óÀ§ ÅÂ±×¸¦ ¼ø¹øÀ¸·Î ¾ò´Â´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	at			¼ø¹ø.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnMlTag*.
+ * ìµœìƒìœ„ íƒœê·¸ë¥¼ ìˆœë²ˆìœ¼ë¡œ ì–»ëŠ”ë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	at			ìˆœë²ˆ.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnMlTag*.
  */
 qnMlTag* qn_mlu_get_tag_nth(qnMlu* self, int at)
 {
@@ -704,11 +704,11 @@ qnMlTag* qn_mlu_get_tag_nth(qnMlu* self, int at)
 }
 
 /**
- * ÃÖ»óÀ§ ÅÂ±×°¡ °®°í ÀÖ´Â ÄÁÅØ½ºÆ®¸¦ ¾ò´Â´Ù.
- * @param [ÀÔ·Â]	self  	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	name	  	ÅÂ±× ÀÌ¸§.
- * @param	ifnotexist	ÅÂ±×°¡ Á¸ÀçÇÏÁö ¾ÊÀ» °æ¿ì ¹İÈ¯ÇÒ °ª.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ifnotexist¸¦ ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº ÅÂ±× ÄÁÅØ½ºÆ®.
+ * ìµœìƒìœ„ íƒœê·¸ê°€ ê°–ê³  ìˆëŠ” ì»¨í…ìŠ¤íŠ¸ë¥¼ ì–»ëŠ”ë‹¤.
+ * @param [ì…ë ¥]	self  	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	name	  	íƒœê·¸ ì´ë¦„.
+ * @param	ifnotexist	íƒœê·¸ê°€ ì¡´ì¬í•˜ì§€ ì•Šì„ ê²½ìš° ë°˜í™˜í•  ê°’.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ifnotexistë¥¼ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ íƒœê·¸ ì»¨í…ìŠ¤íŠ¸.
  */
 const char* qn_mlu_get_context(qnMlu* self, const char* name, const char* ifnotexist)
 {
@@ -717,11 +717,11 @@ const char* qn_mlu_get_context(qnMlu* self, const char* name, const char* ifnote
 }
 
 /**
- * ÃÖ»óÀ§ ÅÂ±×°¡ °®°í ÀÖ´Â ÄÁÅØ½ºÆ®¸¦ ¾ò´Â´Ù. ÅÂ±×´Â ¼ø¹øÀ¸·Î °Ë»çÇÑ´Ù.
- * @param [ÀÔ·Â]	self  	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	at		  	¼ø¹ø.
- * @param	ifnotexist	ÅÂ±×°¡ Á¸ÀçÇÏÁö ¾ÊÀ» °æ¿ì ¹İÈ¯ÇÒ °ª.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ifnotexist¸¦ ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº ÅÂ±× ÄÁÅØ½ºÆ®.
+ * ìµœìƒìœ„ íƒœê·¸ê°€ ê°–ê³  ìˆëŠ” ì»¨í…ìŠ¤íŠ¸ë¥¼ ì–»ëŠ”ë‹¤. íƒœê·¸ëŠ” ìˆœë²ˆìœ¼ë¡œ ê²€ì‚¬í•œë‹¤.
+ * @param [ì…ë ¥]	self  	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	at		  	ìˆœë²ˆ.
+ * @param	ifnotexist	íƒœê·¸ê°€ ì¡´ì¬í•˜ì§€ ì•Šì„ ê²½ìš° ë°˜í™˜í•  ê°’.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ifnotexistë¥¼ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ íƒœê·¸ ì»¨í…ìŠ¤íŠ¸.
  */
 const char* qn_mlu_get_context_nth(qnMlu* self, int at, const char* ifnotexist)
 {
@@ -730,10 +730,10 @@ const char* qn_mlu_get_context_nth(qnMlu* self, int at, const char* ifnotexist)
 }
 
 /**
- * ÁöÁ¤ÇÑ ÅÂ±×°¡ ÀÖ³ª °Ë»çÇÑ´Ù.
- * @param [ÀÔ·Â]	self   	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param [ÀÔ·Â]	tag	(³Î°ªÀÌ ¾Æ´Ô) ÁöÁ¤ÇÑ ÅÂ±×.
- * @return	ÅÂ±×°¡ ¾øÀ¸¸é -1À» ÀÖÀ¸¸é ÇØ´ç ¼ø¹øÀ» ¹İÈ¯ÇÑ´Ù.
+ * ì§€ì •í•œ íƒœê·¸ê°€ ìˆë‚˜ ê²€ì‚¬í•œë‹¤.
+ * @param [ì…ë ¥]	self   	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param [ì…ë ¥]	tag	(ë„ê°’ì´ ì•„ë‹˜) ì§€ì •í•œ íƒœê·¸.
+ * @return	íƒœê·¸ê°€ ì—†ìœ¼ë©´ -1ì„ ìˆìœ¼ë©´ í•´ë‹¹ ìˆœë²ˆì„ ë°˜í™˜í•œë‹¤.
  */
 int qn_mlu_contains(qnMlu* self, qnMlTag* tag)
 {
@@ -743,10 +743,10 @@ int qn_mlu_contains(qnMlu* self, qnMlTag* tag)
 }
 
 /**
- * ÃÖ»óÀ§ ÅÂ±×¿¡ ´ëÇØ ForEach¸¦ ¼öÇàÇÑ´Ù.
- * @param [ÀÔ·Â]	self		°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param [ÀÔ·Â]	func	Äİ¹é ÇÔ¼ö.
- * @param	userdata		Äİ¹é µ¥ÀÌÅÍ.
+ * ìµœìƒìœ„ íƒœê·¸ì— ëŒ€í•´ ForEachë¥¼ ìˆ˜í–‰í•œë‹¤.
+ * @param [ì…ë ¥]	self		ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param [ì…ë ¥]	func	ì½œë°± í•¨ìˆ˜.
+ * @param	userdata		ì½œë°± ë°ì´í„°.
  */
 void qn_mlu_foreach(qnMlu* self, void(*func)(pointer_t userdata, qnMlTag* tag), pointer_t userdata)
 {
@@ -760,9 +760,9 @@ void qn_mlu_foreach(qnMlu* self, void(*func)(pointer_t userdata, qnMlTag* tag), 
 }
 
 /**
- * ÃÖ»óÀ§ ÅÂ±×¿¡ ´ëÇØ LoopEach¸¦ ¼öÇàÇÑ´Ù.
- * @param [ÀÔ·Â]	self		°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param [ÀÔ·Â]	func	Äİ¹é ÇÔ¼ö.
+ * ìµœìƒìœ„ íƒœê·¸ì— ëŒ€í•´ LoopEachë¥¼ ìˆ˜í–‰í•œë‹¤.
+ * @param [ì…ë ¥]	self		ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param [ì…ë ¥]	func	ì½œë°± í•¨ìˆ˜.
  */
 void qn_mlu_loopeach(qnMlu* self, void(*func)(qnMlTag* tag))
 {
@@ -776,12 +776,12 @@ void qn_mlu_loopeach(qnMlu* self, void(*func)(qnMlTag* tag))
 }
 
 /**
- * ÅÂ±×¸¦ Ãß°¡ÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	name		ÅÂ±× ÀÌ¸§.
- * @param	context 	ÅÂ±× ÄÁÅØ½ºÆ®.
- * @param	line		ÁÙ¹øÈ£.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº ¸¸µé¾îÁø ÅÂ±×.
+ * íƒœê·¸ë¥¼ ì¶”ê°€í•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	name		íƒœê·¸ ì´ë¦„.
+ * @param	context 	íƒœê·¸ ì»¨í…ìŠ¤íŠ¸.
+ * @param	line		ì¤„ë²ˆí˜¸.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ ë§Œë“¤ì–´ì§„ íƒœê·¸.
  */
 qnMlTag* qn_mlu_add(qnMlu* self, const char* name, const char* context, int line)
 {
@@ -802,10 +802,10 @@ qnMlTag* qn_mlu_add(qnMlu* self, const char* name, const char* context, int line
 }
 
 /**
- * ÅÂ±×¸¦ Ãß°¡ÇÑ´Ù.
- * @param [ÀÔ·Â]	self   	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param [ÀÔ·Â]	tag	(³Î°ªÀÌ ¾Æ´Ô) Ãß°¡ÇÒ ÅÂ±×.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº Ãß°¡ÇÑ ÅÂ±×.
+ * íƒœê·¸ë¥¼ ì¶”ê°€í•œë‹¤.
+ * @param [ì…ë ¥]	self   	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param [ì…ë ¥]	tag	(ë„ê°’ì´ ì•„ë‹˜) ì¶”ê°€í•  íƒœê·¸.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ ì¶”ê°€í•œ íƒœê·¸.
  */
 qnMlTag* qn_mlu_add_tag(qnMlu* self, qnMlTag* tag)
 {
@@ -817,11 +817,11 @@ qnMlTag* qn_mlu_add_tag(qnMlu* self, qnMlTag* tag)
 }
 
 /**
- * ÅÂ±×¸¦ Á¦°ÅÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	name		ÅÂ±× ÀÌ¸§.
- * @param	isall   	°°Àº ÀÌ¸§ ÅÂ±×¸¦ ¸ğµÎ Áö¿ì·Á¸é ÂüÀ¸·Î ³Ö´Â´Ù.
- * @return	Áö¿î ÅÂ±×ÀÇ °¹¼ö.
+ * íƒœê·¸ë¥¼ ì œê±°í•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	name		íƒœê·¸ ì´ë¦„.
+ * @param	isall   	ê°™ì€ ì´ë¦„ íƒœê·¸ë¥¼ ëª¨ë‘ ì§€ìš°ë ¤ë©´ ì°¸ìœ¼ë¡œ ë„£ëŠ”ë‹¤.
+ * @return	ì§€ìš´ íƒœê·¸ì˜ ê°¯ìˆ˜.
  */
 int qn_mlu_remove(qnMlu* self, const char* name, bool isall)
 {
@@ -851,10 +851,10 @@ int qn_mlu_remove(qnMlu* self, const char* name, bool isall)
 }
 
 /**
- * ÅÂ±×¸¦ ¼ø¹øÀ¸·Î Á¦°ÅÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	at			¼ø¹ø.
- * @return	¼º°øÇÏ¸é ÂüÀ», ½ÇÆĞÇÏ¸é °ÅÁşÀ» ¹İÈ¯ÇÑ´Ù.
+ * íƒœê·¸ë¥¼ ìˆœë²ˆìœ¼ë¡œ ì œê±°í•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param	at			ìˆœë²ˆ.
+ * @return	ì„±ê³µí•˜ë©´ ì°¸ì„, ì‹¤íŒ¨í•˜ë©´ ê±°ì§“ì„ ë°˜í™˜í•œë‹¤.
  */
 bool qn_mlu_remove_nth(qnMlu* self, int at)
 {
@@ -871,11 +871,11 @@ bool qn_mlu_remove_nth(qnMlu* self, int at)
 }
 
 /**
- * ÅÂ±×¸¦ Á¦°ÅÇÑ´Ù.
- * @param [ÀÔ·Â]	self   	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param [ÀÔ·Â]	tag	(³Î°ªÀÌ ¾Æ´Ô) Áö¿ï ÅÂ±×.
- * @param	isdelete   	ÅÂ±×¸¦ »èÁ¦ÇÏ·Á¸é ÂüÀ¸·Î ³Ö´Â´Ù.
- * @return	¼º°øÇÏ¸é ÂüÀ», ½ÇÆĞÇÏ¸é °ÅÁşÀ» ¹İÈ¯ÇÑ´Ù.
+ * íƒœê·¸ë¥¼ ì œê±°í•œë‹¤.
+ * @param [ì…ë ¥]	self   	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
+ * @param [ì…ë ¥]	tag	(ë„ê°’ì´ ì•„ë‹˜) ì§€ìš¸ íƒœê·¸.
+ * @param	isdelete   	íƒœê·¸ë¥¼ ì‚­ì œí•˜ë ¤ë©´ ì°¸ìœ¼ë¡œ ë„£ëŠ”ë‹¤.
+ * @return	ì„±ê³µí•˜ë©´ ì°¸ì„, ì‹¤íŒ¨í•˜ë©´ ê±°ì§“ì„ ë°˜í™˜í•œë‹¤.
  */
 bool qn_mlu_remove_tag(qnMlu* self, qnMlTag* tag, bool isdelete)
 {
@@ -901,12 +901,12 @@ bool qn_mlu_remove_tag(qnMlu* self, qnMlTag* tag, bool isdelete)
 
 
 //////////////////////////////////////////////////////////////////////////
-// ³ëµå
+// ë…¸ë“œ
 
 /**
- * ÅÂ±× ³ëµå¸¦ ¸¸µç´Ù.
- * @param	name	ÅÂ±× ÀÌ¸§.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnMlTag*.
+ * íƒœê·¸ ë…¸ë“œë¥¼ ë§Œë“ ë‹¤.
+ * @param	name	íƒœê·¸ ì´ë¦„.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnMlTag*.
  */
 qnMlTag* qn_mltag_new(const char* name)
 {
@@ -923,7 +923,7 @@ qnMlTag* qn_mltag_new(const char* name)
 	return (qnMlTag*)self;
 }
 
-// Á¦°Å
+// ì œê±°
 static void _qn_realtag_delete_ptr(qnRealTag** ptr)
 {
 	qnRealTag* self = *ptr;
@@ -940,8 +940,8 @@ static void _qn_realtag_delete_ptr(qnRealTag** ptr)
 }
 
 /**
- * ÅÂ±× ³ëµå¸¦ Á¦°ÅÇÑ´Ù.
- * @param [ÀÔ·Â]	self	°³Ã¼³ª ÀÎÅÍÆäÀÌ½ºÀÇ ÀÚ±â ÀÚ½Å °ª.
+ * íƒœê·¸ ë…¸ë“œë¥¼ ì œê±°í•œë‹¤.
+ * @param [ì…ë ¥]	self	ê°œì²´ë‚˜ ì¸í„°í˜ì´ìŠ¤ì˜ ìê¸° ìì‹  ê°’.
  */
 void qn_mltag_delete(qnMlTag* self)
 {
@@ -950,10 +950,10 @@ void qn_mltag_delete(qnMlTag* self)
 }
 
 /**
- * ÅÂ±× ³»¿ëÀ» Ãß°¡ÇÑ´Ù.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	cntx	   	ÄÁÅØ½ºÆ®.
- * @param	size	   	ÄÁÅØ½ºÆ®ÀÇ Å©±â.
+ * íƒœê·¸ ë‚´ìš©ì„ ì¶”ê°€í•œë‹¤.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param	cntx	   	ì»¨í…ìŠ¤íŠ¸.
+ * @param	size	   	ì»¨í…ìŠ¤íŠ¸ì˜ í¬ê¸°.
  */
 void qn_mltag_add_context(qnMlTag* ptr, const char* cntx, int size)
 {
@@ -961,11 +961,11 @@ void qn_mltag_add_context(qnMlTag* ptr, const char* cntx, int size)
 
 	if (!cntx)
 	{
-		// ³»¿ë¾øÀ» ¶§
+		// ë‚´ìš©ì—†ì„ ë•Œ
 	}
 	else
 	{
-		// ³»¿ëÀÖÀ» ¶§
+		// ë‚´ìš©ìˆì„ ë•Œ
 		if (size <= 0)
 			size = (int)strlen(cntx);
 
@@ -990,10 +990,10 @@ void qn_mltag_add_context(qnMlTag* ptr, const char* cntx, int size)
 }
 
 /**
- * ÅÂ±×¿¡ ³»¿ëÀ» ¾´´Ù.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	cntx	   	ÄÁÅØ½ºÆ®.
- * @param	size	   	ÄÁÅØ½ºÆ®ÀÇ Å©±â.
+ * íƒœê·¸ì— ë‚´ìš©ì„ ì“´ë‹¤.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param	cntx	   	ì»¨í…ìŠ¤íŠ¸.
+ * @param	size	   	ì»¨í…ìŠ¤íŠ¸ì˜ í¬ê¸°.
  */
 void qn_mltag_set_context(qnMlTag* ptr, const char* cntx, int size)
 {
@@ -1008,17 +1008,17 @@ void qn_mltag_set_context(qnMlTag* ptr, const char* cntx, int size)
 	qn_mltag_add_context(ptr, cntx, size);
 }
 
-// ÀÎ¼ö ºĞ¼®
+// ì¸ìˆ˜ ë¶„ì„
 static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 {
 	int at, eq;
-	qnBstr1k k, v;   // Å°¿Í °ªÀº °¢°¢ 1k
+	qnBstr1k k, v;   // í‚¤ì™€ ê°’ì€ ê°ê° 1k
 
 	qn_retval_if_fail(bs->len > 0, true);
 
 	for (;;)
 	{
-		// Å°
+		// í‚¤
 		eq = qn_bstr_find_char(bs, 0, '=');
 
 		if (eq < 0)
@@ -1027,7 +1027,7 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 
 			if (bs->len > 0)
 			{
-				// °ªÀÌ ¾ø´Âµ¥ Å°¸¸ ÀÖÀ¸¸é ¾ÈµÊ
+				// ê°’ì´ ì—†ëŠ”ë° í‚¤ë§Œ ìˆìœ¼ë©´ ì•ˆë¨
 				return false;
 			}
 
@@ -1040,20 +1040,20 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 		qn_bstr_sub_bstr(bs, bs, eq + 1, -1);
 		qn_bstr_trim_left(bs);
 
-		// °ª
+		// ê°’
 		if (bs->len == 0)
 		{
-			// ¾Æ¸¶µµ '='µÚ¿¡ °ªÀÌ ¾ø´Â µí
+			// ì•„ë§ˆë„ '='ë’¤ì— ê°’ì´ ì—†ëŠ” ë“¯
 			return false;
 		}
 		else if (qn_bstr_nth(bs, 0) == '"')
 		{
-			// ÀÌÁß ÀÎ¿ëÀÌ¸é ´ÙÀ½ ÀÌÁß ÀÎ¿ë±îÁö
+			// ì´ì¤‘ ì¸ìš©ì´ë©´ ë‹¤ìŒ ì´ì¤‘ ì¸ìš©ê¹Œì§€
 			at = qn_bstr_find_char(bs, 1, '"');
 
 			if (at < 0)
 			{
-				// ¾øÀ¸¸é ¿À·ù
+				// ì—†ìœ¼ë©´ ì˜¤ë¥˜
 				return false;
 			}
 
@@ -1062,12 +1062,12 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 		}
 		else if (qn_bstr_nth(bs, 0) == '\'')
 		{
-			// ´ÜÀÏ ÀÎ¿ëÀÌ¸é ´ÙÀ½ ´ÜÀÏ ÀÎ¿ë±îÁö
+			// ë‹¨ì¼ ì¸ìš©ì´ë©´ ë‹¤ìŒ ë‹¨ì¼ ì¸ìš©ê¹Œì§€
 			at = qn_bstr_find_char(bs, 1, '\'');
 
 			if (at < 0)
 			{
-				// ¾øÀ¸¸é ¿À·ù
+				// ì—†ìœ¼ë©´ ì˜¤ë¥˜
 				return false;
 			}
 
@@ -1076,18 +1076,18 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 		}
 		else
 		{
-			// ´ÙÀ½ °ø¹é±îÁö
+			// ë‹¤ìŒ ê³µë°±ê¹Œì§€
 			at = qn_bstr_find_char(bs, 0, ' ');
 
 			if (at < 0)
 			{
-				// ÀüÃ¼ ´Ù
+				// ì „ì²´ ë‹¤
 				qn_bstr_set_bstr(&v, bs);
 				qn_bstr_trim(&v);
 
 				if (v.len == 0)
 				{
-					// ¾Æ¸¶µµ ¸¶Áö¸·¿¡ '='¸¸ ÀÖ´Â µí
+					// ì•„ë§ˆë„ ë§ˆì§€ë§‰ì— '='ë§Œ ìˆëŠ” ë“¯
 					return false;
 				}
 
@@ -1100,14 +1100,14 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 			}
 		}
 
-		// ³ÖÀÚ
+		// ë„£ì
 		qn_mltag_set_arg((qnMlTag*)self, k.data, v.data);
 	}
 
 	return true;
 }
 
-// ÀÎ¼ö ÆÄÀÏ¿¡ ¾²±â
+// ì¸ìˆ˜ íŒŒì¼ì— ì“°ê¸°
 static void _qn_realtag_write_file_arg(qnFile* file, char** pk, char** pv)
 {
 	char sz[3];
@@ -1126,7 +1126,7 @@ static void _qn_realtag_write_file_arg(qnFile* file, char** pk, char** pv)
 	qn_file_write(file, sz + 1, 0, sizeof(char) * 1);
 }
 
-// ÆÄÀÏ¿¡ ¾²±â
+// íŒŒì¼ì— ì“°ê¸°
 static bool _qn_realtag_write_file(qnRealTag* self, qnFile* file, int ident)
 {
 	bool isbody = false;
@@ -1137,7 +1137,7 @@ static bool _qn_realtag_write_file(qnRealTag* self, qnFile* file, int ident)
 	qn_strfll(szident, 0, ident, '\t');
 	szident[ident] = '\0';
 
-	// ¾Æ·¡ ¸¹´Ù. ¶Ç´Â ³»¿ë ±æ´Ù
+	// ì•„ë˜ ë§ë‹¤. ë˜ëŠ” ë‚´ìš© ê¸¸ë‹¤
 	isbody = qn_arr_count(&self->subs) > 0 || self->base.clen > 64 ? true : false;
 
 	if (!isbody)
@@ -1199,7 +1199,7 @@ static bool _qn_realtag_write_file(qnRealTag* self, qnFile* file, int ident)
 			qn_file_write(file, bs.data, 0, (int)bs.len);
 		}
 
-		// ³»¿ë
+		// ë‚´ìš©
 		if (self->base.clen > 0)
 		{
 			qn_file_write(file, szident, 0, ident);
@@ -1213,7 +1213,7 @@ static bool _qn_realtag_write_file(qnRealTag* self, qnFile* file, int ident)
 			qn_file_write(file, &ch, 0, sizeof(char));
 		}
 
-		// ÀÚ½Ä
+		// ìì‹
 		ident++;
 
 		for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
@@ -1231,9 +1231,9 @@ static bool _qn_realtag_write_file(qnRealTag* self, qnFile* file, int ident)
 }
 
 /**
- * ÇÏºÎ ÅÂ±×ÀÇ °¹¼ö¸¦ ¾ò´Â´Ù.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @return	ÇÏºÎ ÅÂ±×ÀÇ °¹¼ö.
+ * í•˜ë¶€ íƒœê·¸ì˜ ê°¯ìˆ˜ë¥¼ ì–»ëŠ”ë‹¤.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @return	í•˜ë¶€ íƒœê·¸ì˜ ê°¯ìˆ˜.
  */
 int qn_mltag_get_sub_count(qnMlTag* ptr)
 {
@@ -1243,10 +1243,10 @@ int qn_mltag_get_sub_count(qnMlTag* ptr)
 }
 
 /**
- * ÇÏºÎ ÅÂ±×¸¦ Ã£´Â´Ù.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	name	   	Ã£À» ÅÂ±× ÀÌ¸§.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnMlTag*.
+ * í•˜ë¶€ íƒœê·¸ë¥¼ ì°¾ëŠ”ë‹¤.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param	name	   	ì°¾ì„ íƒœê·¸ ì´ë¦„.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnMlTag*.
  */
 qnMlTag* qn_mltag_get_sub(qnMlTag* ptr, const char* name)
 {
@@ -1267,10 +1267,10 @@ qnMlTag* qn_mltag_get_sub(qnMlTag* ptr, const char* name)
 }
 
 /**
- * ÇÏºÎ ÅÂ±×¸¦ ¼ø¹øÀ¸·Î Ã£´Â´Ù.
- * @param [ÀÔ·Â] ptr °³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	at		   	¼ø¹ø.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnMlTag*.
+ * í•˜ë¶€ íƒœê·¸ë¥¼ ìˆœë²ˆìœ¼ë¡œ ì°¾ëŠ”ë‹¤.
+ * @param [ì…ë ¥] ptr ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param	at		   	ìˆœë²ˆ.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnMlTag*.
  */
 qnMlTag* qn_mltag_get_sub_nth(qnMlTag* ptr, int at)
 {
@@ -1279,11 +1279,11 @@ qnMlTag* qn_mltag_get_sub_nth(qnMlTag* ptr, int at)
 }
 
 /**
- * ÇÏºÎ ÅÂ±×ÀÇ ÄÁÅØ½ºÆ®¸¦ ¾ò´Â´Ù.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	name	   	ÅÂ±× ÀÌ¸§.
- * @param	ifnotexist 	ÅÂ±×¸¦ Ã£À» ¼ö ¾øÀ¸¸é ¹İÈ¯ÇÒ °ª.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ifnotexit¸¦ ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº char*.
+ * í•˜ë¶€ íƒœê·¸ì˜ ì»¨í…ìŠ¤íŠ¸ë¥¼ ì–»ëŠ”ë‹¤.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param	name	   	íƒœê·¸ ì´ë¦„.
+ * @param	ifnotexist 	íƒœê·¸ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìœ¼ë©´ ë°˜í™˜í•  ê°’.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ifnotexitë¥¼ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ char*.
  */
 const char* qn_mltag_get_sub_context(qnMlTag* ptr, const char* name, const char* ifnotexist)
 {
@@ -1292,11 +1292,11 @@ const char* qn_mltag_get_sub_context(qnMlTag* ptr, const char* name, const char*
 }
 
 /**
- * ÇÏºÎ ÅÂ±×ÀÇ ÄÁÅØ½ºÆ®¸¦ ¼ø¹øÀ¸·Î ¾ò´Â´Ù.
- * @param [ÀÔ·Â] ptr °³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	at			¼ø¹ø.
- * @param	ifnotexist 	ÅÂ±×¸¦ Ã£À» ¼ö ¾øÀ¸¸é ¹İÈ¯ÇÒ °ª.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº char*.
+ * í•˜ë¶€ íƒœê·¸ì˜ ì»¨í…ìŠ¤íŠ¸ë¥¼ ìˆœë²ˆìœ¼ë¡œ ì–»ëŠ”ë‹¤.
+ * @param [ì…ë ¥] ptr ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param	at			ìˆœë²ˆ.
+ * @param	ifnotexist 	íƒœê·¸ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìœ¼ë©´ ë°˜í™˜í•  ê°’.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ char*.
  */
 const char* qn_mltag_get_sub_context_nth(qnMlTag* ptr, int at, const char* ifnotexist)
 {
@@ -1305,10 +1305,10 @@ const char* qn_mltag_get_sub_context_nth(qnMlTag* ptr, int at, const char* ifnot
 }
 
 /**
- * ÁöÁ¤ÇÑ ÅÂ±×¸¦ ÇÏºÎ ÅÂ±×·Î °®°í ÀÖ³ª Á¶»ç.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param [ÀÔ·Â]	tag	(³Î°ªÀÌ ¾Æ´Ï¸é) Ã£À» ÅÂ±×.
- * @return	Ã£Áö ¸øÇÏ¸é -1, ¾Æ´Ï¸é ÇØ´ç ¼ø¹øÀ» ¹İÈ¯.
+ * ì§€ì •í•œ íƒœê·¸ë¥¼ í•˜ë¶€ íƒœê·¸ë¡œ ê°–ê³  ìˆë‚˜ ì¡°ì‚¬.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param [ì…ë ¥]	tag	(ë„ê°’ì´ ì•„ë‹ˆë©´) ì°¾ì„ íƒœê·¸.
+ * @return	ì°¾ì§€ ëª»í•˜ë©´ -1, ì•„ë‹ˆë©´ í•´ë‹¹ ìˆœë²ˆì„ ë°˜í™˜.
  */
 int qn_mltag_contains_sub(qnMlTag* ptr, qnMlTag* tag)
 {
@@ -1321,10 +1321,10 @@ int qn_mltag_contains_sub(qnMlTag* ptr, qnMlTag* tag)
 }
 
 /**
- * ÇÏºÎ ÅÂ±×¿¡ ´ëÇØ ForEach ¿¬»êÀ» ¼öÇàÇÑ´Ù.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param [ÀÔ·Â]	func	Äİ¹é ÇÔ¼ö.
- * @param	userdata		Äİ¹é µ¥ÀÌÅÍ.
+ * í•˜ë¶€ íƒœê·¸ì— ëŒ€í•´ ForEach ì—°ì‚°ì„ ìˆ˜í–‰í•œë‹¤.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param [ì…ë ¥]	func	ì½œë°± í•¨ìˆ˜.
+ * @param	userdata		ì½œë°± ë°ì´í„°.
  */
 void qn_mltag_foreach_sub(qnMlTag* ptr, void(*func)(pointer_t userdata, qnMlTag* tag), pointer_t userdata)
 {
@@ -1340,9 +1340,9 @@ void qn_mltag_foreach_sub(qnMlTag* ptr, void(*func)(pointer_t userdata, qnMlTag*
 }
 
 /**
- * ÇÏºÎ ÅÂ±×¿¡ ´ëÇØ LoopEach ¿¬»êÀ» ¼öÇàÇÑ´Ù.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param [ÀÔ·Â]	func	Äİ¹é ÇÔ¼ö.
+ * í•˜ë¶€ íƒœê·¸ì— ëŒ€í•´ LoopEach ì—°ì‚°ì„ ìˆ˜í–‰í•œë‹¤.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param [ì…ë ¥]	func	ì½œë°± í•¨ìˆ˜.
  */
 void qn_mltag_loopeach_sub(qnMlTag* ptr, void(*func)(qnMlTag* tag))
 {
@@ -1358,12 +1358,12 @@ void qn_mltag_loopeach_sub(qnMlTag* ptr, void(*func)(qnMlTag* tag))
 }
 
 /**
- * ÇÏºÎ ÅÂ±×¸¦ Ãß°¡ÇÑ´Ù.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	name	   	ÅÂ±× ÀÌ¸§.
- * @param	context	   	ÅÂ±× ÄÜÅØ½ºÆ®.
- * @param	line	   	ÁÙ ¹øÈ£.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnMlTag*.
+ * í•˜ë¶€ íƒœê·¸ë¥¼ ì¶”ê°€í•œë‹¤.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param	name	   	íƒœê·¸ ì´ë¦„.
+ * @param	context	   	íƒœê·¸ ì½˜í…ìŠ¤íŠ¸.
+ * @param	line	   	ì¤„ ë²ˆí˜¸.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnMlTag*.
  */
 qnMlTag* qn_mltag_add_sub(qnMlTag* ptr, const char* name, const char* context, int line)
 {
@@ -1385,10 +1385,10 @@ qnMlTag* qn_mltag_add_sub(qnMlTag* ptr, const char* name, const char* context, i
 }
 
 /**
- * ÇÏºÎ ÅÂ±×¸¦ Ãß°¡ÇÑ´Ù.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param [ÀÔ·Â]	tag	Ãß°¡ÇÒ ÅÂ±×.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ³Î°ªÀ» ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº qnMlTag*.
+ * í•˜ë¶€ íƒœê·¸ë¥¼ ì¶”ê°€í•œë‹¤.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param [ì…ë ¥]	tag	ì¶”ê°€í•  íƒœê·¸.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ë„ê°’ì„ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ qnMlTag*.
  */
 qnMlTag* qn_mltag_add_sub_tag(qnMlTag* ptr, qnMlTag* tag)
 {
@@ -1402,11 +1402,11 @@ qnMlTag* qn_mltag_add_sub_tag(qnMlTag* ptr, qnMlTag* tag)
 }
 
 /**
- * ÁöÁ¤ÇÑ ÀÌ¸§ÀÇ ÅÂ±×¸¦ Á¦°ÅÇÑ´Ù.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	name	   	ÅÂ±× ÀÌ¸§.
- * @param	isall	   	°°Àº ÀÌ¸§ÀÇ ¸ğµç ÅÂ±×¸¦ Áö¿ì·Á¸é ÂüÀ¸·Î ³Ö´Â´Ù.
- * @return	Áö¿î ÅÂ±×ÀÇ °¹¼ö.
+ * ì§€ì •í•œ ì´ë¦„ì˜ íƒœê·¸ë¥¼ ì œê±°í•œë‹¤.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param	name	   	íƒœê·¸ ì´ë¦„.
+ * @param	isall	   	ê°™ì€ ì´ë¦„ì˜ ëª¨ë“  íƒœê·¸ë¥¼ ì§€ìš°ë ¤ë©´ ì°¸ìœ¼ë¡œ ë„£ëŠ”ë‹¤.
+ * @return	ì§€ìš´ íƒœê·¸ì˜ ê°¯ìˆ˜.
  */
 int qn_mltag_remove_sub(qnMlTag* ptr, const char* name, bool isall)
 {
@@ -1439,10 +1439,10 @@ int qn_mltag_remove_sub(qnMlTag* ptr, const char* name, bool isall)
 }
 
 /**
- * ÁöÁ¤ÇÑ ¼ø¹øÀÇ ÇÏºÎ ÅÂ±×¸¦ »èÁ¦ÇÑ´Ù.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	at			¼ø¹ø.
- * @return	¼º°øÇÏ¸é ÂüÀ», ½ÇÆĞÇÏ¸é °ÅÁşÀ» ¹İÈ¯ÇÑ´Ù.
+ * ì§€ì •í•œ ìˆœë²ˆì˜ í•˜ë¶€ íƒœê·¸ë¥¼ ì‚­ì œí•œë‹¤.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param	at			ìˆœë²ˆ.
+ * @return	ì„±ê³µí•˜ë©´ ì°¸ì„, ì‹¤íŒ¨í•˜ë©´ ê±°ì§“ì„ ë°˜í™˜í•œë‹¤.
  */
 bool qn_mltag_remove_sub_nth(qnMlTag* ptr, int at)
 {
@@ -1460,11 +1460,11 @@ bool qn_mltag_remove_sub_nth(qnMlTag* ptr, int at)
 }
 
 /**
- * ÁöÁ¤ÇÑ ÇÏºÎ ÅÂ±×¸¦ »èÁ¦ÇÑ´Ù.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param [ÀÔ·Â,¹İÈ¯]	tag	(³Î°ªÀÌ ¾Æ´Ô) Áö¿ï ÅÂ±×.
- * @param	isdelete   	ÅÂ±× ÀÚÃ¼¸¦ »èÁ¦ÇÏ·Á¸é ÂüÀ¸·Î ³Ö´Â´Ù.
- * @return	¼º°øÇÏ¸é ÂüÀ», ½ÇÆĞÇÏ¸é °ÅÁşÀ» ¹İÈ¯ÇÑ´Ù.
+ * ì§€ì •í•œ í•˜ë¶€ íƒœê·¸ë¥¼ ì‚­ì œí•œë‹¤.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param [ì…ë ¥,ë°˜í™˜]	tag	(ë„ê°’ì´ ì•„ë‹˜) ì§€ìš¸ íƒœê·¸.
+ * @param	isdelete   	íƒœê·¸ ìì²´ë¥¼ ì‚­ì œí•˜ë ¤ë©´ ì°¸ìœ¼ë¡œ ë„£ëŠ”ë‹¤.
+ * @return	ì„±ê³µí•˜ë©´ ì°¸ì„, ì‹¤íŒ¨í•˜ë©´ ê±°ì§“ì„ ë°˜í™˜í•œë‹¤.
  */
 bool qn_mltag_remove_sub_tag(qnMlTag* ptr, qnMlTag* tag, bool isdelete)
 {
@@ -1490,9 +1490,9 @@ bool qn_mltag_remove_sub_tag(qnMlTag* ptr, qnMlTag* tag, bool isdelete)
 }
 
 /**
- * ÅÂ±×ÀÇ ÀÎ¼öÀÇ °³¼ö¸¦ ¹İÈ¯ÇÑ´Ù.
- * @param [ÀÔ·Â]	ptr	°³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @return	ÀÎ¼öÀÇ °³¼ö.
+ * íƒœê·¸ì˜ ì¸ìˆ˜ì˜ ê°œìˆ˜ë¥¼ ë°˜í™˜í•œë‹¤.
+ * @param [ì…ë ¥]	ptr	ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @return	ì¸ìˆ˜ì˜ ê°œìˆ˜.
  */
 int qn_mltag_get_arity(qnMlTag* ptr)
 {
@@ -1502,11 +1502,11 @@ int qn_mltag_get_arity(qnMlTag* ptr)
 }
 
 /**
- * ÀÎ¼ö¸¦ ÀÌ¸§À¸·Î Ã£´Â´Ù.
- * @param [ÀÔ·Â] ptr °³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	name	   	ÀÎ¼ö ÀÌ¸§.
- * @param	ifnotexist 	ÀÎ¼ö¸¦ Ã£Áö ¸øÇÏ¸é ¹İÈ¯ÇÒ °ª.
- * @return	¹®Á¦°¡ ÀÖ°Å³ª ½ÇÆĞÇÏ¸é ifnotexist¸¦ ¹İÈ¯, ¼º°øÇÒ ¶§ ¹İÈ¯°ªÀº ÀÎ¼öÀÇ µ¥ÀÌÅÍ.
+ * ì¸ìˆ˜ë¥¼ ì´ë¦„ìœ¼ë¡œ ì°¾ëŠ”ë‹¤.
+ * @param [ì…ë ¥] ptr ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param	name	   	ì¸ìˆ˜ ì´ë¦„.
+ * @param	ifnotexist 	ì¸ìˆ˜ë¥¼ ì°¾ì§€ ëª»í•˜ë©´ ë°˜í™˜í•  ê°’.
+ * @return	ë¬¸ì œê°€ ìˆê±°ë‚˜ ì‹¤íŒ¨í•˜ë©´ ifnotexistë¥¼ ë°˜í™˜, ì„±ê³µí•  ë•Œ ë°˜í™˜ê°’ì€ ì¸ìˆ˜ì˜ ë°ì´í„°.
  */
 const char* qn_mltag_get_arg(qnMlTag* ptr, const char* name, const char* ifnotexist)
 {
@@ -1522,12 +1522,12 @@ const char* qn_mltag_get_arg(qnMlTag* ptr, const char* name, const char* ifnotex
 }
 
 /**
- * ´ÙÀ½ ÀÎ¼ö¸¦ Ã£´Â´Ù.
- * @param [ÀÔ·Â,¹İÈ¯]	ptr  	(³Î°ªÀÌ ¾Æ´Ï¸é) Æ÷ÀÎÅÍ.
- * @param [ÀÔ·Â,¹İÈ¯]	index	(³Î°ªÀÌ ¾Æ´Ô) ³»ºÎ Ã£±â ÀÎµ¦½º µ¥ÀÌÅÍ.
- * @param	name		 	ÀÎ¼ö ÀÌ¸§.
- * @param	data		 	ÀÎ¼ö ÀÚ·á.
- * @return	¼º°øÇÏ¸é ÂüÀ», ½ÇÆĞÇÏ¸é °ÅÁşÀ» ¹İÈ¯ÇÑ´Ù.
+ * ë‹¤ìŒ ì¸ìˆ˜ë¥¼ ì°¾ëŠ”ë‹¤.
+ * @param [ì…ë ¥,ë°˜í™˜]	ptr  	(ë„ê°’ì´ ì•„ë‹ˆë©´) í¬ì¸í„°.
+ * @param [ì…ë ¥,ë°˜í™˜]	index	(ë„ê°’ì´ ì•„ë‹˜) ë‚´ë¶€ ì°¾ê¸° ì¸ë±ìŠ¤ ë°ì´í„°.
+ * @param	name		 	ì¸ìˆ˜ ì´ë¦„.
+ * @param	data		 	ì¸ìˆ˜ ìë£Œ.
+ * @return	ì„±ê³µí•˜ë©´ ì°¸ì„, ì‹¤íŒ¨í•˜ë©´ ê±°ì§“ì„ ë°˜í™˜í•œë‹¤.
  */
 bool qn_mltag_next_arg(qnMlTag* ptr, pointer_t* index, const char** name, const char** data)
 {
@@ -1551,10 +1551,10 @@ bool qn_mltag_next_arg(qnMlTag* ptr, pointer_t* index, const char** name, const 
 }
 
 /**
- * ÀÌ¸§¿¡ ÇØ´çÇÏ´Â ÀÎ¼ö°¡ ÀÖ´ÂÁö Á¶»çÇÑ´Ù.
- * @param [ÀÔ·Â] ptr °³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	name	   	ÀÎ¼ö ÀÌ¸§.
- * @return	¼º°øÇÏ¸é ÂüÀ», ½ÇÆĞÇÏ¸é °ÅÁşÀ» ¹İÈ¯ÇÑ´Ù.
+ * ì´ë¦„ì— í•´ë‹¹í•˜ëŠ” ì¸ìˆ˜ê°€ ìˆëŠ”ì§€ ì¡°ì‚¬í•œë‹¤.
+ * @param [ì…ë ¥] ptr ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param	name	   	ì¸ìˆ˜ ì´ë¦„.
+ * @return	ì„±ê³µí•˜ë©´ ì°¸ì„, ì‹¤íŒ¨í•˜ë©´ ê±°ì§“ì„ ë°˜í™˜í•œë‹¤.
  */
 bool qn_mltag_contains_arg(qnMlTag* ptr, const char* name)
 {
@@ -1562,10 +1562,10 @@ bool qn_mltag_contains_arg(qnMlTag* ptr, const char* name)
 }
 
 /**
- * ÀÎ¼ö¿¡ ´ëÇØ ForEach ¿¬»êÀ» ¼öÇàÇÑ´Ù.
- * @param [ÀÔ·Â,¹İÈ¯]	ptr 	(³Î°ªÀÌ ¾Æ´Ï¸é) Æ÷ÀÎÅÍ.
- * @param [ÀÔ·Â]	func	Äİ¹é ÇÔ¼ö.
- * @param	userdata		Äİ¹é µ¥ÀÌÅÍ.
+ * ì¸ìˆ˜ì— ëŒ€í•´ ForEach ì—°ì‚°ì„ ìˆ˜í–‰í•œë‹¤.
+ * @param [ì…ë ¥,ë°˜í™˜]	ptr 	(ë„ê°’ì´ ì•„ë‹ˆë©´) í¬ì¸í„°.
+ * @param [ì…ë ¥]	func	ì½œë°± í•¨ìˆ˜.
+ * @param	userdata		ì½œë°± ë°ì´í„°.
  */
 void qn_mltag_foreach_arg(qnMlTag* ptr, void(*func)(pointer_t userdata, const char* name, const char* data), pointer_t userdata)
 {
@@ -1575,9 +1575,9 @@ void qn_mltag_foreach_arg(qnMlTag* ptr, void(*func)(pointer_t userdata, const ch
 }
 
 /**
- * ÀÎ¼ö¿¡ ´ëÇØ LoopEach ¿¬»êÀ» ¼öÇàÇÑ´Ù.
- * @param [ÀÔ·Â,¹İÈ¯]	ptr 	(³Î°ªÀÌ ¾Æ´Ï¸é) Æ÷ÀÎÅÍ.
- * @param [ÀÔ·Â]	func	Äİ¹é ÇÔ¼ö.
+ * ì¸ìˆ˜ì— ëŒ€í•´ LoopEach ì—°ì‚°ì„ ìˆ˜í–‰í•œë‹¤.
+ * @param [ì…ë ¥,ë°˜í™˜]	ptr 	(ë„ê°’ì´ ì•„ë‹ˆë©´) í¬ì¸í„°.
+ * @param [ì…ë ¥]	func	ì½œë°± í•¨ìˆ˜.
  */
 void qn_mltag_loopeach_arg(qnMlTag* ptr, void(*func)(const char* name, const char* data))
 {
@@ -1587,10 +1587,10 @@ void qn_mltag_loopeach_arg(qnMlTag* ptr, void(*func)(const char* name, const cha
 }
 
 /**
- * ÀÎ¼ö¸¦ Ãß°¡ÇÑ´Ù.
- * @param [ÀÔ·Â] ptr °³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	name	   	ÀÎ¼ö ÀÌ¸§.
- * @param	value	   	ÀÎ¼ö °ª.
+ * ì¸ìˆ˜ë¥¼ ì¶”ê°€í•œë‹¤.
+ * @param [ì…ë ¥] ptr ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param	name	   	ì¸ìˆ˜ ì´ë¦„.
+ * @param	value	   	ì¸ìˆ˜ ê°’.
  */
 void qn_mltag_set_arg(qnMlTag* ptr, const char* name, const char* value)
 {
@@ -1612,10 +1612,10 @@ void qn_mltag_set_arg(qnMlTag* ptr, const char* name, const char* value)
 }
 
 /**
- * ÀÎ¼ö¸¦ Á¦°ÅÇÑ´Ù.
- * @param [ÀÔ·Â] ptr °³Ã¼ÀÇ ÀÚ±â ÀÚ½Å °ª.
- * @param	name	   	Á¦°ÅÇÒ ÀÎ¼ö ÀÌ¸§.
- * @return	¼º°øÇÏ¸é ÂüÀ», ½ÇÆĞÇÏ¸é °ÅÁşÀ» ¹İÈ¯ÇÑ´Ù.
+ * ì¸ìˆ˜ë¥¼ ì œê±°í•œë‹¤.
+ * @param [ì…ë ¥] ptr ê°œì²´ì˜ ìê¸° ìì‹  ê°’.
+ * @param	name	   	ì œê±°í•  ì¸ìˆ˜ ì´ë¦„.
+ * @return	ì„±ê³µí•˜ë©´ ì°¸ì„, ì‹¤íŒ¨í•˜ë©´ ê±°ì§“ì„ ë°˜í™˜í•œë‹¤.
  */
 bool qn_mltag_remove_arg(qnMlTag* ptr, const char* name)
 {
