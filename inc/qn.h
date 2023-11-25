@@ -9,32 +9,29 @@
 // runtime configuration
 
 // platform
-#if defined(_WIN32)
+#if _WIN32
 #	define _QN_WINDOWS_					1
 #endif
 
-#if defined(__FreeBSD__) || defined(__OpenBSD__)
+#if __FreeBSD__ || __OpenBSD__
 #	define _QN_BSD_						1
 #endif
 
-#if defined(__linux__) || defined(__gnu_linux__)
+#if __linux__
 #	define _QN_LINUX_					1
 #endif
 
-#if defined(__android__) || defined(__ANDROID__)
+#if __android__
 #	define _QN_ANDROID_					1
-#endif
-
-#if defined(__unix__) || defined(__unix)
-#	define _QN_UNIX_					1
-#endif
-
-#if _QN_ANDROID_
 #	define _QN_MOBILE_					1
 #endif
 
-#if defined(_WINCONV) || defined(_QN_WINDOWS_)
-#	define _QN_WINCONV_					1
+#if __unix__
+#	define _QN_UNIX_					1
+#endif
+
+#if _WIN64 || __LP64__ || __amd64__ || __x86_64__ || __aarch64__
+#	define _QN_64_						1
 #endif
 
 #ifdef _CHAR_UNSIGNED

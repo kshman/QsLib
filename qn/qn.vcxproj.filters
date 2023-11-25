@@ -68,10 +68,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="qn.cpp">
+    <ClCompile Include="qn.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp">
+    <ClCompile Include="pch.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="qn_mem.c">

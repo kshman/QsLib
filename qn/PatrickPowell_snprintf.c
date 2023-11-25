@@ -7,6 +7,14 @@
 * dopr(): poor man's version of doprintf
 */
 
+#if _QN_64_
+#define _str_fmt_size		_str_fmt_long
+#define _wcs_fmt_size		_wcs_fmt_long
+#else
+#define _str_fmt_size		_str_fmt_int
+#define _wcs_fmt_size		_wcs_fmt_int
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 // 인라인 도구
 
@@ -1051,7 +1059,7 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:
 								value.sz = va_arg(args, size_t);
-								_str_fmt_long(outfn, ptr, &currlen, maxlen, &value, 10, min, max, flags);
+								_str_fmt_size(outfn, ptr, &currlen, maxlen, &value, 10, min, max, flags);
 								break;
 
 							case DP_C_INTMAX:   // 64비트
@@ -1061,7 +1069,7 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 
 							case DP_C_PTRDIFF:
 								value.ff = va_arg(args, ptrdiff_t);
-								_str_fmt_long(outfn, ptr, &currlen, maxlen, &value, 10, min, max, flags);
+								_str_fmt_size(outfn, ptr, &currlen, maxlen, &value, 10, min, max, flags);
 								break;
 
 							case DP_C_CHAR:
@@ -1122,7 +1130,7 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:
 								value.sz = va_arg(args, size_t);
-								_str_fmt_long(outfn, ptr, &currlen, maxlen, &value, base, min, max, flags);
+								_str_fmt_size(outfn, ptr, &currlen, maxlen, &value, base, min, max, flags);
 								break;
 
 							case DP_C_INTMAX:   // 64비트
@@ -1132,7 +1140,7 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 
 							case DP_C_PTRDIFF:
 								value.ff = va_arg(args, ptrdiff_t);
-								_str_fmt_long(outfn, ptr, &currlen, maxlen, &value, base, min, max, flags);
+								_str_fmt_size(outfn, ptr, &currlen, maxlen, &value, base, min, max, flags);
 								break;
 
 							case DP_C_CHAR:
@@ -1343,7 +1351,7 @@ size_t dopr(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, co
 					case 'p':
 						flags |= DP_F_UNSIGNED | DP_F_UP;
 						value.s = va_arg(args, char*);
-						_str_fmt_long(outfn, ptr, &currlen, maxlen, &value, 16, min, max, flags);
+						_str_fmt_size(outfn, ptr, &currlen, maxlen, &value, 16, min, max, flags);
 						break;
 
 					case 'n':
@@ -2374,7 +2382,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:
 								value.sz = va_arg(args, size_t);
-								_wcs_fmt_long(outfn, ptr, &currlen, maxlen, &value, 10, min, max, flags);
+								_wcs_fmt_size(outfn, ptr, &currlen, maxlen, &value, 10, min, max, flags);
 								break;
 
 							case DP_C_INTMAX:   // 64비트
@@ -2384,7 +2392,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 
 							case DP_C_PTRDIFF:
 								value.ff = va_arg(args, ptrdiff_t);
-								_wcs_fmt_long(outfn, ptr, &currlen, maxlen, &value, 10, min, max, flags);
+								_wcs_fmt_size(outfn, ptr, &currlen, maxlen, &value, 10, min, max, flags);
 								break;
 
 							case DP_C_CHAR:
@@ -2445,7 +2453,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:
 								value.sz = va_arg(args, size_t);
-								_wcs_fmt_long(outfn, ptr, &currlen, maxlen, &value, base, min, max, flags);
+								_wcs_fmt_size(outfn, ptr, &currlen, maxlen, &value, base, min, max, flags);
 								break;
 
 							case DP_C_INTMAX:   // 64비트
@@ -2455,7 +2463,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 
 							case DP_C_PTRDIFF:
 								value.ff = va_arg(args, ptrdiff_t);
-								_wcs_fmt_long(outfn, ptr, &currlen, maxlen, &value, base, min, max, flags);
+								_wcs_fmt_size(outfn, ptr, &currlen, maxlen, &value, base, min, max, flags);
 								break;
 
 							case DP_C_CHAR:
@@ -2666,7 +2674,7 @@ size_t doprw(_sn_outfunc outfn, _sn_clfunc clfn, pointer_t ptr, size_t maxlen, c
 					case L'p':
 						flags |= DP_F_UNSIGNED | DP_F_UP;
 						value.s = va_arg(args, char*);
-						_wcs_fmt_long(outfn, ptr, &currlen, maxlen, &value, 16, min, max, flags);
+						_wcs_fmt_size(outfn, ptr, &currlen, maxlen, &value, 16, min, max, flags);
 						break;
 
 					case L'n':

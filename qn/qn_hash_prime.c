@@ -73,7 +73,6 @@ size_t qn_hashfunc(int32_t prime8, func_t func, pointer_t data)
 	return h;
 }
 
-#if 0
 /**
  * 지정한 데이터로 CRC32를 만든다.
  * @date 2013-12-22
@@ -123,7 +122,6 @@ static uint32_t qn_crc32(const uint8_t* data, size_t size)
 		crc32 = crc32_table[(crc32 ^ data[i]) & 0xFF] ^ (crc32 >> 8);
 	return ~crc32;
 }
-#endif
 
 /**
  * 지정한 데이터로 CRC64를 만든다.
@@ -249,7 +247,11 @@ static uint64_t qn_crc64(const uint8_t* data, size_t size)
 //
 size_t qn_hashdata(const uint8_t* data, size_t size)
 {
+#if _QN_64_
 	return qn_crc64(data, size);
+#else
+	return qn_crc32(data, size);
+#endif
 }
 
 /**

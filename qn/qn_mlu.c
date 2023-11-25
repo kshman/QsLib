@@ -195,7 +195,7 @@ void qn_mlu_add_errf(qnMlu* self, const char* fmt, ...)
  */
 void qn_mlu_print_err(qnMlu* self)
 {
-	for (int i = 0; i < qn_arr_count(&self->errs); i++)
+	for (size_t i = 0; i < qn_arr_count(&self->errs); i++)
 	{
 		char* psz = qn_arr_nth(&self->errs, i);
 #if _QN_WINDOWS_
@@ -632,13 +632,13 @@ bool qn_mlu_write_file(qnMlu* self, const char* filename)
 	qn_retval_if_fail(file, FALSE);
 
 	// UTF8 BOM
-	int i = 0x00BFBBEF;
-	qn_file_write(file, &i, 0, 3);
+	int bom = 0x00BFBBEF;
+	qn_file_write(file, &bom, 0, 3);
 
 	// xml 부호
 	qn_file_write(file, (const pointer_t)_ml_header_desc, 0, (int)strlen(_ml_header_desc));
 
-	for (i = 0; i < qn_arr_count(&self->tags); i++)
+	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
 		qnRealTag* tag = qn_arr_nth(&self->tags, i);
 		_qn_realtag_write_file(tag, file, 0);
@@ -667,7 +667,7 @@ int qn_mlu_get_count(qnMlu* self)
  */
 const char* qn_mlu_get_err(qnMlu* self, int at)
 {
-	return at >= 0 && at < qn_arr_count(&self->errs) ? qn_arr_nth(&self->errs, at) : NULL;
+	return at >= 0 && at < (int)qn_arr_count(&self->errs) ? qn_arr_nth(&self->errs, at) : NULL;
 }
 
 /**
@@ -681,7 +681,7 @@ qnMlTag* qn_mlu_get_tag(qnMlu* self, const char* name)
 	qn_retval_if_fail(name, NULL);
 
 	size_t hash = qn_strhash(name);
-	for (int i = 0; i < qn_arr_count(&self->tags); i++)
+	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
 		qnRealTag* mt = qn_arr_nth(&self->tags, i);
 
@@ -700,7 +700,7 @@ qnMlTag* qn_mlu_get_tag(qnMlu* self, const char* name)
  */
 qnMlTag* qn_mlu_get_tag_nth(qnMlu* self, int at)
 {
-	return at >= 0 && at < qn_arr_count(&self->tags) ? (qnMlTag*)qn_arr_nth(&self->tags, at) : NULL;
+	return at >= 0 && at < (int)qn_arr_count(&self->tags) ? (qnMlTag*)qn_arr_nth(&self->tags, at) : NULL;
 }
 
 /**
@@ -752,7 +752,7 @@ void qn_mlu_foreach(qnMlu* self, void(*func)(pointer_t userdata, qnMlTag* tag), 
 {
 	qn_ret_if_fail(func);
 
-	for (int i = 0; i < qn_arr_count(&self->tags); i++)
+	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
 		qnRealTag* mt = qn_arr_nth(&self->tags, i);
 		func(userdata, (qnMlTag*)mt);
@@ -768,7 +768,7 @@ void qn_mlu_loopeach(qnMlu* self, void(*func)(qnMlTag* tag))
 {
 	qn_ret_if_fail(func);
 
-	for (int i = 0; i < qn_arr_count(&self->tags); i++)
+	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
 		qnRealTag* mt = qn_arr_nth(&self->tags, i);
 		func((qnMlTag*)mt);
@@ -829,7 +829,7 @@ int qn_mlu_remove(qnMlu* self, const char* name, bool isall)
 
 	size_t hash = qn_strhash(name);
 	int cnt = 0;
-	for (int i = 0; i < qn_arr_count(&self->tags); i++)
+	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
 		qnRealTag* tag = qn_arr_nth(&self->tags, i);
 
@@ -860,7 +860,7 @@ bool qn_mlu_remove_nth(qnMlu* self, int at)
 {
 	qnRealTag* tag;
 
-	if (at < 0 || at >= qn_arr_count(&self->tags))
+	if (at < 0 || at >= (int)qn_arr_count(&self->tags))
 		return FALSE;
 
 	tag = qn_arr_nth(&self->tags, at);
@@ -883,7 +883,7 @@ bool qn_mlu_remove_tag(qnMlu* self, qnMlTag* tag, bool isdelete)
 
 	qn_retval_if_fail(tag, FALSE);
 
-	for (int i = 0; i < qn_arr_count(&self->tags); i++)
+	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
 		if (qn_arr_nth(&self->tags, i) == mt)
 		{
@@ -1133,7 +1133,6 @@ static bool _qn_realtag_write_file(qnRealTag* self, qnFile* file, int ident)
 	char ch;
 	char szident[260];
 	qnBstr2k bs;
-	int i;
 
 	qn_strfll(szident, 0, ident, '\t');
 	szident[ident] = '\0';
@@ -1217,7 +1216,7 @@ static bool _qn_realtag_write_file(qnRealTag* self, qnFile* file, int ident)
 		// 자식
 		ident++;
 
-		for (i = 0; i < qn_arr_count(&self->subs); i++)
+		for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
 		{
 			qnRealTag* tag = qn_arr_nth(&self->subs, i);
 			_qn_realtag_write_file(tag, file, ident);
@@ -1256,7 +1255,7 @@ qnMlTag* qn_mltag_get_sub(qnMlTag* ptr, const char* name)
 	qn_retval_if_fail(name, NULL);
 
 	size_t hash = qn_strhash(name);
-	for (int i = 0; i < qn_arr_count(&self->subs); i++)
+	for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
 	{
 		qnRealTag* mt = qn_arr_nth(&self->subs, i);
 
@@ -1276,7 +1275,7 @@ qnMlTag* qn_mltag_get_sub(qnMlTag* ptr, const char* name)
 qnMlTag* qn_mltag_get_sub_nth(qnMlTag* ptr, int at)
 {
 	qnRealTag* self = (qnRealTag*)ptr;
-	return at >= 0 && at < qn_arr_count(&self->subs) ? (qnMlTag*)qn_arr_nth(&self->subs, at) : NULL;
+	return at >= 0 && at < (int)qn_arr_count(&self->subs) ? (qnMlTag*)qn_arr_nth(&self->subs, at) : NULL;
 }
 
 /**
@@ -1330,11 +1329,10 @@ int qn_mltag_contains_sub(qnMlTag* ptr, qnMlTag* tag)
 void qn_mltag_foreach_sub(qnMlTag* ptr, void(*func)(pointer_t userdata, qnMlTag* tag), pointer_t userdata)
 {
 	qnRealTag* self = (qnRealTag*)ptr;
-	int i;
 
 	qn_ret_if_fail(func);
 
-	for (i = 0; i < qn_arr_count(&self->subs); i++)
+	for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
 	{
 		qnRealTag* mt = qn_arr_nth(&self->subs, i);
 		func(userdata, (qnMlTag*)mt);
@@ -1352,7 +1350,7 @@ void qn_mltag_loopeach_sub(qnMlTag* ptr, void(*func)(qnMlTag* tag))
 
 	qn_ret_if_fail(func);
 
-	for (int i = 0; i < qn_arr_count(&self->subs); i++)
+	for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
 	{
 		qnRealTag* mt = qn_arr_nth(&self->subs, i);
 		func((qnMlTag*)mt);
@@ -1413,18 +1411,15 @@ qnMlTag* qn_mltag_add_sub_tag(qnMlTag* ptr, qnMlTag* tag)
 int qn_mltag_remove_sub(qnMlTag* ptr, const char* name, bool isall)
 {
 	qnRealTag* self = (qnRealTag*)ptr;
-	qnRealTag* mt;
-	int i, cnt;
-	size_t hash;
 
 	qn_retval_if_fail(name, -1);
 
-	hash = qn_strhash(name);
-	cnt = 0;
+	size_t hash = qn_strhash(name);
+	int cnt = 0;
 
-	for (i = 0; i < qn_arr_count(&self->subs); i++)
+	for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
 	{
-		mt = qn_arr_nth(&self->subs, i);
+		qnRealTag* mt = qn_arr_nth(&self->subs, i);
 
 		if (mt->nhash == hash && strcmp(mt->base.name, name) == 0)
 		{
@@ -1454,7 +1449,7 @@ bool qn_mltag_remove_sub_nth(qnMlTag* ptr, int at)
 	qnRealTag* self = (qnRealTag*)ptr;
 	qnRealTag* mt;
 
-	if (at < 0 || at >= qn_arr_count(&self->subs))
+	if (at < 0 || at >= (int)qn_arr_count(&self->subs))
 		return FALSE;
 
 	mt = qn_arr_nth(&self->subs, at);
@@ -1478,7 +1473,7 @@ bool qn_mltag_remove_sub_tag(qnMlTag* ptr, qnMlTag* tag, bool isdelete)
 
 	qn_retval_if_fail(tag, FALSE);
 
-	for (int i = 0; i < qn_arr_count(&self->subs); i++)
+	for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
 	{
 		if (qn_arr_nth(&self->subs, i) == mt)
 		{
