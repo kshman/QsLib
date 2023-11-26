@@ -23,13 +23,16 @@ VPATH=src:../../qn
 SRC=qn.c qn_mem.c qn_hash.c qn_sort.c qn_str.c qn_datetime.c qn_debug.c qn_file.c  qn_mlu.c \
 	PatrickPowell_snprintf.c 
 OBJ=$(SRC:.c=.o)
+ASM=$(SRC:.c=.s)
 LNK=$(notdir $(OBJ))
 
 # build
 all: $(DEST)
 
+asm: $(ASM)
+
 clean:
-	rm -f $(DEST) $(LNK)
+	rm -f $(DEST) $(LNK) $(ASM)
 
 rebuild: clean all
 
@@ -39,6 +42,9 @@ install: all
 
 %.o: %.c
 	$(CC) -c $(CFLAG) -o "$(*F).o" "$<"
+
+%.s: %.c
+	$(CC) -c $(CFLAG) -S "$<"
 
 $(DEST): $(OBJ)
 	$(CC) -shared -Wl,-export-dynamic -Wl,-soname,$@ -o $@ $(LNK)

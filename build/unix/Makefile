@@ -17,6 +17,9 @@ endif
 all: $(DEST)
 	$(MAKE) -f qn.mk all
 
+asm: $(DEST)
+	$(MAKE) -f qn.mk asm
+
 clean:
 	$(MAKE) -f qn.mk clean
 
