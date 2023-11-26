@@ -1,19 +1,19 @@
 ﻿#include "pch.h"
 #include "qn.h"
 
-/**
- * 오류처리용 assert.
- * @param	expr		표현.
- * @param	mesg		오류 내용.
- * @param	filename	파일의 파일 이름.
- * @param	line		파일의 줄 번호.
- * @return	int.
+/*!
+ * @brief 오류처리용 assert
+ * @param	expr		표현
+ * @param	mesg		오류 내용
+ * @param	filename	파일의 파일 이름
+ * @param	line		파일의 줄 번호
+ * @return	int
  */
 int qn_debug_assert(const char* expr, const char* mesg, const char* filename, int line)
 {
-	size_t len = snprintf(NULL, 0, "filename=\"%s\", line=%d", filename, line);
+	size_t len = qn_snprintf(NULL, 0, "filename=\"%s\", line=%d", filename, line);
 	char* buf = qn_alloca(len + 1, char);
-	snprintf(buf, len + 1, "filename=\"%s\", line=%d", filename, line);
+	qn_snprintf(buf, len + 1, "filename=\"%s\", line=%d", filename, line);
 
 #if _QN_WINDOWS_
 	OutputDebugStringA(buf);
@@ -35,10 +35,10 @@ int qn_debug_assert(const char* expr, const char* mesg, const char* filename, in
 	return 0;
 }
 
-/**
- * HALT 메시지.
- * @param	cls	클래스 이름.
- * @param	msg	출력할 메시지.
+/*!
+ * @brief HALT 메시지
+ * @param	cls	클래스 이름
+ * @param	msg	출력할 메시지
  */
 int qn_debug_halt(const char* cls, const char* msg)
 {
@@ -50,16 +50,16 @@ int qn_debug_halt(const char* cls, const char* msg)
 	if (msg)
 	{
 		const char* fmt = "HALT [%s] %s\n";
-		size_t len = snprintf(NULL, 0, fmt, cls, msg);
+		size_t len = qn_snprintf(NULL, 0, fmt, cls, msg);
 		buf = qn_alloca(len + 1, char);
-		snprintf(buf, len + 1, fmt, cls, msg);
+		qn_snprintf(buf, len + 1, fmt, cls, msg);
 	}
 	else
 	{
 		const char* fmt = "HALT [%s]\n";
-		size_t len = snprintf(NULL, 0, fmt, cls);
+		size_t len = qn_snprintf(NULL, 0, fmt, cls);
 		buf = qn_alloca(len + 1, char);
-		snprintf(buf, len + 1, fmt, cls);
+		qn_snprintf(buf, len + 1, fmt, cls);
 	}
 
 #if _QN_WINDOWS_

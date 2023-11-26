@@ -17,7 +17,7 @@ struct qnFile
 	char* name;
 	qnFileAccess		acs;
 	int					flag;
-#if _QN_WINDOWS_
+#if _MSC_VER
 	HANDLE				fd;
 #else
 	int					fd;
@@ -25,12 +25,12 @@ struct qnFile
 };
 
 // 최대 할당 크기
-static size_t _max_file_alloc_size = 512 * 1024 * 1024;
+static size_t _max_file_alloc_size = 512ULL * 1024ULL * 1024ULL;
 
 // 분석
-void qn_file_access_parse(const char* mode, qnFileAccess* self, int* flag)
+static void _qn_file_access_parse(const char* mode, qnFileAccess* self, int* flag)
 {
-#if _QN_WINDOWS_
+#if _MSC_VER
 	char ch;
 
 	self->mode = 0;
@@ -45,46 +45,46 @@ void qn_file_access_parse(const char* mode, qnFileAccess* self, int* flag)
 		{
 			switch (*mode)
 			{
-			case 'a':
-				self->mode = OPEN_ALWAYS;
-				self->access = GENERIC_WRITE;
-				*flag = QN_FF_WRITE | QN_FF_SEEK;
-				break;
+				case 'a':
+					self->mode = OPEN_ALWAYS;
+					self->access = GENERIC_WRITE;
+					*flag = QN_FF_WRITE | QN_FF_SEEK;
+					break;
 
-			case 'r':
-				self->mode = OPEN_EXISTING;
-				self->access = GENERIC_READ;
-				*flag = QN_FF_READ | QN_FF_SEEK;
-				break;
+				case 'r':
+					self->mode = OPEN_EXISTING;
+					self->access = GENERIC_READ;
+					*flag = QN_FF_READ | QN_FF_SEEK;
+					break;
 
-			case 'w':
-				self->mode = CREATE_ALWAYS;
-				self->access = GENERIC_WRITE;
-				*flag = QN_FF_WRITE | QN_FF_SEEK;
-				break;
+				case 'w':
+					self->mode = CREATE_ALWAYS;
+					self->access = GENERIC_WRITE;
+					*flag = QN_FF_WRITE | QN_FF_SEEK;
+					break;
 
-			case '+':
-				self->access = GENERIC_WRITE | GENERIC_READ;
-				*flag = QN_FF_READ | QN_FF_WRITE | QN_FF_SEEK;
-				break;
+				case '+':
+					self->access = GENERIC_WRITE | GENERIC_READ;
+					*flag = QN_FF_READ | QN_FF_WRITE | QN_FF_SEEK;
+					break;
 
-			case '@':
-				ch = *(mode + 1);
+				case '@':
+					ch = *(mode + 1);
 
-				if (ch == 'R')
-					self->share = FILE_SHARE_READ, ++mode;
-				else if (ch == 'W')
-					self->share = FILE_SHARE_WRITE, ++mode;
-				else if (ch == '+')
-					self->share = FILE_SHARE_READ | FILE_SHARE_WRITE, ++mode;
+					if (ch == 'R')
+						self->share = FILE_SHARE_READ, ++mode;
+					else if (ch == 'W')
+						self->share = FILE_SHARE_WRITE, ++mode;
+					else if (ch == '+')
+						self->share = FILE_SHARE_READ | FILE_SHARE_WRITE, ++mode;
 
-				break;
+					break;
 
-			case '!':
-				if (self->mode == CREATE_ALWAYS)
-					self->attr |= FILE_FLAG_DELETE_ON_CLOSE;
+				case '!':
+					if (self->mode == CREATE_ALWAYS)
+						self->attr |= FILE_FLAG_DELETE_ON_CLOSE;
 
-				break;
+					break;
 			}
 		}
 	}
@@ -109,107 +109,107 @@ void qn_file_access_parse(const char* mode, qnFileAccess* self, int* flag)
 		{
 			switch (*mode)
 			{
-			case 'a':
-				self->mode = O_WRONLY | O_APPEND | O_CREAT;
-				*flag = QN_FF_WRITE | QN_FF_SEEK;
-				break;
+				case 'a':
+					self->mode = O_WRONLY | O_APPEND | O_CREAT;
+					*flag = QN_FF_WRITE | QN_FF_SEEK;
+					break;
 
-			case 'r':
-				self->mode = O_RDONLY;
-				*flag = QN_FF_READ | QN_FF_SEEK;
-				break;
+				case 'r':
+					self->mode = O_RDONLY;
+					*flag = QN_FF_READ | QN_FF_SEEK;
+					break;
 
-			case 'w':
-				self->mode = O_WRONLY | O_TRUNC | O_CREAT;
-				*flag = QN_FF_WRITE | QN_FF_SEEK;
-				break;
+				case 'w':
+					self->mode = O_WRONLY | O_TRUNC | O_CREAT;
+					*flag = QN_FF_WRITE | QN_FF_SEEK;
+					break;
 
-			case '+':
-				self->mode |= O_RDWR;
-				*flag = QN_FF_READ | QN_FF_WRITE | QN_FF_SEEK;
-				break;
+				case '+':
+					self->mode |= O_RDWR;
+					*flag = QN_FF_READ | QN_FF_WRITE | QN_FF_SEEK;
+					break;
 
-			case '@':
-				cm = *(mode + 1);
+				case '@':
+					cm = *(mode + 1);
 
-				if (cm != '\0')
-				{
-					if (cm == 'U')
+					if (cm != '\0')
 					{
-						ch = *(mode + 2);
-
-						if (ch != '\0')
+						if (cm == 'U')
 						{
-							if (ch == 'R')
-								self->access |= S_IRUSR;
-							else if (ch == 'W')
-								self->access |= S_IWUSR;
-							else if (ch == 'X')
-								self->access |= S_IXUSR;
+							ch = *(mode + 2);
+
+							if (ch != '\0')
+							{
+								if (ch == 'R')
+									self->access |= S_IRUSR;
+								else if (ch == 'W')
+									self->access |= S_IWUSR;
+								else if (ch == 'X')
+									self->access |= S_IXUSR;
+
+								mode++;
+							}
 
 							mode++;
 						}
-
-						mode++;
-					}
-					else if (cm == 'G')
-					{
-						ch = *(mode + 2);
-
-						if (ch != '\0')
+						else if (cm == 'G')
 						{
-							if (ch == 'R')
-								self->access |= S_IRGRP;
-							else if (ch == 'W')
-								self->access |= S_IWGRP;
-							else if (ch == 'X')
-								self->access |= S_IXGRP;
+							ch = *(mode + 2);
+
+							if (ch != '\0')
+							{
+								if (ch == 'R')
+									self->access |= S_IRGRP;
+								else if (ch == 'W')
+									self->access |= S_IWGRP;
+								else if (ch == 'X')
+									self->access |= S_IXGRP;
+
+								mode++;
+							}
 
 							mode++;
 						}
-
-						mode++;
-					}
-					else if (cm == 'O')
-					{
-						ch = *(mode + 2);
-
-						if (ch != '\0')
+						else if (cm == 'O')
 						{
-							if (ch == 'R')
-								self->access |= S_IROTH;
-							else if (ch == 'W')
-								self->access |= S_IWOTH;
-							else if (ch == 'X')
-								self->access |= S_IXOTH;
+							ch = *(mode + 2);
+
+							if (ch != '\0')
+							{
+								if (ch == 'R')
+									self->access |= S_IROTH;
+								else if (ch == 'W')
+									self->access |= S_IWOTH;
+								else if (ch == 'X')
+									self->access |= S_IXOTH;
+
+								mode++;
+							}
 
 							mode++;
 						}
-
-						mode++;
-					}
-					else if (isdigit(cm))
-					{
-						const char* p = mode + 2;
-
-						while (isdigit(*p))
-							p++;
-
-						if ((p - (mode + 1)) < 63)
+						else if (isdigit(cm))
 						{
-							char sz[64], * stop;
-							strncpy(sz, (mode + 1), p - (mode + 1));
-							self->access = strtol(sz, &stop, 8);
+							const char* p = mode + 2;
+
+							while (isdigit(*p))
+								p++;
+
+							if ((p - (mode + 1)) < 63)
+							{
+								char sz[64], * stop;
+								strncpy(sz, (mode + 1), p - (mode + 1));
+								self->access = strtol(sz, &stop, 8);
+							}
+
+							mode = p;
 						}
-
-						mode = p;
 					}
-				}
 
-				break;
+					break;
 
-			case '!':
-				break;
+				case '!':
+					break;
 			}
 		}
 	}
@@ -225,9 +225,9 @@ void qn_file_access_parse(const char* mode, qnFileAccess* self, int* flag)
 #endif
 }
 
-void qn_file_access_parse_l(const wchar_t* mode, qnFileAccess* self, int* flag)
+static void _qn_file_access_parse_l(const wchar_t* mode, qnFileAccess* self, int* flag)
 {
-#if _QN_WINDOWS_
+#if _MSC_VER
 	wchar_t ch;
 
 	self->mode = 0;
@@ -242,46 +242,46 @@ void qn_file_access_parse_l(const wchar_t* mode, qnFileAccess* self, int* flag)
 		{
 			switch (*mode)
 			{
-			case L'a':
-				self->mode = OPEN_ALWAYS;
-				self->access = GENERIC_WRITE;
-				*flag = QN_FF_WRITE | QN_FF_SEEK;
-				break;
+				case L'a':
+					self->mode = OPEN_ALWAYS;
+					self->access = GENERIC_WRITE;
+					*flag = QN_FF_WRITE | QN_FF_SEEK;
+					break;
 
-			case L'r':
-				self->mode = OPEN_EXISTING;
-				self->access = GENERIC_READ;
-				*flag = QN_FF_READ | QN_FF_SEEK;
-				break;
+				case L'r':
+					self->mode = OPEN_EXISTING;
+					self->access = GENERIC_READ;
+					*flag = QN_FF_READ | QN_FF_SEEK;
+					break;
 
-			case L'w':
-				self->mode = CREATE_ALWAYS;
-				self->access = GENERIC_WRITE;
-				*flag = QN_FF_WRITE | QN_FF_SEEK;
-				break;
+				case L'w':
+					self->mode = CREATE_ALWAYS;
+					self->access = GENERIC_WRITE;
+					*flag = QN_FF_WRITE | QN_FF_SEEK;
+					break;
 
-			case L'+':
-				self->access = GENERIC_WRITE | GENERIC_READ;
-				*flag = QN_FF_READ | QN_FF_WRITE | QN_FF_SEEK;
-				break;
+				case L'+':
+					self->access = GENERIC_WRITE | GENERIC_READ;
+					*flag = QN_FF_READ | QN_FF_WRITE | QN_FF_SEEK;
+					break;
 
-			case L'@':
-				ch = *(mode + 1);
+				case L'@':
+					ch = *(mode + 1);
 
-				if (ch == L'R')
-					self->share = FILE_SHARE_READ, ++mode;
-				else if (ch == L'W')
-					self->share = FILE_SHARE_WRITE, ++mode;
-				else if (ch == L'+')
-					self->share = FILE_SHARE_READ | FILE_SHARE_WRITE, ++mode;
+					if (ch == L'R')
+						self->share = FILE_SHARE_READ, ++mode;
+					else if (ch == L'W')
+						self->share = FILE_SHARE_WRITE, ++mode;
+					else if (ch == L'+')
+						self->share = FILE_SHARE_READ | FILE_SHARE_WRITE, ++mode;
 
-				break;
+					break;
 
-			case L'!':
-				if (self->mode == CREATE_ALWAYS)
-					self->attr |= FILE_FLAG_DELETE_ON_CLOSE;
+				case L'!':
+					if (self->mode == CREATE_ALWAYS)
+						self->attr |= FILE_FLAG_DELETE_ON_CLOSE;
 
-				break;
+					break;
 			}
 		}
 	}
@@ -306,107 +306,107 @@ void qn_file_access_parse_l(const wchar_t* mode, qnFileAccess* self, int* flag)
 		{
 			switch (*mode)
 			{
-			case L'a':
-				self->mode = O_WRONLY | O_APPEND | O_CREAT;
-				*flag = QN_FF_WRITE | QN_FF_SEEK;
-				break;
+				case L'a':
+					self->mode = O_WRONLY | O_APPEND | O_CREAT;
+					*flag = QN_FF_WRITE | QN_FF_SEEK;
+					break;
 
-			case L'r':
-				self->mode = O_RDONLY;
-				*flag = QN_FF_READ | QN_FF_SEEK;
-				break;
+				case L'r':
+					self->mode = O_RDONLY;
+					*flag = QN_FF_READ | QN_FF_SEEK;
+					break;
 
-			case L'w':
-				self->mode = O_WRONLY | O_TRUNC | O_CREAT;
-				*flag = QN_FF_WRITE | QN_FF_SEEK;
-				break;
+				case L'w':
+					self->mode = O_WRONLY | O_TRUNC | O_CREAT;
+					*flag = QN_FF_WRITE | QN_FF_SEEK;
+					break;
 
-			case L'+':
-				self->mode |= O_RDWR;
-				*flag = QN_FF_READ | QN_FF_WRITE | QN_FF_SEEK;
-				break;
+				case L'+':
+					self->mode |= O_RDWR;
+					*flag = QN_FF_READ | QN_FF_WRITE | QN_FF_SEEK;
+					break;
 
-			case L'@':
-				cm = *(mode + 1);
+				case L'@':
+					cm = *(mode + 1);
 
-				if (cm != L'\0')
-				{
-					if (cm == L'U')
+					if (cm != L'\0')
 					{
-						ch = *(mode + 2);
-
-						if (ch != L'\0')
+						if (cm == L'U')
 						{
-							if (ch == L'R')
-								self->access |= S_IRUSR;
-							else if (ch == L'W')
-								self->access |= S_IWUSR;
-							else if (ch == L'X')
-								self->access |= S_IXUSR;
+							ch = *(mode + 2);
+
+							if (ch != L'\0')
+							{
+								if (ch == L'R')
+									self->access |= S_IRUSR;
+								else if (ch == L'W')
+									self->access |= S_IWUSR;
+								else if (ch == L'X')
+									self->access |= S_IXUSR;
+
+								mode++;
+							}
 
 							mode++;
 						}
-
-						mode++;
-					}
-					else if (cm == L'G')
-					{
-						ch = *(mode + 2);
-
-						if (ch != L'\0')
+						else if (cm == L'G')
 						{
-							if (ch == L'R')
-								self->access |= S_IRGRP;
-							else if (ch == L'W')
-								self->access |= S_IWGRP;
-							else if (ch == L'X')
-								self->access |= S_IXGRP;
+							ch = *(mode + 2);
+
+							if (ch != L'\0')
+							{
+								if (ch == L'R')
+									self->access |= S_IRGRP;
+								else if (ch == L'W')
+									self->access |= S_IWGRP;
+								else if (ch == L'X')
+									self->access |= S_IXGRP;
+
+								mode++;
+							}
 
 							mode++;
 						}
-
-						mode++;
-					}
-					else if (cm == L'O')
-					{
-						ch = *(mode + 2);
-
-						if (ch != L'\0')
+						else if (cm == L'O')
 						{
-							if (ch == L'R')
-								self->access |= S_IROTH;
-							else if (ch == L'W')
-								self->access |= S_IWOTH;
-							else if (ch == L'X')
-								self->access |= S_IXOTH;
+							ch = *(mode + 2);
+
+							if (ch != L'\0')
+							{
+								if (ch == L'R')
+									self->access |= S_IROTH;
+								else if (ch == L'W')
+									self->access |= S_IWOTH;
+								else if (ch == L'X')
+									self->access |= S_IXOTH;
+
+								mode++;
+							}
 
 							mode++;
 						}
-
-						mode++;
-					}
-					else if (iswdigit(cm))
-					{
-						const wchar_t* p = mode + 2;
-
-						while (iswdigit(*p))
-							p++;
-
-						if ((p - (mode + 1)) < 63)
+						else if (iswdigit(cm))
 						{
-							wchar_t sz[64], * stop;
-							wcsncpy(sz, (mode + 1), p - (mode + 1));
-							self->access = wcstol(sz, &stop, 8);
+							const wchar_t* p = mode + 2;
+
+							while (iswdigit(*p))
+								p++;
+
+							if ((p - (mode + 1)) < 63)
+							{
+								wchar_t sz[64], * stop;
+								wcsncpy(sz, (mode + 1), p - (mode + 1));
+								self->access = wcstol(sz, &stop, 8);
+							}
+
+							mode = p;
 						}
-
-						mode = p;
 					}
-				}
 
-				break;
+					break;
 
-			case L'!':
-				break;
+				case L'!':
+					break;
 			}
 		}
 	}
@@ -422,27 +422,23 @@ void qn_file_access_parse_l(const wchar_t* mode, qnFileAccess* self, int* flag)
 #endif
 }
 
-/**
- * 새 파일 처리 구조를 만든다.
- * @param	filename	파일의 이름.
- * @param	mode		파일 처리 모드.
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 qnFile*.
+/*!
+ * @brief 새 파일 처리 구조를 만든다
+ * @param	filename	파일의 이름
+ * @param	mode		파일 처리 모드
+ * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 qnFile*
  */
 qnFile* qn_file_new(const char* filename, const char* mode)
 {
-	qnFile* self;
-#if _QN_WINDOWS_
-	wchar_t uni[QN_MAX_PATH];
-#endif
-
 	qn_retval_if_fail(filename, NULL);
 
-	self = qn_alloc_1(qnFile);
+	qnFile* self = qn_alloc_1(qnFile);
 	qn_retval_if_fail(self, NULL);
 
-	qn_file_access_parse(mode, &self->acs, &self->flag);
+	_qn_file_access_parse(mode, &self->acs, &self->flag);
 
-#if _QN_WINDOWS_
+#if _MSC_VER
+	wchar_t uni[QN_MAX_PATH];
 	qn_utf8to16(uni, QN_MAX_PATH - 1, filename, 0);
 	self->fd = CreateFile(uni, self->acs.access, self->acs.share, NULL, self->acs.mode, self->acs.attr, NULL);
 
@@ -462,25 +458,23 @@ qnFile* qn_file_new(const char* filename, const char* mode)
 	return self;
 }
 
-/**
- * 유니코드용 새 파일 구조를 만든다.
- * @param	filename	파일의 이름.
- * @param	mode		파일 처리 모드.
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 qnFile*.
+/*!
+ * @brief 유니코드용 새 파일 구조를 만든다
+ * @param	filename	파일의 이름
+ * @param	mode		파일 처리 모드
+ * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 qnFile*
  */
 qnFile* qn_file_new_l(const wchar_t* filename, const wchar_t* mode)
 {
-	qnFile* self;
-	char asc[QN_MAX_PATH];
-
 	qn_retval_if_fail(filename, NULL);
 
-	self = qn_alloc_1(qnFile);
+	qnFile* self = qn_alloc_1(qnFile);
 	qn_retval_if_fail(self, NULL);
 
-	qn_file_access_parse_l(mode, &self->acs, &self->flag);
+	_qn_file_access_parse_l(mode, &self->acs, &self->flag);
 
-#if _QN_WINDOWS_
+	char asc[QN_MAX_PATH];
+#if _MSC_VER
 	qn_utf16to8(asc, QN_MAX_PATH - 1, filename, 0);
 	self->fd = CreateFile(filename, self->acs.access, self->acs.share, NULL, self->acs.mode, self->acs.attr, NULL);
 
@@ -501,10 +495,10 @@ qnFile* qn_file_new_l(const wchar_t* filename, const wchar_t* mode)
 	return self;
 }
 
-/**
- * 파일 복제. 핸들을 복제하여 따로 사용할 수 있도록 한다.
- * @param [입력,반환]	src	(널값이 아닌) 원본.
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 qnFile*.
+/*!
+ * @brief 파일 복제. 핸들을 복제하여 따로 사용할 수 있도록 한다
+ * @param[in]	src	(널값이 아닌) 원본
+ * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 qnFile*
  */
 qnFile* qn_file_new_dup(qnFile* src)
 {
@@ -513,7 +507,7 @@ qnFile* qn_file_new_dup(qnFile* src)
 
 	memcpy(self, src, sizeof(qnFile));
 
-#if _QN_WINDOWS_
+#if _MSC_VER
 	HANDLE d, p = GetCurrentProcess();
 	if (!DuplicateHandle(p, self->fd, p, &d, 0, false, DUPLICATE_SAME_ACCESS))
 	{
@@ -539,13 +533,13 @@ qnFile* qn_file_new_dup(qnFile* src)
 	return self;
 }
 
-/**
- * 파일 구조를 제거한다. 더 이상 파일 관리를 하지 않을 때 사용한다.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
+/*!
+ * @brief 파일 구조를 제거한다. 더 이상 파일 관리를 하지 않을 때 사용한다
+ * @param[in]	self	파일 개체
  */
 void qn_file_delete(qnFile* self)
 {
-#if _QN_WINDOWS_
+#if _MSC_VER
 	if (self->fd && self->fd != INVALID_HANDLE_VALUE)
 		CloseHandle(self->fd);
 #else
@@ -557,45 +551,42 @@ void qn_file_delete(qnFile* self)
 	qn_free(self);
 }
 
-/**
- * 파일 플래그를 가져온다.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @param	mask		플래그의 마스크.
- * @return	파일 플래그.
+/*!
+ * @brief 파일 플래그를 가져온다
+ * @param[in]	self	파일 개체
+ * @param	mask		플래그의 마스크
+ * @return	파일 플래그
  */
 int qn_file_flags(qnFile* self, int mask)
 {
 	return (self->flag & mask) != 0;
 }
 
-/**
- * 파일 이름을 얻는다.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @return	파일의 이름.
+/*!
+ * @brief 파일 이름을 얻는다
+ * @param[in]	self	파일 개체
+ * @return	파일의 이름
  */
 const char* qn_file_name(qnFile* self)
 {
 	return self->name;
 }
 
-/**
- * 파일에서 읽는다.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @param	buffer  	읽은 데이터를 저장할 버퍼.
- * @param	offset  	버퍼의 옵셋.
- * @param	size		읽을 크기.
- * @return	실제 읽은 길이를 반환.
+/*!
+ * @brief 파일에서 읽는다
+ * @param[in]	self	파일 개체
+ * @param	buffer  	읽은 데이터를 저장할 버퍼
+ * @param	offset  	버퍼의 옵셋
+ * @param	size		읽을 크기
+ * @return	실제 읽은 길이를 반환
  */
 int qn_file_read(qnFile* self, pointer_t buffer, int offset, int size)
 {
-	uint8_t* ptr;
-
 	qn_retval_if_fail(buffer != NULL, -1);
 	qn_retval_if_fail(size >= 0, 0);
 
-	ptr = (uint8_t*)buffer;
-
-#if _QN_WINDOWS_
+	uint8_t* ptr = (uint8_t*)buffer;
+#if _MSC_VER
 	DWORD ret;
 	return ReadFile(self->fd, ptr + offset, size, &ret, NULL) ? (int)ret : 0;
 #else
@@ -603,24 +594,21 @@ int qn_file_read(qnFile* self, pointer_t buffer, int offset, int size)
 #endif
 }
 
-/**
- * 파일에 쓴다.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @param	buffer  	쓸 데이터가 들어 있는 버퍼.
- * @param	offset  	버퍼의 옵셋.
- * @param	size		쓸 크기.
- * @return	실제 쓴 길이를 반환.
+/*!
+ * @brief 파일에 쓴다
+ * @param[in]	self	파일 개체
+ * @param	buffer  	쓸 데이터가 들어 있는 버퍼
+ * @param	offset  	버퍼의 옵셋
+ * @param	size		쓸 크기
+ * @return	실제 쓴 길이를 반환
  */
-int qn_file_write(qnFile* self, const pointer_t buffer, int offset, int size)
+int qn_file_write(qnFile* self, cpointer_t buffer, int offset, int size)
 {
-	const uint8_t* ptr;
-
 	qn_retval_if_fail(buffer != NULL, -1);
 	qn_retval_if_fail(size >= 0, 0);
 
-	ptr = (const uint8_t*)buffer;
-
-#if _QN_WINDOWS_
+	const uint8_t* ptr = (const uint8_t*)buffer;
+#if _MSC_VER
 	DWORD ret;
 	return WriteFile(self->fd, ptr + offset, size, &ret, NULL) ? (int)ret : 0;
 #else
@@ -628,14 +616,14 @@ int qn_file_write(qnFile* self, const pointer_t buffer, int offset, int size)
 #endif
 }
 
-/**
- * 파일 크기를 얻는다.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @return	파일의 길이.
+/*!
+ * @brief 파일 크기를 얻는다
+ * @param[in]	self	파일 개체
+ * @return	파일의 길이
  */
 int64_t qn_file_size(qnFile* self)
 {
-#if _QN_WINDOWS_
+#if _MSC_VER
 	LARGE_INTEGER ll;
 	return GetFileSizeEx(self->fd, &ll) ? ll.QuadPart : -1;
 #else
@@ -653,51 +641,48 @@ int64_t qn_file_size(qnFile* self)
 #endif
 }
 
-/**
- * 파일 위치 얻기.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @return	현재 파일의 읽고 쓰는 위치.
+/*!
+ * @brief 파일 위치 얻기
+ * @param[in]	self	파일 개체
+ * @return	현재 파일의 읽고 쓰는 위치
  */
 int64_t qn_file_tell(qnFile* self)
 {
-#if _QN_WINDOWS_
-	LARGE_INTEGER ll, pl;
-	pl.QuadPart = 0;
+#if _MSC_VER
+	LARGE_INTEGER ll, pl = { .QuadPart = 0 };
 	return SetFilePointerEx(self->fd, pl, &ll, FILE_CURRENT) ? ll.QuadPart : -1;
 #else
 	return lseek(self->fd, 0, SEEK_CUR);
 #endif
 }
 
-/**
- * 파일 위치 변경.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @param	offset  	이동할 위치.
- * @param	org			방식 (C형식 SEEK와 동일).
+/*!
+ * @brief 파일 위치 변경
+ * @param[in]	self	파일 개체
+ * @param	offset  	이동할 위치
+ * @param	org			방식 (C형식 SEEK와 동일)
  * @return	변경된 위치.
  */
 int64_t qn_file_seek(qnFile* self, int64_t offset, int org)
 {
-#if _QN_WINDOWS_
+#if _MSC_VER
 	LARGE_INTEGER ll;
 	LARGE_INTEGER* po = (LARGE_INTEGER*)&offset;
-
 	BOOL b = SetFilePointerEx(self->fd, *po, &ll, org);
-
 	return b ? ll.QuadPart : -1;
 #else
 	return lseek(self->fd, offset, org);
 #endif
 }
 
-/**
- * 파일 갱신. 파일 내용을 갱신한다. 쓰기 버퍼의 남은 데이터를 모두 쓴다.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @return	성공하면 참, 실패하면 거짓.
+/*!
+ * @brief 파일 갱신. 파일 내용을 갱신한다. 쓰기 버퍼의 남은 데이터를 모두 쓴다
+ * @param[in]	self	파일 개체
+ * @return	성공하면 참, 실패하면 거짓
  */
 bool qn_file_flush(qnFile* self)
 {
-#if _QN_WINDOWS_
+#if _MSC_VER
 	return FlushFileBuffers(self->fd) != 0;
 #else
 #if 0
@@ -707,23 +692,21 @@ bool qn_file_flush(qnFile* self)
 #endif
 }
 
-/**
- * 파일에 쓰기. 포맷 방식.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @param	fmt			포맷 문자열.
- * @return	실제 쓴 길이.
+/*!
+ * @brief 파일에 포맷된 문자열 쓰기
+ * @param[in]	self	파일 개체
+ * @param	fmt			포맷 문자열
+ * @return	실제 쓴 길이
  */
 int qn_file_printf(qnFile* self, const char* fmt, ...)
 {
-	char* buf;
-	int len;
 	va_list va;
 
 	va_start(va, fmt);
-	len = qn_vsnprintf(NULL, 0, fmt, va);
+	int len = qn_vsnprintf(NULL, 0, fmt, va);
 	va_end(va);
 
-	buf = qn_alloca(len + 1, char);
+	char* buf = qn_alloca(len + 1, char);
 	va_start(va, fmt);
 	qn_vsnprintf(buf, len + 1, fmt, va);
 	va_end(va);
@@ -735,21 +718,18 @@ int qn_file_printf(qnFile* self, const char* fmt, ...)
 	return len;
 }
 
-/**
- * 파일에 쓰기, 포맷 방식.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @param	fmt			포맷 문자열.
- * @param	va			가변 인수.
- * @return	실제 쓴 길이.
+/*!
+ * @brief 파일에 포맷된 문자열 쓰기 가변형
+ * @param[in]	self	파일 개체
+ * @param	fmt			포맷 문자열
+ * @param	va			가변 인수
+ * @return	실제 쓴 길이
  */
 int qn_file_vprintf(qnFile* self, const char* fmt, va_list va)
 {
-	char* buf;
-	int len;
+	int len = qn_vsnprintf(NULL, 0, fmt, va);
 
-	len = qn_vsnprintf(NULL, 0, fmt, va);
-
-	buf = qn_alloca(len + 1, char);
+	char* buf = qn_alloca(len + 1, char);
 	qn_vsnprintf(buf, len + 1, fmt, va);
 
 	len = qn_file_write(self, buf, 0, len);
@@ -759,24 +739,22 @@ int qn_file_vprintf(qnFile* self, const char* fmt, va_list va)
 	return len;
 }
 
-/**
- * 파일이 있나 조사한다.
- * @param	filename	파일의 이름.
- * @param [반환]	res 	(널값이 아니면) 파일 처리 플래그로 KFAS_로 시작하는 마스크 플래그.
- * @return	성공하면 참, 실패하면 거짓.
+/*!
+ * @brief 파일이 있나 조사한다
+ * @param	filename	파일의 이름
+ * @param[out]	res 	(널값이 아니면) 파일 처리 플래그로 KFAS_로 시작하는 마스크 플래그
+ * @return	성공하면 참, 실패하면 거짓
  */
 bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 {
 	qn_retval_if_fail(filename, false);
 
-#if _QN_WINDOWS_
-	WIN32_FIND_DATA ffd;
-	HANDLE h;
+#if _MSC_VER
 	wchar_t uni[QN_MAX_PATH];
-
 	qn_utf8to16(uni, QN_MAX_PATH - 1, filename, 0);
 
-	h = FindFirstFileEx(uni, FindExInfoStandard, &ffd, FindExSearchNameMatch, NULL, 0);
+	WIN32_FIND_DATA ffd = { 0, };
+	HANDLE h = FindFirstFileEx(uni, FindExInfoStandard, &ffd, FindExSearchNameMatch, NULL, 0);
 
 	if (h == INVALID_HANDLE_VALUE)
 		return false;
@@ -805,21 +783,19 @@ bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 #endif
 }
 
-/**
- * 파일이 있나 조사한다. 유니코드 버전.
- * @param	filename	파일의 이름.
- * @param [반환]	res 	(널값이 아니면) 파일 처리 플래그로 KFAS_로 시작하는 마스크 플래그.
- * @return	성공하면 참, 실패하면 거짓.
+/*!
+ * @brief 파일이 있나 조사한다. 유니코드 버전
+ * @param	filename	파일의 이름
+ * @param[out]	res 	(널값이 아니면) 파일 처리 플래그로 KFAS_로 시작하는 마스크 플래그
+ * @return	성공하면 참, 실패하면 거짓
  */
 bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir)
 {
 	qn_retval_if_fail(filename, false);
 
-#if _QN_WINDOWS_
-	WIN32_FIND_DATA ffd;
-	HANDLE h;
-
-	h = FindFirstFileEx(filename, FindExInfoStandard, &ffd, FindExSearchNameMatch, NULL, 0);
+#if _MSC_VER
+	WIN32_FIND_DATA ffd = { 0, };
+	HANDLE h = FindFirstFileEx(filename, FindExInfoStandard, &ffd, FindExSearchNameMatch, NULL, 0);
 
 	if (h == INVALID_HANDLE_VALUE)
 		return false;
@@ -831,10 +807,10 @@ bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir)
 			*isdir = (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
 		return true;
-	}	
+	}
 #else
 	char u8[260];
-	qn_utf32to8(u8, 260-1, filename, 0);
+	qn_utf32to8(u8, 260 - 1, filename, 0);
 
 	struct stat s;
 	int n = stat(u8, &s);
@@ -851,52 +827,45 @@ bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir)
 #endif
 }
 
-/**
- * qn_file_alloc 함수에서 사용하는 파일 읽기 최대 할당 크기.
- * @return	최대 할당 크기.
+/*!
+ * @brief qn_file_alloc 함수에서 사용하는 파일 읽기 최대 할당 크기
+ * @return	최대 할당 크기
  */
 size_t qn_file_get_max_alloc_size(void)
 {
 	return _max_file_alloc_size;
 }
 
-/**
- * qn_file_alloc 함수에서 사용할 파일 읽기 최대 할당 크기 설정.
- * @param	n	할당할 크기.
+/*!
+ * @brief qn_file_alloc 함수에서 사용할 파일 읽기 최대 할당 크기 설정
+ * @param	n	할당할 크기
  */
 void qn_file_set_max_alloc_size(size_t n)
 {
 	_max_file_alloc_size = n == 0 ? (512ULL * 1024ULL * 1024ULL) : n;
 }
 
-/**
- * 파일 할당. 즉 파일 전체를 읽어 메모리에 할당한 후 반환한다.
- * @param	filename	파일의 이름.
- * @param [반환]	size	(널값이 아니면) 읽은 파일의 크기.
- * @return	읽은 버퍼. 사용한 다음 k_free 함수로 해제해야한다.
+/*!
+ * @brief 파일 할당. 즉, 파일 전체를 읽어 메모리에 할당한 후 반환한다
+ * @param	filename	파일의 이름
+ * @param[out]	size	(널값이 아니면) 읽은 파일의 크기
+ * @return	읽은 버퍼. 사용한 다음 k_free 함수로 해제해야한다
  */
 pointer_t qn_file_alloc(const char* filename, int* size)
 {
-	qnFile* file;
-	pointer_t buf;
-	int64_t len;
-
 	qn_retval_if_fail(filename != NULL, NULL);
 
-	file = qn_file_new(filename, "rb");
+	qnFile* file = qn_file_new(filename, "rb");
+	qn_retval_if_fail(file, NULL);
 
-	if (!file)
-		return NULL;
-
-	len = qn_file_size(file);
-
+	int64_t len = qn_file_size(file);
 	if (!len || len > (int64_t)_max_file_alloc_size)
 	{
 		qn_file_delete(file);
 		return NULL;
 	}
 
-	buf = qn_alloc((size_t)len + 4, uint8_t);
+	pointer_t buf = qn_alloc((size_t)len + 4, uint8_t);
 	qn_file_read(file, buf, 0, (int)len);
 
 	qn_file_delete(file);
@@ -907,24 +876,20 @@ pointer_t qn_file_alloc(const char* filename, int* size)
 	return buf;
 }
 
-/**
- * 파일 할당. 즉 파일 전체를 읽어 메모리에 할당한 후 반환한다. 유니코드 버전.
- * @param	filename	파일의 이름.
- * @param [반환]	size	(널값이 아니면) 읽은 파일의 크기.
- * @return	읽은 버퍼. 사용한 다음 k_free 함수로 해제해야한다.
+/*!
+ * @brief 파일 할당. 즉, 파일 전체를 읽어 메모리에 할당한 후 반환한다. 유니코드 버전
+ * @param	filename	파일의 이름
+ * @param[out]	size	(널값이 아니면) 읽은 파일의 크기
+ * @return	읽은 버퍼. 사용한 다음 k_free 함수로 해제해야한다
  */
 pointer_t qn_file_alloc_l(const wchar_t* filename, int* size)
 {
-	qnFile* file;
-	pointer_t buf;
-	uint64_t len;
-
 	qn_retval_if_fail(filename, NULL);
 
-	file = qn_file_new_l(filename, L"rb");
+	qnFile* file = qn_file_new_l(filename, L"rb");
 	qn_retval_if_fail(file, NULL);
 
-	len = qn_file_size(file);
+	int64_t len = qn_file_size(file);
 
 	if (!len || len > _max_file_alloc_size)
 	{
@@ -932,7 +897,7 @@ pointer_t qn_file_alloc_l(const wchar_t* filename, int* size)
 		return NULL;
 	}
 
-	buf = qn_alloc((size_t)len + 4, uint8_t);
+	pointer_t buf = qn_alloc((size_t)len + 4, uint8_t);
 	qn_file_read(file, buf, 0, (int)len);
 
 	qn_file_delete(file);
@@ -945,54 +910,48 @@ pointer_t qn_file_alloc_l(const wchar_t* filename, int* size)
 
 
 //////////////////////////////////////////////////////////////////////////
-// 디렉터리
+// 디렉토리
 
-// 디렉터리 구조체.
+// 디렉토리 구조체.
 struct qnDir
 {
-#if _QN_WINDOWS_
-	wchar_t*			name;
+#if _MSC_VER
+	wchar_t* name;
 	int					stat;
 	HANDLE				handle;
 	WIN32_FIND_DATA		ffd;
 	char				file[MAX_PATH];
 #else
-	DIR*				pd;
+	DIR* pd;
 	wchar_t				ufile[QN_MAX_PATH];
 #endif
 };
 
-/**
- * 디렉터리를 새로 만든다.
- * @param	path 	디렉터리의 완전한 경로 이름.
- * @param	flags	사용하지 않음.
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 개체.
+/*!
+ * @brief 디렉토리를 새로 만든다
+ * @param	path 	디렉토리의 완전한 경로 이름
+ * @param	flags	사용하지 않음
+ * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 개체
  */
 qnDir* qn_dir_new(const char* path)
 {
-	qnDir* self;
-
-#if _QN_WINDOWS_
-	size_t len;
-	wchar_t* suffix;
-	wchar_t fpath[MAX_PATH];
-	wchar_t uni[MAX_PATH];
-	WIN32_FILE_ATTRIBUTE_DATA fad;
-
+#if _MSC_VER
 	qn_retval_if_fail(path != NULL, NULL);
 
+	wchar_t uni[MAX_PATH];
 	qn_utf8to16(uni, MAX_PATH - 1, path, 0);
 
+	WIN32_FILE_ATTRIBUTE_DATA fad = { 0, };
 	if (!GetFileAttributesEx(uni, GetFileExInfoStandard, &fad))
 		return NULL;
-
 	if (!(fad.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 		return NULL;
 
+	wchar_t fpath[MAX_PATH];
 	(void)_wfullpath(fpath, uni, MAX_PATH);
 
-	len = wcslen(fpath) + 1/*슬래시*/ + 1/*서픽스*/ + 1/*널*/;
-	suffix = qn_alloc(len, wchar_t);
+	size_t len = wcslen(fpath) + 1/*슬래시*/ + 1/*서픽스*/ + 1/*널*/;
+	wchar_t* suffix = qn_alloc(len, wchar_t);
 	qn_retval_if_fail(suffix, NULL);
 
 	wcscpy_s(suffix, len, fpath);
@@ -1008,8 +967,8 @@ qnDir* qn_dir_new(const char* path)
 	suffix[len] = L'*';
 	suffix[len + 1] = L'\0';
 
-	self = qn_alloc_zero_1(qnDir);
-	if (!self) 
+	qnDir* self = qn_alloc_zero_1(qnDir);
+	if (!self)
 	{
 		qn_free(suffix);
 		return NULL;
@@ -1018,11 +977,9 @@ qnDir* qn_dir_new(const char* path)
 	self->name = suffix;
 	self->handle = INVALID_HANDLE_VALUE;
 #else
-	DIR* pd;
-
 	qn_retval_if_fail(path, NULL);
 
-	pd = opendir(path);
+	DIR* pd = opendir(path);
 	qn_retval_if_fail(pd != NULL, NULL);
 
 	self = qn_alloc_zero_1(qnDir);
@@ -1032,34 +989,28 @@ qnDir* qn_dir_new(const char* path)
 	return self;
 }
 
-/**
- * 디렉터리를 새로 만든다. (유니코드 사용)
- * @param	path 	디렉터리의 완전한 경로 이름.
- * @param	flags	사용하지 않음.
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 개체.
+/*!
+ * @brief 디렉토리를 새로 만든다 (유니코드 사용)
+ * @param	path 	디렉토리의 완전한 경로 이름
+ * @param	flags	사용하지 않음
+ * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 개체
  */
 qnDir* qn_dir_new_l(const wchar_t* path)
 {
-	qnDir* self;
-
-#if _QN_WINDOWS_
-	size_t len;
-	wchar_t* suffix;
-	wchar_t fpath[MAX_PATH];
-	WIN32_FILE_ATTRIBUTE_DATA fad;
-
+#if _MSC_VER
 	qn_retval_if_fail(path != NULL, NULL);
 
+	WIN32_FILE_ATTRIBUTE_DATA fad = { 0, };
 	if (!GetFileAttributesEx(path, GetFileExInfoStandard, &fad))
 		return NULL;
-
 	if (!(fad.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 		return NULL;
 
+	wchar_t fpath[MAX_PATH];
 	(void)_wfullpath(fpath, path, MAX_PATH);
 
-	len = wcslen(fpath) + 1/*슬래시*/ + 1/*서픽스*/ + 1/*널*/;
-	suffix = qn_alloc(len, wchar_t);
+	size_t len = wcslen(fpath) + 1/*슬래시*/ + 1/*서픽스*/ + 1/*널*/;
+	wchar_t* suffix = qn_alloc(len, wchar_t);
 	qn_retval_if_fail(suffix, NULL);
 
 	wcscpy_s(suffix, len, fpath);
@@ -1075,8 +1026,8 @@ qnDir* qn_dir_new_l(const wchar_t* path)
 	suffix[len] = L'*';
 	suffix[len + 1] = L'\0';
 
-	self = qn_alloc_zero_1(qnDir);
-	if (!self) 
+	qnDir* self = qn_alloc_zero_1(qnDir);
+	if (!self)
 	{
 		qn_free(suffix);
 		return NULL;
@@ -1085,13 +1036,11 @@ qnDir* qn_dir_new_l(const wchar_t* path)
 	self->name = suffix;
 	self->handle = INVALID_HANDLE_VALUE;
 #else
-	DIR* pd;
-	char asc[260];
-
 	qn_retval_if_fail(path, NULL);
 
+	char asc[260];
 	qn_utf32to8(asc, 260 - 1, path, 0);
-	pd = opendir(asc);
+	DIR* pd = opendir(asc);
 	qn_retval_if_fail(pd != NULL, NULL);
 
 	self = qn_alloc_zero_1(qnDir);
@@ -1101,13 +1050,13 @@ qnDir* qn_dir_new_l(const wchar_t* path)
 	return self;
 }
 
-/**
- * 디렉터리 개체 제거.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
+/*!
+ * @brief 디렉토리 개체 제거
+ * @param[in]	self	디렉토리 개체
  */
 void qn_dir_delete(qnDir* self)
 {
-#if _QN_WINDOWS_
+#if _MSC_VER
 	if (self->handle != INVALID_HANDLE_VALUE)
 		FindClose(self->handle);
 
@@ -1119,14 +1068,14 @@ void qn_dir_delete(qnDir* self)
 	qn_free(self);
 }
 
-/**
- * 디렉터리에서 항목 읽기.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 파일 이름.
+/*!
+ * @brief 디렉토리에서 항목 읽기
+ * @param[in]	self	디렉토리 개체
+ * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 파일 이름
  */
 const char* qn_dir_read(qnDir* self)
 {
-#if _QN_WINDOWS_
+#if _MSC_VER
 	for (;;)
 	{
 		if (self->stat < 0)
@@ -1160,9 +1109,7 @@ const char* qn_dir_read(qnDir* self)
 		return self->file;
 	}
 #else
-	struct dirent* ent;
-
-	ent = readdir(self->pd);
+	struct dirent* ent = readdir(self->pd);
 
 	while (ent && (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0))
 		ent = readdir(self->pd);
@@ -1171,14 +1118,14 @@ const char* qn_dir_read(qnDir* self)
 #endif
 }
 
-/**
- * 디렉터리에서 항목 읽기. (유니코드)
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 파일 이름.
+/*!
+ * @brief 디렉토리에서 항목 읽기 (유니코드)
+ * @param[in]	self	디렉토리 개체
+ * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 파일 이름
  */
 const wchar_t* qn_dir_read_l(qnDir* self)
 {
-#if _QN_WINDOWS_
+#if _MSC_VER
 	for (;;)
 	{
 		if (self->stat < 0)
@@ -1210,9 +1157,7 @@ const wchar_t* qn_dir_read_l(qnDir* self)
 		return self->ffd.cFileName;
 	}
 #else
-	struct dirent* ent;
-
-	ent = readdir(self->pd);
+	struct dirent* ent = readdir(self->pd);
 
 	while (ent && (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0))
 		ent = readdir(self->pd);
@@ -1227,13 +1172,13 @@ const wchar_t* qn_dir_read_l(qnDir* self)
 #endif
 }
 
-/**
- * 디렉터리를 첫 항목으로 감기.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
+/*!
+ * @brief 디렉토리를 첫 항목으로 감기
+ * @param[in]	self	디렉토리 개체
  */
 void qn_dir_rewind(qnDir* self)
 {
-#if _QN_WINDOWS_
+#if _MSC_VER
 	if (self->handle != INVALID_HANDLE_VALUE)
 		FindClose(self->handle);
 
@@ -1244,14 +1189,14 @@ void qn_dir_rewind(qnDir* self)
 #endif
 }
 
-/**
- * 디렉터리에서 몇번째 항목인지 얻기.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @return	항목 순서.
+/*!
+ * @brief 디렉토리에서 몇번째 항목인지 얻기
+ * @param[in]	self	디렉토리 개체
+ * @return	항목 순서
  */
 int qn_dir_tell(qnDir* self)
 {
-#if _QN_WINDOWS_
+#if _MSC_VER
 	return self->stat;
 #elif _QN_ANDROID_
 	return -1;
@@ -1260,14 +1205,14 @@ int qn_dir_tell(qnDir* self)
 #endif
 }
 
-/**
- * 디렉터리에서 순서 항목으로 찾아가지.
- * @param [입력]	self	개체나 인터페이스의 자기 자신 값.
- * @param	pos			찾아갈 위치.
+/*!
+ * @brief 디렉토리에서 순서 항목으로 찾아가기
+ * @param[in]	self	디렉토리 개체
+ * @param	pos			찾아갈 위치
  */
 void qn_dir_seek(qnDir* self, int pos)
 {
-#if _QN_WINDOWS_
+#if _MSC_VER
 	if (pos < 0)
 	{
 		if (self->handle != INVALID_HANDLE_VALUE)

@@ -16,58 +16,6 @@
 QN_EXTC_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
-// inlines
-#if _MSC_VER
-#define _qn_inl_strupr		_strupr_s
-#define _qn_inl_strlwr		_strlwr_s
-#define _qn_inl_wcsupr		_wcsupr_s
-#define _qn_inl_wcslwr		_wcslwr_s
-#else
-#define _strdup				strdup
-#define strcpy_s(a,b,c)		strcpy(a,c)
-#define strncpy_s(a,b,c,d)	strncpy(a,c,d)
-#define wcscpy_s(a,b,c)		wcscpy(a,c)
-#define wcsncpy_s(a,b,c,d)	wcsncpy(a,c,d)
-
-QN_INLINE char* _qn_inl_strupr(char* p, size_t size)
-{
-	char* s = p;
-	for (; *s; ++s)
-		if ((*s >= 'a') && (*s <= 'z'))
-			*s -= 'a' - 'A';
-	return p;
-}
-
-QN_INLINE char* _qn_inl_strlwr(char* p, size_t size)
-{
-	char* s = p;
-	for (; *s; ++s)
-		if ((*s >= 'A') && (*s <= 'Z'))
-			*s += 'a' - 'A';
-	return p;
-}
-
-QN_INLINE wchar_t* _qn_inl_wcsupr(wchar_t* p, size_t size)
-{
-	wchar_t* s = p;
-	for (; *s; ++s)
-		if ((*s >= L'a') && (*s <= L'z'))
-			*s -= (wchar_t)(L'a' - L'A');
-	return p;
-}
-
-QN_INLINE wchar_t* _qn_inl_wcslwr(wchar_t* p, size_t size)
-{
-	wchar_t* s = p;
-	for (; *s; ++s)
-		if ((*s >= L'A') && (*s <= L'Z'))
-			*s += (wchar_t)(L'a' - L'A');
-	return p;
-}
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////
 // array
 typedef struct qnArr
 {
@@ -173,7 +121,7 @@ typedef struct qnArr
 	(qn_qsort((p)->data, (p)->count, qn_arr_sizeof(name), func))
 
 #define qn_arr_sort_context(name,p,func,userdata)\
-	(qn_qsort_context((p)->data, (p)->count, qn_arr_sizeof(name), func, userdata))
+	(qn_qsortc((p)->data, (p)->count, qn_arr_sizeof(name), func, userdata))
 
 /* value type */
 #define qn_arr_add(name,p,item)\
@@ -1895,11 +1843,11 @@ typedef struct qnHash
 	QN_INLINE size_t name##_Hash_Cb_Hash(size_t* key) { return *key; }\
 	QN_INLINE bool name##_Hash_Cb_Eq(size_t* k1, size_t* k2) { return (*k1)==(*k2); }
 #define QN_HASH_HASHER_CHAR_PTR(name)\
-	QN_INLINE size_t name##_Hash_Cb_Hash(const pointer_t key) { return qn_strhash(*(const char**)key); }\
-	QN_INLINE bool name##_Hash_Cb_Eq(const pointer_t k1, const pointer_t k2) { return strcmp(*(const char**)k1, *(const char**)k2)==0; }
+	QN_INLINE size_t name##_Hash_Cb_Hash(cpointer_t key) { return qn_strhash(*(const char**)key); }\
+	QN_INLINE bool name##_Hash_Cb_Eq(cpointer_t k1, cpointer_t k2) { return strcmp(*(const char**)k1, *(const char**)k2)==0; }
 #define QN_HASH_HASHER_WCHAR_PTR(name)\
-	QN_INLINE size_t name##_Hash_Cb_Hash(const pointer_t key) { return qn_wcshash(*(const wchar_t**)key); }\
-	QN_INLINE bool name##_Hash_Cb_Eq(const pointer_t k1, const pointer_t k2) { return wcscmp(*(const wchar_t**)k1, *(const wchar_t**)k2)==0; }
+	QN_INLINE size_t name##_Hash_Cb_Hash(cpointer_t key) { return qn_wcshash(*(const wchar_t**)key); }\
+	QN_INLINE bool name##_Hash_Cb_Eq(cpointer_t k1, cpointer_t k2) { return wcscmp(*(const wchar_t**)k1, *(const wchar_t**)k2)==0; }
 #define QN_HASH_HASHER_CHAR_PTR_INCASE(name)\
 	QN_INLINE size_t name##_Hash_Cb_Hash(const char** key) { return qn_strihash(*key); }\
 	QN_INLINE bool name##_Hash_Cb_Eq(const char** k1, const char** k2) { return stricmp(*k1, *k2)==0; }
@@ -2100,7 +2048,7 @@ typedef struct qnHash
 		/* keyptr: pointer of key */\
 		/* valuedata : data of value */\
 		/* replace: true=replace original key, false=discard given key */\
-		size_t __ah;\
+		size_t __ah=0;\
 		struct name##Node** __an=NULL;\
 		_qn_inl_hash_lookup_hash(name,p,keyptr,__an,&__ah);\
 		if (__an) {\
@@ -3292,26 +3240,26 @@ QN_INLINE void _qn_inl_bstr_append_format(qnBstr* p, size_t size, const char* fm
 }
 
 #define qn_bstr_upper(p)\
-	_qn_inl_strupr(((qnBstr*)p)->data, ((qnBstr*)p)->len);
+	qn_strupr(((qnBstr*)p)->data, ((qnBstr*)p)->len);
 
 #define qn_bstr_lower(p)\
-	_qn_inl_strlwr(((qnBstr*)p)->data, ((qnBstr*)p)->len);
+	qn_strlwr(((qnBstr*)p)->data, ((qnBstr*)p)->len);
 
 #define qn_bstr_trim(p)\
 	QN_STMT_BEGIN{\
-		qn_strtrim((p)->data);\
+		qn_strtrm((p)->data);\
 		(p)->len=strlen((p)->data);\
 	}QN_STMT_END
 
 #define qn_bstr_trim_left(p)\
 	QN_STMT_BEGIN{\
-		qn_strltrim((p)->data);\
+		qn_strltm((p)->data);\
 		(p)->len=strlen((p)->data);\
 	}QN_STMT_END
 
 #define qn_bstr_trim_right(p)\
 	QN_STMT_BEGIN{\
-		qn_strrtrim((p)->data);\
+		qn_strrtm((p)->data);\
 		(p)->len=strlen((p)->data);\
 	}QN_STMT_END
 
@@ -3320,13 +3268,13 @@ QN_INLINE void _qn_inl_bstr_append_format(qnBstr* p, size_t size, const char* fm
 		(p)->len=strlen(qn_strrem((p)->data, rmlist));\
 	}QN_STMT_END
 
-QN_INLINE int qn_bstr_has_char(const pointer_t p, const char* chars)
+QN_INLINE int qn_bstr_has_char(cpointer_t p, const char* chars)
 {
 	char* s=qn_strbrk(((qnBstr*)p)->data, chars);
 	return (s) ? (int)(s-((qnBstr*)p)->data) : -1;
 }
 
-QN_INLINE int qn_bstr_find_char(const pointer_t p, size_t at, char ch)
+QN_INLINE int qn_bstr_find_char(cpointer_t p, size_t at, char ch)
 {
 	char* s=strchr(((qnBstr*)p)->data+at, ch);
 	return (s) ? (int)(s-((qnBstr*)p)->data) : -1;
@@ -3334,7 +3282,7 @@ QN_INLINE int qn_bstr_find_char(const pointer_t p, size_t at, char ch)
 
 #define qn_bstr_sub_bstr(p, s, pos, len)\
 	_qn_inl_bstr_sub_bstr(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, (const qnBstr*)(s), pos, len)
-QN_INLINE bool _qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, size_t pos, size_t len)
+QN_INLINE bool _qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, size_t pos, intptr_t len)
 {
 	qn_retval_if_fail(pos >= 0, false);
 	qn_retval_if_fail(s->len >= pos, false);
@@ -3533,19 +3481,19 @@ QN_INLINE void _qn_inl_bwcs_append_format(qnBwcs* p, size_t size, const wchar_t*
 
 #define qn_bwcs_trim(p)\
 	QN_STMT_BEGIN{\
-		qn_wcstrim((p)->data);\
+		qn_wcstrm((p)->data);\
 		(p)->len=wcslen((p)->data);\
 	}QN_STMT_END
 
 #define qn_bwcs_trim_left(p)\
 	QN_STMT_BEGIN{\
-		qn_wcsltrim((p)->data);\
+		qn_wcsltm((p)->data);\
 		(p)->len=wcslen((p)->data);\
 	}QN_STMT_END
 
 #define qn_bwcs_trim_right(p)\
 	QN_STMT_BEGIN{\
-		qn_wcsrtrim((p)->data);\
+		qn_wcsrtm((p)->data);\
 		(p)->len=wcslen((p)->data);\
 	}QN_STMT_END
 
@@ -3554,13 +3502,13 @@ QN_INLINE void _qn_inl_bwcs_append_format(qnBwcs* p, size_t size, const wchar_t*
 		(p)->len=wcslen(qn_wcsrem((p)->data, rmlist));\
 	}QN_STMT_END
 
-QN_INLINE int qn_bwcs_has_char(const pointer_t p, const wchar_t* chars)
+QN_INLINE int qn_bwcs_has_char(cpointer_t p, const wchar_t* chars)
 {
 	wchar_t* s=qn_wcsbrk(((qnBwcs*)p)->data, chars);
 	return (s) ? (int)(s-((qnBwcs*)p)->data) : -1;
 }
 
-QN_INLINE int qn_bwcs_find_char(const pointer_t p, size_t at, wchar_t ch)
+QN_INLINE int qn_bwcs_find_char(cpointer_t p, size_t at, wchar_t ch)
 {
 	wchar_t* s=wcschr(((qnBwcs*)p)->data+at, ch);
 	return (s) ? (int)(s-((qnBwcs*)p)->data) : -1;
@@ -3568,7 +3516,7 @@ QN_INLINE int qn_bwcs_find_char(const pointer_t p, size_t at, wchar_t ch)
 
 #define qn_bwcs_sub_bwcs(p, s, pos, len)\
 	_qn_inl_bstr_sub_bstr(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, ((qnBwcs*)(s)), pos, len)
-QN_INLINE bool _qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, size_t pos, size_t len)
+QN_INLINE bool _qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, size_t pos, intptr_t len)
 {
 	qn_retval_if_fail(pos>=0, false);
 	qn_retval_if_fail(s->len>=pos, false);

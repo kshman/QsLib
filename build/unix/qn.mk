@@ -20,10 +20,8 @@ SOST=libqn.so
 VPATH=src:../../qn
 
 #
-SRC= PatrickPowell_snprintf.c \
-	qn_datetime.c qn_debug.c qn_file.c qn_hash_prime.c \
-	qn_mem.c qn_mlu.c qn_sort.c qn_str.c \
-	qn.c
+SRC=qn.c qn_mem.c qn_hash.c qn_sort.c qn_str.c qn_datetime.c qn_debug.c qn_file.c  qn_mlu.c \
+	PatrickPowell_snprintf.c 
 OBJ=$(SRC:.c=.o)
 LNK=$(notdir $(OBJ))
 

@@ -8,7 +8,7 @@ int main()
 
     qnDateTime dt;
     qn_now(&dt);
-    printf("시간: %2d:%2d:%2d.%3d\n", dt.hour, dt.minute, dt.second, dt.millisecond);
+    printf("시간: %02d:%02d:%02d.%03d\n", dt.hour, dt.minute, dt.second, dt.millisecond);
 
     char* str;
     int len=qn_asprintf(&str, "이것은 숫자:%d, 실수:%f, 문자열:%s", 12, 12.345, "문자열");

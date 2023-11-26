@@ -7,7 +7,7 @@
 #endif
 
 //
-pointer_t qn_memenc(pointer_t dest, const pointer_t src, size_t size)
+pointer_t qn_memenc(pointer_t dest, cpointer_t src, size_t size)
 {
 	uint8_t* pd = (uint8_t*)dest;
 	uint8_t* ps = (uint8_t*)src;
@@ -22,7 +22,7 @@ pointer_t qn_memenc(pointer_t dest, const pointer_t src, size_t size)
 }
 
 //
-pointer_t qn_memdec(pointer_t dest, const pointer_t src, size_t size)
+pointer_t qn_memdec(pointer_t dest, cpointer_t src, size_t size)
 {
 	uint8_t* pd = (uint8_t*)dest;
 	uint8_t* ps = (uint8_t*)src;
@@ -37,7 +37,7 @@ pointer_t qn_memdec(pointer_t dest, const pointer_t src, size_t size)
 }
 
 //
-pointer_t qn_memzcpr(const pointer_t src, size_t srcsize, /*RET_NULLABLE*/size_t* destsize)
+pointer_t qn_memzcpr(cpointer_t src, size_t srcsize, /*NULLABLE*/size_t* destsize)
 {
 	qn_retval_if_fail(src != NULL, NULL);
 	qn_retval_if_fail(srcsize > 0, NULL);
@@ -59,7 +59,7 @@ pointer_t qn_memzcpr(const pointer_t src, size_t srcsize, /*RET_NULLABLE*/size_t
 }
 
 //
-pointer_t qn_memzucp(const pointer_t src, size_t srcsize, size_t bufsize, /*RET_NULLABLE*/size_t* destsize)
+pointer_t qn_memzucp(cpointer_t src, size_t srcsize, size_t bufsize, /*NULLABLE*/size_t* destsize)
 {
 	qn_retval_if_fail(src != NULL, NULL);
 	qn_retval_if_fail(srcsize > 0, NULL);
@@ -112,7 +112,7 @@ char qn_memhrd(size_t size, double* out)
 }
 
 //
-char* qn_memdmp(const pointer_t ptr, size_t size, char* outbuf, size_t buflen)
+char* qn_memdmp(cpointer_t ptr, size_t size, char* outbuf, size_t buflen)
 {
 	qn_retval_if_fail(ptr != NULL, NULL);
 	qn_retval_if_fail(outbuf != NULL, NULL);

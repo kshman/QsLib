@@ -1,0 +1,22 @@
+root = true
+
+[*.{h,c,cc,cpp,rc}]
+end_of_line = crlf
+charset = utf-8-bom
+trim_trailing_whitespace = true
+insert_final_newline = true
+ident_style = tab
+ident_size = 4
+
+[*.{js,json}]
+end_of_line = lf
+charset = utf-8
+insert_final_newline = true
+ident_style = space
+ident_size = 2
+
+[Makefile, *.mk]
+charset = utf-8
+insert_final_newline = true
+ident_style = tab
+ident_size = 4

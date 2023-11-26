@@ -1,10 +1,10 @@
 ﻿#include "pch.h"
 #include "qn.h"
 
-/**
- * 로컬 시간으로 변화.
- * @param [반환]	ptm	시간 구조체.
- * @param	tt	   	time_t 형식의 시간.
+/*!
+ * @brief 로컬 시간으로 변화
+ * @param[out]	ptm	시간 구조체
+ * @param	tt	   	time_t 형식의 시간
  */
 void qn_localtime(struct tm* ptm, const time_t tt)
 {
@@ -18,10 +18,10 @@ void qn_localtime(struct tm* ptm, const time_t tt)
 #endif
 }
 
-/**
- * UTC 시간으로 변화.
- * @param [반환]	ptm	시간 구조체.
- * @param	tt	   	time_t 형식의 시간.
+/*!
+ * @brief UTC 시간으로 변화
+ * @param[out]	ptm	시간 구조체
+ * @param	tt	   	time_t 형식의 시간
  */
 void qn_gmtime(struct tm* ptm, const time_t tt)
 {
@@ -35,9 +35,9 @@ void qn_gmtime(struct tm* ptm, const time_t tt)
 #endif
 }
 
-/**
- * 현재 날짜 시간.
- * @param [반환]	dt	(널값이 아니면) 현재 날짜 시간.
+/*!
+ * @brief 현재 날짜 시간.
+ * @param[out]	dt	(널값이 아니면) 현재 날짜 시간
  */
 void qn_now(qnDateTime* dt)
 {
@@ -72,9 +72,9 @@ void qn_now(qnDateTime* dt)
 #endif
 }
 
-/**
- * 현재의 UTC 날짜 시간.
- * @param [반환]	dt	(널값이 아니면) 현재 날짜 시간.
+/*!
+ * @brief 현재의 UTC 날짜 시간
+ * @param[out]	dt	(널값이 아니면) 현재 날짜 시간
  */
 void qn_utc(qnDateTime* dt)
 {
@@ -109,10 +109,10 @@ void qn_utc(qnDateTime* dt)
 #endif
 }
 
-/**
- * 초를 시간으로.
- * @param	sec   	초.
- * @param [반환]	dt	(널값이 아니면) 변환된 시간.
+/*!
+ * @brief 초를 시간으로
+ * @param	sec   	초
+ * @param[out]	dt	(널값이 아니면) 변환된 시간
  */
 void qn_stod(double sec, qnDateTime* dt)
 {
@@ -129,10 +129,10 @@ void qn_stod(double sec, qnDateTime* dt)
 	dt->millisecond = (uint32_t)m;
 }
 
-/**
- * 밀리초를 시간으로.
- * @param	msec  	밀리초.
- * @param [반환]	dt	(널값이 아니면) 변환된 시간.
+/*!
+ * @brief 밀리초를 시간으로
+ * @param	msec  	밀리초
+ * @param[out]	dt	(널값이 아니면) 변환된 시간
  */
 void qn_mstod(uint32_t msec, qnDateTime* dt)
 {
@@ -145,9 +145,9 @@ void qn_mstod(uint32_t msec, qnDateTime* dt)
 	dt->millisecond = msec - (ns * 1000);
 }
 
-/**
- * 사이클 64비트.
- * @return	현재의 사이클 TICK.
+/*!
+ * @brief 사이클 64비트
+ * @return	현재의 사이클 TICK
  */
 uint64_t qn_cycle(void)
 {
@@ -178,9 +178,9 @@ uint64_t qn_cycle(void)
 #endif
 }
 
-/**
- * 초단위 TICK.
- * @return	현재의 TICK.
+/*!
+ * @brief 초단위 TICK
+ * @return	현재의 TICK
  */
 double qn_stick(void)
 {
@@ -204,9 +204,9 @@ double qn_stick(void)
 	return t * s_cycle_per_tick;
 }
 
-/**
- * 밀리초 단위의 TICK.
- * @return	현재의 TICK.
+/*!
+ * @brief 밀리초 단위의 TICK
+ * @return	현재의 TICK
  */
 uint64_t qn_tick(void)
 {
@@ -217,9 +217,9 @@ uint64_t qn_tick(void)
 #endif
 }
 
-/**
- * 밀리초 슬립.
- * @param	milliseconds	밀리초 단위로 처리되는 millisecond.
+/*!
+ * @brief 밀리초 슬립
+ * @param	milliseconds	밀리초 단위로 처리되는 millisecond
  */
 void qn_sleep(uint32_t milliseconds)
 {
@@ -233,9 +233,9 @@ void qn_sleep(uint32_t milliseconds)
 #endif
 }
 
-/**
- * 마이크로초 슬립.
- * @param	microseconds	마이크로초 단위로 처리되는 microsecond.
+/*!
+ * @brief 마이크로초 슬립
+ * @param	microseconds	마이크로초 단위로 처리되는 microsecond
  */
 void qn_usleep(uint32_t microseconds)
 {
@@ -246,18 +246,18 @@ void qn_usleep(uint32_t microseconds)
 #endif
 }
 
-/**
- * 초 슬립.
- * @param	seconds	초 단위로 처리되는 second.
+/*!
+ * @brief 초(second) 슬립
+ * @param	seconds	초 단위로 처리되는 second
  */
 void qn_ssleep(uint32_t seconds)
 {
 	qn_sleep(seconds * 1000);
 }
 
-/**
- * 마이크로 슬립, 정밀 시계를 이용하며 스레드 콘텍스트가 일반 슬립보다 제한된다.
- * @param	microseconds	마이크로초 단위로 처리되는 microsecond.
+/*!
+ * @brief 마이크로 슬립, 정밀 시계를 이용하며 스레드 콘텍스트가 일반 슬립보다 제한된다
+ * @param	microseconds	마이크로초 단위로 처리되는 microsecond
  */
 void qn_msleep(uint64_t microseconds)
 {
@@ -301,25 +301,25 @@ typedef struct qnRealTimer
 	int					past;
 	double              cut;
 
-	vlong_t				basetime;
-	vlong_t				stoptime;
-	vlong_t				lasttime;
-	vlong_t				curtime;
-	vlong_t				frmtime;
+	vint64_t			basetime;
+	vint64_t			stoptime;
+	vint64_t			lasttime;
+	vint64_t			curtime;
+	vint64_t			frmtime;
 
 	uint32_t			count;
 
 	double				tick;
-	vlong_t				frame;
+	vint64_t			frame;
 
 	bool				manual;
 	double				fps_abs;
 	int					fps_frame;
 } qnRealTimer;
 
-/**
- * 타이머 만들기.
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 타이머.
+/*!
+ * @brief 타이머 만들기
+ * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 타이머
  */
 qnTimer* qn_timer_new(void)
 {
@@ -353,18 +353,18 @@ qnTimer* qn_timer_new(void)
 	return (qnTimer*)self;
 }
 
-/**
- * 타이머 제거.
- * @param [입력]	self	타이머 개체
+/*!
+ * @brief 타이머 제거
+ * @param[in]	self	타이머 개체
  */
 void qn_timer_delete(qnTimer* self)
 {
 	qn_free(self);
 }
 
-/**
- * 타이머 리셋.
- * @param [입력]	self	타이머 개체
+/*!
+ * @brief 타이머 리셋
+ * @param[in]	self	타이머 개체
  */
 void qn_timer_reset(qnTimer* self)
 {
@@ -379,9 +379,9 @@ void qn_timer_reset(qnTimer* self)
 	impl->stop = false;
 }
 
-/**
- * 타이머 시작.
- * @param [입력]	self	타이머 개체
+/*!
+ * @brief 타이머 시작
+ * @param[in]	self	타이머 개체
  */
 void qn_timer_start(qnTimer* self)
 {
@@ -399,9 +399,9 @@ void qn_timer_start(qnTimer* self)
 	impl->stop = false;
 }
 
-/**
- * 타이머 정지.
- * @param [입력]	self	타이머 개체
+/*!
+ * @brief 타이머 정지
+ * @param[in]	self	타이머 개체
  */
 void qn_timer_stop(qnTimer* self)
 {
@@ -415,10 +415,10 @@ void qn_timer_stop(qnTimer* self)
 	impl->stop = true;
 }
 
-/**
- * 타이머 갱신.
- * @param [입력]	self	타이머 개체
- * @return	성공하면 참, 실패하면 거짓.
+/*!
+ * @brief 타이머 갱신
+ * @param[in]	self	타이머 개체
+ * @return	성공하면 참, 실패하면 거짓
  */
 bool qn_timer_update(qnTimer* self)
 {
@@ -461,50 +461,50 @@ bool qn_timer_update(qnTimer* self)
 	return ret;
 }
 
-/**
- * 타이머의 절대 시간.
- * @param [입력]	self	타이머 개체
- * @return	double.
+/*!
+ * @brief 타이머의 절대 시간
+ * @param[in]	self	타이머 개체
+ * @return	double
  */
 double qn_timer_get_abs(qnTimer* self)
 {
 	return self->abstime;
 }
 
-/**
- * 타이머의 시작 부터의 실행 시간.
- * @param [입력]	self	타이머 개체
- * @return	double.
+/*!
+ * @brief 타이머의 시작 부터의 실행 시간
+ * @param[in]	self	타이머 개체
+ * @return	double
  */
 double qn_timer_get_run(qnTimer* self)
 {
 	return  self->runtime;
 }
 
-/**
- * 타이머 갱신의 시간 주기(Frame Per Second)
- * @param [입력]	self	타이머 개체
- * @return	double.
+/*!
+ * @brief 타이머 갱신의 시간 주기(Frame Per Second)
+ * @param[in]	self	타이머 개체
+ * @return	double
  */
 double qn_timer_get_fps(qnTimer* self)
 {
 	return self->fps;
 }
 
-/**
- * 타이머 갱신에 따른 경과 값.
- * @param [입력]	self	타이머 개체
- * @return	double.
+/*!
+ * @brief 타이머 갱신에 따른 경과 값
+ * @param[in]	self	타이머 개체
+ * @return	double
  */
 double qn_timer_get_adv(qnTimer* self)
 {
 	return self->advance;
 }
 
-/**
- * 타이머의 과다 수행에 따른 갱신 경과의 제한 값.
- * @param [입력]	self	타이머 개체
- * @return	double.
+/*!
+ * @brief 타이머의 과다 수행에 따른 갱신 경과의 제한 값
+ * @param[in]	self	타이머 개체
+ * @return	double
  */
 double qn_timer_get_cut(qnTimer* self)
 {
@@ -512,10 +512,10 @@ double qn_timer_get_cut(qnTimer* self)
 	return impl->cut;
 }
 
-/**
- * 타이머 과다 수행에 따른 갱신 경과값의 설정.
- * @param [입력]	self	타이머 개체
- * @param	cut			제한 값.
+/*!
+ * @brief 타이머 과다 수행에 따른 갱신 경과값의 설정
+ * @param[in]	self	타이머 개체
+ * @param	cut			제한 값
  */
 void qn_timer_set_cut(qnTimer* self, double cut)
 {
@@ -523,10 +523,10 @@ void qn_timer_set_cut(qnTimer* self, double cut)
 	impl->cut = cut;
 }
 
-/**
- * 타이머 매뉴얼 타입 FPS 측정.
- * @param [입력]	self	타이머 개체
- * @param	value   	기능을 쓰려면 참으로 넣는다.
+/*!
+ * @brief 타이머 매뉴얼 타입 FPS 측정
+ * @param[in]	self	타이머 개체
+ * @param	value   	기능을 쓰려면 참으로 넣는다
  */
 void qn_timer_set_manual(qnTimer* self, bool value)
 {
