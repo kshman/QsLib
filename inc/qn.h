@@ -361,13 +361,15 @@ QNAPI char* qn_strrem(char* p, const char* rmlist);
 QNAPI char* qn_strpcpy(char* dest, const char* src);
 QNAPI char* qn_strcat(const char* p, ...);
 #if _MSC_VER
-#define qn_strcpy			strcpy_s
-#define qn_strdup			_stdup
-#define qn_strupr			_strupr_s
-#define qn_strlwr			_strlwr_s
+#define qn_strcpy						strcpy_s
+#define qn_strncpy						strncpy_s
+#define qn_strdup						_strdup
+#define qn_strupr						_strupr_s
+#define qn_strlwr						_strlwr_s
 #else
-#define qn_strcpy(a,b,c)	strcpy(a,c)
-#define qn_strdup			strdup
+#define qn_strcpy(a,b,c)				strcpy(a,c)
+#define qn_strncpy(a,b,c,d)				strncpy(a,c,d)
+#define qn_strdup						strdup
 QNAPI char* qn_strupr(char* p, size_t size);
 QNAPI char* qn_strupr(char* p, size_t size);
 #endif
@@ -390,13 +392,15 @@ QNAPI wchar_t* qn_wcsrem(wchar_t* p, const wchar_t* rmlist);
 QNAPI wchar_t* qn_wcspcpy(wchar_t* dest, const wchar_t* src);
 QNAPI wchar_t* qn_wcscat(const wchar_t* p, ...);
 #if _MSC_VER
-#define qn_wcscpy			wcscpy_s
-#define qn_wcsdup			_wcsdup
-#define qn_wcsupr			_strupr_s
-#define qn_wcslrw			_strlwr_s
+#define qn_wcscpy						wcscpy_s
+#define qn_wcsncpy						wcsncpy_s
+#define qn_wcsdup						_wcsdup
+#define qn_wcsupr						_wcsupr_s
+#define qn_wcslrw						_wcslwr_s
 #else
-#define qn_wcscpy(a,b,c)	wcscpy(a,c)
-#define qn_wcsdup			_wcsdup
+#define qn_wcscpy(a,b,c)				wcscpy(a,c)
+#define qn_wcsncpy(a,b,c,d)				wcsncpy(a,c,d)
+#define qn_wcsdup						_wcsdup
 QNAPI wchar_t* qn_wcsupr(wchar_t* p, size_t size);
 QNAPI wchar_t* qn_wcslwr(wchar_t* p, size_t size);
 #endif

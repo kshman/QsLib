@@ -178,11 +178,7 @@ char* qn_strmid(char* dest, size_t destsize, const char* src, size_t pos, size_t
 		*dest = '\0';
 	else
 	{
-#if _MSC_VER
-		strncpy_s(dest, destsize, src + pos, len);
-#else
-		strncpy(dest, src + pos, len);
-#endif
+		qn_strncpy(dest, destsize, src + pos, len);
 		*(dest + len) = '\0';
 	}
 
@@ -480,11 +476,7 @@ wchar_t* qn_wcsmid(wchar_t* dest, size_t destsize, const wchar_t* src, size_t po
 		*dest = L'\0';
 	else
 	{
-#if _MSC_VER
-		wcsncpy_s(dest, destsize, src + pos, len);
-#else
-		wcsncpy(dest, src + pos, len);
-#endif
+		qn_wcsncpy(dest, destsize, src + pos, len);
 		*(dest + len) = L'\0';
 	}
 

@@ -3152,7 +3152,7 @@ typedef struct qnBstr8k
 		if ((len)<0) qn_bstr_set(p,str);\
 		else {\
 			(p)->len=len;\
-			strncpy_s((p)->data, QN_COUNTOF((p)->data), (str), (len));\
+			qn_strncpy((p)->data, QN_COUNTOF((p)->data), (str), (len));\
 		}\
 	}QN_STMT_END
 
@@ -3386,7 +3386,7 @@ typedef struct qnBwcs8k
 		if ((len)<0) qn_bwcs_set(p,str);\
 		else {\
 			(p)->len=len;\
-			wcsncpy_s((p)->data, QN_COUNTOF((p)->data), (str), (len));\
+			qn_wcsncpy((p)->data, QN_COUNTOF((p)->data), (str), (len));\
 		}\
 	}QN_STMT_END
 
