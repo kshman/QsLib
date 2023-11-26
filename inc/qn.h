@@ -175,33 +175,33 @@ QN_EXTC_BEGIN
 //////////////////////////////////////////////////////////////////////////
 // types
 
-/*! handle */
+/*! @brief handle */
 typedef void*							pointer_t;
-/*! const handle */
+/*! @brief const handle */
 typedef const void*						cpointer_t;
-/*! handle const */
+/*! @brief handle const */
 typedef void const*						pointerc_t;
-/*! function pointer */
+/*! @brief function pointer */
 typedef void (*func_t)(void);
-/*! parameter function pointer */
+/*! @brief parameter function pointer */
 typedef void (*paramfunc_t)(pointer_t);
 
 #if _QN_WINDOWS_
-/*! 32bit unicode */
+/*! @brief 32bit unicode */
 typedef uint32_t						uchar4_t;
-/*! 16bit unicode */
+/*! @brief 16bit unicode */
 typedef wchar_t							uchar2_t;
 #else
-/*! 32bit unicode */
+/*! @brief 32bit unicode */
 typedef wchar_t							uchar4_t;
-/*! 16bit unicode */
+/*! @brief 16bit unicode */
 typedef uint16_t						uchar2_t;
 #endif
 
-/*! half int */
+/*! @brief half int */
 typedef uint16_t						half_t;
 
-/*! variant 16bit short */
+/*! @brief variant 16bit short */
 typedef union vint16_t
 {
 	struct
@@ -211,7 +211,7 @@ typedef union vint16_t
 	uint16_t			w;
 } vint16_t;
 
-/*! variant 32bit int */
+/*! @brief variant 32bit int */
 typedef union vint32_t
 {
 	struct
@@ -225,7 +225,7 @@ typedef union vint32_t
 	uint32_t			dw;
 } vint32_t;
 
-/*! variant 64bit long long */
+/*! @brief variant 64bit long long */
 typedef union vint64_t
 {
 	struct
@@ -244,7 +244,7 @@ typedef union vint64_t
 	uint64_t			q;
 } vint64_t;
 
-/*! any value */
+/*! @brief any value */
 typedef union any_t
 {
 	bool				b;
@@ -265,7 +265,7 @@ typedef union any_t
 	uint8_t				data[8];
 } any_t;
 
-/*! function parameter */
+/*! @brief function parameter */
 typedef struct funcparam_t
 {
 	paramfunc_t			func;
@@ -337,6 +337,7 @@ QNAPI size_t qn_hashfn(int32_t prime8, func_t func, pointer_t data);
 QNAPI size_t qn_hashcrc(const uint8_t* data, size_t size);
 QNAPI uint32_t qn_primenear(uint32_t value);
 QNAPI uint32_t qn_primeshift(uint32_t value, uint32_t min, uint32_t* shift);
+
 QNAPI void qn_qsort(pointer_t ptr, size_t count, size_t stride, int(*compfunc)(cpointer_t, cpointer_t));
 QNAPI void qn_qsortc(pointer_t ptr, size_t count, size_t stride, int(*compfunc)(pointer_t, cpointer_t, cpointer_t), pointer_t context);
 
@@ -435,7 +436,7 @@ QNAPI void qn_usleep(uint32_t microseconds);
 QNAPI void qn_ssleep(uint32_t seconds);
 QNAPI void qn_msleep(uint64_t microseconds);
 
-/*! date time */
+/*! @brief date time */
 typedef struct qnDateTime
 {
 	union
@@ -466,7 +467,7 @@ QNAPI void qn_utc(qnDateTime* dt);
 QNAPI void qn_stod(double sec, qnDateTime* dt);
 QNAPI void qn_mstod(uint32_t msec, qnDateTime* dt);
 
-/*! timer */
+/*! @brief timer */
 typedef struct qnTimer
 {
 	double				abstime;
@@ -493,7 +494,7 @@ QNAPI void qn_timer_set_manual(qnTimer* self, bool value);
 //////////////////////////////////////////////////////////////////////////
 // i/o
 
-/*! file io */
+/*! @brief file io */
 typedef struct qnIoFuncDesc
 {
 	int(*read)(pointer_t handle, pointer_t buffer, int offset, int size);
@@ -506,13 +507,13 @@ typedef struct qnIoFuncDesc
 //////////////////////////////////////////////////////////////////////////
 // disk i/o
 
-/*! directory */
+/*! @brief directory */
 typedef struct qnDir qnDir;
 
-/*! file */
+/*! @brief file */
 typedef struct qnFile qnFile;
 
-/*! file info */
+/*! @brief file info */
 typedef struct qnFileInfo
 {
 	int16_t				type;
@@ -524,7 +525,7 @@ typedef struct qnFileInfo
 	char				name[256];
 } qnFileInfo;
 
-/*! file access */
+/*! @brief file access */
 typedef struct qnFileAccess
 {
 #if _MSC_VER
@@ -538,7 +539,7 @@ typedef struct qnFileAccess
 #endif
 } qnFileAccess;
 
-// seek
+/*! @brief seek */
 typedef enum qnSeek
 {
 	QN_SEEK_BEGIN	= 0,
@@ -546,7 +547,7 @@ typedef enum qnSeek
 	QN_SEEK_END		= 2,
 } qnSeek;
 
-// file flag
+/*! @brief file flag */
 typedef enum qnFileFlag
 {
 	QN_FF_READ		= 0x1,
@@ -592,10 +593,10 @@ QNAPI const wchar_t* qn_dir_read_l(qnDir* self);
 //////////////////////////////////////////////////////////////////////////
 // xml
 
-/*! ml unit */
+/*! @brief ml unit */
 typedef struct qnMlu qnMlu;
 
-/*! ml tag */
+/*! @brief ml tag */
 typedef struct qnMlTag
 {
 	char*				name;
