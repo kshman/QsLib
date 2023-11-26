@@ -222,7 +222,7 @@ typedef union vint32_t
 	{
 		uint16_t		l, h;
 	} w;
-	uint32_t				dw;
+	uint32_t			dw;
 } vint32_t;
 
 /*! variant 64bit long long */
@@ -255,7 +255,7 @@ typedef union any_t
 	char*				s;
 	wchar_t*			w;
 	pointer_t			p;
-	cpointer_t		cp;
+	cpointer_t			cp;
 	func_t				func;
 
 	int64_t				i64;
@@ -361,9 +361,13 @@ QNAPI char* qn_strrem(char* p, const char* rmlist);
 QNAPI char* qn_strpcpy(char* dest, const char* src);
 QNAPI char* qn_strcat(const char* p, ...);
 #if _MSC_VER
+#define qn_strcpy			strcpy_s
+#define qn_strdup			_stdup
 #define qn_strupr			_strupr_s
 #define qn_strlwr			_strlwr_s
 #else
+#define qn_strcpy(a,b,c)	strcpy(a,c)
+#define qn_strdup			strdup
 QNAPI char* qn_strupr(char* p, size_t size);
 QNAPI char* qn_strupr(char* p, size_t size);
 #endif
@@ -386,9 +390,13 @@ QNAPI wchar_t* qn_wcsrem(wchar_t* p, const wchar_t* rmlist);
 QNAPI wchar_t* qn_wcspcpy(wchar_t* dest, const wchar_t* src);
 QNAPI wchar_t* qn_wcscat(const wchar_t* p, ...);
 #if _MSC_VER
+#define qn_wcscpy			wcscpy_s
+#define qn_wcsdup			_wcsdup
 #define qn_wcsupr			_strupr_s
 #define qn_wcslrw			_strlwr_s
 #else
+#define qn_wcscpy(a,b,c)	wcscpy(a,c)
+#define qn_wcsdup			_wcsdup
 QNAPI wchar_t* qn_wcsupr(wchar_t* p, size_t size);
 QNAPI wchar_t* qn_wcslwr(wchar_t* p, size_t size);
 #endif

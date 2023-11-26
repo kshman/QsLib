@@ -1660,7 +1660,7 @@ static void _wcs_fmt_long(wchar_t* buffer, size_t* currlen, size_t maxlen, sn_an
 	int spadlen;
 	int zpadlen;
 	int quote;
-#if USE_LOCALE_INFO
+#if USE_WIDE_LOCALE
 	struct lconv* lc = localeconv();
 #endif
 
@@ -1711,7 +1711,7 @@ static void _wcs_fmt_long(wchar_t* buffer, size_t* currlen, size_t maxlen, sn_an
 		hexprefix = L'\0';
 
 	//
-#if USE_LOCALE_INFO
+#if USE_WIDE_LOCALE
 	quote = _wcs_quote_seps(place, flags, lc);
 #else
 	quote = _wcs_quote_seps(place, flags);

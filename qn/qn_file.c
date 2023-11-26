@@ -453,7 +453,7 @@ qnFile* qn_file_new(const char* filename, const char* mode)
 		return NULL;
 	}
 
-	self->name = _strdup(filename);
+	self->name = qn_strdup(filename);
 
 	return self;
 }
@@ -490,7 +490,7 @@ qnFile* qn_file_new_l(const wchar_t* filename, const wchar_t* mode)
 		return NULL;
 	}
 
-	self->name = _strdup(asc);
+	self->name = qn_strdup(asc);
 
 	return self;
 }
@@ -528,7 +528,7 @@ qnFile* qn_file_new_dup(qnFile* src)
 	}
 #endif
 
-	self->name = _strdup(src->name);
+	self->name = qn_strdup(src->name);
 
 	return self;
 }
@@ -891,7 +891,7 @@ pointer_t qn_file_alloc_l(const wchar_t* filename, int* size)
 
 	int64_t len = qn_file_size(file);
 
-	if (!len || len > _max_file_alloc_size)
+	if (len <= 0 || (size_t)len > _max_file_alloc_size)
 	{
 		qn_file_delete(file);
 		return NULL;
@@ -982,7 +982,7 @@ qnDir* qn_dir_new(const char* path)
 	DIR* pd = opendir(path);
 	qn_retval_if_fail(pd != NULL, NULL);
 
-	self = qn_alloc_zero_1(qnDir);
+	qnDir* self = qn_alloc_zero_1(qnDir);
 	self->pd = pd;
 #endif
 
@@ -1043,7 +1043,7 @@ qnDir* qn_dir_new_l(const wchar_t* path)
 	DIR* pd = opendir(asc);
 	qn_retval_if_fail(pd != NULL, NULL);
 
-	self = qn_alloc_zero_1(qnDir);
+	qnDir* self = qn_alloc_zero_1(qnDir);
 	self->pd = pd;
 #endif
 

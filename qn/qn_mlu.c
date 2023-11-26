@@ -190,7 +190,7 @@ void qn_mlu_add_err(qnMlu* self, const char* msg)
 {
 	qn_ret_if_fail(msg);
 
-	char* dup = _strdup(msg);
+	char* dup = qn_strdup(msg);
 	qn_arr_add(ErrorArray, &self->errs, dup);
 }
 
@@ -923,7 +923,7 @@ qnMlTag* qn_mltag_new(const char* name)
 	qnRealTag* self = qn_alloc_zero_1(qnRealTag);
 	qn_retval_if_fail(self, NULL);
 
-	self->base.name = _strdup(name);
+	self->base.name = qn_strdup(name);
 	qn_strupr(self->base.name, strlen(self->base.name));
 
 	self->base.nlen = (int)strlen(self->base.name);
@@ -986,7 +986,7 @@ void qn_mltag_add_context(qnMlTag* ptr, const char* cntx, int size)
 		self->base.cntx = qn_alloc(size + 1, char);
 		qn_ret_if_fail(self->base.cntx);
 
-		strcpy_s(self->base.cntx, size + 1, cntx);
+		qn_strcpy(self->base.cntx, size + 1, cntx);
 		self->base.clen = size;
 		self->chash = qn_strhash(self->base.cntx);
 	}
@@ -1593,8 +1593,8 @@ void qn_mltag_set_arg(qnMlTag* ptr, const char* name, const char* value)
 	qn_ret_if_fail(name);
 
 	qnRealTag* self = (qnRealTag*)ptr;
-	char* dn = _strdup(name);
-	char* dv = _strdup(value);
+	char* dn = qn_strdup(name);
+	char* dv = qn_strdup(value);
 
 	qn_strupr(dn, strlen(dn));
 

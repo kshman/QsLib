@@ -3118,7 +3118,7 @@ typedef struct qnBstr8k
 
 #define qn_bstr_init(p,str)\
 	QN_STMT_BEGIN{\
-		if ((str)) { (p)->len=strlen(str); strcpy_s((p)->data, QN_COUNTOF((p)->data), (str)); }\
+		if ((str)) { (p)->len=strlen(str); qn_strcpy((p)->data, QN_COUNTOF((p)->data), (str)); }\
 		else { (p)->len=0; (p)->data[0]='\0'; }\
 	}QN_STMT_END
 
@@ -3138,13 +3138,13 @@ typedef struct qnBstr8k
 #define qn_bstr_set(p, str)\
 	QN_STMT_BEGIN{\
 		(p)->len=strlen(str);\
-		strcpy_s((p)->data, QN_COUNTOF((p)->data), (str));\
+		qn_strcpy((p)->data, QN_COUNTOF((p)->data), (str));\
 	}QN_STMT_END
 
 #define qn_bstr_set_bstr(p, right)\
 	QN_STMT_BEGIN{\
 		(p)->len=(right)->len;\
-		strcpy_s((p)->data, QN_COUNTOF((p)->data), (right)->data);\
+		qn_strcpy((p)->data, QN_COUNTOF((p)->data), (right)->data);\
 	}QN_STMT_END
 
 #define qn_bstr_set_len(p, str, len)\
@@ -3169,13 +3169,13 @@ typedef struct qnBstr8k
 
 #define qn_bstr_append(p, str)\
 	QN_STMT_BEGIN{\
-		strcpy_s(&(p)->data[(p)->len], QN_COUNTOF((p)->data)-(p)->len, str);\
+		qn_strcpy(&(p)->data[(p)->len], QN_COUNTOF((p)->data)-(p)->len, str);\
 		(p)->len+=strlen(str);\
 	}QN_STMT_END
 
 #define qn_bstr_append_bstr(p, right)\
 	QN_STMT_BEGIN{\
-		strcpy_s(&(p)->data[(p)->len], QN_COUNTOF((p)->data)-(p)->len, (right)->data);\
+		qn_strcpy(&(p)->data[(p)->len], QN_COUNTOF((p)->data)-(p)->len, (right)->data);\
 		(p)->len+=(right)->len;\
 	}QN_STMT_END
 
