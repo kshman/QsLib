@@ -48,6 +48,7 @@
 #	define QN_FORCELINE					__forceinline
 #	define QN_INLINE					__inline
 #	define QN_FUNC_NAME					__FUNCTION__
+#	define QN_MEM_BARRIER()				_ReadWriteBarrier()
 #elif __GNUC__
 #ifndef __cplusplus
 #	define QN_FORCELINE					static inline __attribute__ ((always_inline))
@@ -57,6 +58,12 @@
 #	define QN_INLINE					inline
 #endif
 #	define QN_FUNC_NAME					__FUNCTION__	/* __PRETTY_FUNCTION__ */
+#if __X86__ || _M_X86 || __AMD64__ || __x86_64__
+#	define QN_MEM_BARRIER()				__asm__ __volatile__("" : : : "memory");
+#elif __aarch64__
+#	define QN_MEM_BARRIER()				__asm__ __volatile__("dsb sy" : : : "memory")
+#endif
+#	define QN_MEM_BARRIER()				__sync_synchronize();
 #endif
 
 #if defined(__cplusplus)
@@ -150,7 +157,6 @@ QN_EXTC_BEGIN
 #define QN_MASK_SET(pv,mask,isset)		((isset)?((*(pv))|=(mask)):((*(pv))&=~(mask)))
 
 // constant
-
 #define QN_USEC_PER_SEC					1000000
 #define QN_NSEC_PER_SEC					1000000000
 

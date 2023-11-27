@@ -41,7 +41,7 @@ QN_INLINE float qn_clampf(float v, float min, float max) { return QN_CLAMP(v, mi
 QN_INLINE float qn_cradf(float v) { return v < (float)-QN_PIH ? v + (float)QN_PIH : v >(float)QN_PIH ? v - (float)QN_PIH : v; }
 QN_INLINE float qn_lerpf(float l, float r, float f) { return l + f * (r - l); }
 QN_INLINE void qn_sincosf(float f, float* s, float* c) { *s = sinf(f); *c = cosf(f); }
-QN_INLINE void qn_sscf(float f, float* s, float* c) { float z = cosf(f); *s = z - QN_PIH; *c = z; }
+QN_INLINE void qn_sscf(float f, float* s, float* c) { float z = cosf(f); *s = z - (float)QN_PIH; *c = z; }
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -215,9 +215,13 @@ QNAPI void qn_mat4_affine(qnMat4* pm, const qnVec3* scl, const qnVec3* rotcenter
 QNAPI void qn_mat4_trfm(qnMat4* m, const qnVec3* loc, const qnQuat* rot, const qnVec3* scl);
 QNAPI void qn_mat4_trfm_vec(qnMat4* m, const qnVec3* loc, const qnVec3* rot, const qnVec3* scl);
 QNAPI float qn_mat4_det(const qnMat4* m);
+// plane
+QNAPI void qn_plane_trfm(qnPlane* pp, const qnPlane* plane, const qnMat4* trfm);
+QNAPI void qn_plane_points(qnPlane* pp, const qnVec3* v1, const qnVec3* v2, const qnVec3* v3);
+QNAPI bool qn_plane_intersect(const qnPlane* p, qnVec3* loc, qnVec3* dir, const qnPlane* o);
+// line3
+QNAPI bool qn_line3_intersect_sphere(const qnLine3* p, const qnVec3* org, float rad, float* dist);
 QN_EXTC_END
-
-QN_INLINE bool qn_plane_intersect(const qnPlane* p, qnVec3* loc, qnVec3* dir, const qnPlane* o);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1957,8 +1961,7 @@ QN_INLINE float qn_plane_dist(const qnPlane* p, const qnVec3* v)
 
 QN_INLINE void qn_plane_norm(qnPlane* pp, const qnPlane* p)
 {
-	float f = sqrtf(p->a * p->a + p->b * p->b + p->c * p->c);
-	if (f > 0.0f) f = 1.0f / f;
+	float f = 1.0f / sqrtf(p->a * p->a + p->b * p->b + p->c * p->c);
 	pp->a = p->a * f;
 	pp->b = p->b * f;
 	pp->c = p->c * f;
@@ -1972,54 +1975,6 @@ QN_INLINE void qn_plane_rnorm(qnPlane* pp, const qnPlane* p)
 	pp->b = p->b * n;
 	pp->c = p->c * n;
 	pp->d = p->d * n;
-}
-
-QN_INLINE void qn_plane_trfm(qnPlane* pp, const qnPlane* plane, const qnMat4* trfm)
-{
-	qnVec3 v, n, s;
-
-	qn_vec3_mag(&v, (const qnVec3*)plane, -plane->d);
-	qn_vec3_trfm(&v, &v, trfm);
-	qn_vec3_norm(&n, (const qnVec3*)plane);
-	qn_vec3_set(&s, trfm->_11, trfm->_22, trfm->_33);
-
-	if (!qn_eqf(s.x, 0.0f) && !qn_eqf(s.y, 0.0f) && !qn_eqf(s.z, 0.0f) && (qn_eqf(s.x, 1.0f) || qn_eqf(s.y, 1.0f) || qn_eqf(s.z, 1.0f)))
-	{
-		n.x = n.x / (s.x * s.x);
-		n.y = n.y / (s.y * s.y);
-		n.z = n.z / (s.z * s.z);
-	}
-
-	qn_vec3_trfm_norm(&n, &n, trfm);
-	qn_vec3_norm((qnVec3*)pp, &n);
-	pp->d = -qn_vec3_dot(&v, (const qnVec3*)pp);
-}
-
-QN_INLINE void qn_plane_points(qnPlane* pp, const qnVec3* v1, const qnVec3* v2, const qnVec3* v3)
-{
-	qnVec3 t0, t1, t2;
-	qn_vec3_sub(&t0, v2, v1);
-	qn_vec3_sub(&t1, v3, v2);
-	qn_vec3_cross(&t2, &t0, &t1);
-	qn_vec3_norm(&t2, &t2);
-	qn_plane_set(pp, t2.x, t2.y, t2.z, -qn_vec3_dot(v1, &t2));
-}
-
-QN_INLINE bool qn_plane_intersect(const qnPlane* p, qnVec3* loc, qnVec3* dir, const qnPlane* o)
-{
-	float f0 = qn_vec3_len((const qnVec3*)p);
-	float f1 = qn_vec3_len((const qnVec3*)o);
-	float f2 = qn_vec3_dot((const qnVec3*)p, (const qnVec3*)o);
-	float det = f0 * f1 - f2 * f2;
-	if (qn_absf(det) < QN_EPSILON)
-		return false;
-
-	float inv = 1.0f / det;
-	float fa = (f1 * -p->d + f2 * o->d) * inv;
-	float fb = (f0 * -o->d + f2 * p->d) * inv;
-	qn_vec3_cross(dir, (const qnVec3*)p, (const qnVec3*)o);
-	qn_vec3_set(loc, p->a * fa + o->a * fb, p->b * fa + o->b * fb, p->c * fa + o->c * fb);
-	return true;
 }
 
 QN_INLINE float qn_plane_intersect_line(const qnPlane* p, const qnVec3* v1, const qnVec3* v2)
@@ -2090,26 +2045,6 @@ QN_INLINE bool qn_line3_in(const qnLine3* p, const qnVec3* v)
 	return qn_vec3_between(v, &p->begin, &p->end);
 }
 
-QN_INLINE bool qn_line3_intersect_sphere(const qnLine3* p, const qnVec3* org, float rad, float* dist)
-{
-	qnVec3 t;
-	qn_vec3_sub(&t, org, &p->begin);
-	float c = qn_vec3_len(&t);
-
-	qnVec3 v;
-	qn_line3_vec(p, &v);
-	qn_vec3_norm(&v, &v);
-	float z = qn_vec3_dot(&t, &v);
-	float d = rad * rad - (c * c - z * z);
-
-	if (d < 0.0f)
-		return false;
-
-	if (dist)
-		*dist = z - sqrtf(d);
-	return true;
-}
-
 
 //////////////////////////////////////////////////////////////////////////
 // half
@@ -2117,16 +2052,7 @@ QN_INLINE bool qn_line3_intersect_sphere(const qnLine3* p, const qnVec3* org, fl
 // half type
 QN_INLINE half_t qn_float2half(const float v)
 {
-#if _MSC_VER
-	_ReadWriteBarrier();
-#elif __GNUC__
-#if __X86__ || _M_X86 || __AMD64__ || __x86_64__
-	__asm__ __volatile__("" : : : "memory");
-#else
-	__sync_synchronize();
-#endif
-#endif
-
+	QN_MEM_BARRIER();
 	uint32_t u = *(const uint32_t*)&v;
 	uint32_t s = (u & 0x80000000U) >> 16U;
 	u = u & 0x7FFFFFFFU;
@@ -2152,17 +2078,9 @@ QN_INLINE half_t qn_float2half(const float v)
 
 QN_INLINE float qn_half2float(const half_t v)
 {
-#if _MSC_VER
-	_ReadWriteBarrier();
-#elif __GNUC__
-#if __X86__ || _M_X86 || __AMD64__ || __x86_64__
-	__asm__ __volatile__("" : : : "memory");
-#else
-	__sync_synchronize();
-#endif
-#endif
-
-	uint32_t e, m = (uint32_t)(v & 0x03FF);
+	QN_MEM_BARRIER();
+	uint32_t m = (uint32_t)(v & 0x03FF);
+	uint32_t e;
 
 	if ((v & 0x7C00) != 0)
 		e = (uint32_t)((v >> 10) & 0x1F);

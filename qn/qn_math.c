@@ -862,3 +862,100 @@ void qn_mat4_trfm_vec(qnMat4* m, const qnVec3* loc, const qnVec3* rot, const qnV
 		f[11] *= scl->z;
 	}
 }
+
+/*!
+ * @brief 면 트랜스폼
+ * @param pp 반환 면
+ * @param plane 대상 면
+ * @param trfm 트랜스폼 행렬
+*/
+void qn_plane_trfm(qnPlane* pp, const qnPlane* plane, const qnMat4* trfm)
+{
+	qnVec3 v, n, s;
+
+	qn_vec3_mag(&v, (const qnVec3*)plane, -plane->d);
+	qn_vec3_trfm(&v, &v, trfm);
+	qn_vec3_norm(&n, (const qnVec3*)plane);
+	qn_vec3_set(&s, trfm->_11, trfm->_22, trfm->_33);
+
+	if (!qn_eqf(s.x, 0.0f) && !qn_eqf(s.y, 0.0f) && !qn_eqf(s.z, 0.0f) && (qn_eqf(s.x, 1.0f) || qn_eqf(s.y, 1.0f) || qn_eqf(s.z, 1.0f)))
+	{
+		n.x = n.x / (s.x * s.x);
+		n.y = n.y / (s.y * s.y);
+		n.z = n.z / (s.z * s.z);
+	}
+
+	qn_vec3_trfm_norm(&n, &n, trfm);
+	qn_vec3_norm((qnVec3*)pp, &n);
+	pp->d = -qn_vec3_dot(&v, (const qnVec3*)pp);
+}
+
+/*!
+ * @brief 점 세개로 평면을 만든다
+ * @param pp 반환 면
+ * @param v1 점1
+ * @param v2 점2
+ * @param v3 점3
+*/
+void qn_plane_points(qnPlane* pp, const qnVec3* v1, const qnVec3* v2, const qnVec3* v3)
+{
+	qnVec3 t0, t1, t2;
+	qn_vec3_sub(&t0, v2, v1);
+	qn_vec3_sub(&t1, v3, v2);
+	qn_vec3_cross(&t2, &t0, &t1);
+	qn_vec3_norm(&t2, &t2);
+	qn_plane_set(pp, t2.x, t2.y, t2.z, -qn_vec3_dot(v1, &t2));
+}
+
+/*!
+ * @brief 벡터와 면의 충돌 평면을 만든다
+ * @param p 반환 면
+ * @param loc 시작 벡터
+ * @param dir 방향 벡터
+ * @param o 대상 평면
+ * @return 만들 수 있으면 TRUE
+*/
+bool qn_plane_intersect(const qnPlane* p, qnVec3* loc, qnVec3* dir, const qnPlane* o)
+{
+	float f0 = qn_vec3_len((const qnVec3*)p);
+	float f1 = qn_vec3_len((const qnVec3*)o);
+	float f2 = qn_vec3_dot((const qnVec3*)p, (const qnVec3*)o);
+	float det = f0 * f1 - f2 * f2;
+	if (qn_absf(det) < QN_EPSILON)
+		return false;
+
+	float inv = 1.0f / det;
+	float fa = (f1 * -p->d + f2 * o->d) * inv;
+	float fb = (f0 * -o->d + f2 * p->d) * inv;
+	qn_vec3_cross(dir, (const qnVec3*)p, (const qnVec3*)o);
+	qn_vec3_set(loc, p->a * fa + o->a * fb, p->b * fa + o->b * fb, p->c * fa + o->c * fb);
+	return true;
+}
+
+/*!
+ * @brief 구와 충돌하는 선 판정
+ * @param p 처리할 선
+ * @param org 구의 중점
+ * @param rad 구의 반지름
+ * @param dist 충돌 거리
+ * @return 충돌하면 true
+*/
+bool qn_line3_intersect_sphere(const qnLine3* p, const qnVec3* org, float rad, float* dist)
+{
+	qnVec3 t;
+	qn_vec3_sub(&t, org, &p->begin);
+	float c = qn_vec3_len(&t);
+
+	qnVec3 v;
+	qn_line3_vec(p, &v);
+	qn_vec3_norm(&v, &v);
+	float z = qn_vec3_dot(&t, &v);
+	float d = rad * rad - (c * c - z * z);
+
+	if (d < 0.0f)
+		return false;
+
+	if (dist)
+		*dist = z - sqrtf(d);
+	return true;
+}
