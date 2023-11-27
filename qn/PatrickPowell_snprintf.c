@@ -1219,7 +1219,7 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 						else
 						{
 							wchar_t wcs[2] = { va_arg(args, wchar_t), L'\0' };
-							vmax = qn_wcstombs(mbs, 1023, wcs, 1);
+							vmax = (int)qn_wcstombs(mbs, 1023, wcs, 1);
 							_str_fmt_str(buffer, &currlen, maxlen, mbs, 0, 0, vmax);
 						}
 						break;
@@ -1230,7 +1230,7 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 						else
 						{
 							wchar_t wcs[2] = { va_arg(args, wchar_t), L'\0' };
-							vmax = qn_wcstombs(mbs, 1023, wcs, 1);
+							vmax = (int)qn_wcstombs(mbs, 1023, wcs, 1);
 							_str_fmt_str(buffer, &currlen, maxlen, mbs, 0, 0, vmax);
 						}
 						break;
@@ -2401,7 +2401,7 @@ size_t doprw(wchar_t* buffer, size_t maxlen, const wchar_t* format, va_list args
 						else
 						{
 							char mbs[2] = { (char)va_arg(args, int), L'\0' };
-							vmax = qn_mbstowcs(wcs, 1023, mbs, 1);
+							vmax = (int)qn_mbstowcs(wcs, 1023, mbs, 1);
 							_wcs_fmt_wcs(buffer, &currlen, maxlen, wcs, 0, 0, vmax);
 						}
 						break;
@@ -2412,7 +2412,7 @@ size_t doprw(wchar_t* buffer, size_t maxlen, const wchar_t* format, va_list args
 						else
 						{
 							char mbs[2] = { (char)va_arg(args, int), L'\0' };
-							vmax = qn_mbstowcs(wcs, 1023, mbs, 1);
+							vmax = (int)qn_mbstowcs(wcs, 1023, mbs, 1);
 							_wcs_fmt_wcs(buffer, &currlen, maxlen, wcs, 0, 0, vmax);
 						}
 						break;

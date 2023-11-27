@@ -111,7 +111,7 @@
 #include <wchar.h>
 #include <time.h>
 #include <signal.h>
-#if _QN_BSD_ || _QN_LINUX_
+#if _QN_UNIX_
 #include <sys/time.h>
 #if _QN_LINUX_
 #include <linux/limits.h>
@@ -291,18 +291,19 @@ QNAPI void qn_atexitp(paramfunc_t func, pointer_t data);
 
 QNAPI int qn_debug_assert(const char* expr, const char* mesg, const char* filename, int line);
 QNAPI int qn_debug_halt(const char* cls, const char* msg);
+QNAPI void qn_debug_output(bool breakpoint, const char* fmt, ...);
 
 
 //////////////////////////////////////////////////////////////////////////
 // memory
-#define qn_alloc(cnt,type)				(type*)malloc((cnt)*sizeof(type))
-#define qn_alloc_1(type)				(type*)malloc(sizeof(type))
-#define qn_alloc_zero(cnt, type)		(type*)calloc(cnt, sizeof(type))
-#define qn_alloc_zero_1(type)			(type*)calloc(1, sizeof(type))
-#define qn_realloc(ptr,cnt,type)		(type*)realloc((pointer_t)(ptr), (cnt)*sizeof(type))
+#define qn_alloc(cnt,type)				(type*)qn_mpfalloc((cnt)*sizeof(type), false, QN_FUNC_NAME, __LINE__)
+#define qn_alloc_1(type)				(type*)qn_mpfalloc(sizeof(type), false, QN_FUNC_NAME, __LINE__)
+#define qn_alloc_zero(cnt, type)		(type*)qn_mpfalloc((cnt)*sizeof(type), true, QN_FUNC_NAME, __LINE__)
+#define qn_alloc_zero_1(type)			(type*)qn_mpfalloc(sizeof(type), true, QN_FUNC_NAME, __LINE__)
+#define qn_realloc(ptr,cnt,type)		(type*)qn_mpfreloc((pointer_t)(ptr), (cnt)*sizeof(type), QN_FUNC_NAME, __LINE__)
 
-#define qn_free(ptr)					free((pointer_t)(ptr))
-#define qn_free_ptr(pptr)				QN_STMT_BEGIN{ free((pointer_t)*(pptr)); *(pptr)=NULL; }QN_STMT_END
+#define qn_free(ptr)					qn_mpffree((pointer_t)(ptr))
+#define qn_free_ptr(pptr)				QN_STMT_BEGIN{ qn_mpffree((pointer_t)*(pptr)); *(pptr)=NULL; }QN_STMT_END
 
 #if _MSC_VER
 #define qn_alloca(cnt,type)				(type*)_malloca((cnt)*sizeof(type))
@@ -322,6 +323,12 @@ QNAPI pointer_t qn_memzucp(cpointer_t src, size_t srcsize, size_t bufsize, /*NUL
 QNAPI size_t qn_memagn(size_t size);
 QNAPI char qn_memhrd(size_t size, double* out);
 QNAPI char* qn_memdmp(cpointer_t ptr, size_t size, char* outbuf, size_t buflen);
+
+QNAPI size_t qn_mpfsize(void);
+QNAPI size_t qn_mpfcnt(void);
+QNAPI pointer_t qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line);
+QNAPI pointer_t qn_mpfreloc(pointer_t ptr, size_t size, const char* desc, size_t line);
+QNAPI void qn_mpffree(pointer_t ptr);
 
 
 //////////////////////////////////////////////////////////////////////////

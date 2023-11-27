@@ -11,9 +11,9 @@
  */
 int qn_debug_assert(const char* expr, const char* mesg, const char* filename, int line)
 {
-	size_t len = qn_snprintf(NULL, 0, "filename=\"%s\", line=%d", filename, line);
+	size_t len = qn_snprintf(NULL, 0, "filename=\"%s\", line=%d\n", filename, line);
 	char* buf = qn_alloca(len + 1, char);
-	qn_snprintf(buf, len + 1, "filename=\"%s\", line=%d", filename, line);
+	qn_snprintf(buf, len + 1, "filename=\"%s\", line=%d\n", filename, line);
 
 #if _QN_WINDOWS_
 	OutputDebugStringA(buf);
@@ -31,6 +31,8 @@ int qn_debug_assert(const char* expr, const char* mesg, const char* filename, in
 		fputs(expr, stderr);
 	raise(SIGTRAP);
 #endif
+
+	qn_freea(buf);
 
 	return 0;
 }
@@ -75,4 +77,30 @@ int qn_debug_halt(const char* cls, const char* msg)
 	qn_exit(255);
 
 	return 0;
+}
+
+void qn_debug_output(bool breakpoint, const char* fmt, ...)
+{
+	va_list va;
+	va_start(va, fmt);
+	size_t size = qn_vsnprintf(NULL, 0, fmt, va);
+	char* buf = qn_alloca(size + 1, char);
+	qn_vsnprintf(buf, size + 1, fmt, va);
+	va_end(va);
+#if _MSC_VER
+	OutputDebugStringA(buf);
+#else
+	fputs(buf, stderr);
+#endif
+	qn_freea(buf);
+
+	if (breakpoint)
+	{
+#if _QN_WINDOWS_
+		if (IsDebuggerPresent())
+			DebugBreak();
+#else
+		raise(SIGTRAP);
+#endif
+	}
 }

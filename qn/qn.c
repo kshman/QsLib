@@ -9,6 +9,10 @@ enum
 	qn_ver_rev = 0
 };
 
+//
+extern void _qn_mp_init(void);
+extern void _qn_mp_dispose(void);
+
 // 닫아라
 struct Closure
 {
@@ -42,12 +46,16 @@ static void _qn_dispose(void)
 		node->fp.func(node->fp.data);
 		qn_free(node);
 	}
+
+	_qn_mp_dispose();
 }
 
 //
 static void _qn_init(void)
 {
 	_qn_rt.inited = true;
+
+	_qn_mp_init();
 
 #if _LIB || _STATIC
 	(void)atexit(_qn_dispose);

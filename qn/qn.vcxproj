@@ -162,6 +162,7 @@
     <ClInclude Include="..\inc\qnctn.h" />
     <ClInclude Include="..\inc\qnmath.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="qn_mem.h" />
     <ClInclude Include="zlib\crc32.h" />
     <ClInclude Include="zlib\deflate.h" />
     <ClInclude Include="zlib\gzguts.h" />
