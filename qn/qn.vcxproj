@@ -125,6 +125,7 @@
       <CompileAs>CompileAsC</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>
