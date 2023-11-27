@@ -329,7 +329,7 @@ pointer_t qn_mpfreloc(pointer_t ptr, size_t size, const char* desc, size_t line)
 		return NULL;
 	}
 #if _MSC_VER
-	if (HeapValidate(_qn_mp.heap, 0, node) != 0 || node->sign != MEMORY_SIGN_HEAD)
+	if (HeapValidate(_qn_mp.heap, 0, node) == 0 || node->sign != MEMORY_SIGN_HEAD)
 	{
 		qn_debug_output(false, "Try to realloc invalid memory : 0x%p\n", ptr);
 		char sz[260];
