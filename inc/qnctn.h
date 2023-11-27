@@ -19,7 +19,7 @@ QN_EXTC_BEGIN
 // array
 typedef struct qnArr
 {
-	uint8_t*			data;
+	uint8_t* data;
 	size_t				count;
 	size_t				capa;
 } qnArr;
@@ -225,13 +225,13 @@ typedef struct qnArr
 
 QN_INLINE void _qn_inl_arr_expand(pointer_t arr, size_t size, size_t cnt)
 {
-	qnArr* p=(qnArr*)arr;
-	if (p->count<cnt)
+	qnArr* p = (qnArr*)arr;
+	if (p->count < cnt)
 	{
-		p->capa=p->capa+p->capa/2;
-		if (p->capa<cnt)
-			p->capa=cnt;
-		p->data=!p->data ? qn_alloc(p->capa*size, uint8_t) : qn_realloc(p->data, p->capa*size, uint8_t);
+		p->capa = p->capa + p->capa / 2;
+		if (p->capa < cnt)
+			p->capa = cnt;
+		p->data = !p->data ? qn_alloc(p->capa * size, uint8_t) : qn_realloc(p->data, p->capa * size, uint8_t);
 	}
 }
 
@@ -322,7 +322,7 @@ QN_ARR_DECL(qnPtrArr, pointer_t);
 // container
 typedef struct qnCtnr
 {
-	uint8_t*			data;
+	uint8_t* data;
 	size_t				count;
 } qnCtnr;
 
@@ -510,15 +510,15 @@ QN_CTNR_DECL(qnAnyCtn, any_t);
 // list
 typedef struct qnListNode
 {
-	struct qnListNode*	next;
-	struct qnListNode*	prev;
+	struct qnListNode* next;
+	struct qnListNode* prev;
 	uint8_t				data[];
 } qnListNode;
 
 typedef struct qnList
 {
-	qnListNode*			frst;
-	qnListNode*			last;
+	qnListNode* frst;
+	qnListNode* last;
 	size_t				count;
 } qnList;
 
@@ -815,14 +815,14 @@ typedef struct qnList
 // node list
 typedef struct qnNlNode
 {
-	struct qnNlNode*	next;
-	struct qnNlNode*	prev;
+	struct qnNlNode* next;
+	struct qnNlNode* prev;
 } qnNlNode;
 
 typedef struct qnNodeList
 {
-	qnNlNode*			frst;
-	qnNlNode*			last;
+	qnNlNode* frst;
+	qnNlNode* last;
 	size_t				count;
 } qnNodeList;
 
@@ -1038,16 +1038,16 @@ QN_LIST_DECL(qnPtrList, pointer_t);
 
 QN_INLINE bool qn_plist_contains(qnPtrList* p, pointer_t item)
 {
-	struct qnPtrListNode* node;
+	struct qnPtrListNode* node = NULL;
 	qn_list_contains(qnPtrList, p, item, &node);
-	return node!=NULL;
+	return node != NULL;
 }
 
 QN_INLINE bool qn_plist_find(qnPtrList* p, bool (*pred)(pointer_t, pointer_t), pointer_t userdata)
 {
-	struct qnPtrListNode* node;
+	struct qnPtrListNode* node = NULL;
 	qn_list_find(qnPtrList, p, pred, userdata, &node);
-	return node!=NULL;
+	return node != NULL;
 }
 
 #define qn_plist_foreach(p,func_user_data,userdata)\
@@ -1061,7 +1061,7 @@ QN_INLINE bool qn_plist_find(qnPtrList* p, bool (*pred)(pointer_t, pointer_t), p
 // solo list
 typedef struct qnSlist
 {
-	struct qnSlist*		next;
+	struct qnSlist* next;
 	uint8_t				data[];
 } qnSlist;
 
@@ -1389,31 +1389,31 @@ typedef struct qnSlist
 
 QN_INLINE pointer_t _qn_inl_slist_last(pointer_t ptr)
 {
-	qnSlist* p=(qnSlist*)ptr;
+	qnSlist* p = (qnSlist*)ptr;
 	if (p)
 	{
 		while (p->next)
-			p=p->next;
+			p = p->next;
 	}
 	return p;
 }
 
 QN_INLINE pointer_t _qn_inl_slist_nth(pointer_t ptr, size_t nth)
 {
-	qnSlist* p=(qnSlist*)ptr;
-	while (nth-->0 && p)
-		p=p->next;
+	qnSlist* p = (qnSlist*)ptr;
+	while (nth-- > 0 && p)
+		p = p->next;
 	return (pointer_t)p;
 }
 
 QN_INLINE size_t _qn_inl_slist_count(pointer_t ptr)
 {
-	qnSlist* p=(qnSlist*)ptr;
-	size_t n=0;
+	qnSlist* p = (qnSlist*)ptr;
+	size_t n = 0;
 	while (p)
 	{
 		n++;
-		p=p->next;
+		p = p->next;
 	}
 	return n;
 }
@@ -1425,13 +1425,13 @@ QN_SLIST_DECL(qnPtrSlist, pointer_t);
 
 #define qn_pslist_last(p)\
 	qn_slist_last(p)
-	
+
 #define qn_pslist_nth(p, nth)\
 	qn_slist_nth(p, nth)
-	
+
 #define qn_pslist_data(p, nth)\
 	qn_slist_data(p, nth)
-	
+
 #define qn_pslist_count(p)\
 	qn_slist_count(p)
 
@@ -1449,10 +1449,10 @@ QN_INLINE void qn_pslist_disp(qnPtrSlist* p, void (*func_1)(pointer_t))
 	}
 	else
 	{
-		qnPtrSlist* n;
-		for (; p; p=n)
+		qnPtrSlist* n = NULL;
+		for (; p; p = n)
 		{
-			n=p->next;
+			n = p->next;
 			if (func_1)
 				func_1(p->data);
 			qn_free(p);
@@ -1504,7 +1504,7 @@ QN_INLINE qnPtrSlist* qn_pslist_remove_link(qnPtrSlist* p, qnPtrSlist* link)
 
 QN_INLINE qnPtrSlist* qn_pslist_copy(qnPtrSlist* p)
 {
-	qnPtrSlist* n;
+	qnPtrSlist* n = NULL;
 	qn_slist_copy(qnPtrSlist, p, &n);
 	return n;
 }
@@ -1526,7 +1526,7 @@ QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, pointer_t item)
 // fixed slice
 typedef struct qnSlice
 {
-	uint8_t*			data;
+	uint8_t* data;
 	size_t				max;
 	size_t				count;
 } qnSlice;
@@ -1781,12 +1781,12 @@ typedef struct qnSlice
 // hash
 typedef struct qnHashNode
 {
-	struct qnHashNode*	sib;
-	struct qnHashNode*	next;
-	struct qnHashNode*	prev;
+	struct qnHashNode* sib;
+	struct qnHashNode* next;
+	struct qnHashNode* prev;
 	size_t				hash;
-	uint64_t*			key;
-	uint64_t*			value;
+	uint64_t* key;
+	uint64_t* value;
 } qnHashNode;
 
 typedef struct qnHash
@@ -1794,9 +1794,9 @@ typedef struct qnHash
 	size_t				revision;
 	size_t				bucket;
 	size_t				count;
-	struct qnHashNode**	nodes;
-	struct qnHashNode*	frst;
-	struct qnHashNode*	last;
+	struct qnHashNode** nodes;
+	struct qnHashNode* frst;
+	struct qnHashNode* last;
 } qnHash;
 
 #define QN_HASH_DECL(name,keytype,valuetype)\
@@ -2424,29 +2424,29 @@ QN_INLINE void _qn_inl_hash_resize(qnHash* p)
 	size_t i, newbucket;
 	qnHashNode** newnodes;
 
-	newbucket=qn_primenear((uint32_t)p->count);
-	newbucket=QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
-	newnodes=qn_alloc_zero(newbucket, qnHashNode*);
+	newbucket = qn_primenear((uint32_t)p->count);
+	newbucket = QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
+	newnodes = qn_alloc_zero(newbucket, qnHashNode*);
 	if (!newnodes)
 		return;
 
-	for (i=0; i<p->bucket; i++)
+	for (i = 0; i < p->bucket; i++)
 	{
 		qnHashNode* node;
-		qnHashNode* next;
+		qnHashNode* next = NULL;
 		size_t hashmask;
-		for (node=p->nodes[i]; node; node=next)
+		for (node = p->nodes[i]; node; node = next)
 		{
-			next=node->sib;
-			hashmask=node->hash%newbucket;
-			node->sib=newnodes[hashmask];
-			newnodes[hashmask]=node;
+			next = node->sib;
+			hashmask = node->hash % newbucket;
+			node->sib = newnodes[hashmask];
+			newnodes[hashmask] = node;
 		}
 	}
 
 	qn_free(p->nodes);
-	p->nodes=newnodes;
-	p->bucket=newbucket;
+	p->nodes = newnodes;
+	p->bucket = newbucket;
 }
 
 
@@ -2454,10 +2454,10 @@ QN_INLINE void _qn_inl_hash_resize(qnHash* p)
 // mukum
 typedef struct qnMukumNode
 {
-	struct qnMukumNode*	sib;
+	struct qnMukumNode* sib;
 	size_t				hash;
-	uint32_t*			key;
-	uint32_t*			value;
+	uint32_t* key;
+	uint32_t* value;
 } qnMukumNode;
 
 typedef struct qnMukum
@@ -2465,7 +2465,7 @@ typedef struct qnMukum
 	size_t				revision;
 	size_t				bucket;
 	size_t				count;
-	qnMukumNode**		nodes;
+	qnMukumNode** nodes;
 } qnMukum;
 
 #define QN_MUKUM_DECL(name,keytype,valuetype)\
@@ -3038,29 +3038,29 @@ QN_INLINE void _qn_inl_mukum_resize(qnMukum* p)
 	size_t i, newbucket;
 	qnMukumNode** newnodes;
 
-	newbucket=qn_primenear((uint32_t)p->count);
-	newbucket=QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
-	newnodes=qn_alloc_zero(newbucket, qnMukumNode*);
+	newbucket = qn_primenear((uint32_t)p->count);
+	newbucket = QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
+	newnodes = qn_alloc_zero(newbucket, qnMukumNode*);
 	if (!newnodes)
 		return;
 
-	for (i=0; i<p->bucket; i++)
+	for (i = 0; i < p->bucket; i++)
 	{
 		qnMukumNode* node;
-		qnMukumNode* next;
+		qnMukumNode* next = NULL;
 		size_t hashmask;
-		for (node=p->nodes[i]; node; node=next)
+		for (node = p->nodes[i]; node; node = next)
 		{
-			next=node->sib;
-			hashmask=node->hash%newbucket;
-			node->sib=newnodes[hashmask];
-			newnodes[hashmask]=node;
+			next = node->sib;
+			hashmask = node->hash % newbucket;
+			node->sib = newnodes[hashmask];
+			newnodes[hashmask] = node;
 		}
 	}
 
 	qn_free(p->nodes);
-	p->nodes=newnodes;
-	p->bucket=newbucket;
+	p->nodes = newnodes;
+	p->bucket = newbucket;
 }
 
 
@@ -3220,7 +3220,7 @@ QN_INLINE void _qn_inl_bstr_format(qnBstr* p, size_t size, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
-	p->len=(size_t)qn_vsnprintf(p->data, size, fmt, va);
+	p->len = (size_t)qn_vsnprintf(p->data, size, fmt, va);
 	va_end(va);
 }
 
@@ -3235,7 +3235,7 @@ QN_INLINE void _qn_inl_bstr_append_format(qnBstr* p, size_t size, const char* fm
 {
 	va_list va;
 	va_start(va, fmt);
-	p->len=(size_t)qn_vsnprintf(&p->data[p->len], size-p->len, fmt, va);
+	p->len = (size_t)qn_vsnprintf(&p->data[p->len], size - p->len, fmt, va);
 	va_end(va);
 }
 
@@ -3270,14 +3270,14 @@ QN_INLINE void _qn_inl_bstr_append_format(qnBstr* p, size_t size, const char* fm
 
 QN_INLINE int qn_bstr_has_char(cpointer_t p, const char* chars)
 {
-	char* s=qn_strbrk(((qnBstr*)p)->data, chars);
-	return (s) ? (int)(s-((qnBstr*)p)->data) : -1;
+	char* s = qn_strbrk(((qnBstr*)p)->data, chars);
+	return (s) ? (int)(s - ((qnBstr*)p)->data) : -1;
 }
 
 QN_INLINE int qn_bstr_find_char(cpointer_t p, size_t at, char ch)
 {
-	char* s=strchr(((qnBstr*)p)->data+at, ch);
-	return (s) ? (int)(s-((qnBstr*)p)->data) : -1;
+	char* s = strchr(((qnBstr*)p)->data + at, ch);
+	return (s) ? (int)(s - ((qnBstr*)p)->data) : -1;
 }
 
 #define qn_bstr_sub_bstr(p, s, pos, len)\
@@ -3454,7 +3454,7 @@ QN_INLINE void _qn_inl_bwcs_format(qnBwcs* p, size_t size, const wchar_t* fmt, .
 {
 	va_list va;
 	va_start(va, fmt);
-	p->len=(size_t)qn_vsnwprintf(p->data, size, fmt, va);
+	p->len = (size_t)qn_vsnwprintf(p->data, size, fmt, va);
 	va_end(va);
 }
 
@@ -3469,7 +3469,7 @@ QN_INLINE void _qn_inl_bwcs_append_format(qnBwcs* p, size_t size, const wchar_t*
 {
 	va_list va;
 	va_start(va, fmt);
-	p->len=(size_t)qn_vsnwprintf(&p->data[p->len], size-p->len, fmt, va);
+	p->len = (size_t)qn_vsnwprintf(&p->data[p->len], size - p->len, fmt, va);
 	va_end(va);
 }
 
@@ -3504,30 +3504,30 @@ QN_INLINE void _qn_inl_bwcs_append_format(qnBwcs* p, size_t size, const wchar_t*
 
 QN_INLINE int qn_bwcs_has_char(cpointer_t p, const wchar_t* chars)
 {
-	wchar_t* s=qn_wcsbrk(((qnBwcs*)p)->data, chars);
-	return (s) ? (int)(s-((qnBwcs*)p)->data) : -1;
+	wchar_t* s = qn_wcsbrk(((qnBwcs*)p)->data, chars);
+	return (s) ? (int)(s - ((qnBwcs*)p)->data) : -1;
 }
 
 QN_INLINE int qn_bwcs_find_char(cpointer_t p, size_t at, wchar_t ch)
 {
-	wchar_t* s=wcschr(((qnBwcs*)p)->data+at, ch);
-	return (s) ? (int)(s-((qnBwcs*)p)->data) : -1;
+	wchar_t* s = wcschr(((qnBwcs*)p)->data + at, ch);
+	return (s) ? (int)(s - ((qnBwcs*)p)->data) : -1;
 }
 
 #define qn_bwcs_sub_bwcs(p, s, pos, len)\
 	_qn_inl_bstr_sub_bstr(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, ((qnBwcs*)(s)), pos, len)
 QN_INLINE bool _qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, size_t pos, intptr_t len)
 {
-	qn_retval_if_fail(pos>=0, false);
-	qn_retval_if_fail(s->len>=pos, false);
+	qn_retval_if_fail(pos >= 0, false);
+	qn_retval_if_fail(s->len >= pos, false);
 
-	if (len>0)
-		qn_retval_if_fail(s->len>=(pos+len), false);
+	if (len > 0)
+		qn_retval_if_fail(s->len >= (pos + len), false);
 	else
-		len=s->len-pos;
+		len = s->len - pos;
 
 	qn_wcsmid(p->data, psize, s->data, pos, len);
-	p->len=len;
+	p->len = len;
 	return true;
 }
 

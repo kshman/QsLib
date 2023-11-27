@@ -63,6 +63,9 @@
     <ClInclude Include="..\inc\qnctn.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="..\inc\qnmath.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="qn.c">
@@ -141,6 +144,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="qn_file.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="qn_math.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

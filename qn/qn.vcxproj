@@ -159,6 +159,7 @@
   <ItemGroup>
     <ClInclude Include="..\inc\qn.h" />
     <ClInclude Include="..\inc\qnctn.h" />
+    <ClInclude Include="..\inc\qnmath.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="zlib\crc32.h" />
     <ClInclude Include="zlib\deflate.h" />
@@ -186,6 +187,7 @@
     <ClCompile Include="qn_debug.c" />
     <ClCompile Include="qn_file.c" />
     <ClCompile Include="qn_hash.c" />
+    <ClCompile Include="qn_math.c" />
     <ClCompile Include="qn_mem.c" />
     <ClCompile Include="qn_mlu.c" />
     <ClCompile Include="qn_sort.c" />
