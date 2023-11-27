@@ -28,10 +28,6 @@
 #define QN_TORADIAN(degree)				((degree)*(180.0f/(float)QN_PI))
 #define QN_TODEGREE(radian)				((radian)*((float)QN_PI/180.0f))
 #define QN_EQEPS(a,b,epsilon)			(((a)+(epsilon)>(b)) && ((a)-(epsilon)<(b)))
-#define QN_MAX(a,b)						(((a)>(b))?(a):(b))
-#define QN_MIN(a,b)						(((a)<(b))?(a):(b))
-#define QN_ABS(v)						(((v)<0)?-(v):(v))
-#define QN_CLAMP(v,min,max)				((v)<(min)?(min):(v)>(max)?(max):(v))
 
 QN_INLINE bool qn_eqf(float a, float b) { return QN_EQEPS(a, b, (float)QN_EPSILON); }
 QN_INLINE float qn_maxf(float a, float b) { return QN_MAX(a, b); }

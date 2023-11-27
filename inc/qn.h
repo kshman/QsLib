@@ -62,8 +62,9 @@
 #	define QN_MEM_BARRIER()				__asm__ __volatile__("" : : : "memory");
 #elif __aarch64__
 #	define QN_MEM_BARRIER()				__asm__ __volatile__("dsb sy" : : : "memory")
-#endif
+#else
 #	define QN_MEM_BARRIER()				__sync_synchronize();
+#endif
 #endif
 
 #if defined(__cplusplus)

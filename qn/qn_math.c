@@ -4,21 +4,14 @@
 #include <emmintrin.h>
 #define USE_EMM_INTRIN		1
 #endif
-#if __ARM_NEON
-#include "sse2neon/emmintrin.h"
-#define _INCLUDED_EMM		1
-#define USE_EMM_INTRIN		1
-#endif
 #include "qnmath.h"
 
-#if USE_EMM_INTRIN
+#if USE_EMM_INTRIN && !defined(QN_ALIGN)
 #if _MSC_VER
 #define QN_ALIGN(x)			__declspec(align(x))
 #else
 #define QN_ALIGN(x)			__attribute__ ((aligned(x)))
 #endif
-#define _mm_ror_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((uint8_t)(i+3)%4,(uint8_t)(i+2)%4,(uint8_t)(i+1)%4,(uint8_t)(i+0)%4))) : (vec))
-#define _mm_rol_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((uint8_t)(7-i)%4,(uint8_t)(6-i)%4,(uint8_t)(5-i)%4,(uint8_t)(4-i)%4))) : (vec))
 #endif
 
 /*!
@@ -390,15 +383,20 @@ void qn_quat_ln(qnQuat* pq, const qnQuat* q)
 void qn_mat4_tran(qnMat4* pm, const qnMat4* m)
 {
 #if USE_EMM_INTRIN
-	__m128 mm0 = _mm_unpacklo_ps(_mm_loadu_ps(&m->_11), _mm_loadu_ps(&m->_21));
-	__m128 mm1 = _mm_unpacklo_ps(_mm_loadu_ps(&m->_31), _mm_loadu_ps(&m->_41));
-	__m128 mm2 = _mm_unpackhi_ps(_mm_loadu_ps(&m->_11), _mm_loadu_ps(&m->_21));
-	__m128 mm3 = _mm_unpackhi_ps(_mm_loadu_ps(&m->_31), _mm_loadu_ps(&m->_41));
+	__m128 mm0 = _mm_load_ps(&m->_11);
+	__m128 mm1 = _mm_load_ps(&m->_21);
+	__m128 mm2 = _mm_load_ps(&m->_31);
+	__m128 mm3 = _mm_load_ps(&m->_41);
 
-	_mm_storeu_ps(&pm->_11, _mm_movelh_ps(mm0, mm1));
-	_mm_storeu_ps(&pm->_21, _mm_movehl_ps(mm1, mm0));
-	_mm_storeu_ps(&pm->_31, _mm_movelh_ps(mm2, mm3));
-	_mm_storeu_ps(&pm->_41, _mm_movehl_ps(mm3, mm2));
+	__m128 sm0 = _mm_shuffle_ps(mm0, mm1, 0x44);
+	__m128 sm1 = _mm_shuffle_ps(mm0, mm1, 0xEE);
+	__m128 sm2 = _mm_shuffle_ps(mm2, mm3, 0x44);
+	__m128 sm3 = _mm_shuffle_ps(mm2, mm3, 0xEE);
+
+	_mm_store_ps(&pm->_11, _mm_shuffle_ps(sm0, sm1, 0x88));
+	_mm_store_ps(&pm->_12, _mm_shuffle_ps(sm0, sm1, 0xDD));
+	_mm_store_ps(&pm->_13, _mm_shuffle_ps(sm2, sm3, 0x88));
+	_mm_store_ps(&pm->_14, _mm_shuffle_ps(sm2, sm3, 0xDD));
 #else
 	qnMat4 t =
 	{

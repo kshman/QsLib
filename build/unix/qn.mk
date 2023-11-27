@@ -20,7 +20,8 @@ SOST=libqn.so
 VPATH=src:../../qn
 
 #
-SRC=qn.c qn_mem.c qn_hash.c qn_sort.c qn_str.c qn_datetime.c qn_debug.c qn_file.c  qn_mlu.c \
+SRC=qn.c qn_mem.c qn_hash.c qn_sort.c qn_str.c qn_datetime.c qn_debug.c qn_file.c qn_mlu.c \
+	qn_math.c \
 	PatrickPowell_snprintf.c 
 OBJ=$(SRC:.c=.o)
 ASM=$(SRC:.c=.s)
