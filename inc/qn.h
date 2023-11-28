@@ -363,18 +363,27 @@ QNAPI char* qn_strtrm(char* dest);
 QNAPI char* qn_strrem(char* p, const char* rmlist);
 QNAPI char* qn_strpcpy(char* dest, const char* src);
 QNAPI char* qn_strcat(const char* p, ...);
+QNAPI int qn_strwcm(const char* string, const char* wild);
+QNAPI int qn_striwcm(const char* string, const char* wild);
+QNAPI int qn_strfnd(const char* src, const char* find, size_t index);
 #if _MSC_VER
 #define qn_strcpy						strcpy_s
 #define qn_strncpy						strncpy_s
 #define qn_strdup						_strdup
 #define qn_strupr						_strupr_s
 #define qn_strlwr						_strlwr_s
+#define qn_strncmp						strncmp
+#define qn_stricmp						_stricmp
+#define qn_strnicmp						_strnicmp
 #else
 #define qn_strcpy(a,b,c)				strcpy(a,c)
 #define qn_strncpy(a,b,c,d)				strncpy(a,c,d)
 #define qn_strdup						strdup
 QNAPI char* qn_strupr(char* p, size_t size);
 QNAPI char* qn_strupr(char* p, size_t size);
+QNAPI int qn_strncmp(const char* p1, const char* p2, size_t len);
+QNAPI int qn_stricmp(const char* p1, const char* p2);
+QNAPI int qn_strnicmp(const char* p1, const char* p2, size_t len);
 #endif
 
 QNAPI int qn_vsnwprintf(wchar_t* out, size_t len, const wchar_t* fmt, va_list va);
@@ -394,18 +403,27 @@ QNAPI wchar_t* qn_wcstrm(wchar_t* dest);
 QNAPI wchar_t* qn_wcsrem(wchar_t* p, const wchar_t* rmlist);
 QNAPI wchar_t* qn_wcspcpy(wchar_t* dest, const wchar_t* src);
 QNAPI wchar_t* qn_wcscat(const wchar_t* p, ...);
+QNAPI int qn_wcswcm(const wchar_t* string, const wchar_t* wild);
+QNAPI int qn_wcsiwcm(const wchar_t* string, const wchar_t* wild);
+QNAPI int qn_wcsfnd(const wchar_t* src, const wchar_t* find, size_t index);
 #if _MSC_VER
 #define qn_wcscpy						wcscpy_s
 #define qn_wcsncpy						wcsncpy_s
 #define qn_wcsdup						_wcsdup
 #define qn_wcsupr						_wcsupr_s
 #define qn_wcslrw						_wcslwr_s
+#define qn_wcsncmp						wcsncmp
+#define qn_wcsicmp						_wcsicmp
+#define qn_wcsnicmp						_wcsnicmp
 #else
 #define qn_wcscpy(a,b,c)				wcscpy(a,c)
 #define qn_wcsncpy(a,b,c,d)				wcsncpy(a,c,d)
-#define qn_wcsdup						_wcsdup
+#define qn_wcsdup						qwcsdup
 QNAPI wchar_t* qn_wcsupr(wchar_t* p, size_t size);
 QNAPI wchar_t* qn_wcslwr(wchar_t* p, size_t size);
+QNAPI int qn_wcsncmp(const wchar_t* p1, const wchar_t* p2, size_t len);
+QNAPI int qn_wcsicmp(const wchar_t* p1, const wchar_t* p2);
+QNAPI int qn_wcsnicmp(const wchar_t* p1, const wchar_t* p2, size_t len);
 #endif
 
 QNAPI size_t qn_utf8len(const char* s);
@@ -544,19 +562,19 @@ typedef struct qnFileAccess
 /*! @brief seek */
 typedef enum qnSeek
 {
-	QN_SEEK_BEGIN	= 0,
-	QN_SEEK_CUR		= 1,
-	QN_SEEK_END		= 2,
+	QN_SEEK_BEGIN = 0,
+	QN_SEEK_CUR = 1,
+	QN_SEEK_END = 2,
 } qnSeek;
 
 /*! @brief file flag */
 typedef enum qnFileFlag
 {
-	QN_FF_READ		= 0x1,
-	QN_FF_WRITE		= 0x2,
-	QN_FF_SEEK		= 0x4,
-	QN_FF_ALL		= QN_FF_READ | QN_FF_WRITE | QN_FF_SEEK,
-	QN_FF_RDONLY	= QN_FF_READ | QN_FF_SEEK,
+	QN_FF_READ = 0x1,
+	QN_FF_WRITE = 0x2,
+	QN_FF_SEEK = 0x4,
+	QN_FF_ALL = QN_FF_READ | QN_FF_WRITE | QN_FF_SEEK,
+	QN_FF_RDONLY = QN_FF_READ | QN_FF_SEEK,
 } qnFileFlag;
 
 // file
@@ -679,5 +697,25 @@ QNAPI void qn_mltag_loopeach_arg(qnMlTag* ptr, void(*func)(const char* name, con
 
 QNAPI void qn_mltag_set_arg(qnMlTag* ptr, const char* name, const char* value);
 QNAPI bool qn_mltag_remove_arg(qnMlTag* ptr, const char* name);
+
+
+//////////////////////////////////////////////////////////////////////////
+// object
+
+struct _qnvt_gam
+{
+	const char* name;
+	void (*dispose)(pointer_t);
+};
+
+typedef struct qnGam
+{
+	struct _qnvt_gam*	vt;
+} qnGam;
+
+#define qn_set_vt(g,pvt)				((qnGam*)(g))->vt=(struct _qnvt_gam*)pvt;
+#define qn_get_vt(g,type)				((struct type*)((qnGam*)(g))->vt)
+#define qn_gam(g,type)					((type*)(g))
+#define qn_dispose(g)					((g)?((qnGam*)(g))->vt->dispose(p):(void)0)
 
 QN_EXTC_END

@@ -291,6 +291,118 @@ char* qn_strcat(const char* p, ...)
 	return str;
 }
 
+/**
+ * @brief 문자열에서 와일드 카드 찾기.
+ * Written by Jack Handy - jakkhandy@hotmail.com
+ * (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
+ */
+int qn_strwcm(const char* string, const char* wild)
+{
+	const char *cp = NULL, *mp = NULL;
+
+	while ((*string) && (*wild != '*'))
+	{
+		if ((*wild != *string) && (*wild != '?'))
+			return 0;
+		wild++;
+		string++;
+	}
+
+	while (*string)
+	{
+		if (*wild == '*')
+		{
+			if (!*++wild)
+				return 1;
+			mp = wild;
+			cp = string + 1;
+		}
+		else if ((*wild == *string) || (*wild == '?'))
+		{
+			wild++;
+			string++;
+		}
+		else
+		{
+			wild = mp;
+			string = cp++;
+		}
+	}
+
+	while (*wild == '*')
+		wild++;
+
+	return !*wild;
+}
+
+/**
+ * @brief 문자열에서 와일드 카드 찾기.
+ * Written by Jack Handy - jakkhandy@hotmail.com
+ * (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
+ */
+int qn_striwcm(const char* string, const char* wild)
+{
+	const char *cp = NULL, *mp = NULL;
+
+	while ((*string) && (*wild != '*'))
+	{
+		if ((toupper(*wild) != toupper(*string)) && (*wild != '?'))
+			return 0;
+		wild++;
+		string++;
+	}
+
+	while (*string)
+	{
+		if (*wild == '*')
+		{
+			if (!*++wild)
+				return 1;
+			mp = wild;
+			cp = string + 1;
+		}
+		else if ((toupper(*wild) == toupper(*string)) || (*wild == '?'))
+		{
+			wild++;
+			string++;
+		}
+		else
+		{
+			wild = mp;
+			string = cp++;
+		}
+	}
+
+	while (*wild == '*')
+		wild++;
+
+	return !*wild;
+}
+
+/*! @brief strfind */
+int qn_strfnd(const char* src, const char* find, size_t index)
+{
+	const char* p = src + index;
+	const char* s1, *s2;
+
+	while (*p)
+	{
+		s1 = p;
+		s2 = find;
+
+		while (*s1 && *s2 && !(*s1 - *s2))
+		{
+			++s1;
+			++s2;
+		}
+
+		if (!*s2)
+			return (int)(src + index - p);
+	}
+
+	return -1;
+}
+
 #if !_MSC_VER
 /*! @brief 문자열을 대문자로 */
 char* qn_strupr(char* p, size_t size)
@@ -311,12 +423,67 @@ char* qn_strlwr(char* p, size_t size)
 			*s += 'a' - 'A';
 	return p;
 }
+
+/*! @brief strncmp */
+int qn_strncmp(const char* p1, const char* p2, size_t len)
+{
+	if (!len)
+		return 0;
+
+	while (--len && *p1 && *p1 == *p2)
+		++p1, ++p2;
+
+	return *p1 - *p2;
+}
+
+/*! @brief stricmp */
+int qn_stricmp(const char* p1, const char* p2)
+{
+	int	f, l;
+
+	do
+	{
+		f = (unsigned char)(*(p1++));
+		l = (unsigned char)(*(p2++));
+		if (f >= 'A' && f <= 'Z')	f -= 'A' - 'a';
+		if (l >= 'A' && l <= 'Z')	l -= 'A' - 'a';
+	} while (f && (f == l));
+
+	return (f - l);
+}
+
+/*! @brief strnicmp */
+int qn_strnicmp(const char* p1, const char* p2, size_t len)
+{
+	int	f, l;
+
+	while (len && *p1 && *p2)
+	{
+		--len;
+
+		f = (unsigned char)(*p1);
+		l = (unsigned char)(*p2);
+		if (f >= 'A' && f <= 'Z')	f -= 'A' - 'a';
+		if (l >= 'A' && l <= 'Z')	l -= 'A' - 'a';
+
+		if (f != l) return (f - l);
+		++p1;
+		++p2;
+	}
+
+	return (len) ? (int)(p1 - p2) : 0;
+}
 #endif
 
 
 //////////////////////////////////////////////////////////////////////////
 // 유니코드 문자열
 //
+
+#if !_MSC_VER
+#define towupper(c)					((((c)>=L'a') && ((c)<=L'z')) ? ((c)-L'a'+L'A') : (c))
+#define towlower(c)					((((c)>=L'A') && ((c)<=L'Z')) ? ((c)-L'A'+L'a') : (c))
+#endif
 
 extern size_t doprw(wchar_t* buffer, size_t maxlen, const wchar_t* format, va_list args);
 
@@ -589,6 +756,118 @@ wchar_t* qn_wcscat(const wchar_t* p, ...)
 	return str;
 }
 
+/**
+ * @brief 문자열에서 와일드 카드 찾기.
+ * Written by Jack Handy - jakkhandy@hotmail.com
+ * (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
+ */
+int qn_wcswcm(const wchar_t* string, const wchar_t* wild)
+{
+	const wchar_t *cp = NULL, *mp = NULL;
+
+	while ((*string) && (*wild != L'*'))
+	{
+		if ((*wild != *string) && (*wild != L'?'))
+			return 0;
+		wild++;
+		string++;
+	}
+
+	while (*string)
+	{
+		if (*wild == L'*')
+		{
+			if (!*++wild)
+				return 1;
+			mp = wild;
+			cp = string + 1;
+		}
+		else if ((*wild == *string) || (*wild == L'?'))
+		{
+			wild++;
+			string++;
+		}
+		else
+		{
+			wild = mp;
+			string = cp++;
+		}
+	}
+
+	while (*wild == L'*')
+		wild++;
+
+	return !*wild;
+}
+
+/**
+ * @brief 문자열에서 와일드 카드 찾기.
+ * Written by Jack Handy - jakkhandy@hotmail.com
+ * (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
+ */
+int qn_wcsiwcm(const wchar_t* string, const wchar_t* wild)
+{
+	const wchar_t *cp = NULL, *mp = NULL;
+
+	while ((*string) && (*wild != L'*'))
+	{
+		if ((towupper(*wild) != towupper(*string)) && (*wild != L'?'))
+			return 0;
+		wild++;
+		string++;
+	}
+
+	while (*string)
+	{
+		if (*wild == L'*')
+		{
+			if (!*++wild)
+				return 1;
+			mp = wild;
+			cp = string + 1;
+		}
+		else if ((towupper(*wild) == towupper(*string)) || (*wild == L'?'))
+		{
+			wild++;
+			string++;
+		}
+		else
+		{
+			wild = mp;
+			string = cp++;
+		}
+	}
+
+	while (*wild == L'*')
+		wild++;
+
+	return !*wild;
+}
+
+/*! @brief wcsfind */
+int qn_wcsfnd(const wchar_t* src, const wchar_t* find, size_t index)
+{
+	const wchar_t* p = src + index;
+	const wchar_t* s1, *s2;
+
+	while (*p)
+	{
+		s1 = p;
+		s2 = find;
+
+		while (*s1 && *s2 && !(*s1 - *s2))
+		{
+			++s1;
+			++s2;
+		}
+
+		if (!*s2)
+			return (int)(src + index - p);
+	}
+
+	return -1;
+}
+
 #if !_MSC_VER
 /*! @brief 문자열을 대문자로 */
 wchar_t* qn_wcsupr(wchar_t* p, size_t size)
@@ -608,6 +887,54 @@ wchar_t* qn_wcslwr(wchar_t* p, size_t size)
 		if ((*s >= L'A') && (*s <= L'Z'))
 			*s += (wchar_t)(L'a' - L'A');
 	return p;
+}
+
+/*! @brief wcsncmp */
+int qn_wcsncmp(const wchar_t* p1, const wchar_t* p2, size_t len)
+{
+	if (!len)
+		return 0;
+
+	while (--len && *p1 && *p1 == *p2)
+		++p1, ++p2;
+
+	return (int)(*p1 - *p2);
+}
+
+/*! @brief wcsicmp */
+int qn_wcsicmp(const wchar_t* p1, const wchar_t* p2)
+{
+	wchar_t f, l;
+
+	do
+	{
+		f = (wchar_t)towlower(*p1);
+		l = (wchar_t)towlower(*p2);
+		++p1;
+		++p2;
+	} while (f && (f == l));
+
+	return (int)(f - l);
+}
+
+/*! @brief wcsnicmp */
+int qn_wcsnicmp(const wchar_t* p1, const wchar_t* p2, size_t len)
+{
+	wchar_t f, l;
+
+	while (len && *p1 && *p2)
+	{
+		--len;
+
+		f = (wchar_t)towlower(*p1);
+		l = (wchar_t)towlower(*p2);
+
+		if (f != l) return (f - l);
+		++p1;
+		++p2;
+	}
+
+	return (len) ? (int)(p1 - p2) : 0;
 }
 #endif
 

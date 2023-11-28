@@ -1850,7 +1850,7 @@ typedef struct qnHash
 	QN_INLINE bool name##_Hash_Cb_Eq(cpointer_t k1, cpointer_t k2) { return wcscmp(*(const wchar_t**)k1, *(const wchar_t**)k2)==0; }
 #define QN_HASH_HASHER_CHAR_PTR_INCASE(name)\
 	QN_INLINE size_t name##_Hash_Cb_Hash(const char** key) { return qn_strihash(*key); }\
-	QN_INLINE bool name##_Hash_Cb_Eq(const char** k1, const char** k2) { return stricmp(*k1, *k2)==0; }
+	QN_INLINE bool name##_Hash_Cb_Eq(const char** k1, const char** k2) { return qn_stricmp(*k1, *k2)==0; }
 #define QN_HASH_HASHER_WCHAR_PTR_INCASE(name)\
 	QN_INLINE size_t name##_Hash_Cb_Hash(const wchar_t** key) { return qn_wcsihash(*key); }\
 	QN_INLINE bool name##_Hash_Cb_Eq(const wchar_t** k1, const wchar_t** k2) { return wcsicmp(*k1, *k2)==0; }
@@ -3201,13 +3201,13 @@ typedef struct qnBstr8k
 	(igcase ? qn_strihash((p)->data) : qn_strhash((p)->data))
 
 #define qn_bstr_compare(p, s, igcase)\
-	(igcase ? _stricmp((p)->data, s) : strcmp((p)->data, s))
+	(igcase ? qn_stricmp((p)->data, s) : strcmp((p)->data, s))
 
 #define qn_bstr_compare_bstr(p1, p2, igcase)\
-	(igcase ? _stricmp((p1)->data, (p2)->data) : strcmp((p1)->data, (p2)->data))
+	(igcase ? qn_stricmp((p1)->data, (p2)->data) : strcmp((p1)->data, (p2)->data))
 
 #define qn_bstr_compare_bstr_length(p1, p2, len, igcase)\
-	(igcase ? _strnicmp((p1)->data, (p2)->data, len) : strncmp((p1)->data, (p2)->data, len))
+	(igcase ? qn_strnicmp((p1)->data, (p2)->data, len) : qn_strncmp((p1)->data, (p2)->data, len))
 
 #define qn_bstr_format_va(p, fmt, va)\
 	QN_STMT_BEGIN{\
@@ -3435,13 +3435,13 @@ typedef struct qnBwcs8k
 	(igcase ? qn_wcsihash((p)->data) : qn_wcshash((p)->data))
 
 #define qn_bwcs_compare(p, s, igcase)\
-	(igcase ? _wcsicmp((p)->data, s) : wcscmp((p)->data, s))
+	(igcase ? qn_wcsicmp((p)->data, s) : wcscmp((p)->data, s))
 
 #define qn_bwcs_compare_bwcs(p1, p2, igcase)\
-	(igcase ? _wcsicmp((p1)->data, (p2)->data) : wcscmp((p1)->data, (p2)->data))
+	(igcase ? qn_wcsicmp((p1)->data, (p2)->data) : wcscmp((p1)->data, (p2)->data))
 
 #define qn_bwcs_compare_bwcs_length(p1, p2, len, igcase)\
-	(igcase ? _wcsnicmp((p1)->data, (p2)->data, len) : wcsncmp((p1)->data, (p2)->data, len))
+	(igcase ? qn_wcsnicmp((p1)->data, (p2)->data, len) : qn_wcsncmp((p1)->data, (p2)->data, len))
 
 #define qn_bwcs_format_va(p, fmt, va)\
 	QN_STMT_BEGIN{\
