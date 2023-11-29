@@ -24,6 +24,8 @@ bool _stub_on_init(pointer_t g)
 	self->mouse.lim.move = /*제한 이동 거리(포인트)의 제곱*/5 * 5;
 	self->mouse.lim.tick = /*제한 클릭 시간(밀리초)*/500;
 
+	qn_list_init(qgListEvent, &self->events);
+
 	qg_stub_instance = self;
 	return true;
 }
@@ -33,6 +35,8 @@ void _stub_on_disp(pointer_t g)
 	qgStub* self = qm_cast(g, qgStub);
 
 	qn_timer_delete(self->timer);
+
+	qn_list_disp(qgListEvent, &self->events);
 
 	if (qg_stub_instance == self)
 		qg_stub_instance = NULL;
@@ -88,7 +92,7 @@ bool _stub_mouse_clicks(pointer_t g, qImButton button, qimTrack track)
 }
 
 //
-bool qg_stub_poll(pointer_t g)
+bool qg_stub_update(pointer_t g)
 {
 	qgStub* self = qm_cast(g, qgStub);
 
@@ -107,9 +111,24 @@ bool qg_stub_poll(pointer_t g)
 	if (!QN_TEST_MASK(self->stats, QGSTI_PAUSE))
 		self->advance = adv;
 
-	if (QN_TEST_MASK(self->flags, QGSTUB_IDLE))
+	if (QN_TEST_MASK(self->flags, QGFLAG_IDLE))
 		qn_sleep(!QN_TEST_MASK(self->stats, QGSTI_ACTIVE | QGSTI_VIRTUAL) ? self->delay : 1);
 
+	return true;
+}
+
+bool qg_stub_poll(pointer_t g, qgEvent* ev)
+{
+	qn_retval_if_fail(ev, false);
+
+	qgStub* self = qm_cast(g, qgStub);
+	qn_retval_if_ok(QN_TEST_MASK(self->stats, QGSTI_EXIT), false);
+
+	if (qn_list_is_empty(&self->events))
+		return false;
+
+	*ev = qn_list_data_first(&self->events);
+	qn_list_remove_first(qgListEvent, &self->events);
 	return true;
 }
 
@@ -161,8 +180,47 @@ void qg_stub_set_delay(pointer_t g, int delay)
 	self->delay = (uint32_t)QN_CLAMP(delay, 1, 1000);
 }
 
-int qn_stub_get_delay(pointer_t g)
+int qg_stub_get_delay(pointer_t g)
 {
 	qgStub* self = qm_cast(g, qgStub);
 	return (int)self->delay;
+}
+
+int qg_stub_left_events(pointer_t g)
+{
+	qgStub* self = qm_cast(g, qgStub);
+	return (int)qn_list_count(&self->events);
+}
+
+int qg_stub_add_event(pointer_t g, const qgEvent* ev)
+{
+	qn_retval_if_fail(ev, -1);
+	qgStub* self = qm_cast(g, qgStub);
+	int cnt = (int)qn_list_count(&self->events);
+	if (cnt >= QNEVENT_MAX_VALUE)
+		return -1;
+	qn_list_append(qgListEvent, &self->events, *ev);
+	return cnt + 1;
+}
+
+int qg_stub_add_event_type(pointer_t g, qgEventType type)
+{
+	qgStub* self = qm_cast(g, qgStub);
+	int cnt = (int)qn_list_count(&self->events);
+	if (type != QGEV_EXIT && cnt >= QNEVENT_MAX_VALUE)
+		return -1;
+	qgEvent e = { .ev = type };
+	qn_list_append(qgListEvent, &self->events, e);
+	return cnt + 1;
+}
+
+bool qg_stub_pop_event(pointer_t g, qgEvent* ev)
+{
+	qn_retval_if_fail(ev, false);
+	qgStub* self = qm_cast(g, qgStub);
+	if (qn_list_is_empty(&self->events))
+		return false;
+	*ev = qn_list_data_first(&self->events);
+	qn_list_remove_first(qgListEvent, &self->events);
+	return true;
 }

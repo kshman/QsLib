@@ -47,5 +47,11 @@
     <ClCompile Include="qkmc.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="qg_rdh.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="qg_rdh_es2.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 
 /*
-	int bpp = QN_TEST_MASK(flags, QGSTUB_DITHER) ? 16 : 32;
+	int bpp = QN_TEST_MASK(flags, QGFLAG_DITHER) ? 16 : 32;
 	if (bpp == 16)
 	{
 		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 4);

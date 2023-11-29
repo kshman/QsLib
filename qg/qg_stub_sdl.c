@@ -46,13 +46,13 @@ qgStub* qg_stub_new(const char* driver, const char* title, int width, int height
 		title = "QG stub";
 
 	int wflags = SDL_WINDOW_OPENGL;
-	if (QN_TEST_MASK(flags, QGSTUB_FULLSCREEN))
+	if (QN_TEST_MASK(flags, QGFLAG_FULLSCREEN))
 		wflags |= SDL_WINDOW_FULLSCREEN;
-	if (QN_TEST_MASK(flags, QGSTUB_BORDERLESS))
+	if (QN_TEST_MASK(flags, QGFLAG_BORDERLESS))
 		wflags |= SDL_WINDOW_BORDERLESS;
-	if (QN_TEST_MASK(flags, QGSTUB_RESIZABLE))
+	if (QN_TEST_MASK(flags, QGFLAG_RESIZABLE))
 		wflags |= SDL_WINDOW_RESIZABLE;
-	if (QN_TEST_MASK(flags, QGSTUB_FOCUS))
+	if (QN_TEST_MASK(flags, QGFLAG_FOCUS))
 		wflags |= SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS;
 
 	self->window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, wflags);
@@ -116,7 +116,13 @@ static double _stub_update_active(sdlStub* self, bool isactive)
 	self->active = now;
 	QN_SET_MASK(&self->base.stats, QGSTI_ACTIVE, isactive);
 
-	// 트리거
+	qgEvent e =
+	{
+		.active.ev = QGEV_ACTIVE,
+		.active.active = isactive,
+		.active.delta = adv,
+	};
+	qg_stub_add_event(self, &e);
 
 	return adv;
 }
@@ -133,7 +139,33 @@ static void _stub_layout(sdlStub* self)
 	if (!qn_point_eq(&prev, &self->base.size))
 	{
 		// 크기가 바꼈다 -> 트리거
+		qgEvent e =
+		{
+			.layout.ev = QGEV_LAYOUT,
+			.layout.bound = self->base.bound,
+		};
+		qg_stub_add_event(self, &e);
 	}
+}
+
+static void _stub_keyboard(sdlStub* self, SDL_KeyboardEvent* se, bool isdown)
+{
+	qIkMask mask = _sdl_kmod_to_qikm(se->keysym.mod);
+	self->base.key.mask = mask;
+
+	qIkKey key = _sdlk_to_qik(se->keysym.sym);
+	qn_ret_if_fail(key != QIK_NONE);
+	self->base.key.key[key] = isdown;
+
+	qgEvent e =
+	{
+		.key.ev = isdown ? QGEV_KEYDOWN : QGEV_KEYUP,
+		.key.state = mask,
+		.key.key = key,
+		.key.pressed = se->state == SDL_PRESSED,
+		.key.repeat = se->repeat,
+	};
+	qg_stub_add_event(self, &e);
 }
 
 static void _stub_mouse_point(sdlStub* self, int x, int y)
@@ -143,7 +175,7 @@ static void _stub_mouse_point(sdlStub* self, int x, int y)
 	qn_point_set(&m->pt, x, y);
 }
 
-static qImButton _stub_mouse_button(sdlStub* self, int button, bool isdown)
+static qImButton _stub_mouse_mask(sdlStub* self, int button, bool isdown)
 {
 	switch (button)
 	{
@@ -170,6 +202,65 @@ static qImButton _stub_mouse_button(sdlStub* self, int button, bool isdown)
 	return QIM_NONE;
 }
 
+static void _stub_mouse_move(sdlStub* self, const SDL_MouseMotionEvent* se)
+{
+	_stub_mouse_point(self, se->x, se->y);
+	_stub_mouse_clicks(self, QIM_NONE, QIMT_MOVE);
+
+	qgEvent e =
+	{
+		.mmove.ev = QGEV_MOUSEMOVE,
+		.mmove.state = self->base.mouse.mask,
+		.mmove.x = se->x,
+		.mmove.y = se->y,
+		.mmove.dx = se->x - self->base.mouse.last.x,
+		.mmove.dy = se->y - self->base.mouse.last.y,
+	};
+	qg_stub_add_event(self, &e);
+}
+
+static void _stub_mouse_button(sdlStub* self, const SDL_MouseButtonEvent* se, bool isdown)
+{
+	_stub_mouse_point(self, se->x, se->y);
+
+	qgEvent e =
+	{
+		.mbutton.button = _stub_mouse_mask(self, se->button, isdown),
+		.mbutton.state = self->base.mouse.mask,
+		.mbutton.x = se->x,
+		.mbutton.y = se->y,
+	};
+
+	if (isdown)
+	{
+		bool doubleclick = _stub_mouse_clicks(self, e.mbutton.button, QIMT_DOWN);
+		if (doubleclick)
+		{
+			e.mbutton.ev = QGEV_MOUSEDOUBLE;
+			qg_stub_add_event(self, &e);
+		}
+		e.mbutton.ev = QGEV_MOUSEDOWN;
+		qg_stub_add_event(self, &e);
+	}
+	else
+	{
+		e.mbutton.ev = QGEV_MOUSEUP;
+		qg_stub_add_event(self, &e);
+	}
+}
+
+static void _stub_mouse_wheel(sdlStub* self, const SDL_MouseWheelEvent* se)
+{
+	qgEvent e =
+	{
+		.mwheel.ev = QGEV_MOUSEWHEEL,
+		.mwheel.dir = se->direction == SDL_MOUSEWHEEL_NORMAL ? 1 : -1,
+		.mwheel.x = se->x,
+		.mwheel.y = se->y,
+	};
+	qg_stub_add_event(self, &e);
+}
+
 bool _stub_poll(pointer_t g)
 {
 	sdlStub* self = qm_cast(g, sdlStub);
@@ -181,29 +272,30 @@ bool _stub_poll(pointer_t g)
 		{
 			case SDL_WINDOWEVENT:
 				if (ev.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)		// 포커스 잃음
-				{
 					_stub_update_active(self, true);
-					// 액티브 트리거
-				}
 				else if (ev.window.event == SDL_WINDOWEVENT_FOCUS_LOST)		// 포커스 얻음
 				{
 					_stub_update_active(self, false);
-					// 액티브 트리거
 
+					qgEvent e =
+					{
+						.key.ev = QGEV_KEYUP,
+						.key.state = self->base.key.mask,
+						.key.pressed = 0,
+						.key.repeat = 0,
+					};
 					qgUimKey* k = &self->base.key;
 					for (int i = 0; i < QN_COUNTOF(k->key); i++)
 					{
 						if (!k->key[i])
 							continue;
 						k->key[i] = false;
-						// 키 놓임 트리거
+						e.key.key = (qIkKey)i;
+						qg_stub_add_event(self, &e);
 					}
 				}
 				else if (ev.window.event == SDL_WINDOWEVENT_RESIZED)		// 크기 변경
-				{
 					_stub_layout(self);
-					// 레이아웃 트리거
-				}
 				break;
 
 			case SDL_CONTROLLERAXISMOTION:
@@ -227,50 +319,27 @@ bool _stub_poll(pointer_t g)
 				break;
 
 			case SDL_KEYDOWN:
-				self->base.key.mask = _sdl_kmod_to_qikm(ev.key.keysym.mod);
-				QN_STMT_BEGIN{
-					qIkKey key = _sdlk_to_qik(ev.key.keysym.sym);
-					self->base.key.key[key] = true;
-					// 키 눌림 트리거
-				}QN_STMT_END;
+				_stub_keyboard(self, &ev.key, true);
 				break;
 
 			case SDL_KEYUP:
-				self->base.key.mask = _sdl_kmod_to_qikm(ev.key.keysym.mod);
-				QN_STMT_BEGIN{
-					qIkKey key = _sdlk_to_qik(ev.key.keysym.sym);
-					self->base.key.key[key] = false;
-					// 키 놓임 트리거
-				}QN_STMT_END;
+				_stub_keyboard(self, &ev.key, false);
 				break;
 
 			case SDL_MOUSEMOTION:
-				_stub_mouse_point(self, ev.motion.x, ev.motion.y);
-				_stub_mouse_clicks(self, QIM_NONE, QIMT_MOVE);
-				// 마우스 이동 트리거
+				_stub_mouse_move(self, &ev.motion);
 				break;
 
 			case SDL_MOUSEBUTTONDOWN:
-				_stub_mouse_point(self, ev.button.x, ev.button.y);
-				QN_STMT_BEGIN{
-					qImButton btn = _stub_mouse_button(self, ev.button.button, true);
-					bool doubleclick = _stub_mouse_clicks(self, btn, QIMT_DOWN);
-					// 더블클릭이 참이면 더블 클릭 트리거
-					// 마우스 눌림 트리거
-				}QN_STMT_END;
+				_stub_mouse_button(self, &ev.button, true);
 				break;
 
 			case SDL_MOUSEBUTTONUP:
-				_stub_mouse_point(self, ev.button.x, ev.button.y);
-				QN_STMT_BEGIN{
-					qImButton btn = _stub_mouse_button(self, ev.button.button, false);
-					bool doubleclick = _stub_mouse_clicks(self, btn, QIMT_UP);
-					// 마우스 놓임 트리거
-				}QN_STMT_END;
+				_stub_mouse_button(self, &ev.button, false);
 				break;
 
 			case SDL_MOUSEWHEEL:
-				// 해야함
+				_stub_mouse_wheel(self, &ev.wheel);
 				break;
 
 			case SDL_DROPFILE:
@@ -299,6 +368,7 @@ bool _stub_poll(pointer_t g)
 
 			case SDL_QUIT:
 				QN_SET_MASK(&self->base.stats, QGSTI_EXIT, true);
+				qg_stub_add_event_type(self, QGEV_EXIT);
 				return false;
 		}
 	}

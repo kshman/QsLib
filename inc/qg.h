@@ -9,13 +9,28 @@
 
 // definition
 typedef struct qgStub qgStub;
+typedef struct qgRdh qgRdh;
+
+// instance
+QNAPI qgStub* qg_stub_instance;
+QNAPI qgRdh* qg_rdh_instance;
 
 QN_EXTC_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
-// data
+// types
 
-typedef enum
+typedef enum qgFlag
+{
+	QGFLAG_FULLSCREEN = QN_BIT(0),
+	QGFLAG_BORDERLESS = QN_BIT(1),
+	QGFLAG_RESIZABLE = QN_BIT(2),
+	QGFLAG_FOCUS = QN_BIT(3),
+	QGFLAG_IDLE = QN_BIT(4),
+	QGFLAG_DITHER = QN_BIT(5),
+} qgFlag;
+
+typedef enum qgClrFmt
 {
 	QGCF_NONE,
 	QGCF8_L,
@@ -34,7 +49,7 @@ typedef enum
 	QGCF_MAX_VALUE,
 } qgClrFmt;
 
-typedef enum
+typedef enum qgClrMask
 {
 	QGCM_RED = QN_BIT(0),
 	QGCM_GREEN = QN_BIT(1),
@@ -48,7 +63,7 @@ typedef enum
 	QGCM_RGBA = QGCM_RED | QGCM_GREEN | QGCM_BLUE | QGCM_ALPHA,
 } qgClrMask;
 
-typedef enum
+typedef enum qgTopology
 {
 	QGTPG_POINT,
 	QGTPG_LINE,
@@ -57,21 +72,21 @@ typedef enum
 	QGTPG_TRI_STRIP,
 } qgTopology;
 
-typedef enum
+typedef enum qgFill
 {
 	QGFLL_POINT,
 	QGFLL_WIRE,
 	QGFLL_SOLID,
 } qgFill;
 
-typedef enum
+typedef enum qgCull
 {
 	QGCUL_NONE,
 	QGCUL_FRONT,
 	QGCUL_BACK,
 } qgCull;
 
-typedef enum
+typedef enum qgCmpOp
 {
 	QGCMP_NEVER,
 	QGCMP_LE,
@@ -83,7 +98,7 @@ typedef enum
 	QGCMP_ALWAYS,
 } qgCmpOp;
 
-typedef enum
+typedef enum qgStencilOp
 {
 	QGSTP_KEEP,
 	QGSTP_ZERO,
@@ -95,7 +110,7 @@ typedef enum
 	QGSTP_DEC,
 } qgStencilOp;
 
-typedef enum
+typedef enum qgBlendOp
 {
 	QGBLO_ADD,
 	QGBLO_SUB,
@@ -104,7 +119,7 @@ typedef enum
 	QGBLO_MAX,
 } qgBlendOp;
 
-typedef enum
+typedef enum qgFactor
 {
 	QGBFT_ZERO,
 	QGBFT_ONE,
@@ -184,17 +199,88 @@ typedef struct qgUimCtrlCtrlVib
 
 
 //////////////////////////////////////////////////////////////////////////
-// object
+// event
 
-typedef enum
+typedef enum qgEventType
 {
-	QGSTUB_FULLSCREEN = QN_BIT(0),
-	QGSTUB_BORDERLESS = QN_BIT(1),
-	QGSTUB_RESIZABLE = QN_BIT(2),
-	QGSTUB_FOCUS = QN_BIT(3),
-	QGSTUB_IDLE = QN_BIT(4),
-	QGSTUB_DITHER = QN_BIT(30),
-} qgStubFlag;
+	QGEV_NONE,
+	QGEV_ACTIVE,
+	QGEV_LAYOUT,
+	QGEV_KEYDOWN,
+	QGEV_KEYUP,
+	QGEV_MOUSEMOVE,
+	QGEV_MOUSEDOWN,
+	QGEV_MOUSEUP,
+	QGEV_MOUSEWHEEL,
+	QGEV_MOUSEDOUBLE,
+	QGEV_EXIT = 255,
+} qgEventType;
+
+struct qgEventActive
+{
+	qgEventType			ev;
+	int32_t				active;	// bool
+	double				delta;
+};
+
+struct qgEventLayout
+{
+	qgEventType			ev;
+	qnRect				bound;
+	int32_t				_pad;
+};
+
+struct qgEventKeyboard
+{
+	qgEventType			ev;
+	int16_t				pressed;
+	int16_t				repeat;
+	qIkKey				key;
+	qIkMask				state;
+};
+
+struct qgEventMouseMove {
+	qgEventType			ev;
+	int32_t				x;
+	int32_t				y;
+	int32_t				dx;
+	int32_t				dy;
+	qImMask				state;
+};
+
+struct qgEventMouseButton {
+	qgEventType			ev;
+	int32_t				x;
+	int32_t				y;
+	qImButton			button;
+	qImMask				state;
+};
+
+struct qgEventMouseWheel {
+	qgEventType			ev;
+	int32_t				dir;
+	int32_t				x;
+	int32_t				y;
+};
+
+typedef union qgEvent
+{
+	qgEventType					ev;
+	struct qgEventActive		active;
+	struct qgEventLayout		layout;
+	struct qgEventKeyboard		key;
+	struct qgEventMouseMove		mmove;
+	struct qgEventMouseButton	mbutton;
+	struct qgEventMouseWheel	mwheel;
+} qgEvent;
+
+QN_LIST_DECL(qgListEvent, qgEvent);
+
+#define QNEVENT_MAX_VALUE		5000
+
+
+//////////////////////////////////////////////////////////////////////////
+// stub
 
 typedef enum
 {
@@ -213,7 +299,7 @@ struct qgStub
 
 	pointer_t			handle;
 
-	qgStubFlag			flags;
+	qgFlag				flags;
 	qgStubStat			stats;
 	uintptr_t			polls;
 
@@ -230,6 +316,8 @@ struct qgStub
 
 	qgUimKey			key;
 	qgUimMouse			mouse;
+
+	qgListEvent			events;
 };
 
 qvt_name(qgStub)
@@ -237,13 +325,12 @@ qvt_name(qgStub)
 	qvt_name(qnGam)		base;
 };
 
-QNAPI qgStub* qg_stub_instance;
-
 QNAPI qgStub* qg_stub_new(const char* driver, const char* title, int width, int height, int flags);
 QNAPI bool qg_stub_close(pointer_t g);
 QNAPI void qg_stub_dispose(pointer_t g);
 
-QNAPI bool qg_stub_poll(pointer_t g);
+QNAPI bool qg_stub_update(pointer_t g);
+QNAPI bool qg_stub_poll(pointer_t g, qgEvent* ev);
 
 QNAPI const qgUimMouse* qg_stub_get_mouse(pointer_t g);
 QNAPI const qgUimKey* qg_stub_get_key(pointer_t g);
@@ -253,6 +340,102 @@ QNAPI double qg_stub_get_fps(pointer_t g);
 QNAPI double qg_stub_get_ref_adv(pointer_t g);
 QNAPI double qg_stub_get_def_adv(pointer_t g);
 QNAPI void qg_stub_set_delay(pointer_t g, int delay);
-QNAPI int qn_stub_get_delay(pointer_t g);
+QNAPI int qg_stub_get_delay(pointer_t g);
+
+QNAPI int qg_stub_left_events(pointer_t g);
+QNAPI int qg_stub_add_event(pointer_t g, const qgEvent* ev);
+QNAPI int qg_stub_add_event_type(pointer_t g, qgEventType type);
+QNAPI bool qg_stub_pop_event(pointer_t g, qgEvent* ev);
+
+
+//////////////////////////////////////////////////////////////////////////
+// render device
+
+typedef struct qgDeviceInfo
+{
+	char				name[64];
+	char				vendor[64];
+	int					renderer_version;
+	int					shader_version;
+	int					max_tex_dim;
+	int					max_tex_count;
+	int					max_off_count;
+	int					tex_image_flag;
+} qgDeviceInfo;
+
+typedef struct qgRenderInfo
+{
+	intptr_t			frames;
+	intptr_t			begins;
+	intptr_t			ends;
+	intptr_t			invokes;
+	intptr_t			shaders;
+	intptr_t			transforms;
+	intptr_t			draws;
+	intptr_t			vertices;
+	bool				flush;
+} qgRenderInfo;
+
+typedef struct qgRenderTm
+{
+	qnMat4				world;
+	qnMat4				view;
+	qnMat4				proj;
+	qnMat4				vp;
+	qnMat4				inv;		// inverse view
+	qnMat4				ortho;		// ortho transform
+	qnMat4				frm;		// tex formation
+	qnMat4				tex[4];
+} qgRenderTm;
+
+typedef struct qgRenderParam
+{
+	int					bones;
+	qnMat4*				bonptr;
+	qnVec4				v[4];
+	qnMat4				m[4];
+	qnColor				clear;
+} qgRenderParam;
+
+struct qgRdh
+{
+	qnGam				gam;
+
+	qgStub*				stub;
+
+	qgRenderInfo		info;
+	qgRenderTm			tm;
+	qgRenderParam		param;
+
+	qgDeviceInfo		caps;
+};
+
+qvt_name(qgRdh)
+{
+	qvt_name(qnGam)		base;
+};
+
+QNAPI void qg_rdh_dispose(pointer_t g);
+
+QNAPI const qgDeviceInfo* qg_rdh_get_device_info(pointer_t g);
+QNAPI const qgRenderInfo* qg_rdh_get_render_info(pointer_t g);
+QNAPI const qgRenderTm* qg_rdh_get_render_tm(pointer_t g);
+QNAPI const qgRenderParam* qg_rdh_get_render_param(pointer_t g);
+
+QNAPI bool qg_rdh_poll(pointer_t g, qgEvent* ev);
+QNAPI bool qg_rdh_begin(pointer_t g);
+QNAPI void qg_rdh_end(pointer_t g);
+
+QNAPI void qg_rdh_set_param_vec3(pointer_t g, int at, const qnVec3* v);
+QNAPI void qg_rdh_set_param_vec4(pointer_t g, int at, const qnVec4* v);
+QNAPI void qg_rdh_set_param_mat4(pointer_t g, int at, const qnMat4* m);
+QNAPI void qg_rdh_set_param_weight(pointer_t g, int count, qnMat4* weight);
+QNAPI void qg_rdh_set_clear(pointer_t g, const qnColor* color);
+QNAPI void qg_rdh_set_proj(pointer_t g, const qnMat4* m);
+QNAPI void qg_rdh_set_view(pointer_t g, const qnMat4* m);
+QNAPI void qg_rdh_set_world(pointer_t g, const qnMat4* m);
+
+QNAPI void qg_rdh_draw_primitive(pointer_t g, qgTopology tpg, int count, int stride, cpointer_t data);
+QNAPI void qg_rdh_draw_indexed_primitive(pointer_t g, qgTopology tpg, int vcount, int vstride, cpointer_t vdata, int icount, int istride, cpointer_t idata);
 
 QN_EXTC_END
