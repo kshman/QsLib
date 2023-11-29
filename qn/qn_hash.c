@@ -4,7 +4,7 @@
 //////////////////////////////////////////////////////////////////////////
 // 해시
 
-/*!
+/**
  * @brief 포인터 해시. 일반적인 size_t 해시를 의미함
  * @param[in]	p	입력 변수
  * @return	해시 값
@@ -20,7 +20,7 @@ size_t qn_hashptr(cpointer_t p)
 	return (size_t)t.rem;
 }
 
-/*!
+/**
  * @brief 시간 해시. 현재 시각을 이용하여 해시값을 만든다
  * @return	해시 값
  */
@@ -56,14 +56,14 @@ size_t qn_hashnow(void)
 	return (h1 + dif++) ^ h2;
 }
 
-/*!
+/**
  * @brief 콜백 해시. 함수 콜백을 해시값으로 만들어 준다
  * @param[in]	prime8	8비트 소수 값
  * @param[in]	func  	콜백 함수
  * @param[in]	data  	콜백 데이터
  * @return	해시 값
  */
-size_t qn_hashfn(int32_t prime8, func_t func, pointer_t data)
+size_t qn_hashfn(int prime8, func_t func, pointer_t data)
 {
 	// PP FF FF FF FD DD DD DD
 	size_t h = prime8 & 0xFFULL << 56ULL;
@@ -74,7 +74,7 @@ size_t qn_hashfn(int32_t prime8, func_t func, pointer_t data)
 }
 
 #if _QN_64_
-/*!
+/**
  * @brief 지정한 데이터로 CRC64를 만든다
  * @date 2013-12-22
  * @param[in] data 자료
@@ -195,7 +195,7 @@ static uint64_t qn_crc64(const uint8_t* data, size_t size)
 	return ~crc64;
 }
 #else
-/*!
+/**
  * @brief 지정한 데이터로 CRC32를 만든다
  * @date 2013-12-22
  * @param[in] data 자료
@@ -246,7 +246,7 @@ static uint32_t qn_crc32(const uint8_t* data, size_t size)
 }
 #endif
 
-/*!
+/**
  * @brief 데이터를 crc로 해시한다
  * @param[in] data 데이터
  * @param[in] size 데이터 크기
@@ -261,7 +261,7 @@ size_t qn_hashcrc(const uint8_t* data, size_t size)
 #endif
 }
 
-/*!
+/**
  * @brief 가까운 소수 얻기. 처리할 수 있는 최소 소수는 QN_MAX_HASH(11), 최대 소수는 QN_MAX_HASH(13845163)
  * @param[in] value 입력 값
  * @return 소수 값
@@ -281,7 +281,7 @@ uint32_t qn_primenear(uint32_t value)
 	return s_prime_table[QN_COUNTOF(s_prime_table) - 1];
 }
 
-/*!
+/**
  * @brief 제곱 소수 얻기. 근거리에 해당하는 제곱 소수를 계산해준다
  * @param[in] value 입력 값
  * @param[in] min 최소 값

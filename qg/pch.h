@@ -61,6 +61,8 @@
 #include "SDL/SDL.h"
 #include "SDL/SDL_system.h"
 #include "SDL/SDL_opengles2.h"
+#include "SDL/SDL_keycode.h"
+#include "SDL/SDL_mouse.h"
 
 //
 #if _MSC_VER

@@ -154,8 +154,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\inc\qg.h" />
-    <ClInclude Include="..\inc\qmkc.h" />
+    <ClInclude Include="..\inc\qkmc.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="qg_internal.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.c">
@@ -166,7 +167,7 @@
     </ClCompile>
     <ClCompile Include="qg_stub.c" />
     <ClCompile Include="qg_stub_sdl.c" />
-    <ClCompile Include="qmkc.c" />
+    <ClCompile Include="qkmc.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

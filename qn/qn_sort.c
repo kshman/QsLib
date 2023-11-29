@@ -36,7 +36,7 @@ static void _qsort_short_context(uint8_t* lo, uint8_t* hi, size_t stride, int(*f
 	}
 }
 
-/*!
+/**
  * @brief 콘텍스트 입력 받는 퀵정렬
  * @param	ptr				정렬할 데이터의 포인터
  * @param	count			데이터의 갯수
@@ -195,7 +195,7 @@ static void _qsort_short(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(cpo
 	}
 }
 
-/*!
+/**
  * @brief 퀵정렬
  * @param	ptr				정렬할 데이터의 포인터
  * @param	count			데이터의 갯수

@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <qn.h>
+#include <qkmc.h>
 
 //////////////////////////////////////////////////////////////////////////
 // version
@@ -13,14 +14,6 @@ QN_EXTC_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
 // data
-
-typedef enum
-{
-	QGSTUB_FULLSCREEN = QN_BIT(0),
-	QGSTUB_BORDERLESS = QN_BIT(1),
-	QGSTUB_RESIZABLE = QN_BIT(2),
-	QGSTUB_FOCUS = QN_BIT(3),
-} qgStubFlag;
 
 typedef enum
 {
@@ -128,35 +121,138 @@ typedef enum
 
 
 //////////////////////////////////////////////////////////////////////////
+// inputs
+
+//
+typedef struct qgUimKey
+{
+	qIkMask				mask : 16;
+	bool				key[QIK_MAX_VALUE];
+} qgUimKey;
+
+//
+typedef struct qgUimMouse
+{
+	qImMask				mask;
+	int					wheel;
+	qnPoint				pt;
+	qnPoint				last;
+
+	struct
+	{
+		uint32_t		tick;
+		qImButton		btn;
+		qnPoint			loc;
+	}					clk;
+	struct
+	{
+		int				move;
+		uint32_t		tick;
+	}					lim;
+} qgUimMouse;
+
+//
+typedef struct qgUimCtrl
+{
+	qIcButton			btn : 16;
+	qnPoint				trg;
+	qnVec2				lthb;
+	qnVec2				rthb;
+} qgUimCtrl;
+
+//
+typedef struct qgUimCtrlInfo
+{
+	qIcMask				flags;
+
+	int					type : 16;
+	int					extend : 16;
+
+	int					battery_type : 8;
+	int					battery_level : 8;
+
+	int					headset_type : 8;
+	int					headset_level : 8;
+} qgUimCtrlInfo;
+
+// 
+typedef struct qgUimCtrlCtrlVib
+{
+	uint16_t			left;
+	uint16_t			right;
+} qgUimCtrlCtrlVib;
+
+
+//////////////////////////////////////////////////////////////////////////
 // object
+
+typedef enum
+{
+	QGSTUB_FULLSCREEN = QN_BIT(0),
+	QGSTUB_BORDERLESS = QN_BIT(1),
+	QGSTUB_RESIZABLE = QN_BIT(2),
+	QGSTUB_FOCUS = QN_BIT(3),
+	QGSTUB_IDLE = QN_BIT(4),
+	QGSTUB_DITHER = QN_BIT(30),
+} qgStubFlag;
+
+typedef enum
+{
+	QGSTI_EXIT = QN_BIT(0),
+	QGSTI_VIRTUAL = QN_BIT(1),
+	QGSTI_ACTIVE = QN_BIT(2),
+	QGSTI_LAYOUT = QN_BIT(3),
+	// DROP / CURSOR / SCRSAVE
+	QGSTI_ACS = QN_BIT(13),
+	QGSTI_PAUSE = QN_BIT(14),
+} qgStubStat;
 
 struct qgStub
 {
 	qnGam				base;
 
 	pointer_t			handle;
-	qnTimer*			timer;
 
+	qgStubFlag			flags;
+	qgStubStat			stats;
+	uintptr_t			polls;
+
+	qnTimer*			timer;
 	uint32_t			delay;
-	double				active;
-	double				running;
 	double				fps;
+	double				run;
+	float				refadv;
+	float				advance;
 
 	qnRect				bound;
 	qnPoint				size;
 	qnPoint				limit;
-	qgClrFmt			format;
+
+	qgUimKey			key;
+	qgUimMouse			mouse;
 };
 
-struct _qgvt_stub
+qvt_name(qgStub)
 {
-	struct _qnvt_gam	base;
+	qvt_name(qnGam)		base;
 };
 
 QNAPI qgStub* qg_stub_instance;
 
-QNAPI bool qg_stub_on_init(pointer_t g);
-QNAPI bool qg_stub_on_disp(pointer_t g);
+QNAPI qgStub* qg_stub_new(const char* driver, const char* title, int width, int height, int flags);
+QNAPI bool qg_stub_close(pointer_t g);
 QNAPI void qg_stub_dispose(pointer_t g);
+
+QNAPI bool qg_stub_poll(pointer_t g);
+
+QNAPI const qgUimMouse* qg_stub_get_mouse(pointer_t g);
+QNAPI const qgUimKey* qg_stub_get_key(pointer_t g);
+QNAPI bool qg_stub_test_key(pointer_t g, qIkKey key);
+QNAPI double qg_stub_get_runtime(pointer_t g);
+QNAPI double qg_stub_get_fps(pointer_t g);
+QNAPI double qg_stub_get_ref_adv(pointer_t g);
+QNAPI double qg_stub_get_def_adv(pointer_t g);
+QNAPI void qg_stub_set_delay(pointer_t g, int delay);
+QNAPI int qn_stub_get_delay(pointer_t g);
 
 QN_EXTC_END

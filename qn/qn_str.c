@@ -6,7 +6,7 @@
 
 extern size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args);
 
-/*! @brief vsnprintf */
+/** @brief vsnprintf */
 int qn_vsnprintf(char* out, size_t len, const char* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, -1);
@@ -18,7 +18,7 @@ int qn_vsnprintf(char* out, size_t len, const char* fmt, va_list va)
 	return out ? (int)QN_MIN(res, len) : (int)res;
 }
 
-/*! @brief vaprintf */
+/** @brief vaprintf */
 int qn_vasprintf(char** out, const char* fmt, va_list va)
 {
 	qn_retval_if_fail(out != NULL, -2);
@@ -36,7 +36,7 @@ int qn_vasprintf(char** out, const char* fmt, va_list va)
 	return (int)len;
 }
 
-/*! @brief vaprintf */
+/** @brief vaprintf */
 char* qn_vapsprintf(const char* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, NULL);
@@ -51,7 +51,7 @@ char* qn_vapsprintf(const char* fmt, va_list va)
 	return ret;
 }
 
-/*! @brief snprintf */
+/** @brief snprintf */
 int qn_snprintf(char* out, size_t len, const char* fmt, ...)
 {
 	va_list va;
@@ -62,7 +62,7 @@ int qn_snprintf(char* out, size_t len, const char* fmt, ...)
 	return ret;
 }
 
-/*! @brief asprintf */
+/** @brief asprintf */
 int qn_asprintf(char** out, const char* fmt, ...)
 {
 	va_list va;
@@ -73,7 +73,7 @@ int qn_asprintf(char** out, const char* fmt, ...)
 	return ret;
 }
 
-/*! @brief asprintf */
+/** @brief asprintf */
 char* qn_apsprintf(const char* fmt, ...)
 {
 	va_list va;
@@ -84,7 +84,7 @@ char* qn_apsprintf(const char* fmt, ...)
 	return ret;
 }
 
-/*! @brief 글자로 채우기 */
+/** @brief 글자로 채우기 */
 size_t qn_strfll(char* dest, size_t pos, size_t end, int ch)
 {
 	size_t i, cnt;
@@ -96,7 +96,7 @@ size_t qn_strfll(char* dest, size_t pos, size_t end, int ch)
 	return pos + cnt;
 }
 
-/*! @brief 문자열 해시 */
+/** @brief 문자열 해시 */
 size_t qn_strhash(const char* p)
 {
 	const char* sz = p;
@@ -113,7 +113,7 @@ size_t qn_strhash(const char* p)
 	}
 }
 
-/*! @brief 문자열 해시 (대소문자구별안함) */
+/** @brief 문자열 해시 (대소문자구별안함) */
 size_t qn_strihash(const char* p)
 {
 	const char* sz = p;
@@ -131,7 +131,7 @@ size_t qn_strihash(const char* p)
 	}
 }
 
-/*! @brief strbrk */
+/** @brief strbrk */
 char* qn_strbrk(const char* p, const char* c)
 {
 #if 1
@@ -169,7 +169,7 @@ char* qn_strbrk(const char* p, const char* c)
 #endif
 }
 
-/*! @brief strmid */
+/** @brief strmid */
 char* qn_strmid(char* dest, size_t destsize, const char* src, size_t pos, size_t len)
 {
 	size_t size = strlen(src);
@@ -185,7 +185,7 @@ char* qn_strmid(char* dest, size_t destsize, const char* src, size_t pos, size_t
 	return dest;
 }
 
-/*! @brief strltrim */
+/** @brief strltrim */
 char* qn_strltm(char* dest)
 {
 	char* s;
@@ -195,7 +195,7 @@ char* qn_strltm(char* dest)
 	return dest;
 }
 
-/*! @brief strrtrim */
+/** @brief strrtrim */
 char* qn_strrtm(char* dest)
 {
 	size_t len = strlen(dest);
@@ -208,13 +208,13 @@ char* qn_strrtm(char* dest)
 	return dest;
 }
 
-/*! @brief strtrim */
+/** @brief strtrim */
 char* qn_strtrm(char* dest)
 {
 	return qn_strrtm(qn_strltm(dest));
 }
 
-/*! @brief strrem */
+/** @brief strrem */
 char* qn_strrem(char* p, const char* rmlist)
 {
 	char* p1 = p;
@@ -249,7 +249,7 @@ char* qn_strrem(char* p, const char* rmlist)
 	return p;
 }
 
-/*! @brief 복사하고 끝 부분 반환 */
+/** @brief 복사하고 끝 부분 반환 */
 char* qn_strpcpy(char* dest, const char* src)
 {
 	do (*dest++ = *src);
@@ -257,7 +257,7 @@ char* qn_strpcpy(char* dest, const char* src)
 	return dest - 1;
 }
 
-/*! @brief 여러 문자열의 strdup */
+/** @brief 여러 문자열의 strdup */
 char* qn_strcat(const char* p, ...)
 {
 	va_list va;
@@ -379,7 +379,7 @@ int qn_striwcm(const char* string, const char* wild)
 	return !*wild;
 }
 
-/*! @brief strfind */
+/** @brief strfind */
 int qn_strfnd(const char* src, const char* find, size_t index)
 {
 	const char* p = src + index;
@@ -404,7 +404,7 @@ int qn_strfnd(const char* src, const char* find, size_t index)
 }
 
 #if !_MSC_VER
-/*! @brief 문자열을 대문자로 */
+/** @brief 문자열을 대문자로 */
 char* qn_strupr(char* p, size_t size)
 {
 	char* s = p;
@@ -414,7 +414,7 @@ char* qn_strupr(char* p, size_t size)
 	return p;
 }
 
-/*! @brief 문자열을 소문자로 */
+/** @brief 문자열을 소문자로 */
 char* qn_strlwr(char* p, size_t size)
 {
 	char* s = p;
@@ -424,7 +424,7 @@ char* qn_strlwr(char* p, size_t size)
 	return p;
 }
 
-/*! @brief strncmp */
+/** @brief strncmp */
 int qn_strncmp(const char* p1, const char* p2, size_t len)
 {
 	if (!len)
@@ -436,7 +436,7 @@ int qn_strncmp(const char* p1, const char* p2, size_t len)
 	return *p1 - *p2;
 }
 
-/*! @brief stricmp */
+/** @brief stricmp */
 int qn_stricmp(const char* p1, const char* p2)
 {
 	int	f, l;
@@ -452,7 +452,7 @@ int qn_stricmp(const char* p1, const char* p2)
 	return (f - l);
 }
 
-/*! @brief strnicmp */
+/** @brief strnicmp */
 int qn_strnicmp(const char* p1, const char* p2, size_t len)
 {
 	int	f, l;
@@ -487,7 +487,7 @@ int qn_strnicmp(const char* p1, const char* p2, size_t len)
 
 extern size_t doprw(wchar_t* buffer, size_t maxlen, const wchar_t* format, va_list args);
 
-/*! @brief vsnwprintf */
+/** @brief vsnwprintf */
 int qn_vsnwprintf(wchar_t* out, size_t len, const wchar_t* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, -1);
@@ -499,7 +499,7 @@ int qn_vsnwprintf(wchar_t* out, size_t len, const wchar_t* fmt, va_list va)
 	return out ? (int)QN_MIN(res, len) : (int)res;
 }
 
-/*! @brief vaswprintf */
+/** @brief vaswprintf */
 int qn_vaswprintf(wchar_t** out, const wchar_t* fmt, va_list va)
 {
 	qn_retval_if_fail(out != NULL, -2);
@@ -517,7 +517,7 @@ int qn_vaswprintf(wchar_t** out, const wchar_t* fmt, va_list va)
 	return (int)len;
 }
 
-/*! @brief vaspwprintf */
+/** @brief vaspwprintf */
 wchar_t* qn_vapswprintf(const wchar_t* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, NULL);
@@ -532,7 +532,7 @@ wchar_t* qn_vapswprintf(const wchar_t* fmt, va_list va)
 	return ret;
 }
 
-/*! @brief snwprintf */
+/** @brief snwprintf */
 int qn_snwprintf(wchar_t* out, size_t len, const wchar_t* fmt, ...)
 {
 	va_list va;
@@ -545,7 +545,7 @@ int qn_snwprintf(wchar_t* out, size_t len, const wchar_t* fmt, ...)
 	return ret;
 }
 
-/*! @brief aswprintf */
+/** @brief aswprintf */
 int qn_aswprintf(wchar_t** out, const wchar_t* fmt, ...)
 {
 	va_list va;
@@ -558,7 +558,7 @@ int qn_aswprintf(wchar_t** out, const wchar_t* fmt, ...)
 	return ret;
 }
 
-/*! @brief aspwprintf */
+/** @brief aspwprintf */
 wchar_t* qn_apswprintf(const wchar_t* fmt, ...)
 {
 	va_list va;
@@ -571,7 +571,7 @@ wchar_t* qn_apswprintf(const wchar_t* fmt, ...)
 	return ret;
 }
 
-/*! @brief 빈칸으로 채우기 */
+/** @brief 빈칸으로 채우기 */
 size_t qn_wcsfll(wchar_t* dest, size_t pos, size_t end, int ch)
 {
 	size_t i, cnt;
@@ -583,7 +583,7 @@ size_t qn_wcsfll(wchar_t* dest, size_t pos, size_t end, int ch)
 	return pos + cnt;
 }
 
-/*! @brief 문자열 해시 */
+/** @brief 문자열 해시 */
 size_t qn_wcshash(const wchar_t* p)
 {
 	const wchar_t* sz = p;
@@ -600,7 +600,7 @@ size_t qn_wcshash(const wchar_t* p)
 	}
 }
 
-/*! @brief 문자열 해시 (대소문자구별안함) */
+/** @brief 문자열 해시 (대소문자구별안함) */
 size_t qn_wcsihash(const wchar_t* p)
 {
 	const wchar_t* sz = p;
@@ -618,7 +618,7 @@ size_t qn_wcsihash(const wchar_t* p)
 	}
 }
 
-/*! @brief wcsbrk */
+/** @brief wcsbrk */
 wchar_t* qn_wcsbrk(const wchar_t* p, const wchar_t* c)
 {
 	wchar_t* t;
@@ -634,7 +634,7 @@ wchar_t* qn_wcsbrk(const wchar_t* p, const wchar_t* c)
 	return NULL;
 }
 
-/*! @brief wcsmid */
+/** @brief wcsmid */
 wchar_t* qn_wcsmid(wchar_t* dest, size_t destsize, const wchar_t* src, size_t pos, size_t len)
 {
 	size_t size = wcslen(src);
@@ -650,7 +650,7 @@ wchar_t* qn_wcsmid(wchar_t* dest, size_t destsize, const wchar_t* src, size_t po
 	return dest;
 }
 
-/*! @brief wcsltrim */
+/** @brief wcsltrim */
 wchar_t* qn_wcsltm(wchar_t* dest)
 {
 	wchar_t* s;
@@ -660,7 +660,7 @@ wchar_t* qn_wcsltm(wchar_t* dest)
 	return dest;
 }
 
-/*! @brief wcsrtrim */
+/** @brief wcsrtrim */
 wchar_t* qn_wcsrtm(wchar_t* dest)
 {
 	size_t len = wcslen(dest);
@@ -673,13 +673,13 @@ wchar_t* qn_wcsrtm(wchar_t* dest)
 	return dest;
 }
 
-/*! @brief wcstrim */
+/** @brief wcstrim */
 wchar_t* qn_wcstrm(wchar_t* dest)
 {
 	return qn_wcsrtm(qn_wcsltm(dest));
 }
 
-/*! @brief wcsrem */
+/** @brief wcsrem */
 wchar_t* qn_wcsrem(wchar_t* p, const wchar_t* rmlist)
 {
 	wchar_t* p1 = p;
@@ -714,7 +714,7 @@ wchar_t* qn_wcsrem(wchar_t* p, const wchar_t* rmlist)
 	return p;
 }
 
-/*! @brief wcspcpy */
+/** @brief wcspcpy */
 wchar_t* qn_wcspcpy(wchar_t* dest, const wchar_t* src)
 {
 	do (*dest++ = *src);
@@ -722,7 +722,7 @@ wchar_t* qn_wcspcpy(wchar_t* dest, const wchar_t* src)
 	return dest - 1;
 }
 
-/*! @brief 여러 문자열의 strdup */
+/** @brief 여러 문자열의 strdup */
 wchar_t* qn_wcscat(const wchar_t* p, ...)
 {
 	va_list va;
@@ -844,7 +844,7 @@ int qn_wcsiwcm(const wchar_t* string, const wchar_t* wild)
 	return !*wild;
 }
 
-/*! @brief wcsfind */
+/** @brief wcsfind */
 int qn_wcsfnd(const wchar_t* src, const wchar_t* find, size_t index)
 {
 	const wchar_t* p = src + index;
@@ -869,7 +869,7 @@ int qn_wcsfnd(const wchar_t* src, const wchar_t* find, size_t index)
 }
 
 #if !_MSC_VER
-/*! @brief 문자열을 대문자로 */
+/** @brief 문자열을 대문자로 */
 wchar_t* qn_wcsupr(wchar_t* p, size_t size)
 {
 	wchar_t* s = p;
@@ -879,7 +879,7 @@ wchar_t* qn_wcsupr(wchar_t* p, size_t size)
 	return p;
 }
 
-/*! @brief 문자열을 소문자로 */
+/** @brief 문자열을 소문자로 */
 wchar_t* qn_wcslwr(wchar_t* p, size_t size)
 {
 	wchar_t* s = p;
@@ -889,7 +889,7 @@ wchar_t* qn_wcslwr(wchar_t* p, size_t size)
 	return p;
 }
 
-/*! @brief wcsncmp */
+/** @brief wcsncmp */
 int qn_wcsncmp(const wchar_t* p1, const wchar_t* p2, size_t len)
 {
 	if (!len)
@@ -901,7 +901,7 @@ int qn_wcsncmp(const wchar_t* p1, const wchar_t* p2, size_t len)
 	return (int)(*p1 - *p2);
 }
 
-/*! @brief wcsicmp */
+/** @brief wcsicmp */
 int qn_wcsicmp(const wchar_t* p1, const wchar_t* p2)
 {
 	wchar_t f, l;
@@ -917,7 +917,7 @@ int qn_wcsicmp(const wchar_t* p1, const wchar_t* p2)
 	return (int)(f - l);
 }
 
-/*! @brief wcsnicmp */
+/** @brief wcsnicmp */
 int qn_wcsnicmp(const wchar_t* p1, const wchar_t* p2, size_t len)
 {
 	wchar_t f, l;
@@ -942,7 +942,7 @@ int qn_wcsnicmp(const wchar_t* p1, const wchar_t* p2, size_t len)
 //////////////////////////////////////////////////////////////////////////
 // 유니코드
 
-/*!
+/**
  * @brief UTF-8 글자 길이
  * @author cp_strlen_utf8 (http://www.daemonology.net/blog/2008-06-05-faster-utf8-strlen.html)
  */
@@ -997,7 +997,7 @@ pos_done:
 #undef MASK
 }
 
-/*!
+/**
  * @brief UTF-8 문자를 UCS-4 문자로.
  * @param	p	utf8 문자.
  * @return	ucs4 문자.
@@ -1069,7 +1069,7 @@ uchar4_t qn_utf8cbn(const char* p)
 	}
 }
 
-/*! @brief UTF-8 다음 글자 */
+/** @brief UTF-8 다음 글자 */
 char* qn_utf8nch(const char* s)
 {
 	static const char s_skips[256] =
@@ -1086,7 +1086,7 @@ char* qn_utf8nch(const char* s)
 	return (char*)(s + s_skips[*(const uint8_t*)s]);
 }
 
-/*!
+/**
  * @brief UCS-4 문자를 UTF-8 문자로
  * @param	c		   	ucs4 문자.
  * @param[out]	out	utf8 문자가 들어갈 배열. 최소 6개 항목의 배열이어야 한다
@@ -1180,7 +1180,7 @@ size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar_t* inwcs, size_t in
 }
 
 
-/*!
+/**
  * @brief utf8 -> ucs4 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
  * @param[out]	dest	(널값이 아니면) 대상 버퍼 (ucs4)
  * @param	destsize		대상 버퍼 크기
@@ -1219,7 +1219,7 @@ size_t qn_utf8to32(uchar4_t* dest, size_t destsize, const char* src, size_t srcl
 	}
 }
 
-/*!
+/**
  * @brief utf8 -> utf16 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
  * @param[out]	dest	(널값이 아니면) 대상 버퍼 (utf16)
  * @param	destsize		대상 버퍼 크기
@@ -1268,7 +1268,7 @@ size_t qn_utf8to16(uchar2_t* dest, size_t destsize, const char* src, size_t srcl
 	}
 }
 
-/*!
+/**
  * @brief ucs4 -> utf8 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
  * @param[out]	dest	(널값이 아니면) 대상 버퍼 (utf8)
  * @param	destsize		대상 버퍼 크기
@@ -1357,7 +1357,7 @@ size_t qn_utf32to8(char* dest, size_t destsize, const uchar4_t* src, size_t srcl
 	return size;
 }
 
-/*!
+/**
  * @brief utf16 -> utf8 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
  * @param[out]	dest	(널값이 아니면) 대상 버퍼 (utf8)
  * @param	destsize		대상 버퍼 크기
@@ -1531,7 +1531,7 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
 	return size;
 }
 
-/*!
+/**
  * @brief utf16 -> ucs4 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
  * @param[out]	dest	(널값이 아니면) 대상 버퍼 (ucs4)
  * @param	destsize		대상 버퍼 크기
@@ -1693,7 +1693,7 @@ size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t
 	return size;
 }
 
-/*!
+/**
  * @brief utf16 -> ucs4 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
  * @param[out]	dest	(널값이 아니면) 대상 버퍼 (utf16)
  * @param	destsize		대상 버퍼 크기

@@ -1456,6 +1456,11 @@ QN_INLINE bool qn_point_between(const qnPoint* pt, int32_t v)
 	return v > pt->min && v < pt->max;
 }
 
+QN_INLINE bool qn_point_eq(const qnPoint* left, const qnPoint* right)
+{
+	return left->x == right->x && left->y == right->y;
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////

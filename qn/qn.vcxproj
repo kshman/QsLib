@@ -188,6 +188,7 @@
     <ClCompile Include="qn_datetime.c" />
     <ClCompile Include="qn_debug.c" />
     <ClCompile Include="qn_file.c" />
+    <ClCompile Include="qn_gam.c" />
     <ClCompile Include="qn_hash.c" />
     <ClCompile Include="qn_math.c" />
     <ClCompile Include="qn_mem.c" />

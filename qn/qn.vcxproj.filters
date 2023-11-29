@@ -152,6 +152,9 @@
     <ClCompile Include="qn_math.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="qn_gam.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

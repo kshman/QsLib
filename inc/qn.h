@@ -129,7 +129,8 @@ QN_EXTC_BEGIN
 #define QN_STMT_END						while(0)
 
 // function support
-#define _QN_GET_MAC_3(_1,_2,_3,N, ...)	N
+#define _QN_GET_MAC_2(_1,_2,N,...)		N
+#define _QN_GET_MAC_3(_1,_2,_3,N,...)	N
 #define _QN_STRING(x)					#x
 #define _QN_UNICODE(x)					L##x
 #define _QN_CONCAT_2(x,y)				x##y
@@ -152,10 +153,11 @@ QN_EXTC_BEGIN
 #define QN_CLAMP(v,vmin,vmax)			((v)<(vmin)?(vmin):(v)>(vmax)?(vmax):(v))
 
 #define QN_BIT(bit)						(1<<(bit))
-#define QN_BIT_TEST(v,bit)				(((v)&(1<<(bit)))!=0)
 #define QN_MASK(v,mask)					((mask==0)?(v):(v)&(mask))
-#define QN_MASK_TEST(v,mask)			(((v)&(mask))!=0)
-#define QN_MASK_SET(pv,mask,isset)		((isset)?((*(pv))|=(mask)):((*(pv))&=~(mask)))
+#define QN_SET_BIT(pv,bit,isset)		((isset)?((*(pv))|=(1<<(bit))):((*(pv))&=~(1<<(bit))))
+#define QN_SET_MASK(pv,mask,isset)		((isset)?((*(pv))|=(mask)):((*(pv))&=~(mask)))
+#define QN_TEST_BIT(v,bit)				(((v)&(1<<(bit)))!=0)
+#define QN_TEST_MASK(v,mask)			(((v)&(mask))!=0)
 
 // constant
 #define QN_USEC_PER_SEC					1000000
@@ -170,44 +172,36 @@ QN_EXTC_BEGIN
 //////////////////////////////////////////////////////////////////////////
 // types
 
-/*! @brief handle */
-typedef void*							pointer_t;
-/*! @brief const handle */
-typedef const void*						cpointer_t;
-/*! @brief handle const */
-typedef void const*						pointerc_t;
-/*! @brief function pointer */
-typedef void (*func_t)(void);
-/*! @brief parameter function pointer */
-typedef void (*paramfunc_t)(pointer_t);
+typedef intptr_t						nint_t;
+typedef uintptr_t						nuint_t;
 
 #if _QN_WINDOWS_
-/*! @brief 32bit unicode */
-typedef uint32_t						uchar4_t;
-/*! @brief 16bit unicode */
-typedef wchar_t							uchar2_t;
+typedef uint32_t						uchar4_t;			/** @brief 4byte(32bit) unicode */
+typedef wchar_t							uchar2_t;			/** @brief 2byte(16bit) unicode */
 #else
-/*! @brief 32bit unicode */
-typedef wchar_t							uchar4_t;
-/*! @brief 16bit unicode */
-typedef uint16_t						uchar2_t;
+typedef wchar_t							uchar4_t;			/** @brief 4byte(32bit) unicode */
+typedef uint16_t						uchar2_t;			/** @brief 2byte(16bit) unicode */
 #endif
 
-/*! @brief half int */
-typedef uint16_t						half_t;
+typedef uint16_t						half_t;				/** @brief half int */
 
-/*! @brief variant 16bit short */
-typedef union vint16_t
+typedef void*							pointer_t;			/** @brief handle */
+typedef const void*						cpointer_t;			/** @brief const handle */
+typedef void (*func_t)(void);								/** @brief function handle */
+typedef void (*paramfunc_t)(pointer_t);						/** @brief parameter function handle */
+
+/** @brief variant 16bit short */
+typedef union vshort_t
 {
 	struct
 	{
 		uint8_t			l, h;
 	} b;
 	uint16_t			w;
-} vint16_t;
+} vint16_t, vshort_t;
 
-/*! @brief variant 32bit int */
-typedef union vint32_t
+/** @brief variant 32bit int */
+typedef union vint_t
 {
 	struct
 	{
@@ -218,10 +212,10 @@ typedef union vint32_t
 		uint16_t		l, h;
 	} w;
 	uint32_t			dw;
-} vint32_t;
+} vint32_t, vint_t;
 
-/*! @brief variant 64bit long long */
-typedef union vint64_t
+/** @brief variant 64bit long long */
+typedef union vlong_t
 {
 	struct
 	{
@@ -237,9 +231,9 @@ typedef union vint64_t
 		uint32_t		l, h;
 	} dw;
 	uint64_t			q;
-} vint64_t;
+} vint64_t, vlong_t;
 
-/*! @brief any value */
+/** @brief any value */
 typedef union any_t
 {
 	bool				b;
@@ -260,12 +254,26 @@ typedef union any_t
 	uint8_t				data[8];
 } any_t;
 
-/*! @brief function parameter */
+/** @brief function parameter */
 typedef struct funcparam_t
 {
 	paramfunc_t			func;
 	pointer_t			data;
 } funcparam_t;
+
+// cast
+#define qn_ptrcast_int(v)				((int)(intptr_t)(v))
+#define qn_ptrcast_uint(v)				((uint32_t)(uintptr_t)(v))
+#define qn_ptrcast_size(v)				((size_t)(uintptr_t)(v))
+#define qn_ptrcast_float(v)				(*(float*)&(v))
+#define qn_castptr(v)					((intptr_t)(v))
+#define qn_castptr_float(v)				(*(intptr_t*)&(v))
+#if _QN_64_
+#define qn_ptrcast_long(v)				((int64_t)(intptr_t)(v))
+#define qn_ptrcast_ulong(v)				((uint64_t)(uintptr_t)(v))
+#define qn_ptrcast_double(v)			(*(double*)&(v))
+#define qn_castptr_double(v)			(*(intptr_t*)&(v))
+#endif
 
 // conditions
 #define qn_ret_if_fail(x)				QN_STMT_BEGIN{ if (!(x)) return; }QN_STMT_END
@@ -291,7 +299,7 @@ QNAPI void qn_atexitp(paramfunc_t func, pointer_t data);
 
 QNAPI int qn_debug_assert(const char* expr, const char* mesg, const char* filename, int line);
 QNAPI int qn_debug_halt(const char* cls, const char* msg);
-QNAPI void qn_debug_output(bool breakpoint, const char* fmt, ...);
+QNAPI int qn_debug_output(bool breakpoint, const char* fmt, ...);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -335,7 +343,7 @@ QNAPI void qn_mpffree(pointer_t ptr);
 // hash & sort
 QNAPI size_t qn_hashptr(cpointer_t p);
 QNAPI size_t qn_hashnow(void);
-QNAPI size_t qn_hashfn(int32_t prime8, func_t func, pointer_t data);
+QNAPI size_t qn_hashfn(int prime8, func_t func, pointer_t data);
 QNAPI size_t qn_hashcrc(const uint8_t* data, size_t size);
 QNAPI uint32_t qn_primenear(uint32_t value);
 QNAPI uint32_t qn_primeshift(uint32_t value, uint32_t min, uint32_t* shift);
@@ -456,7 +464,7 @@ QNAPI void qn_usleep(uint32_t microseconds);
 QNAPI void qn_ssleep(uint32_t seconds);
 QNAPI void qn_msleep(uint64_t microseconds);
 
-/*! @brief date time */
+/** @brief date time */
 typedef struct qnDateTime
 {
 	union
@@ -487,7 +495,7 @@ QNAPI void qn_utc(qnDateTime* dt);
 QNAPI void qn_stod(double sec, qnDateTime* dt);
 QNAPI void qn_mstod(uint32_t msec, qnDateTime* dt);
 
-/*! @brief timer */
+/** @brief timer */
 typedef struct qnTimer
 {
 	double				abstime;
@@ -514,7 +522,7 @@ QNAPI void qn_timer_set_manual(qnTimer* self, bool value);
 //////////////////////////////////////////////////////////////////////////
 // i/o
 
-/*! @brief file io */
+/** @brief file io */
 typedef struct qnIoFuncDesc
 {
 	int(*read)(pointer_t handle, pointer_t buffer, int offset, int size);
@@ -527,13 +535,13 @@ typedef struct qnIoFuncDesc
 //////////////////////////////////////////////////////////////////////////
 // disk i/o
 
-/*! @brief directory */
+/** @brief directory */
 typedef struct qnDir qnDir;
 
-/*! @brief file */
+/** @brief file */
 typedef struct qnFile qnFile;
 
-/*! @brief file info */
+/** @brief file info */
 typedef struct qnFileInfo
 {
 	int16_t				type;
@@ -545,7 +553,7 @@ typedef struct qnFileInfo
 	char				name[256];
 } qnFileInfo;
 
-/*! @brief file access */
+/** @brief file access */
 typedef struct qnFileAccess
 {
 #if _MSC_VER
@@ -559,7 +567,7 @@ typedef struct qnFileAccess
 #endif
 } qnFileAccess;
 
-/*! @brief seek */
+/** @brief seek */
 typedef enum qnSeek
 {
 	QN_SEEK_BEGIN = 0,
@@ -567,7 +575,7 @@ typedef enum qnSeek
 	QN_SEEK_END = 2,
 } qnSeek;
 
-/*! @brief file flag */
+/** @brief file flag */
 typedef enum qnFileFlag
 {
 	QN_FF_READ = 0x1,
@@ -613,10 +621,10 @@ QNAPI const wchar_t* qn_dir_read_l(qnDir* self);
 //////////////////////////////////////////////////////////////////////////
 // xml
 
-/*! @brief ml unit */
+/** @brief ml unit */
 typedef struct qnMlu qnMlu;
 
-/*! @brief ml tag */
+/** @brief ml tag */
 typedef struct qnMlTag
 {
 	char*				name;
@@ -700,9 +708,13 @@ QNAPI bool qn_mltag_remove_arg(qnMlTag* ptr, const char* name);
 
 
 //////////////////////////////////////////////////////////////////////////
-// object
+// qm(qn gam)
 
-struct _qnvt_gam
+#define qvt_name(type)					struct _vt##type
+#define qvt_cast(g,type)				((struct _vt##type*)((qnGam*)(g))->vt)
+#define qm_cast(g,type)					((type*)(g))
+
+qvt_name(qnGam)
 {
 	const char* name;
 	void (*dispose)(pointer_t);
@@ -710,12 +722,17 @@ struct _qnvt_gam
 
 typedef struct qnGam
 {
-	struct _qnvt_gam*	vt;
+	qvt_name(qnGam)*	vt;
+	volatile int		ref;
+	pointer_t			ptr;
 } qnGam;
 
-#define qn_set_vt(g,pvt)				((qnGam*)(g))->vt=(struct _qnvt_gam*)pvt;
-#define qn_get_vt(g,type)				((struct type*)((qnGam*)(g))->vt)
-#define qn_gam(g,type)					((type*)(g))
-#define qn_dispose(g)					((g)?((qnGam*)(g))->vt->dispose(p):(void)0)
+QNAPI pointer_t qm_init(pointer_t g, pointer_t vt);
+QNAPI pointer_t qm_load(pointer_t g);
+QNAPI pointer_t qm_unload(pointer_t g);
+
+QNAPI int qm_get_ref(pointer_t g);
+QNAPI pointer_t qm_get_ptr(pointer_t g);
+QNAPI pointer_t qm_set_ptr(pointer_t g, pointer_t ptr);
 
 QN_EXTC_END

@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 #include "qn.h"
 
-/*!
+/**
  * @brief 오류처리용 assert
  * @param	expr		표현
  * @param	mesg		오류 내용
@@ -37,7 +37,7 @@ int qn_debug_assert(const char* expr, const char* mesg, const char* filename, in
 	return 0;
 }
 
-/*!
+/**
  * @brief HALT 메시지
  * @param	cls	클래스 이름
  * @param	msg	출력할 메시지
@@ -79,7 +79,7 @@ int qn_debug_halt(const char* cls, const char* msg)
 	return 0;
 }
 
-void qn_debug_output(bool breakpoint, const char* fmt, ...)
+int qn_debug_output(bool breakpoint, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -103,4 +103,6 @@ void qn_debug_output(bool breakpoint, const char* fmt, ...)
 		raise(SIGTRAP);
 #endif
 	}
+
+	return (int)size;
 }

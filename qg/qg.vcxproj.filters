@@ -21,7 +21,10 @@
     <ClInclude Include="..\inc\qg.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\inc\qmkc.h">
+    <ClInclude Include="..\inc\qkmc.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="qg_internal.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -35,7 +38,7 @@
     <ClCompile Include="qg_stub_sdl.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="qmkc.c">
+    <ClCompile Include="qkmc.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,0 +1,231 @@
+﻿#pragma once
+
+//////////////////////////////////////////////////////////////////////////
+// key board 
+
+// 수정 대상: VK키를 다른 종류로 바꾸는게 좋겟음. 예컨데 스캔코드
+typedef enum qIkKey
+{
+	QIK_NONE						= 0,
+	QIK_BS							= 0x08,	// BACKSPACE
+	QIK_TAB							= 0x09,
+	QIK_RETURN						= 0x0D,
+	QIK_PAUSE						= 0x13,
+	QIK_CAPSLOCK					= 0x14,
+	QIK_ESC							= 0x1B,
+	QIK_SPACE						= 0x20,
+	QIK_PGUP						= 0x21,	// PRIOR PAGE
+	QIK_PGDN						= 0x22,	// NEXT PAGE
+	QIK_END							= 0x23,
+	QIK_HOME						= 0x24,
+	QIK_LEFT						= 0x25,
+	QIK_UP							= 0x26,
+	QIK_RIGHT						= 0x27,
+	QIK_DOWN						= 0x28,
+	QIK_PRTSCR	        			= 0x2C,	// SNAPSHOT
+	QIK_INS							= 0x2D,	// INSERT
+	QIK_DEL							= 0x2E,	// DELETE
+	QIK_0							= 0x30,
+	QIK_1							= 0x31,
+	QIK_2							= 0x32,
+	QIK_3							= 0x33,
+	QIK_4							= 0x34,
+	QIK_5							= 0x35,
+	QIK_6							= 0x36,
+	QIK_7							= 0x37,
+	QIK_8							= 0x38,
+	QIK_9							= 0x39,
+	QIK_A							= 0x41,
+	QIK_B							= 0x42,
+	QIK_C							= 0x43,
+	QIK_D							= 0x44,
+	QIK_E							= 0x45,
+	QIK_F							= 0x46,
+	QIK_G							= 0x47,
+	QIK_H							= 0x48,
+	QIK_I							= 0x49,
+	QIK_J							= 0x4A,
+	QIK_K							= 0x4B,
+	QIK_L							= 0x4C,
+	QIK_M							= 0x4D,
+	QIK_N							= 0x4E,
+	QIK_O							= 0x4F,
+	QIK_P							= 0x50,
+	QIK_Q							= 0x51,
+	QIK_R							= 0x52,
+	QIK_S							= 0x53,
+	QIK_T							= 0x54,
+	QIK_U							= 0x55,
+	QIK_V							= 0x56,
+	QIK_W							= 0x57,
+	QIK_X							= 0x58,
+	QIK_Y							= 0x59,
+	QIK_Z							= 0x5A,
+	QIK_LWIN						= 0x5B,	// LEFT WIN / META / COMMAND
+	QIK_RWIN						= 0x5C,	// RIGHT WIN / META / COMMAND
+	QIK_APPS						= 0x5D,
+	QIK_NUM_0						= 0x60,
+	QIK_NUM_1						= 0x61,
+	QIK_NUM_2						= 0x62,
+	QIK_NUM_3						= 0x63,
+	QIK_NUM_4						= 0x64,
+	QIK_NUM_5						= 0x65,
+	QIK_NUM_6						= 0x66,
+	QIK_NUM_7						= 0x67,
+	QIK_NUM_8						= 0x68,
+	QIK_NUM_9						= 0x69,
+	QIK_NUM_MUL						= 0x6A,	// *
+	QIK_NUM_ADD						= 0x6B,	// +
+	QIK_NUM_SEP		       			= 0x6C,	// ,
+	QIK_NUM_SUB	        			= 0x6D,	// -
+	QIK_NUM_DOT						= 0x6E,	// .
+	QIK_NUM_DIV						= 0x6F,	// /
+	QIK_F1							= 0x70,
+	QIK_F2							= 0x71,
+	QIK_F3							= 0x72,
+	QIK_F4							= 0x73,
+	QIK_F5							= 0x74,
+	QIK_F6							= 0x75,
+	QIK_F7							= 0x76,
+	QIK_F8							= 0x77,
+	QIK_F9							= 0x78,
+	QIK_F10							= 0x79,
+	QIK_F11							= 0x7A,
+	QIK_F12							= 0x7B,
+	QIK_F13							= 0x7C,
+	QIK_F14							= 0x7D,
+	QIK_F15							= 0x7E,
+	QIK_F16							= 0x7F,
+	QIK_F17							= 0x80,
+	QIK_F18							= 0x81,
+	QIK_F19							= 0x82,
+	QIK_F20							= 0x83,
+	QIK_F21							= 0x84,
+	QIK_F22							= 0x85,
+	QIK_F23							= 0x86,
+	QIK_F24							= 0x87,
+	QIK_NUMLOCK						= 0x90,
+	QIK_SCRL						= 0x91,	// SCROLL LOCK
+	QIK_LSHIFT						= 0xA0,	// LEFT SHIFT
+	QIK_RSHIFT						= 0xA1,	// RIGHT SHIFT
+	QIK_LCTRL		     			= 0xA2,	// LEFT CONTROL
+	QIK_RCTRL	        			= 0xA3,	// RIGHT CONTROL	
+	QIK_LALT						= 0xA4,	// LEFT ALT / MENU / OPTION
+	QIK_RALT						= 0xA5,	// RIGHT ALT / MENU / OPTION
+	QIK_SEMI						= 0xBB,	// ;:
+	QIK_COMMA						= 0xBC,	// ,<
+	QIK_ADD							= 0xBB,	// =+
+	QIK_SUB							= 0xBD,	// -_
+	QIK_DOT							= 0xBE,	// .>
+	QIK_SLASH						= 0xBF,	// /?
+	QIK_TILT						= 0xC0,	// `~
+	QIK_LBR							= 0xDB, // [{
+	QIK_BACKSLASH					= 0xDC,	// \|
+	QIK_RBR							= 0xDD,	// ]}
+	QIK_QUOTE						= 0xDE, // '"
+	QIK_PLAY						= 0xFA,
+	QIK_ZOOM						= 0xFB,
+	QIK_MAX_VALUE					= 0xFF,
+} qIkKey;
+
+typedef enum qIkMask
+{
+	QIKM_SHIFT						= QN_BIT(0),
+	QIKM_CTRL						= QN_BIT(1),
+	QIKM_ALT						= QN_BIT(2),
+	QIKM_CAPS						= QN_BIT(12),
+	QIKM_SCRL						= QN_BIT(13),
+	QIKM_NUM						= QN_BIT(14),
+} qIkMask;
+
+
+//////////////////////////////////////////////////////////////////////////
+// mouse button
+typedef enum qImButton
+{
+	QIM_NONE						= 0,
+	QIM_LEFT						= 1,
+	QIM_RIGHT						= 2,
+	QIM_MIDDLE						= 3,
+	QIM_X1							= 4,
+	QIM_X2							= 5,
+} qImButton;
+
+typedef enum qImMask
+{
+	QIMM_LEFT						= QN_BIT(QIM_LEFT),
+	QIMM_RIGHT						= QN_BIT(QIM_RIGHT),
+	QIMM_MIDDLE						= QN_BIT(QIM_MIDDLE),
+	QIMM_X1							= QN_BIT(QIM_X1),
+	QIMM_X2							= QN_BIT(QIM_X2),
+
+	QIMM_WHEELUP					= 0x0100,
+	QIMM_WHEELDOWN					= 0x0200,
+	QIMM_DOUBLE						= 0x1000,
+} qImMask;
+
+typedef enum qimTrack
+{
+	QIMT_MOVE						= 0,
+	QIMT_DOWN						= 1,
+	QIMT_UP							= 2,
+} qimTrack;
+
+
+//////////////////////////////////////////////////////////////////////////
+// controller key
+
+typedef enum qIcButton
+{
+	QIC_NONE						= 0,
+	QIC_UP							= 1,
+	QIC_DOWN						= 2,
+	QIC_LEFT						= 3,
+	QIC_RIGHT						= 4,
+	QIC_START						= 5,
+	QIC_BACK						= 6,
+	QIC_THB_LEFT					= 7,
+	QIC_THB_RIGHT					= 8,
+	QIC_SHD_LEFT					= 9,
+	QIC_SHD_RIGHT					= 10,
+	QIC_A							= 11,
+	QIC_B							= 12,
+	QIC_X							= 13,
+	QIC_Y							= 14,
+} qIcButton;
+
+typedef enum qIcMask
+{
+	QICM_UP							 = QN_BIT(QIC_UP),
+	QICM_DOWN						 = QN_BIT(QIC_DOWN),
+	QICM_LEFT						 = QN_BIT(QIC_LEFT),
+	QICM_RIGHT						 = QN_BIT(QIC_RIGHT),
+	QICM_START						 = QN_BIT(QIC_START),
+	QICM_BACK						 = QN_BIT(QIC_BACK),
+	QICM_THB_LEFT					 = QN_BIT(QIC_THB_LEFT),
+	QICM_THB_RIGHT					 = QN_BIT(QIC_THB_RIGHT),
+	QICM_SHD_LEFT					 = QN_BIT(QIC_SHD_LEFT),
+	QICM_SHD_RIGHT					 = QN_BIT(QIC_SHD_RIGHT),
+	QICM_A							 = QN_BIT(QIC_A),
+	QICM_B							 = QN_BIT(QIC_B),
+	QICM_X							 = QN_BIT(QIC_X),
+	QICM_Y							 = QN_BIT(QIC_Y),
+} qIcMask;
+
+
+//////////////////////////////////////////////////////////////////////////
+// touch
+
+typedef enum qIcTouch
+{
+	QITT_BEGIN						= 1,
+	QITT_MOVE						= 2,
+	QITT_END						= 3,
+} qIcTouch;
+
+
+//////////////////////////////////////////////////////////////////////////
+// function
+QNAPI const char* qikstr(qIkKey key);
+QNAPI const char* qimstr(qImButton button);
+QNAPI const char* qicstr(qIcButton button);
