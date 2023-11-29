@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "qg.h"
-#include "qg_internal.h"
+#include "qg_kmc.h"
+#include "qg_stub.h"
 #include "SDL/SDL_syswm.h"
 #include "SDL/SDL_keyboard.h"
 

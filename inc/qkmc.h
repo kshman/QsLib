@@ -112,9 +112,9 @@ typedef enum qIkKey
 	QIK_RCTRL	        			= 0xA3,	// RIGHT CONTROL	
 	QIK_LALT						= 0xA4,	// LEFT ALT / MENU / OPTION
 	QIK_RALT						= 0xA5,	// RIGHT ALT / MENU / OPTION
-	QIK_SEMI						= 0xBB,	// ;:
-	QIK_COMMA						= 0xBC,	// ,<
+	QIK_SEMI						= 0xBA,	// ;:
 	QIK_ADD							= 0xBB,	// =+
+	QIK_COMMA						= 0xBC,	// ,<
 	QIK_SUB							= 0xBD,	// -_
 	QIK_DOT							= 0xBE,	// .>
 	QIK_SLASH						= 0xBF,	// /?
@@ -123,8 +123,6 @@ typedef enum qIkKey
 	QIK_BACKSLASH					= 0xDC,	// \|
 	QIK_RBR							= 0xDD,	// ]}
 	QIK_QUOTE						= 0xDE, // '"
-	QIK_PLAY						= 0xFA,
-	QIK_ZOOM						= 0xFB,
 	QIK_MAX_VALUE					= 0xFF,
 } qIkKey;
 

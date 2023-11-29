@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="헤더 파일\internal">
+      <UniqueIdentifier>{28e86586-78e2-40cd-ac6a-97f1c40c5263}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -24,8 +27,11 @@
     <ClInclude Include="..\inc\qkmc.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="qg_internal.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="qg_stub.h">
+      <Filter>헤더 파일\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="qg_kmc.h">
+      <Filter>헤더 파일\internal</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

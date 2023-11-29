@@ -156,7 +156,8 @@
     <ClInclude Include="..\inc\qg.h" />
     <ClInclude Include="..\inc\qkmc.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="qg_internal.h" />
+    <ClInclude Include="qg_stub.h" />
+    <ClInclude Include="qg_kmc.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.c">
