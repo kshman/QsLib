@@ -33,6 +33,12 @@
     <ClInclude Include="qg_kmc.h">
       <Filter>헤더 파일\internal</Filter>
     </ClInclude>
+    <ClInclude Include="qg_es2.h">
+      <Filter>헤더 파일\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="qg_es2func.h">
+      <Filter>헤더 파일\internal</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="qg_stub.c">

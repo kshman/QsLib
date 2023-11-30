@@ -42,7 +42,8 @@ qgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, 
 		return NULL;
 	}
 
-	qg_stub_instance = qm_cast(self, qgStub);
+	_rdh_reset(self);
+
 	return self;
 }
 
@@ -60,7 +61,6 @@ void _rdh_construct(pointer_t g, qgStub* stub)
 {
 	qgRdh* self = qm_cast(g, qgRdh);
 	self->stub = stub;
-	_rdh_reset(self);
 }
 
 void _rdh_finalize(pointer_t g)
@@ -93,6 +93,9 @@ void _rdh_reset(pointer_t g)
 	for (size_t i = 0; i < QN_COUNTOF(self->param.m); i++)
 		qn_mat4_rst(&self->param.m[i]);
 	qn_color_set(&self->param.clear, 0.2f, 0.2f, 0.2f, 1.0f);
+
+	//
+	qvt_cast(self, qgRdh)->_reset(self);
 }
 
 const qgDeviceInfo* qg_rdh_get_device_info(pointer_t g)
@@ -172,6 +175,9 @@ bool qg_rdh_begin(pointer_t g)
 {
 	qn_retval_if_fail(g, false);
 	qgRdh* self = qm_cast(g, qgRdh);
+
+	self->info.flush = false;
+
 	return qvt_cast(self, qgRdh)->begin(self);
 }
 
@@ -184,6 +190,22 @@ void qg_rdh_end(pointer_t g)
 	self->info.flush = true;
 
 	qvt_cast(self, qgRdh)->end(self);
+}
+
+void qg_rdh_flush(pointer_t g)
+{
+	qn_ret_if_fail(g);
+	qgRdh* self = qm_cast(g, qgRdh);
+
+	if (!self->info.flush)
+	{
+		qn_debug_output(true, "RDH: call end before flush\n");
+		qg_rdh_end(self);
+	}
+
+	qvt_cast(self, qgRdh)->flush(self);
+
+	self->info.frames++;
 }
 
 void qg_rdh_set_param_vec4(pointer_t g, int at, const qnVec4* v)

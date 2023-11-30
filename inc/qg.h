@@ -26,6 +26,7 @@ typedef enum qgClrFmt
 	QGCF16_L,
 	QGCF16_RGB,
 	QGCF16_RGBA,
+	QGCF32_RGB,
 	QGCF32_RGBA,
 	QGCF32_BGRA,
 	QGCF16F_R,
@@ -130,7 +131,8 @@ typedef enum qgFlag
 	QGFLAG_RESIZABLE	= QN_BIT(2),
 	QGFLAG_FOCUS		= QN_BIT(3),
 	QGFLAG_IDLE			= QN_BIT(4),
-	QGFLAG_DITHER		= QN_BIT(5),
+	QGFLAG_DITHER		= QN_BIT(16),
+	QGFLAG_MSAA			= QN_BIT(17),
 } qgFlag;
 
 typedef enum qgStti
@@ -282,6 +284,7 @@ QN_LIST_DECL(qgListEvent, qgEvent);
 typedef struct qgDeviceInfo
 {
 	char				name[64];
+	char				renderer[64];
 	char				vendor[64];
 	int					renderer_version;
 	int					shader_version;
@@ -334,11 +337,12 @@ struct qgStub
 	qnGam				base;
 
 	pointer_t			handle;
+	pointer_t			oshandle;
 
 	qgFlag				flags;
 	qgStti				sttis;
 	uint32_t			delay;
-	int32_t				_pad[1];
+	qgClrFmt			clrfmt;
 
 	qnTimer*			timer;
 	double				fps;
@@ -407,14 +411,19 @@ qvt_name(qgRdh)
 	qvt_name(qnGam)		base;
 	bool (*_construct)(pointer_t, int);
 	void (*_finalize)(pointer_t);
+	void (*_reset)(pointer_t);
 
 	bool (*begin)(pointer_t);
 	void (*end)(pointer_t);
+	void (*flush)(pointer_t);
+
 	bool (*primitive_begin)(pointer_t, qgTopology, int, int, pointer_t*);
 	void (*primitive_end)(pointer_t);
 	bool (*indexed_primitive_begin)(pointer_t, qgTopology, int, int, pointer_t*, int, int, pointer_t*);
 	void (*indexed_primitive_end)(pointer_t);
 };
+
+QNAPI qgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, int flags);
 
 QNAPI const qgDeviceInfo* qg_rdh_get_device_info(pointer_t g);
 QNAPI const qgRenderInfo* qg_rdh_get_render_info(pointer_t g);
@@ -423,8 +432,10 @@ QNAPI const qgRenderParam* qg_rdh_get_render_param(pointer_t g);
 
 QNAPI bool qg_rdh_loop(pointer_t g);
 QNAPI bool qg_rdh_poll(pointer_t g, qgEvent* ev);
+
 QNAPI bool qg_rdh_begin(pointer_t g);
 QNAPI void qg_rdh_end(pointer_t g);
+QNAPI void qg_rdh_flush(pointer_t g);
 
 QNAPI void qg_rdh_set_param_vec3(pointer_t g, int at, const qnVec3* v);
 QNAPI void qg_rdh_set_param_vec4(pointer_t g, int at, const qnVec4* v);

@@ -44,8 +44,6 @@ bool _sdl_construct(pointer_t g, struct stubParam* param)
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 		return false;
 
-	SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengles2");
-
 	if (!param->title)
 		param->title = "QG";
 
@@ -71,12 +69,13 @@ bool _sdl_construct(pointer_t g, struct stubParam* param)
 	}
 
 	SDL_GetWindowWMInfo(self->window, &self->wminfo);
+	self->base.handle = self->window;
 #if _QN_WINDOWS_
-	self->base.handle = self->wminfo.info.win.window;
+	self->base.oshandle = self->wminfo.info.win.window;
 #elif _QN_ANDROID_
-	self->base.handle = self->wminfo.info.android.window;
+	self->base.oshandle = self->wminfo.info.android.window;
 #elif _QN_UNIX_
-	self->base.handle = self->wminfo.info.x11.window;
+	self->base.oshandle = self->wminfo.info.x11.window;
 #endif
 
 	SDL_GetWindowSize(self->window, &self->base.size.width, &self->base.size.height);

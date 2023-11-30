@@ -4,20 +4,26 @@ int main()
 {
 	qn_runtime(NULL);
 
-	qgStub* stub = qg_stub_new("QG TEST", 800, 600, QGFLAG_IDLE | QGFLAG_RESIZABLE);
-	if (!stub)
+	qgRdh* rdh = qg_rdh_new(NULL, "QG TEST", 800, 600, QGFLAG_IDLE | QGFLAG_RESIZABLE);
+	if (!rdh)
 		return 1;
 
-	while (qg_stub_loop(stub))
+	while (qg_rdh_loop(rdh))
 	{
 		qgEvent ev;
-		while (qg_stub_poll(stub, &ev))
+		while (qg_rdh_poll(rdh, &ev))
 		{
 			qn_debug_output(false, "msg[%d]\n", ev.ev);
 		}
+
+		if (qg_rdh_begin(rdh))
+		{
+			qg_rdh_end(rdh);
+			qg_rdh_flush(rdh);
+		}
 	}
 
-	qm_unload(stub);
+	qm_unload(rdh);
 
 	return 0;
 }
