@@ -723,7 +723,7 @@ qvt_name(qnGam)
 typedef struct qnGam
 {
 	qvt_name(qnGam)*	vt;
-	volatile int		ref;
+	volatile intptr_t	ref;
 	pointer_t			ptr;
 } qnGam;
 

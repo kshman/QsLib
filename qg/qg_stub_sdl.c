@@ -7,10 +7,17 @@
 
 //////////////////////////////////////////////////////////////////////////
 // SDL 스터브
-qvt_name(qgStub) _vt_sdl_stub =
+bool _sdl_construct(pointer_t g, struct stubParam* param);
+void _sdl_finalize(pointer_t g);
+bool _sdl_poll(pointer_t g);
+
+qvt_name(qgStub) _vt_sdl =
 {
 	.base.name = "SDLRenderStub",
 	.base.dispose = qg_stub_dispose,
+	._construct = _sdl_construct,
+	._finalize = _sdl_finalize,
+	._poll = _sdl_poll,
 };
 
 typedef struct sdlStub
@@ -23,44 +30,44 @@ typedef struct sdlStub
 	double				active;
 } sdlStub;
 
-qgStub* qg_stub_new(const char* driver, const char* title, int width, int height, int flags)
+pointer_t _stub_allocator()
 {
-	if (driver != NULL && qn_stricmp(driver, "sdl") == 0)
-		return NULL;
+	sdlStub* self = qn_alloc_zero_1(sdlStub);
+	qn_retval_if_fail(self, NULL);
+	return qm_init(self, &_vt_sdl);
+}
+
+bool _sdl_construct(pointer_t g, struct stubParam* param)
+{
+	sdlStub* self = qm_cast(g, sdlStub);
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-		return NULL;
+		return false;
 
 	SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengles2");
 
-	sdlStub* self = qn_alloc_zero_1(sdlStub);
-	qn_retval_if_fail(self, NULL);
-
-	if (!_stub_on_init(self))
-	{
-		qn_free(self);
-		return NULL;
-	}
-
-	if (!title)
-		title = "QG stub";
+	if (!param->title)
+		param->title = "QG";
 
 	int wflags = SDL_WINDOW_OPENGL;
-	if (QN_TEST_MASK(flags, QGFLAG_FULLSCREEN))
+	if (QN_TEST_MASK(param->flags, QGFLAG_FULLSCREEN))
 		wflags |= SDL_WINDOW_FULLSCREEN;
-	if (QN_TEST_MASK(flags, QGFLAG_BORDERLESS))
+	if (QN_TEST_MASK(param->flags, QGFLAG_BORDERLESS))
 		wflags |= SDL_WINDOW_BORDERLESS;
-	if (QN_TEST_MASK(flags, QGFLAG_RESIZABLE))
+	if (QN_TEST_MASK(param->flags, QGFLAG_RESIZABLE))
 		wflags |= SDL_WINDOW_RESIZABLE;
-	if (QN_TEST_MASK(flags, QGFLAG_FOCUS))
+	if (QN_TEST_MASK(param->flags, QGFLAG_FOCUS))
 		wflags |= SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS;
 
-	self->window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, wflags);
+	self->window = SDL_CreateWindow(
+		param->title,
+		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+		param->width, param->height,
+		wflags);
 	if (self->window == NULL)
 	{
 		qn_debug_output(false, "SDL: unable to initialize (%d)\n", SDL_GetError());
-		qg_stub_dispose(self);
-		return NULL;
+		return false;
 	}
 
 	SDL_GetWindowWMInfo(self->window, &self->wminfo);
@@ -77,44 +84,27 @@ qgStub* qg_stub_new(const char* driver, const char* title, int width, int height
 	self->base.bound.right = self->base.bound.left + self->base.size.width;
 	self->base.bound.bottom = self->base.bound.top + self->base.size.height;
 
-	SDL_Surface* surface = SDL_GetWindowSurface(self->window);
-
-	self->base.flags = flags;
-	self->base.stats = QGSTI_ACTIVE;
-
 	self->active = qn_timer_get_abs(self->base.timer);
 
-	return qm_init(self, &_vt_sdl_stub);
+	return true;
 }
 
-void qg_stub_dispose(pointer_t g)
+void _sdl_finalize(pointer_t g)
 {
 	sdlStub* self = qm_cast(g, sdlStub);
 
 	if (self->window)
 		SDL_DestroyWindow(self->window);
 
-	_stub_on_disp(self);
-	qn_free(self);
-
 	SDL_Quit();
 }
 
-bool qg_stub_close(pointer_t g)
-{
-	sdlStub* self = qm_cast(g, sdlStub);
-
-	QN_SET_MASK(&self->base.stats, QGSTI_EXIT, true);
-
-	return true;
-}
-
-static double _stub_update_active(sdlStub* self, bool isactive)
+static double _sdl_mesg_active(sdlStub* self, bool isactive)
 {
 	double now = qn_timer_get_abs(self->base.timer);
 	double adv = now - self->active;
 	self->active = now;
-	QN_SET_MASK(&self->base.stats, QGSTI_ACTIVE, isactive);
+	QN_SET_MASK(&self->base.sttis, QGSTTI_ACTIVE, isactive);
 
 	qgEvent e =
 	{
@@ -127,7 +117,7 @@ static double _stub_update_active(sdlStub* self, bool isactive)
 	return adv;
 }
 
-static void _stub_layout(sdlStub* self)
+static void _sdl_mesg_layout(sdlStub* self)
 {
 	qnPoint prev = self->base.size;
 
@@ -148,7 +138,7 @@ static void _stub_layout(sdlStub* self)
 	}
 }
 
-static void _stub_keyboard(sdlStub* self, SDL_KeyboardEvent* se, bool isdown)
+static void _sdl_mesg_key(sdlStub* self, SDL_KeyboardEvent* se, bool isdown)
 {
 	qIkMask mask = _sdl_kmod_to_qikm(se->keysym.mod);
 	self->base.key.mask = mask;
@@ -168,14 +158,14 @@ static void _stub_keyboard(sdlStub* self, SDL_KeyboardEvent* se, bool isdown)
 	qg_stub_add_event(self, &e);
 }
 
-static void _stub_mouse_point(sdlStub* self, int x, int y)
+static void _sdl_set_mouse_point(sdlStub* self, int x, int y)
 {
 	qgUimMouse* m = &self->base.mouse;
 	m->last = m->pt;
 	qn_point_set(&m->pt, x, y);
 }
 
-static qImButton _stub_mouse_mask(sdlStub* self, int button, bool isdown)
+static qImButton _sdl_set_mouse_mask(sdlStub* self, int button, bool isdown)
 {
 	switch (button)
 	{
@@ -202,9 +192,9 @@ static qImButton _stub_mouse_mask(sdlStub* self, int button, bool isdown)
 	return QIM_NONE;
 }
 
-static void _stub_mouse_move(sdlStub* self, const SDL_MouseMotionEvent* se)
+static void _sdl_mesg_mouse_move(sdlStub* self, const SDL_MouseMotionEvent* se)
 {
-	_stub_mouse_point(self, se->x, se->y);
+	_sdl_set_mouse_point(self, se->x, se->y);
 	_stub_mouse_clicks(self, QIM_NONE, QIMT_MOVE);
 
 	qgEvent e =
@@ -219,13 +209,13 @@ static void _stub_mouse_move(sdlStub* self, const SDL_MouseMotionEvent* se)
 	qg_stub_add_event(self, &e);
 }
 
-static void _stub_mouse_button(sdlStub* self, const SDL_MouseButtonEvent* se, bool isdown)
+static void _sdl_mesg_mouse_button(sdlStub* self, const SDL_MouseButtonEvent* se, bool isdown)
 {
-	_stub_mouse_point(self, se->x, se->y);
+	_sdl_set_mouse_point(self, se->x, se->y);
 
 	qgEvent e =
 	{
-		.mbutton.button = _stub_mouse_mask(self, se->button, isdown),
+		.mbutton.button = _sdl_set_mouse_mask(self, se->button, isdown),
 		.mbutton.state = self->base.mouse.mask,
 		.mbutton.x = se->x,
 		.mbutton.y = se->y,
@@ -249,7 +239,7 @@ static void _stub_mouse_button(sdlStub* self, const SDL_MouseButtonEvent* se, bo
 	}
 }
 
-static void _stub_mouse_wheel(sdlStub* self, const SDL_MouseWheelEvent* se)
+static void _sdl_mesg_mouse_wheel(sdlStub* self, const SDL_MouseWheelEvent* se)
 {
 	qgEvent e =
 	{
@@ -261,7 +251,7 @@ static void _stub_mouse_wheel(sdlStub* self, const SDL_MouseWheelEvent* se)
 	qg_stub_add_event(self, &e);
 }
 
-bool _stub_poll(pointer_t g)
+bool _sdl_poll(pointer_t g)
 {
 	sdlStub* self = qm_cast(g, sdlStub);
 
@@ -272,10 +262,10 @@ bool _stub_poll(pointer_t g)
 		{
 			case SDL_WINDOWEVENT:
 				if (ev.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)		// 포커스 잃음
-					_stub_update_active(self, true);
+					_sdl_mesg_active(self, true);
 				else if (ev.window.event == SDL_WINDOWEVENT_FOCUS_LOST)		// 포커스 얻음
 				{
-					_stub_update_active(self, false);
+					_sdl_mesg_active(self, false);
 
 					qgEvent e =
 					{
@@ -295,7 +285,7 @@ bool _stub_poll(pointer_t g)
 					}
 				}
 				else if (ev.window.event == SDL_WINDOWEVENT_RESIZED)		// 크기 변경
-					_stub_layout(self);
+					_sdl_mesg_layout(self);
 				break;
 
 			case SDL_CONTROLLERAXISMOTION:
@@ -319,27 +309,27 @@ bool _stub_poll(pointer_t g)
 				break;
 
 			case SDL_KEYDOWN:
-				_stub_keyboard(self, &ev.key, true);
+				_sdl_mesg_key(self, &ev.key, true);
 				break;
 
 			case SDL_KEYUP:
-				_stub_keyboard(self, &ev.key, false);
+				_sdl_mesg_key(self, &ev.key, false);
 				break;
 
 			case SDL_MOUSEMOTION:
-				_stub_mouse_move(self, &ev.motion);
+				_sdl_mesg_mouse_move(self, &ev.motion);
 				break;
 
 			case SDL_MOUSEBUTTONDOWN:
-				_stub_mouse_button(self, &ev.button, true);
+				_sdl_mesg_mouse_button(self, &ev.button, true);
 				break;
 
 			case SDL_MOUSEBUTTONUP:
-				_stub_mouse_button(self, &ev.button, false);
+				_sdl_mesg_mouse_button(self, &ev.button, false);
 				break;
 
 			case SDL_MOUSEWHEEL:
-				_stub_mouse_wheel(self, &ev.wheel);
+				_sdl_mesg_mouse_wheel(self, &ev.wheel);
 				break;
 
 			case SDL_DROPFILE:
@@ -367,16 +357,14 @@ bool _stub_poll(pointer_t g)
 				break;
 
 			case SDL_QUIT:
-				QN_SET_MASK(&self->base.stats, QGSTI_EXIT, true);
+				QN_SET_MASK(&self->base.sttis, QGSTTI_EXIT, true);
 				qg_stub_add_event_type(self, QGEV_EXIT);
 				return false;
 		}
 	}
 
-	if (QN_TEST_MASK(self->base.stats, QGSTI_EXIT))
+	if (QN_TEST_MASK(self->base.sttis, QGSTTI_EXIT))
 		return false;
-
-	self->base.polls++;
 
 	return true;
 }

@@ -44,7 +44,7 @@
     <ClCompile Include="qg_stub_sdl.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="qkmc.c">
+    <ClCompile Include="qg_kmc.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="qg_rdh.c">

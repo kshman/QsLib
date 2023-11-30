@@ -20,16 +20,6 @@ QN_EXTC_BEGIN
 //////////////////////////////////////////////////////////////////////////
 // types
 
-typedef enum qgFlag
-{
-	QGFLAG_FULLSCREEN = QN_BIT(0),
-	QGFLAG_BORDERLESS = QN_BIT(1),
-	QGFLAG_RESIZABLE = QN_BIT(2),
-	QGFLAG_FOCUS = QN_BIT(3),
-	QGFLAG_IDLE = QN_BIT(4),
-	QGFLAG_DITHER = QN_BIT(5),
-} qgFlag;
-
 typedef enum qgClrFmt
 {
 	QGCF_NONE,
@@ -134,6 +124,44 @@ typedef enum qgFactor
 	QGBFT_SAS,
 } qgFactor;
 
+typedef enum qgFlag
+{
+	QGFLAG_FULLSCREEN	= QN_BIT(0),
+	QGFLAG_BORDERLESS	= QN_BIT(1),
+	QGFLAG_RESIZABLE	= QN_BIT(2),
+	QGFLAG_FOCUS		= QN_BIT(3),
+	QGFLAG_IDLE			= QN_BIT(4),
+	QGFLAG_DITHER		= QN_BIT(5),
+} qgFlag;
+
+typedef enum qgStti
+{
+	QGSTTI_VIRTUAL		= QN_BIT(1),
+	QGSTTI_ACTIVE		= QN_BIT(2),
+	QGSTTI_LAYOUT		= QN_BIT(3),
+	QGSTTI_ACS			= QN_BIT(13),
+	QGSTTI_PAUSE		= QN_BIT(14),
+	QGSTTI_DROP			= QN_BIT(15),
+	QGSTTI_CURSOR		= QN_BIT(16),
+	QGSTTI_SCRSAVE		= QN_BIT(17),
+	QGSTTI_EXIT			= QN_BIT(30),
+} qgStti;
+
+typedef enum qgEventType
+{
+	QGEV_NONE,
+	QGEV_ACTIVE,
+	QGEV_LAYOUT,
+	QGEV_KEYDOWN,
+	QGEV_KEYUP,
+	QGEV_MOUSEMOVE,
+	QGEV_MOUSEDOWN,
+	QGEV_MOUSEUP,
+	QGEV_MOUSEWHEEL,
+	QGEV_MOUSEDOUBLE,
+	QGEV_EXIT = 255,
+} qgEventType;
+
 
 //////////////////////////////////////////////////////////////////////////
 // inputs
@@ -199,157 +227,58 @@ typedef struct qgUimCtrlCtrlVib
 
 
 //////////////////////////////////////////////////////////////////////////
-// event
-
-typedef enum qgEventType
-{
-	QGEV_NONE,
-	QGEV_ACTIVE,
-	QGEV_LAYOUT,
-	QGEV_KEYDOWN,
-	QGEV_KEYUP,
-	QGEV_MOUSEMOVE,
-	QGEV_MOUSEDOWN,
-	QGEV_MOUSEUP,
-	QGEV_MOUSEWHEEL,
-	QGEV_MOUSEDOUBLE,
-	QGEV_EXIT = 255,
-} qgEventType;
-
-struct qgEventActive
-{
-	qgEventType			ev;
-	int32_t				active;	// bool
-	double				delta;
-};
-
-struct qgEventLayout
-{
-	qgEventType			ev;
-	qnRect				bound;
-	int32_t				_pad;
-};
-
-struct qgEventKeyboard
-{
-	qgEventType			ev;
-	int16_t				pressed;
-	int16_t				repeat;
-	qIkKey				key;
-	qIkMask				state;
-};
-
-struct qgEventMouseMove {
-	qgEventType			ev;
-	int32_t				x;
-	int32_t				y;
-	int32_t				dx;
-	int32_t				dy;
-	qImMask				state;
-};
-
-struct qgEventMouseButton {
-	qgEventType			ev;
-	int32_t				x;
-	int32_t				y;
-	qImButton			button;
-	qImMask				state;
-};
-
-struct qgEventMouseWheel {
-	qgEventType			ev;
-	int32_t				dir;
-	int32_t				x;
-	int32_t				y;
-};
-
-typedef union qgEvent
-{
-	qgEventType					ev;
-	struct qgEventActive		active;
-	struct qgEventLayout		layout;
-	struct qgEventKeyboard		key;
-	struct qgEventMouseMove		mmove;
-	struct qgEventMouseButton	mbutton;
-	struct qgEventMouseWheel	mwheel;
-} qgEvent;
-
-QN_LIST_DECL(qgListEvent, qgEvent);
+// stub data
 
 #define QNEVENT_MAX_VALUE		5000
 
-
-//////////////////////////////////////////////////////////////////////////
-// stub
-
-typedef enum
+typedef union qgEvent
 {
-	QGSTI_EXIT = QN_BIT(0),
-	QGSTI_VIRTUAL = QN_BIT(1),
-	QGSTI_ACTIVE = QN_BIT(2),
-	QGSTI_LAYOUT = QN_BIT(3),
-	// DROP / CURSOR / SCRSAVE
-	QGSTI_ACS = QN_BIT(13),
-	QGSTI_PAUSE = QN_BIT(14),
-} qgStubStat;
+	qgEventType			ev;
+	struct Active
+	{
+		qgEventType			ev;
+		int32_t				active;	// bool
+		double				delta;
+	}						active;
+	struct Layout
+	{
+		qgEventType			ev;
+		qnRect				bound;
+		int32_t				_pad[1];
+	}					layout;
+	struct Keyboard
+	{
+		qgEventType			ev;
+		int16_t				pressed;
+		int16_t				repeat;
+		qIkKey				key;
+		qIkMask				state;
+	}					key;
+	struct MouseMove {
+		qgEventType			ev;
+		int32_t				x;
+		int32_t				y;
+		int32_t				dx;
+		int32_t				dy;
+		qImMask				state;
+	}					mmove;
+	struct MouseButton {
+		qgEventType			ev;
+		int32_t				x;
+		int32_t				y;
+		qImButton			button;
+		qImMask				state;
+		int32_t				_pad[1];
+	}					mbutton;
+	struct MouseWheel {
+		qgEventType			ev;
+		int32_t				dir;
+		int32_t				x;
+		int32_t				y;
+	}					mwheel;
+} qgEvent;
 
-struct qgStub
-{
-	qnGam				base;
-
-	pointer_t			handle;
-
-	qgFlag				flags;
-	qgStubStat			stats;
-	uintptr_t			polls;
-
-	qnTimer*			timer;
-	uint32_t			delay;
-	double				fps;
-	double				run;
-	float				refadv;
-	float				advance;
-
-	qnRect				bound;
-	qnPoint				size;
-	qnPoint				limit;
-
-	qgUimKey			key;
-	qgUimMouse			mouse;
-
-	qgListEvent			events;
-};
-
-qvt_name(qgStub)
-{
-	qvt_name(qnGam)		base;
-};
-
-QNAPI qgStub* qg_stub_new(const char* driver, const char* title, int width, int height, int flags);
-QNAPI bool qg_stub_close(pointer_t g);
-QNAPI void qg_stub_dispose(pointer_t g);
-
-QNAPI bool qg_stub_update(pointer_t g);
-QNAPI bool qg_stub_poll(pointer_t g, qgEvent* ev);
-
-QNAPI const qgUimMouse* qg_stub_get_mouse(pointer_t g);
-QNAPI const qgUimKey* qg_stub_get_key(pointer_t g);
-QNAPI bool qg_stub_test_key(pointer_t g, qIkKey key);
-QNAPI double qg_stub_get_runtime(pointer_t g);
-QNAPI double qg_stub_get_fps(pointer_t g);
-QNAPI double qg_stub_get_ref_adv(pointer_t g);
-QNAPI double qg_stub_get_def_adv(pointer_t g);
-QNAPI void qg_stub_set_delay(pointer_t g, int delay);
-QNAPI int qg_stub_get_delay(pointer_t g);
-
-QNAPI int qg_stub_left_events(pointer_t g);
-QNAPI int qg_stub_add_event(pointer_t g, const qgEvent* ev);
-QNAPI int qg_stub_add_event_type(pointer_t g, qgEventType type);
-QNAPI bool qg_stub_pop_event(pointer_t g, qgEvent* ev);
-
-
-//////////////////////////////////////////////////////////////////////////
-// render device
+QN_LIST_DECL(qgListEvent, qgEvent);
 
 typedef struct qgDeviceInfo
 {
@@ -396,6 +325,71 @@ typedef struct qgRenderParam
 	qnMat4				m[4];
 	qnColor				clear;
 } qgRenderParam;
+
+
+//////////////////////////////////////////////////////////////////////////
+// stub
+
+struct qgStub
+{
+	qnGam				base;
+
+	pointer_t			handle;
+
+	qgFlag				flags;
+	qgStti				sttis;
+	uint32_t			delay;
+	int32_t				_pad[1];
+
+	qnTimer*			timer;
+	double				fps;
+	double				run;
+
+	float				refadv;
+	float				advance;
+
+	qnRect				bound;
+	qnPoint				size;
+
+	qgUimKey			key;
+	qgUimMouse			mouse;
+
+	qgListEvent			events;
+};
+
+qvt_name(qgStub)
+{
+	qvt_name(qnGam)		base;
+	bool (*_construct)(pointer_t, pointer_t);
+	void (*_finalize)(pointer_t);
+	bool (*_poll)(pointer_t);
+};
+
+QNAPI qgStub* qg_stub_new(const char* driver, const char* title, int width, int height, int flags);
+QNAPI void qg_stub_close(pointer_t g);
+QNAPI void qg_stub_dispose(pointer_t g);
+
+QNAPI bool qg_stub_update(pointer_t g);
+QNAPI bool qg_stub_poll(pointer_t g, qgEvent* ev);
+
+QNAPI const qgUimMouse* qg_stub_get_mouse(pointer_t g);
+QNAPI const qgUimKey* qg_stub_get_key(pointer_t g);
+QNAPI bool qg_stub_test_key(pointer_t g, qIkKey key);
+QNAPI double qg_stub_get_runtime(pointer_t g);
+QNAPI double qg_stub_get_fps(pointer_t g);
+QNAPI double qg_stub_get_ref_adv(pointer_t g);
+QNAPI double qg_stub_get_def_adv(pointer_t g);
+QNAPI void qg_stub_set_delay(pointer_t g, int delay);
+QNAPI int qg_stub_get_delay(pointer_t g);
+
+QNAPI int qg_stub_left_events(pointer_t g);
+QNAPI int qg_stub_add_event(pointer_t g, const qgEvent* ev);
+QNAPI int qg_stub_add_event_type(pointer_t g, qgEventType type);
+QNAPI bool qg_stub_pop_event(pointer_t g, qgEvent* ev);
+
+
+//////////////////////////////////////////////////////////////////////////
+// render device
 
 struct qgRdh
 {
