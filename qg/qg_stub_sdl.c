@@ -14,7 +14,7 @@ bool _sdl_poll(pointer_t g);
 qvt_name(qgStub) _vt_sdl =
 {
 	.base.name = "SDLRenderStub",
-	.base.dispose = qg_stub_dispose,
+	.base.dispose = _stub_dispose,
 	._construct = _sdl_construct,
 	._finalize = _sdl_finalize,
 	._poll = _sdl_poll,

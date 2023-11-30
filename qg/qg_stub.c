@@ -9,7 +9,7 @@ qgStub* qg_stub_instance = NULL;
 //////////////////////////////////////////////////////////////////////////
 // 스터브
 
-qgStub* qg_stub_new(const char* driver, const char* title, int width, int height, int flags)
+qgStub* qg_stub_new(const char* title, int width, int height, int flags)
 {
 	if (qg_stub_instance)
 	{
@@ -35,7 +35,7 @@ qgStub* qg_stub_new(const char* driver, const char* title, int width, int height
 	return self;
 }
 
-void qg_stub_dispose(pointer_t g)
+void _stub_dispose(pointer_t g)
 {
 	qgStub* self = qm_cast(g, qgStub);
 
@@ -129,7 +129,7 @@ void qg_stub_close(pointer_t g)
 }
 
 //
-bool qg_stub_update(pointer_t g)
+bool qg_stub_loop(pointer_t g)
 {
 	qgStub* self = qm_cast(g, qgStub);
 
@@ -154,6 +154,7 @@ bool qg_stub_update(pointer_t g)
 	return true;
 }
 
+//
 bool qg_stub_poll(pointer_t g, qgEvent* ev)
 {
 	qn_retval_if_fail(ev, false);
@@ -168,66 +169,77 @@ bool qg_stub_poll(pointer_t g, qgEvent* ev)
 	return true;
 }
 
+//
 const qgUimMouse* qg_stub_get_mouse(pointer_t g)
 {
 	qgStub* self = qm_cast(g, qgStub);
 	return &self->mouse;
 }
 
+//
 const qgUimKey* qg_stub_get_key(pointer_t g)
 {
 	qgStub* self = qm_cast(g, qgStub);
 	return &self->key;
 }
 
+//
 bool qg_stub_test_key(pointer_t g, qIkKey key)
 {
 	qgStub* self = qm_cast(g, qgStub);
 	return (uint32_t)key < QIK_MAX_VALUE ? self->key.key[key] : false;
 }
 
+//
 double qg_stub_get_runtime(pointer_t g)
 {
 	qgStub* self = qm_cast(g, qgStub);
 	return self->run;
 }
 
+//
 double qg_stub_get_fps(pointer_t g)
 {
 	qgStub* self = qm_cast(g, qgStub);
 	return self->fps;
 }
 
+//
 double qg_stub_get_ref_adv(pointer_t g)
 {
 	qgStub* self = qm_cast(g, qgStub);
 	return self->refadv;
 }
 
+//
 double qg_stub_get_def_adv(pointer_t g)
 {
 	qgStub* self = qm_cast(g, qgStub);
 	return self->advance;
 }
 
+//
 void qg_stub_set_delay(pointer_t g, int delay)
 {
 	qgStub* self = qm_cast(g, qgStub);
 	self->delay = (uint32_t)QN_CLAMP(delay, 1, 1000);
 }
 
+//
 int qg_stub_get_delay(pointer_t g)
 {
 	qgStub* self = qm_cast(g, qgStub);
 	return (int)self->delay;
 }
 
+//
 int qg_stub_left_events(pointer_t g)
 {
 	qgStub* self = qm_cast(g, qgStub);
 	return (int)qn_list_count(&self->events);
 }
 
+//
 int qg_stub_add_event(pointer_t g, const qgEvent* ev)
 {
 	qn_retval_if_fail(ev, -1);
@@ -239,6 +251,7 @@ int qg_stub_add_event(pointer_t g, const qgEvent* ev)
 	return cnt + 1;
 }
 
+//
 int qg_stub_add_event_type(pointer_t g, qgEventType type)
 {
 	qgStub* self = qm_cast(g, qgStub);
@@ -250,6 +263,7 @@ int qg_stub_add_event_type(pointer_t g, qgEventType type)
 	return cnt + 1;
 }
 
+//
 bool qg_stub_pop_event(pointer_t g, qgEvent* ev)
 {
 	qn_retval_if_fail(ev, false);

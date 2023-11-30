@@ -13,7 +13,6 @@ typedef struct qgRdh qgRdh;
 
 // instance
 QNAPI qgStub* qg_stub_instance;
-QNAPI qgRdh* qg_rdh_instance;
 
 QN_EXTC_BEGIN
 
@@ -365,11 +364,10 @@ qvt_name(qgStub)
 	bool (*_poll)(pointer_t);
 };
 
-QNAPI qgStub* qg_stub_new(const char* driver, const char* title, int width, int height, int flags);
+QNAPI qgStub* qg_stub_new(const char* title, int width, int height, int flags);
 QNAPI void qg_stub_close(pointer_t g);
-QNAPI void qg_stub_dispose(pointer_t g);
 
-QNAPI bool qg_stub_update(pointer_t g);
+QNAPI bool qg_stub_loop(pointer_t g);
 QNAPI bool qg_stub_poll(pointer_t g, qgEvent* ev);
 
 QNAPI const qgUimMouse* qg_stub_get_mouse(pointer_t g);
@@ -393,7 +391,7 @@ QNAPI bool qg_stub_pop_event(pointer_t g, qgEvent* ev);
 
 struct qgRdh
 {
-	qnGam				gam;
+	qnGam				base;
 
 	qgStub*				stub;
 
@@ -407,15 +405,23 @@ struct qgRdh
 qvt_name(qgRdh)
 {
 	qvt_name(qnGam)		base;
-};
+	bool (*_construct)(pointer_t, int);
+	void (*_finalize)(pointer_t);
 
-QNAPI void qg_rdh_dispose(pointer_t g);
+	bool (*begin)(pointer_t);
+	void (*end)(pointer_t);
+	bool (*primitive_begin)(pointer_t, qgTopology, int, int, pointer_t*);
+	void (*primitive_end)(pointer_t);
+	bool (*indexed_primitive_begin)(pointer_t, qgTopology, int, int, pointer_t*, int, int, pointer_t*);
+	void (*indexed_primitive_end)(pointer_t);
+};
 
 QNAPI const qgDeviceInfo* qg_rdh_get_device_info(pointer_t g);
 QNAPI const qgRenderInfo* qg_rdh_get_render_info(pointer_t g);
 QNAPI const qgRenderTm* qg_rdh_get_render_tm(pointer_t g);
 QNAPI const qgRenderParam* qg_rdh_get_render_param(pointer_t g);
 
+QNAPI bool qg_rdh_loop(pointer_t g);
 QNAPI bool qg_rdh_poll(pointer_t g, qgEvent* ev);
 QNAPI bool qg_rdh_begin(pointer_t g);
 QNAPI void qg_rdh_end(pointer_t g);

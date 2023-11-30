@@ -4,30 +4,69 @@
 
 //////////////////////////////////////////////////////////////////////////
 // 렌더 디바이스
-qgRdh* qg_rdh_instance = NULL;
 
-bool _rdh_on_init(pointer_t g, const char* title, int width, int height, int flags)
+qgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, int flags)
 {
-	qgStub* stub = qg_stub_new(NULL, title, width, height, flags);
-	qn_retval_if_fail(stub, false);
+	qgStub* stub = qg_stub_new(title, width, height, flags);
+	qn_retval_if_fail(stub, NULL);
 
-	qgRdh* self = qm_cast(g, qgRdh);
-	self->stub = stub;
+	struct
+	{
+		const char* name;
+		const char* alias;
+		pointer_t(*func)();
+	} allocators[] =
+	{
+		{ "ES2", "GLES2", _es2_allocator },
+		{ NULL, NULL, _es2_allocator },
+	};
 
-	_rdh_reset(self);
+	pointer_t(*allocator)() = allocators[QN_COUNTOF(allocators) - 1].func;
+	if (driver != NULL)
+	{
+		for (size_t i = 0; i < QN_COUNTOF(allocators); i++)
+			if (strcmp(allocators[i].name, driver) == 0 || strcmp(allocators[i].alias, driver) == 0)
+			{
+				allocator = allocators[i].func;
+				break;
+			}
+	}
 
-	qg_rdh_instance = self;
-	return true;
+	qgRdh* self = qm_cast(allocator(), qgRdh);
+
+	_rdh_construct(self, stub);
+	if (!qvt_cast(self, qgRdh)->_construct(self, flags))
+	{
+		_rdh_finalize(self);
+		qn_free(self);
+		return NULL;
+	}
+
+	qg_stub_instance = qm_cast(self, qgStub);
+	return self;
 }
 
-void _rdh_on_disp(pointer_t g)
+void _rdh_dispose(pointer_t g)
 {
 	qgRdh* self = qm_cast(g, qgRdh);
 
-	qm_unload(self->stub);
+	qvt_cast(self, qgRdh)->_finalize(self);
+	_rdh_finalize(self);
 
-	if (qg_rdh_instance = self)
-		qg_rdh_instance = NULL;
+	qn_free(self);
+}
+
+void _rdh_construct(pointer_t g, qgStub* stub)
+{
+	qgRdh* self = qm_cast(g, qgRdh);
+	self->stub = stub;
+	_rdh_reset(self);
+}
+
+void _rdh_finalize(pointer_t g)
+{
+	qgRdh* self = qm_cast(g, qgRdh);
+	qm_unload(self->stub);
 }
 
 void _rdh_reset(pointer_t g)
@@ -84,6 +123,32 @@ const qgRenderParam* qg_rdh_get_render_param(pointer_t g)
 	return &self->param;
 }
 
+//
+bool qg_rdh_loop(pointer_t g)
+{
+	qn_retval_if_fail(g, false);
+	qgRdh* self = qm_cast(g, qgRdh);
+
+	if (!qg_stub_loop(self->stub))
+		return false;
+
+	// 여기서 가상일 때 레이아웃 확인
+
+	// 초기화
+	qgRenderInfo* i = &self->info;
+	i->invokes = 0;
+	i->shaders = 0;
+	i->transforms = 0;
+	i->draws = 0;
+	i->vertices = 0;
+
+	i->begins++;
+	i->flush = false;
+
+	return true;
+}
+
+//
 bool qg_rdh_poll(pointer_t g, qgEvent* ev)
 {
 	qn_retval_if_fail(g && ev, false);
@@ -107,23 +172,7 @@ bool qg_rdh_begin(pointer_t g)
 {
 	qn_retval_if_fail(g, false);
 	qgRdh* self = qm_cast(g, qgRdh);
-	if (!qg_stub_update(self->stub))
-		return false;
-
-	// 여기서 가상일 때 레이아웃 확인
-
-	// 초기화
-	qgRenderInfo* i = &self->info;
-	i->invokes = 0;
-	i->shaders = 0;
-	i->transforms = 0;
-	i->draws = 0;
-	i->vertices = 0;
-
-	i->begins++;
-	i->flush = false;
-
-	return _rdh_impl_begin(self);
+	return qvt_cast(self, qgRdh)->begin(self);
 }
 
 void qg_rdh_end(pointer_t g)
@@ -134,7 +183,7 @@ void qg_rdh_end(pointer_t g)
 	self->info.ends++;
 	self->info.flush = true;
 
-	_rdh_impl_end(self);
+	qvt_cast(self, qgRdh)->end(self);
 }
 
 void qg_rdh_set_param_vec4(pointer_t g, int at, const qnVec4* v)
@@ -226,9 +275,10 @@ void qg_rdh_draw_primitive(pointer_t g, qgTopology tpg, int count, int stride, c
 
 	qn_ret_if_fail((size_t)count > 0 && (size_t)stride > 0 && data);
 	pointer_t vert;
-	_rdh_impl_primitive_begin(self, tpg, count, stride, &vert);
-	memcpy(vert, data, count * stride);
-	_rdh_impl_primitive_end(self);
+	if (!qvt_cast(self, qgRdh)->primitive_begin(self, tpg, count, stride, &vert))
+		return;
+	memcpy(vert, data, (size_t)(count * stride));
+	qvt_cast(self, qgRdh)->primitive_end(self);
 
 	self->info.invokes++;
 	self->info.draws++;
@@ -242,10 +292,11 @@ void qg_rdh_draw_indexed_primitive(pointer_t g, qgTopology tpg, int vcount, int 
 	qn_ret_if_fail((size_t)vcount > 0 && (size_t)vstride > 0 && vdata);
 	qn_ret_if_fail((size_t)icount > 0 && (size_t)istride > 0 && idata);
 	pointer_t vert, ind;
-	_rdh_impl_indexed_primitive_begin(self, tpg, vcount, vstride, &vert, icount, istride, &ind);
-	memcpy(vert, vdata, vcount * vstride);
-	memcpy(ind, idata, icount * istride);
-	_rdh_impl_indexed_primitive_end(self);
+	if (!qvt_cast(self, qgRdh)->indexed_primitive_begin(self, tpg, vcount, vstride, &vert, icount, istride, &ind))
+		return;
+	memcpy(vert, vdata, (size_t)(vcount * vstride));
+	memcpy(ind, idata, (size_t)(icount * istride));
+	qvt_cast(self, qgRdh)->indexed_primitive_end(self);
 
 	self->info.invokes++;
 	self->info.draws++;
