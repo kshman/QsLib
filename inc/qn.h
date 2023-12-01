@@ -45,11 +45,13 @@
 
 // compiler specific
 #if _MSC_VER
+#	define QN_RESTRICT					__restrict
 #	define QN_FORCELINE					__forceinline
 #	define QN_INLINE					__inline
 #	define QN_FUNC_NAME					__FUNCTION__
 #	define QN_MEM_BARRIER()				_ReadWriteBarrier()
 #elif __GNUC__
+#	define QN_RESTRICT					restrict
 #ifndef __cplusplus
 #	define QN_FORCELINE					static inline __attribute__ ((always_inline))
 #	define QN_INLINE					static inline

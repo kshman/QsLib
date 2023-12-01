@@ -7,9 +7,11 @@
 
 //////////////////////////////////////////////////////////////////////////
 // SDL 스터브
-bool _sdl_construct(pointer_t g, struct stubParam* param);
-void _sdl_finalize(pointer_t g);
-bool _sdl_poll(pointer_t g);
+typedef struct sdlStub sdlStub;
+
+static bool _sdl_construct(qgStub* g, struct stubParam* param);
+static void _sdl_finalize(qgStub* g);
+static bool _sdl_poll(qgStub* g);
 
 qvt_name(qgStub) _vt_sdl =
 {
@@ -20,7 +22,7 @@ qvt_name(qgStub) _vt_sdl =
 	._poll = _sdl_poll,
 };
 
-typedef struct sdlStub
+struct sdlStub
 {
 	qgStub				base;
 
@@ -28,16 +30,16 @@ typedef struct sdlStub
 	SDL_SysWMinfo		wminfo;
 
 	double				active;
-} sdlStub;
+};
 
-pointer_t _stub_allocator()
+qgStub* _stub_allocator()
 {
 	sdlStub* self = qn_alloc_zero_1(sdlStub);
 	qn_retval_if_fail(self, NULL);
 	return qm_init(self, &_vt_sdl);
 }
 
-bool _sdl_construct(pointer_t g, struct stubParam* param)
+bool _sdl_construct(qgStub* g, struct stubParam* param)
 {
 	sdlStub* self = qm_cast(g, sdlStub);
 
@@ -88,7 +90,7 @@ bool _sdl_construct(pointer_t g, struct stubParam* param)
 	return true;
 }
 
-void _sdl_finalize(pointer_t g)
+void _sdl_finalize(qgStub* g)
 {
 	sdlStub* self = qm_cast(g, sdlStub);
 
@@ -111,7 +113,7 @@ static double _sdl_mesg_active(sdlStub* self, bool isactive)
 		.active.active = isactive,
 		.active.delta = adv,
 	};
-	qg_stub_add_event(self, &e);
+	qg_stub_add_event(qm_cast(self, qgStub), &e);
 
 	return adv;
 }
@@ -133,7 +135,7 @@ static void _sdl_mesg_layout(sdlStub* self)
 			.layout.ev = QGEV_LAYOUT,
 			.layout.bound = self->base.bound,
 		};
-		qg_stub_add_event(self, &e);
+		qg_stub_add_event(qm_cast(self, qgStub), &e);
 	}
 }
 
@@ -154,7 +156,7 @@ static void _sdl_mesg_key(sdlStub* self, SDL_KeyboardEvent* se, bool isdown)
 		.key.pressed = se->state == SDL_PRESSED,
 		.key.repeat = se->repeat,
 	};
-	qg_stub_add_event(self, &e);
+	qg_stub_add_event(qm_cast(self, qgStub), &e);
 }
 
 static void _sdl_set_mouse_point(sdlStub* self, int x, int y)
@@ -194,7 +196,7 @@ static qImButton _sdl_set_mouse_mask(sdlStub* self, int button, bool isdown)
 static void _sdl_mesg_mouse_move(sdlStub* self, const SDL_MouseMotionEvent* se)
 {
 	_sdl_set_mouse_point(self, se->x, se->y);
-	_stub_mouse_clicks(self, QIM_NONE, QIMT_MOVE);
+	_stub_mouse_clicks(qm_cast(self, qgStub), QIM_NONE, QIMT_MOVE);
 
 	qgEvent e =
 	{
@@ -205,7 +207,7 @@ static void _sdl_mesg_mouse_move(sdlStub* self, const SDL_MouseMotionEvent* se)
 		.mmove.dx = se->x - self->base.mouse.last.x,
 		.mmove.dy = se->y - self->base.mouse.last.y,
 	};
-	qg_stub_add_event(self, &e);
+	qg_stub_add_event(qm_cast(self, qgStub), &e);
 }
 
 static void _sdl_mesg_mouse_button(sdlStub* self, const SDL_MouseButtonEvent* se, bool isdown)
@@ -222,19 +224,19 @@ static void _sdl_mesg_mouse_button(sdlStub* self, const SDL_MouseButtonEvent* se
 
 	if (isdown)
 	{
-		bool doubleclick = _stub_mouse_clicks(self, e.mbutton.button, QIMT_DOWN);
+		bool doubleclick = _stub_mouse_clicks(qm_cast(self, qgStub), e.mbutton.button, QIMT_DOWN);
 		if (doubleclick)
 		{
 			e.mbutton.ev = QGEV_MOUSEDOUBLE;
-			qg_stub_add_event(self, &e);
+			qg_stub_add_event(qm_cast(self, qgStub), &e);
 		}
 		e.mbutton.ev = QGEV_MOUSEDOWN;
-		qg_stub_add_event(self, &e);
+		qg_stub_add_event(qm_cast(self, qgStub), &e);
 	}
 	else
 	{
 		e.mbutton.ev = QGEV_MOUSEUP;
-		qg_stub_add_event(self, &e);
+		qg_stub_add_event(qm_cast(self, qgStub), &e);
 	}
 }
 
@@ -247,10 +249,10 @@ static void _sdl_mesg_mouse_wheel(sdlStub* self, const SDL_MouseWheelEvent* se)
 		.mwheel.x = se->x,
 		.mwheel.y = se->y,
 	};
-	qg_stub_add_event(self, &e);
+	qg_stub_add_event(qm_cast(self, qgStub), &e);
 }
 
-bool _sdl_poll(pointer_t g)
+bool _sdl_poll(qgStub* g)
 {
 	sdlStub* self = qm_cast(g, sdlStub);
 
@@ -280,7 +282,7 @@ bool _sdl_poll(pointer_t g)
 							continue;
 						k->key[i] = false;
 						e.key.key = (qIkKey)i;
-						qg_stub_add_event(self, &e);
+						qg_stub_add_event(qm_cast(self, qgStub), &e);
 					}
 				}
 				else if (ev.window.event == SDL_WINDOWEVENT_RESIZED)		// 크기 변경
@@ -357,7 +359,7 @@ bool _sdl_poll(pointer_t g)
 
 			case SDL_QUIT:
 				QN_SET_MASK(&self->base.sttis, QGSTTI_EXIT, true);
-				qg_stub_add_event_type(self, QGEV_EXIT);
+				qg_stub_add_event_type(qm_cast(self, qgStub), QGEV_EXIT);
 				return false;
 		}
 	}

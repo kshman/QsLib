@@ -1,5 +1,8 @@
 ﻿#pragma once
 
+// 전역
+extern size_t qg_number(void);
+
 // 스터브
 struct stubParam
 {
@@ -9,15 +12,14 @@ struct stubParam
 	int				flags;
 };
 
-extern pointer_t _stub_allocator();
-extern void _stub_dispose(pointer_t g);
-extern void _stub_construct(pointer_t g, struct stubParam* param);
-extern void _stub_finalize(pointer_t g);
+extern qgStub* _stub_allocator();
+extern void _stub_dispose(qgStub* g);
+extern void _stub_construct(qgStub* g, struct stubParam* param);
+extern void _stub_finalize(qgStub* g);
 
-extern bool _stub_mouse_clicks(pointer_t g, qImButton button, qimTrack track);
+extern bool _stub_mouse_clicks(qgStub* g, qImButton button, qimTrack track);
 
 // 렌더 디바이스
-extern pointer_t _es2_allocator();
-extern void _rdh_dispose(pointer_t g);
-
+extern qgRdh* _es2_allocator();
+extern void _rdh_dispose(qgRdh* g);
 

@@ -14,25 +14,25 @@ es2Func _es2func;
 //////////////////////////////////////////////////////////////////////////
 // ES2 SDL 렌더 디바이스
 
-static bool _es2_construct(pointer_t g, int flags);
-static void _es2_finalize(pointer_t g);
-static void _es2_reset(pointer_t g);
-static void _es2_clear(pointer_t g, int flag, const qnColor* color, int stencil, float depth);
+static bool _es2_construct(qgRdh* g, int flags);
+static void _es2_finalize(qgRdh* g);
+static void _es2_reset(qgRdh* g);
+static void _es2_clear(qgRdh* g, int flag, const qnColor* color, int stencil, float depth);
 
-static bool _es2_begin(pointer_t g);
-static void _es2_end(pointer_t g);
-static void _es2_flush(pointer_t g);
+static bool _es2_begin(qgRdh* g);
+static void _es2_end(qgRdh* g);
+static void _es2_flush(qgRdh* g);
 
-static bool _es2_set_index(pointer_t g, pointer_t buffer);
-static bool _es2_set_vertex(pointer_t g, int stage, pointer_t buffer);
+static bool _es2_set_index(qgRdh* g, pointer_t buffer);
+static bool _es2_set_vertex(qgRdh* g, int stage, pointer_t buffer);
 
-static pointer_t _es2_create_layout(pointer_t g, int count, const qgVarLayout* vars);
-static pointer_t _es2_create_buffer(pointer_t g, qgBufType type, int count, int stride, cpointer_t data);
+static qgVlo* _es2_create_layout(qgRdh* g, int count, const qgVarLayout* vars);
+static qgBuf* _es2_create_buffer(qgRdh* g, qgBufType type, int count, int stride, cpointer_t data);
 
-static bool _es2_primitive_begin(pointer_t g, qgTopology tpg, int count, int stride, pointer_t* pptr);
-static void _es2_primitive_end(pointer_t g);
-static bool _es2_indexed_primitive_begin(pointer_t g, qgTopology tpg, int vcount, int vstride, pointer_t* pvptr, int icount, int istride, pointer_t* piptr);
-static void _es2_indexed_primitive_end(pointer_t g);
+static bool _es2_primitive_begin(qgRdh* g, qgTopology tpg, int count, int stride, pointer_t* pptr);
+static void _es2_primitive_end(qgRdh* g);
+static bool _es2_indexed_primitive_begin(qgRdh* g, qgTopology tpg, int vcount, int vstride, pointer_t* pvptr, int icount, int istride, pointer_t* piptr);
+static void _es2_indexed_primitive_end(qgRdh* g);
 
 qvt_name(qgRdh) _vt_es2 =
 {
@@ -61,7 +61,7 @@ qvt_name(qgRdh) _vt_es2 =
 };
 
 // 할당
-pointer_t _es2_allocator()
+qgRdh* _es2_allocator()
 {
 	es2Rdh* self = qn_alloc_zero_1(es2Rdh);
 	qn_retval_if_fail(self, NULL);
@@ -69,7 +69,7 @@ pointer_t _es2_allocator()
 }
 
 // 버전 문자열에서 숫자만
-static int _es2_get_version(GLenum name, const char* name1, const char* name2)
+static int es2_gl_get_version(GLenum name, const char* name1, const char* name2)
 {
 	const char* s = (const char*)ES2FUNC(glGetString)(name);
 	float f =
@@ -79,8 +79,16 @@ static int _es2_get_version(GLenum name, const char* name1, const char* name2)
 	return (int)(floor(f) * 100.0f + (QN_FRACT(f) * 10.0));
 }
 
+// 값
+static int es2_gl_get_integer(GLenum name)
+{
+	GLint n;
+	ES2FUNC(glGetIntegerv)(name, &n);
+	return n;
+}
+
 // 컨스트럭터
-static bool _es2_construct(pointer_t g, int flags)
+static bool _es2_construct(qgRdh* g, int flags)
 {
 	es2Rdh* self = qm_cast(g, es2Rdh);
 
@@ -151,8 +159,11 @@ static bool _es2_construct(pointer_t g, int flags)
 	qn_strncpy(caps->name, 64, info.name, 63);
 	qn_strncpy(caps->renderer, 64, (const char*)ES2FUNC(glGetString)(GL_RENDERER), 63);
 	qn_strncpy(caps->vendor, 64, (const char*)ES2FUNC(glGetString)(GL_VENDOR), 63);
-	caps->renderer_version = _es2_get_version(GL_VERSION, "OPENGLES", "OPENGL ES");
-	caps->shader_version = _es2_get_version(GL_SHADING_LANGUAGE_VERSION, "OPENGL ES GLSL ES ", "OPENGL ES GLSL ");
+	caps->renderer_version = es2_gl_get_version(GL_VERSION, "OPENGLES", "OPENGL ES");
+	caps->shader_version = es2_gl_get_version(GL_SHADING_LANGUAGE_VERSION, "OPENGL ES GLSL ES ", "OPENGL ES GLSL ");
+	caps->max_vertex_attrs = es2_gl_get_integer(GL_MAX_VERTEX_ATTRIBS);
+	if (caps->max_vertex_attrs > QGLOS_MAX_VALUE * 3)
+		caps->max_vertex_attrs = QGLOS_MAX_VALUE * 3;
 	caps->max_tex_dim = info.max_texture_width;
 	caps->max_tex_count = /*임시*/1;
 	caps->max_off_count = /*임시*/1;
@@ -175,14 +186,14 @@ static bool _es2_construct(pointer_t g, int flags)
 }
 
 // 파이날라이즈
-static void _es2_finalize(pointer_t g)
+static void _es2_finalize(qgRdh* g)
 {
 	es2Rdh* self = qm_cast(g, es2Rdh);
 	size_t i;
 
 	// 펜딩
 	qm_unload(self->pd.ib);
-	for (i = 0; i < ES2_MAX_LAYOUT_ATTRIB; i++)
+	for (i = 0; i < self->base.caps.max_vertex_attrs; i++)
 		qm_unload(self->pd.vb[i]);
 
 	// SDL 렌더러
@@ -191,7 +202,7 @@ static void _es2_finalize(pointer_t g)
 }
 
 // 리셋
-static void _es2_reset(pointer_t g)
+static void _es2_reset(qgRdh* g)
 {
 	es2Rdh* self = qm_cast(g, es2Rdh);
 	qgDeviceInfo* caps = &self->base.caps;
@@ -239,22 +250,22 @@ static void _es2_reset(pointer_t g)
 }
 
 // 시작
-static bool _es2_begin(pointer_t g)
+static bool _es2_begin(qgRdh* g)
 {
 	es2Rdh* self = qm_cast(g, es2Rdh);
-	_es2_clear(self, QGCLR_DEPTH | QGCLR_STENCIL | QGCLR_RENDER, &self->base.param.clear, 0, 1.0f);
+	_es2_clear(qm_cast(self, qgRdh), QGCLR_DEPTH | QGCLR_STENCIL | QGCLR_RENDER, &self->base.param.clear, 0, 1.0f);
 	ES2FUNC(glFrontFace)(GL_CW);
 	return true;
 }
 
 // 끝
-static void _es2_end(pointer_t g)
+static void _es2_end(qgRdh* g)
 {
 	es2Rdh* self = qm_cast(g, es2Rdh);
 }
 
 // 플러시
-static void _es2_flush(pointer_t g)
+static void _es2_flush(qgRdh* g)
 {
 	es2Rdh* self = qm_cast(g, es2Rdh);
 
@@ -263,7 +274,7 @@ static void _es2_flush(pointer_t g)
 }
 
 // 지우기
-static void _es2_clear(pointer_t g, int flag, const qnColor* color, int stencil, float depth)
+static void _es2_clear(qgRdh* g, int flag, const qnColor* color, int stencil, float depth)
 {
 	// 도움: https://open.gl/depthstencils
 	es2Rdh* self = qm_cast(g, es2Rdh);
@@ -292,7 +303,7 @@ static void _es2_clear(pointer_t g, int flag, const qnColor* color, int stencil,
 }
 
 // 인덱스 설정
-static bool _es2_set_index(pointer_t g, pointer_t buffer)
+static bool _es2_set_index(qgRdh* g, pointer_t buffer)
 {
 	es2Rdh* self = qm_cast(g, es2Rdh);
 	es2Buf* buf = qm_cast(buffer, es2Buf);
@@ -321,10 +332,10 @@ static bool _es2_set_index(pointer_t g, pointer_t buffer)
 }
 
 // 정점 설정
-static bool _es2_set_vertex(pointer_t g, int stage, pointer_t buffer)
+static bool _es2_set_vertex(qgRdh* g, int stage, pointer_t buffer)
 {
-	qn_retval_if_fail((size_t)stage < ES2_MAX_LAYOUT_ATTRIB, false);
 	es2Rdh* self = qm_cast(g, es2Rdh);
+	qn_retval_if_fail((size_t)stage < self->base.caps.max_vertex_attrs, false);
 	es2Buf* buf = qm_cast(buffer, es2Buf);
 
 	if (buf == NULL)
@@ -351,7 +362,7 @@ static bool _es2_set_vertex(pointer_t g, int stage, pointer_t buffer)
 }
 
 // 레이아웃 만들기
-static pointer_t _es2_create_layout(pointer_t g, int count, const qgVarLayout* vars)
+static qgVlo* _es2_create_layout(qgRdh* g, int count, const qgVarLayout* vars)
 {
 	static GLenum s_format[QGLOT_MAX_VALUE] =
 	{
@@ -438,11 +449,19 @@ static pointer_t _es2_create_layout(pointer_t g, int count, const qgVarLayout* v
 		vlo->base.stage[i] += (uint16_t)offset[i];
 	}
 
-	return vlo;
+	return qm_cast(vlo, qgVlo);
+}
+
+// 세이더 만들기
+static qgShd* _es2_create_shader(qgRdh* g, const char* name)
+{
+	es2Rdh* self = qm_cast(g, es2Rdh);
+	es2Shd* shd = _es2shd_allocator(name);
+	return qm_cast(shd, qgShd);
 }
 
 // 버퍼 만들기
-static pointer_t _es2_create_buffer(pointer_t g, qgBufType type, int count, int stride, cpointer_t data)
+static qgBuf* _es2_create_buffer(qgRdh* g, qgBufType type, int count, int stride, cpointer_t data)
 {
 	qn_retval_if_fail(count > 0 && stride > 0, NULL);
 	es2Rdh* self = qm_cast(g, es2Rdh);
@@ -461,7 +480,7 @@ static pointer_t _es2_create_buffer(pointer_t g, qgBufType type, int count, int 
 	ES2FUNC(glGenBuffers)(1, &gl_id);
 	qn_retval_if_fail(gl_id != 0, NULL);
 
-	_es2_bind_buffer(self, gl_type, gl_id);
+	es2_bind_buffer(self, gl_type, gl_id);
 
 	// 데이터
 	GLenum gl_usage;
@@ -481,33 +500,33 @@ static pointer_t _es2_create_buffer(pointer_t g, qgBufType type, int count, int 
 	ES2FUNC(glBufferData)(gl_type, (GLsizeiptr)size, ptr, gl_usage);
 
 	// 준비는 끝났다
-	es2Buf* buf = qm_cast(_es2buf_allocator(gl_id, gl_type, gl_usage, stride, size, type), es2Buf);
+	es2Buf* buf = _es2buf_allocator(gl_id, gl_type, gl_usage, stride, size, type);
 	if (buf == NULL)
 	{
 		ES2FUNC(glDeleteBuffers)(1, &gl_id);
 		return NULL;
 	}
-	return buf;
+	return qm_cast(buf, qgBuf);
 }
 
 // 프리미티브 시작
-static bool _es2_primitive_begin(pointer_t g, qgTopology tpg, int count, int stride, pointer_t* pptr)
+static bool _es2_primitive_begin(qgRdh* g, qgTopology tpg, int count, int stride, pointer_t* pptr)
 {
 	return false;
 }
 
 // 프리미티브 끝
-static void _es2_primitive_end(pointer_t g)
+static void _es2_primitive_end(qgRdh* g)
 {
 }
 
 // 인덱스 프리미티브 시작
-static bool _es2_indexed_primitive_begin(pointer_t g, qgTopology tpg, int vcount, int vstride, pointer_t* pvptr, int icount, int istride, pointer_t* piptr)
+static bool _es2_indexed_primitive_begin(qgRdh* g, qgTopology tpg, int vcount, int vstride, pointer_t* pvptr, int icount, int istride, pointer_t* piptr)
 {
 	return false;
 }
 
 // 인덱스 프리미티브 끝
-static void _es2_indexed_primitive_end(pointer_t g)
+static void _es2_indexed_primitive_end(qgRdh* g)
 {
 }

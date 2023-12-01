@@ -173,41 +173,41 @@ typedef enum qgLoStage
 	QGLOS_MAX_VALUE,
 } qgLoStage;
 
-typedef enum qgShdName
+typedef enum qgShdType
 {
-	QGSHD_VS,
-	QGSHD_PS,
-} qgShdName;
+	QGSHT_VS,
+	QGSHT_PS,
+} qgShdType;
 
 typedef enum qgShdRole
 {
 	QGSHR_MANUAL,
-	QGSHD_AUTO,
-	QGSHD_DISCARD
+	QGSHR_AUTO,
+	QGSHR_DISCARD
 } qgShdRole;
 
-typedef enum qgShdType
+typedef enum qgShdConst
 {
-	QGSHT_UNKNOWN,
-	QGSHT_FLOAT1,
-	QGSHT_FLOAT2,
-	QGSHT_FLOAT3,
-	QGSHT_FLOAT4,
-	QGSHT_FLOAT16,
-	QGSHT_INT1,
-	QGSHT_INT2,
-	QGSHT_INT3,
-	QGSHT_INT4,
-	QGSHT_BYTE1,
-	QGSHT_BYTE2,
-	QGSHT_BYTE3,
-	QGSHT_BYTE4,
-	QGSHT_SPLR_1D,
-	QGSHT_SPLR_2D,
-	QGSHT_SPLR_3D,
-	QGSHT_SPLR_CUBE,
-	QGSHT_MAX_VALUE
-} qgShdType;
+	QGSHC_UNKNOWN,
+	QGSHC_FLOAT1,
+	QGSHC_FLOAT2,
+	QGSHC_FLOAT3,
+	QGSHC_FLOAT4,
+	QGSHC_FLOAT16,
+	QGSHC_INT1,
+	QGSHC_INT2,
+	QGSHC_INT3,
+	QGSHC_INT4,
+	QGSHC_BYTE1,
+	QGSHC_BYTE2,
+	QGSHC_BYTE3,
+	QGSHC_BYTE4,
+	QGSHC_SPLR_1D,
+	QGSHC_SPLR_2D,
+	QGSHC_SPLR_3D,
+	QGSHC_SPLR_CUBE,
+	QGSHC_MAX_VALUE
+} qgShdConst;
 
 typedef enum qgShdAuto
 {
@@ -236,7 +236,7 @@ typedef enum qgShdAuto
 	QGSHA_PROP_MAT3,
 	QGSHA_MAT_PALETTE,
 	QGSHA_MAX_VALUE
-} qgShaderAuto;
+} qgShdAuto;
 
 typedef enum qgBufType
 {
@@ -424,6 +424,7 @@ typedef struct qgDeviceInfo
 	char				vendor[64];
 	int					renderer_version;
 	int					shader_version;
+	int					max_vertex_attrs;
 	int					max_tex_dim;
 	int					max_tex_count;
 	int					max_off_count;
@@ -535,15 +536,17 @@ typedef struct qgVarShader
 	size_t				hash;
 	char				name[32];
 
-	int					role : 8;			// 0=manual, 1=auto, 2=discard
-	qgShdType			type : 8;
+	qgShdRole			role : 8;			// 0=manual, 1=auto, 2=discard
+	qgShdConst			cnst : 8;
 
 	uint16_t			size;
-	uintptr_t			offset;
+	uint32_t			offset;
 
 	pointer_t			aptr;
-	pointer_t			dptr;
+	pointer_t			xptr;
 } qgVarShader;
+
+typedef void(*qgVarShaderFunc)(pointer_t, int, qgVarShader*, qgShd*);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -580,31 +583,31 @@ struct qgStub
 qvt_name(qgStub)
 {
 	qvt_name(qnGam)		base;
-	bool (*_construct)(pointer_t, pointer_t);
-	void (*_finalize)(pointer_t);
-	bool (*_poll)(pointer_t);
+	bool (*_construct)(qgStub*, pointer_t);
+	void (*_finalize)(qgStub*);
+	bool (*_poll)(qgStub*);
 };
 
 QNAPI qgStub* qg_stub_new(const char* title, int width, int height, int flags);
-QNAPI void qg_stub_close(pointer_t g);
+QNAPI void qg_stub_close(qgStub* g);
 
-QNAPI bool qg_stub_loop(pointer_t g);
-QNAPI bool qg_stub_poll(pointer_t g, qgEvent* ev);
+QNAPI bool qg_stub_loop(qgStub* g);
+QNAPI bool qg_stub_poll(qgStub* g, qgEvent* ev);
 
-QNAPI const qgUimMouse* qg_stub_get_mouse(pointer_t g);
-QNAPI const qgUimKey* qg_stub_get_key(pointer_t g);
-QNAPI bool qg_stub_test_key(pointer_t g, qIkKey key);
-QNAPI double qg_stub_get_runtime(pointer_t g);
-QNAPI double qg_stub_get_fps(pointer_t g);
-QNAPI double qg_stub_get_ref_adv(pointer_t g);
-QNAPI double qg_stub_get_def_adv(pointer_t g);
-QNAPI void qg_stub_set_delay(pointer_t g, int delay);
-QNAPI int qg_stub_get_delay(pointer_t g);
+QNAPI const qgUimMouse* qg_stub_get_mouse(qgStub* g);
+QNAPI const qgUimKey* qg_stub_get_key(qgStub* g);
+QNAPI bool qg_stub_test_key(qgStub* g, qIkKey key);
+QNAPI double qg_stub_get_runtime(qgStub* g);
+QNAPI double qg_stub_get_fps(qgStub* g);
+QNAPI double qg_stub_get_ref_adv(qgStub* g);
+QNAPI double qg_stub_get_def_adv(qgStub* g);
+QNAPI void qg_stub_set_delay(qgStub* g, int delay);
+QNAPI int qg_stub_get_delay(qgStub* g);
 
-QNAPI int qg_stub_left_events(pointer_t g);
-QNAPI int qg_stub_add_event(pointer_t g, const qgEvent* ev);
-QNAPI int qg_stub_add_event_type(pointer_t g, qgEventType type);
-QNAPI bool qg_stub_pop_event(pointer_t g, qgEvent* ev);
+QNAPI int qg_stub_left_events(qgStub* g);
+QNAPI int qg_stub_add_event(qgStub* g, const qgEvent* ev);
+QNAPI int qg_stub_add_event_type(qgStub* g, qgEventType type);
+QNAPI bool qg_stub_pop_event(qgStub* g, qgEvent* ev);
 
 
 // render device
@@ -624,57 +627,58 @@ struct qgRdh
 qvt_name(qgRdh)
 {
 	qvt_name(qnGam)		base;
-	bool (*_construct)(pointer_t, int);
-	void (*_finalize)(pointer_t);
-	void (*_reset)(pointer_t);
-	void (*_clear)(pointer_t, int, const qnColor*, int, float);
+	bool (*_construct)(qgRdh*, int);
+	void (*_finalize)(qgRdh*);
+	void (*_reset)(qgRdh*);
+	void (*_clear)(qgRdh*, int, const qnColor*, int, float);
 
-	bool (*begin)(pointer_t);
-	void (*end)(pointer_t);
-	void (*flush)(pointer_t);
+	bool (*begin)(qgRdh*);
+	void (*end)(qgRdh*);
+	void (*flush)(qgRdh*);
 
-	bool (*set_index)(pointer_t, pointer_t);
-	bool (*set_vertex)(pointer_t, int, pointer_t);
+	bool (*set_index)(qgRdh*, pointer_t);
+	bool (*set_vertex)(qgRdh*, int, pointer_t);
 
-	pointer_t(*create_layout)(pointer_t, int, const qgVarLayout*);
-	pointer_t(*create_buffer)(pointer_t, qgBufType, int, int, cpointer_t);
+	qgVlo* (*create_layout)(qgRdh*, int, const qgVarLayout*);
+	qgShd* (*create_shader)(qgRdh*, const char*);
+	qgBuf* (*create_buffer)(qgRdh*, qgBufType, int, int, cpointer_t);
 
-	bool (*primitive_begin)(pointer_t, qgTopology, int, int, pointer_t*);
-	void (*primitive_end)(pointer_t);
-	bool (*indexed_primitive_begin)(pointer_t, qgTopology, int, int, pointer_t*, int, int, pointer_t*);
-	void (*indexed_primitive_end)(pointer_t);
+	bool (*primitive_begin)(qgRdh*, qgTopology, int, int, pointer_t*);
+	void (*primitive_end)(qgRdh*);
+	bool (*indexed_primitive_begin)(qgRdh*, qgTopology, int, int, pointer_t*, int, int, pointer_t*);
+	void (*indexed_primitive_end)(qgRdh*);
 };
 
 QNAPI qgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, int flags);
 
-QNAPI const qgDeviceInfo* qg_rdh_get_device_info(pointer_t g);
-QNAPI const qgRenderInfo* qg_rdh_get_render_info(pointer_t g);
-QNAPI const qgRenderTm* qg_rdh_get_render_tm(pointer_t g);
-QNAPI const qgRenderParam* qg_rdh_get_render_param(pointer_t g);
+QNAPI const qgDeviceInfo* qg_rdh_get_device_info(qgRdh* g);
+QNAPI const qgRenderInfo* qg_rdh_get_render_info(qgRdh* g);
+QNAPI const qgRenderTm* qg_rdh_get_render_tm(qgRdh* g);
+QNAPI const qgRenderParam* qg_rdh_get_render_param(qgRdh* g);
 
-QNAPI bool qg_rdh_loop(pointer_t g);
-QNAPI bool qg_rdh_poll(pointer_t g, qgEvent* ev);
+QNAPI bool qg_rdh_loop(qgRdh* g);
+QNAPI bool qg_rdh_poll(qgRdh* g, qgEvent* ev);
 
-QNAPI bool qg_rdh_begin(pointer_t g);
-QNAPI void qg_rdh_end(pointer_t g);
-QNAPI void qg_rdh_flush(pointer_t g);
+QNAPI bool qg_rdh_begin(qgRdh* g);
+QNAPI void qg_rdh_end(qgRdh* g);
+QNAPI void qg_rdh_flush(qgRdh* g);
 
-QNAPI void qg_rdh_set_param_vec3(pointer_t g, int at, const qnVec3* v);
-QNAPI void qg_rdh_set_param_vec4(pointer_t g, int at, const qnVec4* v);
-QNAPI void qg_rdh_set_param_mat4(pointer_t g, int at, const qnMat4* m);
-QNAPI void qg_rdh_set_param_weight(pointer_t g, int count, qnMat4* weight);
-QNAPI void qg_rdh_set_clear(pointer_t g, const qnColor* color);
-QNAPI void qg_rdh_set_proj(pointer_t g, const qnMat4* m);
-QNAPI void qg_rdh_set_view(pointer_t g, const qnMat4* m);
-QNAPI void qg_rdh_set_world(pointer_t g, const qnMat4* m);
+QNAPI void qg_rdh_set_param_vec3(qgRdh* g, int at, const qnVec3* v);
+QNAPI void qg_rdh_set_param_vec4(qgRdh* g, int at, const qnVec4* v);
+QNAPI void qg_rdh_set_param_mat4(qgRdh* g, int at, const qnMat4* m);
+QNAPI void qg_rdh_set_param_weight(qgRdh* g, int count, qnMat4* weight);
+QNAPI void qg_rdh_set_clear(qgRdh* g, const qnColor* color);
+QNAPI void qg_rdh_set_proj(qgRdh* g, const qnMat4* m);
+QNAPI void qg_rdh_set_view(qgRdh* g, const qnMat4* m);
+QNAPI void qg_rdh_set_world(qgRdh* g, const qnMat4* m);
 
-QNAPI bool qg_rdh_set_index(pointer_t g, pointer_t buffer);
-QNAPI bool qg_rdh_set_vertex(pointer_t g, int stage, pointer_t buffer);
+QNAPI bool qg_rdh_set_index(qgRdh* g, pointer_t buffer);
+QNAPI bool qg_rdh_set_vertex(qgRdh* g, int stage, pointer_t buffer);
 
-QNAPI qgBuf* qg_rdh_create_buffer(pointer_t g, qgBufType type, int count, int stride, cpointer_t data);
+QNAPI qgBuf* qg_rdh_create_buffer(qgRdh* g, qgBufType type, int count, int stride, cpointer_t data);
 
-QNAPI void qg_rdh_draw_primitive(pointer_t g, qgTopology tpg, int count, int stride, cpointer_t data);
-QNAPI void qg_rdh_draw_indexed_primitive(pointer_t g, qgTopology tpg, int vcount, int vstride, cpointer_t vdata, int icount, int istride, cpointer_t idata);
+QNAPI void qg_rdh_draw_primitive(qgRdh* g, qgTopology tpg, int count, int stride, cpointer_t data);
+QNAPI void qg_rdh_draw_indexed_primitive(qgRdh* g, qgTopology tpg, int vcount, int vstride, cpointer_t vdata, int icount, int istride, cpointer_t idata);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -696,8 +700,8 @@ struct qgVlo
 	uint16_t			stage[QGLOS_MAX_VALUE];
 };
 
-QNAPI uint32_t qg_vlo_get_stride(pointer_t g);
-QNAPI uint32_t qg_vlo_get_stage(pointer_t g, int stage);
+QNAPI uint32_t qg_vlo_get_stride(qgVlo* g);
+QNAPI uint32_t qg_vlo_get_stage(qgVlo* g, int stage);
 
 
 // shader
@@ -705,18 +709,19 @@ struct qgShd
 {
 	qgRdGam				base;
 
-	pointer_t			intr;
+	char				name[64];
+	funcparam_t			intr;
 };
 
 qvt_name(qgShd)
 {
 	qvt_name(qnGam)		base;
-	bool(*bind)(pointer_t, qgShdName, cpointer_t, int, int);
-	bool(*bind_shd)(pointer_t, qgShdName, pointer_t);
-	bool(*bind_name)(pointer_t qgShdName, const char*);
-	void(*add_condition)(pointer_t, const char*);
-	void(*clear_condition)(pointer_t);
-	void(*link)(pointer_t);
+	bool(*bind)(qgShd*, qgShdType, cpointer_t, int, int);
+	bool(*bind_shd)(qgShd*, qgShdType, qgShd*);
+	//bool(*bind_name)(qgShd* qgShdType, const char*);
+	//void(*add_condition)(qgShd*, const char*);
+	//void(*clear_condition)(qgShd*);
+	bool(*link)(qgShd*);
 };
 
 
@@ -733,14 +738,14 @@ struct qgBuf
 qvt_name(qgBuf)
 {
 	qvt_name(qnGam)		base;
-	pointer_t(*map)(pointer_t);
-	bool (*unmap)(pointer_t);
-	bool (*data)(pointer_t, pointer_t);
+	pointer_t(*map)(qgBuf*);
+	bool (*unmap)(qgBuf*);
+	bool (*data)(qgBuf*, cpointer_t);
 };
 
-QNAPI qgBufType qg_buf_get_type(pointer_t g);
-QNAPI uint32_t qg_buf_get_stride(pointer_t g);
-QNAPI uint32_t qg_buf_get_size(pointer_t g);
-QNAPI bool qg_buf_mapped_data(pointer_t g, cpointer_t data, int size);
+QNAPI qgBufType qg_buf_get_type(qgBuf* g);
+QNAPI uint32_t qg_buf_get_stride(qgBuf* g);
+QNAPI uint32_t qg_buf_get_size(qgBuf* g);
+QNAPI bool qg_buf_mapped_data(qgBuf* g, cpointer_t data, int size);
 
 QN_EXTC_END
