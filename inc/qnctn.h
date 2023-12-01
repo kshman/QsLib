@@ -19,15 +19,15 @@ QN_EXTC_BEGIN
 // array
 typedef struct qnArr
 {
-	uint8_t* data;
 	size_t				count;
 	size_t				capa;
+	uint8_t*			data;
 } qnArr;
 
 #define QN_ARR_DECL(name,type)\
 	typedef struct name name;\
 	typedef type name##Type;\
-	struct name { type* data; size_t count; size_t capa; };
+	struct name { size_t count; size_t capa; type* data; };
 
 #define qn_arr_nth(p,n)						(((p)->data)[(size_t)(n)])
 #define qn_arr_inv(p,n)						(((p)->data)[((p)->count-1-(size_t)(n))])
@@ -322,21 +322,21 @@ QN_ARR_DECL(qnPtrArr, pointer_t);
 // container
 typedef struct qnCtnr
 {
-	uint8_t* data;
 	size_t				count;
+	uint8_t*			data;
 } qnCtnr;
 
 #define QN_CTNR_DECL(name,type)\
 	typedef type name##Type;\
-	typedef struct name { type* data; size_t count; } name
+	typedef struct name { size_t count; type* data; } name
 
 #if _DEBUG
-#define qn_ctnr_at_safe(p,n)				(((p)->data)[((size_t)(n)<(p)->count) ? (size_t)(n) : qn_debug_assert(#n, "overflow", __FILE__, __LINE__)])
+#define qn_ctnr_nth_safe(p,n)			(((p)->data)[((size_t)(n)<(p)->count) ? (size_t)(n) : qn_debug_assert(#n, "overflow", __FILE__, __LINE__)])
 #else
-#define qn_ctnr_at_safe(p,n)				(((p)->data)[(size_t)(n)])
+#define qn_ctnr_nth_safe(p,n)			(((p)->data)[(size_t)(n)])
 #endif
-#define qn_ctnr_nth(p,n)					(((p)->data)[(size_t)(n)])
-#define qn_ctnr_count(p)					((p)->count)
+#define qn_ctnr_nth(p,n)				(((p)->data)[(size_t)(n)])
+#define qn_ctnr_count(p)				((p)->count)
 #define qn_ctnr_data(p)					((p)->data)
 #define qn_ctnr_size(name)				(sizeof(name##Type))
 #define qn_ctnr_set(p,n,i)				(((p)->data)[(size_t)(n)]=(i))
@@ -456,7 +456,7 @@ typedef struct qnCtnr
 // pointer container 
 QN_CTNR_DECL(qnPtrCtnr, pointer_t);
 
-#define qn_pctnr_at_safe(p,n)			qn_ctnr_at_safe(p,n)
+#define qn_pctnr_nth_safe(p,n)			qn_ctnr_nth_safe(p,n)
 #define qn_pctnr_nth(p,n)				qn_ctnr_nth(p,n)
 #define qn_pctnr_count(p,n)				qn_ctnr_count(p,n)
 #define qn_pctnr_data(p)				qn_ctnr_data(p)
@@ -510,15 +510,15 @@ QN_CTNR_DECL(qnAnyCtn, any_t);
 // list
 typedef struct qnListNode
 {
-	struct qnListNode* next;
-	struct qnListNode* prev;
+	struct qnListNode*	next;
+	struct qnListNode*	prev;
 	uint8_t				data[];
 } qnListNode;
 
 typedef struct qnList
 {
-	qnListNode* frst;
-	qnListNode* last;
+	qnListNode*			frst;
+	qnListNode*			last;
 	size_t				count;
 } qnList;
 
@@ -815,14 +815,14 @@ typedef struct qnList
 // node list
 typedef struct qnNlNode
 {
-	struct qnNlNode* next;
-	struct qnNlNode* prev;
+	struct qnNlNode*	next;
+	struct qnNlNode*	prev;
 } qnNlNode;
 
 typedef struct qnNodeList
 {
-	qnNlNode* frst;
-	qnNlNode* last;
+	qnNlNode*			frst;
+	qnNlNode*			last;
 	size_t				count;
 } qnNodeList;
 
@@ -1061,7 +1061,7 @@ QN_INLINE bool qn_plist_find(qnPtrList* p, bool (*pred)(pointer_t, pointer_t), p
 // solo list
 typedef struct qnSlist
 {
-	struct qnSlist* next;
+	struct qnSlist*		next;
 	uint8_t				data[];
 } qnSlist;
 
@@ -1526,14 +1526,14 @@ QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, pointer_t item)
 // fixed slice
 typedef struct qnSlice
 {
-	uint8_t* data;
 	size_t				max;
 	size_t				count;
+	uint8_t*			data;
 } qnSlice;
 
 #define QN_SLICE_DECL(name, type)\
 	typedef type name##Type;\
-	typedef struct name { type* data; size_t max; size_t count; } name
+	typedef struct name { size_t max; size_t count; type* data; } name
 
 #define qn_slice_nth(p,n)				(((p)->data)[(size_t)(n)])
 #define qn_slice_invat(p,n)				(((p)->data)[((p)->count-1-(size_t)(n)])
@@ -1781,12 +1781,12 @@ typedef struct qnSlice
 // hash
 typedef struct qnHashNode
 {
-	struct qnHashNode* sib;
-	struct qnHashNode* next;
-	struct qnHashNode* prev;
+	struct qnHashNode*	sib;
+	struct qnHashNode*	next;
+	struct qnHashNode*	prev;
 	size_t				hash;
-	uint64_t* key;
-	uint64_t* value;
+	uint64_t*			key;
+	uint64_t*			value;
 } qnHashNode;
 
 typedef struct qnHash
@@ -1794,9 +1794,9 @@ typedef struct qnHash
 	size_t				revision;
 	size_t				bucket;
 	size_t				count;
-	struct qnHashNode** nodes;
-	struct qnHashNode* frst;
-	struct qnHashNode* last;
+	struct qnHashNode**	nodes;
+	struct qnHashNode*	frst;
+	struct qnHashNode*	last;
 } qnHash;
 
 #define QN_HASH_DECL(name,keytype,valuetype)\
@@ -2454,10 +2454,10 @@ QN_INLINE void _qn_inl_hash_resize(qnHash* p)
 // mukum
 typedef struct qnMukumNode
 {
-	struct qnMukumNode* sib;
+	struct qnMukumNode*	sib;
 	size_t				hash;
-	uint32_t* key;
-	uint32_t* value;
+	uint32_t*			key;
+	uint32_t*			value;
 } qnMukumNode;
 
 typedef struct qnMukum
@@ -2465,7 +2465,7 @@ typedef struct qnMukum
 	size_t				revision;
 	size_t				bucket;
 	size_t				count;
-	qnMukumNode** nodes;
+	qnMukumNode**		nodes;
 } qnMukum;
 
 #define QN_MUKUM_DECL(name,keytype,valuetype)\

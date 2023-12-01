@@ -33,6 +33,12 @@
     <ClInclude Include="qg_kmc.h">
       <Filter>헤더 파일\internal</Filter>
     </ClInclude>
+    <ClInclude Include="qg_es2.h">
+      <Filter>헤더 파일\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="qg_es2func.h">
+      <Filter>헤더 파일\internal</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="qg_stub.c">
@@ -41,10 +47,25 @@
     <ClCompile Include="pch.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="qg_stub_sdl.c">
+    <ClCompile Include="qgsdl_stub.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="qkmc.c">
+    <ClCompile Include="qg_kmc.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="qg_rdh.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="qges2_rdh.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="qg_rdo.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="qges2_rdo.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="qg.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

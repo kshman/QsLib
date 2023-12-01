@@ -25,7 +25,7 @@ pointer_t qm_unload(pointer_t g)
 {
 	qn_retval_if_fail(g, NULL);
 	qnGam* self = qm_cast(g, qnGam);
-	int ref = --self->ref;
+	volatile int ref = (int)--self->ref;
 	if (ref != 0)
 	{
 		qn_assert(ref > 0, "invalid reference count!");
@@ -33,6 +33,14 @@ pointer_t qm_unload(pointer_t g)
 	}
 	self->vt->dispose(self);
 	return NULL;
+}
+
+//
+int qm_get_ref(pointer_t g)
+{
+	qn_retval_if_fail(g, -1);
+	qnGam* self = qm_cast(g, qnGam);
+	return (int)self->ref;
 }
 
 //
@@ -54,9 +62,19 @@ pointer_t qm_set_ptr(pointer_t g, pointer_t ptr)
 }
 
 //
-int qm_get_ref(pointer_t g)
+uintptr_t qm_get_desc(pointer_t g)
 {
-	qn_retval_if_fail(g, -1);
+	qn_retval_if_fail(g, 0);
 	qnGam* self = qm_cast(g, qnGam);
-	return self->ref;
+	return self->desc;
+}
+
+//
+QNAPI uintptr_t qm_set_desc(pointer_t g, uintptr_t ptr)
+{
+	qn_retval_if_fail(g, 0);
+	qnGam* self = qm_cast(g, qnGam);
+	uintptr_t prev = self->desc;
+	self->desc = ptr;
+	return prev;
 }

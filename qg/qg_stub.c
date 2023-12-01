@@ -2,46 +2,74 @@
 #include "qg.h"
 #include "qg_stub.h"
 
-//////////////////////////////////////////////////////////////////////////
-// 스터브
+// 전역 스터브
 qgStub* qg_stub_instance = NULL;
 
-bool _stub_on_init(pointer_t g)
+
+//////////////////////////////////////////////////////////////////////////
+// 스터브
+
+qgStub* qg_stub_new(const char* title, int width, int height, int flags)
 {
 	if (qg_stub_instance)
 	{
-		qn_debug_output(true, "'%s' is already instanced.\n", qvt_cast(qg_stub_instance, qnGam)->name);
-		return false;
+		qn_debug_output(true, "STUB: '%s' is already instanced.\n", qvt_cast(qg_stub_instance, qnGam)->name);
+		return qg_stub_instance;
 	}
 
-	qgStub* self = qm_cast(g, qgStub);
+	qgStub* self = _stub_allocator();
+	if (!self)
+		return NULL;
+
+	struct stubParam param = { title, width, height, flags };
+	_stub_construct(self, &param);
+
+	if (!qvt_cast(self, qgStub)->_construct(self, &param))
+	{
+		_stub_finalize(self);
+		qn_free(self);
+		return NULL;
+	}
+
+	qg_stub_instance = self;
+	return self;
+}
+
+void _stub_dispose(qgStub* self)
+{
+	qvt_cast(self, qgStub)->_finalize(self);
+
+	_stub_finalize(self);
+	qn_free(self);
+
+	if (qg_stub_instance == self)
+		qg_stub_instance = NULL;
+}
+
+void _stub_construct(qgStub* self, struct stubParam* param)
+{
+	self->flags = param->flags;
+	self->sttis = QGSTTI_ACTIVE;
+	self->delay = 10;
 
 	self->timer = qn_timer_new();
 	qn_timer_set_manual(self->timer, true);
 
-	self->delay = 10;
-
 	self->mouse.lim.move = /*제한 이동 거리(포인트)의 제곱*/5 * 5;
 	self->mouse.lim.tick = /*제한 클릭 시간(밀리초)*/500;
 
-	qg_stub_instance = self;
-	return true;
+	qn_list_init(qgListEvent, &self->events);
 }
 
-void _stub_on_disp(pointer_t g)
+void _stub_finalize(qgStub* self)
 {
-	qgStub* self = qm_cast(g, qgStub);
-
 	qn_timer_delete(self->timer);
 
-	if (qg_stub_instance == self)
-		qg_stub_instance = NULL;
-
+	qn_list_disp(qgListEvent, &self->events);
 }
 
-bool _stub_mouse_clicks(pointer_t g, qImButton button, qimTrack track)
+bool _stub_mouse_clicks(qgStub* self, qImButton button, qimTrack track)
 {
-	qgStub* self = qm_cast(g, qgStub);
 	qgUimMouse* m = &self->mouse;
 
 	if (track == QIMT_MOVE)
@@ -87,14 +115,17 @@ bool _stub_mouse_clicks(pointer_t g, qImButton button, qimTrack track)
 	return false;
 }
 
-//
-bool qg_stub_poll(pointer_t g)
+void qg_stub_close(qgStub* self)
 {
-	qgStub* self = qm_cast(g, qgStub);
+	QN_SET_MASK(&self->sttis, QGSTTI_EXIT, true);
+}
 
-	if (!QN_TEST_MASK(self->stats, QGSTI_VIRTUAL))
+//
+bool qg_stub_loop(qgStub* self)
+{
+	if (!QN_TEST_MASK(self->sttis, QGSTTI_VIRTUAL))
 	{
-		if (!_stub_poll(self) || QN_TEST_MASK(self->stats, QGSTI_EXIT))
+		if (!qvt_cast(self, qgStub)->_poll(self) || QN_TEST_MASK(self->sttis, QGSTTI_EXIT))
 			return false;
 	}
 
@@ -104,65 +135,117 @@ bool qg_stub_poll(pointer_t g)
 	self->fps = qn_timer_get_fps(self->timer);
 	self->refadv = adv;
 
-	if (!QN_TEST_MASK(self->stats, QGSTI_PAUSE))
+	if (!QN_TEST_MASK(self->sttis, QGSTTI_PAUSE))
 		self->advance = adv;
 
-	if (QN_TEST_MASK(self->flags, QGSTUB_IDLE))
-		qn_sleep(!QN_TEST_MASK(self->stats, QGSTI_ACTIVE | QGSTI_VIRTUAL) ? self->delay : 1);
+	if (QN_TEST_MASK(self->flags, QGFLAG_IDLE))
+		qn_sleep(!QN_TEST_MASK(self->sttis, QGSTTI_ACTIVE | QGSTTI_VIRTUAL) ? self->delay : 1);
 
 	return true;
 }
 
-const qgUimMouse* qg_stub_get_mouse(pointer_t g)
+//
+bool qg_stub_poll(qgStub* self, qgEvent* ev)
 {
-	qgStub* self = qm_cast(g, qgStub);
+	qn_retval_if_fail(ev, false);
+
+	if (qn_list_is_empty(&self->events))
+		return false;
+
+	*ev = qn_list_data_first(&self->events);
+	qn_list_remove_first(qgListEvent, &self->events);
+	return true;
+}
+
+//
+const qgUimMouse* qg_stub_get_mouse(qgStub* self)
+{
 	return &self->mouse;
 }
 
-const qgUimKey* qg_stub_get_key(pointer_t g)
+//
+const qgUimKey* qg_stub_get_key(qgStub* self)
 {
-	qgStub* self = qm_cast(g, qgStub);
 	return &self->key;
 }
 
-bool qg_stub_test_key(pointer_t g, qIkKey key)
+//
+bool qg_stub_test_key(qgStub* self, qIkKey key)
 {
-	qgStub* self = qm_cast(g, qgStub);
 	return (uint32_t)key < QIK_MAX_VALUE ? self->key.key[key] : false;
 }
 
-double qg_stub_get_runtime(pointer_t g)
+//
+double qg_stub_get_runtime(qgStub* self)
 {
-	qgStub* self = qm_cast(g, qgStub);
 	return self->run;
 }
 
-double qg_stub_get_fps(pointer_t g)
+//
+double qg_stub_get_fps(qgStub* self)
 {
-	qgStub* self = qm_cast(g, qgStub);
 	return self->fps;
 }
 
-double qg_stub_get_ref_adv(pointer_t g)
+//
+double qg_stub_get_ref_adv(qgStub* self)
 {
-	qgStub* self = qm_cast(g, qgStub);
 	return self->refadv;
 }
 
-double qg_stub_get_def_adv(pointer_t g)
+//
+double qg_stub_get_def_adv(qgStub* self)
 {
-	qgStub* self = qm_cast(g, qgStub);
 	return self->advance;
 }
 
-void qg_stub_set_delay(pointer_t g, int delay)
+//
+void qg_stub_set_delay(qgStub* self, int delay)
 {
-	qgStub* self = qm_cast(g, qgStub);
 	self->delay = (uint32_t)QN_CLAMP(delay, 1, 1000);
 }
 
-int qn_stub_get_delay(pointer_t g)
+//
+int qg_stub_get_delay(qgStub* self)
 {
-	qgStub* self = qm_cast(g, qgStub);
 	return (int)self->delay;
+}
+
+//
+int qg_stub_left_events(qgStub* self)
+{
+	return (int)qn_list_count(&self->events);
+}
+
+//
+int qg_stub_add_event(qgStub* self, const qgEvent* ev)
+{
+	qn_retval_if_fail(ev, -1);
+	int cnt = (int)qn_list_count(&self->events);
+	if (cnt >= QNEVENT_MAX_VALUE)
+		return -1;
+	qn_list_append(qgListEvent, &self->events, *ev);
+	return cnt + 1;
+}
+
+//
+int qg_stub_add_event_type(qgStub* self, qgEventType type)
+{
+	int cnt = (int)qn_list_count(&self->events);
+	if (type != QGEV_EXIT && cnt >= QNEVENT_MAX_VALUE)
+		return -1;
+	qgEvent e = { .ev = type };
+	qn_list_append(qgListEvent, &self->events, e);
+	return cnt + 1;
+}
+
+//
+bool qg_stub_pop_event(qgStub* self, qgEvent* ev)
+{
+	qn_retval_if_fail(ev, false);
+	if (qn_list_is_empty(&self->events))
+		return false;
+	*ev = qn_list_data_first(&self->events);
+	qn_list_remove_first(qgListEvent, &self->events);
+	return true;
 }

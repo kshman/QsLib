@@ -45,11 +45,13 @@
 
 // compiler specific
 #if _MSC_VER
+#	define QN_RESTRICT					__restrict
 #	define QN_FORCELINE					__forceinline
 #	define QN_INLINE					__inline
 #	define QN_FUNC_NAME					__FUNCTION__
 #	define QN_MEM_BARRIER()				_ReadWriteBarrier()
 #elif __GNUC__
+#	define QN_RESTRICT					restrict
 #ifndef __cplusplus
 #	define QN_FORCELINE					static inline __attribute__ ((always_inline))
 #	define QN_INLINE					static inline
@@ -723,8 +725,9 @@ qvt_name(qnGam)
 typedef struct qnGam
 {
 	qvt_name(qnGam)*	vt;
-	volatile int		ref;
+	volatile intptr_t	ref;
 	pointer_t			ptr;
+	uintptr_t			desc;
 } qnGam;
 
 QNAPI pointer_t qm_init(pointer_t g, pointer_t vt);
@@ -734,5 +737,7 @@ QNAPI pointer_t qm_unload(pointer_t g);
 QNAPI int qm_get_ref(pointer_t g);
 QNAPI pointer_t qm_get_ptr(pointer_t g);
 QNAPI pointer_t qm_set_ptr(pointer_t g, pointer_t ptr);
+QNAPI uintptr_t qm_get_desc(pointer_t g);
+QNAPI uintptr_t qm_set_desc(pointer_t g, uintptr_t ptr);
 
 QN_EXTC_END
