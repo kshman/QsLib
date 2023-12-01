@@ -4,6 +4,7 @@
 #include "qg_es2.h"
 
 static bool _es2shd_link(qgShd* g);
+static void es2shd_process_var(es2Shd* self);
 es2ShaderAttrib* es2shd_find_attr(es2Shd* self, qgLoUsage usage, int index);
 
 //
@@ -123,6 +124,63 @@ void es2_commit_layout(es2Rdh* self)
 	}
 }
 
+// 사용자 포인터 그리기...인데 이거 ES2에서 됨?
+void es2_commit_layout_up(es2Rdh* self, cpointer_t buffer, int stride)
+{
+	size_t max_attrs = self->base.caps.max_vertex_attrs;
+	es2Shd* shd = self->pd.shd;
+	es2Vlo* vlo = self->pd.vlo;
+
+	es2LayoutElement* stelm = vlo->es_elm[0];	// 스테이지 0밖에 안씀. 버퍼가 하나니깐
+	int stcnt = vlo->es_cnt[0];
+	qn_verify(stride == vlo->base.stage[0]);
+
+	es2_bind_buffer(self, GL_ARRAY_BUFFER, 0);	// 버퍼 초기화 안하면 안된다.
+
+	bool ok[ES2_MAX_VERTEXT_ATTRS] = { false, };
+	for (int i = 0; i < stcnt; i++)
+	{
+		const es2LayoutElement* le = &stelm[i];
+		es2ShaderAttrib* pav = es2shd_find_attr(shd, le->usage, le->index);
+		if (pav != NULL && pav->attrib < max_attrs)
+		{
+			GLuint gl_attr = pav->attrib;
+			es2LayoutProperty* lp = &self->ss.layouts[gl_attr];
+			cpointer_t pointer = ((const uint8_t*)buffer + le->offset);
+			ok[gl_attr] = true;
+			if (!lp->enable)
+			{
+				ES2FUNC(glEnableVertexAttribArray)(gl_attr);
+				lp->enable = true;
+			}
+			if (lp->pointer != pointer ||
+				lp->buffer != 0 ||
+				lp->stride != (GLsizei)stride ||
+				lp->format != le->format ||
+				lp->normalized != le->normalized)
+			{
+				ES2FUNC(glVertexAttribPointer)(gl_attr, le->size, le->format, le->normalized, stride, pointer);
+				lp->pointer = pointer;
+				lp->buffer = 0;
+				lp->stride = stride;
+				lp->size = le->size;
+				lp->format = le->format;
+				lp->normalized = le->normalized;
+			}
+		}
+	}
+
+	// 정리
+	for (size_t s = 0; s < max_attrs; s++)
+	{
+		if (!ok[s] && self->ss.layouts[s].enable)
+		{
+			ES2FUNC(glDisableVertexAttribArray)((GLint)s);
+			self->ss.layouts[s].enable = false;
+		}
+	}
+}
+
 //
 void es2_commit_shader(es2Rdh* self)
 {
@@ -144,6 +202,9 @@ void es2_commit_shader(es2Rdh* self)
 		ES2FUNC(glUseProgram)(program);
 		self->ss.program = program;
 	}
+
+	// 세이더 값 여기서 넣는다!!!
+	es2shd_process_var(shd);
 }
 
 
@@ -353,28 +414,30 @@ static bool _es2shd_bind_shd(qgShd* g, qgShdType type, qgShd* shaderptr)
 	es2Shd* self = qm_cast(g, es2Shd);
 	es2Shd* shader = qm_cast(shaderptr, es2Shd);
 	GLuint handle = (GLuint)qm_get_desc(self);
+	bool ok = false;
 
-	if (type == QGSHT_VS)
+	if (QN_TEST_MASK(type, QGSHT_VS))
 	{
 		qn_retval_if_fail(shader->rvertex, false);
 		es2shd_handle_unload(self->rvertex, handle);
 
 		self->rvertex->ref++;
 		ES2FUNC(glAttachShader)(handle, self->rvertex->handle);
+		ok = true;
 	}
-	else if (type == QGSHT_PS)
+
+	if (QN_TEST_MASK(type, QGSHT_PS))
 	{
 		qn_retval_if_fail(shader->rfragment, false);
 		es2shd_handle_unload(self->rfragment, handle);
 
 		self->rfragment->ref++;
 		ES2FUNC(glAttachShader)(handle, self->rfragment->handle);
+		ok = true;
 	}
-	else
-	{
-		// 멍미!
+
+	if (!ok)
 		return false;
-	}
 
 	self->linked = false;
 	return true;
@@ -564,7 +627,7 @@ es2ShaderAttrib* es2shd_find_attr(es2Shd* self, qgLoUsage usage, int index)
 }
 
 //
-void es2shd_process_var(es2Shd* self)
+static void es2shd_process_var(es2Shd* self)
 {
 	for (size_t i = 0; i < qn_ctnr_count(&self->vars); i++)
 	{

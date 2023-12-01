@@ -29,7 +29,10 @@ typedef struct es2Vlo es2Vlo;
 typedef struct es2Shd es2Shd;
 typedef struct es2Buf es2Buf;
 
-//
+//////////////////////////////////////////////////////////////////////////
+// 데이터 타입
+
+// 참조 핸들
 struct es2RefHandle
 {
 	volatile intptr_t	ref;
@@ -53,7 +56,7 @@ struct es2LayoutElement
 struct es2LayoutProperty
 {
 	bool				enable;
-	pointer_t			pointer;
+	cpointer_t			pointer;
 	GLuint				buffer;
 	GLsizei				stride;
 	GLuint				size;
@@ -74,7 +77,7 @@ struct es2ShaderAttrib
 	es2ShaderAttrib*	next;
 };
 
-//
+// 세션 데이터
 struct es2Session
 {
 	GLuint				program;
@@ -88,7 +91,7 @@ struct es2Session
 	qnRect				scirect;
 };
 
-//
+// 펜딩 데이터
 struct es2Pending
 {
 	es2Shd*				shd;
@@ -107,6 +110,10 @@ struct es2Pending
 	pointer_t			idata;
 };
 
+
+//////////////////////////////////////////////////////////////////////////
+// 디바이스
+
 // ES2 렌더 디바이스
 struct es2Rdh
 {
@@ -118,6 +125,9 @@ struct es2Rdh
 	es2Pending			pd;
 };
 extern void es2_bind_buffer(es2Rdh* self, GLenum type, GLuint id);
+extern void es2_commit_layout(es2Rdh* self);
+extern void es2_commit_layout_up(es2Rdh* self, cpointer_t buffer, int stride);
+extern void es2_commit_shader(es2Rdh* self);
 
 // 레이아웃
 struct es2Vlo
@@ -163,30 +173,3 @@ struct es2Buf
 	pointer_t			lockbuf;
 };
 extern es2Buf* _es2buf_allocator(GLuint gl_id, GLenum gl_type, GLenum gl_usage, int stride, int size, qgBufType type);
-
-//
-QN_INLINE void _es2_mat4_tex_form(qnMat4* m, float radius, float cx, float cy, float tx, float ty, float sx, float sy)
-{
-	float c, s;
-	qn_sincosf(radius, &s, &c);
-
-	m->_11 = c * sx;
-	m->_12 = s * sy;
-	m->_13 = 0.0f;
-	m->_14 = 0.0f;
-
-	m->_21 = -s * sx;
-	m->_22 = c * sy;
-	m->_23 = 0.0f;
-	m->_24 = 0.0f;
-
-	m->_31 = c * sx * cx + -s * cy + tx;
-	m->_32 = s * sy * cx + c * cy + ty;
-	m->_33 = 1.0f;
-	m->_34 = 0.0f;
-
-	m->_41 = 0.0f;
-	m->_42 = 0.0f;
-	m->_43 = 0.0f;
-	m->_44 = 1.0f;
-}

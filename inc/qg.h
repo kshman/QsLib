@@ -69,6 +69,9 @@ typedef enum qgTopology
 	QGTPG_LINE_STRIP,
 	QGTPG_TRI,
 	QGTPG_TRI_STRIP,
+	QGTPG_EX_LINE_LOOP,
+	QGTPG_EX_TRI_FAN,
+	QGTPG_MAX_VALUE,
 } qgTopology;
 
 typedef enum qgFill
@@ -175,8 +178,9 @@ typedef enum qgLoStage
 
 typedef enum qgShdType
 {
-	QGSHT_VS,
-	QGSHT_PS,
+	QGSHT_VS = QN_BIT(0),
+	QGSHT_PS = QN_BIT(1),
+	QGSHT_ALL = QGSHT_VS | QGSHT_PS,
 } qgShdType;
 
 typedef enum qgShdRole
@@ -441,7 +445,7 @@ typedef struct qgRenderInfo
 	intptr_t			shaders;
 	intptr_t			transforms;
 	intptr_t			draws;
-	intptr_t			vertices;
+	intptr_t			primitives;
 	bool				flush;
 } qgRenderInfo;
 
@@ -636,18 +640,20 @@ qvt_name(qgRdh)
 	void (*end)(qgRdh*);
 	void (*flush)(qgRdh*);
 
-	void (*set_shader)(qgRdh*, qgShd*, qgVlo*);
-	bool (*set_index)(qgRdh*, qgBuf*);
-	bool (*set_vertex)(qgRdh*, int, qgBuf*);
-
 	qgVlo* (*create_layout)(qgRdh*, int, const qgVarLayout*);
 	qgShd* (*create_shader)(qgRdh*, const char*);
 	qgBuf* (*create_buffer)(qgRdh*, qgBufType, int, int, cpointer_t);
+
+	void (*set_shader)(qgRdh*, qgShd*, qgVlo*);
+	bool (*set_index)(qgRdh*, qgBuf*);
+	bool (*set_vertex)(qgRdh*, int, qgBuf*);
 
 	bool (*primitive_begin)(qgRdh*, qgTopology, int, int, pointer_t*);
 	void (*primitive_end)(qgRdh*);
 	bool (*indexed_primitive_begin)(qgRdh*, qgTopology, int, int, pointer_t*, int, int, pointer_t*);
 	void (*indexed_primitive_end)(qgRdh*);
+	bool (*draw)(qgRdh*, qgTopology, int);
+	bool (*draw_indexed)(qgRdh*, qgTopology, int);
 };
 
 QNAPI qgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, int flags);
@@ -673,13 +679,18 @@ QNAPI void qg_rdh_set_proj(qgRdh* g, const qnMat4* m);
 QNAPI void qg_rdh_set_view(qgRdh* g, const qnMat4* m);
 QNAPI void qg_rdh_set_world(qgRdh* g, const qnMat4* m);
 
+QNAPI qgVlo* qg_rdh_create_layout(qgRdh* self, int count, const qgVarLayout* layouts);
+QNAPI qgShd* qg_rdh_create_shader(qgRdh* self, const char* name);
+QNAPI qgBuf* qg_rdh_create_buffer(qgRdh* g, qgBufType type, int count, int stride, cpointer_t data);
+
+QNAPI void qg_set_shader(qgRdh* self, qgShd* shader, qgVlo* layout);
 QNAPI bool qg_rdh_set_index(qgRdh* g, pointer_t buffer);
 QNAPI bool qg_rdh_set_vertex(qgRdh* g, int stage, pointer_t buffer);
 
-QNAPI qgBuf* qg_rdh_create_buffer(qgRdh* g, qgBufType type, int count, int stride, cpointer_t data);
-
-QNAPI void qg_rdh_draw_primitive(qgRdh* g, qgTopology tpg, int count, int stride, cpointer_t data);
-QNAPI void qg_rdh_draw_indexed_primitive(qgRdh* g, qgTopology tpg, int vcount, int vstride, cpointer_t vdata, int icount, int istride, cpointer_t idata);
+QNAPI void qg_rdh_primitive_draw(qgRdh* g, qgTopology tpg, int count, int stride, cpointer_t data);
+QNAPI void qg_rdh_primitive_draw_indexed(qgRdh* g, qgTopology tpg, int vcount, int vstride, cpointer_t vdata, int icount, int istride, cpointer_t idata);
+QNAPI bool qg_rdh_draw(qgRdh* self, qgTopology tpg, int vcount);
+QNAPI bool qg_rdh_draw_indexed(qgRdh* self, qgTopology tpg, int icount);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -747,6 +758,9 @@ qvt_name(qgBuf)
 QNAPI qgBufType qg_buf_get_type(qgBuf* g);
 QNAPI uint32_t qg_buf_get_stride(qgBuf* g);
 QNAPI uint32_t qg_buf_get_size(qgBuf* g);
-QNAPI bool qg_buf_mapped_data(qgBuf* g, cpointer_t data, int size);
+
+QNAPI pointer_t qg_buf_map(qgBuf* self);
+QNAPI bool qg_buf_unmap(qgBuf* self);
+QNAPI bool qg_buf_data(qgBuf* self, cpointer_t data);
 
 QN_EXTC_END

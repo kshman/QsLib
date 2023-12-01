@@ -143,7 +143,7 @@ bool qg_rdh_loop(qgRdh* self)
 	i->shaders = 0;
 	i->transforms = 0;
 	i->draws = 0;
-	i->vertices = 0;
+	i->primitives = 0;
 
 	i->begins++;
 	i->flush = false;
@@ -261,24 +261,6 @@ void qg_rdh_set_world(qgRdh* self, const qnMat4* m)
 	self->info.transforms++;
 }
 
-void qg_set_shader(qgRdh* self, qgShd* shader, qgVlo* layout)
-{
-	self->info.invokes++;
-	qvt_cast(self, qgRdh)->set_shader(self, shader, layout);
-}
-
-bool qg_rdh_set_index(qgRdh* self, pointer_t buffer)
-{
-	self->info.invokes++;
-	return qvt_cast(self, qgRdh)->set_index(self, buffer);
-}
-
-bool qg_rdh_set_vertex(qgRdh* self, int stage, pointer_t buffer)
-{
-	self->info.invokes++;
-	return qvt_cast(self, qgRdh)->set_vertex(self, stage, buffer);
-}
-
 qgVlo* qg_rdh_create_layout(qgRdh* self, int count, const qgVarLayout* layouts)
 {
 	self->info.invokes++;
@@ -297,9 +279,28 @@ qgBuf* qg_rdh_create_buffer(qgRdh* self, qgBufType type, int count, int stride, 
 	return qvt_cast(self, qgRdh)->create_buffer(self, type, count, stride, data);
 }
 
-void qg_rdh_draw_primitive(qgRdh* self, qgTopology tpg, int count, int stride, cpointer_t data)
+void qg_set_shader(qgRdh* self, qgShd* shader, qgVlo* layout)
 {
-	qn_ret_if_fail((size_t)count > 0 && (size_t)stride > 0 && data);
+	self->info.invokes++;
+	self->info.shaders++;
+	qvt_cast(self, qgRdh)->set_shader(self, shader, layout);
+}
+
+bool qg_rdh_set_index(qgRdh* self, pointer_t buffer)
+{
+	self->info.invokes++;
+	return qvt_cast(self, qgRdh)->set_index(self, buffer);
+}
+
+bool qg_rdh_set_vertex(qgRdh* self, int stage, pointer_t buffer)
+{
+	self->info.invokes++;
+	return qvt_cast(self, qgRdh)->set_vertex(self, stage, buffer);
+}
+
+void qg_rdh_primitive_draw(qgRdh* self, qgTopology tpg, int count, int stride, cpointer_t data)
+{
+	qn_ret_if_fail(count > 0 && stride > 0 && data);
 	pointer_t vert;
 	if (!qvt_cast(self, qgRdh)->primitive_begin(self, tpg, count, stride, &vert))
 		return;
@@ -308,13 +309,13 @@ void qg_rdh_draw_primitive(qgRdh* self, qgTopology tpg, int count, int stride, c
 
 	self->info.invokes++;
 	self->info.draws++;
-	self->info.vertices += count;
+	self->info.primitives += count;
 }
 
-void qg_rdh_draw_indexed_primitive(qgRdh* self, qgTopology tpg, int vcount, int vstride, cpointer_t vdata, int icount, int istride, cpointer_t idata)
+void qg_rdh_primitive_draw_indexed(qgRdh* self, qgTopology tpg, int vcount, int vstride, cpointer_t vdata, int icount, int istride, cpointer_t idata)
 {
-	qn_ret_if_fail((size_t)vcount > 0 && (size_t)vstride > 0 && vdata);
-	qn_ret_if_fail((size_t)icount > 0 && (size_t)istride > 0 && idata);
+	qn_ret_if_fail(vcount > 0 && vstride > 0 && vdata);
+	qn_ret_if_fail(icount > 0 && istride > 0 && idata);
 	pointer_t vert, ind;
 	if (!qvt_cast(self, qgRdh)->indexed_primitive_begin(self, tpg, vcount, vstride, &vert, icount, istride, &ind))
 		return;
@@ -324,5 +325,25 @@ void qg_rdh_draw_indexed_primitive(qgRdh* self, qgTopology tpg, int vcount, int 
 
 	self->info.invokes++;
 	self->info.draws++;
-	self->info.vertices += vcount;
+	self->info.primitives += vcount;
+}
+
+bool qg_rdh_draw(qgRdh* self, qgTopology tpg, int vcount)
+{
+	qn_retval_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
+	qn_retval_if_fail(vcount > 0, false);
+
+	self->info.invokes++;
+	self->info.draws++;
+	return qvt_cast(self, qgRdh)->draw(self, tpg, vcount);
+}
+
+bool qg_rdh_draw_indexed(qgRdh* self, qgTopology tpg, int icount)
+{
+	qn_retval_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
+	qn_retval_if_fail(icount > 0, false);
+
+	self->info.invokes++;
+	self->info.draws++;
+	return qvt_cast(self, qgRdh)->draw_indexed(self, tpg, icount);
 }

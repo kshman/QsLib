@@ -19,6 +19,44 @@ uint32_t qg_vlo_get_stage(qgVlo* self, int stage)
 
 
 //////////////////////////////////////////////////////////////////////////
+// 세이더
+
+const char* qg_shd_get_name(qgShd* self)
+{
+	return self->name;
+}
+
+void qg_shd_set_intr(qgShd* self, qgVarShaderFunc func, pointer_t data)
+{
+	if (func == NULL)
+	{
+		self->intr.func = NULL;
+		self->intr.data = NULL;
+		return;
+	}
+
+	self->intr.func = (paramfunc_t)func;
+	self->intr.data = data;
+}
+
+bool qg_shd_bind(qgShd* self, qgShdType type, cpointer_t data, int size, int flags)
+{
+	qn_retval_if_fail(data && size > 0, false);
+	return qvt_cast(self, qgShd)->bind(self, type, data, size, flags);
+}
+
+bool qg_shd_bind_shd(qgShd* self, qgShdType type, qgShd* shader)
+{
+	return qvt_cast(self, qgShd)->bind_shd(self, type, shader);
+}
+
+bool qg_shd_link(qgShd* self)
+{
+	return qvt_cast(self, qgShd)->link(self);
+}
+
+
+//////////////////////////////////////////////////////////////////////////
 // 버퍼
 
 // 버퍼 타입
@@ -40,12 +78,19 @@ uint32_t qg_buf_get_size(qgBuf* self)
 }
 
 //
-bool qg_buf_mapped_data(qgBuf* self, cpointer_t data, int size)
+pointer_t qg_buf_map(qgBuf* self)
 {
-	qn_retval_if_fail(data, false);
-	size_t sz = size == 0 ? self->size : (size_t)size;
-	pointer_t lock = qvt_cast(self, qgBuf)->map(self);
-	qn_retval_if_fail(lock, false);
-	memcpy(lock, data, sz);
+	return qvt_cast(self, qgBuf)->map(self);
+}
+
+bool qg_buf_unmap(qgBuf* self)
+{
 	return qvt_cast(self, qgBuf)->unmap(self);
 }
+
+bool qg_buf_data(qgBuf* self, cpointer_t data)
+{
+	qn_retval_if_fail(data, false);
+	return qvt_cast(self, qgBuf)->data(self, data);
+}
+
