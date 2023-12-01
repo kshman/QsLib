@@ -2,8 +2,16 @@
 #include "qg.h"
 #include "qg_stub.h"
 
+// 전역 디바이스
+qgRdh* qg_rdh_instance = NULL;
+
+
 //////////////////////////////////////////////////////////////////////////
 // 렌더 디바이스
+
+static void _rdh_construct(pointer_t g, qgStub* stub);
+static void _rdh_finalize(pointer_t g);
+static void _rdh_reset(pointer_t g);
 
 qgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, int flags)
 {
@@ -44,7 +52,15 @@ qgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, 
 
 	_rdh_reset(self);
 
+	if (qg_rdh_instance == NULL)
+		qg_rdh_instance = self;
 	return self;
+}
+
+static void _rdh_construct(pointer_t g, qgStub* stub)
+{
+	qgRdh* self = qm_cast(g, qgRdh);
+	self->stub = stub;
 }
 
 void _rdh_dispose(pointer_t g)
@@ -55,21 +71,18 @@ void _rdh_dispose(pointer_t g)
 	_rdh_finalize(self);
 
 	qn_free(self);
+
+	if (qg_rdh_instance == self)
+		qg_rdh_instance = NULL;
 }
 
-void _rdh_construct(pointer_t g, qgStub* stub)
-{
-	qgRdh* self = qm_cast(g, qgRdh);
-	self->stub = stub;
-}
-
-void _rdh_finalize(pointer_t g)
+static void _rdh_finalize(pointer_t g)
 {
 	qgRdh* self = qm_cast(g, qgRdh);
 	qm_unload(self->stub);
 }
 
-void _rdh_reset(pointer_t g)
+static void _rdh_reset(pointer_t g)
 {
 	qgRdh* self = qm_cast(g, qgRdh);
 
@@ -100,28 +113,24 @@ void _rdh_reset(pointer_t g)
 
 const qgDeviceInfo* qg_rdh_get_device_info(pointer_t g)
 {
-	qn_retval_if_fail(g, NULL);
 	qgRdh* self = qm_cast(g, qgRdh);
 	return &self->caps;
 }
 
 const qgRenderInfo* qg_rdh_get_render_info(pointer_t g)
 {
-	qn_retval_if_fail(g, NULL);
 	qgRdh* self = qm_cast(g, qgRdh);
 	return &self->info;
 }
 
 const qgRenderTm* qg_rdh_get_render_tm(pointer_t g)
 {
-	qn_retval_if_fail(g, NULL);
 	qgRdh* self = qm_cast(g, qgRdh);
 	return &self->tm;
 }
 
 const qgRenderParam* qg_rdh_get_render_param(pointer_t g)
 {
-	qn_retval_if_fail(g, NULL);
 	qgRdh* self = qm_cast(g, qgRdh);
 	return &self->param;
 }
@@ -129,7 +138,6 @@ const qgRenderParam* qg_rdh_get_render_param(pointer_t g)
 //
 bool qg_rdh_loop(pointer_t g)
 {
-	qn_retval_if_fail(g, false);
 	qgRdh* self = qm_cast(g, qgRdh);
 
 	if (!qg_stub_loop(self->stub))
@@ -154,7 +162,7 @@ bool qg_rdh_loop(pointer_t g)
 //
 bool qg_rdh_poll(pointer_t g, qgEvent* ev)
 {
-	qn_retval_if_fail(g && ev, false);
+	qn_retval_if_fail(ev, false);
 	qgRdh* self = qm_cast(g, qgRdh);
 	bool ret = qg_stub_poll(self->stub, ev);
 	if (!ret)
@@ -173,7 +181,6 @@ bool qg_rdh_poll(pointer_t g, qgEvent* ev)
 
 bool qg_rdh_begin(pointer_t g)
 {
-	qn_retval_if_fail(g, false);
 	qgRdh* self = qm_cast(g, qgRdh);
 
 	self->info.flush = false;
@@ -183,7 +190,6 @@ bool qg_rdh_begin(pointer_t g)
 
 void qg_rdh_end(pointer_t g)
 {
-	qn_ret_if_fail(g);
 	qgRdh* self = qm_cast(g, qgRdh);
 
 	self->info.ends++;
@@ -194,7 +200,6 @@ void qg_rdh_end(pointer_t g)
 
 void qg_rdh_flush(pointer_t g)
 {
-	qn_ret_if_fail(g);
 	qgRdh* self = qm_cast(g, qgRdh);
 
 	if (!self->info.flush)
@@ -210,7 +215,7 @@ void qg_rdh_flush(pointer_t g)
 
 void qg_rdh_set_param_vec4(pointer_t g, int at, const qnVec4* v)
 {
-	qn_ret_if_fail(g && v);
+	qn_ret_if_fail(v);
 	qgRdh* self = qm_cast(g, qgRdh);
 	qn_ret_if_fail((size_t)at < QN_COUNTOF(self->param.v));
 	self->param.v[at] = *v;
@@ -220,7 +225,7 @@ void qg_rdh_set_param_vec4(pointer_t g, int at, const qnVec4* v)
 
 void qg_rdh_set_param_vec3(pointer_t g, int at, const qnVec3* v)
 {
-	qn_ret_if_fail(g && v);
+	qn_ret_if_fail(v);
 	qgRdh* self = qm_cast(g, qgRdh);
 	qn_ret_if_fail((size_t)at < QN_COUNTOF(self->param.v));
 	qn_vec4_set(&self->param.v[at], v->x, v->y, v->z, 0.0f);
@@ -230,7 +235,7 @@ void qg_rdh_set_param_vec3(pointer_t g, int at, const qnVec3* v)
 
 void qg_rdh_set_param_mat4(pointer_t g, int at, const qnMat4* m)
 {
-	qn_ret_if_fail(g && m);
+	qn_ret_if_fail(m);
 	qgRdh* self = qm_cast(g, qgRdh);
 	qn_ret_if_fail((size_t)at < QN_COUNTOF(self->param.m));
 	self->param.m[at] = *m;
@@ -240,7 +245,6 @@ void qg_rdh_set_param_mat4(pointer_t g, int at, const qnMat4* m)
 
 void qg_rdh_set_param_weight(pointer_t g, int count, qnMat4* weight)
 {
-	qn_ret_if_fail(g);
 	qgRdh* self = qm_cast(g, qgRdh);
 	self->param.bones = count;
 	self->param.bonptr = weight;
@@ -250,16 +254,18 @@ void qg_rdh_set_param_weight(pointer_t g, int count, qnMat4* weight)
 
 void qg_rdh_set_clear(pointer_t g, const qnColor* color)
 {
-	qn_ret_if_fail(g && color);
 	qgRdh* self = qm_cast(g, qgRdh);
-	self->param.clear = *color;
+	if (color)
+		self->param.clear = *color;
+	else
+		qn_color_set(&self->param.clear, 0.0f, 0.0f, 0.0f, 1.0f);
 
 	self->info.invokes++;
 }
 
 void qg_rdh_set_proj(pointer_t g, const qnMat4* m)
 {
-	qn_ret_if_fail(g && m);
+	qn_ret_if_fail(m);
 	qgRdh* self = qm_cast(g, qgRdh);
 	self->tm.proj = *m;
 	qn_mat4_mul(&self->tm.vp, &self->tm.view, m);
@@ -270,7 +276,7 @@ void qg_rdh_set_proj(pointer_t g, const qnMat4* m)
 
 void qg_rdh_set_view(pointer_t g, const qnMat4* m)
 {
-	qn_ret_if_fail(g && m);
+	qn_ret_if_fail(m);
 	qgRdh* self = qm_cast(g, qgRdh);
 	self->tm.view = *m;
 	qn_mat4_inv(&self->tm.inv, m, NULL);
@@ -282,7 +288,7 @@ void qg_rdh_set_view(pointer_t g, const qnMat4* m)
 
 void qg_rdh_set_world(pointer_t g, const qnMat4* m)
 {
-	qn_ret_if_fail(g && m);
+	qn_ret_if_fail(m);
 	qgRdh* self = qm_cast(g, qgRdh);
 	self->tm.world = *m;
 
@@ -290,9 +296,23 @@ void qg_rdh_set_world(pointer_t g, const qnMat4* m)
 	self->info.transforms++;
 }
 
+bool qg_rdh_set_index(pointer_t g, pointer_t buffer)
+{
+	return qvt_cast(g, qgRdh)->set_index(g, buffer);
+}
+
+bool qg_rdh_set_vertex(pointer_t g, int stage, pointer_t buffer)
+{
+	return qvt_cast(g, qgRdh)->set_vertex(g, stage, buffer);
+}
+
+qgBuf* qg_rdh_create_buffer(pointer_t g, qgBufType type, int count, int stride, cpointer_t data)
+{
+	return qm_cast(qvt_cast(g, qgRdh)->create_buffer(g, type, count, stride, data), qgBuf);
+}
+
 void qg_rdh_draw_primitive(pointer_t g, qgTopology tpg, int count, int stride, cpointer_t data)
 {
-	qn_ret_if_fail(g);
 	qgRdh* self = qm_cast(g, qgRdh);
 
 	qn_ret_if_fail((size_t)count > 0 && (size_t)stride > 0 && data);
@@ -309,7 +329,6 @@ void qg_rdh_draw_primitive(pointer_t g, qgTopology tpg, int count, int stride, c
 
 void qg_rdh_draw_indexed_primitive(pointer_t g, qgTopology tpg, int vcount, int vstride, cpointer_t vdata, int icount, int istride, cpointer_t idata)
 {
-	qn_ret_if_fail(g);
 	qgRdh* self = qm_cast(g, qgRdh);
 	qn_ret_if_fail((size_t)vcount > 0 && (size_t)vstride > 0 && vdata);
 	qn_ret_if_fail((size_t)icount > 0 && (size_t)istride > 0 && idata);

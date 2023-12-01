@@ -69,7 +69,7 @@ bool _sdl_construct(pointer_t g, struct stubParam* param)
 	}
 
 	SDL_GetWindowWMInfo(self->window, &self->wminfo);
-	self->base.handle = self->window;
+	qm_set_desc(self, (uintptr_t)self->window);
 #if _QN_WINDOWS_
 	self->base.oshandle = self->wminfo.info.win.window;
 #elif _QN_ANDROID_

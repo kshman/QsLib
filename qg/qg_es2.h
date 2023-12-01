@@ -1,8 +1,6 @@
 ﻿#pragma once
 
-#ifndef APIENTRY
-#define APIENTRY
-#endif
+#define ES2_MAX_LAYOUT_ATTRIB	12
 
 #if _QN_WINDOWS_
 typedef struct es2Func
@@ -13,9 +11,22 @@ typedef struct es2Func
 } es2Func;
 
 extern es2Func _es2func;
+#define ES2FUNC(f)		_es2func.##f
+#else
+#define ES2FUNC(f)		f
 #endif
 
-typedef struct es2Session
+#define ES2RDH_INSTANCE			((es2Rdh*)qg_rdh_instance)
+
+typedef struct es2Session es2Session;
+typedef struct es2Pending es2Pending;
+typedef struct es2Rdh es2Rdh;
+typedef struct es2VloElement es2VloElement;
+typedef struct es2Vlo es2Vlo;
+typedef struct es2Buf es2Buf;
+
+//
+struct es2Session
 {
 	GLuint				program;
 	GLuint				buf_array;
@@ -24,10 +35,14 @@ typedef struct es2Session
 
 	bool				scissor;
 	qnRect				scirect;
-} es2Session;
+};
 
-typedef struct es2Pending
+//
+struct es2Pending
 {
+	es2Buf*				ib;
+	es2Buf*				vb[ES2_MAX_LAYOUT_ATTRIB];
+
 	int					tpg;
 	int					vcount;
 	int					vstride;
@@ -36,9 +51,10 @@ typedef struct es2Pending
 	int					isize;
 	pointer_t			vdata;
 	pointer_t			idata;
-} es2Pending;
+};
 
-typedef struct es2Rdh
+//
+struct es2Rdh
 {
 	qgRdh				base;
 
@@ -46,8 +62,46 @@ typedef struct es2Rdh
 
 	es2Session			ss;
 	es2Pending			pd;
-} es2Rdh;
+};
 
+void _es2_bind_buffer(es2Rdh* self, GLenum type, GLuint id);
+
+// 레이아웃 요소
+struct es2VloElement
+{
+	qgLoUsage			usage;
+	int					index;
+	GLenum				format;
+	GLuint				offset;
+	GLuint				attrib;
+	GLuint				size;
+	GLboolean			normalized;
+	GLboolean			conv;
+};
+
+// 레이아웃
+struct es2Vlo
+{
+	qgVlo				base;
+
+	int					es_cnt[QGLOS_MAX_VALUE];
+	es2VloElement*		es_elm[QGLOS_MAX_VALUE];
+};
+extern pointer_t _es2vlo_allocator();
+
+// 버퍼
+struct es2Buf
+{
+	qgBuf				base;
+
+	GLenum				gl_type;
+	GLenum				gl_usage;
+
+	pointer_t			lockbuf;
+};
+extern pointer_t _es2buf_allocator(GLuint gl_id, GLenum gl_type, GLenum gl_usage, int stride, int size, qgBufType type);
+
+//
 QN_INLINE void _es2_mat4_tex_form(qnMat4* m, float radius, float cx, float cy, float tx, float ty, float sx, float sy)
 {
 	float c, s;

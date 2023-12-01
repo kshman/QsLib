@@ -725,6 +725,7 @@ typedef struct qnGam
 	qvt_name(qnGam)*	vt;
 	volatile intptr_t	ref;
 	pointer_t			ptr;
+	uintptr_t			desc;
 } qnGam;
 
 QNAPI pointer_t qm_init(pointer_t g, pointer_t vt);
@@ -734,5 +735,7 @@ QNAPI pointer_t qm_unload(pointer_t g);
 QNAPI int qm_get_ref(pointer_t g);
 QNAPI pointer_t qm_get_ptr(pointer_t g);
 QNAPI pointer_t qm_set_ptr(pointer_t g, pointer_t ptr);
+QNAPI uintptr_t qm_get_desc(pointer_t g);
+QNAPI uintptr_t qm_set_desc(pointer_t g, uintptr_t ptr);
 
 QN_EXTC_END

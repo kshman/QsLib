@@ -8,11 +8,20 @@
 #define _QG_VERSION_					202311L
 
 // definition
-typedef struct qgStub qgStub;
-typedef struct qgRdh qgRdh;
+typedef struct qgStub qgStub;			/**< STUB */
+typedef struct qgRdh qgRdh;				/**< RENDERER */
+typedef struct qgRdGam qgRdGam;			/**< RENDER OBJECT */
+typedef struct qgRds qgRds;				/**< DEPTH&STENCIL */
+typedef struct qgRsz qgRsz;				/**< RASTERIZER */
+typedef struct qgBld qgBld;				/**< BLEND */
+typedef struct qgSpr qgSpr;				/**< SAMPLER */
+typedef struct qgShd qgShd;				/**< SHADER */
+typedef struct qgVlo qgVlo;				/**< VERTEX LAYOUT */
+typedef struct qgBuf qgBuf;				/**< BUFFER */
 
 // instance
 QNAPI qgStub* qg_stub_instance;
+QNAPI qgRdh* qg_rdh_instance;
 
 QN_EXTC_BEGIN
 
@@ -124,28 +133,142 @@ typedef enum qgFactor
 	QGBFT_SAS,
 } qgFactor;
 
+typedef enum qgLoUsage
+{
+	QGLOU_POSITION,
+	QGLOU_COLOR,		// diffuse & specular
+	QGLOU_WEIGHT,		// blend weights
+	QGLOU_INDEX,		// blend indices
+	QGLOU_NORMAL,
+	QGLOU_TEXTURE,		// texture coord
+	QGLOU_TANGENT,
+	QGLOU_BINORMAL,
+	QGLOU_MAX_VALUE
+} qgLoUsage;
+
+typedef enum qgLoType
+{
+	QGLOT_FLOAT1,
+	QGLOT_FLOAT2,
+	QGLOT_FLOAT3,
+	QGLOT_FLOAT4,
+	QGLOT_HALF2,
+	QGLOT_HALF4,
+	QGLOT_BYTE2,
+	QGLOT_BYTE4,
+	QGLOT_BYTE4N,
+	QGLOT_SHORT2,
+	QGLOT_SHORT4,
+	QGLOT_SHORT2N,
+	QGLOT_COLOR,
+	QGLOT_MAX_VALUE
+} qgLoType;
+
+typedef enum qgLoStage
+{
+	QGLOS_1,
+	QGLOS_2,
+	QGLOS_3,
+	QGLOS_4,
+	QGLOS_MAX_VALUE,
+} qgLoStage;
+
+typedef enum qgShdType
+{
+	QGSHT_UNKNOWN,
+	QGSHT_FLOAT1,
+	QGSHT_FLOAT2,
+	QGSHT_FLOAT3,
+	QGSHT_FLOAT4,
+	QGSHT_FLOAT16,
+	QGSHT_INT1,
+	QGSHT_INT2,
+	QGSHT_INT3,
+	QGSHT_INT4,
+	QGSHT_BYTE1,
+	QGSHT_BYTE2,
+	QGSHT_BYTE3,
+	QGSHT_BYTE4,
+	QGSHT_SPLR_1D,
+	QGSHT_SPLR_2D,
+	QGSHT_SPLR_3D,
+	QGSHT_SPLR_CUBE,
+	QGSHT_MAX_VALUE
+} qgShaderType;
+
+typedef enum qgShdAuto
+{
+	QGSHA_ORTHO_PROJ,
+	QGSHA_WORLD,
+	QGSHA_VIEW,
+	QGSHA_PROJ,
+	QGSHA_VIEW_PROJ,
+	QGSHA_INV_VIEW,
+	QGSHA_WORLD_VIEW_PROJ,
+	QGSHA_TEX0,
+	QGSHA_TEX1,
+	QGSHA_TEX2,
+	QGSHA_TEX3,
+	QGSHA_TEX4,
+	QGSHA_TEX5,
+	QGSHA_TEX6,
+	QGSHA_TEX7,
+	QGSHA_PROP_VEC0,
+	QGSHA_PROP_VEC1,
+	QGSHA_PROP_VEC2,
+	QGSHA_PROP_VEC3,
+	QGSHA_PROP_MAT0,
+	QGSHA_PROP_MAT1,
+	QGSHA_PROP_MAT2,
+	QGSHA_PROP_MAT3,
+	QGSHA_MAT_PALETTE,
+	QGSHA_MAX_VALUE
+} qgShaderAuto;
+
+typedef enum qgBufType
+{
+	QGBUF_UNKNOWN,
+	QGBUF_INDEX,
+	QGBUF_VERTEX,
+} qgBufType;
+
+typedef enum qgResAccess
+{
+	QGRSA_NONE = 0,
+	QGRSA_RD = QN_BIT(0),
+	QGRSA_WR = QN_BIT(1),
+	QGRSA_RW = QGRSA_RD | QGRSA_WR,
+} qgResAccess;
+
+typedef enum qgClear
+{
+	QGCLR_DEPTH = QN_BIT(0),
+	QGCLR_STENCIL = QN_BIT(1),
+	QGCLR_RENDER = QN_BIT(2),
+} qgClear;
+
 typedef enum qgFlag
 {
-	QGFLAG_FULLSCREEN	= QN_BIT(0),
-	QGFLAG_BORDERLESS	= QN_BIT(1),
-	QGFLAG_RESIZABLE	= QN_BIT(2),
-	QGFLAG_FOCUS		= QN_BIT(3),
-	QGFLAG_IDLE			= QN_BIT(4),
-	QGFLAG_DITHER		= QN_BIT(16),
-	QGFLAG_MSAA			= QN_BIT(17),
+	QGFLAG_FULLSCREEN = QN_BIT(0),
+	QGFLAG_BORDERLESS = QN_BIT(1),
+	QGFLAG_RESIZABLE = QN_BIT(2),
+	QGFLAG_FOCUS = QN_BIT(3),
+	QGFLAG_IDLE = QN_BIT(4),
+	QGFLAG_DITHER = QN_BIT(16),
+	QGFLAG_MSAA = QN_BIT(17),
 } qgFlag;
 
 typedef enum qgStti
 {
-	QGSTTI_VIRTUAL		= QN_BIT(1),
-	QGSTTI_ACTIVE		= QN_BIT(2),
-	QGSTTI_LAYOUT		= QN_BIT(3),
-	QGSTTI_ACS			= QN_BIT(13),
-	QGSTTI_PAUSE		= QN_BIT(14),
-	QGSTTI_DROP			= QN_BIT(15),
-	QGSTTI_CURSOR		= QN_BIT(16),
-	QGSTTI_SCRSAVE		= QN_BIT(17),
-	QGSTTI_EXIT			= QN_BIT(30),
+	QGSTTI_VIRTUAL = QN_BIT(1),
+	QGSTTI_ACTIVE = QN_BIT(2),
+	QGSTTI_LAYOUT = QN_BIT(3),
+	QGSTTI_ACS = QN_BIT(13),
+	QGSTTI_PAUSE = QN_BIT(14),
+	QGSTTI_DROP = QN_BIT(15),
+	QGSTTI_CURSOR = QN_BIT(16),
+	QGSTTI_SCRSAVE = QN_BIT(17),
+	QGSTTI_EXIT = QN_BIT(30),
 } qgStti;
 
 typedef enum qgEventType
@@ -292,6 +415,7 @@ typedef struct qgDeviceInfo
 	int					max_tex_count;
 	int					max_off_count;
 	int					tex_image_flag;
+	qgClrFmt			clrfmt;
 } qgDeviceInfo;
 
 typedef struct qgRenderInfo
@@ -330,19 +454,99 @@ typedef struct qgRenderParam
 
 
 //////////////////////////////////////////////////////////////////////////
-// stub
+// object
 
+typedef struct qgPropPixel
+{
+	qgClrFmt			fmt;
+	uint8_t				bpp;
+	uint8_t				rr, rl;
+	uint8_t				gr, gl;
+	uint8_t				br, bl;
+	uint8_t				ar, al;
+} qgPixelProp;
+
+typedef struct qgPropDepthStencil
+{
+	bool				d_write : 8;
+	qgCmpOp				d_func : 8;
+
+	bool				f_enable : 8;
+	qgCmpOp				f_func : 8;
+	qgStencilOp			f_pass : 8;
+	qgStencilOp			f_fail : 8;
+	qgStencilOp			f_depth : 8;
+
+	bool				b_enable : 8;
+	qgCmpOp				b_func : 8;
+	qgStencilOp			b_pass : 8;
+	qgStencilOp			b_fail : 8;
+	qgStencilOp			b_depth : 8;
+
+	uint8_t				m_read;
+	uint8_t				m_write;
+} qgPropDepthStencil;
+
+typedef struct qgPropRasterizer
+{
+	qgFill				fill : 8;
+	qgCull				cull : 8;
+	float				depth_bias;
+	float				slope_scale;
+} qgPropRasterizer;
+
+typedef struct qgPropBlend
+{
+	qgBlendOp			c_op : 16;
+	qgFactor			c_src : 8;
+	qgFactor			c_dst : 8;
+
+	qgBlendOp			a_op : 16;
+	qgFactor			a_src : 8;
+	qgFactor			a_dst : 8;
+
+	qgClrMask			mask;
+} qgPropBlend;
+
+typedef struct qgVarLayout
+{
+	qgLoUsage			usage : 16;
+	int					index : 16;
+	qgLoType			type : 16;
+	int					slot : 16;
+	int					zz;
+} qgVarLayout;
+
+typedef struct qgVarShader
+{
+	size_t				hash;
+	char				name[32];
+
+	int					role : 8;			// 0=manual, 1=auto, 2=discard
+	qgShaderType		type : 8;
+
+	uint16_t			size;
+	uintptr_t			offset;
+
+	pointer_t			aptr;
+	pointer_t			dptr;
+} qgVarShader;
+
+
+//////////////////////////////////////////////////////////////////////////
+// stub & render device
+
+// stub
 struct qgStub
 {
 	qnGam				base;
 
-	pointer_t			handle;
 	pointer_t			oshandle;
 
 	qgFlag				flags;
 	qgStti				sttis;
 	uint32_t			delay;
-	qgClrFmt			clrfmt;
+	int32_t				_padding[1];
 
 	qnTimer*			timer;
 	double				fps;
@@ -390,9 +594,7 @@ QNAPI int qg_stub_add_event_type(pointer_t g, qgEventType type);
 QNAPI bool qg_stub_pop_event(pointer_t g, qgEvent* ev);
 
 
-//////////////////////////////////////////////////////////////////////////
 // render device
-
 struct qgRdh
 {
 	qnGam				base;
@@ -412,10 +614,17 @@ qvt_name(qgRdh)
 	bool (*_construct)(pointer_t, int);
 	void (*_finalize)(pointer_t);
 	void (*_reset)(pointer_t);
+	void (*_clear)(pointer_t, int, const qnColor*, int, float);
 
 	bool (*begin)(pointer_t);
 	void (*end)(pointer_t);
 	void (*flush)(pointer_t);
+
+	bool (*set_index)(pointer_t, pointer_t);
+	bool (*set_vertex)(pointer_t, int, pointer_t);
+
+	pointer_t(*create_layout)(pointer_t, int, const qgVarLayout*);
+	pointer_t(*create_buffer)(pointer_t, qgBufType, int, int, cpointer_t);
 
 	bool (*primitive_begin)(pointer_t, qgTopology, int, int, pointer_t*);
 	void (*primitive_end)(pointer_t);
@@ -446,7 +655,59 @@ QNAPI void qg_rdh_set_proj(pointer_t g, const qnMat4* m);
 QNAPI void qg_rdh_set_view(pointer_t g, const qnMat4* m);
 QNAPI void qg_rdh_set_world(pointer_t g, const qnMat4* m);
 
+QNAPI bool qg_rdh_set_index(pointer_t g, pointer_t buffer);
+QNAPI bool qg_rdh_set_vertex(pointer_t g, int stage, pointer_t buffer);
+
+QNAPI qgBuf* qg_rdh_create_buffer(pointer_t g, qgBufType type, int count, int stride, cpointer_t data);
+
 QNAPI void qg_rdh_draw_primitive(pointer_t g, qgTopology tpg, int count, int stride, cpointer_t data);
 QNAPI void qg_rdh_draw_indexed_primitive(pointer_t g, qgTopology tpg, int vcount, int vstride, cpointer_t vdata, int icount, int istride, cpointer_t idata);
+
+
+//////////////////////////////////////////////////////////////////////////
+// object
+
+//
+struct qgRdGam
+{
+	qnGam				base;
+};
+
+
+// layout
+struct qgVlo
+{
+	qgRdGam				base;
+
+	int					stride;
+	uint16_t			stage[QGLOS_MAX_VALUE];
+};
+
+QNAPI uint32_t qg_vlo_get_stride(pointer_t g);
+QNAPI uint32_t qg_vlo_get_stage(pointer_t g, int stage);
+
+
+// buffer
+struct qgBuf
+{
+	qgRdGam				base;
+
+	qgBufType			type : 16;
+	uint16_t			stride;
+	uint32_t			size;
+};
+
+qvt_name(qgBuf)
+{
+	qvt_name(qnGam)		base;
+	pointer_t(*map)(pointer_t);
+	bool (*unmap)(pointer_t);
+	bool (*data)(pointer_t, pointer_t);
+};
+
+QNAPI qgBufType qg_buf_get_type(pointer_t g);
+QNAPI uint32_t qg_buf_get_stride(pointer_t g);
+QNAPI uint32_t qg_buf_get_size(pointer_t g);
+QNAPI bool qg_buf_mapped_data(pointer_t g, cpointer_t data, int size);
 
 QN_EXTC_END
