@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#define ES2_MAX_VERTEXT_ATTRS	32
+
 #if _QN_WINDOWS_
 typedef struct es2Func
 {
@@ -76,7 +78,7 @@ struct es2ShaderAttrib
 struct es2Session
 {
 	GLuint				program;
-	es2LayoutProperty	layouts[QGLOS_MAX_VALUE * 3];
+	es2LayoutProperty	layouts[ES2_MAX_VERTEXT_ATTRS];
 
 	GLuint				buf_array;
 	GLuint				buf_element_array;
@@ -93,7 +95,7 @@ struct es2Pending
 	es2Vlo*				vlo;
 
 	es2Buf*				ib;
-	es2Buf*				vb[QGLOS_MAX_VALUE];
+	es2Buf*				vb[ES2_MAX_VERTEXT_ATTRS];
 
 	int					tpg;
 	int					vcount;

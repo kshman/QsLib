@@ -42,7 +42,7 @@ void es2_commit_layout(es2Rdh* self)
 	es2Shd* shd = self->pd.shd;
 	es2Vlo* vlo = self->pd.vlo;
 
-	bool ok[QGLOS_MAX_VALUE * 3] = { false, };
+	bool ok[ES2_MAX_VERTEXT_ATTRS] = { false, };
 	for (size_t s = 0; s < max_attrs; s++)
 	{
 		es2Buf* buf = self->pd.vb[s];
