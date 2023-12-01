@@ -103,7 +103,7 @@ static void _rdh_reset(qgRdh* self)
 		qn_vec4_rst(&self->param.v[i]);
 	for (size_t i = 0; i < QN_COUNTOF(self->param.m); i++)
 		qn_mat4_rst(&self->param.m[i]);
-	qn_color_set(&self->param.clear, 0.2f, 0.2f, 0.2f, 1.0f);
+	qn_color_set(&self->param.clear, 0.1f, 0.1f, 0.1f, 1.0f);
 
 	//
 	qvt_cast(self, qgRdh)->_reset(self);
@@ -259,6 +259,12 @@ void qg_rdh_set_world(qgRdh* self, const qnMat4* m)
 	self->tm.world = *m;
 	self->info.invokes++;
 	self->info.transforms++;
+}
+
+void qg_set_shader(qgRdh* self, qgShd* shader, qgVlo* layout)
+{
+	self->info.invokes++;
+	qvt_cast(self, qgRdh)->set_shader(self, shader, layout);
 }
 
 bool qg_rdh_set_index(qgRdh* self, pointer_t buffer)

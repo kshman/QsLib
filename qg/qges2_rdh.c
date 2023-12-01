@@ -23,8 +23,9 @@ static bool _es2_begin(qgRdh* g);
 static void _es2_end(qgRdh* g);
 static void _es2_flush(qgRdh* g);
 
-static bool _es2_set_index(qgRdh* g, pointer_t buffer);
-static bool _es2_set_vertex(qgRdh* g, int stage, pointer_t buffer);
+static void _es2_set_shader(qgRdh* g, qgShd* shader, qgVlo* layout);
+static bool _es2_set_index(qgRdh* g, qgBuf* buffer);
+static bool _es2_set_vertex(qgRdh* g, int stage, qgBuf* buffer);
 
 static qgVlo* _es2_create_layout(qgRdh* g, int count, const qgVarLayout* vars);
 static qgBuf* _es2_create_buffer(qgRdh* g, qgBufType type, int count, int stride, cpointer_t data);
@@ -48,6 +49,7 @@ qvt_name(qgRdh) _vt_es2 =
 	.end = _es2_end,
 	.flush = _es2_flush,
 
+	.set_shader = _es2_set_shader,
 	.set_index = _es2_set_index,
 	.set_vertex = _es2_set_vertex,
 
@@ -162,10 +164,10 @@ static bool _es2_construct(qgRdh* g, int flags)
 	caps->renderer_version = es2_gl_get_version(GL_VERSION, "OPENGLES", "OPENGL ES");
 	caps->shader_version = es2_gl_get_version(GL_SHADING_LANGUAGE_VERSION, "OPENGL ES GLSL ES ", "OPENGL ES GLSL ");
 	caps->max_vertex_attrs = es2_gl_get_integer(GL_MAX_VERTEX_ATTRIBS);
-	if (caps->max_vertex_attrs > QGLOS_MAX_VALUE * 3)
-		caps->max_vertex_attrs = QGLOS_MAX_VALUE * 3;
+	if (caps->max_vertex_attrs > ES2_MAX_VERTEXT_ATTRS)
+		caps->max_vertex_attrs = ES2_MAX_VERTEXT_ATTRS;
 	caps->max_tex_dim = info.max_texture_width;
-	caps->max_tex_count = /*임시*/1;
+	caps->max_tex_count = es2_gl_get_integer(GL_MAX_TEXTURE_IMAGE_UNITS);
 	caps->max_off_count = /*임시*/1;
 	caps->tex_image_flag = /*임시*/0;
 
@@ -192,6 +194,9 @@ static void _es2_finalize(qgRdh* g)
 	size_t i;
 
 	// 펜딩
+	qm_unload(self->pd.shd);
+	qm_unload(self->pd.vlo);
+
 	qm_unload(self->pd.ib);
 	for (i = 0; i < self->base.caps.max_vertex_attrs; i++)
 		qm_unload(self->pd.vb[i]);
@@ -227,7 +232,7 @@ static void _es2_reset(qgRdh* g)
 
 	ES2FUNC(glDisable)(GL_POLYGON_OFFSET_FILL);
 
-	//for (int i = 0; i < caps->max_off_count; i++)	// 오프가 1개뿐이다
+	//for (int i = 0; i < caps->max_off_count; i++)	// 오프가 1개뿐이다. 어짜피 관련 함수에 인덱스 넣는 곳도 없음
 	{
 		ES2FUNC(glEnable)(GL_BLEND);
 		ES2FUNC(glBlendEquationSeparate)(GL_FUNC_ADD, GL_FUNC_ADD);
@@ -246,7 +251,6 @@ static void _es2_reset(qgRdh* g)
 
 	ES2FUNC(glDisable)(GL_SCISSOR_TEST);
 	ES2FUNC(glFrontFace)(GL_CW);
-	//glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
 }
 
 // 시작
@@ -302,8 +306,52 @@ static void _es2_clear(qgRdh* g, int flag, const qnColor* color, int stencil, fl
 		ES2FUNC(glClear)(cf);
 }
 
+// 세이더 설정
+static void _es2_set_shader(qgRdh* g, qgShd* shader, qgVlo* layout)
+{
+	es2Rdh* self = qm_cast(g, es2Rdh);
+	es2Shd* shd = qm_cast(shader, es2Shd);
+	es2Vlo* vlo = qm_cast(layout, es2Vlo);
+
+	if (shd == NULL)
+	{
+		if (self->pd.shd != NULL)
+		{
+			qm_unload(self->pd.shd);
+			self->pd.shd = NULL;
+		}
+	}
+	else
+	{
+		if (self->pd.shd != shd)
+		{
+			qm_unload(self->pd.shd);
+			self->pd.shd = shd;
+			qm_load(shd);
+		}
+	}
+
+	if (vlo == NULL)
+	{
+		if (self->pd.vlo != NULL)
+		{
+			qm_unload(self->pd.vlo);
+			self->pd.vlo = NULL;
+		}
+	}
+	else
+	{
+		if (self->pd.vlo != vlo)
+		{
+			qm_unload(self->pd.vlo);
+			self->pd.vlo = vlo;
+			qm_load(vlo);
+		}
+	}
+}
+
 // 인덱스 설정
-static bool _es2_set_index(qgRdh* g, pointer_t buffer)
+static bool _es2_set_index(qgRdh* g, qgBuf* buffer)
 {
 	es2Rdh* self = qm_cast(g, es2Rdh);
 	es2Buf* buf = qm_cast(buffer, es2Buf);
@@ -332,7 +380,7 @@ static bool _es2_set_index(qgRdh* g, pointer_t buffer)
 }
 
 // 정점 설정
-static bool _es2_set_vertex(qgRdh* g, int stage, pointer_t buffer)
+static bool _es2_set_vertex(qgRdh* g, int stage, qgBuf* buffer)
 {
 	es2Rdh* self = qm_cast(g, es2Rdh);
 	qn_retval_if_fail((size_t)stage < self->base.caps.max_vertex_attrs, false);

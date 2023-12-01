@@ -636,8 +636,9 @@ qvt_name(qgRdh)
 	void (*end)(qgRdh*);
 	void (*flush)(qgRdh*);
 
-	bool (*set_index)(qgRdh*, pointer_t);
-	bool (*set_vertex)(qgRdh*, int, pointer_t);
+	void (*set_shader)(qgRdh*, qgShd*, qgVlo*);
+	bool (*set_index)(qgRdh*, qgBuf*);
+	bool (*set_vertex)(qgRdh*, int, qgBuf*);
 
 	qgVlo* (*create_layout)(qgRdh*, int, const qgVarLayout*);
 	qgShd* (*create_shader)(qgRdh*, const char*);
