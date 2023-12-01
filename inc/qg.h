@@ -173,6 +173,19 @@ typedef enum qgLoStage
 	QGLOS_MAX_VALUE,
 } qgLoStage;
 
+typedef enum qgShdName
+{
+	QGSHD_VS,
+	QGSHD_PS,
+} qgShdName;
+
+typedef enum qgShdRole
+{
+	QGSHR_MANUAL,
+	QGSHD_AUTO,
+	QGSHD_DISCARD
+} qgShdRole;
+
 typedef enum qgShdType
 {
 	QGSHT_UNKNOWN,
@@ -194,7 +207,7 @@ typedef enum qgShdType
 	QGSHT_SPLR_3D,
 	QGSHT_SPLR_CUBE,
 	QGSHT_MAX_VALUE
-} qgShaderType;
+} qgShdType;
 
 typedef enum qgShdAuto
 {
@@ -523,7 +536,7 @@ typedef struct qgVarShader
 	char				name[32];
 
 	int					role : 8;			// 0=manual, 1=auto, 2=discard
-	qgShaderType		type : 8;
+	qgShdType			type : 8;
 
 	uint16_t			size;
 	uintptr_t			offset;
@@ -685,6 +698,26 @@ struct qgVlo
 
 QNAPI uint32_t qg_vlo_get_stride(pointer_t g);
 QNAPI uint32_t qg_vlo_get_stage(pointer_t g, int stage);
+
+
+// shader
+struct qgShd
+{
+	qgRdGam				base;
+
+	pointer_t			intr;
+};
+
+qvt_name(qgShd)
+{
+	qvt_name(qnGam)		base;
+	bool(*bind)(pointer_t, qgShdName, cpointer_t, int, int);
+	bool(*bind_shd)(pointer_t, qgShdName, pointer_t);
+	bool(*bind_name)(pointer_t qgShdName, const char*);
+	void(*add_condition)(pointer_t, const char*);
+	void(*clear_condition)(pointer_t);
+	void(*link)(pointer_t);
+};
 
 
 // buffer

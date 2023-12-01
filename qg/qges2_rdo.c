@@ -31,6 +31,12 @@ void _es2_bind_buffer(es2Rdh* self, GLenum type, GLuint id)
 	}
 }
 
+//
+void _es2_commit_layout(es2Rdh* self)
+{
+
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // 레이아웃
@@ -56,6 +62,66 @@ static void _es2vlo_dispose(pointer_t g)
 	for (size_t i = 0; i < QGLOS_MAX_VALUE; i++)
 		if (self->es_elm[i])
 			qn_free(self->es_elm[i]);
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// 세이더
+
+qvt_name(qgShd) _vt_es2shd =
+{
+	.base.name = "ES2Shd",
+	.base.dispose = NULL,
+	.bind = NULL,
+	.bind_shd = NULL,
+	.bind_name = NULL,
+	.add_condition = NULL,
+	.clear_condition = NULL,
+	.link = NULL,
+};
+
+static es2RefHandle* es2shd_handle_new(GLuint handle)
+{
+	es2RefHandle* ptr = qn_alloc_1(es2RefHandle*);
+	ptr->ref = 1;
+	ptr->handle = handle;
+	return ptr;
+}
+
+static void es2shd_handle_unload(es2RefHandle* ptr, GLuint program)
+{
+	if (ptr)
+	{
+		if (program > 0)
+			ES2FUNC(glDetachShader)(program, ptr->handle);
+
+		intptr_t ref = --ptr->ref;
+		if (ref == 0)
+		{
+			ES2FUNC(glDeleteShader)(ptr->handle);
+			qn_free(ptr);
+		}
+	}
+}
+
+pointer_t _es2shd_allocator()
+{
+	es2Shd* self = qn_alloc_zero_1(es2Shd);
+	qn_retval_if_fail(self, NULL);
+	qm_set_desc(self, ES2FUNC(glCreateProgram)());
+	return qm_init(self, &_vt_es2shd);
+}
+
+static void _es2shd_dispose(pointer_t g)
+{
+	es2Shd* self = qm_cast(g, es2Shd);
+
+	es2shd_handle_unload(self->rvp, 0);
+	es2shd_handle_unload(self->rfp, 0);
+
+	ES2FUNC(glDeleteProgram)((GLuint)qm_get_desc(self));
+
+	qn_free(self);
 }
 
 
@@ -100,6 +166,8 @@ static void _es2buf_dispose(pointer_t g)
 
 	GLuint id = (GLuint)qm_get_desc(self);
 	ES2FUNC(glDeleteBuffers)(1, &id);
+
+	qn_free(self);
 }
 
 static pointer_t _es2buf_map(pointer_t g)

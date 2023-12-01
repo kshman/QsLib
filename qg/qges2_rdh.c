@@ -413,13 +413,13 @@ static pointer_t _es2_create_layout(pointer_t g, int count, const qgVarLayout* v
 		if (accum[i] == 0)
 			continue;
 		vlo->es_cnt[i] = (int)accum[i];
-		vlo->es_elm[i] = qn_alloc(accum[i], es2VloElement);
+		vlo->es_elm[i] = qn_alloc(accum[i], es2LayoutElement);
 	}
 
 	for (size_t i = 0; i < count; i++)
 	{
 		const qgVarLayout* v = &vars[i];
-		es2VloElement* e = vlo->es_elm[v->slot]++;
+		es2LayoutElement* e = vlo->es_elm[v->slot]++;
 		e->usage = v->usage;
 		e->index = v->index;
 		e->format = s_format[v->type];

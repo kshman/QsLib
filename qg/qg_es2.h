@@ -18,12 +18,22 @@ extern es2Func _es2func;
 
 #define ES2RDH_INSTANCE			((es2Rdh*)qg_rdh_instance)
 
+typedef struct es2RefHandle es2RefHandle;
 typedef struct es2Session es2Session;
 typedef struct es2Pending es2Pending;
+typedef struct es2LayoutElement es2LayoutElement;
+typedef struct es2ShaderAttrib es2ShaderAttrib;
 typedef struct es2Rdh es2Rdh;
-typedef struct es2VloElement es2VloElement;
 typedef struct es2Vlo es2Vlo;
+typedef struct es2Shd es2Shd;
 typedef struct es2Buf es2Buf;
+
+//
+struct es2RefHandle
+{
+	volatile intptr_t	ref;
+	GLuint				handle;
+};
 
 //
 struct es2Session
@@ -53,7 +63,34 @@ struct es2Pending
 	pointer_t			idata;
 };
 
-//
+// 레이아웃 요소
+struct es2LayoutElement
+{
+	qgLoUsage			usage;
+	int					index;
+	GLenum				format;
+	GLuint				offset;
+	GLuint				attrib;
+	GLuint				size;
+	GLboolean			normalized;
+	GLboolean			conv;
+};
+
+// 세이더 속성
+struct es2ShaderAttrib
+{
+	GLint				attrib;
+	qgShdType			type : 16;
+	uint16_t			size;
+	qgLoUsage			usage : 16;
+	uint16_t			index;
+	size_t				hash;
+	char				name[32];
+	es2ShaderAttrib*	next;
+};
+QN_ARR_DECL(es2ArrShaderAttrib, es2ShaderAttrib);
+
+// ES2 렌더 디바이스
 struct es2Rdh
 {
 	qgRdh				base;
@@ -66,28 +103,31 @@ struct es2Rdh
 
 void _es2_bind_buffer(es2Rdh* self, GLenum type, GLuint id);
 
-// 레이아웃 요소
-struct es2VloElement
-{
-	qgLoUsage			usage;
-	int					index;
-	GLenum				format;
-	GLuint				offset;
-	GLuint				attrib;
-	GLuint				size;
-	GLboolean			normalized;
-	GLboolean			conv;
-};
-
 // 레이아웃
 struct es2Vlo
 {
 	qgVlo				base;
 
 	int					es_cnt[QGLOS_MAX_VALUE];
-	es2VloElement*		es_elm[QGLOS_MAX_VALUE];
+	es2LayoutElement*	es_elm[QGLOS_MAX_VALUE];
 };
 extern pointer_t _es2vlo_allocator();
+
+// 세이더
+struct es2Shd
+{
+	qgShd				base;
+
+	es2RefHandle*		rfp;
+	es2RefHandle*		rvp;
+	es2ArrShaderAttrib	attrs;
+
+	int					amask;
+	int					acount[QGLOU_MAX_VALUE];
+	es2ShaderAttrib*	alink[QGLOU_MAX_VALUE];
+
+	bool				linked;
+};
 
 // 버퍼
 struct es2Buf
