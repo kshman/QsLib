@@ -5,16 +5,10 @@
 // 레이아웃
 
 //
-uint32_t qg_vlo_get_stride(qgVlo* self)
-{
-	return self->stride;
-}
-
-//
-uint32_t qg_vlo_get_stage(qgVlo* self, int stage)
+uint32_t qg_vlo_get_stride(qgVlo* self, qgLoStage stage)
 {
 	qn_retval_if_fail((size_t)stage < QGLOS_MAX_VALUE, 0);
-	return self->stage[stage];
+	return self->stride[stage];
 }
 
 

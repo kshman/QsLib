@@ -42,12 +42,13 @@ struct es2RefHandle
 // 레이아웃 요소
 struct es2LayoutElement
 {
-	qgLoUsage			usage;
-	int					index;
+	qgLoStage			stage : 8;
+	qgLoUsage			usage : 8;
+	int					index : 8;
+	GLuint				attr : 8;
+	GLuint				size;
 	GLenum				format;
 	GLuint				offset;
-	GLuint				attrib;
-	GLuint				size;
 	GLboolean			normalized;
 	GLboolean			conv;
 };
@@ -55,7 +56,6 @@ struct es2LayoutElement
 // 레이아웃 프로퍼티
 struct es2LayoutProperty
 {
-	bool				enable;
 	const void*			pointer;
 	GLuint				buffer;
 	GLsizei				stride;
@@ -69,9 +69,9 @@ struct es2ShaderAttrib
 {
 	GLint				attrib;
 	qgShdConst			cnst : 16;
-	uint16_t			size;
+	ushort				size;
 	qgLoUsage			usage : 16;
-	uint16_t			index;
+	ushort				index;
 	size_t				hash;
 	char				name[32];
 	es2ShaderAttrib*	next;
@@ -81,6 +81,7 @@ struct es2ShaderAttrib
 struct es2Session
 {
 	GLuint				program;
+	uint				layout_mask;
 	es2LayoutProperty	layouts[ES2_MAX_VERTEX_ATTRIBUTES];
 
 	GLuint				buf_array;
@@ -106,8 +107,8 @@ struct es2Pending
 	int					vsize;
 	int					istride;
 	int					isize;
-	void*			vdata;
-	void*			idata;
+	void*				vdata;
+	void*				idata;
 };
 
 
@@ -154,9 +155,9 @@ struct es2Shd
 	es2CtnVarShader		vars;
 	es2CtnShaderAttrib	attrs;
 
-	int					usage_mask;
-	uint8_t				usage_count[QGLOU_MAX_VALUE];
-	es2ShaderAttrib*	usage_attrs[QGLOU_MAX_VALUE];
+	int					attr_mask;
+	byte				attr_count[QGLOU_MAX_VALUE];
+	es2ShaderAttrib*	attr_usage[QGLOU_MAX_VALUE];
 
 	bool				linked;
 };

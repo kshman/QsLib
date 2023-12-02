@@ -50,6 +50,7 @@
 #	define QN_INLINE					__inline
 #	define QN_FUNC_NAME					__FUNCTION__
 #	define QN_MEM_BARRIER()				_ReadWriteBarrier()
+#	define QN_STATIC_ASSERT				static_assert
 #elif __GNUC__
 #	define QN_RESTRICT					restrict
 #ifndef __cplusplus
@@ -67,6 +68,7 @@
 #else
 #	define QN_MEM_BARRIER()				__sync_synchronize();
 #endif
+#	define QN_STATIC_ASSERT				_Static_assert
 #endif
 
 #if defined(__cplusplus)

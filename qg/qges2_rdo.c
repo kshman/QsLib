@@ -39,56 +39,70 @@ void es2_bind_buffer(es2Rdh* self, GLenum gl_type, GLuint gl_id)
 //
 void es2_commit_layout(es2Rdh* self)
 {
-	size_t max_attrs = self->base.caps.max_vertex_attrs;
+	const GLint max_attrs = self->base.caps.max_vertex_attrs;
 	es2Shd* shd = self->pd.shd;
 	es2Vlo* vlo = self->pd.vlo;
 
-	bool ok[ES2_MAX_VERTEX_ATTRS] = { false, };
-	for (size_t s = 0; s < max_attrs; s++)
+	GLint gl_attr = 0;
+	uint ok = 0;
+	QN_STATIC_ASSERT(ES2_MAX_VERTEX_ATTRIBUTES <= sizeof(ok) * 8, "Not enough for access ES2_MAX_VERTEX_ATTRIBUTES");
+
+	for (size_t s = 0; s < QGLOS_MAX_VALUE; s++)
 	{
 		es2Buf* buf = self->pd.vb[s];
-		es2LayoutElement* stelm = vlo->es_elm[s];
-		int stcnt = vlo->es_cnt[s];
+		const es2LayoutElement* stelm = vlo->es_elm[s];
+		const int stcnt = vlo->es_cnt[s];
 
 		if (buf != NULL)
 		{
-			// 버퍼 셋
-			GLsizei stride = (GLsizei)vlo->base.stage[s];
+			// 정점 버퍼가 있다
+			GLsizei gl_stride = (GLsizei)vlo->base.stride[s];
 			GLuint gl_buf = (GLuint)qm_get_desc(buf);
 			es2_bind_buffer(self, GL_ARRAY_BUFFER, gl_buf);
 
-			// 레이아웃
+			// 해당 스테이지의 레이아웃
 			for (int i = 0; i < stcnt; i++)
 			{
+				if (gl_attr >= qg_rdh_caps(self)->max_vertex_attrs)
+					break;
+
 				const es2LayoutElement* le = &stelm[i];
-				es2ShaderAttrib* pav = es2shd_find_attr(shd, le->usage, le->index);
-				if (pav != NULL && pav->attrib < max_attrs)
+				if (self->base.caps.test_stage_valid)
 				{
-					GLuint gl_attr = pav->attrib;
-					es2LayoutProperty* lp = &self->ss.layouts[gl_attr];
-					void* pointer = ((uint8_t*)NULL + le->offset);
-					ok[gl_attr] = true;
-					if (!lp->enable)
+					es2ShaderAttrib* pav = es2shd_find_attr(shd, le->usage, le->index);
+					if (pav == NULL || pav->attrib != gl_attr)
 					{
-						ES2FUNC(glEnableVertexAttribArray)(gl_attr);
-						lp->enable = true;
-					}
-					if (lp->pointer != pointer ||
-						lp->buffer != gl_buf ||
-						lp->stride != stride ||
-						lp->size != le->size ||
-						lp->format != le->format ||
-						lp->normalized != le->normalized)
-					{
-						ES2FUNC(glVertexAttribPointer)(gl_attr, le->size, le->format, le->normalized, stride, pointer);
-						lp->pointer = pointer;
-						lp->buffer = gl_buf;
-						lp->stride = stride;
-						lp->size = le->size;
-						lp->format = le->format;
-						lp->normalized = le->normalized;
+						qn_debug_output(true, "ES2Rdh: vertex attribute mismatch %d (shader: %d)\n",
+							gl_attr, pav ? pav->attrib : -1);
+						break;
 					}
 				}
+
+				ok |= QN_BIT(gl_attr);
+				es2LayoutProperty* lp = &self->ss.layouts[gl_attr];
+				void* pointer = ((uint8_t*)NULL + le->offset);
+				if (!QN_TEST_BIT(self->ss.layout_mask, gl_attr))
+				{
+					QN_SET_BIT(&self->ss.layout_mask, gl_attr, true);
+					ES2FUNC(glEnableVertexAttribArray)(gl_attr);
+				}
+				if (lp->pointer != pointer ||
+					lp->buffer != gl_buf ||
+					lp->stride != gl_stride ||
+					lp->size != le->size ||
+					lp->format != le->format ||
+					lp->normalized != le->normalized)
+				{
+					ES2FUNC(glVertexAttribPointer)(gl_attr, le->size, le->format, le->normalized, gl_stride, pointer);
+					lp->pointer = pointer;
+					lp->buffer = gl_buf;
+					lp->stride = gl_stride;
+					lp->size = le->size;
+					lp->format = le->format;
+					lp->normalized = le->normalized;
+				}
+
+				gl_attr++;
 			}
 		}
 		else
@@ -96,32 +110,45 @@ void es2_commit_layout(es2Rdh* self)
 			// 버퍼 엄네
 			for (int i = 0; i < stcnt; i++)
 			{
+				if (gl_attr >= max_attrs)
+					break;
+
 				const es2LayoutElement* le = &stelm[i];
-				es2ShaderAttrib* pav = es2shd_find_attr(shd, le->usage, le->index);
-				if (pav != NULL && pav->attrib < max_attrs)
+				if (self->base.caps.test_stage_valid)
 				{
-					GLuint gl_attr = pav->attrib;
-					es2LayoutProperty* lp = &self->ss.layouts[gl_attr];
-					if (lp->enable)
+					es2ShaderAttrib* pav = es2shd_find_attr(shd, le->usage, le->index);
+					if (pav == NULL || pav->attrib != gl_attr)
 					{
-						ES2FUNC(glDisableVertexAttribArray)(gl_attr);
-						lp->enable = true;
+						qn_debug_output(true, "ES2Rdh: vertex attribute mismatch %d (shader: %d)\n",
+							gl_attr, pav ? pav->attrib : -1);
+						break;
 					}
-					GLfloat tmp[4] = { 0.0f, };
-					ES2FUNC(glVertexAttrib4fv)(gl_attr, tmp);
 				}
+
+				es2LayoutProperty* lp = &self->ss.layouts[gl_attr];
+				if (QN_TEST_BIT(self->ss.layout_mask, gl_attr))
+				{
+					QN_SET_BIT(&self->ss.layout_mask, gl_attr, false);
+					ES2FUNC(glDisableVertexAttribArray)(gl_attr);
+				}
+				GLfloat tmp[4] = { 0.0f, };
+				ES2FUNC(glVertexAttrib4fv)(gl_attr, tmp);
+
+				gl_attr++;
 			}
 		}
 	}
 
 	// 정리
-	for (size_t s = 0; s < max_attrs; s++)
+	uint aftermask = self->ss.layout_mask & ~ok;
+	for (GLuint i = 0; i < max_attrs && aftermask; i++)
 	{
-		if (!ok[s] && self->ss.layouts[s].enable)
+		if (QN_TEST_BIT(aftermask, 0))
 		{
-			ES2FUNC(glDisableVertexAttribArray)((GLint)s);
-			self->ss.layouts[s].enable = false;
+			QN_SET_BIT(&self->ss.layout_mask, i, false);
+			ES2FUNC(glDisableVertexAttribArray)(i);
 		}
+		aftermask >>= 1;
 	}
 }
 
@@ -448,7 +475,7 @@ static bool _es2shd_bind_shd(qgShd* g, qgShdType type, qgShd* shaderptr)
 }
 
 //
-qgShdConst es2shd_to_shader_const(GLenum gl_type)
+qgShdConst es2shd_enum_to_const(GLenum gl_type)
 {
 	switch (gl_type)
 	{
@@ -507,29 +534,25 @@ static bool _es2shd_link(qgShd* g)
 	qn_retval_if_ok(self->linked, true);
 	qn_retval_if_fail(self->rvertex && self->rfragment, false);
 
-	GLuint handle = (GLuint)qm_get_desc(self);
-	ES2FUNC(glLinkProgram)(handle);
+	GLuint gl_program = (GLuint)qm_get_desc(self);
+	ES2FUNC(glLinkProgram)(gl_program);
 
 	GLint gl_status = 0;
-	ES2FUNC(glGetProgramiv)(handle, GL_LINK_STATUS, &gl_status);
+	ES2FUNC(glGetProgramiv)(gl_program, GL_LINK_STATUS, &gl_status);
 	if (gl_status == GL_FALSE)
 	{
-		es2shd_error(handle, "Link", false, true);
+		es2shd_error(gl_program, "Link", false, true);
 		return false;
 	}
 
 	// 분석
 	GLint gl_count = 0, gl_maxlen = 0;
-	char sz[32];
+	char sz[64];
 
 	// 전역 변수 (유니폼)
-	ES2FUNC(glGetProgramiv)(handle, GL_ACTIVE_UNIFORMS, &gl_count);
+	ES2FUNC(glGetProgramiv)(gl_program, GL_ACTIVE_UNIFORMS, &gl_count);
 	if (gl_count > 0)
 	{
-		ES2FUNC(glGetProgramiv)(handle, GL_ACTIVE_UNIFORM_MAX_LENGTH, &gl_maxlen);
-		if (gl_maxlen == 0 || gl_maxlen > 31)	// 오류 처리는 안하는데 브레이크는 검
-			qn_debug_output(true, "ES2Shd: invalid maximum length of uniforms.\n");
-
 		qn_ctnr_disp(es2CtnVarShader, &self->vars);
 		qn_ctnr_init(es2CtnVarShader, &self->vars, gl_count);
 
@@ -537,16 +560,16 @@ static bool _es2shd_link(qgShd* g)
 		{
 			GLint gl_size;
 			GLenum gl_type;
-			ES2FUNC(glGetActiveUniform)(handle, i, 32 - 1, NULL, &gl_size, &gl_type, sz);
+			ES2FUNC(glGetActiveUniform)(gl_program, i, 64 - 1, NULL, &gl_size, &gl_type, sz);
 
-			qgShdConst cnst = es2shd_to_shader_const(gl_type);
+			qgShdConst cnst = es2shd_enum_to_const(gl_type);
 			if (cnst == QGSHC_UNKNOWN)	// 여기도 오류 처리는 안하고 브레이크만
 				qn_debug_output(true, "ES2Shd: not supported uniform data type. (id: %X, name: '%s')\n", gl_type, self->base.name);
 
 			qgVarShader* v = &qn_ctnr_nth(&self->vars, i);
-			qn_strncpy(v->name, 32, sz, 32 - 1);
+			qn_strncpy(v->name, 64, sz, 64 - 1);
 			v->hash = qn_strihash(v->name);
-			v->offset = ES2FUNC(glGetUniformLocation)(handle, sz);
+			v->offset = ES2FUNC(glGetUniformLocation)(gl_program, sz);
 			v->size = (uint16_t)gl_size;
 			v->cnst = cnst;
 			es2shd_match_auto_info(v);
@@ -555,40 +578,32 @@ static bool _es2shd_link(qgShd* g)
 	}
 
 	// 인수 (어트리뷰트)
-	ES2FUNC(glGetProgramiv)(handle, GL_ACTIVE_ATTRIBUTES, &gl_count);
+	ES2FUNC(glGetProgramiv)(gl_program, GL_ACTIVE_ATTRIBUTES, &gl_count);
 	if (gl_count > 0)
 	{
-		ES2FUNC(glGetProgramiv)(handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &gl_maxlen);
-		/*
-		if (maxlen == 0)
-			// 이 경우는 드라이버가 gl_로 시작하는 애들을 인수로 처리했을 경우. 한편 사용자 인수가 없다는 말.
-			// 고정 기능과 호환되는 기능을 사용할 경우이므로 인수로 처리할 필요는 없지만. 지금 우리가 쓰는건 GL이 아니고 ES2
-			qn_debug_output(true, "ES2Shd: invalid maximum length of attribute.\n");
-		*/
-
 		qn_ctnr_disp(es2CtnShaderAttrib, &self->attrs);
 		qn_ctnr_init(es2CtnShaderAttrib, &self->attrs, gl_count);
-		self->usage_mask = 0;
-		qn_zero(self->usage_count, QGLOU_MAX_VALUE, int);
-		qn_zero(self->usage_link, QGLOU_MAX_VALUE, es2ShaderAttrib*);
+		self->attr_mask = 0;
+		qn_zero(self->attr_count, QGLOU_MAX_VALUE, byte);
+		qn_zero(self->attr_usage, QGLOU_MAX_VALUE, es2ShaderAttrib*);
 
 		for (GLint i = 0; i < gl_count; i++)
 		{
 			GLint gl_size;
 			GLenum gl_type;
 			GLsizei gl_len;
-			ES2FUNC(glGetActiveAttrib)(handle, i, 32 - 1, &gl_len, &gl_size, &gl_type, sz);
+			ES2FUNC(glGetActiveAttrib)(gl_program, i, 64 - 1, &gl_len, &gl_size, &gl_type, sz);
 
-			qgShdConst cnst = es2shd_to_shader_const(gl_type);
+			qgShdConst cnst = es2shd_enum_to_const(gl_type);
 			if (cnst == QGSHC_UNKNOWN)	// 여기도 오류 처리는 안하고 브레이크만
 				qn_debug_output(true, "ES2Shd: not supported attribute data type. (id: %X, name: '%s')\n", gl_type, self->base.name);
 
 			es2ShaderAttrib* a = &qn_ctnr_nth(&self->attrs, i);
-			qn_strncpy(a->name, 32, sz, 32 - 1);
+			qn_strncpy(a->name, 64, sz, 64 - 1);
 			a->hash = qn_strihash(a->name);
 			a->cnst = cnst;
 			a->size = gl_size;
-			a->attrib = ES2FUNC(glGetAttribLocation)(handle, sz);
+			a->attrib = ES2FUNC(glGetAttribLocation)(gl_program, sz);
 			if (a->attrib < 0)
 			{
 				a->usage = QGLOU_MAX_VALUE;
@@ -605,12 +620,12 @@ static bool _es2shd_link(qgShd* g)
 				}
 				else
 				{
-					a->index = self->acount[a->usage]++;
+					a->index = self->attr_count[a->usage]++;
 					// 인덱스 검사용으로 저장. 단, 순서는 꺼꾸로 라는거
-					a->next = self->alink[a->usage];
-					self->alink[a->usage] = a;
+					a->next = self->attr_usage[a->usage];
+					self->attr_usage[a->usage] = a;
 				}
-				self->amask |= QN_BIT(a->usage);
+				self->attr_mask |= QN_BIT(a->usage);
 			}
 		}
 	}
@@ -622,7 +637,7 @@ static bool _es2shd_link(qgShd* g)
 //
 es2ShaderAttrib* es2shd_find_attr(es2Shd* self, qgLoUsage usage, int index)
 {
-	es2ShaderAttrib* a = self->alink[usage];
+	es2ShaderAttrib* a = self->attr_usage[usage];
 	for (int i = 0; i < index; i++)
 	{
 		if (!a) break;

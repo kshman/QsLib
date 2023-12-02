@@ -22,9 +22,9 @@ static const char* ps =
 "  //gl_FragColor = vec4 (1.0, 1.0, 1.0, 1.0 );\n"
 "  gl_FragColor = vec4 (vnormal.x, vcolor.y, 1.0, 1.0 );\n"
 "}                                            \n";
-static qgVarLayout layout[1] =
+static qgPropLayout layout[1] =
 {
-	{QGLOU_POSITION, 0, QGLOT_FLOAT2, 0},
+	{QGLOS_1, 0, QGLOU_POSITION, QGLOT_FLOAT2},
 };
 static float vertices[] =
 {
@@ -35,6 +35,8 @@ static float vertices[] =
 
 int main()
 {
+	static_assert(sizeof(int)!=4, "!!!!");
+
 	qn_runtime(NULL);
 
 	qgRdh* rdh = qg_rdh_new(NULL, "QG TEST", 800, 600, QGFLAG_IDLE | QGFLAG_RESIZABLE);
