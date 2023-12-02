@@ -8,7 +8,7 @@
 #include "qn_mem.h"
 
 //
-pointer_t qn_memenc(pointer_t dest, cpointer_t src, size_t size)
+void* qn_memenc(void* dest, const void* src, size_t size)
 {
 	uint8_t* pd = (uint8_t*)dest;
 	uint8_t* ps = (uint8_t*)src;
@@ -23,7 +23,7 @@ pointer_t qn_memenc(pointer_t dest, cpointer_t src, size_t size)
 }
 
 //
-pointer_t qn_memdec(pointer_t dest, cpointer_t src, size_t size)
+void* qn_memdec(void* dest, const void* src, size_t size)
 {
 	uint8_t* pd = (uint8_t*)dest;
 	uint8_t* ps = (uint8_t*)src;
@@ -38,7 +38,7 @@ pointer_t qn_memdec(pointer_t dest, cpointer_t src, size_t size)
 }
 
 //
-pointer_t qn_memzcpr(cpointer_t src, size_t srcsize, /*NULLABLE*/size_t* destsize)
+void* qn_memzcpr(const void* src, size_t srcsize, /*NULLABLE*/size_t* destsize)
 {
 	qn_retval_if_fail(src != NULL, NULL);
 	qn_retval_if_fail(srcsize > 0, NULL);
@@ -60,7 +60,7 @@ pointer_t qn_memzcpr(cpointer_t src, size_t srcsize, /*NULLABLE*/size_t* destsiz
 }
 
 //
-pointer_t qn_memzucp(cpointer_t src, size_t srcsize, size_t bufsize, /*NULLABLE*/size_t* destsize)
+void* qn_memzucp(const void* src, size_t srcsize, size_t bufsize, /*NULLABLE*/size_t* destsize)
 {
 	qn_retval_if_fail(src != NULL, NULL);
 	qn_retval_if_fail(srcsize > 0, NULL);
@@ -113,7 +113,7 @@ char qn_memhrd(size_t size, double* out)
 }
 
 //
-char* qn_memdmp(cpointer_t ptr, size_t size, char* outbuf, size_t buflen)
+char* qn_memdmp(const void* ptr, size_t size, char* outbuf, size_t buflen)
 {
 	qn_retval_if_fail(ptr != NULL, NULL);
 	qn_retval_if_fail(outbuf != NULL, NULL);
@@ -185,18 +185,18 @@ static void _qn_mp_clear(void)
 	if (_qn_mp.count == 0 && _qn_mp.frst == NULL && _qn_mp.last == NULL)
 		return;
 
-	qn_debug_output(false, "Found %d allocations\n", _qn_mp.count);
+	qn_debug_outputf(false, "Memory Profiler", "found %d allocations", _qn_mp.count);
 
 	size_t sum = 0;
 	for (memBlock* next = NULL, *node = _qn_mp.frst; node; node = next)
 	{
 		if (node->line)
-			qn_debug_output(false, "%s(%Lu) : %Lu(%Lu) : 0x%p\n", node->desc, node->line, node->size, node->block, _memptr(node));
+			qn_debug_outputf(false, "Memory Profiler", "\t%s(%Lu) : %Lu(%Lu) : 0x%p", node->desc, node->line, node->size, node->block, _memptr(node));
 		else
-			qn_debug_output(false, "%Lu(%Lu) : 0x%p\n", node->size, node->block, _memptr(node));
+			qn_debug_outputf(false, "Memory Profiler", "\t%Lu(%Lu) : 0x%p", node->size, node->block, _memptr(node));
 		char sz[64];
 		qn_memdmp(_memptr(node), QN_MIN(32, node->size), sz, 64 - 1);
-		qn_debug_output(false, "        %s\n", sz);
+		qn_debug_outputf(false, "Memory Profiler", "\t\t{%s}", sz);
 		next = node->next;
 		sum += node->block;
 
@@ -210,9 +210,9 @@ static void _qn_mp_clear(void)
 	double size;
 	char usage = qn_memhrd(sum, &size);
 	if (usage == ' ')
-		qn_debug_output(true, "Total block size: %Lu bytes\n", sum);
+		qn_debug_outputf(true, "Memory Profiler", "total block size: %Lu bytes", sum);
 	else
-		qn_debug_output(true, "Total block size: %.2f %cbytes\n", size, usage);
+		qn_debug_outputf(true, "Memory Profiler", "total block size: %.2f %cbytes", size, usage);
 }
 
 void _qn_mp_dispose(void)
@@ -224,7 +224,7 @@ void _qn_mp_dispose(void)
 	{
 		SIZE_T s;
 		if (HeapQueryInformation(_qn_mp.heap, HeapEnableTerminationOnCorruption, NULL, 0, &s))
-			qn_debug_output(true, "Heap allocation left: %d\n", (int)s);
+			qn_debug_outputf(true, "Memory Profiler", "heap allocation left: %d", (int)s);
 		HeapDestroy(_qn_mp.heap);
 	}
 #endif
@@ -280,7 +280,7 @@ size_t qn_mpfcnt(void)
 }
 
 //
-pointer_t qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
+void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 {
 	qn_retval_if_fail(size, NULL);
 
@@ -293,7 +293,7 @@ pointer_t qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 #endif
 	if (!node)
 	{
-		qn_debug_output(false, "Cannot allocate memory : %s(%Lu) : %Lu(%Lu)\n", desc, line, size, block);
+		qn_debug_outputf(false, "Memory Profiler", "cannot allocate memory : %s(%Lu) : %Lu(%Lu)", desc, line, size, block);
 		return NULL;
 	}
 
@@ -312,7 +312,7 @@ pointer_t qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 }
 
 //
-pointer_t qn_mpfreloc(pointer_t ptr, size_t size, const char* desc, size_t line)
+void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 {
 	if (!ptr)
 		return qn_mpfalloc(size, false, desc, line);
@@ -325,16 +325,16 @@ pointer_t qn_mpfreloc(pointer_t ptr, size_t size, const char* desc, size_t line)
 	memBlock* node = _memhdr(ptr);
 	if (node == NULL)
 	{
-		qn_debug_output(true, "Try to realloc null memory node : 0x%p\n", ptr);
+		qn_debug_outputf(true, "Memory Profiler", "try to realloc null memory node : 0x%p", ptr);
 		return NULL;
 	}
 #if _MSC_VER
 	if (HeapValidate(_qn_mp.heap, 0, node) == 0 || node->sign != MEMORY_SIGN_HEAD)
 	{
-		qn_debug_output(false, "Try to realloc invalid memory : 0x%p\n", ptr);
+		qn_debug_outputf(false, "Memory Profiler", "try to realloc invalid memory : 0x%p", ptr);
 		char sz[260];
 		qn_memdmp(ptr, 19, sz, 260 - 1);
-		qn_debug_output(true, "[%s]\n", sz);
+		qn_debug_outputf(true, "Memory Profiler", "\t\t{%s}", sz);
 		return NULL;
 	}
 #endif
@@ -356,7 +356,7 @@ pointer_t qn_mpfreloc(pointer_t ptr, size_t size, const char* desc, size_t line)
 #endif
 		if (!node)
 		{
-			qn_debug_output(false, "Cannot reallocate memory : %s(%Lu) : %Lu(%Lu)\n", desc, line, size, block);
+			qn_debug_outputf(false, "Memory Profiler", "cannot reallocate memory : %s(%Lu) : %Lu(%Lu)", desc, line, size, block);
 			return NULL;
 		}
 
@@ -369,23 +369,23 @@ pointer_t qn_mpfreloc(pointer_t ptr, size_t size, const char* desc, size_t line)
 }
 
 //
-void qn_mpffree(pointer_t ptr)
+void qn_mpffree(void* ptr)
 {
 	qn_ret_if_fail(ptr);
 
 	memBlock* node = _memhdr(ptr);
 	if (node == NULL)
 	{
-		qn_debug_output(true, "Try to free null memory node : 0x%p\n", ptr);
+		qn_debug_outputf(true, "Memory Profiler", "try to free null memory node : 0x%p", ptr);
 		return;
 	}
 #if _MSC_VER
 	if (HeapValidate(_qn_mp.heap, 0, node) == 0 || node->sign != MEMORY_SIGN_HEAD)
 	{
-		qn_debug_output(false, "Try to free invalid memory : 0x%p\n", ptr);
+		qn_debug_outputf(false, "Memory Profiler", "try to free invalid memory : 0x%p", ptr);
 		char sz[260];
 		qn_memdmp(ptr, 19, sz, 260 - 1);
-		qn_debug_output(true, "[%s]\n", sz);
+		qn_debug_outputf(true, "Memory Profiler", "\t\t{%s}", sz);
 		return;
 	}
 #endif

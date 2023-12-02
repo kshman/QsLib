@@ -106,20 +106,20 @@ typedef struct qnPoint
 {
 	union
 	{
-		struct { int32_t x, y; };
-		struct { int32_t min, max; };
-		struct { int32_t left, right; };
-		struct { uint32_t ux, uy; };
-		struct { uint32_t umin, umax; };
-		struct { uint32_t uleft, uright; };
-		struct { uint32_t width, height; };
+		struct { int x, y; };
+		struct { int min, max; };
+		struct { int left, right; };
+		struct { uint ux, uy; };
+		struct { uint umin, umax; };
+		struct { uint uleft, uright; };
+		struct { uint width, height; };
 	};
 } qnPoint;
 
 // rect
 typedef struct qnRect
 {
-	int32_t left, top, right, bottom;
+	int left, top, right, bottom;
 } qnRect;
 
 // quad
@@ -141,9 +141,9 @@ typedef struct qnKolor
 	{
 		struct
 		{
-			uint8_t b, g, r, a;
+			byte b, g, r, a;
 		};
-		uint32_t u;
+		uint u;
 	};
 } qnKolor;
 
@@ -170,19 +170,19 @@ typedef struct qnTrfm
 // half vector2
 typedef struct qnVecH2
 {
-	half_t x, y;
+	halfint x, y;
 } qnVecH2;
 
 // half vector3
 typedef struct qnVecH3
 {
-	half_t x, y, z;
+	halfint x, y, z;
 } qnVecH3;
 
 // hafl vector4
 typedef struct qnVecH4
 {
-	half_t x, y, z, w;
+	halfint x, y, z, w;
 } qnVecH4;
 
 // external function
@@ -1434,7 +1434,7 @@ QN_INLINE void qn_mat4_interpolate(qnMat4* pm, const qnMat4* left, const qnMat4*
 //////////////////////////////////////////////////////////////////////////
 // point
 
-QN_INLINE void qn_point_set(qnPoint* pt, int32_t x_or_min, int32_t y_or_max)
+QN_INLINE void qn_point_set(qnPoint* pt, int x_or_min, int y_or_max)
 {
 	pt->x = x_or_min;
 	pt->y = y_or_max;
@@ -1451,7 +1451,7 @@ QN_INLINE float qn_point_aspect(const qnPoint* pt)
 	return (float)pt->x / (float)pt->y;
 }
 
-QN_INLINE bool qn_point_between(const qnPoint* pt, int32_t v)
+QN_INLINE bool qn_point_between(const qnPoint* pt, int v)
 {
 	return v > pt->min && v < pt->max;
 }
@@ -1466,7 +1466,7 @@ QN_INLINE bool qn_point_eq(const qnPoint* left, const qnPoint* right)
 //////////////////////////////////////////////////////////////////////////
 // rect
 
-QN_INLINE void qn_rect_set(qnRect* prt, int32_t left, int32_t top, int32_t right, int32_t bottom)
+QN_INLINE void qn_rect_set(qnRect* prt, int left, int top, int right, int bottom)
 {
 	prt->left = left;
 	prt->top = top;
@@ -1474,7 +1474,7 @@ QN_INLINE void qn_rect_set(qnRect* prt, int32_t left, int32_t top, int32_t right
 	prt->bottom = bottom;
 }
 
-QN_INLINE void qn_rect_set_size(qnRect* p, int32_t x, int32_t y, int32_t w, int32_t h)
+QN_INLINE void qn_rect_set_size(qnRect* p, int x, int y, int w, int h)
 {
 	p->left = x;
 	p->top = y;
@@ -1490,7 +1490,7 @@ QN_INLINE void qn_rect_zero(qnRect* prt)
 	prt->bottom = 0;
 }
 
-QN_INLINE void qn_rect_mag(qnRect* p, const qnRect* rt, int32_t w, int32_t h)
+QN_INLINE void qn_rect_mag(qnRect* p, const qnRect* rt, int w, int h)
 {
 	p->left = rt->left - w;
 	p->top = rt->top - h;
@@ -1498,7 +1498,7 @@ QN_INLINE void qn_rect_mag(qnRect* p, const qnRect* rt, int32_t w, int32_t h)
 	p->bottom = rt->bottom + h;
 }
 
-QN_INLINE void qn_rect_inflate(qnRect* p, const qnRect* rt, int32_t l, int32_t t, int32_t r, int32_t b)
+QN_INLINE void qn_rect_inflate(qnRect* p, const qnRect* rt, int l, int t, int r, int b)
 {
 	p->left = rt->left - l;
 	p->top = rt->top - t;
@@ -1506,7 +1506,7 @@ QN_INLINE void qn_rect_inflate(qnRect* p, const qnRect* rt, int32_t l, int32_t t
 	p->bottom = rt->bottom + b;
 }
 
-QN_INLINE void qn_rect_deflate(qnRect* p, const qnRect* rt, int32_t l, int32_t t, int32_t r, int32_t b)
+QN_INLINE void qn_rect_deflate(qnRect* p, const qnRect* rt, int l, int t, int r, int b)
 {
 	p->left = rt->left + l;
 	p->top = rt->top + t;
@@ -1514,7 +1514,7 @@ QN_INLINE void qn_rect_deflate(qnRect* p, const qnRect* rt, int32_t l, int32_t t
 	p->bottom = rt->bottom - b;
 }
 
-QN_INLINE void qn_rect_offset(qnRect* p, const qnRect* rt, int32_t l, int32_t t, int32_t r, int32_t b)
+QN_INLINE void qn_rect_offset(qnRect* p, const qnRect* rt, int l, int t, int r, int b)
 {
 	p->left = rt->left + l;
 	p->top = rt->top + t;
@@ -1522,17 +1522,17 @@ QN_INLINE void qn_rect_offset(qnRect* p, const qnRect* rt, int32_t l, int32_t t,
 	p->bottom = rt->bottom + b;
 }
 
-QN_INLINE int32_t qn_rect_width(const qnRect* prt)
+QN_INLINE int qn_rect_width(const qnRect* prt)
 {
 	return prt->right - prt->left;
 }
 
-QN_INLINE int32_t qn_rect_height(const qnRect* prt)
+QN_INLINE int qn_rect_height(const qnRect* prt)
 {
 	return prt->bottom - prt->top;
 }
 
-QN_INLINE bool qn_rect_in(const qnRect* prt, int32_t x, int32_t y)
+QN_INLINE bool qn_rect_in(const qnRect* prt, int x, int y)
 {
 	return (x >= prt->left && x <= prt->right && y >= prt->top && y <= prt->bottom);
 }
@@ -1650,7 +1650,7 @@ QN_INLINE void qn_color_set(qnColor* pc, float r, float g, float b, float a)
 	pc->a = a;
 }
 
-QN_INLINE void qn_color_set_uint(qnColor* pc, uint32_t value)
+QN_INLINE void qn_color_set_uint(qnColor* pc, uint value)
 {
 	float f = 1.0f / 255.0f;
 	pc->b = (float)(value & 255) * f; value >>= 8;
@@ -1747,21 +1747,21 @@ QN_INLINE float* qn_color_float(qnColor* c)
 	return &c->r;
 }
 
-QN_INLINE uint32_t qn_color_uint(const qnColor* pc)
+QN_INLINE uint qn_color_uint(const qnColor* pc)
 {
-	uint8_t R = (uint8_t)(pc->r * 255.0f + 0.5f);
-	uint8_t G = (uint8_t)(pc->g * 255.0f + 0.5f);
-	uint8_t B = (uint8_t)(pc->b * 255.0f + 0.5f);
-	uint8_t A = (uint8_t)(pc->a * 255.0f + 0.5f);
-	return ((uint32_t)A << 24) | ((uint32_t)R << 16) | ((uint32_t)G << 8) | (uint32_t)B;
+	byte R = (byte)(pc->r * 255.0f + 0.5f);
+	byte G = (byte)(pc->g * 255.0f + 0.5f);
+	byte B = (byte)(pc->b * 255.0f + 0.5f);
+	byte A = (byte)(pc->a * 255.0f + 0.5f);
+	return ((uint)A << 24) | ((uint)R << 16) | ((uint)G << 8) | (uint)B;
 }
 
-QN_INLINE uint32_t qn_color_uint_exact(const qnColor* pc)
+QN_INLINE uint qn_color_uint_exact(const qnColor* pc)
 {
-	uint32_t R = (pc->r >= 1.0f) ? 0xff : (pc->r <= 0.0f) ? 0x00 : (uint32_t)(pc->r * 255.0f + 0.5f);
-	uint32_t G = (pc->g >= 1.0f) ? 0xff : (pc->g <= 0.0f) ? 0x00 : (uint32_t)(pc->g * 255.0f + 0.5f);
-	uint32_t B = (pc->b >= 1.0f) ? 0xff : (pc->b <= 0.0f) ? 0x00 : (uint32_t)(pc->b * 255.0f + 0.5f);
-	uint32_t A = (pc->a >= 1.0f) ? 0xff : (pc->a <= 0.0f) ? 0x00 : (uint32_t)(pc->a * 255.0f + 0.5f);
+	uint R = (pc->r >= 1.0f) ? 0xff : (pc->r <= 0.0f) ? 0x00 : (uint)(pc->r * 255.0f + 0.5f);
+	uint G = (pc->g >= 1.0f) ? 0xff : (pc->g <= 0.0f) ? 0x00 : (uint)(pc->g * 255.0f + 0.5f);
+	uint B = (pc->b >= 1.0f) ? 0xff : (pc->b <= 0.0f) ? 0x00 : (uint)(pc->b * 255.0f + 0.5f);
+	uint A = (pc->a >= 1.0f) ? 0xff : (pc->a <= 0.0f) ? 0x00 : (uint)(pc->a * 255.0f + 0.5f);
 	return (A << 24) | (R << 16) | (G << 8) | B;
 }
 
@@ -1795,7 +1795,7 @@ QN_INLINE void qn_color_saturation(qnColor* pc, const qnColor* c, float s)
 //////////////////////////////////////////////////////////////////////////
 // byte color
 
-QN_INLINE void qn_kolor_set(qnKolor* pc, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+QN_INLINE void qn_kolor_set(qnKolor* pc, byte r, byte g, byte b, byte a)
 {
 	pc->r = r;
 	pc->g = g;
@@ -1805,23 +1805,23 @@ QN_INLINE void qn_kolor_set(qnKolor* pc, uint8_t r, uint8_t g, uint8_t b, uint8_
 
 QN_INLINE void qn_kolor_set_float(qnKolor* pc, float r, float g, float b, float a)
 {
-	pc->r = (uint8_t)rintf(r * 255.0f);
-	pc->g = (uint8_t)rintf(g * 255.0f);
-	pc->b = (uint8_t)rintf(b * 255.0f);
-	pc->a = (uint8_t)rintf(a * 255.0f);
+	pc->r = (byte)rintf(r * 255.0f);
+	pc->g = (byte)rintf(g * 255.0f);
+	pc->b = (byte)rintf(b * 255.0f);
+	pc->a = (byte)rintf(a * 255.0f);
 }
 
-QN_INLINE void qn_kolor_set_uint(qnKolor* pc, uint32_t value)
+QN_INLINE void qn_kolor_set_uint(qnKolor* pc, uint value)
 {
 	pc->u = value;
 }
 
 QN_INLINE void qn_kolor_set_color(qnKolor* pc, const qnColor* cr)
 {
-	pc->r = (uint8_t)rintf(cr->r * 255.0f);
-	pc->g = (uint8_t)rintf(cr->g * 255.0f);
-	pc->b = (uint8_t)rintf(cr->b * 255.0f);
-	pc->a = (uint8_t)rintf(cr->a * 255.0f);
+	pc->r = (byte)rintf(cr->r * 255.0f);
+	pc->g = (byte)rintf(cr->g * 255.0f);
+	pc->b = (byte)rintf(cr->b * 255.0f);
+	pc->a = (byte)rintf(cr->a * 255.0f);
 }
 
 QN_INLINE void qn_kolor_add(qnKolor* pc, const qnKolor* left, const qnKolor* right)
@@ -1836,10 +1836,10 @@ QN_INLINE void qn_kolor_sub(qnKolor* pc, const qnKolor* left, const qnKolor* rig
 
 QN_INLINE void qn_kolor_mag(qnKolor* pc, const qnKolor* left, float scale)
 {
-	pc->r = (uint8_t)rintf(left->r * scale);
-	pc->g = (uint8_t)rintf(left->g * scale);
-	pc->b = (uint8_t)rintf(left->b * scale);
-	pc->a = (uint8_t)rintf(left->a * scale);
+	pc->r = (byte)rintf(left->r * scale);
+	pc->g = (byte)rintf(left->g * scale);
+	pc->b = (byte)rintf(left->b * scale);
+	pc->a = (byte)rintf(left->a * scale);
 }
 
 QN_INLINE void qn_kolor_neg(qnKolor* pc, const qnKolor* c)
@@ -1854,18 +1854,18 @@ QN_INLINE void qn_kolor_interpolate(qnKolor* pc, const qnKolor* left, const qnKo
 {
 	// left=tocolor, right=fromcolor
 	float f = 1.0f - s;
-	pc->r = (uint8_t)rintf(right->r * f + left->r * s);
-	pc->g = (uint8_t)rintf(right->g * f + left->g * s);
-	pc->b = (uint8_t)rintf(right->b * f + left->b * s);
-	pc->a = (uint8_t)rintf(right->a * f + left->a * s);
+	pc->r = (byte)rintf(right->r * f + left->r * s);
+	pc->g = (byte)rintf(right->g * f + left->g * s);
+	pc->b = (byte)rintf(right->b * f + left->b * s);
+	pc->a = (byte)rintf(right->a * f + left->a * s);
 }
 
 QN_INLINE void qn_kolor_lerp(qnKolor* pc, const qnKolor* left, const qnKolor* right, float s)
 {
-	pc->r = (uint8_t)rintf(left->r + s * (right->r - left->r));
-	pc->g = (uint8_t)rintf(left->g + s * (right->g - left->g));
-	pc->b = (uint8_t)rintf(left->b + s * (right->b - left->b));
-	pc->a = (uint8_t)rintf(left->a + s * (right->a - left->a));
+	pc->r = (byte)rintf(left->r + s * (right->r - left->r));
+	pc->g = (byte)rintf(left->g + s * (right->g - left->g));
+	pc->b = (byte)rintf(left->b + s * (right->b - left->b));
+	pc->a = (byte)rintf(left->a + s * (right->a - left->a));
 }
 
 QN_INLINE void qn_kolor_mod(qnKolor* pc, const qnKolor* left, const qnKolor* right)
@@ -1899,18 +1899,18 @@ QN_INLINE bool qn_kolor_eq(const qnKolor* left, const qnKolor* right)
 
 QN_INLINE void qn_kolor_contrast(qnKolor* pc, const qnKolor* c, float s)
 {
-	pc->r = (uint8_t)rintf(s * (c->r - 0.5f));
-	pc->g = (uint8_t)rintf(s * (c->g - 0.5f));
-	pc->b = (uint8_t)rintf(s * (c->b - 0.5f));
+	pc->r = (byte)rintf(s * (c->r - 0.5f));
+	pc->g = (byte)rintf(s * (c->g - 0.5f));
+	pc->b = (byte)rintf(s * (c->b - 0.5f));
 	pc->a = c->a;
 }
 
 QN_INLINE void qn_kolor_saturation(qnKolor* pc, const qnKolor* c, float s)
 {
 	float g = c->r * 0.2125f + c->g * 0.7154f + c->b * 0.0721f;
-	pc->r = (uint8_t)rintf(g + s * (c->r - g));
-	pc->g = (uint8_t)rintf(g + s * (c->g - g));
-	pc->b = (uint8_t)rintf(g + s * (c->b - g));
+	pc->r = (byte)rintf(g + s * (c->r - g));
+	pc->g = (byte)rintf(g + s * (c->g - g));
+	pc->b = (byte)rintf(g + s * (c->b - g));
 	pc->a = c->a;
 }
 
@@ -1945,7 +1945,7 @@ QN_INLINE void qn_plane_from_point_norm(qnPlane* pp, const qnVec3* pv, const qnV
 	pp->d = -qn_vec3_dot(pv, pn);
 }
 
-QN_INLINE int32_t qn_plane_face_point(const qnPlane* p, const qnVec3* v)
+QN_INLINE int qn_plane_face_point(const qnPlane* p, const qnVec3* v)
 {
 	float f = qn_vec3_dot((const qnVec3*)p, v) + p->d;
 	if (f < -QN_EPSILON)
@@ -2051,14 +2051,14 @@ QN_INLINE bool qn_line3_in(const qnLine3* p, const qnVec3* v)
 // half
 
 // half type
-QN_INLINE half_t qn_float2half(const float v)
+QN_INLINE halfint qn_float2half(const float v)
 {
 	QN_MEM_BARRIER();
-	uint32_t u = *(const uint32_t*)&v;
-	uint32_t s = (u & 0x80000000U) >> 16U;
+	uint u = *(const uint*)&v;
+	uint s = (u & 0x80000000U) >> 16U;
 	u = u & 0x7FFFFFFFU;
 
-	uint32_t r;
+	uint r;
 	if (u > 0x47FFEFFFU)
 		r = 0x7FFFU;
 	else
@@ -2067,24 +2067,24 @@ QN_INLINE half_t qn_float2half(const float v)
 			u += 0xC8000000U;
 		else
 		{
-			uint32_t t = 113U - (u >> 23U);
+			uint t = 113U - (u >> 23U);
 			u = (0x800000U | (u & 0x7FFFFFU)) >> t;
 		}
 
 		r = ((u + 0x0FFFU + ((u >> 13U) & 1U)) >> 13U) & 0x7FFFU;
 	}
 
-	return (half_t)(r | s);
+	return (halfint)(r | s);
 }
 
-QN_INLINE float qn_half2float(const half_t v)
+QN_INLINE float qn_half2float(const halfint v)
 {
 	QN_MEM_BARRIER();
-	uint32_t m = (uint32_t)(v & 0x03FF);
-	uint32_t e;
+	uint m = (uint)(v & 0x03FF);
+	uint e;
 
 	if ((v & 0x7C00) != 0)
-		e = (uint32_t)((v >> 10) & 0x1F);
+		e = (uint)((v >> 10) & 0x1F);
 	else if (m != 0)
 	{
 		e = 1;
@@ -2098,9 +2098,9 @@ QN_INLINE float qn_half2float(const half_t v)
 		m &= 0x03FF;
 	}
 	else
-		e = (uint32_t)-112;
+		e = (uint)-112;
 
-	uint32_t r = ((v & 0x8000) << 16) | ((e + 112) << 23) | (m << 13);
+	uint r = ((v & 0x8000) << 16) | ((e + 112) << 23) | (m << 13);
 	return *(float*)&r;
 }
 

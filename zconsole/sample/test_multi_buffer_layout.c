@@ -1,4 +1,6 @@
-﻿#include <qs.h>
+﻿// 다중 버퍼와 그에 따른 레이아웃
+// 정점(스테이지1)과 색깔(스테이지) 버퍼가 두개
+#include <qs.h>
 
 static const char* vs =
 "attribute vec4 aposition;\n"

@@ -66,14 +66,14 @@ bool _sdl_construct(qgStub* g, struct stubParam* param)
 		wflags);
 	if (self->window == NULL)
 	{
-		qn_debug_output(false, "SDL: unable to initialize (%d)\n", SDL_GetError());
+		qn_debug_outputf(false, "SDL", "unable to initialize (%d)", SDL_GetError());
 		return false;
 	}
 
 	SDL_GetWindowWMInfo(self->window, &self->wminfo);
 	qm_set_desc(self, (uintptr_t)self->window);
 #if _QN_WINDOWS_
-	self->base.oshandle = self->wminfo.info.win.window;
+	self->base.oshandle = self->wminfo.invokes.win.window;
 #elif _QN_ANDROID_
 	self->base.oshandle = self->wminfo.info.android.window;
 #elif _QN_UNIX_

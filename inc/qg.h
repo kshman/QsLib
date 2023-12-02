@@ -69,6 +69,9 @@ typedef enum qgTopology
 	QGTPG_LINE_STRIP,
 	QGTPG_TRI,
 	QGTPG_TRI_STRIP,
+	QGTPG_EX_LINE_LOOP,
+	QGTPG_EX_TRI_FAN,
+	QGTPG_MAX_VALUE,
 } qgTopology;
 
 typedef enum qgFill
@@ -161,6 +164,7 @@ typedef enum qgLoType
 	QGLOT_SHORT4,
 	QGLOT_SHORT2N,
 	QGLOT_COLOR,
+	QGLOT_COLORN,
 	QGLOT_MAX_VALUE
 } qgLoType;
 
@@ -175,8 +179,9 @@ typedef enum qgLoStage
 
 typedef enum qgShdType
 {
-	QGSHT_VS,
-	QGSHT_PS,
+	QGSHT_VS = QN_BIT(0),
+	QGSHT_PS = QN_BIT(1),
+	QGSHT_ALL = QGSHT_VS | QGSHT_PS,
 } qgShdType;
 
 typedef enum qgShdRole
@@ -301,7 +306,144 @@ typedef enum qgEventType
 
 
 //////////////////////////////////////////////////////////////////////////
-// inputs
+// properties
+
+//
+typedef struct qgPropPixel
+{
+	qgClrFmt			fmt;
+	byte				bpp;
+	byte				rr, rl;
+	byte				gr, gl;
+	byte				br, bl;
+	byte				ar, al;
+} qgPixelProp;
+
+//
+typedef struct qgPropDepthStencil
+{
+	bool				d_write : 8;
+	qgCmpOp				d_func : 8;
+
+	bool				f_enable : 8;
+	qgCmpOp				f_func : 8;
+	qgStencilOp			f_pass : 8;
+	qgStencilOp			f_fail : 8;
+	qgStencilOp			f_depth : 8;
+
+	bool				b_enable : 8;
+	qgCmpOp				b_func : 8;
+	qgStencilOp			b_pass : 8;
+	qgStencilOp			b_fail : 8;
+	qgStencilOp			b_depth : 8;
+
+	byte				m_read;
+	byte				m_write;
+} qgPropDepthStencil;
+
+//
+typedef struct qgPropRasterizer
+{
+	qgFill				fill : 8;
+	qgCull				cull : 8;
+	float				depth_bias;
+	float				slope_scale;
+} qgPropRasterizer;
+
+//
+typedef struct qgPropBlend
+{
+	qgBlendOp			c_op : 16;
+	qgFactor			c_src : 8;
+	qgFactor			c_dst : 8;
+
+	qgBlendOp			a_op : 16;
+	qgFactor			a_src : 8;
+	qgFactor			a_dst : 8;
+
+	qgClrMask			mask;
+} qgPropBlend;
+
+//
+typedef struct qgPropLayout
+{
+	qgLoStage			stage : 8;			// qgLoStage
+	int					index : 8;
+	qgLoUsage			usage : 8;
+	qgLoType			type : 8;
+} qgPropLayout;
+
+//
+typedef struct qgVarShader
+{
+	char				name[64];
+
+	qgShdRole			role : 8;			// 0=manual, 1=auto, 2=discard
+	qgShdConst			cnst : 8;
+
+	ushort				size;
+	uint				offset;				// variable offset
+} qgVarShader;
+
+//
+typedef void(*qgVarShaderFunc)(void*, qgVarShader*, qgShd*);
+
+
+//////////////////////////////////////////////////////////////////////////
+// stub data
+
+// maximum event queue
+#define QNEVENT_MAX_VALUE		5000
+
+//
+typedef union qgEvent
+{
+	qgEventType			ev;
+	struct Active
+	{
+		qgEventType			ev;
+		int					active;	// bool
+		double				delta;
+	}					active;
+	struct Layout
+	{
+		qgEventType			ev;
+		qnRect				bound;
+		int					_pad[1];
+	}					layout;
+	struct Keyboard
+	{
+		qgEventType			ev;
+		int16_t				pressed;
+		int16_t				repeat;
+		qIkKey				key;
+		qIkMask				state;
+	}					key;
+	struct MouseMove {
+		qgEventType			ev;
+		int					x;
+		int					y;
+		int					dx;
+		int					dy;
+		qImMask				state;
+	}					mmove;
+	struct MouseButton {
+		qgEventType			ev;
+		int					x;
+		int					y;
+		qImButton			button;
+		qImMask				state;
+		int					_pad[1];
+	}					mbutton;
+	struct MouseWheel {
+		qgEventType			ev;
+		int					dir;
+		int					x;
+		int					y;
+	}					mwheel;
+} qgEvent;
+
+QN_LIST_DECL(qgListEvent, qgEvent);
 
 //
 typedef struct qgUimKey
@@ -320,14 +462,14 @@ typedef struct qgUimMouse
 
 	struct
 	{
-		uint32_t		tick;
+		uint			tick;
 		qImButton		btn;
 		qnPoint			loc;
 	}					clk;
 	struct
 	{
 		int				move;
-		uint32_t		tick;
+		uint			tick;
 	}					lim;
 } qgUimMouse;
 
@@ -358,64 +500,9 @@ typedef struct qgUimCtrlInfo
 // 
 typedef struct qgUimCtrlCtrlVib
 {
-	uint16_t			left;
-	uint16_t			right;
+	ushort				left;
+	ushort				right;
 } qgUimCtrlCtrlVib;
-
-
-//////////////////////////////////////////////////////////////////////////
-// stub data
-
-#define QNEVENT_MAX_VALUE		5000
-
-typedef union qgEvent
-{
-	qgEventType			ev;
-	struct Active
-	{
-		qgEventType			ev;
-		int32_t				active;	// bool
-		double				delta;
-	}						active;
-	struct Layout
-	{
-		qgEventType			ev;
-		qnRect				bound;
-		int32_t				_pad[1];
-	}					layout;
-	struct Keyboard
-	{
-		qgEventType			ev;
-		int16_t				pressed;
-		int16_t				repeat;
-		qIkKey				key;
-		qIkMask				state;
-	}					key;
-	struct MouseMove {
-		qgEventType			ev;
-		int32_t				x;
-		int32_t				y;
-		int32_t				dx;
-		int32_t				dy;
-		qImMask				state;
-	}					mmove;
-	struct MouseButton {
-		qgEventType			ev;
-		int32_t				x;
-		int32_t				y;
-		qImButton			button;
-		qImMask				state;
-		int32_t				_pad[1];
-	}					mbutton;
-	struct MouseWheel {
-		qgEventType			ev;
-		int32_t				dir;
-		int32_t				x;
-		int32_t				y;
-	}					mwheel;
-} qgEvent;
-
-QN_LIST_DECL(qgListEvent, qgEvent);
 
 typedef struct qgDeviceInfo
 {
@@ -430,20 +517,21 @@ typedef struct qgDeviceInfo
 	int					max_off_count;
 	int					tex_image_flag;
 	qgClrFmt			clrfmt;
+	bool				test_stage_valid;
 } qgDeviceInfo;
 
-typedef struct qgRenderInfo
+typedef struct qgRenderInvoke
 {
-	intptr_t			frames;
-	intptr_t			begins;
-	intptr_t			ends;
-	intptr_t			invokes;
-	intptr_t			shaders;
-	intptr_t			transforms;
-	intptr_t			draws;
-	intptr_t			vertices;
+	nint				frames;
+	nint				begins;
+	nint				ends;
+	nint				invokes;
+	nint				shaders;
+	nint				transforms;
+	nint				draws;
+	nint				primitives;
 	bool				flush;
-} qgRenderInfo;
+} qgRenderInvoke;
 
 typedef struct qgRenderTm
 {
@@ -468,88 +556,6 @@ typedef struct qgRenderParam
 
 
 //////////////////////////////////////////////////////////////////////////
-// object
-
-typedef struct qgPropPixel
-{
-	qgClrFmt			fmt;
-	uint8_t				bpp;
-	uint8_t				rr, rl;
-	uint8_t				gr, gl;
-	uint8_t				br, bl;
-	uint8_t				ar, al;
-} qgPixelProp;
-
-typedef struct qgPropDepthStencil
-{
-	bool				d_write : 8;
-	qgCmpOp				d_func : 8;
-
-	bool				f_enable : 8;
-	qgCmpOp				f_func : 8;
-	qgStencilOp			f_pass : 8;
-	qgStencilOp			f_fail : 8;
-	qgStencilOp			f_depth : 8;
-
-	bool				b_enable : 8;
-	qgCmpOp				b_func : 8;
-	qgStencilOp			b_pass : 8;
-	qgStencilOp			b_fail : 8;
-	qgStencilOp			b_depth : 8;
-
-	uint8_t				m_read;
-	uint8_t				m_write;
-} qgPropDepthStencil;
-
-typedef struct qgPropRasterizer
-{
-	qgFill				fill : 8;
-	qgCull				cull : 8;
-	float				depth_bias;
-	float				slope_scale;
-} qgPropRasterizer;
-
-typedef struct qgPropBlend
-{
-	qgBlendOp			c_op : 16;
-	qgFactor			c_src : 8;
-	qgFactor			c_dst : 8;
-
-	qgBlendOp			a_op : 16;
-	qgFactor			a_src : 8;
-	qgFactor			a_dst : 8;
-
-	qgClrMask			mask;
-} qgPropBlend;
-
-typedef struct qgVarLayout
-{
-	qgLoUsage			usage : 16;
-	int					index : 16;
-	qgLoType			type : 16;
-	int					slot : 16;
-	int					zz;
-} qgVarLayout;
-
-typedef struct qgVarShader
-{
-	size_t				hash;
-	char				name[32];
-
-	qgShdRole			role : 8;			// 0=manual, 1=auto, 2=discard
-	qgShdConst			cnst : 8;
-
-	uint16_t			size;
-	uint32_t			offset;
-
-	pointer_t			aptr;
-	pointer_t			xptr;
-} qgVarShader;
-
-typedef void(*qgVarShaderFunc)(pointer_t, int, qgVarShader*, qgShd*);
-
-
-//////////////////////////////////////////////////////////////////////////
 // stub & render device
 
 // stub
@@ -557,12 +563,12 @@ struct qgStub
 {
 	qnGam				base;
 
-	pointer_t			oshandle;
+	void*				oshandle;
 
 	qgFlag				flags;
 	qgStti				sttis;
-	uint32_t			delay;
-	int32_t				_padding[1];
+	uint				delay;
+	int					_padding[1];
 
 	qnTimer*			timer;
 	double				fps;
@@ -583,7 +589,7 @@ struct qgStub
 qvt_name(qgStub)
 {
 	qvt_name(qnGam)		base;
-	bool (*_construct)(qgStub*, pointer_t);
+	bool (*_construct)(qgStub*, void*);
 	void (*_finalize)(qgStub*);
 	bool (*_poll)(qgStub*);
 };
@@ -617,11 +623,11 @@ struct qgRdh
 
 	qgStub*				stub;
 
-	qgRenderInfo		info;
+	qgDeviceInfo		caps;
+
 	qgRenderTm			tm;
 	qgRenderParam		param;
-
-	qgDeviceInfo		caps;
+	qgRenderInvoke		invokes;
 };
 
 qvt_name(qgRdh)
@@ -636,24 +642,26 @@ qvt_name(qgRdh)
 	void (*end)(qgRdh*);
 	void (*flush)(qgRdh*);
 
+	qgVlo* (*create_layout)(qgRdh*, int, const qgPropLayout*);
+	qgShd* (*create_shader)(qgRdh*, const char*);
+	qgBuf* (*create_buffer)(qgRdh*, qgBufType, int, int, const void*);
+
 	void (*set_shader)(qgRdh*, qgShd*, qgVlo*);
 	bool (*set_index)(qgRdh*, qgBuf*);
-	bool (*set_vertex)(qgRdh*, int, qgBuf*);
+	bool (*set_vertex)(qgRdh*, qgLoStage, qgBuf*);
 
-	qgVlo* (*create_layout)(qgRdh*, int, const qgVarLayout*);
-	qgShd* (*create_shader)(qgRdh*, const char*);
-	qgBuf* (*create_buffer)(qgRdh*, qgBufType, int, int, cpointer_t);
-
-	bool (*primitive_begin)(qgRdh*, qgTopology, int, int, pointer_t*);
+	bool (*primitive_begin)(qgRdh*, qgTopology, int, int, void**);
 	void (*primitive_end)(qgRdh*);
-	bool (*indexed_primitive_begin)(qgRdh*, qgTopology, int, int, pointer_t*, int, int, pointer_t*);
+	bool (*indexed_primitive_begin)(qgRdh*, qgTopology, int, int, void**, int, int, void**);
 	void (*indexed_primitive_end)(qgRdh*);
+	bool (*draw)(qgRdh*, qgTopology, int);
+	bool (*draw_indexed)(qgRdh*, qgTopology, int);
 };
 
 QNAPI qgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, int flags);
 
 QNAPI const qgDeviceInfo* qg_rdh_get_device_info(qgRdh* g);
-QNAPI const qgRenderInfo* qg_rdh_get_render_info(qgRdh* g);
+QNAPI const qgRenderInvoke* qg_rdh_get_render_info(qgRdh* g);
 QNAPI const qgRenderTm* qg_rdh_get_render_tm(qgRdh* g);
 QNAPI const qgRenderParam* qg_rdh_get_render_param(qgRdh* g);
 
@@ -673,13 +681,18 @@ QNAPI void qg_rdh_set_proj(qgRdh* g, const qnMat4* m);
 QNAPI void qg_rdh_set_view(qgRdh* g, const qnMat4* m);
 QNAPI void qg_rdh_set_world(qgRdh* g, const qnMat4* m);
 
-QNAPI bool qg_rdh_set_index(qgRdh* g, pointer_t buffer);
-QNAPI bool qg_rdh_set_vertex(qgRdh* g, int stage, pointer_t buffer);
+QNAPI qgVlo* qg_rdh_create_layout(qgRdh* self, int count, const qgPropLayout* layouts);
+QNAPI qgShd* qg_rdh_create_shader(qgRdh* self, const char* name);
+QNAPI qgBuf* qg_rdh_create_buffer(qgRdh* g, qgBufType type, int count, int stride, const void* data);
 
-QNAPI qgBuf* qg_rdh_create_buffer(qgRdh* g, qgBufType type, int count, int stride, cpointer_t data);
+QNAPI void qg_rdh_set_shader(qgRdh* self, qgShd* shader, qgVlo* layout);
+QNAPI bool qg_rdh_set_index(qgRdh* g, void* buffer);
+QNAPI bool qg_rdh_set_vertex(qgRdh* g, qgLoStage stage, void* buffer);
 
-QNAPI void qg_rdh_draw_primitive(qgRdh* g, qgTopology tpg, int count, int stride, cpointer_t data);
-QNAPI void qg_rdh_draw_indexed_primitive(qgRdh* g, qgTopology tpg, int vcount, int vstride, cpointer_t vdata, int icount, int istride, cpointer_t idata);
+QNAPI void qg_rdh_primitive_draw(qgRdh* g, qgTopology tpg, int count, int stride, const void* data);
+QNAPI void qg_rdh_primitive_draw_indexed(qgRdh* g, qgTopology tpg, int vcount, int vstride, const void* vdata, int icount, int istride, const void* idata);
+QNAPI bool qg_rdh_draw(qgRdh* self, qgTopology tpg, int vcount);
+QNAPI bool qg_rdh_draw_indexed(qgRdh* self, qgTopology tpg, int icount);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -697,12 +710,10 @@ struct qgVlo
 {
 	qgRdGam				base;
 
-	int					stride;
-	uint16_t			stage[QGLOS_MAX_VALUE];
+	ushort				stride[QGLOS_MAX_VALUE];
 };
 
-QNAPI uint32_t qg_vlo_get_stride(qgVlo* g);
-QNAPI uint32_t qg_vlo_get_stage(qgVlo* g, int stage);
+QNAPI uint qg_vlo_get_stride(qgVlo* g, qgLoStage stage);
 
 
 // shader
@@ -717,13 +728,20 @@ struct qgShd
 qvt_name(qgShd)
 {
 	qvt_name(qnGam)		base;
-	bool(*bind)(qgShd*, qgShdType, cpointer_t, int, int);
+	bool(*bind)(qgShd*, qgShdType, const void*, int, int);
 	bool(*bind_shd)(qgShd*, qgShdType, qgShd*);
 	//bool(*bind_name)(qgShd* qgShdType, const char*);
 	//void(*add_condition)(qgShd*, const char*);
 	//void(*clear_condition)(qgShd*);
 	bool(*link)(qgShd*);
 };
+
+QNAPI const char* qg_shd_get_name(qgShd* self);
+QNAPI void qg_shd_set_intr(qgShd* self, qgVarShaderFunc func, void* data);
+
+QNAPI bool qg_shd_bind(qgShd* self, qgShdType type, const void* data, int size, int flags);
+QNAPI bool qg_shd_bind_shd(qgShd* self, qgShdType type, qgShd* shader);
+QNAPI bool qg_shd_link(qgShd* self);
 
 
 // buffer
@@ -732,21 +750,24 @@ struct qgBuf
 	qgRdGam				base;
 
 	qgBufType			type : 16;
-	uint16_t			stride;
-	uint32_t			size;
+	ushort				stride;
+	uint				size;
 };
 
 qvt_name(qgBuf)
 {
 	qvt_name(qnGam)		base;
-	pointer_t(*map)(qgBuf*);
+	void*(*map)(qgBuf*);
 	bool (*unmap)(qgBuf*);
-	bool (*data)(qgBuf*, cpointer_t);
+	bool (*data)(qgBuf*, const void*);
 };
 
 QNAPI qgBufType qg_buf_get_type(qgBuf* g);
-QNAPI uint32_t qg_buf_get_stride(qgBuf* g);
-QNAPI uint32_t qg_buf_get_size(qgBuf* g);
-QNAPI bool qg_buf_mapped_data(qgBuf* g, cpointer_t data, int size);
+QNAPI uint qg_buf_get_stride(qgBuf* g);
+QNAPI uint qg_buf_get_size(qgBuf* g);
+
+QNAPI void* qg_buf_map(qgBuf* self);
+QNAPI bool qg_buf_unmap(qgBuf* self);
+QNAPI bool qg_buf_data(qgBuf* self, const void* data);
 
 QN_EXTC_END

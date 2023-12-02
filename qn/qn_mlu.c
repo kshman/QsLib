@@ -100,7 +100,7 @@ qnMlu* qn_mlu_new_file(const char* filename)
  * @param	filename	파일의 이름
  * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 qnMlu*
  */
-qnMlu* qn_mlu_new_file_l(const wchar_t* filename)
+qnMlu* qn_mlu_new_file_l(const wchar* filename)
 {
 	int size;
 	uint8_t* data = (uint8_t*)qn_file_alloc_l(filename, &size);
@@ -131,7 +131,7 @@ qnMlu* qn_mlu_new_file_l(const wchar_t* filename)
  * @param	size	버퍼 크기
  * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 qnMlu*
  */
-qnMlu* qn_mlu_new_buffer(cpointer_t data, int size)
+qnMlu* qn_mlu_new_buffer(const void* data, int size)
 {
 	qnMlu* self;
 
@@ -242,7 +242,7 @@ void qn_mlu_print(qnMlu* self)
  * @param	size		버퍼 크기
  * @return	성공하면 참을, 실패하면 거짓을 반환한다
  */
-bool qn_mlu_load_buffer(qnMlu* self, cpointer_t data, int size)
+bool qn_mlu_load_buffer(qnMlu* self, const void* data, int size)
 {
 	qn_retval_if_fail(data, false);
 	qn_retval_if_fail(size > 0, false);
@@ -649,7 +649,7 @@ bool qn_mlu_write_file(qnMlu* self, const char* filename)
 	qn_file_write(file, &bom, 0, 3);
 
 	// xml 부호
-	qn_file_write(file, (cpointer_t)_ml_header_desc, 0, (int)strlen(_ml_header_desc));
+	qn_file_write(file, (const void*)_ml_header_desc, 0, (int)strlen(_ml_header_desc));
 
 	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
@@ -761,7 +761,7 @@ int qn_mlu_contains(qnMlu* self, qnMlTag* tag)
  * @param[in]	func	콜백 함수
  * @param	userdata		콜백 데이터
  */
-void qn_mlu_foreach(qnMlu* self, void(*func)(pointer_t userdata, qnMlTag* tag), pointer_t userdata)
+void qn_mlu_foreach(qnMlu* self, void(*func)(void*, qnMlTag*), void* userdata)
 {
 	qn_ret_if_fail(func);
 
@@ -1327,7 +1327,7 @@ int qn_mltag_contains_sub(qnMlTag* ptr, qnMlTag* tag)
  * @param[in]	func	콜백 함수
  * @param	userdata		콜백 데이터
  */
-void qn_mltag_foreach_sub(qnMlTag* ptr, void(*func)(pointer_t userdata, qnMlTag* tag), pointer_t userdata)
+void qn_mltag_foreach_sub(qnMlTag* ptr, void(*func)(void* userdata, qnMlTag* tag), void* userdata)
 {
 	qn_ret_if_fail(func);
 
@@ -1528,11 +1528,11 @@ const char* qn_mltag_get_arg(qnMlTag* ptr, const char* name, const char* ifnotex
  * @param	data		 	인수 자료
  * @return	성공하면 참을, 실패하면 거짓을 반환한다
  */
-bool qn_mltag_next_arg(qnMlTag* ptr, pointer_t* index, const char** name, const char** data)
+bool qn_mltag_next_arg(qnMlTag* ptr, void** index, const char** name, const char** data)
 {
 	qn_retval_if_fail(index, false);
 
-	if (*index == (pointer_t)(intptr_t)-1)
+	if (*index == (void*)(intptr_t)-1)
 		return false;
 
 	qnRealTag* self = (qnRealTag*)ptr;
@@ -1541,7 +1541,7 @@ bool qn_mltag_next_arg(qnMlTag* ptr, pointer_t* index, const char** name, const 
 	if (name) *name = node->key;
 	if (data) *data = node->value;
 
-	*index = node->next ? node->next : (pointer_t)(intptr_t)-1;
+	*index = node->next ? node->next : (void*)(intptr_t)-1;
 
 	return true;
 }
@@ -1563,7 +1563,7 @@ bool qn_mltag_contains_arg(qnMlTag* ptr, const char* name)
  * @param[in]	func	콜백 함수
  * @param	userdata		콜백 데이터
  */
-void qn_mltag_foreach_arg(qnMlTag* ptr, void(*func)(pointer_t userdata, const char* name, const char* data), pointer_t userdata)
+void qn_mltag_foreach_arg(qnMlTag* ptr, void(*func)(void* userdata, const char* name, const char* data), void* userdata)
 {
 	qnRealTag* self = (qnRealTag*)ptr;
 

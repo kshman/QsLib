@@ -134,11 +134,11 @@ void qn_stod(double sec, qnDateTime* dt)
  * @param	msec  	밀리초
  * @param[out]	dt	(널값이 아니면) 변환된 시간
  */
-void qn_mstod(uint32_t msec, qnDateTime* dt)
+void qn_mstod(uint msec, qnDateTime* dt)
 {
 	qn_ret_if_fail(dt != NULL);
 
-	uint32_t ns = msec / 1000;
+	uint ns = msec / 1000;
 	dt->hour = ns / 3600;
 	dt->minute = (ns % 3600) / 60;
 	dt->second = (ns % 60);

@@ -2,7 +2,7 @@
 #include "qn.h"
 
 // 만들었슴
-pointer_t qm_init(pointer_t g, pointer_t vt)
+void* qm_init(void* g, void* vt)
 {
 	qn_retval_if_fail(g, NULL);
 	qnGam* self = qm_cast(g, qnGam);
@@ -12,7 +12,7 @@ pointer_t qm_init(pointer_t g, pointer_t vt)
 }
 
 // 로드
-pointer_t qm_load(pointer_t g)
+void* qm_load(void* g)
 {
 	qn_retval_if_fail(g, NULL);
 	qnGam* self = qm_cast(g, qnGam);
@@ -21,7 +21,7 @@ pointer_t qm_load(pointer_t g)
 }
 
 // 언로드
-pointer_t qm_unload(pointer_t g)
+void* qm_unload(void* g)
 {
 	qn_retval_if_fail(g, NULL);
 	qnGam* self = qm_cast(g, qnGam);
@@ -36,7 +36,7 @@ pointer_t qm_unload(pointer_t g)
 }
 
 //
-int qm_get_ref(pointer_t g)
+int qm_get_ref(void* g)
 {
 	qn_retval_if_fail(g, -1);
 	qnGam* self = qm_cast(g, qnGam);
@@ -44,25 +44,7 @@ int qm_get_ref(pointer_t g)
 }
 
 //
-pointer_t qm_get_ptr(pointer_t g)
-{
-	qn_retval_if_fail(g, NULL);
-	qnGam* self = qm_cast(g, qnGam);
-	return self->ptr;
-}
-
-//
-pointer_t qm_set_ptr(pointer_t g, pointer_t ptr)
-{
-	qn_retval_if_fail(g, NULL);
-	qnGam* self = qm_cast(g, qnGam);
-	pointer_t prev = self->ptr;
-	self->ptr = ptr;
-	return prev;
-}
-
-//
-uintptr_t qm_get_desc(pointer_t g)
+nuint qm_get_desc(void* g)
 {
 	qn_retval_if_fail(g, 0);
 	qnGam* self = qm_cast(g, qnGam);
@@ -70,11 +52,11 @@ uintptr_t qm_get_desc(pointer_t g)
 }
 
 //
-QNAPI uintptr_t qm_set_desc(pointer_t g, uintptr_t ptr)
+QNAPI nuint qm_set_desc(void* g, nuint ptr)
 {
 	qn_retval_if_fail(g, 0);
 	qnGam* self = qm_cast(g, qnGam);
-	uintptr_t prev = self->desc;
+	nuint prev = self->desc;
 	self->desc = ptr;
 	return prev;
 }

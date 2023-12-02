@@ -183,7 +183,7 @@ extern DECLSPEC int SDLCALL SDL_GetNumRenderDrivers(void);
  * \sa SDL_GetNumRenderDrivers
  */
 extern DECLSPEC int SDLCALL SDL_GetRenderDriverInfo(int index,
-                                                    SDL_RendererInfo * info);
+                                                    SDL_RendererInfo * invokes);
 
 /**
  * Create a window and default renderer.
@@ -286,7 +286,7 @@ extern DECLSPEC SDL_Window * SDLCALL SDL_RenderGetWindow(SDL_Renderer *renderer)
  * \sa SDL_CreateRenderer
  */
 extern DECLSPEC int SDLCALL SDL_GetRendererInfo(SDL_Renderer * renderer,
-                                                SDL_RendererInfo * info);
+                                                SDL_RendererInfo * invokes);
 
 /**
  * Get the output size in pixels of a rendering context.

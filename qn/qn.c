@@ -12,6 +12,8 @@ enum
 //
 extern void _qn_mp_init(void);
 extern void _qn_mp_dispose(void);
+extern void _qn_dbg_init(void);
+extern void _qn_dbg_dispose(void);
 
 // 닫아라
 struct Closure
@@ -48,6 +50,7 @@ static void _qn_dispose(void)
 	}
 
 	_qn_mp_dispose();
+	_qn_dbg_dispose();
 }
 
 //
@@ -55,6 +58,7 @@ static void _qn_init(void)
 {
 	_qn_rt.inited = true;
 
+	_qn_dbg_init();
 	_qn_mp_init();
 
 #if _LIB || _STATIC
@@ -86,7 +90,7 @@ void qn_exit(const int exitcode)
 }
 
 //
-void qn_atexit(paramfunc_t func, pointer_t data)
+void qn_atexit(paramfunc_t func, void* data)
 {
 	qn_ret_if_fail(func);
 
@@ -100,7 +104,7 @@ void qn_atexit(paramfunc_t func, pointer_t data)
 }
 
 //
-void qn_atexitp(paramfunc_t func, pointer_t data)
+void qn_atexitp(paramfunc_t func, void* data)
 {
 	qn_ret_if_fail(func);
 

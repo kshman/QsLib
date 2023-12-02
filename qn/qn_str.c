@@ -485,10 +485,10 @@ int qn_strnicmp(const char* p1, const char* p2, size_t len)
 #define towlower(c)					((((c)>=L'A') && ((c)<=L'Z')) ? ((c)-L'A'+L'a') : (c))
 #endif
 
-extern size_t doprw(wchar_t* buffer, size_t maxlen, const wchar_t* format, va_list args);
+extern size_t doprw(wchar* buffer, size_t maxlen, const wchar* format, va_list args);
 
 /** @brief vsnwprintf */
-int qn_vsnwprintf(wchar_t* out, size_t len, const wchar_t* fmt, va_list va)
+int qn_vsnwprintf(wchar* out, size_t len, const wchar* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, -1);
 
@@ -500,7 +500,7 @@ int qn_vsnwprintf(wchar_t* out, size_t len, const wchar_t* fmt, va_list va)
 }
 
 /** @brief vaswprintf */
-int qn_vaswprintf(wchar_t** out, const wchar_t* fmt, va_list va)
+int qn_vaswprintf(wchar** out, const wchar* fmt, va_list va)
 {
 	qn_retval_if_fail(out != NULL, -2);
 	qn_retval_if_fail(fmt != NULL, -1);
@@ -510,7 +510,7 @@ int qn_vaswprintf(wchar_t** out, const wchar_t* fmt, va_list va)
 		*out = NULL;
 	else
 	{
-		*out = qn_alloc(len + 1, wchar_t);
+		*out = qn_alloc(len + 1, wchar);
 		len = doprw(*out, len + 1, fmt, va);
 	}
 
@@ -518,7 +518,7 @@ int qn_vaswprintf(wchar_t** out, const wchar_t* fmt, va_list va)
 }
 
 /** @brief vaspwprintf */
-wchar_t* qn_vapswprintf(const wchar_t* fmt, va_list va)
+wchar* qn_vapswprintf(const wchar* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, NULL);
 
@@ -526,14 +526,14 @@ wchar_t* qn_vapswprintf(const wchar_t* fmt, va_list va)
 	if (len == 0)
 		return NULL;
 
-	wchar_t* ret = qn_alloc(len + 1, wchar_t);
+	wchar* ret = qn_alloc(len + 1, wchar);
 	doprw(ret, len + 1, fmt, va);
 
 	return ret;
 }
 
 /** @brief snwprintf */
-int qn_snwprintf(wchar_t* out, size_t len, const wchar_t* fmt, ...)
+int qn_snwprintf(wchar* out, size_t len, const wchar* fmt, ...)
 {
 	va_list va;
 	int ret;
@@ -546,7 +546,7 @@ int qn_snwprintf(wchar_t* out, size_t len, const wchar_t* fmt, ...)
 }
 
 /** @brief aswprintf */
-int qn_aswprintf(wchar_t** out, const wchar_t* fmt, ...)
+int qn_aswprintf(wchar** out, const wchar* fmt, ...)
 {
 	va_list va;
 	int ret;
@@ -559,10 +559,10 @@ int qn_aswprintf(wchar_t** out, const wchar_t* fmt, ...)
 }
 
 /** @brief aspwprintf */
-wchar_t* qn_apswprintf(const wchar_t* fmt, ...)
+wchar* qn_apswprintf(const wchar* fmt, ...)
 {
 	va_list va;
-	wchar_t* ret;
+	wchar* ret;
 
 	va_start(va, fmt);
 	ret = qn_vapswprintf(fmt, va);
@@ -572,21 +572,21 @@ wchar_t* qn_apswprintf(const wchar_t* fmt, ...)
 }
 
 /** @brief 빈칸으로 채우기 */
-size_t qn_wcsfll(wchar_t* dest, size_t pos, size_t end, int ch)
+size_t qn_wcsfll(wchar* dest, size_t pos, size_t end, int ch)
 {
 	size_t i, cnt;
 	if (pos >= end)
 		return pos;
 	cnt = end - pos;
 	for (i = 0; i < cnt; i++)
-		dest[pos + i] = (wchar_t)ch;
+		dest[pos + i] = (wchar)ch;
 	return pos + cnt;
 }
 
 /** @brief 문자열 해시 */
-size_t qn_wcshash(const wchar_t* p)
+size_t qn_wcshash(const wchar* p)
 {
-	const wchar_t* sz = p;
+	const wchar* sz = p;
 	size_t h = *sz++;
 	if (!h)
 		return 0;
@@ -601,9 +601,9 @@ size_t qn_wcshash(const wchar_t* p)
 }
 
 /** @brief 문자열 해시 (대소문자구별안함) */
-size_t qn_wcsihash(const wchar_t* p)
+size_t qn_wcsihash(const wchar* p)
 {
-	const wchar_t* sz = p;
+	const wchar* sz = p;
 	size_t h = towupper(*sz);
 	if (!h)
 		return 0;
@@ -619,15 +619,15 @@ size_t qn_wcsihash(const wchar_t* p)
 }
 
 /** @brief wcsbrk */
-wchar_t* qn_wcsbrk(const wchar_t* p, const wchar_t* c)
+wchar* qn_wcsbrk(const wchar* p, const wchar* c)
 {
-	wchar_t* t;
+	wchar* t;
 	while (*p)
 	{
-		for (t = (wchar_t*)c; *t; t++)
+		for (t = (wchar*)c; *t; t++)
 		{
 			if (*t == *p)
-				return (wchar_t*)p;
+				return (wchar*)p;
 		}
 		p++;
 	}
@@ -635,7 +635,7 @@ wchar_t* qn_wcsbrk(const wchar_t* p, const wchar_t* c)
 }
 
 /** @brief wcsmid */
-wchar_t* qn_wcsmid(wchar_t* dest, size_t destsize, const wchar_t* src, size_t pos, size_t len)
+wchar* qn_wcsmid(wchar* dest, size_t destsize, const wchar* src, size_t pos, size_t len)
 {
 	size_t size = wcslen(src);
 
@@ -651,17 +651,17 @@ wchar_t* qn_wcsmid(wchar_t* dest, size_t destsize, const wchar_t* src, size_t po
 }
 
 /** @brief wcsltrim */
-wchar_t* qn_wcsltm(wchar_t* dest)
+wchar* qn_wcsltm(wchar* dest)
 {
-	wchar_t* s;
+	wchar* s;
 	for (s = dest; *s && iswspace(*s); s++);
 	if (dest != s)
-		memmove(dest, s, (wcslen(s) + 1) * sizeof(wchar_t));
+		memmove(dest, s, (wcslen(s) + 1) * sizeof(wchar));
 	return dest;
 }
 
 /** @brief wcsrtrim */
-wchar_t* qn_wcsrtm(wchar_t* dest)
+wchar* qn_wcsrtm(wchar* dest)
 {
 	size_t len = wcslen(dest);
 	while (len--)
@@ -674,20 +674,20 @@ wchar_t* qn_wcsrtm(wchar_t* dest)
 }
 
 /** @brief wcstrim */
-wchar_t* qn_wcstrm(wchar_t* dest)
+wchar* qn_wcstrm(wchar* dest)
 {
 	return qn_wcsrtm(qn_wcsltm(dest));
 }
 
 /** @brief wcsrem */
-wchar_t* qn_wcsrem(wchar_t* p, const wchar_t* rmlist)
+wchar* qn_wcsrem(wchar* p, const wchar* rmlist)
 {
-	wchar_t* p1 = p;
-	wchar_t* p2 = p;
+	wchar* p1 = p;
+	wchar* p2 = p;
 
 	while (*p1)
 	{
-		const wchar_t* ps = rmlist;
+		const wchar* ps = rmlist;
 		bool b = false;
 
 		while (*ps)
@@ -715,7 +715,7 @@ wchar_t* qn_wcsrem(wchar_t* p, const wchar_t* rmlist)
 }
 
 /** @brief wcspcpy */
-wchar_t* qn_wcspcpy(wchar_t* dest, const wchar_t* src)
+wchar* qn_wcspcpy(wchar* dest, const wchar* src)
 {
 	do (*dest++ = *src);
 	while (*src++ != L'\0');
@@ -723,33 +723,33 @@ wchar_t* qn_wcspcpy(wchar_t* dest, const wchar_t* src)
 }
 
 /** @brief 여러 문자열의 strdup */
-wchar_t* qn_wcscat(const wchar_t* p, ...)
+wchar* qn_wcscat(const wchar* p, ...)
 {
 	va_list va;
-	wchar_t* str;
-	wchar_t* s, * c;
+	wchar* str;
+	wchar* s, * c;
 	size_t size;
 
 	size = wcslen(p) + 1;
 	va_start(va, p);
-	s = va_arg(va, wchar_t*);
+	s = va_arg(va, wchar*);
 	while (s)
 	{
 		size += wcslen(s);
-		s = va_arg(va, wchar_t*);
+		s = va_arg(va, wchar*);
 	}
 	va_end(va);
 
-	str = qn_alloc(size, wchar_t);
+	str = qn_alloc(size, wchar);
 	c = str;
 
 	c = qn_wcspcpy(c, p);
 	va_start(va, p);
-	s = va_arg(va, wchar_t*);
+	s = va_arg(va, wchar*);
 	while (s)
 	{
 		c = qn_wcspcpy(c, s);
-		s = va_arg(va, wchar_t*);
+		s = va_arg(va, wchar*);
 	}
 	va_end(va);
 
@@ -761,9 +761,9 @@ wchar_t* qn_wcscat(const wchar_t* p, ...)
  * Written by Jack Handy - jakkhandy@hotmail.com
  * (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
  */
-int qn_wcswcm(const wchar_t* string, const wchar_t* wild)
+int qn_wcswcm(const wchar* string, const wchar* wild)
 {
-	const wchar_t *cp = NULL, *mp = NULL;
+	const wchar *cp = NULL, *mp = NULL;
 
 	while ((*string) && (*wild != L'*'))
 	{
@@ -805,9 +805,9 @@ int qn_wcswcm(const wchar_t* string, const wchar_t* wild)
  * Written by Jack Handy - jakkhandy@hotmail.com
  * (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
  */
-int qn_wcsiwcm(const wchar_t* string, const wchar_t* wild)
+int qn_wcsiwcm(const wchar* string, const wchar* wild)
 {
-	const wchar_t *cp = NULL, *mp = NULL;
+	const wchar *cp = NULL, *mp = NULL;
 
 	while ((*string) && (*wild != L'*'))
 	{
@@ -845,10 +845,10 @@ int qn_wcsiwcm(const wchar_t* string, const wchar_t* wild)
 }
 
 /** @brief wcsfind */
-int qn_wcsfnd(const wchar_t* src, const wchar_t* find, size_t index)
+int qn_wcsfnd(const wchar* src, const wchar* find, size_t index)
 {
-	const wchar_t* p = src + index;
-	const wchar_t* s1, *s2;
+	const wchar* p = src + index;
+	const wchar* s1, *s2;
 
 	while (*p)
 	{
@@ -870,27 +870,27 @@ int qn_wcsfnd(const wchar_t* src, const wchar_t* find, size_t index)
 
 #if !_MSC_VER
 /** @brief 문자열을 대문자로 */
-wchar_t* qn_wcsupr(wchar_t* p, size_t size)
+wchar* qn_wcsupr(wchar* p, size_t size)
 {
-	wchar_t* s = p;
+	wchar* s = p;
 	for (; *s; ++s)
 		if ((*s >= L'a') && (*s <= L'z'))
-			*s -= (wchar_t)(L'a' - L'A');
+			*s -= (wchar)(L'a' - L'A');
 	return p;
 }
 
 /** @brief 문자열을 소문자로 */
-wchar_t* qn_wcslwr(wchar_t* p, size_t size)
+wchar* qn_wcslwr(wchar* p, size_t size)
 {
-	wchar_t* s = p;
+	wchar* s = p;
 	for (; *s; ++s)
 		if ((*s >= L'A') && (*s <= L'Z'))
-			*s += (wchar_t)(L'a' - L'A');
+			*s += (wchar)(L'a' - L'A');
 	return p;
 }
 
 /** @brief wcsncmp */
-int qn_wcsncmp(const wchar_t* p1, const wchar_t* p2, size_t len)
+int qn_wcsncmp(const wchar* p1, const wchar* p2, size_t len)
 {
 	if (!len)
 		return 0;
@@ -902,14 +902,14 @@ int qn_wcsncmp(const wchar_t* p1, const wchar_t* p2, size_t len)
 }
 
 /** @brief wcsicmp */
-int qn_wcsicmp(const wchar_t* p1, const wchar_t* p2)
+int qn_wcsicmp(const wchar* p1, const wchar* p2)
 {
-	wchar_t f, l;
+	wchar f, l;
 
 	do
 	{
-		f = (wchar_t)towlower(*p1);
-		l = (wchar_t)towlower(*p2);
+		f = (wchar)towlower(*p1);
+		l = (wchar)towlower(*p2);
 		++p1;
 		++p2;
 	} while (f && (f == l));
@@ -918,16 +918,16 @@ int qn_wcsicmp(const wchar_t* p1, const wchar_t* p2)
 }
 
 /** @brief wcsnicmp */
-int qn_wcsnicmp(const wchar_t* p1, const wchar_t* p2, size_t len)
+int qn_wcsnicmp(const wchar* p1, const wchar* p2, size_t len)
 {
-	wchar_t f, l;
+	wchar f, l;
 
 	while (len && *p1 && *p2)
 	{
 		--len;
 
-		f = (wchar_t)towlower(*p1);
-		l = (wchar_t)towlower(*p2);
+		f = (wchar)towlower(*p1);
+		l = (wchar)towlower(*p2);
 
 		if (f != l) return (f - l);
 		++p1;
@@ -946,7 +946,7 @@ int qn_wcsnicmp(const wchar_t* p1, const wchar_t* p2, size_t len)
  * @brief UTF-8 글자 길이
  * @author cp_strlen_utf8 (http://www.daemonology.net/blog/2008-06-05-faster-utf8-strlen.html)
  */
-size_t qn_utf8len(const char* s)
+size_t qn_u8len(const char* s)
 {
 #define MASK    ((size_t)(-1)/0xFF)
 	const char* t;
@@ -1002,7 +1002,7 @@ pos_done:
  * @param	p	utf8 문자.
  * @return	ucs4 문자.
  */
-uchar4_t qn_utf8cbn(const char* p)
+uchar4 qn_u8cbn(const char* p)
 {
 	int len, mask;
 	uint8_t ch = *(uint8_t*)p;
@@ -1047,17 +1047,17 @@ uchar4_t qn_utf8cbn(const char* p)
 	{
 		// 사용하지 않는 문자 코드
 		// 0xFFFFFFFF
-		return (uchar4_t)-1;
+		return (uchar4)-1;
 	}
 	else
 	{
 		// UCS4로 변환
-		uchar4_t ret = p[0] & mask;
+		uchar4 ret = p[0] & mask;
 		for (int i = 1; i < len; i++)
 		{
 			if ((p[i] & 0xC0) != 0x80)
 			{
-				ret = (uchar4_t)-1;
+				ret = (uchar4)-1;
 				break;
 			}
 
@@ -1070,7 +1070,7 @@ uchar4_t qn_utf8cbn(const char* p)
 }
 
 /** @brief UTF-8 다음 글자 */
-char* qn_utf8nch(const char* s)
+char* qn_u8nch(const char* s)
 {
 	static const char s_skips[256] =
 	{
@@ -1092,7 +1092,7 @@ char* qn_utf8nch(const char* s)
  * @param[out]	out	utf8 문자가 들어갈 배열. 최소 6개 항목의 배열이어야 한다
  * @return	utf8문자를 구성하는 문자열의 길이.
  */
-int qn_utf8ucb(uchar4_t c, char* out)
+int qn_u8ucb(uchar4 c, char* out)
 {
 	int first, len;
 
@@ -1142,9 +1142,9 @@ int qn_utf8ucb(uchar4_t c, char* out)
 }
 
 // utf16 서로게이트를 ucs4로 바꿈
-static uchar4_t _utf16_surrogate(uchar2_t h, uchar2_t l)
+static uchar4 _utf16_surrogate(uchar2 h, uchar2 l)
 {
-	return (((uchar4_t)h - 0xD800) * 0x0400 + (uchar4_t)l - 0xDC00 + 0x010000);
+	return (((uchar4)h - 0xD800) * 0x0400 + (uchar4)l - 0xDC00 + 0x010000);
 }
 
 
@@ -1152,7 +1152,7 @@ static uchar4_t _utf16_surrogate(uchar2_t h, uchar2_t l)
 // 문자열 변환
 
 //
-size_t qn_mbstowcs(wchar_t* outwcs, size_t outsize, const char* inmbs, size_t insize)
+size_t qn_mbstowcs(wchar* outwcs, size_t outsize, const char* inmbs, size_t insize)
 {
 	int len =
 #if _QN_WINDOWS_
@@ -1166,7 +1166,7 @@ size_t qn_mbstowcs(wchar_t* outwcs, size_t outsize, const char* inmbs, size_t in
 }
 
 //
-size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar_t* inwcs, size_t insize)
+size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar* inwcs, size_t insize)
 {
 	int len =
 #if _QN_WINDOWS_
@@ -1188,14 +1188,14 @@ size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar_t* inwcs, size_t in
  * @param	srclen			원본 길이. 0으로 지정할 수 있음
  * @return	변환한 길이 또는 변환에 필요한 길이
  */
-size_t qn_utf8to32(uchar4_t* dest, size_t destsize, const char* src, size_t srclen)
+size_t qn_u8to32(uchar4* dest, size_t destsize, const char* src, size_t srclen)
 {
 	qn_retval_if_fail(src, 0);
 
 	if (destsize == 0 || !dest)
 	{
 		// utf-8 -> ucs-4의 길이는.... 그냥 utf-8의 길이.
-		return qn_utf8len(src);
+		return qn_u8len(src);
 	}
 	else
 	{
@@ -1203,17 +1203,17 @@ size_t qn_utf8to32(uchar4_t* dest, size_t destsize, const char* src, size_t srcl
 		size_t i, size;
 
 		if (srclen == 0)
-			srclen = qn_utf8len(src);
+			srclen = qn_u8len(src);
 
 		size = QN_MIN(destsize, srclen);
 
 		for (t = src, i = 0; i < size; i++)
 		{
-			dest[i] = qn_utf8cbn(t);
-			t = qn_utf8nch(t);
+			dest[i] = qn_u8cbn(t);
+			t = qn_u8nch(t);
 		}
 
-		dest[i] = (uchar4_t)'\0';
+		dest[i] = (uchar4)'\0';
 
 		return size;
 	}
@@ -1227,7 +1227,7 @@ size_t qn_utf8to32(uchar4_t* dest, size_t destsize, const char* src, size_t srcl
  * @param	srclen			원본 길이. 0으로 지정할 수 있음
  * @return	변환한 길이 또는 변환에 필요한 길이
  */
-size_t qn_utf8to16(uchar2_t* dest, size_t destsize, const char* src, size_t srclen)
+size_t qn_u8to16(uchar2* dest, size_t destsize, const char* src, size_t srclen)
 {
 	qn_retval_if_fail(src, 0);
 
@@ -1235,7 +1235,7 @@ size_t qn_utf8to16(uchar2_t* dest, size_t destsize, const char* src, size_t srcl
 	{
 		// utf-8 -> ucs-4의 길이는.... 그냥 utf-8의 길이.
 		// 다만 서로게이트 문제는 어떻게 하나... 일단 이걸로 하고 나중에 고치자
-		return qn_utf8len(src);
+		return qn_u8len(src);
 	}
 	else
 	{
@@ -1243,26 +1243,26 @@ size_t qn_utf8to16(uchar2_t* dest, size_t destsize, const char* src, size_t srcl
 		size_t i, size;
 
 		if (srclen == 0)
-			srclen = qn_utf8len(src);
+			srclen = qn_u8len(src);
 
 		size = QN_MIN(destsize, srclen);
 
 		for (t = src, i = 0; i < size;)
 		{
-			uchar4_t ch = qn_utf8cbn(t);
+			uchar4 ch = qn_u8cbn(t);
 
 			if (ch < 0x010000)
-				dest[i++] = (uchar2_t)ch;
+				dest[i++] = (uchar2)ch;
 			else
 			{
-				dest[i++] = (uchar2_t)((ch - 0x010000) / 0x0400 + 0xD800);
-				dest[i++] = (uchar2_t)((ch - 0x010000) % 0x0400 + 0xDC00);
+				dest[i++] = (uchar2)((ch - 0x010000) / 0x0400 + 0xD800);
+				dest[i++] = (uchar2)((ch - 0x010000) % 0x0400 + 0xDC00);
 			}
 
-			t = qn_utf8nch(t);
+			t = qn_u8nch(t);
 		}
 
-		dest[i] = (uchar2_t)'\0';
+		dest[i] = (uchar2)'\0';
 
 		return size;
 	}
@@ -1276,11 +1276,11 @@ size_t qn_utf8to16(uchar2_t* dest, size_t destsize, const char* src, size_t srcl
  * @param	srclen			원본 길이. 0으로 지정할 수 있음
  * @return	변환한 길이 또는 변환에 필요한 길이
  */
-size_t qn_utf32to8(char* dest, size_t destsize, const uchar4_t* src, size_t srclen_org)
+size_t qn_u32to8(char* dest, size_t destsize, const uchar4* src, size_t srclen_org)
 {
 	size_t z, n, size;
 	intptr_t i, srclen;
-	uchar4_t uc;
+	uchar4 uc;
 
 	qn_retval_if_fail(src, 0);
 
@@ -1349,7 +1349,7 @@ size_t qn_utf32to8(char* dest, size_t destsize, const uchar4_t* src, size_t srcl
 		char* p = dest;
 
 		for (i = 0; p < (dest + size); i++)
-			p += qn_utf8ucb(src[i], p);
+			p += qn_u8ucb(src[i], p);
 
 		*p = '\0';
 	}
@@ -1365,12 +1365,12 @@ size_t qn_utf32to8(char* dest, size_t destsize, const uchar4_t* src, size_t srcl
  * @param	srclen			원본 길이. 0으로 지정할 수 있음
  * @return	변환한 길이 또는 변환에 필요한 길이
  */
-size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srclen)
+size_t qn_u16to8(char* dest, size_t destsize, const uchar2* src, size_t srclen)
 {
-	const uchar2_t* cp;
+	const uchar2* cp;
 	char* p;
-	uchar4_t hsg, uc;
-	uchar2_t ch;
+	uchar4 hsg, uc;
+	uchar2 ch;
 	size_t size, n, z;
 
 	qn_retval_if_fail(src, 0);
@@ -1390,7 +1390,7 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
 				// 하위 서로게이트
 				if (hsg)
 				{
-					uc = _utf16_surrogate((uchar2_t)hsg, ch);
+					uc = _utf16_surrogate((uchar2)hsg, ch);
 					hsg = 0;
 				}
 				else
@@ -1446,7 +1446,7 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
 				// 하위 서로게이트
 				if (hsg)
 				{
-					uc = _utf16_surrogate((uchar2_t)hsg, ch);
+					uc = _utf16_surrogate((uchar2)hsg, ch);
 					hsg = 0;
 				}
 				else
@@ -1507,7 +1507,7 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
 			if (ch >= 0xDC00 && ch < 0xE000)
 			{
 				// 하위 서로게이트
-				uc = _utf16_surrogate((uchar2_t)hsg, ch);
+				uc = _utf16_surrogate((uchar2)hsg, ch);
 				hsg = 0;
 			}
 			else if (ch >= 0xD800 && ch < 0xDC00)
@@ -1522,7 +1522,7 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
 				uc = ch;
 			}
 
-			p += qn_utf8ucb(uc, p);
+			p += qn_u8ucb(uc, p);
 		}
 
 		*p = '\0';
@@ -1539,12 +1539,12 @@ size_t qn_utf16to8(char* dest, size_t destsize, const uchar2_t* src, size_t srcl
  * @param	srclen			원본 길이. 0으로 지정할 수 있음
  * @return	변환한 길이 또는 변환에 필요한 길이
  */
-size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t srclen)
+size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, size_t srclen)
 {
-	const uchar2_t* cp;
-	uchar4_t* p;
-	uchar4_t hsg, uc;
-	uchar2_t ch;
+	const uchar2* cp;
+	uchar4* p;
+	uchar4 hsg, uc;
+	uchar2 ch;
 	size_t size, z;
 
 	qn_retval_if_fail(src, 0);
@@ -1564,7 +1564,7 @@ size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t
 				// 하위 서로게이트
 				if (hsg)
 				{
-					uc = _utf16_surrogate((uchar2_t)hsg, ch);
+					uc = _utf16_surrogate((uchar2)hsg, ch);
 					hsg = 0;
 				}
 				else
@@ -1613,7 +1613,7 @@ size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t
 				// 하위 서로게이트
 				if (hsg)
 				{
-					uc = _utf16_surrogate((uchar2_t)hsg, ch);
+					uc = _utf16_surrogate((uchar2)hsg, ch);
 					hsg = 0;
 				}
 				else
@@ -1668,7 +1668,7 @@ size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t
 			if (ch >= 0xDC00 && ch < 0xE000)
 			{
 				// 하위 서로게이트
-				uc = _utf16_surrogate((uchar2_t)hsg, ch);
+				uc = _utf16_surrogate((uchar2)hsg, ch);
 				hsg = 0;
 			}
 			else if (ch >= 0xD800 && ch < 0xDC00)
@@ -1701,10 +1701,10 @@ size_t qn_utf16to32(uchar4_t* dest, size_t destsize, const uchar2_t* src, size_t
  * @param	srclen_org		원본 길이. 0으로 지정할 수 있음
  * @return	변환한 길이 또는 변환에 필요한 길이
  */
-size_t qn_utf32to16(uchar2_t* dest, size_t destsize, const uchar4_t* src, size_t srclen_org)
+size_t qn_u32to16(uchar2* dest, size_t destsize, const uchar4* src, size_t srclen_org)
 {
-	uchar2_t* p;
-	uchar4_t uc;
+	uchar2* p;
+	uchar4 uc;
 	size_t size, z;
 	intptr_t i, srclen;
 
@@ -1776,15 +1776,15 @@ size_t qn_utf32to16(uchar2_t* dest, size_t destsize, const uchar4_t* src, size_t
 			uc = src[i];
 
 			if (uc < 0x010000)
-				p[z++] = (uchar2_t)uc;
+				p[z++] = (uchar2)uc;
 			else
 			{
-				p[z++] = (uchar2_t)((uc - 0x010000) / 0x0400 + 0xD800);
-				p[z++] = (uchar2_t)((uc - 0x010000) % 0x0400 + 0xDC00);
+				p[z++] = (uchar2)((uc - 0x010000) / 0x0400 + 0xD800);
+				p[z++] = (uchar2)((uc - 0x010000) % 0x0400 + 0xDC00);
 			}
 		}
 
-		p[z] = (uchar2_t)'\0';
+		p[z] = (uchar2)'\0';
 	}
 
 	return size;

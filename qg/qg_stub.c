@@ -13,7 +13,7 @@ qgStub* qg_stub_new(const char* title, int width, int height, int flags)
 {
 	if (qg_stub_instance)
 	{
-		qn_debug_output(true, "STUB: '%s' is already instanced.\n", qvt_cast(qg_stub_instance, qnGam)->name);
+		qn_debug_outputf(true, "STUB", "'%s' is already instanced.", qvt_cast(qg_stub_instance, qnGam)->name);
 		return qg_stub_instance;
 	}
 

@@ -346,7 +346,7 @@ struct SDL_SysWMinfo
         /* Make sure this union is always 64 bytes (8 64-bit pointers). */
         /* Be careful not to overflow this if you add a new target! */
         Uint8 dummy[64];
-    } info;
+    } invokes;
 };
 
 #endif /* SDL_PROTOTYPES_ONLY */
@@ -372,7 +372,7 @@ typedef struct SDL_SysWMinfo SDL_SysWMinfo;
  * \since This function is available since SDL 2.0.0.
  */
 extern DECLSPEC SDL_bool SDLCALL SDL_GetWindowWMInfo(SDL_Window * window,
-                                                     SDL_SysWMinfo * info);
+                                                     SDL_SysWMinfo * invokes);
 
 
 /* Ends C function definitions when using C++ */

@@ -9,7 +9,7 @@
  * @param[in]	p	입력 변수
  * @return	해시 값
  */
-size_t qn_hashptr(cpointer_t p)
+size_t qn_hashptr(const void* p)
 {
 	lldiv_t t = lldiv((long long)(size_t)p, 127773);
 	t.rem = 16807 * t.rem - 2836 * t.quot;
@@ -63,7 +63,7 @@ size_t qn_hashnow(void)
  * @param[in]	data  	콜백 데이터
  * @return	해시 값
  */
-size_t qn_hashfn(int prime8, func_t func, pointer_t data)
+size_t qn_hashfn(int prime8, func_t func, void* data)
 {
 	// PP FF FF FF FD DD DD DD
 	size_t h = prime8 & 0xFFULL << 56ULL;
@@ -252,7 +252,7 @@ static uint32_t qn_crc32(const uint8_t* data, size_t size)
  * @param[in] size 데이터 크기
  * @return 해시 값
 */
-size_t qn_hashcrc(const uint8_t* data, size_t size)
+size_t qn_hashcrc(const byte* data, size_t size)
 {
 #if _QN_64_
 	return qn_crc64(data, size);
