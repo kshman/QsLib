@@ -23,11 +23,15 @@ typedef struct es2Session es2Session;
 typedef struct es2Pending es2Pending;
 typedef struct es2LayoutElement es2LayoutElement;
 typedef struct es2LayoutProperty es2LayoutProperty;
+typedef struct es2ShaderUniform es2ShaderUniform;
 typedef struct es2ShaderAttrib es2ShaderAttrib;
 typedef struct es2Rdh es2Rdh;
 typedef struct es2Vlo es2Vlo;
 typedef struct es2Shd es2Shd;
 typedef struct es2Buf es2Buf;
+
+typedef void(*es2shd_auto_func)(es2Rdh*, GLint, const qgVarShader*);
+
 
 //////////////////////////////////////////////////////////////////////////
 // 데이터 타입
@@ -64,17 +68,24 @@ struct es2LayoutProperty
 	GLboolean			normalized;
 };
 
-// 세이더 속성
+// 세이더 유니폼(=세이더 변수) 속성
+struct es2ShaderUniform
+{
+	qgVarShader			base;
+
+	size_t				hash;
+	es2shd_auto_func	auto_func;
+};
+
+// 세이더 어트리뷰트 속성
 struct es2ShaderAttrib
 {
-	GLint				attrib;
-	qgShdConst			cnst : 16;
-	ushort				size;
-	qgLoUsage			usage : 16;
-	ushort				index;
-	size_t				hash;
 	char				name[32];
-	es2ShaderAttrib*	next;
+	GLint				attrib : 8;
+	GLint				size : 8;
+	qgLoUsage			usage : 16;
+	qgShdConst			cnst : 16;
+	size_t				hash;
 };
 
 // 세션 데이터
@@ -127,7 +138,7 @@ struct es2Rdh
 };
 extern void es2_bind_buffer(es2Rdh* self, GLenum type, GLuint id);
 extern void es2_commit_layout(es2Rdh* self);
-extern void es2_commit_layout_up(es2Rdh* self, const void* buffer, int stride);
+extern void es2_commit_layout_up(es2Rdh* self, const void* buffer, GLsizei stride);
 extern void es2_commit_shader(es2Rdh* self);
 
 // 레이아웃
@@ -141,7 +152,7 @@ struct es2Vlo
 extern void* _es2vlo_allocator();
 
 // 세이더 저장소
-QN_CTNR_DECL(es2CtnVarShader, qgVarShader);
+QN_CTNR_DECL(es2CtnShaderUniform, es2ShaderUniform);
 QN_CTNR_DECL(es2CtnShaderAttrib, es2ShaderAttrib);
 
 // 세이더
@@ -152,12 +163,9 @@ struct es2Shd
 	es2RefHandle*		rfragment;
 	es2RefHandle*		rvertex;
 
-	es2CtnVarShader		vars;
+	es2CtnShaderUniform	uniforms;
 	es2CtnShaderAttrib	attrs;
-
 	int					attr_mask;
-	byte				attr_count[QGLOU_MAX_VALUE];
-	es2ShaderAttrib*	attr_usage[QGLOU_MAX_VALUE];
 
 	bool				linked;
 };

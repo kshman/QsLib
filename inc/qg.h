@@ -367,7 +367,7 @@ typedef struct qgPropBlend
 //
 typedef struct qgPropLayout
 {
-	qgLoStage			stage : 8;	// qgLoStage
+	qgLoStage			stage : 8;			// qgLoStage
 	int					index : 8;
 	qgLoUsage			usage : 8;
 	qgLoType			type : 8;
@@ -377,20 +377,16 @@ typedef struct qgPropLayout
 typedef struct qgVarShader
 {
 	char				name[64];
-	size_t				hash;
 
 	qgShdRole			role : 8;			// 0=manual, 1=auto, 2=discard
 	qgShdConst			cnst : 8;
 
 	ushort				size;
-	uint				offset;
-
-	void*				aptr;
-	void*				xptr;
+	uint				offset;				// variable offset
 } qgVarShader;
 
 //
-typedef void(*qgVarShaderFunc)(void*, int, qgVarShader*, qgShd*);
+typedef void(*qgVarShaderFunc)(void*, qgVarShader*, qgShd*);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -459,8 +455,8 @@ typedef struct qgUimKey
 //
 typedef struct qgUimMouse
 {
-	qImMask				mask : 16;
-	int					wheel : 16;
+	qImMask				mask;
+	int					wheel;
 	qnPoint				pt;
 	qnPoint				last;
 
@@ -652,7 +648,7 @@ qvt_name(qgRdh)
 
 	void (*set_shader)(qgRdh*, qgShd*, qgVlo*);
 	bool (*set_index)(qgRdh*, qgBuf*);
-	bool (*set_vertex)(qgRdh*, int, qgBuf*);
+	bool (*set_vertex)(qgRdh*, qgLoStage, qgBuf*);
 
 	bool (*primitive_begin)(qgRdh*, qgTopology, int, int, void**);
 	void (*primitive_end)(qgRdh*);

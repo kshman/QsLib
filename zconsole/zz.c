@@ -1,27 +1,17 @@
 ﻿#include <qs.h>
 
 static const char* vs =
-"attribute vec4 aposition;    \n"
-"attribute vec4 anormal;    \n"
-"attribute vec3 acolor;    \n"
-"attribute vec2 acoord;    \n"
-"varying vec3 vcolor;\n"
-"varying vec4 vnormal;\n"
-"void main()                  \n"
-"{                            \n"
-"   gl_Position = vec4(aposition.xyz, 1.0);  \n"
-"   vcolor=vec3(acolor.xy, acoord.x);\n"
-"   vnormal=anormal;\n"
-"}                            \n";
-static const char* ps =
+"attribute vec4 aposition;\n"
+"void main()\n"
+"{\n"
+"   gl_Position = vec4(aposition.xyz, 1.0);\n"
+"}\n";
+static const char* ps = 
 "precision mediump float;\n"
-"varying vec3 vcolor;\n"
-"varying vec4 vnormal;\n"
-"void main()                                  \n"
-"{                                            \n"
-"  //gl_FragColor = vec4 (1.0, 1.0, 1.0, 1.0 );\n"
-"  gl_FragColor = vec4 (vnormal.x, vcolor.y, 1.0, 1.0 );\n"
-"}                                            \n";
+"void main()\n"
+"{\n"
+"  gl_FragColor = vec4 (1.0, 1.0, 1.0, 1.0 );\n"
+"}\n";
 static qgPropLayout layout[1] =
 {
 	{QGLOS_1, 0, QGLOU_POSITION, QGLOT_FLOAT2},
@@ -35,8 +25,6 @@ static float vertices[] =
 
 int main()
 {
-	static_assert(sizeof(int)!=4, "!!!!");
-
 	qn_runtime(NULL);
 
 	qgRdh* rdh = qg_rdh_new(NULL, "QG TEST", 800, 600, QGFLAG_IDLE | QGFLAG_RESIZABLE);

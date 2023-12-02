@@ -189,7 +189,7 @@ void qg_rdh_flush(qgRdh* self)
 {
 	if (!self->invokes.flush)
 	{
-		qn_debug_output(true, "RDH: call end before flush\n");
+		qn_debug_outputs(true, "RDH", "call end before flush");
 		qg_rdh_end(self);
 	}
 	qvt_cast(self, qgRdh)->flush(self);
@@ -318,7 +318,8 @@ void qg_rdh_primitive_draw_indexed(qgRdh* self, qgTopology tpg, int vcount, int 
 {
 	qn_ret_if_fail(vcount > 0 && vstride > 0 && vdata);
 	qn_ret_if_fail(icount > 0 && istride > 0 && idata);
-	void* vert, ind;
+	void* vert;
+	void* ind;
 	if (!qvt_cast(self, qgRdh)->indexed_primitive_begin(self, tpg, vcount, vstride, &vert, icount, istride, &ind))
 		return;
 	memcpy(vert, vdata, (size_t)(vcount * vstride));

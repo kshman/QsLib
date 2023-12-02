@@ -66,7 +66,7 @@ bool _sdl_construct(qgStub* g, struct stubParam* param)
 		wflags);
 	if (self->window == NULL)
 	{
-		qn_debug_output(false, "SDL: unable to initialize (%d)\n", SDL_GetError());
+		qn_debug_outputf(false, "SDL", "unable to initialize (%d)", SDL_GetError());
 		return false;
 	}
 

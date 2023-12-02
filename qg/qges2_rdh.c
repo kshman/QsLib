@@ -136,14 +136,14 @@ static bool _es2_construct(qgRdh* g, int flags)
 		SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
 	if (self->renderer == NULL)
 	{
-		qn_debug_output(true, "ES2: failed to create renderer (%s)\n", SDL_GetError());
+		qn_debug_outputf(true, "ES2", "failed to create renderer (%s)", SDL_GetError());
 		return false;
 	}
 
 	// 프로시져
 	if (SDL_GL_LoadLibrary(NULL) != 0)
 	{
-		qn_debug_output(true, "ES2: failed to load library (%s)\n", SDL_GetError());
+		qn_debug_outputf(true, "ES2", "failed to load library (%s)", SDL_GetError());
 		return false;
 	}
 
@@ -152,7 +152,7 @@ static bool _es2_construct(qgRdh* g, int flags)
 	QN_STMT_BEGIN{\
 		_es2func.func = SDL_GL_GetProcAddress(#func);\
 		if (!_es2func.func) {\
-			qn_debug_output(true, "ES2: function load failed '%s'\n", #func);\
+			qn_debug_outputf(true, "ES2", "function load failed '%s'", #func);\
 			return false;\
 		}\
 	}QN_STMT_END;
@@ -205,7 +205,7 @@ static void _es2_finalize(qgRdh* g)
 	qm_unload(self->pd.vlo);
 
 	qm_unload(self->pd.ib);
-	for (i = 0; i < self->base.caps.max_vertex_attrs; i++)
+	for (i = 0; i < QGLOS_MAX_VALUE; i++)
 		qm_unload(self->pd.vb[i]);
 
 	// SDL 렌더러

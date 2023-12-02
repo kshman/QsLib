@@ -200,7 +200,6 @@ typedef uint16_t						uchar2;				/** @brief 2byte(16bit) unicode */
 #endif
 
 typedef uint16_t						halfint;
-typedef void*							handle;
 
 /** @brief variant 16bit short */
 typedef union vint16_t
@@ -270,7 +269,7 @@ typedef union any_t
 typedef struct funcparam_t
 {
 	paramfunc_t			func;
-	void*			data;
+	void*				data;
 } funcparam_t;
 
 // cast
@@ -310,8 +309,12 @@ QNAPI void qn_atexit(paramfunc_t func, void* data);
 QNAPI void qn_atexitp(paramfunc_t func, void* data);
 
 QNAPI int qn_debug_assert(const char* expr, const char* mesg, const char* filename, int line);
-QNAPI int qn_debug_halt(const char* cls, const char* msg);
-QNAPI int qn_debug_output(bool breakpoint, const char* fmt, ...);
+QNAPI void qn_debug_halt(const char* cls, const char* msg);
+QNAPI int qn_debug_outputs(bool breakpoint, const char* head, const char* mesg);
+QNAPI int qn_debug_outputf(bool breakpoint, const char* head, const char* fmt, ...);
+
+QNAPI int qn_outputs(const char* mesg);
+QNAPI int qn_outputf(const char* fmt, ...);
 
 
 //////////////////////////////////////////////////////////////////////////

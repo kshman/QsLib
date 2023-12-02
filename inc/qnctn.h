@@ -372,7 +372,7 @@ typedef struct qnCtnr
 	}QN_STMT_END
 
 #define qn_ctnr_disp(name, p)\
-	qn_free((void*)(p)->data)
+	qn_free_ptr(&(void*)(p)->data)
 
 #define qn_ctnr_reset(name, p)\
 	QN_STMT_BEGIN{ (p)->count=0; }QN_STMT_END
