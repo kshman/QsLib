@@ -8,29 +8,29 @@ static void es2shd_process_var(es2Shd* self);
 es2ShaderAttrib* es2shd_find_attr(es2Shd* self, qgLoUsage usage, int index);
 
 //
-void es2_bind_buffer(es2Rdh* self, GLenum type, GLuint id)
+void es2_bind_buffer(es2Rdh* self, GLenum gl_type, GLuint gl_id)
 {
-	switch (type)
+	switch (gl_type)
 	{
 		case GL_ARRAY_BUFFER:
-			if (self->ss.buf_array != id)
+			if (self->ss.buf_array != gl_id)
 			{
-				ES2FUNC(glBindBuffer)(GL_ARRAY_BUFFER, id);
-				self->ss.buf_array = id;
+				ES2FUNC(glBindBuffer)(GL_ARRAY_BUFFER, gl_id);
+				self->ss.buf_array = gl_id;
 			}
 			break;
 		case GL_ELEMENT_ARRAY_BUFFER:
-			if (self->ss.buf_element_array != id)
+			if (self->ss.buf_element_array != gl_id)
 			{
-				ES2FUNC(glBindBuffer)(GL_ELEMENT_ARRAY_BUFFER, id);
-				self->ss.buf_element_array = id;
+				ES2FUNC(glBindBuffer)(GL_ELEMENT_ARRAY_BUFFER, gl_id);
+				self->ss.buf_element_array = gl_id;
 			}
 			break;
 		case GL_PIXEL_UNPACK_BUFFER_NV:
-			if (self->ss.buf_pixel_unpack != id)
+			if (self->ss.buf_pixel_unpack != gl_id)
 			{
-				ES2FUNC(glBindBuffer)(GL_PIXEL_UNPACK_BUFFER_NV, id);
-				self->ss.buf_pixel_unpack = id;
+				ES2FUNC(glBindBuffer)(GL_PIXEL_UNPACK_BUFFER_NV, gl_id);
+				self->ss.buf_pixel_unpack = gl_id;
 			}
 			break;
 	}
@@ -43,7 +43,7 @@ void es2_commit_layout(es2Rdh* self)
 	es2Shd* shd = self->pd.shd;
 	es2Vlo* vlo = self->pd.vlo;
 
-	bool ok[ES2_MAX_VERTEXT_ATTRS] = { false, };
+	bool ok[ES2_MAX_VERTEX_ATTRS] = { false, };
 	for (size_t s = 0; s < max_attrs; s++)
 	{
 		es2Buf* buf = self->pd.vb[s];
@@ -53,7 +53,7 @@ void es2_commit_layout(es2Rdh* self)
 		if (buf != NULL)
 		{
 			// 버퍼 셋
-			int stride = vlo->base.stage[s];
+			GLsizei stride = (GLsizei)vlo->base.stage[s];
 			GLuint gl_buf = (GLuint)qm_get_desc(buf);
 			es2_bind_buffer(self, GL_ARRAY_BUFFER, gl_buf);
 
@@ -66,7 +66,7 @@ void es2_commit_layout(es2Rdh* self)
 				{
 					GLuint gl_attr = pav->attrib;
 					es2LayoutProperty* lp = &self->ss.layouts[gl_attr];
-					pointer_t pointer = ((uint8_t*)NULL + le->offset);
+					void* pointer = ((uint8_t*)NULL + le->offset);
 					ok[gl_attr] = true;
 					if (!lp->enable)
 					{
@@ -75,7 +75,8 @@ void es2_commit_layout(es2Rdh* self)
 					}
 					if (lp->pointer != pointer ||
 						lp->buffer != gl_buf ||
-						lp->stride != le->size ||
+						lp->stride != stride ||
+						lp->size != le->size ||
 						lp->format != le->format ||
 						lp->normalized != le->normalized)
 					{
@@ -125,7 +126,7 @@ void es2_commit_layout(es2Rdh* self)
 }
 
 // 사용자 포인터 그리기...인데 이거 ES2에서 됨?
-void es2_commit_layout_up(es2Rdh* self, cpointer_t buffer, int stride)
+void es2_commit_layout_up(es2Rdh* self, const void* buffer, GLsizei gl_stride)
 {
 	size_t max_attrs = self->base.caps.max_vertex_attrs;
 	es2Shd* shd = self->pd.shd;
@@ -133,11 +134,11 @@ void es2_commit_layout_up(es2Rdh* self, cpointer_t buffer, int stride)
 
 	es2LayoutElement* stelm = vlo->es_elm[0];	// 스테이지 0밖에 안씀. 버퍼가 하나니깐
 	int stcnt = vlo->es_cnt[0];
-	qn_verify(stride == vlo->base.stage[0]);
+	qn_verify(gl_stride == (GLsizei)vlo->base.stage[0]);
 
 	es2_bind_buffer(self, GL_ARRAY_BUFFER, 0);	// 버퍼 초기화 안하면 안된다.
 
-	bool ok[ES2_MAX_VERTEXT_ATTRS] = { false, };
+	bool ok[ES2_MAX_VERTEX_ATTRS] = { false, };
 	for (int i = 0; i < stcnt; i++)
 	{
 		const es2LayoutElement* le = &stelm[i];
@@ -146,7 +147,7 @@ void es2_commit_layout_up(es2Rdh* self, cpointer_t buffer, int stride)
 		{
 			GLuint gl_attr = pav->attrib;
 			es2LayoutProperty* lp = &self->ss.layouts[gl_attr];
-			cpointer_t pointer = ((const uint8_t*)buffer + le->offset);
+			const void* pointer = ((const uint8_t*)buffer + le->offset);
 			ok[gl_attr] = true;
 			if (!lp->enable)
 			{
@@ -155,14 +156,15 @@ void es2_commit_layout_up(es2Rdh* self, cpointer_t buffer, int stride)
 			}
 			if (lp->pointer != pointer ||
 				lp->buffer != 0 ||
-				lp->stride != (GLsizei)stride ||
+				lp->stride != gl_stride ||
+				lp->size != le->size ||
 				lp->format != le->format ||
 				lp->normalized != le->normalized)
 			{
-				ES2FUNC(glVertexAttribPointer)(gl_attr, le->size, le->format, le->normalized, stride, pointer);
+				ES2FUNC(glVertexAttribPointer)(gl_attr, le->size, le->format, le->normalized, gl_stride, pointer);
 				lp->pointer = pointer;
 				lp->buffer = 0;
-				lp->stride = stride;
+				lp->stride = gl_stride;
 				lp->size = le->size;
 				lp->format = le->format;
 				lp->normalized = le->normalized;
@@ -196,11 +198,11 @@ void es2_commit_shader(es2Rdh* self)
 	}
 
 	_es2shd_link((qgShd*)shd);
-	GLuint program = (GLuint)qm_get_desc(shd);
-	if (self->ss.program != program)
+	GLuint gl_program = (GLuint)qm_get_desc(shd);
+	if (self->ss.program != gl_program)
 	{
-		ES2FUNC(glUseProgram)(program);
-		self->ss.program = program;
+		ES2FUNC(glUseProgram)(gl_program);
+		self->ss.program = gl_program;
 	}
 
 	// 세이더 값 여기서 넣는다!!!
@@ -219,7 +221,7 @@ qvt_name(qnGam) _vt_es2vlo =
 	.dispose = _es2vlo_dispose,
 };
 
-pointer_t _es2vlo_allocator()
+void* _es2vlo_allocator()
 {
 	es2Vlo* self = qn_alloc_zero_1(es2Vlo);
 	qn_retval_if_fail(self, NULL);
@@ -232,6 +234,7 @@ static void _es2vlo_dispose(qgVlo* g)
 	for (size_t i = 0; i < QGLOS_MAX_VALUE; i++)
 		if (self->es_elm[i])
 			qn_free(self->es_elm[i]);
+	qn_free(self);
 }
 
 
@@ -244,7 +247,7 @@ static void es2shd_init_auto_info(void);
 static void es2shd_match_auto_info(qgVarShader* v);
 
 static void _es2shd_dispose(qgShd* g);
-static bool _es2shd_bind(qgShd* g, qgShdType type, cpointer_t data, int size, int flags);
+static bool _es2shd_bind(qgShd* g, qgShdType type, const void* data, int size, int flags);
 static bool _es2shd_bind_shd(qgShd* g, qgShdType type, qgShd* shaderptr);
 
 qvt_name(qgShd) _vt_es2shd =
@@ -259,20 +262,20 @@ qvt_name(qgShd) _vt_es2shd =
 	.link = _es2shd_link,
 };
 
-static es2RefHandle* es2shd_handle_new(GLuint handle)
+static es2RefHandle* es2shd_handle_new(GLuint gl_program)
 {
 	es2RefHandle* ptr = qn_alloc_1(es2RefHandle);
 	ptr->ref = 1;
-	ptr->handle = handle;
+	ptr->handle = gl_program;
 	return ptr;
 }
 
-static void es2shd_handle_unload(es2RefHandle* ptr, GLuint program)
+static void es2shd_handle_unload(es2RefHandle* ptr, GLuint gl_program)
 {
 	if (ptr)
 	{
-		if (program > 0)
-			ES2FUNC(glDetachShader)(program, ptr->handle);
+		if (gl_program > 0)
+			ES2FUNC(glDetachShader)(gl_program, ptr->handle);
 
 		intptr_t ref = --ptr->ref;
 		if (ref == 0)
@@ -299,11 +302,12 @@ es2Shd* _es2shd_allocator(const char* name)
 static void _es2shd_dispose(qgShd* g)
 {
 	es2Shd* self = qm_cast(g, es2Shd);
+	GLuint handle = (GLuint)qm_get_desc(self);
 
-	es2shd_handle_unload(self->rvertex, 0);
-	es2shd_handle_unload(self->rfragment, 0);
+	es2shd_handle_unload(self->rvertex, handle);
+	es2shd_handle_unload(self->rfragment, handle);
 
-	ES2FUNC(glDeleteProgram)((GLuint)qm_get_desc(self));
+	ES2FUNC(glDeleteProgram)(handle);
 
 	qn_ctnr_disp(es2CtnVarShader, &self->vars);
 	qn_ctnr_disp(es2CtnShaderAttrib, &self->attrs);
@@ -318,12 +322,12 @@ static void es2shd_error(GLuint handle, const char* progress, bool shader, bool 
 
 	if (shader)
 	{
-		GLint len = 0;
-		ES2FUNC(glGetShaderiv)(handle, GL_INFO_LOG_LENGTH, &len);
-		if (len > 0)
+		GLint gl_len = 0;
+		ES2FUNC(glGetShaderiv)(handle, GL_INFO_LOG_LENGTH, &gl_len);
+		if (gl_len > 0)
 		{
-			GLchar* psz = qn_alloca(len, GLchar);
-			ES2FUNC(glGetShaderInfoLog)(handle, len, &len, psz);
+			GLchar* psz = qn_alloca(gl_len, GLchar);
+			ES2FUNC(glGetShaderInfoLog)(handle, gl_len, &gl_len, psz);
 			qn_debug_output(false, "ES2Shd: shader error '%s'\n", psz);
 			qn_freea(psz);
 		}
@@ -331,12 +335,12 @@ static void es2shd_error(GLuint handle, const char* progress, bool shader, bool 
 
 	if (program)
 	{
-		GLint len = 0;
-		ES2FUNC(glGetProgramiv)(handle, GL_INFO_LOG_LENGTH, &len);
-		if (len > 0)
+		GLint gl_len = 0;
+		ES2FUNC(glGetProgramiv)(handle, GL_INFO_LOG_LENGTH, &gl_len);
+		if (gl_len > 0)
 		{
-			GLchar* psz = qn_alloca(len, GLchar);
-			ES2FUNC(glGetProgramInfoLog)(handle, len, &len, psz);
+			GLchar* psz = qn_alloca(gl_len, GLchar);
+			ES2FUNC(glGetProgramInfoLog)(handle, gl_len, &gl_len, psz);
 			qn_debug_output(false, "ES2Shd: program error '%s'\n", psz);
 			qn_freea(psz);
 		}
@@ -351,35 +355,35 @@ static void es2shd_error(GLuint handle, const char* progress, bool shader, bool 
 }
 
 //
-static es2RefHandle* es2shd_compile(es2Shd* self, GLenum type, const char* src, GLint len)
+static es2RefHandle* es2shd_compile(es2Shd* self, GLenum gl_type, const char* src, GLint gl_len)
 {
 	// http://msdn.microsoft.com/ko-kr/library/windows/apps/dn166905.aspx
-	GLuint shader = ES2FUNC(glCreateShader)(type);
-	qn_retval_if_fail(shader != 0, NULL);
+	GLuint gl_shader = ES2FUNC(glCreateShader)(gl_type);
+	qn_retval_if_fail(gl_shader != 0, NULL);
 
-	ES2FUNC(glShaderSource)(shader, 1, &src, &len);
-	ES2FUNC(glCompileShader)(shader);
+	ES2FUNC(glShaderSource)(gl_shader, 1, &src, gl_len == 0 ? NULL : &gl_len);
+	ES2FUNC(glCompileShader)(gl_shader);
 
-	GLint status = 0;
-	ES2FUNC(glGetShaderiv)(shader, GL_COMPILE_STATUS, &status);
-	if (status != 0)
+	GLint gl_status = 0;
+	ES2FUNC(glGetShaderiv)(gl_shader, GL_COMPILE_STATUS, &gl_status);
+	if (gl_status == GL_FALSE)
 	{
-		const char* s = type == GL_VERTEX_SHADER ? "Vertex" : type == GL_FRAGMENT_SHADER ? "Fragment" : "(unknown)";
-		es2shd_error(shader, s, true, false);
+		const char* s = gl_type == GL_VERTEX_SHADER ? "Vertex" : gl_type == GL_FRAGMENT_SHADER ? "Fragment" : "(unknown)";
+		es2shd_error(gl_shader, s, true, false);
 		return NULL;
 	}
 
-	return es2shd_handle_new(shader);
+	return es2shd_handle_new(gl_shader);
 }
 
 //
-static bool _es2shd_bind(qgShd* g, qgShdType type, cpointer_t data, int size, int flags)
+static bool _es2shd_bind(qgShd* g, qgShdType type, const void* data, int size, int flags)
 {
 	// 해야함: 매크로
 	// 해야함: 인클루트
 	// 해야함: 플래그
 	// 해야함: 보관
-	qn_retval_if_fail(data != NULL && size > 0, false);
+	qn_retval_if_fail(data != NULL && size >= 0, false);
 	es2Shd* self = qm_cast(g, es2Shd);
 	GLuint handle = (GLuint)qm_get_desc(self);
 
@@ -444,9 +448,9 @@ static bool _es2shd_bind_shd(qgShd* g, qgShdType type, qgShd* shaderptr)
 }
 
 //
-qgShdConst es2shd_to_shader_const(GLenum type)
+qgShdConst es2shd_to_shader_const(GLenum gl_type)
 {
-	switch (type)
+	switch (gl_type)
 	{
 		case GL_FLOAT:				return QGSHC_FLOAT1;
 		case GL_FLOAT_VEC2:			return QGSHC_FLOAT2;
@@ -506,30 +510,30 @@ static bool _es2shd_link(qgShd* g)
 	GLuint handle = (GLuint)qm_get_desc(self);
 	ES2FUNC(glLinkProgram)(handle);
 
-	GLint status = 0;
-	ES2FUNC(glGetProgramiv)(handle, GL_LINK_STATUS, &status);
-	if (status != 0)
+	GLint gl_status = 0;
+	ES2FUNC(glGetProgramiv)(handle, GL_LINK_STATUS, &gl_status);
+	if (gl_status == GL_FALSE)
 	{
 		es2shd_error(handle, "Link", false, true);
 		return false;
 	}
 
 	// 분석
-	GLint count = 0, maxlen = 0;
-	char sz[64];
+	GLint gl_count = 0, gl_maxlen = 0;
+	char sz[32];
 
 	// 전역 변수 (유니폼)
-	ES2FUNC(glGetProgramiv)(handle, GL_ACTIVE_UNIFORMS, &count);
-	if (count > 0)
+	ES2FUNC(glGetProgramiv)(handle, GL_ACTIVE_UNIFORMS, &gl_count);
+	if (gl_count > 0)
 	{
-		ES2FUNC(glGetProgramiv)(handle, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxlen);
-		if (maxlen == 0 || maxlen > 31)	// 오류 처리는 안하는데 브레이크는 검
+		ES2FUNC(glGetProgramiv)(handle, GL_ACTIVE_UNIFORM_MAX_LENGTH, &gl_maxlen);
+		if (gl_maxlen == 0 || gl_maxlen > 31)	// 오류 처리는 안하는데 브레이크는 검
 			qn_debug_output(true, "ES2Shd: invalid maximum length of uniforms.\n");
 
 		qn_ctnr_disp(es2CtnVarShader, &self->vars);
-		qn_ctnr_init(es2CtnVarShader, &self->vars, count);
+		qn_ctnr_init(es2CtnVarShader, &self->vars, gl_count);
 
-		for (GLint i = 0; i < count; i++)
+		for (GLint i = 0; i < gl_count; i++)
 		{
 			GLint gl_size;
 			GLenum gl_type;
@@ -551,10 +555,10 @@ static bool _es2shd_link(qgShd* g)
 	}
 
 	// 인수 (어트리뷰트)
-	ES2FUNC(glGetProgramiv)(handle, GL_ACTIVE_ATTRIBUTES, &count);
-	if (count > 0)
+	ES2FUNC(glGetProgramiv)(handle, GL_ACTIVE_ATTRIBUTES, &gl_count);
+	if (gl_count > 0)
 	{
-		ES2FUNC(glGetProgramiv)(handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxlen);
+		ES2FUNC(glGetProgramiv)(handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &gl_maxlen);
 		/*
 		if (maxlen == 0)
 			// 이 경우는 드라이버가 gl_로 시작하는 애들을 인수로 처리했을 경우. 한편 사용자 인수가 없다는 말.
@@ -563,16 +567,17 @@ static bool _es2shd_link(qgShd* g)
 		*/
 
 		qn_ctnr_disp(es2CtnShaderAttrib, &self->attrs);
-		qn_ctnr_init(es2CtnShaderAttrib, &self->attrs, count);
-		self->amask = 0;
-		qn_zero(self->acount, QGLOU_MAX_VALUE, int);
-		qn_zero(self->alink, QGLOU_MAX_VALUE, es2ShaderAttrib*);
+		qn_ctnr_init(es2CtnShaderAttrib, &self->attrs, gl_count);
+		self->usage_mask = 0;
+		qn_zero(self->usage_count, QGLOU_MAX_VALUE, int);
+		qn_zero(self->usage_link, QGLOU_MAX_VALUE, es2ShaderAttrib*);
 
-		for (GLint i = 0; i < count; i++)
+		for (GLint i = 0; i < gl_count; i++)
 		{
 			GLint gl_size;
 			GLenum gl_type;
-			ES2FUNC(glGetActiveUniform)(handle, i, 32 - 1, NULL, &gl_size, &gl_type, sz);
+			GLsizei gl_len;
+			ES2FUNC(glGetActiveAttrib)(handle, i, 32 - 1, &gl_len, &gl_size, &gl_type, sz);
 
 			qgShdConst cnst = es2shd_to_shader_const(gl_type);
 			if (cnst == QGSHC_UNKNOWN)	// 여기도 오류 처리는 안하고 브레이크만
@@ -863,7 +868,7 @@ static void es2shd_match_auto_info(qgVarShader* v)
 		if (v->hash == _es2sai[i].hash && qn_stricmp(v->name, _es2sai[i].name) == 0)
 		{
 			v->role = QGSHR_AUTO;
-			v->aptr = (pointer_t)_es2sai[i].func;
+			v->aptr = (void*)_es2sai[i].func;
 			return;
 		}
 	}
@@ -877,9 +882,9 @@ static void es2shd_match_auto_info(qgVarShader* v)
 // 버퍼
 
 static void _es2buf_dispose(qgBuf* g);
-static pointer_t _es2buf_map(qgBuf* g);
+static void* _es2buf_map(qgBuf* g);
 static bool _es2buf_unmap(qgBuf* g);
-static bool _es2buf_data(qgBuf* g, cpointer_t data);
+static bool _es2buf_data(qgBuf* g, const void* data);
 
 qvt_name(qgBuf) _vt_es2buf =
 {
@@ -912,13 +917,13 @@ static void _es2buf_dispose(qgBuf* g)
 	if (self->lockbuf)
 		qn_free(self->lockbuf);
 
-	GLuint id = (GLuint)qm_get_desc(self);
-	ES2FUNC(glDeleteBuffers)(1, &id);
+	GLuint handle = (GLuint)qm_get_desc(self);
+	ES2FUNC(glDeleteBuffers)(1, &handle);
 
 	qn_free(self);
 }
 
-static pointer_t _es2buf_map(qgBuf* g)
+static void* _es2buf_map(qgBuf* g)
 {
 	es2Buf* self = qm_cast(g, es2Buf);
 
@@ -943,7 +948,7 @@ static bool _es2buf_unmap(qgBuf* g)
 	return true;
 }
 
-static bool _es2buf_data(qgBuf* g, cpointer_t data)
+static bool _es2buf_data(qgBuf* g, const void* data)
 {
 	qn_retval_if_fail(data, false);
 	es2Buf* self = qm_cast(g, es2Buf);

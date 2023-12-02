@@ -324,14 +324,14 @@ typedef struct qgUimMouse
 
 	struct
 	{
-		uint32_t		tick;
+		uint			tick;
 		qImButton		btn;
 		qnPoint			loc;
 	}					clk;
 	struct
 	{
 		int				move;
-		uint32_t		tick;
+		uint			tick;
 	}					lim;
 } qgUimMouse;
 
@@ -362,8 +362,8 @@ typedef struct qgUimCtrlInfo
 // 
 typedef struct qgUimCtrlCtrlVib
 {
-	uint16_t			left;
-	uint16_t			right;
+	ushort				left;
+	ushort				right;
 } qgUimCtrlCtrlVib;
 
 
@@ -378,14 +378,14 @@ typedef union qgEvent
 	struct Active
 	{
 		qgEventType			ev;
-		int32_t				active;	// bool
+		int					active;	// bool
 		double				delta;
 	}						active;
 	struct Layout
 	{
 		qgEventType			ev;
 		qnRect				bound;
-		int32_t				_pad[1];
+		int					_pad[1];
 	}					layout;
 	struct Keyboard
 	{
@@ -397,25 +397,25 @@ typedef union qgEvent
 	}					key;
 	struct MouseMove {
 		qgEventType			ev;
-		int32_t				x;
-		int32_t				y;
-		int32_t				dx;
-		int32_t				dy;
+		int					x;
+		int					y;
+		int					dx;
+		int					dy;
 		qImMask				state;
 	}					mmove;
 	struct MouseButton {
 		qgEventType			ev;
-		int32_t				x;
-		int32_t				y;
+		int					x;
+		int					y;
 		qImButton			button;
 		qImMask				state;
-		int32_t				_pad[1];
+		int					_pad[1];
 	}					mbutton;
 	struct MouseWheel {
 		qgEventType			ev;
-		int32_t				dir;
-		int32_t				x;
-		int32_t				y;
+		int					dir;
+		int					x;
+		int					y;
 	}					mwheel;
 } qgEvent;
 
@@ -438,14 +438,14 @@ typedef struct qgDeviceInfo
 
 typedef struct qgRenderInfo
 {
-	intptr_t			frames;
-	intptr_t			begins;
-	intptr_t			ends;
-	intptr_t			invokes;
-	intptr_t			shaders;
-	intptr_t			transforms;
-	intptr_t			draws;
-	intptr_t			primitives;
+	nint				frames;
+	nint				begins;
+	nint				ends;
+	nint				invokes;
+	nint				shaders;
+	nint				transforms;
+	nint				draws;
+	nint				primitives;
 	bool				flush;
 } qgRenderInfo;
 
@@ -477,11 +477,11 @@ typedef struct qgRenderParam
 typedef struct qgPropPixel
 {
 	qgClrFmt			fmt;
-	uint8_t				bpp;
-	uint8_t				rr, rl;
-	uint8_t				gr, gl;
-	uint8_t				br, bl;
-	uint8_t				ar, al;
+	byte				bpp;
+	byte				rr, rl;
+	byte				gr, gl;
+	byte				br, bl;
+	byte				ar, al;
 } qgPixelProp;
 
 typedef struct qgPropDepthStencil
@@ -501,8 +501,8 @@ typedef struct qgPropDepthStencil
 	qgStencilOp			b_fail : 8;
 	qgStencilOp			b_depth : 8;
 
-	uint8_t				m_read;
-	uint8_t				m_write;
+	byte				m_read;
+	byte				m_write;
 } qgPropDepthStencil;
 
 typedef struct qgPropRasterizer
@@ -532,7 +532,6 @@ typedef struct qgVarLayout
 	int					index : 16;
 	qgLoType			type : 16;
 	int					slot : 16;
-	int					zz;
 } qgVarLayout;
 
 typedef struct qgVarShader
@@ -543,14 +542,14 @@ typedef struct qgVarShader
 	qgShdRole			role : 8;			// 0=manual, 1=auto, 2=discard
 	qgShdConst			cnst : 8;
 
-	uint16_t			size;
-	uint32_t			offset;
+	ushort				size;
+	uint				offset;
 
-	pointer_t			aptr;
-	pointer_t			xptr;
+	void*				aptr;
+	void*				xptr;
 } qgVarShader;
 
-typedef void(*qgVarShaderFunc)(pointer_t, int, qgVarShader*, qgShd*);
+typedef void(*qgVarShaderFunc)(void*, int, qgVarShader*, qgShd*);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -561,12 +560,12 @@ struct qgStub
 {
 	qnGam				base;
 
-	pointer_t			oshandle;
+	void*				oshandle;
 
 	qgFlag				flags;
 	qgStti				sttis;
-	uint32_t			delay;
-	int32_t				_padding[1];
+	uint				delay;
+	int					_padding[1];
 
 	qnTimer*			timer;
 	double				fps;
@@ -587,7 +586,7 @@ struct qgStub
 qvt_name(qgStub)
 {
 	qvt_name(qnGam)		base;
-	bool (*_construct)(qgStub*, pointer_t);
+	bool (*_construct)(qgStub*, void*);
 	void (*_finalize)(qgStub*);
 	bool (*_poll)(qgStub*);
 };
@@ -642,15 +641,15 @@ qvt_name(qgRdh)
 
 	qgVlo* (*create_layout)(qgRdh*, int, const qgVarLayout*);
 	qgShd* (*create_shader)(qgRdh*, const char*);
-	qgBuf* (*create_buffer)(qgRdh*, qgBufType, int, int, cpointer_t);
+	qgBuf* (*create_buffer)(qgRdh*, qgBufType, int, int, const void*);
 
 	void (*set_shader)(qgRdh*, qgShd*, qgVlo*);
 	bool (*set_index)(qgRdh*, qgBuf*);
 	bool (*set_vertex)(qgRdh*, int, qgBuf*);
 
-	bool (*primitive_begin)(qgRdh*, qgTopology, int, int, pointer_t*);
+	bool (*primitive_begin)(qgRdh*, qgTopology, int, int, void**);
 	void (*primitive_end)(qgRdh*);
-	bool (*indexed_primitive_begin)(qgRdh*, qgTopology, int, int, pointer_t*, int, int, pointer_t*);
+	bool (*indexed_primitive_begin)(qgRdh*, qgTopology, int, int, void**, int, int, void**);
 	void (*indexed_primitive_end)(qgRdh*);
 	bool (*draw)(qgRdh*, qgTopology, int);
 	bool (*draw_indexed)(qgRdh*, qgTopology, int);
@@ -681,14 +680,14 @@ QNAPI void qg_rdh_set_world(qgRdh* g, const qnMat4* m);
 
 QNAPI qgVlo* qg_rdh_create_layout(qgRdh* self, int count, const qgVarLayout* layouts);
 QNAPI qgShd* qg_rdh_create_shader(qgRdh* self, const char* name);
-QNAPI qgBuf* qg_rdh_create_buffer(qgRdh* g, qgBufType type, int count, int stride, cpointer_t data);
+QNAPI qgBuf* qg_rdh_create_buffer(qgRdh* g, qgBufType type, int count, int stride, const void* data);
 
-QNAPI void qg_set_shader(qgRdh* self, qgShd* shader, qgVlo* layout);
-QNAPI bool qg_rdh_set_index(qgRdh* g, pointer_t buffer);
-QNAPI bool qg_rdh_set_vertex(qgRdh* g, int stage, pointer_t buffer);
+QNAPI void qg_rdh_set_shader(qgRdh* self, qgShd* shader, qgVlo* layout);
+QNAPI bool qg_rdh_set_index(qgRdh* g, void* buffer);
+QNAPI bool qg_rdh_set_vertex(qgRdh* g, int stage, void* buffer);
 
-QNAPI void qg_rdh_primitive_draw(qgRdh* g, qgTopology tpg, int count, int stride, cpointer_t data);
-QNAPI void qg_rdh_primitive_draw_indexed(qgRdh* g, qgTopology tpg, int vcount, int vstride, cpointer_t vdata, int icount, int istride, cpointer_t idata);
+QNAPI void qg_rdh_primitive_draw(qgRdh* g, qgTopology tpg, int count, int stride, const void* data);
+QNAPI void qg_rdh_primitive_draw_indexed(qgRdh* g, qgTopology tpg, int vcount, int vstride, const void* vdata, int icount, int istride, const void* idata);
 QNAPI bool qg_rdh_draw(qgRdh* self, qgTopology tpg, int vcount);
 QNAPI bool qg_rdh_draw_indexed(qgRdh* self, qgTopology tpg, int icount);
 
@@ -709,11 +708,11 @@ struct qgVlo
 	qgRdGam				base;
 
 	int					stride;
-	uint16_t			stage[QGLOS_MAX_VALUE];
+	ushort				stage[QGLOS_MAX_VALUE];
 };
 
-QNAPI uint32_t qg_vlo_get_stride(qgVlo* g);
-QNAPI uint32_t qg_vlo_get_stage(qgVlo* g, int stage);
+QNAPI uint qg_vlo_get_stride(qgVlo* g);
+QNAPI uint qg_vlo_get_stage(qgVlo* g, int stage);
 
 
 // shader
@@ -728,13 +727,20 @@ struct qgShd
 qvt_name(qgShd)
 {
 	qvt_name(qnGam)		base;
-	bool(*bind)(qgShd*, qgShdType, cpointer_t, int, int);
+	bool(*bind)(qgShd*, qgShdType, const void*, int, int);
 	bool(*bind_shd)(qgShd*, qgShdType, qgShd*);
 	//bool(*bind_name)(qgShd* qgShdType, const char*);
 	//void(*add_condition)(qgShd*, const char*);
 	//void(*clear_condition)(qgShd*);
 	bool(*link)(qgShd*);
 };
+
+QNAPI const char* qg_shd_get_name(qgShd* self);
+QNAPI void qg_shd_set_intr(qgShd* self, qgVarShaderFunc func, void* data);
+
+QNAPI bool qg_shd_bind(qgShd* self, qgShdType type, const void* data, int size, int flags);
+QNAPI bool qg_shd_bind_shd(qgShd* self, qgShdType type, qgShd* shader);
+QNAPI bool qg_shd_link(qgShd* self);
 
 
 // buffer
@@ -743,24 +749,24 @@ struct qgBuf
 	qgRdGam				base;
 
 	qgBufType			type : 16;
-	uint16_t			stride;
-	uint32_t			size;
+	ushort				stride;
+	uint				size;
 };
 
 qvt_name(qgBuf)
 {
 	qvt_name(qnGam)		base;
-	pointer_t(*map)(qgBuf*);
+	void*(*map)(qgBuf*);
 	bool (*unmap)(qgBuf*);
-	bool (*data)(qgBuf*, cpointer_t);
+	bool (*data)(qgBuf*, const void*);
 };
 
 QNAPI qgBufType qg_buf_get_type(qgBuf* g);
-QNAPI uint32_t qg_buf_get_stride(qgBuf* g);
-QNAPI uint32_t qg_buf_get_size(qgBuf* g);
+QNAPI uint qg_buf_get_stride(qgBuf* g);
+QNAPI uint qg_buf_get_size(qgBuf* g);
 
-QNAPI pointer_t qg_buf_map(qgBuf* self);
+QNAPI void* qg_buf_map(qgBuf* self);
 QNAPI bool qg_buf_unmap(qgBuf* self);
-QNAPI bool qg_buf_data(qgBuf* self, cpointer_t data);
+QNAPI bool qg_buf_data(qgBuf* self, const void* data);
 
 QN_EXTC_END

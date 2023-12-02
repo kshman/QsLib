@@ -26,7 +26,7 @@ const char* qg_shd_get_name(qgShd* self)
 	return self->name;
 }
 
-void qg_shd_set_intr(qgShd* self, qgVarShaderFunc func, pointer_t data)
+void qg_shd_set_intr(qgShd* self, qgVarShaderFunc func, void* data)
 {
 	if (func == NULL)
 	{
@@ -39,9 +39,8 @@ void qg_shd_set_intr(qgShd* self, qgVarShaderFunc func, pointer_t data)
 	self->intr.data = data;
 }
 
-bool qg_shd_bind(qgShd* self, qgShdType type, cpointer_t data, int size, int flags)
+bool qg_shd_bind(qgShd* self, qgShdType type, const void* data, int size, int flags)
 {
-	qn_retval_if_fail(data && size > 0, false);
 	return qvt_cast(self, qgShd)->bind(self, type, data, size, flags);
 }
 
@@ -78,7 +77,7 @@ uint32_t qg_buf_get_size(qgBuf* self)
 }
 
 //
-pointer_t qg_buf_map(qgBuf* self)
+void* qg_buf_map(qgBuf* self)
 {
 	return qvt_cast(self, qgBuf)->map(self);
 }
@@ -88,7 +87,7 @@ bool qg_buf_unmap(qgBuf* self)
 	return qvt_cast(self, qgBuf)->unmap(self);
 }
 
-bool qg_buf_data(qgBuf* self, cpointer_t data)
+bool qg_buf_data(qgBuf* self, const void* data)
 {
 	qn_retval_if_fail(data, false);
 	return qvt_cast(self, qgBuf)->data(self, data);

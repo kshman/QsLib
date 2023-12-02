@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#define ES2_MAX_VERTEXT_ATTRS	32
+#define ES2_MAX_VERTEX_ATTRIBUTES	16
 
 #if _QN_WINDOWS_
 typedef struct es2Func
@@ -56,7 +56,7 @@ struct es2LayoutElement
 struct es2LayoutProperty
 {
 	bool				enable;
-	cpointer_t			pointer;
+	const void*			pointer;
 	GLuint				buffer;
 	GLsizei				stride;
 	GLuint				size;
@@ -81,7 +81,7 @@ struct es2ShaderAttrib
 struct es2Session
 {
 	GLuint				program;
-	es2LayoutProperty	layouts[ES2_MAX_VERTEXT_ATTRS];
+	es2LayoutProperty	layouts[ES2_MAX_VERTEX_ATTRIBUTES];
 
 	GLuint				buf_array;
 	GLuint				buf_element_array;
@@ -98,7 +98,7 @@ struct es2Pending
 	es2Vlo*				vlo;
 
 	es2Buf*				ib;
-	es2Buf*				vb[ES2_MAX_VERTEXT_ATTRS];
+	es2Buf*				vb[QGLOS_MAX_VALUE];
 
 	int					tpg;
 	int					vcount;
@@ -106,8 +106,8 @@ struct es2Pending
 	int					vsize;
 	int					istride;
 	int					isize;
-	pointer_t			vdata;
-	pointer_t			idata;
+	void*			vdata;
+	void*			idata;
 };
 
 
@@ -126,7 +126,7 @@ struct es2Rdh
 };
 extern void es2_bind_buffer(es2Rdh* self, GLenum type, GLuint id);
 extern void es2_commit_layout(es2Rdh* self);
-extern void es2_commit_layout_up(es2Rdh* self, cpointer_t buffer, int stride);
+extern void es2_commit_layout_up(es2Rdh* self, const void* buffer, int stride);
 extern void es2_commit_shader(es2Rdh* self);
 
 // 레이아웃
@@ -137,7 +137,7 @@ struct es2Vlo
 	int					es_cnt[QGLOS_MAX_VALUE];
 	es2LayoutElement*	es_elm[QGLOS_MAX_VALUE];
 };
-extern pointer_t _es2vlo_allocator();
+extern void* _es2vlo_allocator();
 
 // 세이더 저장소
 QN_CTNR_DECL(es2CtnVarShader, qgVarShader);
@@ -154,9 +154,9 @@ struct es2Shd
 	es2CtnVarShader		vars;
 	es2CtnShaderAttrib	attrs;
 
-	int					amask;
-	int					acount[QGLOU_MAX_VALUE];
-	es2ShaderAttrib*	alink[QGLOU_MAX_VALUE];
+	int					usage_mask;
+	uint8_t				usage_count[QGLOU_MAX_VALUE];
+	es2ShaderAttrib*	usage_attrs[QGLOU_MAX_VALUE];
 
 	bool				linked;
 };
@@ -170,6 +170,6 @@ struct es2Buf
 	GLenum				gl_type;
 	GLenum				gl_usage;
 
-	pointer_t			lockbuf;
+	void*			lockbuf;
 };
 extern es2Buf* _es2buf_allocator(GLuint gl_id, GLenum gl_type, GLenum gl_usage, int stride, int size, qgBufType type);

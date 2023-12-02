@@ -8,7 +8,7 @@
 #include "qn_mem.h"
 
 //
-pointer_t qn_memenc(pointer_t dest, cpointer_t src, size_t size)
+void* qn_memenc(void* dest, const void* src, size_t size)
 {
 	uint8_t* pd = (uint8_t*)dest;
 	uint8_t* ps = (uint8_t*)src;
@@ -23,7 +23,7 @@ pointer_t qn_memenc(pointer_t dest, cpointer_t src, size_t size)
 }
 
 //
-pointer_t qn_memdec(pointer_t dest, cpointer_t src, size_t size)
+void* qn_memdec(void* dest, const void* src, size_t size)
 {
 	uint8_t* pd = (uint8_t*)dest;
 	uint8_t* ps = (uint8_t*)src;
@@ -38,7 +38,7 @@ pointer_t qn_memdec(pointer_t dest, cpointer_t src, size_t size)
 }
 
 //
-pointer_t qn_memzcpr(cpointer_t src, size_t srcsize, /*NULLABLE*/size_t* destsize)
+void* qn_memzcpr(const void* src, size_t srcsize, /*NULLABLE*/size_t* destsize)
 {
 	qn_retval_if_fail(src != NULL, NULL);
 	qn_retval_if_fail(srcsize > 0, NULL);
@@ -60,7 +60,7 @@ pointer_t qn_memzcpr(cpointer_t src, size_t srcsize, /*NULLABLE*/size_t* destsiz
 }
 
 //
-pointer_t qn_memzucp(cpointer_t src, size_t srcsize, size_t bufsize, /*NULLABLE*/size_t* destsize)
+void* qn_memzucp(const void* src, size_t srcsize, size_t bufsize, /*NULLABLE*/size_t* destsize)
 {
 	qn_retval_if_fail(src != NULL, NULL);
 	qn_retval_if_fail(srcsize > 0, NULL);
@@ -113,7 +113,7 @@ char qn_memhrd(size_t size, double* out)
 }
 
 //
-char* qn_memdmp(cpointer_t ptr, size_t size, char* outbuf, size_t buflen)
+char* qn_memdmp(const void* ptr, size_t size, char* outbuf, size_t buflen)
 {
 	qn_retval_if_fail(ptr != NULL, NULL);
 	qn_retval_if_fail(outbuf != NULL, NULL);
@@ -280,7 +280,7 @@ size_t qn_mpfcnt(void)
 }
 
 //
-pointer_t qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
+void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 {
 	qn_retval_if_fail(size, NULL);
 
@@ -312,7 +312,7 @@ pointer_t qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 }
 
 //
-pointer_t qn_mpfreloc(pointer_t ptr, size_t size, const char* desc, size_t line)
+void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 {
 	if (!ptr)
 		return qn_mpfalloc(size, false, desc, line);
@@ -369,7 +369,7 @@ pointer_t qn_mpfreloc(pointer_t ptr, size_t size, const char* desc, size_t line)
 }
 
 //
-void qn_mpffree(pointer_t ptr)
+void qn_mpffree(void* ptr)
 {
 	qn_ret_if_fail(ptr);
 

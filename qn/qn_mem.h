@@ -28,5 +28,5 @@ typedef struct memBlock
 } memBlock;
 
 #define _memhdr(ptr)			(((memBlock*)(ptr))-1)
-#define _memptr(block)			(pointer_t)(((memBlock*)(block))+1)
+#define _memptr(block)			(void*)(((memBlock*)(block))+1)
 #define _memsize(size)			(((sizeof(memBlock)+(size)+MEMORY_GAP)+MEMORY_BLOCK_SIZE-1)&~(MEMORY_BLOCK_SIZE-1))

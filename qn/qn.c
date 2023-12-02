@@ -86,7 +86,7 @@ void qn_exit(const int exitcode)
 }
 
 //
-void qn_atexit(paramfunc_t func, pointer_t data)
+void qn_atexit(paramfunc_t func, void* data)
 {
 	qn_ret_if_fail(func);
 
@@ -100,7 +100,7 @@ void qn_atexit(paramfunc_t func, pointer_t data)
 }
 
 //
-void qn_atexitp(paramfunc_t func, pointer_t data)
+void qn_atexitp(paramfunc_t func, void* data)
 {
 	qn_ret_if_fail(func);
 

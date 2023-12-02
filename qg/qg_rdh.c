@@ -273,35 +273,35 @@ qgShd* qg_rdh_create_shader(qgRdh* self, const char* name)
 	return qvt_cast(self, qgRdh)->create_shader(self, name);
 }
 
-qgBuf* qg_rdh_create_buffer(qgRdh* self, qgBufType type, int count, int stride, cpointer_t data)
+qgBuf* qg_rdh_create_buffer(qgRdh* self, qgBufType type, int count, int stride, const void* data)
 {
 	self->info.invokes++;
 	return qvt_cast(self, qgRdh)->create_buffer(self, type, count, stride, data);
 }
 
-void qg_set_shader(qgRdh* self, qgShd* shader, qgVlo* layout)
+void qg_rdh_set_shader(qgRdh* self, qgShd* shader, qgVlo* layout)
 {
 	self->info.invokes++;
 	self->info.shaders++;
 	qvt_cast(self, qgRdh)->set_shader(self, shader, layout);
 }
 
-bool qg_rdh_set_index(qgRdh* self, pointer_t buffer)
+bool qg_rdh_set_index(qgRdh* self, void* buffer)
 {
 	self->info.invokes++;
 	return qvt_cast(self, qgRdh)->set_index(self, buffer);
 }
 
-bool qg_rdh_set_vertex(qgRdh* self, int stage, pointer_t buffer)
+bool qg_rdh_set_vertex(qgRdh* self, int stage, void* buffer)
 {
 	self->info.invokes++;
 	return qvt_cast(self, qgRdh)->set_vertex(self, stage, buffer);
 }
 
-void qg_rdh_primitive_draw(qgRdh* self, qgTopology tpg, int count, int stride, cpointer_t data)
+void qg_rdh_primitive_draw(qgRdh* self, qgTopology tpg, int count, int stride, const void* data)
 {
 	qn_ret_if_fail(count > 0 && stride > 0 && data);
-	pointer_t vert;
+	void* vert;
 	if (!qvt_cast(self, qgRdh)->primitive_begin(self, tpg, count, stride, &vert))
 		return;
 	memcpy(vert, data, (size_t)(count * stride));
@@ -312,11 +312,11 @@ void qg_rdh_primitive_draw(qgRdh* self, qgTopology tpg, int count, int stride, c
 	self->info.primitives += count;
 }
 
-void qg_rdh_primitive_draw_indexed(qgRdh* self, qgTopology tpg, int vcount, int vstride, cpointer_t vdata, int icount, int istride, cpointer_t idata)
+void qg_rdh_primitive_draw_indexed(qgRdh* self, qgTopology tpg, int vcount, int vstride, const void* vdata, int icount, int istride, const void* idata)
 {
 	qn_ret_if_fail(vcount > 0 && vstride > 0 && vdata);
 	qn_ret_if_fail(icount > 0 && istride > 0 && idata);
-	pointer_t vert, ind;
+	void* vert, ind;
 	if (!qvt_cast(self, qgRdh)->indexed_primitive_begin(self, tpg, vcount, vstride, &vert, icount, istride, &ind))
 		return;
 	memcpy(vert, vdata, (size_t)(vcount * vstride));

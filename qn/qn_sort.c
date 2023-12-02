@@ -4,7 +4,7 @@
 //////////////////////////////////////////////////////////////////////////
 // 퀵 소트
 
-#define _QSORT_STACK_SIZE (8 * sizeof(pointer_t) - 2)
+#define _QSORT_STACK_SIZE (8 * sizeof(void*) - 2)
 
 static void _qsort_swap(uint8_t* a, uint8_t* b, size_t stride)
 {
@@ -19,7 +19,7 @@ static void _qsort_swap(uint8_t* a, uint8_t* b, size_t stride)
 	}
 }
 
-static void _qsort_short_context(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(pointer_t, cpointer_t, cpointer_t), pointer_t context)
+static void _qsort_short_context(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(void*, const void*, const void*), void* context)
 {
 	while (hi > lo)
 	{
@@ -44,7 +44,7 @@ static void _qsort_short_context(uint8_t* lo, uint8_t* hi, size_t stride, int(*f
  * @param[in]	compfunc	비교 연산 콜백 함수
  * @param	context			콜백 함수용 콘텍스트
  */
-void qn_qsortc(pointer_t ptr, size_t count, size_t stride, int(*compfunc)(pointer_t, cpointer_t, cpointer_t), pointer_t context)
+void qn_qsortc(void* ptr, size_t count, size_t stride, int(*compfunc)(void*, const void*, const void*), void* context)
 {
 	qn_ret_if_fail(ptr);
 	qn_ret_if_fail(count > 1);
@@ -176,7 +176,7 @@ pos_recursive:
 	}
 }
 
-static void _qsort_short(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(cpointer_t, cpointer_t))
+static void _qsort_short(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(const void*, const void*))
 {
 	uint8_t* p, * max;
 
@@ -202,7 +202,7 @@ static void _qsort_short(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(cpo
  * @param	stride			데이터의 폭
  * @param[in]	compfunc	비교 연산 콜백 함수
  */
-void qn_qsort(pointer_t ptr, size_t count, size_t stride, int(*compfunc)(cpointer_t, cpointer_t))
+void qn_qsort(void* ptr, size_t count, size_t stride, int(*compfunc)(const void*, const void*))
 {
 	qn_ret_if_fail(ptr);
 	qn_ret_if_fail(count > 1);

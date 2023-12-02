@@ -225,10 +225,10 @@ static void _qn_file_access_parse(const char* mode, qnFileAccess* self, int* fla
 #endif
 }
 
-static void _qn_file_access_parse_l(const wchar_t* mode, qnFileAccess* self, int* flag)
+static void _qn_file_access_parse_l(const wchar* mode, qnFileAccess* self, int* flag)
 {
 #if _MSC_VER
-	wchar_t ch;
+	wchar ch;
 
 	self->mode = 0;
 
@@ -295,7 +295,7 @@ static void _qn_file_access_parse_l(const wchar_t* mode, qnFileAccess* self, int
 		self->share = FILE_SHARE_READ;
 	}
 #else
-	wchar_t ch, cm;
+	wchar ch, cm;
 
 	self->mode = 0;
 	self->access = 0;
@@ -387,14 +387,14 @@ static void _qn_file_access_parse_l(const wchar_t* mode, qnFileAccess* self, int
 						}
 						else if (iswdigit(cm))
 						{
-							const wchar_t* p = mode + 2;
+							const wchar* p = mode + 2;
 
 							while (iswdigit(*p))
 								p++;
 
 							if ((p - (mode + 1)) < 63)
 							{
-								wchar_t sz[64], * stop;
+								wchar sz[64], * stop;
 								wcsncpy(sz, (mode + 1), p - (mode + 1));
 								self->access = wcstol(sz, &stop, 8);
 							}
@@ -438,8 +438,8 @@ qnFile* qn_file_new(const char* filename, const char* mode)
 	_qn_file_access_parse(mode, &self->acs, &self->flag);
 
 #if _MSC_VER
-	wchar_t uni[QN_MAX_PATH];
-	qn_utf8to16(uni, QN_MAX_PATH - 1, filename, 0);
+	wchar uni[QN_MAX_PATH];
+	qn_u8to16(uni, QN_MAX_PATH - 1, filename, 0);
 	self->fd = CreateFile(uni, self->acs.access, self->acs.share, NULL, self->acs.mode, self->acs.attr, NULL);
 
 	if (!self->fd || self->fd == INVALID_HANDLE_VALUE)
@@ -464,7 +464,7 @@ qnFile* qn_file_new(const char* filename, const char* mode)
  * @param	mode		파일 처리 모드
  * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 qnFile*
  */
-qnFile* qn_file_new_l(const wchar_t* filename, const wchar_t* mode)
+qnFile* qn_file_new_l(const wchar* filename, const wchar* mode)
 {
 	qn_retval_if_fail(filename, NULL);
 
@@ -475,12 +475,12 @@ qnFile* qn_file_new_l(const wchar_t* filename, const wchar_t* mode)
 
 	char asc[QN_MAX_PATH];
 #if _MSC_VER
-	qn_utf16to8(asc, QN_MAX_PATH - 1, filename, 0);
+	qn_u16to8(asc, QN_MAX_PATH - 1, filename, 0);
 	self->fd = CreateFile(filename, self->acs.access, self->acs.share, NULL, self->acs.mode, self->acs.attr, NULL);
 
 	if (!self->fd || self->fd == INVALID_HANDLE_VALUE)
 #else
-	qn_utf32to8(asc, QN_MAX_PATH - 1, filename, 0);
+	qn_u32to8(asc, QN_MAX_PATH - 1, filename, 0);
 	self->fd = self->acs.access == 0 ? open(asc, self->acs.mode) : open(asc, self->acs.mode, self->acs.access);
 
 	if (self->fd < 0)
@@ -580,7 +580,7 @@ const char* qn_file_name(qnFile* self)
  * @param	size		읽을 크기
  * @return	실제 읽은 길이를 반환
  */
-int qn_file_read(qnFile* self, pointer_t buffer, int offset, int size)
+int qn_file_read(qnFile* self, void* buffer, int offset, int size)
 {
 	qn_retval_if_fail(buffer != NULL, -1);
 	qn_retval_if_fail(size >= 0, 0);
@@ -602,7 +602,7 @@ int qn_file_read(qnFile* self, pointer_t buffer, int offset, int size)
  * @param	size		쓸 크기
  * @return	실제 쓴 길이를 반환
  */
-int qn_file_write(qnFile* self, cpointer_t buffer, int offset, int size)
+int qn_file_write(qnFile* self, const void* buffer, int offset, int size)
 {
 	qn_retval_if_fail(buffer != NULL, -1);
 	qn_retval_if_fail(size >= 0, 0);
@@ -663,7 +663,7 @@ int64_t qn_file_tell(qnFile* self)
  * @param	org			방식 (C형식 SEEK와 동일)
  * @return	변경된 위치.
  */
-int64_t qn_file_seek(qnFile* self, int64_t offset, int org)
+int64_t qn_file_seek(qnFile* self, llong offset, int org)
 {
 #if _MSC_VER
 	LARGE_INTEGER ll;
@@ -750,8 +750,8 @@ bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 	qn_retval_if_fail(filename, false);
 
 #if _MSC_VER
-	wchar_t uni[QN_MAX_PATH];
-	qn_utf8to16(uni, QN_MAX_PATH - 1, filename, 0);
+	wchar uni[QN_MAX_PATH];
+	qn_u8to16(uni, QN_MAX_PATH - 1, filename, 0);
 
 	WIN32_FIND_DATA ffd = { 0, };
 	HANDLE h = FindFirstFileEx(uni, FindExInfoStandard, &ffd, FindExSearchNameMatch, NULL, 0);
@@ -789,7 +789,7 @@ bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
  * @param[out]	res 	(널값이 아니면) 파일 처리 플래그로 KFAS_로 시작하는 마스크 플래그
  * @return	성공하면 참, 실패하면 거짓
  */
-bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir)
+bool qn_file_exist_l(const wchar* filename, /*RET-NULLABLE*/bool* isdir)
 {
 	qn_retval_if_fail(filename, false);
 
@@ -810,7 +810,7 @@ bool qn_file_exist_l(const wchar_t* filename, /*RET-NULLABLE*/bool* isdir)
 	}
 #else
 	char u8[260];
-	qn_utf32to8(u8, 260 - 1, filename, 0);
+	qn_u32to8(u8, 260 - 1, filename, 0);
 
 	struct stat s;
 	int n = stat(u8, &s);
@@ -851,7 +851,7 @@ void qn_file_set_max_alloc_size(size_t n)
  * @param[out]	size	(널값이 아니면) 읽은 파일의 크기
  * @return	읽은 버퍼. 사용한 다음 k_free 함수로 해제해야한다
  */
-pointer_t qn_file_alloc(const char* filename, int* size)
+void* qn_file_alloc(const char* filename, int* size)
 {
 	qn_retval_if_fail(filename != NULL, NULL);
 
@@ -865,7 +865,7 @@ pointer_t qn_file_alloc(const char* filename, int* size)
 		return NULL;
 	}
 
-	pointer_t buf = qn_alloc((size_t)len + 4, uint8_t);
+	void* buf = qn_alloc((size_t)len + 4, uint8_t);
 	qn_file_read(file, buf, 0, (int)len);
 
 	qn_file_delete(file);
@@ -882,7 +882,7 @@ pointer_t qn_file_alloc(const char* filename, int* size)
  * @param[out]	size	(널값이 아니면) 읽은 파일의 크기
  * @return	읽은 버퍼. 사용한 다음 k_free 함수로 해제해야한다
  */
-pointer_t qn_file_alloc_l(const wchar_t* filename, int* size)
+void* qn_file_alloc_l(const wchar* filename, int* size)
 {
 	qn_retval_if_fail(filename, NULL);
 
@@ -897,7 +897,7 @@ pointer_t qn_file_alloc_l(const wchar_t* filename, int* size)
 		return NULL;
 	}
 
-	pointer_t buf = qn_alloc((size_t)len + 4, uint8_t);
+	void* buf = qn_alloc((size_t)len + 4, uint8_t);
 	qn_file_read(file, buf, 0, (int)len);
 
 	qn_file_delete(file);
@@ -916,14 +916,14 @@ pointer_t qn_file_alloc_l(const wchar_t* filename, int* size)
 struct qnDir
 {
 #if _MSC_VER
-	wchar_t* name;
+	wchar* name;
 	int					stat;
 	HANDLE				handle;
 	WIN32_FIND_DATA		ffd;
 	char				file[MAX_PATH];
 #else
 	DIR* pd;
-	wchar_t				ufile[QN_MAX_PATH];
+	wchar				ufile[QN_MAX_PATH];
 #endif
 };
 
@@ -938,8 +938,8 @@ qnDir* qn_dir_new(const char* path)
 #if _MSC_VER
 	qn_retval_if_fail(path != NULL, NULL);
 
-	wchar_t uni[MAX_PATH];
-	qn_utf8to16(uni, MAX_PATH - 1, path, 0);
+	wchar uni[MAX_PATH];
+	qn_u8to16(uni, MAX_PATH - 1, path, 0);
 
 	WIN32_FILE_ATTRIBUTE_DATA fad = { 0, };
 	if (!GetFileAttributesEx(uni, GetFileExInfoStandard, &fad))
@@ -947,11 +947,11 @@ qnDir* qn_dir_new(const char* path)
 	if (!(fad.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 		return NULL;
 
-	wchar_t fpath[MAX_PATH];
+	wchar fpath[MAX_PATH];
 	(void)_wfullpath(fpath, uni, MAX_PATH);
 
 	size_t len = wcslen(fpath) + 1/*슬래시*/ + 1/*서픽스*/ + 1/*널*/;
-	wchar_t* suffix = qn_alloc(len, wchar_t);
+	wchar* suffix = qn_alloc(len, wchar);
 	qn_retval_if_fail(suffix, NULL);
 
 	wcscpy_s(suffix, len, fpath);
@@ -995,7 +995,7 @@ qnDir* qn_dir_new(const char* path)
  * @param	flags	사용하지 않음
  * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 개체
  */
-qnDir* qn_dir_new_l(const wchar_t* path)
+qnDir* qn_dir_new_l(const wchar* path)
 {
 #if _MSC_VER
 	qn_retval_if_fail(path != NULL, NULL);
@@ -1006,11 +1006,11 @@ qnDir* qn_dir_new_l(const wchar_t* path)
 	if (!(fad.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 		return NULL;
 
-	wchar_t fpath[MAX_PATH];
+	wchar fpath[MAX_PATH];
 	(void)_wfullpath(fpath, path, MAX_PATH);
 
 	size_t len = wcslen(fpath) + 1/*슬래시*/ + 1/*서픽스*/ + 1/*널*/;
-	wchar_t* suffix = qn_alloc(len, wchar_t);
+	wchar* suffix = qn_alloc(len, wchar);
 	qn_retval_if_fail(suffix, NULL);
 
 	wcscpy_s(suffix, len, fpath);
@@ -1039,7 +1039,7 @@ qnDir* qn_dir_new_l(const wchar_t* path)
 	qn_retval_if_fail(path, NULL);
 
 	char asc[260];
-	qn_utf32to8(asc, 260 - 1, path, 0);
+	qn_u32to8(asc, 260 - 1, path, 0);
 	DIR* pd = opendir(asc);
 	qn_retval_if_fail(pd != NULL, NULL);
 
@@ -1104,7 +1104,7 @@ const char* qn_dir_read(qnDir* self)
 		if (wcscmp(self->ffd.cFileName, L".") == 0 || wcscmp(self->ffd.cFileName, L"..") == 0)
 			continue;
 
-		qn_utf16to8(self->file, MAX_PATH - 1, self->ffd.cFileName, 0);
+		qn_u16to8(self->file, MAX_PATH - 1, self->ffd.cFileName, 0);
 
 		return self->file;
 	}
@@ -1123,7 +1123,7 @@ const char* qn_dir_read(qnDir* self)
  * @param[in]	self	디렉토리 개체
  * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 파일 이름
  */
-const wchar_t* qn_dir_read_l(qnDir* self)
+const wchar* qn_dir_read_l(qnDir* self)
 {
 #if _MSC_VER
 	for (;;)
@@ -1166,7 +1166,7 @@ const wchar_t* qn_dir_read_l(qnDir* self)
 		return NULL;
 	else
 	{
-		qn_utf8to32(self->ufile, 260 - 1, ent->d_name, 0);
+		qn_u8to32(self->ufile, 260 - 1, ent->d_name, 0);
 		return self->ufile;
 	}
 #endif
