@@ -191,6 +191,9 @@ static bool _es2_construct(qgRdh* g, int flags)
 
 	self->ss.scissor = false;
 
+	// 세이더 자동 유니폼
+	es2shd_init_auto_uniforms();
+
 	return true;
 }
 
@@ -581,11 +584,11 @@ static qgBuf* _es2_create_buffer(qgRdh* g, qgBufType type, int count, int stride
 		ptr = NULL;
 	}
 
-	int size = count * stride;
-	ES2FUNC(glBufferData)(gl_type, (GLsizeiptr)size, ptr, gl_usage);
+	GLsizeiptr size = count * stride;
+	ES2FUNC(glBufferData)(gl_type, size, ptr, gl_usage);
 
 	// 준비는 끝났다
-	es2Buf* buf = _es2buf_allocator(gl_id, gl_type, gl_usage, stride, size, type);
+	es2Buf* buf = _es2buf_allocator(gl_id, gl_type, gl_usage, stride, (int)size, type);
 	if (buf == NULL)
 	{
 		ES2FUNC(glDeleteBuffers)(1, &gl_id);
@@ -643,7 +646,7 @@ static bool _es2_draw(qgRdh* g, qgTopology tpg, int vcount)
 	es2_commit_layout(self);
 
 	GLenum gl_tpg = es2_conv_topology(tpg);
-	ES2FUNC(glDrawArrays)(tpg, 0, (GLsizei)vcount);
+	ES2FUNC(glDrawArrays)(gl_tpg, 0, (GLsizei)vcount);
 	return true;
 }
 

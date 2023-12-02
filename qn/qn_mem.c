@@ -191,12 +191,12 @@ static void _qn_mp_clear(void)
 	for (memBlock* next = NULL, *node = _qn_mp.frst; node; node = next)
 	{
 		if (node->line)
-			qn_debug_outputf(false, "Memory Profiler", "%s(%Lu) : %Lu(%Lu) : 0x%p", node->desc, node->line, node->size, node->block, _memptr(node));
+			qn_debug_outputf(false, "Memory Profiler", "\t%s(%Lu) : %Lu(%Lu) : 0x%p", node->desc, node->line, node->size, node->block, _memptr(node));
 		else
-			qn_debug_outputf(false, "Memory Profiler", "%Lu(%Lu) : 0x%p", node->size, node->block, _memptr(node));
+			qn_debug_outputf(false, "Memory Profiler", "\t%Lu(%Lu) : 0x%p", node->size, node->block, _memptr(node));
 		char sz[64];
 		qn_memdmp(_memptr(node), QN_MIN(32, node->size), sz, 64 - 1);
-		qn_debug_outputf(false, "Memory Profiler", "    {%s}", sz);
+		qn_debug_outputf(false, "Memory Profiler", "\t\t{%s}", sz);
 		next = node->next;
 		sum += node->block;
 
@@ -334,7 +334,7 @@ void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 		qn_debug_outputf(false, "Memory Profiler", "try to realloc invalid memory : 0x%p", ptr);
 		char sz[260];
 		qn_memdmp(ptr, 19, sz, 260 - 1);
-		qn_debug_outputf(true, "Memory Profiler", "    {%s}", sz);
+		qn_debug_outputf(true, "Memory Profiler", "\t\t{%s}", sz);
 		return NULL;
 	}
 #endif
@@ -385,7 +385,7 @@ void qn_mpffree(void* ptr)
 		qn_debug_outputf(false, "Memory Profiler", "try to free invalid memory : 0x%p", ptr);
 		char sz[260];
 		qn_memdmp(ptr, 19, sz, 260 - 1);
-		qn_debug_outputf(true, "Memory Profiler", "    {%s}", sz);
+		qn_debug_outputf(true, "Memory Profiler", "\t\t{%s}", sz);
 		return;
 	}
 #endif

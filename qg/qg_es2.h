@@ -170,6 +170,7 @@ struct es2Shd
 	bool				linked;
 };
 extern es2Shd* _es2shd_allocator(const char* name);
+extern void es2shd_init_auto_uniforms(void);
 
 // 버퍼
 struct es2Buf

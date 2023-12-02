@@ -294,7 +294,6 @@ static void _es2vlo_dispose(qgVlo* g)
 //////////////////////////////////////////////////////////////////////////
 // 세이더
 
-static void es2shd_init_auto_uniforms(void);
 static void es2shd_match_auto_uniform(es2ShaderUniform* v);
 
 static void _es2shd_dispose(qgShd* g);
@@ -339,14 +338,13 @@ static void es2shd_handle_unload(es2RefHandle* ptr, GLuint gl_program)
 
 es2Shd* _es2shd_allocator(const char* name)
 {
-	es2shd_init_auto_uniforms();
 	es2Shd* self = qn_alloc_zero_1(es2Shd);
 	qn_retval_if_fail(self, NULL);
 	qm_set_desc(self, ES2FUNC(glCreateProgram)());
 	if (name != NULL)
-		qn_strncpy(self->base.name, 64, name, 63);
+		qn_strncpy(self->base.name, QN_COUNTOF(self->base.name), name, QN_COUNTOF(self->base.name) - 1);
 	else
-		qn_snprintf(self->base.name, 64, "%s#%Lu", "ES2Shd", qg_number());
+		qn_snprintf(self->base.name, QN_COUNTOF(self->base.name), "%s#%Lu", "ES2Shd", qg_number());
 	return qm_init(self, &_vt_es2shd);
 }
 
@@ -833,13 +831,13 @@ static bool _es2shd_auto_uniform_inited = false;
 
 static struct es2ShaderAutoInfo
 {
-	size_t				hash;
 	const char*			name;
 	qgShdAuto			type;
 	void(*func)(es2Rdh*, GLint, const qgVarShader*);
+	size_t				hash;
 } _es2shd_auto_uniforms[QGSHA_MAX_VALUE] =
 {
-#define ES2SAI(name, type, func) { 0, "s" QN_STRING(name), type, func }
+#define ES2SAI(name, type, func) { "s" QN_STRING(name), type, func, 0 }
 	ES2SAI(OrthoProj, QGSHA_ORTHO_PROJ, es2shd_auto_otho_proj),
 	ES2SAI(World, QGSHA_WORLD, es2shd_auto_world),
 	ES2SAI(View, QGSHA_VIEW, es2shd_auto_view),
@@ -868,7 +866,7 @@ static struct es2ShaderAutoInfo
 };
 
 // 자동 초기화
-static void es2shd_init_auto_uniforms(void)
+void es2shd_init_auto_uniforms(void)
 {
 	qn_ret_if_ok(_es2shd_auto_uniform_inited);
 	_es2shd_auto_uniform_inited = true;

@@ -112,7 +112,7 @@ static int _qn_dbg_out_trace(const char* head, const char* text)
 	size_t len = qn_snprintf(NULL, 0, fmt, head, text);
 	char* buf = qn_alloca(len + 1, char);
 	qn_snprintf(buf, len + 1, fmt, head, text);
-	_qn_dbg_out_str(text);
+	_qn_dbg_out_str(buf);
 	qn_freea(buf);
 
 	return (int)len;
