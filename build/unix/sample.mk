@@ -10,15 +10,13 @@ EMM=
 endif
 
 # 기본값
+CC=cc
 DEFS=
-WARNS=-W -Wall -Wextra -Wno-missing-field-initializers
-CFLAGS=-O3 -fPIC $(EMM) $(WARNS) $(DEFS)
 INCDIR=-I../../inc
-LIB=-lqn -lz -lm
 
 # 플래그
-CFLAG=$(CFLAGS) $(INCDIR)
-LFLAG=$(LIB)
+CFLAGS=$(EMM) $(INCDIR)
+LFLAGS=-lqn -lz -lm
 
 #
 VPATH=src:../../zconsole/sample
@@ -42,9 +40,9 @@ rebuild: clean all
 install: 
 
 %.s: %.c
-	$(CC) -c $(CFLAG) -S "$<"
+	$(CC) -c $(CFLAGS) -S -fverbose-asm "$<"
 
 $(DEST): $(SRC)
-	$(CC) -o $@ $(CFLAG) $(LFLAG)  "$<"
+	$(CC) -o $@ $(CFLAGS) $(LFLAGS)  "$<"
 
 

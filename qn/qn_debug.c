@@ -21,7 +21,7 @@ static struct qnDebugImpl
 
 	bool			debugger;
 	bool			redirect;
-} _qn_dbg = { NULL, 3, "qs", false, false };
+} _qn_dbg = { NULL, 3, "qs", };
 
 //
 void _qn_dbg_init(void)
@@ -131,7 +131,7 @@ int qn_debug_assert(const char* expr, const char* mesg, const char* filename, in
 	qn_retval_if_fail(expr, -1);
 
 	if (!mesg)
-		mesg="";
+		mesg = "";
 
 	const char* fmt = "%s: %s(filename=\"%s\", line=%d)\n";
 	size_t len = qn_snprintf(NULL, 0, fmt, expr, mesg, filename, line);
@@ -157,7 +157,7 @@ void qn_debug_halt(const char* cls, const char* msg)
 	if (!cls)
 		cls = "unknown";
 	if (!msg)
-		msg ="";
+		msg = "";
 
 	const char* fmt = "HALT [%s] %s\n";
 	size_t len = qn_snprintf(NULL, 0, fmt, cls, msg);
@@ -183,9 +183,11 @@ int qn_debug_outputs(bool breakpoint, const char* head, const char* mesg)
 
 int qn_debug_outputf(bool breakpoint, const char* head, const char* fmt, ...)
 {
-	va_list va;
+	va_list va, vq;
 	va_start(va, fmt);
-	size_t size = qn_vsnprintf(NULL, 0, fmt, va);
+	va_copy(vq, va);
+	size_t size = qn_vsnprintf(NULL, 0, fmt, vq);
+	va_end(vq);
 	char* buf = qn_alloca(size + 1, char);
 	qn_vsnprintf(buf, size + 1, fmt, va);
 	va_end(va);
@@ -208,9 +210,11 @@ int qn_outputs(const char* mesg)
 
 int qn_outputf(const char* fmt, ...)
 {
-	va_list va;
+	va_list va, vq;
 	va_start(va, fmt);
-	size_t size = qn_vsnprintf(NULL, 0, fmt, va);
+	va_copy(vq, va);
+	size_t size = qn_vsnprintf(NULL, 0, fmt, vq);
+	va_end(vq);
 	char* buf = qn_alloca(size + 1, char);
 	qn_vsnprintf(buf, size + 1, fmt, va);
 	va_end(va);

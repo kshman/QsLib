@@ -389,7 +389,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const void* data, int size)
 			}
 
 			// 이름 + 인수
-			qn_bstr_init(btag, NULL);
+			qn_bstr_clear(btag);
 
 			for (; i < size; i++)
 			{
@@ -419,7 +419,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const void* data, int size)
 			if (hasclosure)
 			{
 				// 닫는애는 인수가 없으므로
-				qn_bstr_init(barg, NULL);
+				qn_bstr_clear(barg);
 				qn_bstr_set_bstr(bname, btag);
 				qn_bstr_upper(bname);
 			}
@@ -433,7 +433,7 @@ bool qn_mlu_load_buffer(qnMlu* self, const void* data, int size)
 				if (at < 0)
 				{
 					// 이름만 있음
-					qn_bstr_init(barg, NULL);
+					qn_bstr_clear(barg);
 					qn_bstr_set_bstr(bname, btag);
 					qn_bstr_upper(bname);
 				}

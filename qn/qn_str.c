@@ -24,7 +24,10 @@ int qn_vasprintf(char** out, const char* fmt, va_list va)
 	qn_retval_if_fail(out != NULL, -2);
 	qn_retval_if_fail(fmt != NULL, -1);
 
-	size_t len = dopr(NULL, 0, fmt, va);
+	va_list vq;
+	va_copy(vq, va);
+	size_t len = dopr(NULL, 0, fmt, vq);
+	va_end(vq);
 	if (len == 0)
 		*out = NULL;
 	else
@@ -41,7 +44,10 @@ char* qn_vapsprintf(const char* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, NULL);
 
-	size_t len = dopr(NULL, 0, fmt, va);
+	va_list vq;
+	va_copy(vq, va);
+	size_t len = dopr(NULL, 0, fmt, vq);
+	va_end(vq);
 	if (len == 0)
 		return NULL;
 

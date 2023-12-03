@@ -2059,7 +2059,14 @@ QN_INLINE bool qn_line3_in(const qnLine3* p, const qnVec3* v)
 QN_INLINE halfint qn_float2half(const float v)
 {
 	QN_MEM_BARRIER();
-	uint u = *(const uint*)&v;
+#if __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif
+	uint u = *(uint*)&v;
+#if __GNUC__
+#pragma GCC diagnostic pop
+#endif
 	uint s = (u & 0x80000000U) >> 16U;
 	u = u & 0x7FFFFFFFU;
 
@@ -2106,7 +2113,14 @@ QN_INLINE float qn_half2float(const halfint v)
 		e = (uint)-112;
 
 	uint r = ((v & 0x8000) << 16) | ((e + 112) << 23) | (m << 13);
+#if __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif
 	return *(float*)&r;
+#if __GNUC__
+#pragma GCC diagnostic pop
+#endif
 }
 
 // vec half

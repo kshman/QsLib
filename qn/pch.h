@@ -39,13 +39,9 @@
 #if _MSC_VER
 #pragma warning(disable:4100)		// 참조되지 않은 정식 매개 변수입니다.
 #pragma warning(disable:4127)		// 조건식이 상수입니다.
-//#pragma warning(disable:4505)		// 참조되지 않은 지역 함수를 제거했습니다.
 #endif
-
-//
 #if __GNUC__
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-//#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-//#pragma GCC diagnostic ignored "-Wmissing-braces"
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #endif
 
