@@ -35,10 +35,8 @@
 #else
 #	if defined(_WIN32)
 #		define QNAPI					__declspec(dllexport)
-#	elif defined(__GNUC__)
-#		define QNAPI					__attribute__((__visibility__("default")))
 #	else
-#		define QNAPI					extern
+#		define QNAPI					__attribute__((__visibility__("default")))
 #	endif
 #endif
 
@@ -58,21 +56,28 @@
 #endif
 
 // SDL
+#if _MSC_VER
 #include "SDL/SDL.h"
 #include "SDL/SDL_system.h"
 #include "SDL/SDL_opengles2.h"
 #include "SDL/SDL_keycode.h"
 #include "SDL/SDL_mouse.h"
+#else
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_system.h>
+#include <SDL2/SDL_opengles2.h>
+#include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_mouse.h>
+#endif
 
 //
 #if _MSC_VER
 #pragma warning(disable:4100)		// 참조되지 않은 정식 매개 변수입니다.
 #pragma warning(disable:4127)		// 조건식이 상수입니다.
 #endif
-
-//
 #if __GNUC__
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #endif
 
 #endif //PCH_H

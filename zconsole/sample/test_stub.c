@@ -13,7 +13,7 @@ int main()
 		qgEvent ev;
 		while (qg_stub_poll(stub, &ev))
 		{
-			qn_debug_output(false, "msg[%d]\n", ev.ev);
+			qn_debug_outputf(false, "TEST", "msg[%d]", ev.ev);
 		}
 	}
 

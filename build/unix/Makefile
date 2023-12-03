@@ -16,18 +16,22 @@ endif
 # 전체 빌드
 all: $(DEST)
 	$(MAKE) -f qn.mk all
+	$(MAKE) -f qg.mk all
 
 asm: $(DEST)
 	$(MAKE) -f qn.mk asm
+	$(MAKE) -f qg.mk asm
 
 clean:
 	$(MAKE) -f qn.mk clean
+	$(MAKE) -f qg.mk clean
 	$(MAKE) -f sample.mk clean
 
 rebuild: clean all
 
 install: all
 	$(MAKE) -f qn.mk install
+	$(MAKE) -f qg.mk install
 
 sample:
 	$(MAKE) -f sample.mk clean all

@@ -87,7 +87,7 @@ bool _stub_mouse_clicks(qgStub* self, qImButton button, qimTrack track)
 	{
 		if (m->clk.tick == 0)
 		{
-			m->clk.tick = (uint32_t)qn_tick();
+			m->clk.tick = (uint)qn_tick();
 			m->clk.loc = m->pt;
 			m->clk.btn = button;
 		}
@@ -95,7 +95,7 @@ bool _stub_mouse_clicks(qgStub* self, qImButton button, qimTrack track)
 		{
 			if (m->clk.btn == button)
 			{
-				uint32_t d = (uint32_t)qn_tick() - m->clk.tick;
+				uint d = (uint)qn_tick() - m->clk.tick;
 				if (d < m->lim.tick)
 				{
 					// 더블 클릭으로 인정
@@ -172,7 +172,7 @@ const qgUimKey* qg_stub_get_key(qgStub* self)
 //
 bool qg_stub_test_key(qgStub* self, qIkKey key)
 {
-	return (uint32_t)key < QIK_MAX_VALUE ? self->key.key[key] : false;
+	return (uint)key < QIK_MAX_VALUE ? self->key.key[key] : false;
 }
 
 //
@@ -202,7 +202,7 @@ double qg_stub_get_def_adv(qgStub* self)
 //
 void qg_stub_set_delay(qgStub* self, int delay)
 {
-	self->delay = (uint32_t)QN_CLAMP(delay, 1, 1000);
+	self->delay = (uint)QN_CLAMP(delay, 1, 1000);
 }
 
 //

@@ -74,9 +74,9 @@ const char* qicstr(qIcButton button)
 
 #ifdef SDL_keycode_h_
 //
-qIkKey _sdlk_to_qik(uint32_t sdlk)
+qIkKey _sdlk_to_qik(uint sdlk)
 {
-	static uint8_t _keycodes[] =
+	static byte _keycodes[] =
 	{
 		/*0*/					0,
 		/*1*/					0,
@@ -207,7 +207,7 @@ qIkKey _sdlk_to_qik(uint32_t sdlk)
 		/*126*/					0,
 		/*127/DELETE*/			QIK_DEL,
 	};
-	static uint8_t _scancodes57[] =
+	static byte _scancodes57[] =
 	{
 		/*0/57/CAPSLOCK*/		QIK_CAPSLOCK,
 		/*1/58/F1*/				QIK_F1,
@@ -269,7 +269,7 @@ qIkKey _sdlk_to_qik(uint32_t sdlk)
 		/*57/114/F23*/			QIK_F23,
 		/*58/115/F24*/			QIK_F24,
 	};
-	static uint8_t _scancodes224[] =
+	static byte _scancodes224[] =
 	{
 		/*0/224/LCTRL*/			QIK_LCTRL,
 		/*1/225/LSHIFT*/		QIK_LSHIFT,
