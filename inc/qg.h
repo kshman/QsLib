@@ -650,12 +650,10 @@ qvt_name(qgRdh)
 	bool (*set_index)(qgRdh*, qgBuf*);
 	bool (*set_vertex)(qgRdh*, qgLoStage, qgBuf*);
 
-	bool (*primitive_begin)(qgRdh*, qgTopology, int, int, void**);
-	void (*primitive_end)(qgRdh*);
-	bool (*indexed_primitive_begin)(qgRdh*, qgTopology, int, int, void**, int, int, void**);
-	void (*indexed_primitive_end)(qgRdh*);
 	bool (*draw)(qgRdh*, qgTopology, int);
 	bool (*draw_indexed)(qgRdh*, qgTopology, int);
+	bool (*ptr_draw)(qgRdh*, qgTopology, int, int, const void*);
+	bool (*ptr_draw_indexed)(qgRdh*, qgTopology, int, int, const void*, int, int, const void*);
 };
 
 QNAPI qgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, int flags);
@@ -689,10 +687,10 @@ QNAPI void qg_rdh_set_shader(qgRdh* self, qgShd* shader, qgVlo* layout);
 QNAPI bool qg_rdh_set_index(qgRdh* g, void* buffer);
 QNAPI bool qg_rdh_set_vertex(qgRdh* g, qgLoStage stage, void* buffer);
 
-QNAPI void qg_rdh_primitive_draw(qgRdh* g, qgTopology tpg, int count, int stride, const void* data);
-QNAPI void qg_rdh_primitive_draw_indexed(qgRdh* g, qgTopology tpg, int vcount, int vstride, const void* vdata, int icount, int istride, const void* idata);
 QNAPI bool qg_rdh_draw(qgRdh* self, qgTopology tpg, int vcount);
 QNAPI bool qg_rdh_draw_indexed(qgRdh* self, qgTopology tpg, int icount);
+QNAPI bool qg_rdh_ptr_draw(qgRdh* g, qgTopology tpg, int vcount, int vstride, const void* vdata);
+QNAPI bool qg_rdh_ptr_draw_indexed(qgRdh* g, qgTopology tpg, int vcount, int vstride, const void* vdata, int icount, int istride, const void* idata);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -741,6 +739,7 @@ QNAPI void qg_shd_set_intr(qgShd* self, qgVarShaderFunc func, void* data);
 
 QNAPI bool qg_shd_bind(qgShd* self, qgShdType type, const void* data, int size, int flags);
 QNAPI bool qg_shd_bind_shd(qgShd* self, qgShdType type, qgShd* shader);
+QNAPI bool qg_shd_bind_file(qgShd* self, qgShdType type, const char* filename, int flags);
 QNAPI bool qg_shd_link(qgShd* self);
 
 

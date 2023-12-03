@@ -43,6 +43,16 @@ bool qg_shd_bind_shd(qgShd* self, qgShdType type, qgShd* shader)
 	return qvt_cast(self, qgShd)->bind_shd(self, type, shader);
 }
 
+bool qg_shd_bind_file(qgShd* self, qgShdType type, const char* filename, int flags)
+{
+	int size;
+	void* data = qn_file_alloc(filename, &size);
+	qn_retval_if_fail(data, false);
+	bool ret = qvt_cast(self, qgShd)->bind(self, type, data, size, flags);
+	qn_free(data);
+	return ret;
+}
+
 bool qg_shd_link(qgShd* self)
 {
 	return qvt_cast(self, qgShd)->link(self);

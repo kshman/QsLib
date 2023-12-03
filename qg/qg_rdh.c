@@ -300,37 +300,6 @@ bool qg_rdh_set_vertex(qgRdh* self, qgLoStage stage, void* buffer)
 	return qvt_cast(self, qgRdh)->set_vertex(self, stage, buffer);
 }
 
-void qg_rdh_primitive_draw(qgRdh* self, qgTopology tpg, int count, int stride, const void* data)
-{
-	qn_ret_if_fail(count > 0 && stride > 0 && data);
-	void* vert;
-	if (!qvt_cast(self, qgRdh)->primitive_begin(self, tpg, count, stride, &vert))
-		return;
-	memcpy(vert, data, (size_t)(count * stride));
-	qvt_cast(self, qgRdh)->primitive_end(self);
-
-	self->invokes.invokes++;
-	self->invokes.draws++;
-	self->invokes.primitives += count;
-}
-
-void qg_rdh_primitive_draw_indexed(qgRdh* self, qgTopology tpg, int vcount, int vstride, const void* vdata, int icount, int istride, const void* idata)
-{
-	qn_ret_if_fail(vcount > 0 && vstride > 0 && vdata);
-	qn_ret_if_fail(icount > 0 && istride > 0 && idata);
-	void* vert;
-	void* ind;
-	if (!qvt_cast(self, qgRdh)->indexed_primitive_begin(self, tpg, vcount, vstride, &vert, icount, istride, &ind))
-		return;
-	memcpy(vert, vdata, (size_t)(vcount * vstride));
-	memcpy(ind, idata, (size_t)(icount * istride));
-	qvt_cast(self, qgRdh)->indexed_primitive_end(self);
-
-	self->invokes.invokes++;
-	self->invokes.draws++;
-	self->invokes.primitives += vcount;
-}
-
 bool qg_rdh_draw(qgRdh* self, qgTopology tpg, int vcount)
 {
 	qn_retval_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
@@ -350,3 +319,24 @@ bool qg_rdh_draw_indexed(qgRdh* self, qgTopology tpg, int icount)
 	self->invokes.draws++;
 	return qvt_cast(self, qgRdh)->draw_indexed(self, tpg, icount);
 }
+
+bool qg_rdh_ptr_draw(qgRdh* self, qgTopology tpg, int vcount, int vstride, const void* vdata)
+{
+	qn_retval_if_fail(vcount > 0 && vstride >= 0 && vdata, false);
+
+	self->invokes.invokes++;
+	self->invokes.draws++;
+	return qvt_cast(self, qgRdh)->ptr_draw(self, tpg, vcount, vstride, vdata);
+
+}
+
+bool qg_rdh_ptr_draw_indexed(qgRdh* self, qgTopology tpg, int vcount, int vstride, const void* vdata, int icount, int istride, const void* idata)
+{
+	qn_retval_if_fail(vcount > 0 && vstride >= 0 && vdata, false);
+	qn_retval_if_fail(icount > 0 && idata, false);
+
+	self->invokes.invokes++;
+	self->invokes.draws++;
+	return qvt_cast(self, qgRdh)->ptr_draw_indexed(self, tpg, vcount, vstride, vdata, icount, istride, idata);
+}
+

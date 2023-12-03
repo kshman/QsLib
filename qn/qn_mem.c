@@ -150,7 +150,7 @@ static struct qnMemProof
 	size_t			count;
 	size_t			block_size;
 
-#if _MSC_VER
+#if _QN_WINDOWS_
 	HANDLE			heap;
 #endif
 
@@ -173,7 +173,7 @@ void _qn_mp_init(void)
 	mtx_init(&_qn_mp.lock, mtx_plaine | mtx_recursive);
 #endif
 
-#if _MSC_VER
+#if _QN_WINDOWS_
 	_qn_mp.heap = HeapCreate(0/*|HEAP_NO_SERIALIZE*/, MEMORY_BLOCK_SIZE, 0);
 	ULONG hfv = 2;
 	HeapSetInformation(_qn_mp.heap, HeapCompatibilityInformation, &hfv, sizeof(ULONG));
@@ -200,7 +200,7 @@ static void _qn_mp_clear(void)
 		next = node->next;
 		sum += node->block;
 
-#if _MSC_VER
+#if _QN_WINDOWS_
 		HeapFree(_qn_mp.heap, 0, node);
 #else
 		free(node);
@@ -219,7 +219,7 @@ void _qn_mp_dispose(void)
 {
 	_qn_mp_clear();
 
-#if _MSC_VER
+#if _QN_WINDOWS_
 	if (_qn_mp.heap)
 	{
 		SIZE_T s;
@@ -286,7 +286,7 @@ void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 
 	size_t block = _memsize(size);
 	memBlock* node = (memBlock*)
-#if _MSC_VER
+#if _QN_WINDOWS_
 		HeapAlloc(_qn_mp.heap, zero ? HEAP_ZERO_MEMORY : 0, block);
 #else
 		(zero ? calloc(block, 1) : malloc(block));
@@ -328,7 +328,7 @@ void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 		qn_debug_outputf(true, "Memory Profiler", "try to realloc null memory node : 0x%p", ptr);
 		return NULL;
 	}
-#if _MSC_VER
+#if _QN_WINDOWS_
 	if (HeapValidate(_qn_mp.heap, 0, node) == 0 || node->sign != MEMORY_SIGN_HEAD)
 	{
 		qn_debug_outputf(false, "Memory Profiler", "try to realloc invalid memory : 0x%p", ptr);
@@ -349,10 +349,10 @@ void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 
 	// 재할당 하거나 새 메모리
 	node = (memBlock*)
-#if _MSC_VER
+#if _QN_WINDOWS_
 		HeapReAlloc(_qn_mp.heap, 0, node, block);
 #else
-		realloc(node, block));
+		realloc(node, block);
 #endif
 		if (!node)
 		{
@@ -379,7 +379,7 @@ void qn_mpffree(void* ptr)
 		qn_debug_outputf(true, "Memory Profiler", "try to free null memory node : 0x%p", ptr);
 		return;
 	}
-#if _MSC_VER
+#if _QN_WINDOWS_
 	if (HeapValidate(_qn_mp.heap, 0, node) == 0 || node->sign != MEMORY_SIGN_HEAD)
 	{
 		qn_debug_outputf(false, "Memory Profiler", "try to free invalid memory : 0x%p", ptr);
@@ -393,7 +393,7 @@ void qn_mpffree(void* ptr)
 	node->sign = MEMORY_SIGN_FREE;
 	_qn_mp_del(node);
 
-#if _MSC_VER
+#if _QN_WINDOWS_
 	HeapFree(_qn_mp.heap, 0, node);
 #else
 	free(node);

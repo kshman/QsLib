@@ -31,12 +31,10 @@ static void _es2_set_shader(qgRdh* g, qgShd* shader, qgVlo* layout);
 static bool _es2_set_index(qgRdh* g, qgBuf* buffer);
 static bool _es2_set_vertex(qgRdh* g, qgLoStage stage, qgBuf* buffer);
 
-static bool _es2_primitive_begin(qgRdh* g, qgTopology tpg, int count, int stride, void** pptr);
-static void _es2_primitive_end(qgRdh* g);
-static bool _es2_indexed_primitive_begin(qgRdh* g, qgTopology tpg, int vcount, int vstride, void** pvptr, int icount, int istride, void** piptr);
-static void _es2_indexed_primitive_end(qgRdh* g);
 static bool _es2_draw(qgRdh* g, qgTopology tpg, int vcount);
 static bool _es2_draw_indexed(qgRdh* g, qgTopology tpg, int icount);
+static bool _es2_ptr_draw(qgRdh* g, qgTopology tpg, int vcount, int vstride, const void* vdata);
+static bool _es2_ptr_draw_indexed(qgRdh* g, qgTopology tpg, int vcount, int vstride, const void* vdata, int icount, int istride, const void* idata);
 
 qvt_name(qgRdh) _vt_es2 =
 {
@@ -60,12 +58,10 @@ qvt_name(qgRdh) _vt_es2 =
 	.set_index = _es2_set_index,
 	.set_vertex = _es2_set_vertex,
 
-	.primitive_begin = _es2_primitive_begin,
-	.primitive_end = _es2_primitive_end,
-	.indexed_primitive_begin = _es2_indexed_primitive_begin,
-	.indexed_primitive_end = _es2_indexed_primitive_end,
 	.draw = _es2_draw,
 	.draw_indexed = _es2_draw_indexed,
+	.ptr_draw = _es2_ptr_draw,
+	.ptr_draw_indexed = _es2_ptr_draw_indexed,
 };
 
 // 할당
@@ -603,28 +599,6 @@ static qgBuf* _es2_create_buffer(qgRdh* g, qgBufType type, int count, int stride
 	return qm_cast(buf, qgBuf);
 }
 
-// 프리미티브 시작
-static bool _es2_primitive_begin(qgRdh* g, qgTopology tpg, int count, int stride, void** pptr)
-{
-	return false;
-}
-
-// 프리미티브 끝
-static void _es2_primitive_end(qgRdh* g)
-{
-}
-
-// 인덱스 프리미티브 시작
-static bool _es2_indexed_primitive_begin(qgRdh* g, qgTopology tpg, int vcount, int vstride, void** pvptr, int icount, int istride, void** piptr)
-{
-	return false;
-}
-
-// 인덱스 프리미티브 끝
-static void _es2_indexed_primitive_end(qgRdh* g)
-{
-}
-
 // 토폴로지 변환
 static GLenum es2_conv_topology(qgTopology tpg)
 {
@@ -646,7 +620,7 @@ static bool _es2_draw(qgRdh* g, qgTopology tpg, int vcount)
 {
 	es2Rdh* self = qm_cast(g, es2Rdh);
 	es2Pending* pd = &self->pd;
-	qn_retval_if_fail(pd->vlo && pd->shd && pd->vb[0], false);
+	qn_retval_if_fail(pd->vlo && pd->shd, false);
 
 	es2_commit_shader(self);
 	es2_commit_layout(self);
@@ -661,11 +635,11 @@ static bool _es2_draw_indexed(qgRdh* g, qgTopology tpg, int icount)
 {
 	es2Rdh* self = qm_cast(g, es2Rdh);
 	es2Pending* pd = &self->pd;
-	qn_retval_if_fail(pd->vlo && pd->shd && pd->vb[0] && pd->ib, false);
+	qn_retval_if_fail(pd->vlo && pd->shd && pd->ib, false);
 
 	GLenum gl_index =
 		pd->ib->base.stride == sizeof(ushort) ? GL_UNSIGNED_SHORT :
-		pd->ib->base.stride == sizeof(uint32_t) ? GL_UNSIGNED_INT : 0;
+		pd->ib->base.stride == sizeof(uint) ? GL_UNSIGNED_INT : 0;
 	qn_retval_if_fail(gl_index != 0, false);
 	es2_bind_buffer(self, GL_ELEMENT_ARRAY_BUFFER, (GLuint)qm_get_desc(pd->ib));
 
@@ -674,6 +648,42 @@ static bool _es2_draw_indexed(qgRdh* g, qgTopology tpg, int icount)
 
 	GLenum gl_tpg = es2_conv_topology(tpg);
 	ES2FUNC(glDrawElements)(gl_tpg, (GLint)icount, gl_index, NULL);
+	return true;
+}
+
+// 포인터 데이터로 그리기
+static bool _es2_ptr_draw(qgRdh* g, qgTopology tpg, int vcount, int vstride, const void* vdata)
+{
+	es2Rdh* self = qm_cast(g, es2Rdh);
+	es2Pending* pd = &self->pd;
+	qn_retval_if_fail(pd->vlo && pd->shd, false);
+
+	es2_commit_shader(self);
+	es2_commit_layout_ptr(self, vdata, vstride);
+
+	GLenum gl_tpg = es2_conv_topology(tpg);
+	ES2FUNC(glDrawArrays)(gl_tpg, 0, (GLsizei)vcount);
+	return true;
+}
+
+// 포인터 데이터로 그리기 인덱스
+static bool _es2_ptr_draw_indexed(qgRdh* g, qgTopology tpg, int vcount, int vstride, const void* vdata, int icount, int istride, const void* idata)
+{
+	
+	GLenum gl_index;
+	if (istride == sizeof(ushort)) gl_index = GL_UNSIGNED_SHORT;
+	else if (istride == sizeof(uint)) gl_index = GL_UNSIGNED_INT;
+	else return false;
+
+	es2Rdh* self = qm_cast(g, es2Rdh);
+	es2Pending* pd = &self->pd;
+	qn_retval_if_fail(pd->vlo && pd->shd, false);
+
+	es2_commit_shader(self);
+	es2_commit_layout_ptr(self, vdata, vstride);
+
+	GLenum gl_tpg = es2_conv_topology(tpg);
+	ES2FUNC(glDrawElements)(gl_tpg, (GLint)icount, gl_index, idata);
 	return true;
 }
 
