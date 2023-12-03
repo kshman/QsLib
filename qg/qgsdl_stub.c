@@ -9,14 +9,14 @@
 // SDL 스터브
 typedef struct sdlStub sdlStub;
 
-static bool _sdl_construct(qgStub* g, struct stubParam* param);
+static bool _sdl_construct(qgStub* g, void* param);
 static void _sdl_finalize(qgStub* g);
 static bool _sdl_poll(qgStub* g);
 
 qvt_name(qgStub) _vt_sdl =
 {
 	.base.name = "SDLRenderStub",
-	.base.dispose = _stub_dispose,
+	.base.dispose = (paramfunc_t)_stub_dispose,
 	._construct = _sdl_construct,
 	._finalize = _sdl_finalize,
 	._poll = _sdl_poll,
@@ -39,9 +39,10 @@ qgStub* _stub_allocator()
 	return qm_init(self, &_vt_sdl);
 }
 
-bool _sdl_construct(qgStub* g, struct stubParam* param)
+bool _sdl_construct(qgStub* g, void* paramptr)
 {
 	sdlStub* self = qm_cast(g, sdlStub);
+	struct stubParam* param = (struct stubParam*)paramptr;
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 		return false;
@@ -77,7 +78,8 @@ bool _sdl_construct(qgStub* g, struct stubParam* param)
 #elif _QN_ANDROID_
 	self->base.oshandle = self->wminfo.info.android.window;
 #elif _QN_UNIX_
-	self->base.oshandle = self->wminfo.info.x11.window;
+	// SDL 2.0.3에서는 x11.window가 없더라
+	//self->base.oshandle = self->wminfo.info.x11.window;
 #endif
 
 	SDL_GetWindowSize(self->window, &self->base.size.x, &self->base.size.y);
@@ -276,7 +278,7 @@ bool _sdl_poll(qgStub* g)
 						.key.repeat = 0,
 					};
 					qgUimKey* k = &self->base.key;
-					for (int i = 0; i < QN_COUNTOF(k->key); i++)
+					for (int i = 0; i < (int)QN_COUNTOF(k->key); i++)
 					{
 						if (!k->key[i])
 							continue;

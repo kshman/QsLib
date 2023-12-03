@@ -16,33 +16,30 @@ INCDIR=-I../../inc
 
 # 플래그
 CFLAGS=$(EMM) $(INCDIR)
-LFLAGS=-lqn -lz -lm
+LDFLAGS=-lqg -lqn -lz -lSDL2 -lGLESv2 -lm
 
 #
 VPATH=src:../../zconsole/sample
 
 #
-SRC=\
-	test_printf.c
-DEST=$(SRC:.c=)
-ASM=$(SRC:.c=.s)
+DEST=test_printf test_stub test_rdh test_multi_buffer_layout
 
 # build
 all: $(DEST)
 
-asm: $(ASM)
+asm:
 
 clean:
-	rm -f $(DEST) $(ASM)
+	rm -f $(DEST)
 
 rebuild: clean all
 
 install: 
 
-%.s: %.c
-	$(CC) -c $(CFLAGS) -S -fverbose-asm "$<"
+test_printf: test_printf.c
 
-$(DEST): $(SRC)
-	$(CC) -o $@ $(CFLAGS) $(LFLAGS)  "$<"
+test_stub: test_stub.c
 
+test_rdh: test_rdh.c
 
+test_multi_buffer_layout: test_multi_buffer_layout.c

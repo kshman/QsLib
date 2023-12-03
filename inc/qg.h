@@ -20,8 +20,13 @@ typedef struct qgVlo qgVlo;				/**< VERTEX LAYOUT */
 typedef struct qgBuf qgBuf;				/**< BUFFER */
 
 // instance
+#if !_MSC_VER
+extern QNAPI qgStub* qg_stub_instance;
+extern QNAPI qgRdh* qg_rdh_instance;
+#else
 QNAPI qgStub* qg_stub_instance;
 QNAPI qgRdh* qg_rdh_instance;
+#endif
 
 QN_EXTC_BEGIN
 
@@ -322,16 +327,16 @@ typedef struct qgPropPixel
 //
 typedef struct qgPropDepthStencil
 {
-	bool				d_write : 8;
+	uint				d_write : 8;
 	qgCmpOp				d_func : 8;
 
-	bool				f_enable : 8;
+	uint				f_enable : 8;
 	qgCmpOp				f_func : 8;
 	qgStencilOp			f_pass : 8;
 	qgStencilOp			f_fail : 8;
 	qgStencilOp			f_depth : 8;
 
-	bool				b_enable : 8;
+	uint				b_enable : 8;
 	qgCmpOp				b_func : 8;
 	qgStencilOp			b_pass : 8;
 	qgStencilOp			b_fail : 8;

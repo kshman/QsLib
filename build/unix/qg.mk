@@ -10,27 +10,26 @@ EMM=
 endif
 
 # 기본값
+CC=cc
 DEFS=
-WARNS=-W -Wall -Wextra -Wno-missing-field-initializers
-CFLAGS=-O3 -pipe -fPIC -fvisibility=hidden $(EMM) $(WARNS) $(DEFS)
+WARNS=-W -Wall -Wextra
 INCDIR=-I../../inc -I../../qn
-LIB=-lqn -lz -lm
 
 # 플래그
-CFLAG=$(CFLAGS) $(INCDIR)
-LFLAG=$(LIB)
+CFLAGS=-O3 -pipe -fPIC -fvisibility=hidden $(WARNS) $(EMM) $(DEFS) $(INCDIR)
 
 #
-DEST=libqn.so.6
-SOST=libqn.so
+DEST=libqg.so.3
+SOST=libqg.so
 
 #
-VPATH=src:../../qn
+VPATH=src:../../qg
 
 #
 SRC=\
-	PatrickPowell_snprintf.c \
-	qn.c qn_datetime.c qn_debug.c qn_file.c qn_gam.c qn_hash.c qn_math.c qn_mem.c qn_mlu.c qn_sort.c qn_str.c
+	qg.c qg_kmc.c qg_rdh.c qg_rdo.c qg_stub.c \
+	qges2_rdh.c qges2_rdo.c \
+	qgsdl_stub.c
 OBJ=$(SRC:.c=.o)
 ASM=$(SRC:.c=.s)
 LNK=$(notdir $(OBJ))
@@ -50,10 +49,10 @@ install: all
 	ln -sf /usr/lib/$(DEST) /usr/lib/$(SOST)
 
 %.o: %.c
-	$(CC) -c $(CFLAG) -o "$(*F).o" "$<"
+	$(CC) -c $(CFLAGS) -o "$(*F).o" "$<"
 
 %.s: %.c
-	$(CC) -c $(CFLAG) -S "$<"
+	$(CC) -c $(CFLAGS) -S -fverbose-asm "$<"
 
 $(DEST): $(OBJ)
 	$(CC) -shared -Wl,-export-dynamic -Wl,-soname,$@ -o $@ $(LNK)

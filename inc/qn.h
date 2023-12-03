@@ -13,6 +13,11 @@
 //////////////////////////////////////////////////////////////////////////
 // runtime configuration
 
+// compiler check
+#if !(_MSC_VER || __GNUC__)
+#error unknown compiler! (support: MSVC, CLANG, GCC)
+#endif
+
 // platform
 #if _WIN32
 #	define _QN_WINDOWS_					1
@@ -41,11 +46,6 @@
 
 #ifdef _CHAR_UNSIGNED
 #	error "Compiler option: char type must be signed"
-#endif
-
-// compiler check
-#if !(_MSC_VER || __GNUC__)
-#error unknown compiler! (support: MSVC, CLANG, GCC)
 #endif
 
 // compiler specific
@@ -102,10 +102,8 @@
 #	else
 #		if _QN_WINDOWS_
 #			define QNAPI				__declspec(dllimport)
-#		elif __GNUC__
-#			define QNAPI				__attribute__((__visibility__("default")))
 #		else
-#			define QNAPI				extern
+#			define QNAPI				__attribute__((__visibility__("default")))
 #		endif
 #	endif
 #endif

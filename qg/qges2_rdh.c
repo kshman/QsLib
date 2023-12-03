@@ -39,7 +39,7 @@ static bool _es2_ptr_draw_indexed(qgRdh* g, qgTopology tpg, int vcount, int vstr
 qvt_name(qgRdh) _vt_es2 =
 {
 	.base.name = "GLES2Device",
-	.base.dispose = _rdh_dispose,
+	.base.dispose = (paramfunc_t)_rdh_dispose,
 
 	._construct = _es2_construct,
 	._finalize = _es2_finalize,

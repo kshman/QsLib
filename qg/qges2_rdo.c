@@ -85,7 +85,7 @@ void es2_commit_layout(es2Rdh* self)
 				GLint gl_attr = qn_ctnr_nth(shd_attrs, index).attrib;
 				ok |= QN_BIT(gl_attr);
 				es2LayoutProperty* lp = &self->ss.layouts[gl_attr];
-				void* pointer = ((byte*)NULL + le->offset);
+				void* pointer = (void*)(nuint)le->offset;
 				if (!QN_TEST_BIT(self->ss.layout_mask, gl_attr))
 				{
 					QN_SET_BIT(&self->ss.layout_mask, gl_attr, true);
@@ -277,7 +277,7 @@ static void _es2vlo_dispose(qgVlo* g);
 qvt_name(qnGam) _vt_es2vlo =
 {
 	.name = "ES2Vlo",
-	.dispose = _es2vlo_dispose,
+	.dispose = (paramfunc_t)_es2vlo_dispose,
 };
 
 void* _es2vlo_allocator()
@@ -309,7 +309,7 @@ static bool _es2shd_bind_shd(qgShd* g, qgShdType type, qgShd* shaderptr);
 qvt_name(qgShd) _vt_es2shd =
 {
 	.base.name = "ES2Shd",
-	.base.dispose = _es2shd_dispose,
+	.base.dispose = (paramfunc_t)_es2shd_dispose,
 	.bind = _es2shd_bind,
 	.bind_shd = _es2shd_bind_shd,
 	//.bind_name = NULL,
@@ -915,7 +915,7 @@ static bool _es2buf_data(qgBuf* g, const void* data);
 qvt_name(qgBuf) _vt_es2buf =
 {
 	.base.name = "ES2Buf",
-	.base.dispose = _es2buf_dispose,
+	.base.dispose = (paramfunc_t)_es2buf_dispose,
 	.map = _es2buf_map,
 	.unmap = _es2buf_unmap,
 	.data = _es2buf_data,
