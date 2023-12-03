@@ -1,4 +1,4 @@
-# Last modified by KSH 2023-11-25
+# Last modified by KSH 2023-12-04
 #
 
 # 플랫폼
@@ -14,7 +14,7 @@ DEFS=
 WARNS=-W -Wall -Wextra -Wno-missing-field-initializers
 CFLAGS=-O3 -pipe -fPIC -fvisibility=hidden $(EMM) $(WARNS) $(DEFS)
 INCDIR=-I../../inc -I../../qn
-LIB=-lz -lm
+LIB=-lqn -lz -lm
 
 # 플래그
 CFLAG=$(CFLAGS) $(INCDIR)

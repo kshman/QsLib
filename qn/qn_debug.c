@@ -21,7 +21,7 @@ static struct qnDebugImpl
 
 	bool			debugger;
 	bool			redirect;
-} _qn_dbg = { NULL, 3, "qs", false };
+} _qn_dbg = { NULL, 3, "qs", false, false };
 
 //
 void _qn_dbg_init(void)
@@ -92,7 +92,7 @@ static int _qn_dbg_out_ch(int ch)
 	}
 #else
 	if (_qn_dbg.fp != NULL)
-		fputs(s, _qn_dbg.fp);
+		fputc(ch, _qn_dbg.fp);
 #if _QN_ANDROID_
 	if (_qn_dbg.debugger)
 		__android_log_print(ANDROID_LOG_VERBOSE, _qn_dbg.tag, "%c", ch);

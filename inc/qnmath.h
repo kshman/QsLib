@@ -1,5 +1,10 @@
 ﻿#pragma once
 
+#if _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4201)		// L4, nonstandard extension used : nameless struct/union
+#endif
+
 #include <math.h>
 #if _MSC_VER
 #include <intrin.h>
@@ -2125,3 +2130,7 @@ QN_INLINE void qn_vec4h_set(qnVecH4* p, float x, float y, float z, float w)
 	p->z = qn_float2half(z);
 	p->w = qn_float2half(w);
 }
+
+#if _MSC_VER
+#pragma warning(pop)
+#endif

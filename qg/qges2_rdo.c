@@ -50,12 +50,13 @@ void es2_commit_layout(es2Rdh* self)
 	for (int s = 0, index = 0; s < QGLOS_MAX_VALUE; s++)
 	{
 		es2Buf* buf = self->pd.vb[s];
-		const es2LayoutElement* stelm = vlo->es_elm[s];
 		const int stcnt = vlo->es_cnt[s];
 
 		if (buf != NULL)
 		{
 			// 정점 버퍼가 있다
+			const es2LayoutElement* stelm = vlo->es_elm[s];
+
 			GLsizei gl_stride = (GLsizei)vlo->base.stride[s];
 			GLuint gl_buf = (GLuint)qm_get_desc(buf);
 			es2_bind_buffer(self, GL_ARRAY_BUFFER, gl_buf);
@@ -74,7 +75,7 @@ void es2_commit_layout(es2Rdh* self)
 						qn_debug_outputf(true, "ES2Rdh", "unmatched vertex attribute index %d", index);
 						continue;
 					}
-					if (index >= qn_ctnr_count(shd_attrs))		// 인덱스가 세이더 어트리뷰트 갯수 보다 크다
+					if ((size_t)index >= qn_ctnr_count(shd_attrs))		// 인덱스가 세이더 어트리뷰트 갯수 보다 크다
 					{
 						qn_debug_outputf(true, "ES2Rdh", "vertex attribute index overflow: %d (max: %d)", index, qn_ctnr_count(shd_attrs));
 						continue;
@@ -117,7 +118,6 @@ void es2_commit_layout(es2Rdh* self)
 				if (index >= max_attrs)
 					break;
 
-				const es2LayoutElement* le = &stelm[i];
 				if (qg_rdh_caps(self)->test_stage_valid)
 				{
 					if (!QN_TEST_BIT(shd->attr_mask, index))	// 세이더에 해당 데이터가 없으면 패스
@@ -125,7 +125,7 @@ void es2_commit_layout(es2Rdh* self)
 						qn_debug_outputf(true, "ES2Rdh", "unmatched vertex attribute index %d", index);
 						continue;
 					}
-					if (index >= qn_ctnr_count(shd_attrs))		// 인덱스가 세이더 어트리뷰트 갯수 보다 크다
+					if ((size_t)index >= qn_ctnr_count(shd_attrs))		// 인덱스가 세이더 어트리뷰트 갯수 보다 크다
 					{
 						qn_debug_outputf(true, "ES2Rdh", "vertex attribute index overflow: %d (max: %d)", index, qn_ctnr_count(shd_attrs));
 						continue;
@@ -133,7 +133,6 @@ void es2_commit_layout(es2Rdh* self)
 				}
 
 				GLint gl_attr = qn_ctnr_nth(shd_attrs, index).attrib;
-				es2LayoutProperty* lp = &self->ss.layouts[gl_attr];
 				if (QN_TEST_BIT(self->ss.layout_mask, gl_attr))
 				{
 					QN_SET_BIT(&self->ss.layout_mask, gl_attr, false);
@@ -160,18 +159,25 @@ void es2_commit_layout(es2Rdh* self)
 	}
 }
 
-// 사용자 포인터 그리기...인데 이거 ES2에서 됨?
-void es2_commit_layout_up(es2Rdh* self, const void* buffer, GLsizei gl_stride)
+// 사용자 포인터 그리기
+void es2_commit_layout_ptr(es2Rdh* self, const void* buffer, GLsizei gl_stride)
 {
 	es2Shd* shd = self->pd.shd;
 	es2Vlo* vlo = self->pd.vlo;
+
+	if (gl_stride == 0)
+		gl_stride = (GLsizei)vlo->base.stride[0];
+	else if (gl_stride != (GLsizei)vlo->base.stride[0])
+	{
+		qn_debug_outputf(true, "ES2Rdh", "stride is not same %d != %d", gl_stride, vlo->base.stride[0]);
+		return;
+	}
 
 	const int max_attrs = qg_rdh_caps(self)->max_vertex_attrs;
 	const es2CtnShaderAttrib* shd_attrs = &shd->attrs;
 
 	es2LayoutElement* stelm = vlo->es_elm[0];	// 스테이지 0밖에 안씀. 버퍼가 하나니깐
 	int stcnt = vlo->es_cnt[0];
-	qn_verify(gl_stride == (GLsizei)vlo->base.stride[0]);
 
 	es2_bind_buffer(self, GL_ARRAY_BUFFER, 0);	// 버퍼 초기화 안하면 안된다.
 
@@ -188,7 +194,7 @@ void es2_commit_layout_up(es2Rdh* self, const void* buffer, GLsizei gl_stride)
 				qn_debug_outputf(true, "ES2Rdh", "unmatched vertex attribute index %d", index);
 				continue;
 			}
-			if (index >= qn_ctnr_count(shd_attrs))		// 인덱스가 세이더 어트리뷰트 갯수 보다 크다
+			if ((size_t)index >= qn_ctnr_count(shd_attrs))		// 인덱스가 세이더 어트리뷰트 갯수 보다 크다
 			{
 				qn_debug_outputf(true, "ES2Rdh", "vertex attribute index overflow: %d (max: %d)", index, qn_ctnr_count(shd_attrs));
 				continue;
@@ -244,8 +250,8 @@ void es2_commit_shader(es2Rdh* self)
 	{
 		if (self->ss.program != 0)
 		{
-			ES2FUNC(glUseProgram)(0);
 			self->ss.program = 0;
+			ES2FUNC(glUseProgram)(0);
 		}
 		return;
 	}
@@ -254,8 +260,8 @@ void es2_commit_shader(es2Rdh* self)
 	GLuint gl_program = (GLuint)qm_get_desc(shd);
 	if (self->ss.program != gl_program)
 	{
-		ES2FUNC(glUseProgram)(gl_program);
 		self->ss.program = gl_program;
+		ES2FUNC(glUseProgram)(gl_program);
 	}
 
 	// 세이더 값 여기서 넣는다!!!
@@ -436,7 +442,7 @@ static bool _es2shd_bind(qgShd* g, qgShdType type, const void* data, int size, i
 			return false;
 		ES2FUNC(glAttachShader)(handle, self->rvertex->handle);
 	}
-	else if (type = QGSHT_PS)
+	else if (type == QGSHT_PS)
 	{
 		es2shd_handle_unload(self->rfragment, handle);
 		if ((self->rfragment = es2shd_compile(self, GL_FRAGMENT_SHADER, (const char*)data, (GLint)size)) == NULL)
@@ -717,51 +723,56 @@ static void es2shd_auto_world_view_proj(es2Rdh* rdh, GLint handle, const qgVarSh
 static void es2shd_auto_tex_0(es2Rdh* rdh, GLint handle, const qgVarShader* v)
 {
 	qn_verify(v->cnst == QGSHC_INT1);
-	//glUniform1i(handle, 0);
+	ES2FUNC(glUniform1i)(handle, 0);
 }
 
 // QGSHA_TEX1
 static void es2shd_auto_tex_1(es2Rdh* rdh, GLint handle, const qgVarShader* v)
 {
 	qn_verify(v->cnst == QGSHC_INT1);
-	//glUniform1i(handle, 1);
+	ES2FUNC(glUniform1i)(handle, 1);
 }
 
 // QGSHA_TEX2
 static void es2shd_auto_tex_2(es2Rdh* rdh, GLint handle, const qgVarShader* v)
 {
 	qn_verify(v->cnst == QGSHC_INT1);
-	//glUniform1i(handle, 2);
+	ES2FUNC(glUniform1i)(handle, 2);
 }
 
 // QGSHA_TEX3
 static void es2shd_auto_tex_3(es2Rdh* rdh, GLint handle, const qgVarShader* v)
 {
 	qn_verify(v->cnst == QGSHC_INT1);
+	ES2FUNC(glUniform1i)(handle, 3);
 }
 
 // QGSHA_TEX4
 static void es2shd_auto_tex_4(es2Rdh* rdh, GLint handle, const qgVarShader* v)
 {
 	qn_verify(v->cnst == QGSHC_INT1);
+	ES2FUNC(glUniform1i)(handle, 4);
 }
 
 // QGSHA_TEX5
 static void es2shd_auto_tex_5(es2Rdh* rdh, GLint handle, const qgVarShader* v)
 {
 	qn_verify(v->cnst == QGSHC_INT1);
+	ES2FUNC(glUniform1i)(handle, 5);
 }
 
 // QGSHA_TEX6
 static void es2shd_auto_tex_6(es2Rdh* rdh, GLint handle, const qgVarShader* v)
 {
 	qn_verify(v->cnst == QGSHC_INT1);
+	ES2FUNC(glUniform1i)(handle, 6);
 }
 
 // QGSHA_TEX7
 static void es2shd_auto_tex_7(es2Rdh* rdh, GLint handle, const qgVarShader* v)
 {
 	qn_verify(v->cnst == QGSHC_INT1);
+	ES2FUNC(glUniform1i)(handle, 7);
 }
 
 // QGSHA_PROP_VEC0
@@ -917,7 +928,7 @@ es2Buf* _es2buf_allocator(GLuint gl_id, GLenum gl_type, GLenum gl_usage, int str
 
 	qm_set_desc(self, gl_id);
 	self->base.type = type;
-	self->base.stride = stride;
+	self->base.stride = (ushort)stride;
 	self->base.size = size;
 	self->gl_type = gl_type;
 	self->gl_usage = gl_usage;

@@ -138,7 +138,7 @@ struct es2Rdh
 };
 extern void es2_bind_buffer(es2Rdh* self, GLenum type, GLuint id);
 extern void es2_commit_layout(es2Rdh* self);
-extern void es2_commit_layout_up(es2Rdh* self, const void* buffer, GLsizei stride);
+extern void es2_commit_layout_ptr(es2Rdh* self, const void* buffer, GLsizei stride);
 extern void es2_commit_shader(es2Rdh* self);
 
 // 레이아웃
@@ -180,6 +180,6 @@ struct es2Buf
 	GLenum				gl_type;
 	GLenum				gl_usage;
 
-	void*			lockbuf;
+	void*				lockbuf;
 };
 extern es2Buf* _es2buf_allocator(GLuint gl_id, GLenum gl_type, GLenum gl_usage, int stride, int size, qgBufType type);

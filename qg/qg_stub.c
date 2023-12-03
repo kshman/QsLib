@@ -107,7 +107,7 @@ bool _stub_mouse_clicks(qgStub* self, qImButton button, qimTrack track)
 			m->clk.tick = 0;
 		}
 	}
-	else if (track = QIMT_UP)
+	else if (track == QIMT_UP)
 	{
 		// 버튼 업은 검사 안하지
 	}

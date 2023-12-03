@@ -1,4 +1,4 @@
-﻿#include <qs.h>
+﻿#include <qn.h>
 
 int main()
 {

@@ -1,5 +1,10 @@
 ﻿#pragma once
 
+#if _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4201)		// L4, nonstandard extension used : nameless struct/union
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 // version
 #define _QN_VERSION_					202311L
@@ -751,3 +756,7 @@ QNAPI nuint qm_get_desc(void* g);
 QNAPI nuint qm_set_desc(void* g, nuint ptr);
 
 QN_EXTC_END
+
+#if _MSC_VER
+#pragma warning(pop)
+#endif
