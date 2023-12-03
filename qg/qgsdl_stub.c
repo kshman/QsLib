@@ -80,7 +80,7 @@ bool _sdl_construct(qgStub* g, struct stubParam* param)
 	self->base.oshandle = self->wminfo.info.x11.window;
 #endif
 
-	SDL_GetWindowSize(self->window, &self->base.size.width, &self->base.size.height);
+	SDL_GetWindowSize(self->window, &self->base.size.x, &self->base.size.y);
 	SDL_GetWindowPosition(self->window, &self->base.bound.left, &self->base.bound.top);
 	self->base.bound.right = self->base.bound.left + self->base.size.width;
 	self->base.bound.bottom = self->base.bound.top + self->base.size.height;
@@ -122,7 +122,7 @@ static void _sdl_mesg_layout(sdlStub* self)
 {
 	qnPoint prev = self->base.size;
 
-	SDL_GetWindowSize(self->window, &self->base.size.width, &self->base.size.height);
+	SDL_GetWindowSize(self->window, &self->base.size.x, &self->base.size.y);
 	SDL_GetWindowPosition(self->window, &self->base.bound.left, &self->base.bound.top);
 	self->base.bound.right = self->base.bound.left + self->base.size.width;
 	self->base.bound.bottom = self->base.bound.top + self->base.size.height;

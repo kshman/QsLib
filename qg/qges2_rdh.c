@@ -148,6 +148,10 @@ static bool _es2_construct(qgRdh* g, int flags)
 	}
 
 #if _QN_WINDOWS_
+#if _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4152)	//비표준 확장입니다. 식에서 함수/데이터 포인터 변환이 있습니다.
+#endif
 #define DEF_ES2_FUNC(ret, func, params)\
 	QN_STMT_BEGIN{\
 		_es2func.func = SDL_GL_GetProcAddress(#func);\
@@ -158,6 +162,9 @@ static bool _es2_construct(qgRdh* g, int flags)
 	}QN_STMT_END;
 #include "qg_es2func.h"
 #undef DEF_ES2_FUNC
+#if _MSC_VER
+#pragma warning(pop)
+#endif
 #endif
 
 	// capa
@@ -302,7 +309,7 @@ static bool _es2_begin(qgRdh* g)
 // 끝
 static void _es2_end(qgRdh* g)
 {
-	es2Rdh* self = qm_cast(g, es2Rdh);
+	//es2Rdh* self = qm_cast(g, es2Rdh);
 }
 
 // 플러시
@@ -318,8 +325,7 @@ static void _es2_flush(qgRdh* g)
 static void _es2_clear(qgRdh* g, int flag, const qnColor* color, int stencil, float depth)
 {
 	// 도움: https://open.gl/depthstencils
-	es2Rdh* self = qm_cast(g, es2Rdh);
-
+	//es2Rdh* self = qm_cast(g, es2Rdh);
 	GLbitfield cf = 0;
 
 	if (QN_TEST_MASK(flag, QGCLR_STENCIL))
@@ -491,11 +497,11 @@ static qgVlo* _es2_create_layout(qgRdh* g, int count, const qgPropLayout* layout
 	};
 
 	qn_retval_if_fail(count > 0 && layouts != NULL, NULL);
-	es2Rdh* self = qm_cast(g, es2Rdh);
+	//es2Rdh* self = qm_cast(g, es2Rdh);
 
 	// 갯수 파악 및 스테이지 오류 검사
-	size_t accum[QGLOS_MAX_VALUE] = { 0, };
-	for (size_t i = 0; i < count; i++)
+	byte accum[QGLOS_MAX_VALUE] = { 0, };
+	for (int i = 0; i < count; i++)
 	{
 		const qgPropLayout* l = &layouts[i];
 		if ((size_t)l->stage >= QGLOS_MAX_VALUE)
@@ -517,8 +523,8 @@ static qgVlo* _es2_create_layout(qgRdh* g, int count, const qgPropLayout* layout
 	}
 
 	// 데이터 작성
-	size_t offset[QGLOS_MAX_VALUE] = { 0, };
-	for (size_t i = 0; i < count; i++)
+	ushort offset[QGLOS_MAX_VALUE] = { 0, };
+	for (int i = 0; i < count; i++)
 	{
 		const qgPropLayout* l = &layouts[i];
 		es2LayoutElement* e = elms[l->stage]++;
@@ -543,7 +549,7 @@ static qgVlo* _es2_create_layout(qgRdh* g, int count, const qgPropLayout* layout
 // 세이더 만들기
 static qgShd* _es2_create_shader(qgRdh* g, const char* name)
 {
-	es2Rdh* self = qm_cast(g, es2Rdh);
+	//es2Rdh* self = qm_cast(g, es2Rdh);
 	es2Shd* shd = _es2shd_allocator(name);
 	return qm_cast(shd, qgShd);
 }
@@ -667,7 +673,7 @@ static bool _es2_draw_indexed(qgRdh* g, qgTopology tpg, int icount)
 	es2_commit_layout(self);
 
 	GLenum gl_tpg = es2_conv_topology(tpg);
-	ES2FUNC(glDrawElements)(tpg, (GLint)icount, gl_index, NULL);
+	ES2FUNC(glDrawElements)(gl_tpg, (GLint)icount, gl_index, NULL);
 	return true;
 }
 

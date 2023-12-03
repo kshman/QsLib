@@ -59,13 +59,13 @@ qgBufType qg_buf_get_type(qgBuf* self)
 }
 
 // 폭
-uint32_t qg_buf_get_stride(qgBuf* self)
+ushort qg_buf_get_stride(qgBuf* self)
 {
 	return self->stride;
 }
 
 // 버퍼 크기
-uint32_t qg_buf_get_size(qgBuf* self)
+int qg_buf_get_size(qgBuf* self)
 {
 	return self->size;
 }

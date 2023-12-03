@@ -751,7 +751,7 @@ struct qgBuf
 
 	qgBufType			type : 16;
 	ushort				stride;
-	uint				size;
+	int					size;
 };
 
 qvt_name(qgBuf)
@@ -763,8 +763,8 @@ qvt_name(qgBuf)
 };
 
 QNAPI qgBufType qg_buf_get_type(qgBuf* g);
-QNAPI uint qg_buf_get_stride(qgBuf* g);
-QNAPI uint qg_buf_get_size(qgBuf* g);
+QNAPI ushort qg_buf_get_stride(qgBuf* g);
+QNAPI int qg_buf_get_size(qgBuf* g);
 
 QNAPI void* qg_buf_map(qgBuf* self);
 QNAPI bool qg_buf_unmap(qgBuf* self);
