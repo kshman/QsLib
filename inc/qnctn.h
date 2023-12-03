@@ -2,13 +2,12 @@
 
 #if _MSC_VER
 #pragma warning(push)
-#pragma warning(disable:4127)
-#pragma warning(disable:4200)
+#pragma warning(disable:4127)	// conditional expression is constant
+#pragma warning(disable:4200)	// nonstandard extension used : zero-sized array in struct/union
 #endif
-
 #if __GNUC__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
+//#pragma GCC diagnostic ignored "-Warray-bounds"
 #endif
 
 #include <qn.h>
@@ -3284,7 +3283,6 @@ QN_INLINE int qn_bstr_find_char(const void* p, size_t at, char ch)
 	_qn_inl_bstr_sub_bstr(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, (const qnBstr*)(s), pos, len)
 QN_INLINE bool _qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, size_t pos, intptr_t len)
 {
-	qn_retval_if_fail(pos >= 0, false);
 	qn_retval_if_fail(s->len >= pos, false);
 
 	if (len > 0)
@@ -3518,7 +3516,6 @@ QN_INLINE int qn_bwcs_find_char(const void* p, size_t at, wchar_t ch)
 	_qn_inl_bstr_sub_bstr(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, ((qnBwcs*)(s)), pos, len)
 QN_INLINE bool _qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, size_t pos, intptr_t len)
 {
-	qn_retval_if_fail(pos >= 0, false);
 	qn_retval_if_fail(s->len >= pos, false);
 
 	if (len > 0)
@@ -3536,7 +3533,6 @@ QN_EXTC_END
 #if __GNUC__
 #pragma GCC diagnostic pop
 #endif
-
 #if _MSC_VER
 #pragma warning(pop)
 #endif

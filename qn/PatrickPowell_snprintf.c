@@ -1073,6 +1073,8 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 				switch (ch)
 				{
 					case 'd':
+						//printf("[cflags=%d, currlen=%d, maxlen=%d, vmm=%d/%d, flags=%d\n", cflags, (int)currlen, (int)maxlen, vmin, vmax, flags);
+						//QN_FALL_THROUGH;
 					case 'i':       // 부호있는 십진수
 						switch (cflags)
 						{
@@ -1120,7 +1122,7 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 						break;
 
 					case 'X':       // 대문자 부호없는 16진수
-						flags |= DP_F_UP;
+						flags |= DP_F_UP; QN_FALL_THROUGH;
 					case 'x':       // 소문자 부호없는 16진수
 					case 'o':       // 부호없는 8진수
 					case 'b':       // 부호없는 2진수
@@ -1175,7 +1177,7 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 
 					case 'A':       // 실수의 대문자 16진수 표시 (미구현 '%F'로)
 					case 'F':       // 실수 대문자
-						flags |= DP_F_UP;
+						flags |= DP_F_UP; QN_FALL_THROUGH;
 					case 'a':       // 실수의 소문자 16진수 표시 (미구현 '%f'로)
 					case 'f':       // 실수
 						// long double은 지원 안함...
@@ -1187,7 +1189,7 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 						break;
 
 					case 'E':       // 지수 표시 (대문자)
-						flags |= DP_F_UP;
+						flags |= DP_F_UP; QN_FALL_THROUGH;
 					case 'e':       // 지수 표시
 						flags |= DP_F_E;
 						// long double은 지원 안함...
@@ -1199,7 +1201,7 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 						break;
 
 					case 'G':       // 지수 표시 (대문자)
-						flags |= DP_F_UP;
+						flags |= DP_F_UP; QN_FALL_THROUGH;
 					case 'g':       // 지수 표시
 						flags |= DP_F_G;
 						if (vmax == 0) // C99
@@ -2302,7 +2304,7 @@ size_t doprw(wchar_t* buffer, size_t maxlen, const wchar_t* format, va_list args
 						break;
 
 					case L'X':       // 대문자 부호없는 16진수
-						flags |= DP_F_UP;
+						flags |= DP_F_UP; QN_FALL_THROUGH;
 					case L'x':       // 소문자 부호없는 16진수
 					case L'o':       // 부호없는 8진수
 					case L'b':       // 부호없는 2진수
@@ -2357,8 +2359,7 @@ size_t doprw(wchar_t* buffer, size_t maxlen, const wchar_t* format, va_list args
 
 					case L'A':       // 실수의 대문자 16진수 표시 (미구현 '%F'로)
 					case L'F':       // 실수 대문자
-						flags |= DP_F_UP;
-
+						flags |= DP_F_UP; QN_FALL_THROUGH;
 					case L'a':       // 실수의 소문자 16진수 표시 (미구현 '%f'로)
 					case L'f':       // 실수
 						if (cflags == DP_C_LDOUBLE)
@@ -2369,7 +2370,7 @@ size_t doprw(wchar_t* buffer, size_t maxlen, const wchar_t* format, va_list args
 						break;
 
 					case L'E':      // 지수 표시 (대문자)
-						flags |= DP_F_UP;
+						flags |= DP_F_UP; QN_FALL_THROUGH;
 					case L'e':      // 지수 표시
 						flags |= DP_F_E;
 						// long double은 지원 안함...
@@ -2381,7 +2382,7 @@ size_t doprw(wchar_t* buffer, size_t maxlen, const wchar_t* format, va_list args
 						break;
 
 					case L'G':      // 지수 표시 (대문자)
-						flags |= DP_F_UP;
+						flags |= DP_F_UP; QN_FALL_THROUGH;
 					case L'g':      // 지수 표시
 						flags |= DP_F_G;
 						if (vmax == 0) // C99

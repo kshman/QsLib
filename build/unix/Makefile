@@ -22,11 +22,15 @@ asm: $(DEST)
 
 clean:
 	$(MAKE) -f qn.mk clean
+	$(MAKE) -f sample.mk clean
 
 rebuild: clean all
 
 install: all
 	$(MAKE) -f qn.mk install
+
+sample:
+	$(MAKE) -f sample.mk clean all
 
 # 참고: 컴파일러 정의 확인
 # echo | cc -dM -E -

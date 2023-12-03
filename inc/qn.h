@@ -56,6 +56,7 @@
 #	define QN_FUNC_NAME					__FUNCTION__
 #	define QN_MEM_BARRIER()				_ReadWriteBarrier()
 #	define QN_STATIC_ASSERT				static_assert
+#	define QN_FALL_THROUGH
 #elif __GNUC__
 #	define QN_RESTRICT					restrict
 #ifndef __cplusplus
@@ -74,6 +75,7 @@
 #	define QN_MEM_BARRIER()				__sync_synchronize();
 #endif
 #	define QN_STATIC_ASSERT				_Static_assert
+#	define QN_FALL_THROUGH				__attribute__((fallthrough))
 #endif
 
 #if defined(__cplusplus)
@@ -760,3 +762,4 @@ QN_EXTC_END
 #if _MSC_VER
 #pragma warning(pop)
 #endif
+
