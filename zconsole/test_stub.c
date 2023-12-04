@@ -1,4 +1,5 @@
-﻿#include <qs.h>
+﻿// stub 테스트
+#include <qs.h>
 
 int main()
 {
