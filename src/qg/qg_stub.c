@@ -15,6 +15,8 @@ static void _stub_atexit(void* dummy);
 //
 bool qg_open_stub(const char* title, int width, int height, int flags)
 {
+	qn_runtime(NULL);
+
 	if (qg_stub_instance)
 	{
 		qn_debug_outputf(true, "STUB", "already opened.");
@@ -49,10 +51,10 @@ bool qg_open_stub(const char* title, int width, int height, int flags)
 
 static void _stub_atexit(void* dummy)
 {
-	qg_close();
+	qg_close_stub();
 }
 
-void qg_close(void)
+void qg_close_stub(void)
 {
 	qn_ret_if_fail(qg_stub_instance);
 

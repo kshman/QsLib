@@ -1,50 +1,51 @@
 ﻿#pragma once
 
-#define ES2_MAX_VERTEX_ATTRIBUTES	16
+#include "qs_ctn.h"
+
+#define ES2_MAX_VERTEX_ATTRIBUTES		16
+
+typedef struct _es2RefHandle			es2RefHandle;
+typedef struct _es2Session				es2Session;
+typedef struct _es2Pending				es2Pending;
+typedef struct _es2LayoutElement		es2LayoutElement;
+typedef struct _es2LayoutProperty		es2LayoutProperty;
+typedef struct _es2Uniform		es2Uniform;
+typedef struct _es2Attrib			es2Attrib;
+typedef struct _es2Rdh					es2Rdh;
+typedef struct _es2Vlo					es2Vlo;
+typedef struct _es2Shd					es2Shd;
+typedef struct _es2Buf					es2Buf;
+typedef void(*es2shd_auto_func)(es2Rdh*, GLint, const QgVarShader*);
 
 #if _QN_WINDOWS_
-typedef struct es2Func
+typedef struct _es2Func					es2Func;
+struct _es2Func
 {
-#define DEF_ES2_FUNC(ret,func,params) ret (APIENTRY *func) params;
+#define DEF_GL_FUNC(ret,func,params)	ret (APIENTRY *func) params;
 #include "qg_es2func.h"
-#undef DEF_ES2_FUNC
-} es2Func;
-
+#undef DEF_GL_FUNC
+};
 extern es2Func _es2func;
-#define ES2FUNC(f)		_es2func.##f
+#define GLFUNC(f)						_es2func.##f
 #else
-#define ES2FUNC(f)		f
+#define GLFUNC(f)						f
 #endif
 
-#define ES2RDH_INSTANCE			((es2Rdh*)qg_rdh_instance)
-
-typedef struct es2RefHandle es2RefHandle;
-typedef struct es2Session es2Session;
-typedef struct es2Pending es2Pending;
-typedef struct es2LayoutElement es2LayoutElement;
-typedef struct es2LayoutProperty es2LayoutProperty;
-typedef struct es2ShaderUniform es2ShaderUniform;
-typedef struct es2ShaderAttrib es2ShaderAttrib;
-typedef struct es2Rdh es2Rdh;
-typedef struct es2Vlo es2Vlo;
-typedef struct es2Shd es2Shd;
-typedef struct es2Buf es2Buf;
-
-typedef void(*es2shd_auto_func)(es2Rdh*, GLint, const QgVarShader*);
+#define ES2RDH_INSTANCE					((es2Rdh*)qg_rdh_instance)
 
 
 //////////////////////////////////////////////////////////////////////////
 // 데이터 타입
 
 // 참조 핸들
-struct es2RefHandle
+struct _es2RefHandle
 {
 	volatile intptr_t	ref;
 	GLuint				handle;
 };
 
 // 레이아웃 요소
-struct es2LayoutElement
+struct _es2LayoutElement
 {
 	QgLoStage			stage : 8;
 	QgLoUsage			usage : 8;
@@ -58,7 +59,7 @@ struct es2LayoutElement
 };
 
 // 레이아웃 프로퍼티
-struct es2LayoutProperty
+struct _es2LayoutProperty
 {
 	const void*			pointer;
 	GLuint				buffer;
@@ -69,7 +70,7 @@ struct es2LayoutProperty
 };
 
 // 세이더 유니폼(=세이더 변수) 속성
-struct es2ShaderUniform
+struct _es2Uniform
 {
 	QgVarShader			base;
 
@@ -78,7 +79,7 @@ struct es2ShaderUniform
 };
 
 // 세이더 어트리뷰트 속성
-struct es2ShaderAttrib
+struct _es2Attrib
 {
 	char				name[32];
 	GLint				attrib : 8;
@@ -89,7 +90,7 @@ struct es2ShaderAttrib
 };
 
 // 세션 데이터
-struct es2Session
+struct _es2Session
 {
 	GLuint				program;
 	uint				layout_mask;
@@ -104,7 +105,7 @@ struct es2Session
 };
 
 // 펜딩 데이터
-struct es2Pending
+struct _es2Pending
 {
 	es2Shd*				shd;
 	es2Vlo*				vlo;
@@ -127,7 +128,7 @@ struct es2Pending
 // 디바이스
 
 // ES2 렌더 디바이스
-struct es2Rdh
+struct _es2Rdh
 {
 	QgRdh				base;
 
@@ -142,38 +143,38 @@ extern void es2_commit_layout_ptr(es2Rdh* self, const void* buffer, GLsizei stri
 extern void es2_commit_shader(es2Rdh* self);
 
 // 레이아웃
-struct es2Vlo
+struct _es2Vlo
 {
 	QgVlo				base;
 
 	int					es_cnt[QGLOS_MAX_VALUE];
 	es2LayoutElement*	es_elm[QGLOS_MAX_VALUE];
 };
-extern void* _es2vlo_allocator();
+extern es2Vlo* es2vlo_allocator(es2Rdh* rdh, int count, const QgPropLayout* layouts);
 
 // 세이더 저장소
-QN_CTNR_DECL(es2CtnShaderUniform, es2ShaderUniform);
-QN_CTNR_DECL(es2CtnShaderAttrib, es2ShaderAttrib);
+QN_DECL_CTNR(es2CtnUniform, es2Uniform);
+QN_DECL_CTNR(es2CtnAttrib, es2Attrib);
 
 // 세이더
-struct es2Shd
+struct _es2Shd
 {
 	QgShd				base;
 
 	es2RefHandle*		rfragment;
 	es2RefHandle*		rvertex;
 
-	es2CtnShaderUniform	uniforms;
-	es2CtnShaderAttrib	attrs;
+	es2CtnUniform		uniforms;
+	es2CtnAttrib		attrs;
 	int					attr_mask;
 
 	bool				linked;
 };
-extern es2Shd* _es2shd_allocator(const char* name);
+extern es2Shd* es2shd_allocator(es2Rdh* rdh, const char* name);
 extern void es2shd_init_auto_uniforms(void);
 
 // 버퍼
-struct es2Buf
+struct _es2Buf
 {
 	QgBuf				base;
 
@@ -182,4 +183,4 @@ struct es2Buf
 
 	void*				lockbuf;
 };
-extern es2Buf* _es2buf_allocator(GLuint gl_id, GLenum gl_type, GLenum gl_usage, int stride, int size, QgBufType type);
+extern es2Buf* es2buf_allocator(es2Rdh* rdh, QgBufType type, int count, int stride, const void* data);

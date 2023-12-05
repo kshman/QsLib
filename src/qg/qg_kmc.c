@@ -74,7 +74,7 @@ const char* qg_qic_str(QicButton button)
 
 #ifdef SDL_VERSION
 //
-QikKey _sdlk_to_qik(uint sdlk)
+QikKey sdlk_to_qik(uint sdlk)
 {
 	static byte _keycodes[] =
 	{
@@ -289,7 +289,7 @@ QikKey _sdlk_to_qik(uint sdlk)
 	return QIK_NONE;
 }
 
-QikMask _sdl_kmod_to_qikm(int modifier)
+QikMask sdl_kmod_to_qikm(int modifier)
 {
 	QikMask m = 0;
 	if (modifier & (KMOD_LSHIFT | KMOD_RSHIFT)) m |= QIKM_SHIFT;

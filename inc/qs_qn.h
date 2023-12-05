@@ -87,7 +87,7 @@ typedef struct _QmGam					QmGam;
 #	define QN_FORCE_LINE				__forceinline
 #	define QN_FUNC_NAME					__FUNCTION__
 #	define QN_MEM_BARRIER()				_ReadWriteBarrier()
-#	define QN_STATIC_ASSERT				_STATIC_ASSERT
+#	define QN_STATIC_ASSERT				static_assert
 #	define QN_FALL_THROUGH
 #elif __GNUC__
 #	define QN_RESTRICT					restrict
@@ -707,9 +707,9 @@ QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* name);
 //////////////////////////////////////////////////////////////////////////
 // qm(qn gam)
 
-#define qvt_name(type)					struct _vt##type
-#define qvt_cast(g,type)				((struct _vt##type*)((QmGam*)(g))->vt)
-#define qm_gam(g)						((QnGam*)(g))
+#define qvt_name(type)					struct _vt_##type
+#define qvt_cast(g,type)				((struct _vt_##type*)((QmGam*)(g))->vt)
+
 #define qm_cast(g,type)					((type*)(g))
 
 qvt_name(QmGam)
@@ -725,13 +725,53 @@ struct _QmGam
 	nuint				desc;
 };
 
-QSAPI QmGam* qm_init(QmGam* g, void* vt);
-QSAPI QmGam* qm_load(QmGam* g);
-QSAPI QmGam* qm_unload(QmGam* g);
+QSAPI QmGam* qm_stc_init(QmGam* g, void* vt);
+QSAPI QmGam* qm_stc_load(QmGam* g);
+QSAPI QmGam* qm_stc_unload(QmGam* g);
+QSAPI size_t qm_stc_get_ref(QmGam* g);
+QSAPI nuint qm_stc_get_desc(QmGam* g);
+QSAPI nuint qm_stc_set_desc(QmGam* g, nuint ptr);
 
-QSAPI size_t qm_get_ref(QmGam* g);
-QSAPI nuint qm_get_desc(QmGam* g);
-QSAPI nuint qm_set_desc(QmGam* g, nuint ptr);
+/**
+ * @brief init gam vtable
+ * @param g gam object
+ * @param type type of g
+ * @param vt vtable
+ * @return g self
+ */
+#define qm_init(g,type,vt)				((type*)qm_stc_init((QmGam*)(g), vt))
+/**
+ * @brief load reference
+ * @param g gam object
+ * @return g self
+ */
+#define qm_load(g)						((g) ? qm_stc_load((QmGam*)(g)) : NULL)
+/**
+ * @brief unload reference. if reference is zero, will be disposing
+ * @param g gam object
+ * @return g self
+ */
+#define qm_unload(g)					((g) ? qm_stc_unload((QmGam*)(g)) : NULL)
+/**
+ * @brief return reference
+ * @param g gam object
+ * @return reference value
+ */
+#define qm_get_ref(g)					qm_stc_get_ref((QmGam*)(g))
+/**
+ * @brief return description value
+ * @param g gam object
+ * @param type return type
+ * @return description value
+ */
+#define qm_get_desc(g,type)				(type)qm_stc_get_desc((QmGam*)(g))
+/**
+ * @brief set description value
+ * @param g gam object
+ * @param ptr description(nint)
+ * @return previous description value
+ */
+#define qm_set_desc(g,ptr)				qm_stc_set_desc((QmGam*)(g),(nuint)ptr)
 
 QN_EXTC_END
 

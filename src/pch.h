@@ -1,5 +1,12 @@
 ﻿#pragma once
 
+#ifndef USE_SDL
+#define USE_SDL		2
+#endif
+#ifndef USE_ES2
+#define USE_ES2		1
+#endif
+
 // Windows
 #if defined(_WIN32)
 #	define STRICT
@@ -41,10 +48,11 @@
 #endif
 
 // SDL
-#if _MSC_VER
-#	include "qg/SDL/SDL.h"
-#else
+#if USE_SDL
 #	include <SDL2/SDL.h>
+#if USE_ES2
+#	include <SDL2/SDL_opengles2.h>
+#endif
 #endif
 
 //

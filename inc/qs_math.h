@@ -72,6 +72,7 @@ struct _QnVec2
 		struct { float u, v; };
 		struct { float min, max; };
 		struct { float width, height; };
+		struct { float _near, _far; };
 	};
 };
 

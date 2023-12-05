@@ -1,4 +1,4 @@
-﻿// 다중 버퍼와 그에 따른 레이아웃
+﻿// 다중 버퍼와 레이아웃으로 그리기
 // 정점(스테이지1)과 색깔(스테이지) 버퍼가 두개
 #include <qs.h>
 
@@ -19,7 +19,7 @@ static const char* ps =
 "  //gl_FragColor = vec4 (1.0, 1.0, 1.0, 1.0 );\n"
 "  gl_FragColor = vcolor;\n"
 "}\n";
-static qgPropLayout layout[] =
+static QgPropLayout layout[] =
 {
 	{QGLOS_1, 0, QGLOU_POSITION, QGLOT_FLOAT2},
 	{QGLOS_2, 0, QGLOU_COLOR, QGLOT_FLOAT4},
@@ -41,27 +41,27 @@ int main()
 {
 	qn_runtime(NULL);
 
-	qgRdh* rdh = qg_rdh_new(NULL, "QG TEST", 800, 600, QGFLAG_IDLE | QGFLAG_RESIZABLE);
-	if (!rdh)
-		return 1;
+	QgRdh* rdh = qg_rdh_new(NULL, "RDH", 800, 600, QGFLAG_IDLE | QGFLAG_RESIZABLE | QGFLAG_VSYNC);
+	qn_retval_if_fail(rdh, -1);
 
-	qgVlo* vlo = qg_rdh_create_layout(rdh, QN_COUNTOF(layout), layout);
-	qgBuf* vertexbuf = qg_rdh_create_buffer(rdh, QGBUF_VERTEX, QN_COUNTOF(vertices), sizeof(float), vertices);
-	qgBuf* colorbuf = qg_rdh_create_buffer(rdh, QGBUF_VERTEX, QN_COUNTOF(colors), sizeof(float), colors);
-	qgShd* shd = qg_rdh_create_shader(rdh, "zz shader");
+	QgVlo* vlo = qg_rdh_create_layout(rdh, QN_COUNTOF(layout), layout);
+	QgBuf* vertexbuf = qg_rdh_create_buffer(rdh, QGBUF_VERTEX, QN_COUNTOF(vertices), sizeof(float), vertices);
+	QgBuf* colorbuf = qg_rdh_create_buffer(rdh, QGBUF_VERTEX, QN_COUNTOF(colors), sizeof(float), colors);
+	QgShd* shd = qg_rdh_create_shader(rdh, NULL);
 	qg_shd_bind(shd, QGSHT_VS, vs, 0, 0);
 	qg_shd_bind(shd, QGSHT_PS, ps, 0, 0);
 	qg_shd_link(shd);
 
 	while (qg_rdh_loop(rdh))
 	{
-		qgEvent ev;
+		QgEvent ev;
 		while (qg_rdh_poll(rdh, &ev))
 		{
-
+			if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_ESC)
+				qg_rdh_exit_loop(rdh);
 		}
 
-		if (qg_rdh_begin(rdh))
+		if (qg_rdh_begin(rdh, true))
 		{
 			qg_rdh_set_shader(rdh, shd, vlo);
 			qg_rdh_set_vertex(rdh, QGLOS_1, vertexbuf);
@@ -82,3 +82,4 @@ int main()
 
 	return 0;
 }
+

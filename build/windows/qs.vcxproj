@@ -86,7 +86,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\inc;..\..\inc;..\..\src</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -107,7 +107,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\inc;..\..\inc;..\..\src</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -132,7 +132,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\inc;..\..\inc;..\..\src</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
@@ -154,7 +154,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\inc;..\..\inc;..\..\src</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -180,6 +180,7 @@
     <ClInclude Include="..\..\src\pch.h" />
     <ClInclude Include="..\..\src\qg\qg_es2.h" />
     <ClInclude Include="..\..\src\qg\qg_es2func.h" />
+    <ClInclude Include="..\..\src\qg\qg_glsupp.h" />
     <ClInclude Include="..\..\src\qg\qg_stub.h" />
     <ClInclude Include="..\..\src\qn\qn_mem.h" />
     <ClInclude Include="..\..\src\qn\zlib\crc32.h" />
@@ -202,36 +203,17 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qges2_rdh.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qg\qges2_rdo.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qges2_rdh.c" />
+    <ClCompile Include="..\..\src\qg\qges2_rdo.c" />
+    <ClCompile Include="..\..\src\qg\qges2_shd.c" />
     <ClCompile Include="..\..\src\qg\qgsdl_stub.c" />
     <ClCompile Include="..\..\src\qg\qg_kmc.c" />
-    <ClCompile Include="..\..\src\qg\qg_rdh.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qg\qg_rdo.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qg_rdh.c" />
+    <ClCompile Include="..\..\src\qg\qg_rdo.c" />
     <ClCompile Include="..\..\src\qg\qg_stub.c" />
     <ClCompile Include="..\..\src\qn\PatrickPowell_snprintf.c" />
     <ClCompile Include="..\..\src\qn\qn.c" />
-    <ClCompile Include="..\..\src\qn\qn_datetime.c" />
+    <ClCompile Include="..\..\src\qn\qn_time.c" />
     <ClCompile Include="..\..\src\qn\qn_debug.c" />
     <ClCompile Include="..\..\src\qn\qn_file.c" />
     <ClCompile Include="..\..\src\qn\qn_gam.c" />

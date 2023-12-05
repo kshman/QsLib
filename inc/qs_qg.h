@@ -313,8 +313,9 @@ enum _QgFlag
 	QGFLAG_RESIZABLE = QN_BIT(2),
 	QGFLAG_FOCUS = QN_BIT(3),
 	QGFLAG_IDLE = QN_BIT(4),
-	QGFLAG_DITHER = QN_BIT(16),
-	QGFLAG_MSAA = QN_BIT(17),
+	QGFLAG_VSYNC = QN_BIT(16),
+	QGFLAG_DITHER = QN_BIT(17),
+	QGFLAG_MSAA = QN_BIT(18),
 };
 
 enum _QgStubStat
@@ -552,23 +553,27 @@ struct _QgDeviceInfo
 
 struct _QgRenderInvoke
 {
-	nint				frames;
+	nint				invokes;
 	nint				begins;
 	nint				ends;
-	nint				invokes;
 	nint				shaders;
+	nint				params;
 	nint				transforms;
 	nint				draws;
 	nint				primitives;
+
+	nint				frames;
 	bool				flush;
 };
 
 struct _QgRenderTm
 {
+	QnPoint				size;
+	QnVec2				z;
 	QnMat4				world;
 	QnMat4				view;
 	QnMat4				proj;
-	QnMat4				vp;
+	QnMat4				vipr;
 	QnMat4				inv;		// inverse view
 	QnMat4				ortho;		// ortho transform
 	QnMat4				frm;		// tex formation
@@ -581,7 +586,7 @@ struct _QgRenderParam
 	QnMat4*				bonptr;
 	QnVec4				v[4];
 	QnMat4				m[4];
-	QnColor				clear;
+	QnColor				bgc;
 };
 
 
@@ -590,7 +595,7 @@ struct _QgRenderParam
 
 // stub
 QSAPI bool qg_open_stub(const char* title, int width, int height, int flags);
-QSAPI void qg_close(void);
+QSAPI void qg_close_stub(void);
 
 QSAPI bool qg_loop(void);
 QSAPI bool qg_poll(QgEvent* ev);
@@ -612,14 +617,10 @@ QSAPI int qg_add_event_type(QgEventType type);
 QSAPI bool qg_pop_event(QgEvent* ev);
 
 
-
-/*
 // render device
-struct QgRdh
+struct _QgRdh
 {
-	qnGam				base;
-
-	qgStub*				stub;
+	QmGam				base;
 
 	QgDeviceInfo		caps;
 
@@ -630,13 +631,11 @@ struct QgRdh
 
 qvt_name(QgRdh)
 {
-	qvt_name(qnGam)		base;
-	bool (*_construct)(QgRdh*, int);
-	void (*_finalize)(QgRdh*);
-	void (*_reset)(QgRdh*);
-	void (*_clear)(QgRdh*, int, const QnColor*, int, float);
+	qvt_name(QmGam)		base;
+	void (*reset)(QgRdh*);
+	void (*clear)(QgRdh*, int, const QnColor*, int, float);
 
-	bool (*begin)(QgRdh*);
+	bool (*begin)(QgRdh*, bool);
 	void (*end)(QgRdh*);
 	void (*flush)(QgRdh*);
 
@@ -657,33 +656,38 @@ qvt_name(QgRdh)
 QSAPI QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, int flags);
 
 QSAPI const QgDeviceInfo* qg_rdh_get_device_info(QgRdh* g);
-QSAPI const QgRenderInvoke* qg_rdh_get_render_info(QgRdh* g);
+QSAPI const QgRenderInvoke* qg_rdh_get_render_invokes(QgRdh* g);
 QSAPI const QgRenderTm* qg_rdh_get_render_tm(QgRdh* g);
 QSAPI const QgRenderParam* qg_rdh_get_render_param(QgRdh* g);
 
 QSAPI bool qg_rdh_loop(QgRdh* g);
 QSAPI bool qg_rdh_poll(QgRdh* g, QgEvent* ev);
+QSAPI void qg_rdh_exit_loop(QgRdh* self);
 
-QSAPI bool qg_rdh_begin(QgRdh* g);
+QSAPI bool qg_rdh_begin(QgRdh* g, bool clear);
 QSAPI void qg_rdh_end(QgRdh* g);
 QSAPI void qg_rdh_flush(QgRdh* g);
+
+QSAPI void qg_rdh_reset(QgRdh* self);
+QSAPI void qg_rdh_clear(QgRdh* self, QgClear clear, const QnColor* color, int stencil, float depth);
 
 QSAPI void qg_rdh_set_param_vec3(QgRdh* g, int at, const QnVec3* v);
 QSAPI void qg_rdh_set_param_vec4(QgRdh* g, int at, const QnVec4* v);
 QSAPI void qg_rdh_set_param_mat4(QgRdh* g, int at, const QnMat4* m);
 QSAPI void qg_rdh_set_param_weight(QgRdh* g, int count, QnMat4* weight);
-QSAPI void qg_rdh_set_clear(QgRdh* g, const QnColor* color);
-QSAPI void qg_rdh_set_proj(QgRdh* g, const QnMat4* m);
-QSAPI void qg_rdh_set_view(QgRdh* g, const QnMat4* m);
-QSAPI void qg_rdh_set_world(QgRdh* g, const QnMat4* m);
+QSAPI void qg_rdh_set_background(QgRdh* g, const QnColor* background_color);
+QSAPI void qg_rdh_set_view_proj(QgRdh* g, const QnMat4* proj, const QnMat4* view);
+QSAPI void qg_rdh_set_proj(QgRdh* g, const QnMat4* proj);
+QSAPI void qg_rdh_set_view(QgRdh* g, const QnMat4* view);
+QSAPI void qg_rdh_set_world(QgRdh* g, const QnMat4* workd);
 
 QSAPI QgVlo* qg_rdh_create_layout(QgRdh* self, int count, const QgPropLayout* layouts);
 QSAPI QgShd* qg_rdh_create_shader(QgRdh* self, const char* name);
 QSAPI QgBuf* qg_rdh_create_buffer(QgRdh* g, QgBufType type, int count, int stride, const void* data);
 
 QSAPI void qg_rdh_set_shader(QgRdh* self, QgShd* shader, QgVlo* layout);
-QSAPI bool qg_rdh_set_index(QgRdh* g, void* buffer);
-QSAPI bool qg_rdh_set_vertex(QgRdh* g, QgLoStage stage, void* buffer);
+QSAPI bool qg_rdh_set_index(QgRdh* g, QgBuf* buffer);
+QSAPI bool qg_rdh_set_vertex(QgRdh* g, QgLoStage stage, QgBuf* buffer);
 
 QSAPI bool qg_rdh_draw(QgRdh* self, QgTopology tpg, int vcount);
 QSAPI bool qg_rdh_draw_indexed(QgRdh* self, QgTopology tpg, int icount);
@@ -695,14 +699,14 @@ QSAPI bool qg_rdh_ptr_draw_indexed(QgRdh* g, QgTopology tpg, int vcount, int vst
 // object
 
 //
-struct QgGam
+struct _QgGam
 {
-	qnGam				base;
+	QmGam				base;
 };
 
 
 // layout
-struct QgVlo
+struct _QgVlo
 {
 	QgGam				base;
 
@@ -713,7 +717,7 @@ QSAPI uint qg_vlo_get_stride(QgVlo* g, QgLoStage stage);
 
 
 // shader
-struct QgShd
+struct _QgShd
 {
 	QgGam				base;
 
@@ -723,7 +727,7 @@ struct QgShd
 
 qvt_name(QgShd)
 {
-	qvt_name(qnGam)		base;
+	qvt_name(QmGam)		base;
 	bool(*bind)(QgShd*, QgShdType, const void*, int, int);
 	bool(*bind_shd)(QgShd*, QgShdType, QgShd*);
 	//bool(*bind_name)(QgShd* QgShdType, const char*);
@@ -742,7 +746,7 @@ QSAPI bool qg_shd_link(QgShd* self);
 
 
 // buffer
-struct QgBuf
+struct _QgBuf
 {
 	QgGam				base;
 
@@ -753,7 +757,7 @@ struct QgBuf
 
 qvt_name(QgBuf)
 {
-	qvt_name(qnGam)		base;
+	qvt_name(QmGam)		base;
 	void*(*map)(QgBuf*);
 	bool (*unmap)(QgBuf*);
 	bool (*data)(QgBuf*, const void*);
@@ -766,6 +770,5 @@ QSAPI int qg_buf_get_size(QgBuf* g);
 QSAPI void* qg_buf_map(QgBuf* self);
 QSAPI bool qg_buf_unmap(QgBuf* self);
 QSAPI bool qg_buf_data(QgBuf* self, const void* data);
-*/
 
 QN_EXTC_END

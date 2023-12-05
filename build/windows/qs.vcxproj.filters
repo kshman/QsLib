@@ -105,6 +105,9 @@
     <ClInclude Include="..\..\src\qg\qg_stub.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\qg\qg_glsupp.h">
+      <Filter>헤더 파일\qg</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\pch.c">
@@ -113,7 +116,7 @@
     <ClCompile Include="..\..\src\qn\qn.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_datetime.c">
+    <ClCompile Include="..\..\src\qn\qn_time.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qn\qn_debug.c">
@@ -210,6 +213,9 @@
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qg\qgsdl_stub.c">
+      <Filter>소스 파일\qg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qges2_shd.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
   </ItemGroup>

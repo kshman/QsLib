@@ -1,9 +1,10 @@
 ﻿#include "pch.h"
+#if USE_SDL
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include "qg_stub.h"
-#include "SDL/SDL_syswm.h"
-#include "SDL/SDL_keyboard.h"
+#include "SDL2/SDL_syswm.h"
+#include "SDL2/SDL_keyboard.h"
 
 //////////////////////////////////////////////////////////////////////////
 // SDL 스터브
@@ -22,7 +23,9 @@ struct StubBase* stub_system_open(struct StubParam* param)
 {
 	static struct SDLStub s_stub;
 
-	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+	// SDL_INIT_TIMER, SDL_INIT_AUDIO, SDL_INIT_HAPTIC, SDL_INIT_GAMECONTROLLER, SDL_INIT_SENSOR
+	Uint32 sdl_flags = SDL_INIT_VIDEO | SDL_INIT_EVENTS;
+	if (SDL_Init(sdl_flags) != 0)
 		return NULL;
 	if (param->title == NULL)
 		param->title = "STUB";
@@ -54,6 +57,8 @@ struct StubBase* stub_system_open(struct StubParam* param)
 	SDL_GetWindowPosition(stub->window, &stub->base.bound.left, &stub->base.bound.top);
 	stub->base.bound.right = stub->base.bound.left + stub->base.size.width;
 	stub->base.bound.bottom = stub->base.bound.top + stub->base.size.height;
+
+	stub->base.oshandle = stub->window;
 
 	return (struct StubBase*)stub;
 }
@@ -116,10 +121,10 @@ static void _sdl_mesg_layout(void)
 static void _sdl_mesg_key(SDL_KeyboardEvent* se, bool isdown)
 {
 	struct SDLStub* stub = (struct SDLStub*)qg_stub_instance;
-	QikMask mask = _sdl_kmod_to_qikm(se->keysym.mod);
+	QikMask mask = sdl_kmod_to_qikm(se->keysym.mod);
 	stub->base.key.mask = mask;
 
-	QikKey key = _sdlk_to_qik(se->keysym.sym);
+	QikKey key = sdlk_to_qik(se->keysym.sym);
 	qn_ret_if_fail(key != QIK_NONE);
 	stub->base.key.key[key] = isdown;
 
@@ -352,3 +357,4 @@ bool stub_system_poll(void)
 	return !QN_TEST_MASK(stub->base.sttis, QGSTTI_EXIT);
 }
 
+#endif	// USE_SDL
