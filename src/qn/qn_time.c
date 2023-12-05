@@ -1,5 +1,9 @@
 ﻿#include "pch.h"
 #include "qs_qn.h"
+#if _QN_UNIX_
+#include <unistd.h>
+#include <errno.h>
+#endif
 
 /**
  * @brief 로컬 시간으로 변화

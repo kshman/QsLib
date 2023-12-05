@@ -1,4 +1,4 @@
-# Last modified by KSH 2023-12-04
+# Last modified by KSH 2023-12-06
 #
 
 # 플랫폼
@@ -13,23 +13,24 @@ endif
 CC=cc
 DEFS=
 WARNS=-W -Wall -Wextra
-INCDIR=-I../../inc -I../../qn
+INCDIR=-I../../inc -I../../src
 
 # 플래그
-CFLAGS=-O3 -pipe -fPIC -fvisibility=hidden $(WARNS) $(EMM) $(DEFS) $(INCDIR)
+CFLAGS=-O3 -pipe -fPIC -fvisibility=hidden $(EMM) $(WARNS) $(DEFS) $(INCDIR)
 
 #
-DEST=libqn.so.6
-SOST=libqn.so
+DEST=libqs.so.3
+SOST=libqs.so
 
 #
-VPATH=src:../../qn
+VPATH=src:../../src
 
 #
-SRC=\
-	PatrickPowell_snprintf.c \
-	qn.c qn_datetime.c qn_debug.c qn_file.c qn_gam.c qn_hash.c qn_math.c \
-	qn_mem.c qn_mlu.c qn_sort.c qn_str.c
+SRC=pch.c \
+	qn/PatrickPowell_snprintf.c qn/qn.c qn/qn_debug.c qn/qn_file.c qn/qn_gam.c qn/qn_hash.c \
+	qn/qn_math.c qn/qn_mem.c qn/qn_mlu.c qn/qn_sort.c qn/qn_str.c qn/qn_time.c \
+	qg/qges2_rdh.c qg/qges2_rdo.c qg/qges2_shd.c qg/qgsdl_stub.c \
+	qg/qg_kmc.c qg/qg_rdh.c qg/qg_rdo.c qg/qg_stub.c
 OBJ=$(SRC:.c=.o)
 ASM=$(SRC:.c=.s)
 LNK=$(notdir $(OBJ))
@@ -56,5 +57,3 @@ install: all
 
 $(DEST): $(OBJ)
 	$(CC) -shared -Wl,-export-dynamic -Wl,-soname,$@ -o $@ $(LNK)
-
-

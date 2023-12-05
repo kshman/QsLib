@@ -45,7 +45,7 @@ static bool _es2_ptr_draw_indexed(QgRdh* rdh, QgTopology tpg, int vcount, int vs
 qvt_name(QgRdh) _vt_es2 =
 {
 	.base.name = "ES2Device",
-	.base.dispose = (paramfunc_t)_es2_dispose,
+	.base.dispose = _es2_dispose,
 
 	.reset = _es2_reset,
 	.clear = _es2_clear,
@@ -123,9 +123,11 @@ static SDL_Renderer* _es2_create_renderer(SDL_Window* window, int flags)
 
 	return renderer;
 
+#if _QN_WINDOWS_
 pos_gl_func_error:
 	SDL_DestroyRenderer(renderer);
 	return NULL;
+#endif
 }
 #endif
 

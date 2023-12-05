@@ -3,6 +3,7 @@
 #include "qs_ctn.h"
 #include <fcntl.h>
 #if _QN_UNIX_
+#include <unistd.h>
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>

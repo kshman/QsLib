@@ -16,13 +16,13 @@ INCDIR=-I../../inc
 
 # 플래그
 CFLAGS=$(EMM) $(INCDIR)
-LDFLAGS=-lqg -lqn -lz -lSDL2 -lGLESv2 -lm
+LDFLAGS=-lqs -lz -lSDL2 -lGLESv2 -lm
 
 #
-VPATH=src:../../zconsole/sample
+VPATH=src:../../zconsole
 
 #
-DEST=test_printf test_stub test_rdh test_multi_buffer_layout
+DEST=test_printf test_stub test_rdh test_multi_buffer
 
 # build
 all: $(DEST)
@@ -42,4 +42,4 @@ test_stub: test_stub.c
 
 test_rdh: test_rdh.c
 
-test_multi_buffer_layout: test_multi_buffer_layout.c
+test_multi_buffer: test_multi_buffer.c

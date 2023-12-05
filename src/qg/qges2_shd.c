@@ -395,7 +395,7 @@ static bool _es2shd_bind_shd(QgShd* g, QgShdType type, QgShd* shaderptr);
 qvt_name(QgShd) _vt_es2shd =
 {
 	.base.name = "ES2Shd",
-	.base.dispose = (paramfunc_t)_es2shd_dispose,
+	.base.dispose = _es2shd_dispose,
 	.bind = _es2shd_bind,
 	.bind_shd = _es2shd_bind_shd,
 	//.bind_name = NULL,
