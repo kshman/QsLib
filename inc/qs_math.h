@@ -1839,17 +1839,19 @@ QN_INLINE bool qn_kolor_eq(const QnKolor* left, const QnKolor* right)
 
 QN_INLINE void qn_kolor_contrast(QnKolor* pc, const QnKolor* c, float s)
 {
-	QnColor cr;
+	QnColor cr, cc;
 	qn_color_set_kolor(&cr, pc);
-	qn_color_contrast(&cr, &cr, s);
+	qn_color_set_kolor(&cc, c);
+	qn_color_contrast(&cr, &cc, s);
 	qn_kolor_set_color(pc, &cr);
 }
 
 QN_INLINE void qn_kolor_saturation(QnKolor* pc, const QnKolor* c, float s)
 {
-	QnColor cr;
+	QnColor cr, cc;
 	qn_color_set_kolor(&cr, pc);
-	qn_color_saturation(&cr, &cr, s);
+	qn_color_set_kolor(&cc, c);
+	qn_color_saturation(&cr, &cc, s);
 	qn_kolor_set_color(pc, &cr);
 }
 
