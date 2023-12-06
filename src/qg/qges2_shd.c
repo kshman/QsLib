@@ -186,7 +186,7 @@ void es2_commit_layout_ptr(Es2Rdh* self, const void* buffer, GLsizei gl_stride)
 	const Es2LayoutElement* stelm = vlo->es_elm[0];	// 스테이지 0밖에 안씀. 버퍼가 하나니깐
 	const int stcnt = vlo->es_cnt[0];
 
-	es2_bind_buffer(self, GL_ARRAY_BUFFER, 0);	// 버퍼 초기화 안하면 안된다.
+	es2_bind_buffer(self, GL_ARRAY_BUFFER, 0);	// 버퍼 끄지 않으면 안된다.
 
 	uint ok = 0;
 	QN_STATIC_ASSERT(QGMAX_ES2_VERTEX_ATTRIBUTE <= sizeof(ok) * 8, "Not enough for access QGMAX_ES2_VERTEX_ATTRIBUTE");

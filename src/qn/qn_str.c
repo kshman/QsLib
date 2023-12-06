@@ -1143,7 +1143,7 @@ size_t qn_mbstowcs(wchar* outwcs, size_t outsize, const char* inmbs, size_t insi
 #ifdef _QN_WINDOWS_
 	int len = MultiByteToWideChar(CP_THREAD_ACP, 0, inmbs, insize == 0 ? -1 : (int)insize, outwcs, (int)outsize);
 	if (outwcs && len >= 0 && outsize > 0)
-		outwcs[QN_MIN(outsize - 1, len)] = L'\0';
+		outwcs[QN_MIN((int)outsize - 1, len)] = L'\0';
 	return (int)len;
 #else
 	const size_t len = mbstowcs(outwcs, inmbs, outsize);
@@ -1159,7 +1159,7 @@ size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar* inwcs, size_t insi
 #ifdef _QN_WINDOWS_
 	int len = WideCharToMultiByte(CP_THREAD_ACP, 0, inwcs, insize == 0 ? -1 : (int)insize, outmbs, (int)outsize, NULL, NULL);
 	if (outmbs && len >= 0 && outsize > 0)
-		outmbs[QN_MIN(outsize - 1, len)] = '\0';
+		outmbs[QN_MIN((int)outsize - 1, len)] = '\0';
 	return (int)len;
 #else
 	size_t len = wcstombs(outmbs, inwcs, outsize);
