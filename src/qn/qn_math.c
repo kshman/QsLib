@@ -496,7 +496,7 @@ void qn_mat4_mul(QnMat4* pm, const QnMat4* left, const QnMat4* right)
 void qn_mat4_inv(QnMat4* pm, const QnMat4* m, float* /*NULLABLE*/determinant)
 {
 #ifdef USE_EMM_INTRIN
-	static const __m128 s_PNNP = { .m128_u32 = {0x00000000, 0x80000000, 0x80000000, 0x00000000 } };
+	static const QN_ALIGN(16) uint s_PNNP[] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };
 
 	__m128 A, B, C, D;
 	__m128 iA, iB, iC, iD;
@@ -557,7 +557,7 @@ void qn_mat4_inv(QnMat4* pm, const QnMat4* m, float* /*NULLABLE*/determinant)
 	iC = _mm_sub_ps(iC, _mm_mul_ps(_mm_shuffle_ps(A, A, 0xB1), _mm_shuffle_ps(DC, DC, 0x66)));
 
 	rd = _mm_shuffle_ps(rd, rd, 0);
-	rd = _mm_xor_ps(rd, s_PNNP);
+	rd = _mm_xor_ps(rd, *(__m128*)(&s_PNNP));  // NOLINT
 
 	iB = _mm_sub_ps(_mm_mul_ps(C, _mm_shuffle_ps(dB, dB, 0)), iB);
 	iC = _mm_sub_ps(_mm_mul_ps(B, _mm_shuffle_ps(dC, dC, 0)), iC);

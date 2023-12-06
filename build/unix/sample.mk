@@ -22,7 +22,7 @@ LDFLAGS=-lqs -lz -lSDL2 -lGLESv2 -lm
 VPATH=src:../../zconsole
 
 #
-DEST=test_printf test_stub test_rdh test_multi_buffer
+DEST=test_printf test_stub test_rdh test_buffer test_buffer_multi
 
 # build
 all: $(DEST)
@@ -42,4 +42,6 @@ test_stub: test_stub.c
 
 test_rdh: test_rdh.c
 
-test_multi_buffer: test_multi_buffer.c
+test_buffer: test_buffer.c
+
+test_buffer_multi: test_buffer_multi.c

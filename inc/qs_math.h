@@ -146,7 +146,7 @@ struct QnColor
 };
 
 // byte color
-QN_ALIGN(4) struct QnKolor
+struct QN_ALIGN(4) QnKolor
 {
 	byte b, g, r, a;
 };

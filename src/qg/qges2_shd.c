@@ -101,7 +101,11 @@ void es2_commit_layout(Es2Rdh* self)
 					lp->format != le->format ||
 					lp->normalized != le->normalized)
 				{
+#ifdef _QN_WINDOWS_
 					GLFUNC(glVertexAttribPointer)(gl_attr, le->size, le->format, le->normalized, gl_stride, pointer);
+#else
+					GLFUNC(glVertexAttribPointer)(gl_attr, le->size, le->format, le->normalized, gl_stride, (const void*)pointer);
+#endif
 					lp->pointer = pointer;
 					lp->buffer = gl_buf;
 					lp->stride = gl_stride;
@@ -220,7 +224,11 @@ void es2_commit_layout_ptr(Es2Rdh* self, const void* buffer, GLsizei gl_stride)
 			lp->format != le->format ||
 			lp->normalized != le->normalized)
 		{
+#ifdef _QN_WINDOWS_
 			GLFUNC(glVertexAttribPointer)(gl_attr, le->size, le->format, le->normalized, gl_stride, pointer);
+#else
+			GLFUNC(glVertexAttribPointer)(gl_attr, le->size, le->format, le->normalized, gl_stride, (const void*)pointer);
+#endif
 			lp->pointer = pointer;
 			lp->buffer = 0;
 			lp->stride = gl_stride;
@@ -437,7 +445,11 @@ Es2Shd* es2_shd_allocator(Es2Rdh* rdh, const char* name)
 {
 	Es2Shd* self = qn_alloc_zero_1(Es2Shd);
 	qn_retval_if_fail(self, NULL);
-	qm_set_desc(self, GLFUNC(glCreateProgram)());
+#ifdef _QN_WINDOWS_
+	qm_set_desc(self, es2_func.glCreateProgram());
+#else
+	qm_set_desc(self, GLFUNC(glCreateProgram)());	// 이렇게 하면 LINT에 걸려버렷
+#endif
 	return qm_init(self, Es2Shd, &vt_es2_shd);
 }
 
