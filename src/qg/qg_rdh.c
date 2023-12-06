@@ -46,7 +46,8 @@ QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, 
 
 	// 공통 설정
 	self->caps.test_stage_valid = true;
-	qn_vec2_set(&self->tm.z, 1.0f, 100000.0f);
+	self->tm.z.znear = 1.0f;
+	self->tm.z.zfar = 100000.0f;
 
 	qvt_cast(self, QgRdh)->reset(self);
 
@@ -71,10 +72,10 @@ void rdh_internal_reset(QgRdh* self)
 	// tm
 	QgRenderTm* tm = &self->tm;
 	tm->size = qg_stub_instance->size;
-	const float aspect = qn_point_aspect(&tm->size);
+	const float aspect = qn_size_aspect(&tm->size);
 	qn_mat4_rst(&tm->world);
 	qn_mat4_rst(&tm->view);
-	qn_mat4_perspective_lh(&tm->proj, QN_PI_H, aspect, tm->z._near, tm->z._far);
+	qn_mat4_perspective_lh(&tm->proj, QN_PI_H, aspect, tm->z.znear, tm->z.zfar);
 	tm->vipr = tm->proj;
 	qn_mat4_rst(&tm->inv);
 	qn_mat4_rst(&tm->ortho);
@@ -146,7 +147,7 @@ bool qg_rdh_poll(QgRdh* self, QgEvent* ev)
 	if (!ret)
 		return false;
 
-	if (ev->ev == QGEV_LAYOUT && !qn_point_eq(&self->tm.size, &qg_stub_instance->size))
+	if (ev->ev == QGEV_LAYOUT && !qn_size_eq(&self->tm.size, &qg_stub_instance->size))
 		qvt_cast(self, QgRdh)->reset(self);
 
 	return ret;

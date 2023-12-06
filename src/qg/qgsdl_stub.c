@@ -53,10 +53,10 @@ struct StubBase* stub_system_open(struct StubParam* param)
 	}
 
 	SDL_GetWindowWMInfo(stub->window, &stub->wminfo);
-	SDL_GetWindowSize(stub->window, &stub->base.size.x, &stub->base.size.y);
+	SDL_GetWindowSize(stub->window, &stub->base.size.width, &stub->base.size.height);
 	SDL_GetWindowPosition(stub->window, &stub->base.bound.left, &stub->base.bound.top);
-	stub->base.bound.right = stub->base.bound.left + stub->base.size.x;
-	stub->base.bound.bottom = stub->base.bound.top + stub->base.size.y;
+	stub->base.bound.right = stub->base.bound.left + stub->base.size.width;
+	stub->base.bound.bottom = stub->base.bound.top + stub->base.size.height;
 
 	stub->base.oshandle = stub->window;
 
@@ -98,14 +98,14 @@ static double sdl_mesg_active(bool isactive)
 static void sdl_mesg_layout(void)
 {
 	struct SdlStub* stub = (struct SdlStub*)qg_stub_instance;
-	const QnPoint prev = stub->base.size;
+	const QnSize prev = stub->base.size;
 
-	SDL_GetWindowSize(stub->window, &stub->base.size.x, &stub->base.size.y);
+	SDL_GetWindowSize(stub->window, &stub->base.size.width, &stub->base.size.height);
 	SDL_GetWindowPosition(stub->window, &stub->base.bound.left, &stub->base.bound.top);
-	stub->base.bound.right = stub->base.bound.left + stub->base.size.x;
-	stub->base.bound.bottom = stub->base.bound.top + stub->base.size.y;
+	stub->base.bound.right = stub->base.bound.left + stub->base.size.width;
+	stub->base.bound.bottom = stub->base.bound.top + stub->base.size.height;
 
-	if (!qn_point_eq(&prev, &stub->base.size))
+	if (!qn_size_eq(&prev, &stub->base.size))
 	{
 		// 크기가 바꼈다 -> 트리거
 		const QgEvent e =

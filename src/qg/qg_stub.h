@@ -25,7 +25,7 @@ struct StubBase
 	float				advance;
 
 	QnRect				bound;
-	QnPoint				size;
+	QnSize				size;
 
 	QgUimKey			key;
 	QgUimMouse			mouse;

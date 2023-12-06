@@ -343,6 +343,7 @@ typedef struct QgUimMouse				QgUimMouse;
 typedef struct QgUimCtrl				QgUimCtrl;
 typedef struct QgUimCtrlInfo			QgUimCtrlInfo;
 typedef struct QgUimCtrlVib				QgUimCtrlVib;
+typedef struct QgZdepth					QgZdepth;
 typedef struct QgDeviceInfo				QgDeviceInfo;
 typedef struct QgRenderInvoke			QgRenderInvoke;
 typedef struct QgRenderTm				QgRenderTm;
@@ -537,6 +538,12 @@ struct QgUimCtrlVib
 };
 
 //
+struct QgZdepth
+{
+	float				znear, zfar;
+};
+
+//
 struct QgDeviceInfo
 {
 	char				name[64];
@@ -570,8 +577,8 @@ struct QgRenderInvoke
 
 struct QgRenderTm
 {
-	QnPoint				size;
-	QnVec2				z;
+	QnSize				size;
+	QgZdepth			z;
 	QnMat4				world;
 	QnMat4				view;
 	QnMat4				proj;

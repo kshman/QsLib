@@ -1,4 +1,6 @@
-﻿#include <qs.h>
+﻿// 버퍼와 레이아웃으로 그리기
+// 정점과 색깔로 표현
+#include <qs.h>
 
 static const char* vs =
 "attribute vec4 aposition;\n"

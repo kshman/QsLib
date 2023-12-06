@@ -92,6 +92,7 @@ typedef struct QmGam					QmGam;
 #	define QN_MEM_BARRIER()				_ReadWriteBarrier()
 #	define QN_STATIC_ASSERT				static_assert
 #	define QN_FALL_THROUGH
+#	define QN_ALIGN(x)					__declspec(align(x))
 #elif defined __GNUC__
 #	define QN_RESTRICT					restrict
 #ifndef __cplusplus
@@ -111,6 +112,7 @@ typedef struct QmGam					QmGam;
 #endif
 #	define QN_STATIC_ASSERT				_Static_assert
 #	define QN_FALL_THROUGH				__attribute__((fallthrough))
+#	define QN_ALIGN(x)					__attribute__((aligned(x)))
 #endif
 
 #ifdef __cplusplus

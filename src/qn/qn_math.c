@@ -782,7 +782,7 @@ void qn_mat4_affine(QnMat4* pm, const QnVec3* scl, const QnVec3* rotcenter, cons
 */
 void qn_mat4_trfm(QnMat4* m, const QnVec3* loc, const QnQuat* rot, const QnVec3* scl)
 {
-	float* f = m->_m;
+	float* f = m->f16;
 
 	qn_mat4_quat(m, rot, NULL);
 
@@ -825,7 +825,7 @@ void qn_mat4_trfm(QnMat4* m, const QnVec3* loc, const QnQuat* rot, const QnVec3*
 */
 void qn_mat4_trfm_vec(QnMat4* m, const QnVec3* loc, const QnVec3* rot, const QnVec3* scl)
 {
-	float* f = m->_m;
+	float* f = m->f16;
 
 	qn_mat4_vec(m, rot, NULL);
 

@@ -57,10 +57,13 @@ typedef struct QnVec4					QnVec4;
 typedef struct QnQuat					QnQuat;
 typedef struct QnMat4					QnMat4;
 typedef struct QnPoint					QnPoint;
+typedef struct QnSize					QnSize;
 typedef struct QnRect					QnRect;
 typedef struct QnRectF					QnRectF;
+typedef struct QnCoord					QnCoord;
 typedef struct QnColor					QnColor;
 typedef struct QnKolor					QnKolor;
+typedef struct QnKolorU					QnKolorU;
 typedef struct QnPlane					QnPlane;
 typedef struct QnLine3					QnLine3;
 typedef struct QnTrfm					QnTrfm;
@@ -71,34 +74,19 @@ typedef struct QnVecH4					QnVecH4;
 // vector2
 struct QnVec2
 {
-	union
-	{
-		struct { float x, y; };
-		struct { float u, v; };
-		struct { float min, max; };
-		struct { float width, height; };
-		struct { float _near, _far; };
-	};
+	float x, y;
 };
 
 // vector3
 struct QnVec3
 {
-	union
-	{
-		struct { float x, y, z; };
-		struct { float a, b, c; };
-	};
+	float x, y, z;
 };
 
 // vector4
 struct QnVec4
 {
-	union
-	{
-		struct { float x, y, z, w; };
-		struct { float a, b, c, d; };
-	};
+	float x, y, z, w;
 };
 
 // quaternion
@@ -119,8 +107,8 @@ struct QnMat4
 			float _31, _32, _33, _34;
 			float _41, _42, _43, _44;
 		};
-		float m[4][4];
-		float _m[16];
+		float f[4][4];
+		float f16[16];
 #ifdef _INCLUDED_MM2
 		__m128 m128[4];
 #endif
@@ -130,16 +118,13 @@ struct QnMat4
 // point
 struct QnPoint
 {
-	union
-	{
-		struct { int x, y; };
-		struct { int min, max; };
-		struct { int left, right; };
-		struct { uint ux, uy; };
-		struct { uint umin, umax; };
-		struct { uint uleft, uright; };
-		struct { uint width, height; };
-	};
+	int x, y;
+};
+
+// size
+struct QnSize
+{
+	int width, height;
 };
 
 // rect
@@ -148,10 +133,10 @@ struct QnRect
 	int left, top, right, bottom;
 };
 
-// quad
-struct QnRectF
+//
+struct QnCoord
 {
-	float left, top, right, bottom;
+	float u, v;
 };
 
 // color
@@ -161,14 +146,17 @@ struct QnColor
 };
 
 // byte color
-struct QnKolor
+QN_ALIGN(4) struct QnKolor
+{
+	byte b, g, r, a;
+};
+
+// byte color uni
+struct QnKolorU
 {
 	union
 	{
-		struct
-		{
-			byte b, g, r, a;
-		};
+		QnKolor k;
 		uint u;
 	};
 };
@@ -1467,31 +1455,39 @@ QN_INLINE void qn_mat4_interpolate(QnMat4* pm, const QnMat4* left, const QnMat4*
 
 // point
 
-QN_INLINE void qn_point_set(QnPoint* pt, int x_or_min, int y_or_max)
+QN_INLINE void qn_point_set(QnPoint* pt, int x, int y)
 {
-	pt->x = x_or_min;
-	pt->y = y_or_max;
-}
-
-QN_INLINE void qn_point_set_size(QnPoint* pt, const QnRect* rt)
-{
-	pt->x = rt->right - rt->left;
-	pt->y = rt->bottom - rt->top;
-}
-
-QN_INLINE float qn_point_aspect(const QnPoint* pt)
-{
-	return (float)pt->x / (float)pt->y;
-}
-
-QN_INLINE bool qn_point_between(const QnPoint* pt, int v)
-{
-	return v > pt->min && v < pt->max;
+	pt->x = x;
+	pt->y = y;
 }
 
 QN_INLINE bool qn_point_eq(const QnPoint* left, const QnPoint* right)
 {
 	return left->x == right->x && left->y == right->y;
+}
+
+// size
+
+QN_INLINE void qn_size_set(QnSize* pt, int width, int height)
+{
+	pt->width = width;
+	pt->height = height;
+}
+
+QN_INLINE void qn_size_set_rect(QnSize* pt, const QnRect* rt)
+{
+	pt->width = rt->right - rt->left;
+	pt->height = rt->bottom - rt->top;
+}
+
+QN_INLINE float qn_size_aspect(const QnSize* pt)
+{
+	return (float)pt->width / (float)pt->height;
+}
+
+QN_INLINE bool qn_size_eq(const QnSize* left, const QnSize* right)
+{
+	return left->width == right->width && left->height == right->height;
 }
 
 // rect
@@ -1582,85 +1578,6 @@ QN_INLINE bool qn_rect_intersect(QnRect* p, const QnRect* r1, const QnRect* r2)
 		qn_rect_set(p,
 			QN_MAX(r1->left, r2->left), QN_MAX(r1->top, r2->top),
 			QN_MIN(r1->right, r2->right), QN_MIN(r1->bottom, r2->bottom));
-	}
-	return b;
-}
-
-// quad
-
-QN_INLINE void qn_rectf_set(QnRectF* pq, float left, float top, float right, float bottom)
-{
-	pq->left = left;
-	pq->top = top;
-	pq->right = right;
-	pq->bottom = bottom;
-}
-
-QN_INLINE void qn_rectf_zero(QnRectF* pq)
-{
-	pq->left = 0.0f;
-	pq->top = 0.0f;
-	pq->right = 0.0f;
-	pq->bottom = 0.0f;
-}
-
-QN_INLINE void qn_rectf_mag(QnRectF* p, const QnRectF* rt, float w, float h)
-{
-	p->left = rt->left - w;
-	p->top = rt->top - h;
-	p->right = rt->right + w;
-	p->bottom = rt->bottom + h;
-}
-
-QN_INLINE void qn_rectf_inflate(QnRectF* p, const QnRectF* rt, float l, float t, float r, float b)
-{
-	p->left = rt->left - l;
-	p->top = rt->top - t;
-	p->right = rt->right + r;
-	p->bottom = rt->bottom + b;
-}
-
-QN_INLINE void qn_rectf_deflate(QnRectF* p, const QnRectF* rt, float l, float t, float r, float b)
-{
-	p->left = rt->left + l;
-	p->top = rt->top + t;
-	p->right = rt->right - r;
-	p->bottom = rt->bottom - b;
-}
-
-QN_INLINE void qn_rectf_offset(QnRectF* p, const QnRectF* rt, float l, float t, float r, float b)
-{
-	p->left = rt->left + l;
-	p->top = rt->top + t;
-	p->right = rt->right + r;
-	p->bottom = rt->bottom + b;
-}
-
-QN_INLINE float qn_rectf_width(const QnRectF* pq)
-{
-	return pq->right - pq->left;
-}
-
-QN_INLINE float qn_rectf_height(const QnRectF* pq)
-{
-	return pq->bottom - pq->top;
-}
-
-QN_INLINE bool qn_rectf_in(const QnRectF* pq, float x, float y)
-{
-	return (x >= pq->left && x <= pq->right && y >= pq->top && y <= pq->bottom);
-}
-
-QN_INLINE bool qn_rectf_intersect(QnRectF* p, const QnRectF* q1, const QnRectF* q2)
-{
-	const bool b = q2->left < q1->right && q2->right > q1->left && q2->top < q1->bottom && q2->bottom > q1->top;
-	if (!b)
-		qn_rectf_set(p, 0.0f, 0.0f, 0.0f, 0.0f);
-	else
-	{
-		qn_rectf_set(p,
-			QN_MAX(q1->left, q2->left), QN_MAX(q1->top, q2->top),
-			QN_MIN(q1->right, q2->right), QN_MIN(q1->bottom, q2->bottom));
 	}
 	return b;
 }
@@ -1836,7 +1753,7 @@ QN_INLINE void qn_kolor_set_float(QnKolor* pc, float r, float g, float b, float 
 
 QN_INLINE void qn_kolor_set_uint(QnKolor* pc, uint value)
 {
-	pc->u = value;
+	((QnKolorU*)pc)->u = value;
 }
 
 QN_INLINE void qn_kolor_set_color(QnKolor* pc, const QnColor* cr)
@@ -1849,12 +1766,12 @@ QN_INLINE void qn_kolor_set_color(QnKolor* pc, const QnColor* cr)
 
 QN_INLINE void qn_kolor_add(QnKolor* pc, const QnKolor* left, const QnKolor* right)
 {
-	pc->u = left->u + right->u;
+	((QnKolorU*)pc)->u = ((const QnKolorU*)left)->u + ((const QnKolorU*)right)->u;
 }
 
 QN_INLINE void qn_kolor_sub(QnKolor* pc, const QnKolor* left, const QnKolor* right)
 {
-	pc->u = left->u - right->u;
+	((QnKolorU*)pc)->u = ((const QnKolorU*)left)->u - ((const QnKolorU*)right)->u;
 }
 
 QN_INLINE void qn_kolor_mag(QnKolor* pc, const QnKolor* left, float scale)
@@ -1917,7 +1834,7 @@ QN_INLINE void qn_kolor_max(QnKolor* pc, const QnKolor* left, const QnKolor* rig
 
 QN_INLINE bool qn_kolor_eq(const QnKolor* left, const QnKolor* right)
 {
-	return left->u == right->u;
+	return ((const QnKolorU*)left)->u == ((const QnKolorU*)right)->u;
 }
 
 QN_INLINE void qn_kolor_contrast(QnKolor* pc, const QnKolor* c, float s)
