@@ -1,6 +1,7 @@
 ﻿#pragma once
+// ReSharper disable CppClangTidyBugproneMacroParentheses
 
-#if _MSC_VER
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4127)	// conditional expression is constant
 #pragma warning(disable:4200)	// nonstandard extension used : zero-sized array in struct/union
@@ -14,13 +15,13 @@ QN_EXTC_BEGIN
 	typedef struct _##name name;\
 	typedef type _##name##Type;\
 	struct _##name { size_t count; size_t capa; type* data; };
-QN_DECL_ARR(qnPtrArr, void*);
-QN_DECL_ARR(qnByteArr, byte);
-QN_DECL_ARR(qnIntArr, int);
-QN_DECL_ARR(qnUintArr, uint);
+QN_DECL_ARR(qnPtrArr, void*)
+QN_DECL_ARR(qnByteArr, byte)
+QN_DECL_ARR(qnIntArr, int)
+QN_DECL_ARR(qnUintArr, uint)
 QN_DECL_ARR(qnPcharArr, char*)			// qnPtrArr
-QN_DECL_ARR(qnPccharArr, const char*);	// qnPtrArr
-QN_DECL_ARR(qnAnyArr, any_t);
+QN_DECL_ARR(qnPccharArr, const char*)	// qnPtrArr
+QN_DECL_ARR(qnAnyArr, any_t)
 
 #define qn_arr_nth(p,n)					(((p)->data)[(size_t)(n)])
 #define qn_arr_inv(p,n)					(((p)->data)[((p)->count-1-(size_t)(n))])
@@ -37,17 +38,17 @@ QN_DECL_ARR(qnAnyArr, any_t);
 		(p)->count=0;\
 		(p)->capa=0;\
 		if ((initcapa)>0)\
-			_qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name), (initcapa));\
+			qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name), (initcapa));\
 	}QN_STMT_END
 
 #define qn_arr_disp(name,p)\
 	QN_STMT_BEGIN{ qn_free((p)->data); }QN_STMT_END
 
 #define qn_arr_set_capacity(name,p,newcapa)\
-	QN_STMT_BEGIN{ _qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name), newcapa); }QN_STMT_END
+	QN_STMT_BEGIN{ qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name), newcapa); }QN_STMT_END
 
 #define qn_arr_set_count(name,p,newcnt)\
-	QN_STMT_BEGIN{ _qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name),(newcnt)); (p)->count=(newcnt); }QN_STMT_END
+	QN_STMT_BEGIN{ qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name),(newcnt)); (p)->count=(newcnt); }QN_STMT_END
 
 #define qn_arr_copy(name,p,o)\
 	QN_STMT_BEGIN{\
@@ -65,7 +66,7 @@ QN_DECL_ARR(qnAnyArr, any_t);
 	QN_STMT_BEGIN{\
 		if ((size_t)(cnt)>0)\
 		{\
-			_qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name), (p)->count+(size_t)(cnt));\
+			qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name), (p)->count+(size_t)(cnt));\
 			memcpy(&qn_arr_nth(p, (p)->count), (items), qn_arr_sizeof(name)*(size_t)(cnt));\
 			(p)->count+=(size_t)(cnt);\
 		}\
@@ -90,7 +91,7 @@ QN_DECL_ARR(qnAnyArr, any_t);
 		{\
 			if (__s!=__cnt-1)\
 				memmove(&qn_arr_nth(p,idx), &qn_arr_nth(p,__s), (__cnt-__s)*qn_arr_sizeof(name));\
-			(p)->count-=(size_t)cnt;\
+			(p)->count-=(size_t)(cnt);\
 		}\
 	}QN_STMT_END
 
@@ -120,7 +121,7 @@ QN_DECL_ARR(qnAnyArr, any_t);
 #define qn_arr_add(name,p,item)\
 	QN_STMT_BEGIN{\
 		if ((p)->count>=(p)->capa)\
-			_qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name), (p)->capa+1);\
+			qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name), (p)->capa+1);\
 		qn_arr_nth(p,(p)->count)=(item);\
 		(p)->count++;\
 	}QN_STMT_END
@@ -128,7 +129,7 @@ QN_DECL_ARR(qnAnyArr, any_t);
 #define qn_arr_reserve(name,p)\
 	QN_STMT_BEGIN{\
 		if ((p)->count>=(p)->capa)\
-			_qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name), (p)->capa+1);\
+			qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name), (p)->capa+1);\
 		(p)->count++;\
 	}QN_STMT_END
 
@@ -137,7 +138,7 @@ QN_DECL_ARR(qnAnyArr, any_t);
 		if ((size_t)(idx)<=(p)->count)\
 		{\
 			if ((p)->count>=(p)->capa)\
-				_qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name), (p)->capa+1);\
+				qn_inl_arr_expand((void*)(p), qn_arr_sizeof(name), (p)->capa+1);\
 			memmove((p)->data+(size_t)(idx)+1, (p)->data+(size_t)(idx), ((p)->count-(size_t)(idx))*qn_arr_sizeof(name));\
 			qn_arr_nth(p,idx)=(item);\
 			(p)->count++;\
@@ -216,7 +217,7 @@ QN_DECL_ARR(qnAnyArr, any_t);
 			func_ptr(&qn_arr_nth(p,__i));\
 	}QN_STMT_END
 
-QN_INLINE void _qn_inl_arr_expand(void* arr, size_t size, size_t cnt)
+QN_INLINE void qn_inl_arr_expand(void* arr, size_t size, size_t cnt)
 {
 	qnByteArr* p = (qnByteArr*)arr;
 	if (p->count < cnt)
@@ -283,16 +284,16 @@ QN_INLINE void _qn_inl_arr_expand(void* arr, size_t size, size_t cnt)
 #define QN_DECL_CTNR(name,type)\
 	typedef struct _##name name;\
 	typedef type _##name##Type;\
-	struct _##name { size_t count; type* data; }
-QN_DECL_CTNR(qnPtrCtnr, void*);
-QN_DECL_CTNR(qnByteCtn, byte);
-QN_DECL_CTNR(qnIntCtn, int);
-QN_DECL_CTNR(qnUintCtn, uint);
-QN_DECL_CTNR(qnPcharCtn, char*);		// qnPtrCtnr
-QN_DECL_CTNR(qnPccharCtn, const char*);	// qnPtrCtnr
-QN_DECL_CTNR(qnAnyCtn, any_t);
+	struct _##name { size_t count; type* data; };
+QN_DECL_CTNR(qnPtrCtnr, void*)
+QN_DECL_CTNR(qnByteCtn, byte)
+QN_DECL_CTNR(qnIntCtn, int)
+QN_DECL_CTNR(qnUintCtn, uint)
+QN_DECL_CTNR(qnPcharCtn, char*)			// qnPtrCtnr
+QN_DECL_CTNR(qnPccharCtn, const char*)	// qnPtrCtnr
+QN_DECL_CTNR(qnAnyCtn, any_t)
 
-#if _DEBUG
+#ifdef _DEBUG
 #define qn_ctnr_nth_safe(p,n)			(((p)->data)[((size_t)(n)<(p)->count) ? (size_t)(n) : qn_debug_assert(#n, "overflow", __FILE__, __LINE__)])
 #else
 #define qn_ctnr_nth_safe(p,n)			(((p)->data)[(size_t)(n)])
@@ -377,7 +378,7 @@ QN_DECL_CTNR(qnAnyCtn, any_t);
 		size_t __i, __cnt=(p)->count;\
 		for (*(ret)=-1, __i=0; __i<__cnt; __i++)\
 		{\
-			if (qn_ctnr_nth(p,__i)==item)\
+			if (qn_ctnr_nth(p,__i)==(item))\
 			{\
 				*(ret)=(int)__i;\
 				break;\
@@ -418,16 +419,16 @@ QN_DECL_CTNR(qnAnyCtn, any_t);
 #define qn_pctnr_count(p,n)				qn_ctnr_count(p,n)
 #define qn_pctnr_data(p)				qn_ctnr_data(p)
 
-#define qn_pctnr_init(p, count)			qn_ctnr_init(qnPtrCtnr, (qnPtrCtnr*)p, count)
-#define qn_pctnr_initZero(p, count)		qn_ctnr_init_zero(qnPtrCtnr, (qnPtrCtnr*)p, count)
-#define qn_pctnr_disp(p)				qn_ctnr_disp(qnPtrCtnr, (qnPtrCtnr*)p)
-#define qn_pctnr_set_count(p, count)	qn_ctnr_set_count(qnPtrCtnr, (qnPtrCtnr*)p, count)
-#define qn_pctnr_add_count(p, count)	qn_ctnr_add_count(qnPtrCtnr, (qnPtrCtnr*)p, count)
-#define qn_pctnr_add(p, item)			qn_ctnr_add(qnPtrCtnr, (qnPtrCtnr*)p, (void*)item)
-#define qn_pctnr_zero(p)				qn_ctnr_zero(qnPtrCtnr, (qnPtrCtnr*)p)
+#define qn_pctnr_init(p, count)			qn_ctnr_init(qnPtrCtnr, (qnPtrCtnr*)(p), count)
+#define qn_pctnr_initZero(p, count)		qn_ctnr_init_zero(qnPtrCtnr, (qnPtrCtnr*)(p), count)
+#define qn_pctnr_disp(p)				qn_ctnr_disp(qnPtrCtnr, (qnPtrCtnr*)(p))
+#define qn_pctnr_set_count(p, count)	qn_ctnr_set_count(qnPtrCtnr, (qnPtrCtnr*)(p), count)
+#define qn_pctnr_add_count(p, count)	qn_ctnr_add_count(qnPtrCtnr, (qnPtrCtnr*)(p), count)
+#define qn_pctnr_add(p, item)			qn_ctnr_add(qnPtrCtnr, (qnPtrCtnr*)(p), (void*)(item))
+#define qn_pctnr_zero(p)				qn_ctnr_zero(qnPtrCtnr, (qnPtrCtnr*)(p))
 #define qn_pctnr_foreach(p, func, userdata)\
-										qn_ctnr_foreach(qnPtrCtnr, (qnPtrCtnr*)p, func, userdata)
-#define qn_pctnr_loopeach(p, func)		qn_ctnr_loopeach(qnPtrCtnr, (qnPtrCtnr*)p, func)
+										qn_ctnr_foreach(qnPtrCtnr, (qnPtrCtnr*)(p), func, userdata)
+#define qn_pctnr_loopeach(p, func)		qn_ctnr_loopeach(qnPtrCtnr, (qnPtrCtnr*)(p), func)
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -436,7 +437,7 @@ QN_DECL_CTNR(qnAnyCtn, any_t);
 	typedef struct _##name name;\
 	typedef type _##name##Type;\
 	struct _##name##Node { struct _##name##Node *next, *prev; type data; };\
-	struct _##name { struct _##name##Node *frst, *last; size_t count; }
+	struct _##name { struct _##name##Node *frst, *last; size_t count; };
 
 #define qn_list_count(p)					((p)->count)
 #define qn_list_node_first(p)				((p)->last)
@@ -726,8 +727,8 @@ QN_DECL_CTNR(qnAnyCtn, any_t);
 #define QN_DECL_NODELIST(name,type)\
 	typedef struct _##name name;\
 	typedef type _##name##Type;\
-	struct _##name { type* frst; type* last; size_t count; }
-QN_DECL_LIST(qnPtrList, void*);
+	struct _##name { type* frst; type* last; size_t count; };
+QN_DECL_LIST(qnPtrList, void*)
 
 #define qn_nodelist_count(p)			((p)->count)
 #define qn_nodelist_first(p)			((p)->last)
@@ -916,16 +917,16 @@ QN_DECL_LIST(qnPtrList, void*);
 										qn_list_foreach(qnPtrList, p, func_user_data, userdata)
 #define qn_plist_loopeach(p,func_data)	qn_list_loopeach(qnPtrList, p, func_data)
 
-QN_INLINE bool qn_plist_contains(qnPtrList* p, void* item)
+QN_INLINE bool qn_plist_contains(const qnPtrList* p, const void* item)
 {
-	struct _qnPtrListNode* node = NULL;
+	const struct _qnPtrListNode* node = NULL;
 	qn_list_contains(qnPtrList, p, item, &node);
 	return node != NULL;
 }
 
-QN_INLINE bool qn_plist_find(qnPtrList* p, bool (*pred)(void*, void*), void* userdata)
+QN_INLINE bool qn_plist_find(const qnPtrList* p, bool (*pred)(void*, void*), void* userdata)
 {
-	struct _qnPtrListNode* node = NULL;
+	const struct _qnPtrListNode* node = NULL;
 	qn_list_find(qnPtrList, p, pred, userdata, &node);
 	return node != NULL;
 }
@@ -936,13 +937,13 @@ QN_INLINE bool qn_plist_find(qnPtrList* p, bool (*pred)(void*, void*), void* use
 #define QN_DECL_SLIST(name,type)\
 	typedef struct _##name name;\
 	typedef type _##name##Type;\
-	struct _##name { struct _##name* next; type data; }
-QN_DECL_SLIST(qnPtrSlist, void*);
+	struct _##name { struct _##name* next; type data; };
+QN_DECL_SLIST(qnPtrSlist, void*)
 
-#define qn_slist_last(p)				_qn_inl_slist_last(p)
-#define qn_slist_nth(p,nth)				_qn_inl_slist_nth(p, nth)
-#define qn_slist_data(p,nth)			((_qn_inl_slist_nth(p, nth))->data)
-#define qn_slist_count(p)				_qn_inl_slist_count(p)
+#define qn_slist_last(p)				qn_inl_slist_last(p)
+#define qn_slist_nth(p,nth)				qn_inl_slist_nth(p, nth)
+#define qn_slist_data(p,nth)			((qn_inl_slist_nth(p, nth))->data)
+#define qn_slist_count(p)				qn_inl_slist_count(p)
 
 #define qn_slist_delete(name, p, ptrptr)\
 	QN_STMT_BEGIN{\
@@ -1100,7 +1101,7 @@ QN_DECL_SLIST(qnPtrSlist, void*);
 			name* __np=qn_alloc_1(name);\
 			if (__np) {\
 				__np->data=item;\
-				if (!p)\
+				if (!(p))\
 				{\
 					__np->next=NULL;\
 					*(ptrptr)=__np;\
@@ -1137,7 +1138,7 @@ QN_DECL_SLIST(qnPtrSlist, void*);
 		name* __v=NULL;\
 		while (__t)\
 		{\
-			if (__t->data==item)\
+			if (__t->data==(item))\
 			{\
 				if (__v)\
 					__v->next=__t->next;\
@@ -1209,7 +1210,7 @@ QN_DECL_SLIST(qnPtrSlist, void*);
 		name* __p=(p);\
 		while (__p)\
 		{\
-			if (__p->data==item)\
+			if (__p->data==(item))\
 				break;\
 			__p=__p->next;\
 		}\
@@ -1250,15 +1251,15 @@ QN_DECL_SLIST(qnPtrSlist, void*);
 		}\
 	}QN_STMT_END
 
-QN_INLINE void* _qn_inl_slist_last(void* ptr)
+QN_INLINE void* qn_inl_slist_last(void* ptr)
 {
 	qnPtrSlist* p = (qnPtrSlist*)ptr;
-	for (; p->next;)
+	while (p->next)
 		p = p->next;
 	return p;
 }
 
-QN_INLINE void* _qn_inl_slist_nth(void* ptr, size_t nth)
+QN_INLINE void* qn_inl_slist_nth(void* ptr, size_t nth)
 {
 	qnPtrSlist* p = (qnPtrSlist*)ptr;
 	while (nth-- > 0 && p)
@@ -1266,12 +1267,15 @@ QN_INLINE void* _qn_inl_slist_nth(void* ptr, size_t nth)
 	return (void*)p;
 }
 
-QN_INLINE size_t _qn_inl_slist_count(void* ptr)
+QN_INLINE size_t qn_inl_slist_count(void* ptr)
 {
-	qnPtrSlist* p = (qnPtrSlist*)ptr;
+	const qnPtrSlist* p = (qnPtrSlist*)ptr;
 	size_t n = 0;
 	while (p)
-		n++, p = p->next;
+	{
+		n++;
+		p = p->next;
+	}
 	return n;
 }
 
@@ -1294,8 +1298,7 @@ QN_INLINE void qn_pslist_disp(qnPtrSlist* p, void (*func_1)(void*))
 	}
 	else
 	{
-		qnPtrSlist* n = NULL;
-		for (; p; p = n)
+		for (qnPtrSlist* n; p; p = n)
 		{
 			n = p->next;
 			if (func_1)
@@ -1323,7 +1326,7 @@ QN_INLINE qnPtrSlist* qn_pslist_prepend(qnPtrSlist* p, void* item)
 	return p;
 }
 
-QN_INLINE qnPtrSlist* qn_pslist_insert(qnPtrSlist* p, qnPtrSlist* sib, void* item)
+QN_INLINE qnPtrSlist* qn_pslist_insert(qnPtrSlist* p, const qnPtrSlist* sib, void* item)
 {
 	qn_slist_insert(qnPtrSlist, p, sib, item, &p);
 	return p;
@@ -1335,7 +1338,7 @@ QN_INLINE qnPtrSlist* qn_pslist_insert_nth(qnPtrSlist* p, int nth, void* item)
 	return p;
 }
 
-QN_INLINE qnPtrSlist* qn_pslist_remove(qnPtrSlist* p, void* item)
+QN_INLINE qnPtrSlist* qn_pslist_remove(qnPtrSlist* p, const void* item)
 {
 	qn_slist_remove(qnPtrSlist, p, item, &p);
 	return p;
@@ -1347,14 +1350,14 @@ QN_INLINE qnPtrSlist* qn_pslist_remove_link(qnPtrSlist* p, qnPtrSlist* link)
 	return p;
 }
 
-QN_INLINE qnPtrSlist* qn_pslist_copy(qnPtrSlist* p)
+QN_INLINE qnPtrSlist* qn_pslist_copy(const qnPtrSlist* p)
 {
 	qnPtrSlist* n = NULL;
 	qn_slist_copy(qnPtrSlist, p, &n);
 	return n;
 }
 
-QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, void* item)
+QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, const void* item)
 {
 	qn_slist_contains(qnPtrSlist, p, item, &p);
 	return p;
@@ -1372,7 +1375,7 @@ QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, void* item)
 #define QN_DECL_SLICE(name, type)\
 	typedef struct _##name name;\
 	typedef type _##name##Type;\
-	struct name { size_t max; size_t count; type* data; }
+	struct name { size_t max; size_t count; type* data; };
 
 #define qn_slice_nth(p,n)				(((p)->data)[(size_t)(n)])
 #define qn_slice_invat(p,n)				(((p)->data)[((p)->count-1-(size_t)(n)])
@@ -1579,7 +1582,7 @@ QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, void* item)
 		size_t __i, __cnt=(p)->count;\
 		for (*(retintref)=-1, __i=0; __i<__cnt; __i++)\
 		{\
-			if (qn_slice_nth(p,__i)==item)\
+			if (qn_slice_nth(p,__i)==(item))\
 			{\
 				*(retintref)=(int)__i;\
 				break;\
@@ -1622,8 +1625,8 @@ QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, void* item)
 	typedef keytype _##name##Key;\
 	typedef valuetype _##name##Value;\
 	struct _##name##Node { struct _##name##Node *sib, *next, *prev; size_t hash; _##name##Key key; _##name##Value value; };\
-	struct _##name { size_t revision; size_t bucket; size_t count; struct _##name##Node **nodes, *frst, *last; }
-QN_DECL_HASH(qnInlineHash, size_t, size_t);
+	struct _##name { size_t revision; size_t bucket; size_t count; struct _##name##Node **nodes, *frst, *last; };
+QN_DECL_HASH(qnInlineHash, size_t, size_t)
 
 #define QN_DECL_HASH_HASH(name,func1)	QN_INLINE size_t _##name##_hash_hash(_##name##Key* key) { return func1(key); }
 #define QN_DECL_HASH_HASH_PURE(name)	QN_INLINE size_t _##name##_hash_hash(_##name##Key* key) { return (size_t)(uintptr_t)(*key); }
@@ -1675,7 +1678,7 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 #define QN_DECL_PHASH_HASHER_WCHAR_PTR(name)\
 										QN_INLINE size_t _##name##_ptrhash_hash(const wchar_t* key) { return qn_wcshash(key); }\
 										QN_INLINE bool _##name##_ptrhash_eq(const wchar_t* k1, const wchar_t* k2) { return wcscmp(k1, k2)==0; }
-#define QN_DECL_PHASH_BOTH_NONE(name)	QN_DECL_HASH_PTR_KEY_NONE(name); QN_DECL_HASH_PTR_VALUE_NONE(name)
+#define QN_DECL_PHASH_BOTH_NONE(name)	QN_DECL_HASH_PTR_KEY_NONE(name) QN_DECL_HASH_PTR_VALUE_NONE(name)
 
 //
 #define qn_hash_count(p)				((p)->count)
@@ -1711,14 +1714,14 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 #define qn_hash_remove_node(name,p,node)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node** __en=&(node);\
-		_qn_inl_hash_erase_node(name,p,&__en);\
-		_qn_inl_hash_test_size(name,p);\
+		qn_inl_hash_erase_node(name,p,&__en);\
+		qn_inl_hash_test_size(name,p);\
 	}QN_STMT_END
 
 #define qn_hash_clear(name,p)\
 	QN_STMT_BEGIN{\
-		_qn_inl_hash_erase_all(name,p);\
-		_qn_inl_hash_test_size(name,p);\
+		qn_inl_hash_erase_all(name,p);\
+		qn_inl_hash_test_size(name,p);\
 	}QN_STMT_END
 
 #define qn_hash_foreach(name,p,func3,userdata)\
@@ -1752,7 +1755,7 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 #define qn_hash_node(name,p,keyptr,retnode)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node** __gn;\
-		_qn_inl_hash_lookup(name,p,keyptr,__gn);\
+		qn_inl_hash_lookup(name,p,keyptr,__gn);\
 		(retnode)=*__gn;\
 	}QN_STMT_END
 
@@ -1760,21 +1763,21 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 	QN_STMT_BEGIN{\
 		/* retvalue: pointer of 'value' */\
 		struct _##name##Node **__gn, *__node;\
-		_qn_inl_hash_lookup(name,p,keyptr,__gn);\
+		qn_inl_hash_lookup(name,p,keyptr,__gn);\
 		__node=*__gn;\
 		*(retvalue)=(__node) ? &__node->value : NULL;\
 	}QN_STMT_END
 
 #define qn_hash_add(name,p,keyptr,valueptr)\
-	_qn_inl_hash_set(name,p,keyptr,valueptr,false)
+	qn_inl_hash_set(name,p,keyptr,valueptr,false)
 
 #define qn_hash_set(name,p,keyptr,valueptr)\
-	_qn_inl_hash_set(name,p,keyptr,valueptr,true);
+	qn_inl_hash_set(name,p,keyptr,valueptr,true)
 
 #define qn_hash_remove(name,p,keyptr,retbool_can_be_null)\
 	QN_STMT_BEGIN{\
-		_qn_inl_hash_erase(name,p,keyptr,retbool_can_be_null);\
-		_qn_inl_hash_test_size(name,p);\
+		qn_inl_hash_erase(name,p,keyptr,retbool_can_be_null);\
+		qn_inl_hash_test_size(name,p);\
 	}QN_STMT_END
 
 #define qn_hash_find(name,p,func,userdata,retkey,gotoname)\
@@ -1784,16 +1787,16 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 		{\
 			if (func(userdata, &__node->key, &__node->value))\
 			{\
-				retkey=&__node->key;\
+				(retkey)=&__node->key;\
 				goto K_CONCAT(pos_hash_find_exit,gotoname);\
 			}\
 		}\
-		retkey=NULL;\
+		(retkey)=NULL;\
 		K_CONCAT(pos_hash_find_exit,gotoname):;\
 	}QN_STMT_END
 
 //
-#define _qn_inl_hash_lookup(name,p,keyptr,retnode)\
+#define qn_inl_hash_lookup(name,p,keyptr,retnode)\
 	QN_STMT_BEGIN{\
 		/* keyptr: pointer of key */\
 		/* retnode: pointer's pointer of Node */\
@@ -1807,7 +1810,7 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 		(retnode)=__ln;\
 	}QN_STMT_END
 
-#define _qn_inl_hash_lookup_hash(name,p,keyptr,retnode,rethash)\
+#define qn_inl_hash_lookup_hash(name,p,keyptr,retnode,rethash)\
 	QN_STMT_BEGIN{\
 		/* keyptr: pointer of key */\
 		/* retnode: pointer's pointer of Node */\
@@ -1825,14 +1828,14 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 		}\
 	}QN_STMT_END
 
-#define _qn_inl_hash_set(name,p,keyptr,valueptr,replace)\
+#define qn_inl_hash_set(name,p,keyptr,valueptr,replace)\
 	QN_STMT_BEGIN{\
 		/* keyptr: pointer of key */\
 		/* valuedata : data of value */\
 		/* replace: true=replace original key, false=discard given key */\
 		size_t __ah=0;\
 		struct _##name##Node** __an=NULL;\
-		_qn_inl_hash_lookup_hash(name,p,keyptr,__an,&__ah);\
+		qn_inl_hash_lookup_hash(name,p,keyptr,__an,&__ah);\
 		if (__an) {\
 			struct _##name##Node* __ann=*__an;\
 			if (__ann)\
@@ -1873,15 +1876,15 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 				(p)->revision++;\
 				(p)->count++;\
 				/* step 4 */\
-				_qn_inl_hash_test_size(name,p);\
+				qn_inl_hash_test_size(name,p);\
 			}\
 		}\
 	}QN_STMT_END
 
-#define _qn_inl_hash_erase(name,p,keyptr,retbool)\
+#define qn_inl_hash_erase(name,p,keyptr,retbool)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node** __rn;\
-		_qn_inl_hash_lookup(name,p,keyptr,__rn);\
+		qn_inl_hash_lookup(name,p,keyptr,__rn);\
 		if (*__rn==NULL)\
 		{\
 			if (retbool)\
@@ -1892,7 +1895,7 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 		}\
 		else\
 		{\
-			_qn_inl_hash_erase_node(name,p,&__rn);\
+			qn_inl_hash_erase_node(name,p,&__rn);\
 			if (retbool)\
 			{\
 				bool* __c=retbool;\
@@ -1901,9 +1904,9 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 		}\
 	}QN_STMT_END
 
-#define _qn_inl_hash_erase_node(name,p,pppnode)\
+#define qn_inl_hash_erase_node(name,p,pppnode)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node** __en=*pppnode;\
+		struct _##name##Node** __en=*(pppnode);\
 		struct _##name##Node* __enn=*__en;\
 		/* step 1 */\
 		*__en=__enn->sib;\
@@ -1930,7 +1933,7 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 		(p)->revision++;\
 	}QN_STMT_END
 
-#define _qn_inl_hash_erase_all(name,p)\
+#define qn_inl_hash_erase_all(name,p)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node* __enn;\
 		struct _##name##Node* __enx;\
@@ -1964,14 +1967,14 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 #define qn_hash_ptr_remove_node(name,p,node)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node** __en=&(node);\
-		_qn_inl_hash_ptr_erase_node(name,p,&__en);\
-		_qn_inl_hash_test_size(name,p);\
+		qn_inl_hash_ptr_erase_node(name,p,&__en);\
+		qn_inl_hash_test_size(name,p);\
 	}QN_STMT_END
 
 #define qn_hash_ptr_clear(name,p)\
 	QN_STMT_BEGIN{\
-		_qn_inl_hash_ptr_erase_all(name,p);\
-		_qn_inl_hash_test_size(name,p);\
+		qn_inl_hash_ptr_erase_all(name,p);\
+		qn_inl_hash_test_size(name,p);\
 	}QN_STMT_END
 
 #define qn_hash_ptr_foreach(name,p,func3,userdata)\
@@ -2012,7 +2015,7 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 #define qn_hash_ptr_node(name,p,keyptr,retnode)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node** __gn;\
-		_qn_inl_hash_ptr_lookup(name,p,keyptr,__gn);\
+		qn_inl_hash_ptr_lookup(name,p,keyptr,__gn);\
 		(retnode)=*__gn;\
 	}QN_STMT_END
 
@@ -2021,25 +2024,25 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 		/* retvalue: pointer of 'value' */\
 		struct _##name##Node** __gn;\
 		struct _##name##Node* __node;\
-		_qn_inl_hash_ptr_lookup(name,p,keyptr,__gn);\
+		qn_inl_hash_ptr_lookup(name,p,keyptr,__gn);\
 		__node=*__gn;\
 		*(retvalue)=(__node) ? __node->value : NULL;\
 	}QN_STMT_END
 
 #define qn_hash_ptr_add(name,p,keyptr,valueptr)\
-	_qn_inl_hash_ptr_set(name,p,keyptr,valueptr,false)
+	qn_inl_hash_ptr_set(name,p,keyptr,valueptr,false)
 
 #define qn_hash_ptr_set(name,p,keyptr,valueptr)\
-	_qn_inl_hash_ptr_set(name,p,keyptr,valueptr,true);
+	qn_inl_hash_ptr_set(name,p,keyptr,valueptr,true);
 
 #define qn_hash_ptr_remove(name,p,keyptr,retbool_can_be_null)\
 	QN_STMT_BEGIN{\
-		_qn_inl_hash_ptr_erase(name,p,keyptr,retbool_can_be_null);\
-		_qn_inl_hash_test_size(name,p);\
+		qn_inl_hash_ptr_erase(name,p,keyptr,retbool_can_be_null);\
+		qn_inl_hash_test_size(name,p);\
 	}QN_STMT_END
 
 //
-#define _qn_inl_hash_ptr_lookup(name,p,keyptr,retnode)\
+#define qn_inl_hash_ptr_lookup(name,p,keyptr,retnode)\
 	QN_STMT_BEGIN{\
 		/* keyptr: pointer of key */\
 		/* retnode: pointer's pointer of Node */\
@@ -2055,7 +2058,7 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 		(retnode)=__ln;\
 	}QN_STMT_END
 
-#define _qn_inl_hash_ptr_lookup_hash(name,p,keyptr,retnode,rethash)\
+#define qn_inl_hash_ptr_lookup_hash(name,p,keyptr,retnode,rethash)\
 	QN_STMT_BEGIN{\
 		/* keyptr: pointer of key */\
 		/* retnode: pointer's pointer of Node */\
@@ -2073,7 +2076,7 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 		*(rethash)=__lh;\
 	}QN_STMT_END
 
-#define _qn_inl_hash_ptr_set(name,p,keyptr,valueptr,replace)\
+#define qn_inl_hash_ptr_set(name,p,keyptr,valueptr,replace)\
 	QN_STMT_BEGIN{\
 		/* keyptr: pointer of key */\
 		/* valuedata : data of value */\
@@ -2081,7 +2084,7 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 		size_t __ah;\
 		struct _##name##Node** __an;\
 		struct _##name##Node* __ann;\
-		_qn_inl_hash_ptr_lookup_hash(name,p,keyptr,__an,&__ah);\
+		qn_inl_hash_ptr_lookup_hash(name,p,keyptr,__an,&__ah);\
 		__ann=*__an;\
 		if (__ann)\
 		{\
@@ -2119,14 +2122,14 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 			(p)->revision++;\
 			(p)->count++;\
 			/* step 4 */\
-			_qn_inl_hash_test_size(name,p);\
+			qn_inl_hash_test_size(name,p);\
 		}\
 	}QN_STMT_END
 
-#define _qn_inl_hash_ptr_erase(name,p,keyptr,retbool)\
+#define qn_inl_hash_ptr_erase(name,p,keyptr,retbool)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node** __rn;\
-		_qn_inl_hash_ptr_lookup(name,p,keyptr,__rn);\
+		qn_inl_hash_ptr_lookup(name,p,keyptr,__rn);\
 		if (*__rn==NULL)\
 		{\
 			if (retbool)\
@@ -2137,7 +2140,7 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 		}\
 		else\
 		{\
-			_qn_inl_hash_ptr_erase_node(name,p,&__rn);\
+			qn_inl_hash_ptr_erase_node(name,p,&__rn);\
 			if (retbool)\
 			{\
 				bool* __c=retbool;\
@@ -2146,9 +2149,9 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 		}\
 	}QN_STMT_END
 
-#define _qn_inl_hash_ptr_erase_node(name,p,pppnode)\
+#define qn_inl_hash_ptr_erase_node(name,p,pppnode)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node** __en=*pppnode;\
+		struct _##name##Node** __en=*(pppnode);\
 		struct _##name##Node* __enn=*__en;\
 		/* step 1 */\
 		*__en=__enn->sib;\
@@ -2175,7 +2178,7 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 		(p)->revision++;\
 	}QN_STMT_END
 
-#define _qn_inl_hash_ptr_erase_all(name,p)\
+#define qn_inl_hash_ptr_erase_all(name,p)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node* __enn;\
 		struct _##name##Node* __enx;\
@@ -2192,16 +2195,16 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t);
 	}QN_STMT_END
 
 //
-#define _qn_inl_hash_test_size(name,p)\
+#define qn_inl_hash_test_size(name,p)\
 	QN_STMT_BEGIN{\
 		size_t __cnt=(p)->count;\
 		size_t __bkt=(p)->bucket;\
 		if ((__bkt>=3*__cnt && __bkt>QN_MIN_HASH) ||\
 			(3*__bkt<=__cnt && __bkt<QN_MAX_HASH))\
-			_qn_inl_hash_resize((qnInlineHash*)p);\
+			qn_inl_hash_resize((qnInlineHash*)(p));\
 	}QN_STMT_END
 
-QN_INLINE void _qn_inl_hash_resize(qnInlineHash* p)
+QN_INLINE void qn_inl_hash_resize(qnInlineHash* p)
 {
 	size_t newbucket = qn_primenear((uint32_t)p->count);
 	newbucket = QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
@@ -2210,10 +2213,10 @@ QN_INLINE void _qn_inl_hash_resize(qnInlineHash* p)
 		return;
 	for (size_t i = 0; i < p->bucket; i++)
 	{
-		for (struct _qnInlineHashNode *node = p->nodes[i], *next = NULL; node; node = next)
+		for (struct _qnInlineHashNode *node = p->nodes[i], *next; node; node = next)
 		{
 			next = node->sib;
-			size_t hashmask = node->hash % newbucket;
+			const size_t hashmask = node->hash % newbucket;
 			node->sib = newnodes[hashmask];
 			newnodes[hashmask] = node;
 		}
@@ -2231,8 +2234,8 @@ QN_INLINE void _qn_inl_hash_resize(qnInlineHash* p)
 	typedef keytype _##name##Key;\
 	typedef valuetype _##name##Value;\
 	struct _##name##Node { struct _##name##Node* sib; size_t hash; _##name##Key key; _##name##Value value; };\
-	struct _##name { size_t revision; size_t bucket; size_t count; struct _##name##Node** nodes; }
-QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
+	struct _##name { size_t revision; size_t bucket; size_t count; struct _##name##Node** nodes; };
+QN_DECL_MUKUM(qnInlineMukum, size_t, size_t)
 
 #define QN_DECL_MUKUM_HASH(name,func1)	QN_DECL_HASH_HASH(name,func1)
 #define QN_DECL_MUKUM_HASH_PURE(name)	QN_DECL_HASH_HASH_PURE(name)
@@ -2309,14 +2312,14 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 #define qn_mukum_remove_node(name,p,node)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node** __en=&(node);\
-		_qn_inl_mukum_erase_node(name,p,&__en);\
-		_qn_inl_mukum_test_size(name,p);\
+		qn_inl_mukum_erase_node(name,p,&__en);\
+		qn_inl_mukum_test_size(name,p);\
 	}QN_STMT_END
 
 #define qn_mukum_clear(name,p)\
 	QN_STMT_BEGIN{\
-		_qn_inl_mukum_erase_all(name,p);\
-		_qn_inl_mukum_test_size(name,p);\
+		qn_inl_mukum_erase_all(name,p);\
+		qn_inl_mukum_test_size(name,p);\
 	}QN_STMT_END
 
 #define qn_mukum_foreach(name,p,func3,userdata)\
@@ -2359,7 +2362,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 #define qn_mukum_node(name,p,keyptr,retnode)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node** __gn;\
-		_qn_inl_mukum_lookup(name,p,keyptr,__gn);\
+		qn_inl_mukum_lookup(name,p,keyptr,__gn);\
 		(retnode)=*__gn;\
 	}QN_STMT_END
 
@@ -2368,21 +2371,21 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		/* retvalue: pointer of 'value' */\
 		struct _##name##Node** __gn;\
 		struct _##name##Node* __node;\
-		_qn_inl_mukum_lookup(name,p,keyptr,__gn);\
+		qn_inl_mukum_lookup(name,p,keyptr,__gn);\
 		__node=*__gn;\
 		*(retvalue)=(__node) ? &__node->value : NULL;\
 	}QN_STMT_END
 
 #define qn_mukum_add(name,p,keyptr,valueptr)\
-	_qn_inl_mukum_set(name,p,keyptr,valueptr,false);
+	qn_inl_mukum_set(name,p,keyptr,valueptr,false);
 
 #define qn_mukum_set(name,p,keyptr,valueptr)\
-	_qn_inl_mukum_set(name,p,keyptr,valueptr,true);\
+	qn_inl_mukum_set(name,p,keyptr,valueptr,true);\
 
 #define qn_mukum_remove(name,p,keyptr,retbool_can_be_null)\
 	QN_STMT_BEGIN{\
-		_qn_inl_mukum_erase(name,p,keyptr,retbool_can_be_null);\
-		_qn_inl_mukum_test_size(name,p);\
+		qn_inl_mukum_erase(name,p,keyptr,retbool_can_be_null);\
+		qn_inl_mukum_test_size(name,p);\
 	}QN_STMT_END
 
 #define qn_mukum_find(name,p,func,userdata,retkey,gotoname)\
@@ -2395,17 +2398,17 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 			{\
 				if (func(userdata, &__node->key, &__node->value))\
 				{\
-					retkey=&__node->key;\
+					(retkey)=&__node->key;\
 					goto K_CONCAT(pos_mukum_find_exit,gotoname);\
 				}\
 			}\
 		}\
-		retkey=NULL;\
+		(retkey)=NULL;\
 	K_CONCAT(pos_mukum_find_exit,gotoname):;\
 	}QN_STMT_END
 
 //
-#define _qn_inl_mukum_lookup(name,p,keyptr,retnode)\
+#define qn_inl_mukum_lookup(name,p,keyptr,retnode)\
 	QN_STMT_BEGIN{\
 		/* keyptr: pointer of key */\
 		/* retnode: pointer's pointer of Node */\
@@ -2421,7 +2424,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		(retnode)=__ln;\
 	}QN_STMT_END
 
-#define _qn_inl_mukum_lookup_hash(name,p,keyptr,retnode,rethash)\
+#define qn_inl_mukum_lookup_hash(name,p,keyptr,retnode,rethash)\
 	QN_STMT_BEGIN{\
 		/* keyptr: pointer of key */\
 		/* retnode: pointer's pointer of Node */\
@@ -2439,7 +2442,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		*(rethash)=__lh;\
 	}QN_STMT_END
 
-#define _qn_inl_mukum_set(name,p,keyptr,valueptr,replace)\
+#define qn_inl_mukum_set(name,p,keyptr,valueptr,replace)\
 	QN_STMT_BEGIN{\
 		/* keyptr: pointer of key */\
 		/* valuedata : data of value */\
@@ -2447,7 +2450,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		size_t __ah;\
 		struct _##name##Node** __an;\
 		struct _##name##Node* __ann;\
-		_qn_inl_mukum_lookup_hash(name,p,keyptr,__an,&__ah);\
+		qn_inl_mukum_lookup_hash(name,p,keyptr,__an,&__ah);\
 		__ann=*__an;\
 		if (__ann)\
 		{\
@@ -2477,14 +2480,14 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 			(p)->revision++;\
 			(p)->count++;\
 			/* step 3 */\
-			_qn_inl_mukum_test_size(name,p);\
+			qn_inl_mukum_test_size(name,p);\
 		}\
 	}QN_STMT_END
 
-#define _qn_inl_mukum_erase(name,p,keyptr,retbool)\
+#define qn_inl_mukum_erase(name,p,keyptr,retbool)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node** __rn;\
-		_qn_inl_mukum_lookup(name,p,keyptr,__rn);\
+		qn_inl_mukum_lookup(name,p,keyptr,__rn);\
 		if (*__rn==NULL)\
 		{\
 			if (retbool)\
@@ -2495,7 +2498,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		}\
 		else\
 		{\
-			_qn_inl_mukum_erase_node(name,p,&__rn);\
+			qn_inl_mukum_erase_node(name,p,&__rn);\
 			if (retbool)\
 			{\
 				bool* __c=retbool;\
@@ -2504,9 +2507,9 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		}\
 	}QN_STMT_END
 
-#define _qn_inl_mukum_erase_node(name,p,pppnode)\
+#define qn_inl_mukum_erase_node(name,p,pppnode)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node** __en=*pppnode;\
+		struct _##name##Node** __en=*(pppnode);\
 		struct _##name##Node* __enn=*__en;\
 		/* step 1 */\
 		*__en=__enn->sib;\
@@ -2518,7 +2521,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		(p)->revision++;\
 	}QN_STMT_END
 
-#define _qn_inl_mukum_erase_all(name,p)\
+#define qn_inl_mukum_erase_all(name,p)\
 	QN_STMT_BEGIN{\
 		size_t __i;\
 		struct _##name##Node* __node;\
@@ -2556,14 +2559,14 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 #define qn_mukum_ptr_remove_node(name,p,node)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node** __en=&(node);\
-		_qn_inl_mukum_ptr_erase_node(name,p,&__en);\
-		_qn_inl_mukum_test_size(name,p);\
+		qn_inl_mukum_ptr_erase_node(name,p,&__en);\
+		qn_inl_mukum_test_size(name,p);\
 	}QN_STMT_END
 
 #define qn_mukum_ptr_clear(name,p)\
 	QN_STMT_BEGIN{\
-		_qn_inl_mukum_ptr_erase_all(name,p);\
-		_qn_inl_mukum_test_size(name,p);\
+		qn_inl_mukum_ptr_erase_all(name,p);\
+		qn_inl_mukum_test_size(name,p);\
 	}QN_STMT_END
 
 #define qn_mukum_ptr_foreach(name,p,func3,userdata)\
@@ -2606,7 +2609,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 #define qn_mukum_ptr_node(name,p,keyptr,retnode)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node** __gn;\
-		_qn_inl_mukum_ptr_lookup(name,p,keyptr,__gn);\
+		qn_inl_mukum_ptr_lookup(name,p,keyptr,__gn);\
 		(retnode)=*__gn;\
 	}QN_STMT_END
 
@@ -2615,21 +2618,21 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		/* retvalue: pointer of 'value' */\
 		struct _##name##Node** __gn;\
 		struct _##name##Node* __node;\
-		_qn_inl_mukum_ptr_lookup(name,p,keyptr,__gn);\
+		qn_inl_mukum_ptr_lookup(name,p,keyptr,__gn);\
 		__node=*__gn;\
 		*(retvalue)=(__node) ? __node->value : NULL;\
 	}QN_STMT_END
 
 #define qn_mukum_ptr_add(name,p,keyptr,valueptr)\
-	_qn_inl_mukum_ptr_set(name,p,keyptr,valueptr,false)
+	qn_inl_mukum_ptr_set(name,p,keyptr,valueptr,false)
 
 #define qn_mukum_ptr_set(name,p,keyptr,valueptr)\
-	_qn_inl_mukum_ptr_set(name,p,keyptr,valueptr,true)
+	qn_inl_mukum_ptr_set(name,p,keyptr,valueptr,true)
 
 #define qn_mukum_ptr_remove(name,p,keyptr,retbool_can_be_null)\
 	QN_STMT_BEGIN{\
-		_qn_inl_mukum_ptr_erase(name,p,keyptr,retbool_can_be_null);\
-		_qn_inl_mukum_test_size(name,p);\
+		qn_inl_mukum_ptr_erase(name,p,keyptr,retbool_can_be_null);\
+		qn_inl_mukum_test_size(name,p);\
 	}QN_STMT_END
 
 #define qn_mukum_ptr_find(name,p,func,userdata,retkey,gotoname)\
@@ -2647,12 +2650,12 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 				}\
 			}\
 		}\
-		retkey=NULL;\
+		(retkey)=NULL;\
 		K_CONCAT(pos_mukum_find_exit,gotoname):;\
 	}QN_STMT_END
 
 //
-#define _qn_inl_mukum_ptr_lookup(name,p,keyptr,retnode)\
+#define qn_inl_mukum_ptr_lookup(name,p,keyptr,retnode)\
 	QN_STMT_BEGIN{\
 		/* keyptr: pointer of key */\
 		/* retnode: pointer's pointer of Node */\
@@ -2668,7 +2671,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		(retnode)=__ln;\
 	}QN_STMT_END
 
-#define _qn_inl_mukum_ptr_lookup_hash(name,p,keyptr,retnode,rethash)\
+#define qn_inl_mukum_ptr_lookup_hash(name,p,keyptr,retnode,rethash)\
 	QN_STMT_BEGIN{\
 		/* keyptr: pointer of key */\
 		/* retnode: pointer's pointer of Node */\
@@ -2686,7 +2689,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		*(rethash)=__lh;\
 	}QN_STMT_END
 
-#define _qn_inl_mukum_ptr_set(name,p,keyptr,valueptr,replace)\
+#define qn_inl_mukum_ptr_set(name,p,keyptr,valueptr,replace)\
 	QN_STMT_BEGIN{\
 		/* keyptr: pointer of key */\
 		/* valuedata : data of value */\
@@ -2694,7 +2697,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		size_t __ah;\
 		struct _##name##Node** __an;\
 		struct _##name##Node* __ann;\
-		_qn_inl_mukum_ptr_lookup_hash(name,p,keyptr,__an,&__ah);\
+		qn_inl_mukum_ptr_lookup_hash(name,p,keyptr,__an,&__ah);\
 		__ann=*__an;\
 		if (__ann)\
 		{\
@@ -2724,14 +2727,14 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 			(p)->revision++;\
 			(p)->count++;\
 			/* step 3 */\
-			_qn_inl_mukum_test_size(name,p);\
+			qn_inl_mukum_test_size(name,p);\
 		}\
 	}QN_STMT_END
 
-#define _qn_inl_mukum_ptr_erase(name,p,keyptr,retbool)\
+#define qn_inl_mukum_ptr_erase(name,p,keyptr,retbool)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node** __rn;\
-		_qn_inl_mukum_ptr_lookup(name,p,keyptr,__rn);\
+		qn_inl_mukum_ptr_lookup(name,p,keyptr,__rn);\
 		if (*__rn==NULL)\
 		{\
 			if (retbool)\
@@ -2742,7 +2745,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		}\
 		else\
 		{\
-			_qn_inl_mukum_ptr_erase_node(name,p,&__rn);\
+			qn_inl_mukum_ptr_erase_node(name,p,&__rn);\
 			if (retbool)\
 			{\
 				bool* __c=retbool;\
@@ -2751,9 +2754,9 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		}\
 	}QN_STMT_END
 
-#define _qn_inl_mukum_ptr_erase_node(name,p,pppnode)\
+#define qn_inl_mukum_ptr_erase_node(name,p,pppnode)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node** __en=*pppnode;\
+		struct _##name##Node** __en=*(pppnode);\
 		struct _##name##Node* __enn=*__en;\
 		/* step 1 */\
 		*__en=__enn->sib;\
@@ -2765,7 +2768,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 		(p)->revision++;\
 	}QN_STMT_END
 
-#define _qn_inl_mukum_ptr_erase_all(name,p)\
+#define qn_inl_mukum_ptr_erase_all(name,p)\
 	QN_STMT_BEGIN{\
 		size_t __i;\
 		struct _##name##Node* __node;\
@@ -2784,16 +2787,16 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t);
 	}QN_STMT_END
 
 //
-#define _qn_inl_mukum_test_size(name,p)\
+#define qn_inl_mukum_test_size(name,p)\
 	QN_STMT_BEGIN{\
 		size_t __cnt=(p)->count;\
 		size_t __bkt=(p)->bucket;\
 		if ((__bkt>=3*__cnt && __bkt>QN_MIN_HASH) ||\
 			(3*__bkt<=__cnt && __bkt<QN_MAX_HASH))\
-			_qn_inl_mukum_resize((qnMukum*)p);\
+			qn_inl_mukum_resize((qnMukum*)(p));\
 	}QN_STMT_END
 
-QN_INLINE void _qn_inl_mukum_resize(qnInlineMukum* p)
+QN_INLINE void qn_inl_mukum_resize(qnInlineMukum* p)
 {
 	size_t newbucket = qn_primenear((uint32_t)p->count);
 	newbucket = QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
@@ -2802,10 +2805,10 @@ QN_INLINE void _qn_inl_mukum_resize(qnInlineMukum* p)
 		return;
 	for (size_t i = 0; i < p->bucket; i++)
 	{
-		for (struct _qnInlineMukumNode *node = p->nodes[i], *next = NULL; node; node = next)
+		for (struct _qnInlineMukumNode *node = p->nodes[i], *next; node; node = next)
 		{
 			next = node->sib;
-			size_t hashmask = node->hash % newbucket;
+			const size_t hashmask = node->hash % newbucket;
 			node->sib = newnodes[hashmask];
 			newnodes[hashmask] = node;
 		}
@@ -2820,14 +2823,14 @@ QN_INLINE void _qn_inl_mukum_resize(qnInlineMukum* p)
 // blue string
 #define QN_DECL_BSTR(name,size)\
 	typedef struct _qnBstr##name qnBstr##name;\
-	struct _qnBstr##name { size_t len; char data[size]; }
-QN_DECL_BSTR(, );
-QN_DECL_BSTR(64, 64);
-QN_DECL_BSTR(128, 128);
-QN_DECL_BSTR(260, 260);
-QN_DECL_BSTR(1k, 1024);
-QN_DECL_BSTR(2k, 2048);
-QN_DECL_BSTR(4k, 4096);
+	struct _qnBstr##name { size_t len; char data[size]; };
+QN_DECL_BSTR(, )
+QN_DECL_BSTR(64, 64)
+QN_DECL_BSTR(128, 128)
+QN_DECL_BSTR(260, 260)
+QN_DECL_BSTR(1k, 1024)
+QN_DECL_BSTR(2k, 2048)
+QN_DECL_BSTR(4k, 4096)
 
 #define qn_bstr_length(p)				((p)->len)
 #define qn_bstr_data(p)					((p)->data)
@@ -2908,7 +2911,7 @@ QN_DECL_BSTR(4k, 4096);
 
 #define qn_bstr_append_rep(p, ch, cnt)\
 	QN_STMT_BEGIN{\
-		(p)->len=qn_strfll((p)->data, (p)->len, (p)->len+cnt, ch);\
+		(p)->len=qn_strfll((p)->data, (p)->len, (p)->len+(cnt), ch);\
 		(p)->data[(p)->len]='\0';\
 	}QN_STMT_END
 
@@ -2919,16 +2922,16 @@ QN_DECL_BSTR(4k, 4096);
 	((p)->len!=0)
 
 #define qn_bstr_hash(p, igcase)\
-	(igcase ? qn_strihash((p)->data) : qn_strhash((p)->data))
+	((igcase) ? qn_strihash((p)->data) : qn_strhash((p)->data))
 
 #define qn_bstr_compare(p, s, igcase)\
-	(igcase ? qn_stricmp((p)->data, s) : strcmp((p)->data, s))
+	((igcase) ? qn_stricmp((p)->data, s) : strcmp((p)->data, s))
 
 #define qn_bstr_compare_bstr(p1, p2, igcase)\
-	(igcase ? qn_stricmp((p1)->data, (p2)->data) : strcmp((p1)->data, (p2)->data))
+	((igcase) ? qn_stricmp((p1)->data, (p2)->data) : strcmp((p1)->data, (p2)->data))
 
 #define qn_bstr_compare_bstr_length(p1, p2, len, igcase)\
-	(igcase ? qn_strnicmp((p1)->data, (p2)->data, len) : qn_strncmp((p1)->data, (p2)->data, len))
+	((igcase) ? qn_strnicmp((p1)->data, (p2)->data, len) : qn_strncmp((p1)->data, (p2)->data, len))
 
 #define qn_bstr_format_va(p, fmt, va)\
 	QN_STMT_BEGIN{\
@@ -2936,8 +2939,8 @@ QN_DECL_BSTR(4k, 4096);
 	}QN_STMT_END
 
 #define qn_bstr_format(p, fmt, ...)\
-	_qn_inl_bstr_format(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
-QN_INLINE void _qn_inl_bstr_format(qnBstr* p, size_t size, const char* fmt, ...)
+	qn_inl_bstr_format(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
+QN_INLINE void qn_inl_bstr_format(qnBstr* p, size_t size, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -2951,8 +2954,8 @@ QN_INLINE void _qn_inl_bstr_format(qnBstr* p, size_t size, const char* fmt, ...)
 	}QN_STMT_END
 
 #define qn_bstr_append_format(p, fmt, ...)\
-	_qn_inl_bstr_append_format(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
-QN_INLINE void _qn_inl_bstr_append_format(qnBstr* p, size_t size, const char* fmt, ...)
+	qn_inl_bstr_append_format(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
+QN_INLINE void qn_inl_bstr_append_format(qnBstr* p, size_t size, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -2961,10 +2964,10 @@ QN_INLINE void _qn_inl_bstr_append_format(qnBstr* p, size_t size, const char* fm
 }
 
 #define qn_bstr_upper(p)\
-	qn_strupr(((qnBstr*)p)->data, ((qnBstr*)p)->len);
+	qn_strupr(((qnBstr*)(p))->data, ((qnBstr*)(p))->len)
 
 #define qn_bstr_lower(p)\
-	qn_strlwr(((qnBstr*)p)->data, ((qnBstr*)p)->len);
+	qn_strlwr(((qnBstr*)(p))->data, ((qnBstr*)(p))->len)
 
 #define qn_bstr_trim(p)\
 	QN_STMT_BEGIN{\
@@ -2991,26 +2994,26 @@ QN_INLINE void _qn_inl_bstr_append_format(qnBstr* p, size_t size, const char* fm
 
 QN_INLINE int qn_bstr_has_char(const void* p, const char* chars)
 {
-	char* s = qn_strbrk(((qnBstr*)p)->data, chars);
-	return (s) ? (int)(s - ((qnBstr*)p)->data) : -1;
+	const char* s = qn_strbrk(((const qnBstr*)(p))->data, chars);
+	return (s) ? (int)(s - ((const qnBstr*)(p))->data) : -1;
 }
 
 QN_INLINE int qn_bstr_find_char(const void* p, size_t at, char ch)
 {
-	char* s = strchr(((qnBstr*)p)->data + at, ch);
-	return (s) ? (int)(s - ((qnBstr*)p)->data) : -1;
+	const char* s = strchr(((const qnBstr*)(p))->data + at, ch);
+	return (s) ? (int)(s - ((const qnBstr*)(p))->data) : -1;
 }
 
 #define qn_bstr_sub_bstr(p, s, pos, len)\
-	_qn_inl_bstr_sub_bstr(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, (const qnBstr*)(s), pos, len)
-QN_INLINE bool _qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, size_t pos, intptr_t len)
+	qn_inl_bstr_sub_bstr(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, (const qnBstr*)(s), pos, len)
+QN_INLINE bool qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, size_t pos, nint len)
 {
 	qn_retval_if_fail(s->len >= pos, false);
 
 	if (len > 0)
 		qn_retval_if_fail(s->len >= (pos + len), false);
 	else
-		len = s->len - pos;
+		len = (nint)(s->len - pos);
 
 	qn_strmid(p->data, psize, s->data, pos, len);
 	p->len = len;
@@ -3022,14 +3025,14 @@ QN_INLINE bool _qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, s
 // blue wcs
 #define QN_DECL_BWCS(name,size)\
 	typedef struct _qnBwcs##name qnBwcs##name;\
-	struct _qnBwcs##name { size_t len; wchar data[size]; }
-QN_DECL_BWCS(, );
-QN_DECL_BWCS(64, 64);
-QN_DECL_BWCS(128, 128);
-QN_DECL_BWCS(260, 260);
-QN_DECL_BWCS(1k, 1024);
-QN_DECL_BWCS(2k, 2048);
-QN_DECL_BWCS(4k, 4096);
+	struct _qnBwcs##name { size_t len; wchar data[size]; };
+QN_DECL_BWCS(, )
+QN_DECL_BWCS(64, 64)
+QN_DECL_BWCS(128, 128)
+QN_DECL_BWCS(260, 260)
+QN_DECL_BWCS(1k, 1024)
+QN_DECL_BWCS(2k, 2048)
+QN_DECL_BWCS(4k, 4096)
 
 #define qn_bwcs_length(p)				((p)->len)
 #define qn_bwcs_data(p)					((p)->data)
@@ -3110,7 +3113,7 @@ QN_DECL_BWCS(4k, 4096);
 
 #define qn_bwcs_append_rep(p, ch, cnt)\
 	QN_STMT_BEGIN{\
-		(p)->len=qn_wcsfll((p)->data, (p)->len, (p)->len+cnt, ch);\
+		(p)->len=qn_wcsfll((p)->data, (p)->len, (p)->len+(cnt), ch);\
 		(p)->data[(p)->len]=L'\0';\
 	}QN_STMT_END
 
@@ -3121,16 +3124,16 @@ QN_DECL_BWCS(4k, 4096);
 	((p)->len!=0)
 
 #define qn_bwcs_hash(p, igcase)\
-	(igcase ? qn_wcsihash((p)->data) : qn_wcshash((p)->data))
+	((igcase) ? qn_wcsihash((p)->data) : qn_wcshash((p)->data))
 
 #define qn_bwcs_compare(p, s, igcase)\
-	(igcase ? qn_wcsicmp((p)->data, s) : wcscmp((p)->data, s))
+	((igcase) ? qn_wcsicmp((p)->data, s) : wcscmp((p)->data, s))
 
 #define qn_bwcs_compare_bwcs(p1, p2, igcase)\
-	(igcase ? qn_wcsicmp((p1)->data, (p2)->data) : wcscmp((p1)->data, (p2)->data))
+	((igcase) ? qn_wcsicmp((p1)->data, (p2)->data) : wcscmp((p1)->data, (p2)->data))
 
 #define qn_bwcs_compare_bwcs_length(p1, p2, len, igcase)\
-	(igcase ? qn_wcsnicmp((p1)->data, (p2)->data, len) : qn_wcsncmp((p1)->data, (p2)->data, len))
+	((igcase) ? qn_wcsnicmp((p1)->data, (p2)->data, len) : qn_wcsncmp((p1)->data, (p2)->data, len))
 
 #define qn_bwcs_format_va(p, fmt, va)\
 	QN_STMT_BEGIN{\
@@ -3138,8 +3141,8 @@ QN_DECL_BWCS(4k, 4096);
 	}QN_STMT_END
 
 #define qn_bwcs_format(p, fmt, ...)\
-	_qn_inl_bwcs_format(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
-QN_INLINE void _qn_inl_bwcs_format(qnBwcs* p, size_t size, const wchar_t* fmt, ...)
+	qn_inl_bwcs_format(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
+QN_INLINE void qn_inl_bwcs_format(qnBwcs* p, size_t size, const wchar_t* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -3153,8 +3156,8 @@ QN_INLINE void _qn_inl_bwcs_format(qnBwcs* p, size_t size, const wchar_t* fmt, .
 	}QN_STMT_END
 
 #define qn_bwcs_append_format(p, fmt, ...)\
-	_qn_inl_bwcs_append_format(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
-QN_INLINE void _qn_inl_bwcs_append_format(qnBwcs* p, size_t size, const wchar_t* fmt, ...)
+	qn_inl_bwcs_append_format(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
+QN_INLINE void qn_inl_bwcs_append_format(qnBwcs* p, size_t size, const wchar_t* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -3163,10 +3166,10 @@ QN_INLINE void _qn_inl_bwcs_append_format(qnBwcs* p, size_t size, const wchar_t*
 }
 
 #define qn_bwcs_upper(p)\
-	_wcsupr(((qnBwcs*)p)->data);
+	_wcsupr(((qnBwcs*)(p))->data);
 
 #define qn_bwcs_lower(p)\
-	_wcslwr(((qnBwcs*)p)->data);
+	_wcslwr(((qnBwcs*)(p))->data);
 
 #define qn_bwcs_trim(p)\
 	QN_STMT_BEGIN{\
@@ -3193,26 +3196,26 @@ QN_INLINE void _qn_inl_bwcs_append_format(qnBwcs* p, size_t size, const wchar_t*
 
 QN_INLINE int qn_bwcs_has_char(const void* p, const wchar_t* chars)
 {
-	wchar_t* s = qn_wcsbrk(((qnBwcs*)p)->data, chars);
-	return (s) ? (int)(s - ((qnBwcs*)p)->data) : -1;
+	const wchar_t* s = qn_wcsbrk(((const qnBwcs*)(p))->data, chars);
+	return (s) ? (int)(s - ((const qnBwcs*)(p))->data) : -1;
 }
 
 QN_INLINE int qn_bwcs_find_char(const void* p, size_t at, wchar_t ch)
 {
-	wchar_t* s = wcschr(((qnBwcs*)p)->data + at, ch);
-	return (s) ? (int)(s - ((qnBwcs*)p)->data) : -1;
+	const wchar_t* s = wcschr(((const qnBwcs*)(p))->data + at, ch);
+	return (s) ? (int)(s - ((const qnBwcs*)(p))->data) : -1;
 }
 
 #define qn_bwcs_sub_bwcs(p, s, pos, len)\
-	_qn_inl_bstr_sub_bstr(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, ((qnBwcs*)(s)), pos, len)
-QN_INLINE bool _qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, size_t pos, intptr_t len)
+	qn_inl_bstr_sub_bstr(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, ((qnBwcs*)(s)), pos, len)
+QN_INLINE bool qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, size_t pos, nint len)
 {
 	qn_retval_if_fail(s->len >= pos, false);
 
 	if (len > 0)
 		qn_retval_if_fail(s->len >= (pos + len), false);
 	else
-		len = s->len - pos;
+		len = (nint)(s->len - pos);
 
 	qn_wcsmid(p->data, psize, s->data, pos, len);
 	p->len = len;
@@ -3221,6 +3224,6 @@ QN_INLINE bool _qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, s
 
 QN_EXTC_END
 
-#if _MSC_VER
+#ifdef _MSC_VER
 #pragma warning(pop)
 #endif

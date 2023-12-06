@@ -47,7 +47,7 @@ DEF_GL_FUNC(void, glUniform4fv, (GLint, GLsizei, const GLfloat *))
 DEF_GL_FUNC(void, glUniformMatrix4fv, (GLint, GLsizei, GLboolean, const GLfloat *))
 DEF_GL_FUNC(void, glUseProgram, (GLuint))
 DEF_GL_FUNC(void, glVertexAttrib4fv, (GLuint, const GLfloat *))
-DEF_GL_FUNC(void, glVertexAttribPointer, (GLuint, GLint, GLenum, GLboolean, GLsizei, const void *))
+DEF_GL_FUNC(void, glVertexAttribPointer, (GLuint, GLint, GLenum, GLboolean, GLsizei, /*const void **/nuint))
 
 // 아직 안쓰고 있는거
 //DEF_GL_FUNC(void, glBindAttribLocation, (GLuint, GLuint, const char *))

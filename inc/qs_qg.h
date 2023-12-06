@@ -4,72 +4,12 @@
 #include <qs_math.h>
 #include <qs_kmc.h>
 
-//////////////////////////////////////////////////////////////////////////
-// definition
-
-// maximum event queue
-#define QNEVENT_MAX_VALUE		5000
-
-// typedef
-typedef struct _QgRdh					QgRdh;		/**< RENDERER */
-typedef struct _QgGam					QgGam;		/**< RENDER OBJECT */
-typedef struct _QgRds					QgRds;		/**< DEPTH&STENCIL */
-typedef struct _QgRsz					QgRsz;		/**< RASTERIZER */
-typedef struct _QgBld					QgBld;		/**< BLEND */
-typedef struct _QgSpr					QgSpr;		/**< SAMPLER */
-typedef struct _QgShd					QgShd;		/**< SHADER */
-typedef struct _QgVlo					QgVlo;		/**< VERTEX LAYOUT */
-typedef struct _QgBuf					QgBuf;		/**< BUFFER */
-
-typedef enum _QgClrFmt					QgClrFmt;
-typedef enum _QgClrMask					QgClrMask;
-typedef enum _QgTopology				QgTopology;
-typedef enum _QgFill					QgFill;
-typedef enum _QgCull					QgCull;
-typedef enum _QgCmpOp					QgCmpOp;
-typedef enum _QgStencilOp				QgStencilOp;
-typedef enum _QgBlendOp					QgBlendOp;
-typedef enum _QgFactor					QgFactor;
-typedef enum _QgLoUsage					QgLoUsage;
-typedef enum _QgLoType					QgLoType;
-typedef enum _QgLoStage					QgLoStage;
-typedef enum _QgShdType					QgShdType;
-typedef enum _QgShdRole					QgShdRole;
-typedef enum _QgShdConst				QgShdConst;
-typedef enum _QgShdAuto					QgShdAuto;
-typedef enum _QgBufType					QgBufType;
-typedef enum _QgResAccess				QgResAccess;
-typedef enum _QgClear					QgClear;
-typedef enum _QgFlag					QgFlag;
-typedef enum _QgStubStat				QgStubStat;
-typedef enum _QgEventType				QgEventType;
-
-typedef struct _QgPropPixel				QgPropPixel;
-typedef struct _QgPropDepthStencil		QgPropDepthStencil;
-typedef struct _QgPropRasterizer		QgPropRasterizer;
-typedef struct _QgPropBlend				QgPropBlend;
-typedef struct _QgPropLayout			QgPropLayout;
-typedef struct _QgVarShader				QgVarShader;
-typedef void(*QgVarShaderFunc)(void*, QgVarShader*, QgShd*);
-
-typedef union _QgEvent					QgEvent;
-typedef struct _QgUimKey                QgUimKey;
-typedef struct _QgUimMouse              QgUimMouse;
-typedef struct _QgUimCtrl               QgUimCtrl;
-typedef struct _QgUimCtrlInfo           QgUimCtrlInfo;
-typedef struct _QgUimCtrlVib            QgUimCtrlVib;
-typedef struct _QgDeviceInfo            QgDeviceInfo;
-typedef struct _QgRenderInvoke          QgRenderInvoke;
-typedef struct _QgRenderTm              QgRenderTm;
-typedef struct _QgRenderParam           QgRenderParam;
-
-
 QN_EXTC_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
 // types
 
-enum _QgClrFmt
+enum QgClrFmt
 {
 	QGCF_NONE,
 	QGCF8_L,
@@ -79,17 +19,17 @@ enum _QgClrFmt
 	QGCF32_RGB,
 	QGCF32_RGBA,
 	QGCF32_BGRA,
-	QGCF16F_R,
-	QGCF64F_BGRA,
-	QGCF32F_R,
-	QGCF128F_BGRA,
+	QGCF16_R_F,
+	QGCF64_BGRA_F,
+	QGCF32_R_F,
+	QGCF128_BGRA_F,
 	QGCF_DXT1,
 	QGCF_DXT3,
 	QGCF_DXT5,
 	QGCF_MAX_VALUE,
 };
 
-enum _QgClrMask
+enum QgClrMask
 {
 	QGCM_RED = QN_BIT(0),
 	QGCM_GREEN = QN_BIT(1),
@@ -103,7 +43,7 @@ enum _QgClrMask
 	QGCM_RGBA = QGCM_RED | QGCM_GREEN | QGCM_BLUE | QGCM_ALPHA,
 };
 
-enum _QgTopology
+enum QgTopology
 {
 	QGTPG_POINT,
 	QGTPG_LINE,
@@ -115,21 +55,21 @@ enum _QgTopology
 	QGTPG_MAX_VALUE,
 };
 
-enum _QgFill
+enum QgFill
 {
 	QGFLL_POINT,
 	QGFLL_WIRE,
 	QGFLL_SOLID,
 };
 
-enum _QgCull
+enum QgCull
 {
 	QGCUL_NONE,
 	QGCUL_FRONT,
 	QGCUL_BACK,
 };
 
-enum _QgCmpOp
+enum QgCmpOp
 {
 	QGCMP_NEVER,
 	QGCMP_LE,
@@ -141,7 +81,7 @@ enum _QgCmpOp
 	QGCMP_ALWAYS,
 };
 
-enum _QgStencilOp
+enum QgStencilOp
 {
 	QGSTP_KEEP,
 	QGSTP_ZERO,
@@ -153,7 +93,7 @@ enum _QgStencilOp
 	QGSTP_DEC,
 };
 
-enum _QgBlendOp
+enum QgBlendOp
 {
 	QGBLO_ADD,
 	QGBLO_SUB,
@@ -162,7 +102,7 @@ enum _QgBlendOp
 	QGBLO_MAX,
 };
 
-enum _QgFactor
+enum QgFactor
 {
 	QGBFT_ZERO,
 	QGBFT_ONE,
@@ -177,7 +117,7 @@ enum _QgFactor
 	QGBFT_SAS,
 };
 
-enum _QgLoUsage
+enum QgLoUsage
 {
 	QGLOU_POSITION,
 	QGLOU_COLOR,		// diffuse & specular
@@ -190,7 +130,7 @@ enum _QgLoUsage
 	QGLOU_MAX_VALUE
 };
 
-enum _QgLoType
+enum QgLoType
 {
 	QGLOT_FLOAT1,
 	QGLOT_FLOAT2,
@@ -200,16 +140,16 @@ enum _QgLoType
 	QGLOT_HALF4,
 	QGLOT_BYTE2,
 	QGLOT_BYTE4,
-	QGLOT_BYTE4N,
+	QGLOT_BYTE4_N,
 	QGLOT_SHORT2,
 	QGLOT_SHORT4,
-	QGLOT_SHORT2N,
+	QGLOT_SHORT2_N,
 	QGLOT_COLOR,
 	QGLOT_COLORN,
 	QGLOT_MAX_VALUE
 };
 
-enum _QgLoStage
+enum QgLoStage
 {
 	QGLOS_1,
 	QGLOS_2,
@@ -218,21 +158,21 @@ enum _QgLoStage
 	QGLOS_MAX_VALUE,
 };
 
-enum _QgShdType
+enum QgShdType
 {
 	QGSHT_VS = QN_BIT(0),
 	QGSHT_PS = QN_BIT(1),
 	QGSHT_ALL = QGSHT_VS | QGSHT_PS,
 };
 
-enum _QgShdRole
+enum QgShdRole
 {
 	QGSHR_MANUAL,
 	QGSHR_AUTO,
 	QGSHR_DISCARD
 };
 
-enum _QgShdConst
+enum QgShdConst
 {
 	QGSHC_UNKNOWN,
 	QGSHC_FLOAT1,
@@ -255,7 +195,7 @@ enum _QgShdConst
 	QGSHC_MAX_VALUE
 };
 
-enum _QgShdAuto
+enum QgShdAuto
 {
 	QGSHA_ORTHO_PROJ,
 	QGSHA_WORLD,
@@ -284,14 +224,14 @@ enum _QgShdAuto
 	QGSHA_MAX_VALUE
 };
 
-enum _QgBufType
+enum QgBufType
 {
 	QGBUF_UNKNOWN,
 	QGBUF_INDEX,
 	QGBUF_VERTEX,
 };
 
-enum _QgResAccess
+enum QgResAccess
 {
 	QGRSA_NONE = 0,
 	QGRSA_RD = QN_BIT(0),
@@ -299,14 +239,14 @@ enum _QgResAccess
 	QGRSA_RW = QGRSA_RD | QGRSA_WR,
 };
 
-enum _QgClear
+enum QgClear
 {
 	QGCLR_DEPTH = QN_BIT(0),
 	QGCLR_STENCIL = QN_BIT(1),
 	QGCLR_RENDER = QN_BIT(2),
 };
 
-enum _QgFlag
+enum QgFlag
 {
 	QGFLAG_FULLSCREEN = QN_BIT(0),
 	QGFLAG_BORDERLESS = QN_BIT(1),
@@ -318,7 +258,7 @@ enum _QgFlag
 	QGFLAG_MSAA = QN_BIT(18),
 };
 
-enum _QgStubStat
+enum QgStubStat
 {
 	QGSTTI_VIRTUAL = QN_BIT(1),
 	QGSTTI_ACTIVE = QN_BIT(2),
@@ -331,7 +271,7 @@ enum _QgStubStat
 	QGSTTI_EXIT = QN_BIT(30),
 };
 
-enum _QgEventType
+enum QgEventType
 {
 	QGEV_NONE,
 	QGEV_ACTIVE,
@@ -346,12 +286,74 @@ enum _QgEventType
 	QGEV_EXIT = 255,
 };
 
+#define QGMAX_EVENTS					5000
+
+
+//////////////////////////////////////////////////////////////////////////
+// definition
+
+// enum
+typedef enum QgClrFmt					QgClrFmt;
+typedef enum QgClrMask					QgClrMask;
+typedef enum QgTopology					QgTopology;
+typedef enum QgFill						QgFill;
+typedef enum QgCull						QgCull;
+typedef enum QgCmpOp					QgCmpOp;
+typedef enum QgStencilOp				QgStencilOp;
+typedef enum QgBlendOp					QgBlendOp;
+typedef enum QgFactor					QgFactor;
+typedef enum QgLoUsage					QgLoUsage;
+typedef enum QgLoType					QgLoType;
+typedef enum QgLoStage					QgLoStage;
+typedef enum QgShdType					QgShdType;
+typedef enum QgShdRole					QgShdRole;
+typedef enum QgShdConst					QgShdConst;
+typedef enum QgShdAuto					QgShdAuto;
+typedef enum QgBufType					QgBufType;
+typedef enum QgResAccess				QgResAccess;
+typedef enum QgClear					QgClear;
+typedef enum QgFlag						QgFlag;
+typedef enum QgStubStat					QgStubStat;
+typedef enum QgEventType				QgEventType;
+
+// object
+typedef struct QgRdh					QgRdh;		/**< RENDERER */
+typedef struct QgGam					QgGam;		/**< RENDER OBJECT */
+typedef struct QgRds					QgRds;		/**< DEPTH&STENCIL */
+typedef struct QgRsz					QgRsz;		/**< RASTERIZER */
+typedef struct QgBld					QgBld;		/**< BLEND */
+typedef struct QgSpr					QgSpr;		/**< SAMPLER */
+typedef struct QgShd					QgShd;		/**< SHADER */
+typedef struct QgVlo					QgVlo;		/**< VERTEX LAYOUT */
+typedef struct QgBuf					QgBuf;		/**< BUFFER */
+
+// prop
+typedef struct QgPropPixel				QgPropPixel;
+typedef struct QgPropDepthStencil		QgPropDepthStencil;
+typedef struct QgPropRasterizer			QgPropRasterizer;
+typedef struct QgPropBlend				QgPropBlend;
+typedef struct QgPropLayout				QgPropLayout;
+typedef struct QgVarShader				QgVarShader;
+typedef void(*QgVarShaderFunc)(void*, QgVarShader*, QgShd*);
+
+// data
+typedef union QgEvent					QgEvent;
+typedef struct QgUimKey					QgUimKey;
+typedef struct QgUimMouse				QgUimMouse;
+typedef struct QgUimCtrl				QgUimCtrl;
+typedef struct QgUimCtrlInfo			QgUimCtrlInfo;
+typedef struct QgUimCtrlVib				QgUimCtrlVib;
+typedef struct QgDeviceInfo				QgDeviceInfo;
+typedef struct QgRenderInvoke			QgRenderInvoke;
+typedef struct QgRenderTm				QgRenderTm;
+typedef struct QgRenderParam			QgRenderParam;
+
 
 //////////////////////////////////////////////////////////////////////////
 // properties
 
 //
-struct _QgPropPixel
+struct QgPropPixel
 {
 	QgClrFmt			fmt;
 	byte				bpp;
@@ -362,7 +364,7 @@ struct _QgPropPixel
 };
 
 //
-struct _QgPropDepthStencil
+struct QgPropDepthStencil
 {
 	uint				d_write : 8;
 	QgCmpOp				d_func : 8;
@@ -384,7 +386,7 @@ struct _QgPropDepthStencil
 };
 
 //
-struct _QgPropRasterizer
+struct QgPropRasterizer
 {
 	QgFill				fill : 8;
 	QgCull				cull : 8;
@@ -393,7 +395,7 @@ struct _QgPropRasterizer
 };
 
 //
-struct _QgPropBlend
+struct QgPropBlend
 {
 	QgBlendOp			c_op : 16;
 	QgFactor			c_src : 8;
@@ -407,7 +409,7 @@ struct _QgPropBlend
 };
 
 //
-struct _QgPropLayout
+struct QgPropLayout
 {
 	QgLoStage			stage : 8;			// QgLoStage
 	int					index : 8;
@@ -416,7 +418,7 @@ struct _QgPropLayout
 };
 
 //
-struct _QgVarShader
+struct QgVarShader
 {
 	char				name[64];
 
@@ -428,7 +430,7 @@ struct _QgVarShader
 };
 
 //
-union _QgEvent
+union QgEvent
 {
 	QgEventType			ev;
 	struct Active
@@ -446,8 +448,8 @@ union _QgEvent
 	struct Keyboard
 	{
 		QgEventType			ev;
-		int16_t				pressed;
-		int16_t				repeat;
+		byte				pressed;
+		byte				repeat;
 		QikKey				key;
 		QikMask				state;
 	}					key;
@@ -476,14 +478,14 @@ union _QgEvent
 };
 
 //
-struct _QgUimKey
+struct QgUimKey
 {
 	QikMask				mask : 16;
 	bool				key[QIK_MAX_VALUE];
 };
 
 //
-struct _QgUimMouse
+struct QgUimMouse
 {
 	QimMask				mask;
 	int					wheel;
@@ -504,7 +506,7 @@ struct _QgUimMouse
 };
 
 //
-struct _QgUimCtrl
+struct QgUimCtrl
 {
 	QicButton			btn : 16;
 	QnPoint				trg;
@@ -513,7 +515,7 @@ struct _QgUimCtrl
 };
 
 //
-struct _QgUimCtrlInfo
+struct QgUimCtrlInfo
 {
 	QicMask				flags;
 
@@ -528,14 +530,14 @@ struct _QgUimCtrlInfo
 };
 
 // 
-struct _QgUimCtrlVib
+struct QgUimCtrlVib
 {
 	ushort				left;
 	ushort				right;
 };
 
 //
-struct _QgDeviceInfo
+struct QgDeviceInfo
 {
 	char				name[64];
 	char				renderer[64];
@@ -551,7 +553,7 @@ struct _QgDeviceInfo
 	bool				test_stage_valid;
 };
 
-struct _QgRenderInvoke
+struct QgRenderInvoke
 {
 	nint				invokes;
 	nint				begins;
@@ -566,7 +568,7 @@ struct _QgRenderInvoke
 	bool				flush;
 };
 
-struct _QgRenderTm
+struct QgRenderTm
 {
 	QnPoint				size;
 	QnVec2				z;
@@ -580,7 +582,7 @@ struct _QgRenderTm
 	QnMat4				tex[4];
 };
 
-struct _QgRenderParam
+struct QgRenderParam
 {
 	int					bones;
 	QnMat4*				bonptr;
@@ -618,7 +620,7 @@ QSAPI bool qg_pop_event(QgEvent* ev);
 
 
 // render device
-struct _QgRdh
+struct QgRdh
 {
 	QmGam				base;
 
@@ -699,14 +701,25 @@ QSAPI bool qg_rdh_ptr_draw_indexed(QgRdh* g, QgTopology tpg, int vcount, int vst
 // object
 
 //
-struct _QgGam
+struct QgGam
 {
 	QmGam				base;
 };
 
+// Depth Stencil
+struct QgRds
+{
+	QgGam				base;
+};
+
+// Rasterize
+struct QgRsz
+{
+	QgGam				base;
+};
 
 // layout
-struct _QgVlo
+struct QgVlo
 {
 	QgGam				base;
 
@@ -717,12 +730,14 @@ QSAPI uint qg_vlo_get_stride(QgVlo* g, QgLoStage stage);
 
 
 // shader
-struct _QgShd
+struct QgShd
 {
 	QgGam				base;
 
 	char				name[64];
-	funcparam_t			intr;
+
+	QgVarShaderFunc		intr_func;
+	void*				intr_data;
 };
 
 qvt_name(QgShd)
@@ -746,7 +761,7 @@ QSAPI bool qg_shd_link(QgShd* self);
 
 
 // buffer
-struct _QgBuf
+struct QgBuf
 {
 	QgGam				base;
 

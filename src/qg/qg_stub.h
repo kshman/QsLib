@@ -14,7 +14,7 @@ struct StubBase
 	QgFlag				flags;
 	QgStubStat			sttis;
 	uint				delay;
-	int					_padding[1];
+	int					padding[1];
 
 	QnTimer*			timer;
 	double				fps;
@@ -58,10 +58,10 @@ extern void rdh_internal_reset(QgRdh* self);
 
 extern QgRdh* es2_allocator(void* oshandle, int flags);
 
-#define rdh_caps(rdh)			(&qm_cast(rdh, QgRdh)->caps)
-#define rdh_tm(rdh)				(&qm_cast(rdh, QgRdh)->tm)
-#define rdh_param(rdh)			(&qm_cast(rdh, QgRdh)->tm)
-#define rdh_invokes(rdh)		(&qm_cast(rdh, QgRdh)->invokes)
+#define rdh_caps(rdh)			(qm_cast(rdh, QgRdh)->caps)
+#define rdh_tm(rdh)				(qm_cast(rdh, QgRdh)->tm)
+#define rdh_param(rdh)			(qm_cast(rdh, QgRdh)->tm)
+#define rdh_invokes(rdh)		(qm_cast(rdh, QgRdh)->invokes)
 
 #define rdh_set_flush(rdh,v)	(qm_cast(rdh, QgRdh)->invokes.fluash=(v))
 #define rdh_inc_ends(rdh)		(qm_cast(rdh, QgRdh)->invokes.ends++)

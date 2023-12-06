@@ -2,7 +2,6 @@
 #include "qs_qg.h"
 #include "qg_stub.h"
 
-QSAPI struct StubBase* qg_stub_instance;
 struct StubBase* qg_stub_instance = NULL;
 bool qg_stub_atexit = false;
 
@@ -74,9 +73,9 @@ bool stub_internal_mouse_clicks(QimButton button, QimTrack track)
 	{
 		if (m->clk.tick > 0)
 		{
-			int dx = m->clk.loc.x - m->pt.x;
-			int dy = m->clk.loc.y - m->pt.y;
-			int d = dx * dx + dy * dy;
+			const int dx = m->clk.loc.x - m->pt.x;
+			const int dy = m->clk.loc.y - m->pt.y;
+			const int d = dx * dx + dy * dy;
 			if (d > m->lim.move)	// 마우스가 lim_move 움직이면 두번 누르기 취소
 				m->clk.tick = 0;
 		}
@@ -93,7 +92,7 @@ bool stub_internal_mouse_clicks(QimButton button, QimTrack track)
 		{
 			if (m->clk.btn == button)
 			{
-				uint d = (uint)qn_tick() - m->clk.tick;
+				const uint d = (uint)qn_tick() - m->clk.tick;
 				if (d < m->lim.tick)
 				{
 					// 더블 클릭으로 인정
@@ -125,23 +124,23 @@ bool qg_loop(void)
 	struct StubBase* stub = qg_stub_instance;
 	qn_retval_if_fail(stub, false);
 
-	if (!QN_TEST_MASK(stub->sttis, QGSTTI_VIRTUAL))
+	if (QN_TEST_MASK(stub->sttis, QGSTTI_VIRTUAL) == false)
 	{
 		if (!stub_system_poll() || QN_TEST_MASK(stub->sttis, QGSTTI_EXIT))
 			return false;
 	}
 
 	qn_timer_update(stub->timer);
-	float adv = (float)qn_timer_get_adv(stub->timer);
+	const float adv = (float)qn_timer_get_adv(stub->timer);
 	stub->run = qn_timer_get_run(stub->timer);
 	stub->fps = qn_timer_get_fps(stub->timer);
 	stub->refadv = adv;
 
-	if (!QN_TEST_MASK(stub->sttis, QGSTTI_PAUSE))
+	if (QN_TEST_MASK(stub->sttis, QGSTTI_PAUSE) == false)
 		stub->advance = adv;
 
 	if (QN_TEST_MASK(stub->flags, QGFLAG_IDLE))
-		qn_sleep(!QN_TEST_MASK(stub->sttis, QGSTTI_ACTIVE | QGSTTI_VIRTUAL) ? stub->delay : 1);
+		qn_sleep(QN_TEST_MASK(stub->sttis, QGSTTI_ACTIVE | QGSTTI_VIRTUAL) == false ? stub->delay : 1);
 
 	return true;
 }
@@ -225,8 +224,8 @@ int qg_left_events(void)
 int qg_add_event(const QgEvent* ev)
 {
 	qn_retval_if_fail(ev, -1);
-	int cnt = (int)qn_list_count(&qg_stub_instance->events);
-	if (cnt >= QNEVENT_MAX_VALUE)
+	const int cnt = (int)qn_list_count(&qg_stub_instance->events);
+	if (cnt >= QGMAX_EVENTS)
 		return -1;
 	qn_list_append(qgListEvent, &qg_stub_instance->events, *ev);
 	return cnt + 1;
@@ -235,10 +234,10 @@ int qg_add_event(const QgEvent* ev)
 //
 int qg_add_event_type(QgEventType type)
 {
-	int cnt = (int)qn_list_count(&qg_stub_instance->events);
-	if (type != QGEV_EXIT && cnt >= QNEVENT_MAX_VALUE)
+	const int cnt = (int)qn_list_count(&qg_stub_instance->events);
+	if (type != QGEV_EXIT && cnt >= QGMAX_EVENTS)
 		return -1;
-	QgEvent e = { .ev = type };
+	const QgEvent e = { .ev = type };
 	qn_list_append(qgListEvent, &qg_stub_instance->events, e);
 	return cnt + 1;
 }

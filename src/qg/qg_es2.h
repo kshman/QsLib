@@ -2,56 +2,56 @@
 
 #include "qs_ctn.h"
 
-#define ES2_MAX_VERTEX_ATTRIBUTES		16
+#define QGMAX_ES2_VERTEX_ATTRIBUTE		16
 
-typedef struct _es2RefHandle			es2RefHandle;
-typedef struct _es2Session				es2Session;
-typedef struct _es2Pending				es2Pending;
-typedef struct _es2LayoutElement		es2LayoutElement;
-typedef struct _es2LayoutProperty		es2LayoutProperty;
-typedef struct _es2Uniform		es2Uniform;
-typedef struct _es2Attrib			es2Attrib;
-typedef struct _es2Rdh					es2Rdh;
-typedef struct _es2Vlo					es2Vlo;
-typedef struct _es2Shd					es2Shd;
-typedef struct _es2Buf					es2Buf;
-typedef void(*es2shd_auto_func)(es2Rdh*, GLint, const QgVarShader*);
+typedef struct Es2RefHandle				Es2RefHandle;
+typedef struct Es2Session				Es2Session;
+typedef struct Es2Pending				Es2Pending;
+typedef struct Es2LayoutElement			Es2LayoutElement;
+typedef struct Es2LayoutProperty		Es2LayoutProperty;
+typedef struct Es2Uniform				Es2Uniform;
+typedef struct Es2Attrib				Es2Attrib;
+typedef struct Es2Rdh					Es2Rdh;
+typedef struct Es2Vlo					Es2Vlo;
+typedef struct Es2Shd					Es2Shd;
+typedef struct Es2Buf					Es2Buf;
+typedef void(*es2_shd_auto_func)(const Es2Rdh*, GLint, const QgVarShader*);
 
 #if _QN_WINDOWS_
-typedef struct _es2Func					es2Func;
-struct _es2Func
+typedef struct Es2Func					Es2Func;
+struct Es2Func
 {
-#define DEF_GL_FUNC(ret,func,params)	ret (APIENTRY *func) params;
+#define DEF_GL_FUNC(ret,func,params)	ret (APIENTRY *func) params;  // NOLINT(bugprone-macro-parentheses)
 #include "qg_es2func.h"
 #undef DEF_GL_FUNC
 };
-extern es2Func _es2func;
-#define GLFUNC(f)						_es2func.##f
+extern Es2Func es2_func;
+#define GLFUNC(f)						es2_func.##f
 #else
 #define GLFUNC(f)						f
 #endif
 
-#define ES2RDH_INSTANCE					((es2Rdh*)qg_rdh_instance)
+#define ES2_RDH_INSTANCE				((Es2Rdh*)qg_rdh_instance)
 
 
 //////////////////////////////////////////////////////////////////////////
 // 데이터 타입
 
 // 참조 핸들
-struct _es2RefHandle
+struct Es2RefHandle
 {
-	volatile intptr_t	ref;
+	volatile nint		ref;
 	GLuint				handle;
 };
 
 // 레이아웃 요소
-struct _es2LayoutElement
+struct Es2LayoutElement
 {
 	QgLoStage			stage : 8;
 	QgLoUsage			usage : 8;
 	int					index : 8;
 	GLuint				attr : 8;
-	GLuint				size;
+	GLint				size;
 	GLenum				format;
 	GLuint				offset;
 	GLboolean			normalized;
@@ -59,27 +59,27 @@ struct _es2LayoutElement
 };
 
 // 레이아웃 프로퍼티
-struct _es2LayoutProperty
+struct Es2LayoutProperty
 {
-	const void*			pointer;
+	nuint				pointer;
 	GLuint				buffer;
 	GLsizei				stride;
-	GLuint				size;
+	GLint				size;
 	GLenum				format;
 	GLboolean			normalized;
 };
 
 // 세이더 유니폼(=세이더 변수) 속성
-struct _es2Uniform
+struct Es2Uniform
 {
 	QgVarShader			base;
 
 	size_t				hash;
-	es2shd_auto_func	auto_func;
+	es2_shd_auto_func	auto_func;
 };
 
 // 세이더 어트리뷰트 속성
-struct _es2Attrib
+struct Es2Attrib
 {
 	char				name[32];
 	GLint				attrib : 8;
@@ -90,11 +90,11 @@ struct _es2Attrib
 };
 
 // 세션 데이터
-struct _es2Session
+struct Es2Session
 {
 	GLuint				program;
 	uint				layout_mask;
-	es2LayoutProperty	layouts[ES2_MAX_VERTEX_ATTRIBUTES];
+	Es2LayoutProperty	layouts[QGMAX_ES2_VERTEX_ATTRIBUTE];
 
 	GLuint				buf_array;
 	GLuint				buf_element_array;
@@ -105,13 +105,13 @@ struct _es2Session
 };
 
 // 펜딩 데이터
-struct _es2Pending
+struct Es2Pending
 {
-	es2Shd*				shd;
-	es2Vlo*				vlo;
+	Es2Shd*				shd;
+	Es2Vlo*				vlo;
 
-	es2Buf*				ib;
-	es2Buf*				vb[QGLOS_MAX_VALUE];
+	Es2Buf*				ib;
+	Es2Buf*				vb[QGLOS_MAX_VALUE];
 
 	int					tpg;
 	int					vcount;
@@ -128,53 +128,53 @@ struct _es2Pending
 // 디바이스
 
 // ES2 렌더 디바이스
-struct _es2Rdh
+struct Es2Rdh
 {
 	QgRdh				base;
 
 	SDL_Renderer*		renderer;
 
-	es2Session			ss;
-	es2Pending			pd;
+	Es2Session			ss;
+	Es2Pending			pd;
 };
-extern void es2_bind_buffer(es2Rdh* self, GLenum type, GLuint id);
-extern void es2_commit_layout(es2Rdh* self);
-extern void es2_commit_layout_ptr(es2Rdh* self, const void* buffer, GLsizei stride);
-extern void es2_commit_shader(es2Rdh* self);
+extern void es2_bind_buffer(Es2Rdh* self, GLenum type, GLuint id);
+extern void es2_commit_layout(Es2Rdh* self);
+extern void es2_commit_layout_ptr(Es2Rdh* self, const void* buffer, GLsizei stride);
+extern void es2_commit_shader(Es2Rdh* self);
 
 // 레이아웃
-struct _es2Vlo
+struct Es2Vlo
 {
 	QgVlo				base;
 
 	int					es_cnt[QGLOS_MAX_VALUE];
-	es2LayoutElement*	es_elm[QGLOS_MAX_VALUE];
+	Es2LayoutElement*	es_elm[QGLOS_MAX_VALUE];
 };
-extern es2Vlo* es2vlo_allocator(es2Rdh* rdh, int count, const QgPropLayout* layouts);
+extern Es2Vlo* es2_vlo_allocator(Es2Rdh* rdh, int count, const QgPropLayout* layouts);
 
 // 세이더 저장소
-QN_DECL_CTNR(es2CtnUniform, es2Uniform);
-QN_DECL_CTNR(es2CtnAttrib, es2Attrib);
+QN_DECL_CTNR(Es2CtnUniform, Es2Uniform);
+QN_DECL_CTNR(Es2CtnAttrib, Es2Attrib);
 
 // 세이더
-struct _es2Shd
+struct Es2Shd
 {
 	QgShd				base;
 
-	es2RefHandle*		rfragment;
-	es2RefHandle*		rvertex;
+	Es2RefHandle*		rfragment;
+	Es2RefHandle*		rvertex;
 
-	es2CtnUniform		uniforms;
-	es2CtnAttrib		attrs;
+	Es2CtnUniform		uniforms;
+	Es2CtnAttrib		attrs;
 	int					attr_mask;
 
 	bool				linked;
 };
-extern es2Shd* es2shd_allocator(es2Rdh* rdh, const char* name);
-extern void es2shd_init_auto_uniforms(void);
+extern Es2Shd* es2_shd_allocator(Es2Rdh* rdh, const char* name);
+extern void es2_shd_init_auto_uniforms(void);
 
 // 버퍼
-struct _es2Buf
+struct Es2Buf
 {
 	QgBuf				base;
 
@@ -183,4 +183,4 @@ struct _es2Buf
 
 	void*				lockbuf;
 };
-extern es2Buf* es2buf_allocator(es2Rdh* rdh, QgBufType type, int count, int stride, const void* data);
+extern Es2Buf* es2_buf_allocator(Es2Rdh* rdh, QgBufType type, int count, int stride, const void* data);

@@ -2,7 +2,6 @@
 #include "qs_qg.h"
 #include "qg_stub.h"
 
-QSAPI QgRdh* qg_rdh_instance;
 QgRdh* qg_rdh_instance = NULL;
 
 
@@ -15,24 +14,24 @@ QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, 
 	qg_open_stub(title, width, height, flags);
 	qn_retval_if_fail(qg_stub_instance, NULL);
 
-	struct
+	static struct
 	{
 		const char* name;
 		const char* alias;
 		QgRdh* (*func)(void*, int);
-	} allocators[] =
+	} s_allocators[] =
 	{
 		{ "ES2", "GLES2", es2_allocator },
 		{ NULL, NULL, es2_allocator },
 	};
 
-	QgRdh* (*allocator)() = allocators[QN_COUNTOF(allocators) - 1].func;
+	QgRdh* (*allocator)(void*, int) = s_allocators[QN_COUNTOF(s_allocators) - 1].func;
 	if (driver != NULL)
 	{
-		for (size_t i = 0; i < QN_COUNTOF(allocators); i++)
-			if (strcmp(allocators[i].name, driver) == 0 || strcmp(allocators[i].alias, driver) == 0)
+		for (size_t i = 0; i < QN_COUNTOF(s_allocators); i++)
+			if (strcmp(s_allocators[i].name, driver) == 0 || strcmp(s_allocators[i].alias, driver) == 0)
 			{
-				allocator = allocators[i].func;
+				allocator = s_allocators[i].func;
 				break;
 			}
 	}
@@ -72,10 +71,10 @@ void rdh_internal_reset(QgRdh* self)
 	// tm
 	QgRenderTm* tm = &self->tm;
 	tm->size = qg_stub_instance->size;
-	float aspect = qn_point_aspect(&tm->size);
+	const float aspect = qn_point_aspect(&tm->size);
 	qn_mat4_rst(&tm->world);
 	qn_mat4_rst(&tm->view);
-	qn_mat4_perspective_lh(&tm->proj, QN_PIH, aspect, tm->z._near, tm->z._far);
+	qn_mat4_perspective_lh(&tm->proj, QN_PI_H, aspect, tm->z._near, tm->z._far);
 	tm->vipr = tm->proj;
 	qn_mat4_rst(&tm->inv);
 	qn_mat4_rst(&tm->ortho);
@@ -143,7 +142,7 @@ bool qg_rdh_loop(QgRdh* self)
 //
 bool qg_rdh_poll(QgRdh* self, QgEvent* ev)
 {
-	bool ret = qg_poll(ev);
+	const bool ret = qg_poll(ev);
 	if (!ret)
 		return false;
 
@@ -300,9 +299,9 @@ QgVlo* qg_rdh_create_layout(QgRdh* self, int count, const QgPropLayout* layouts)
 //
 QgShd* qg_rdh_create_shader(QgRdh* self, const char* name)
 {
-	char tmpname[64];
 	if (name == NULL)
 	{
+		char tmpname[64];
 		qn_snprintf(tmpname, QN_COUNTOF(tmpname), "Shader#%zu", qn_number());
 		name = tmpname;
 	}

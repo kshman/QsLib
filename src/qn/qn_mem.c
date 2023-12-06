@@ -10,13 +10,13 @@
 //
 void* qn_memenc(void* dest, const void* src, size_t size)
 {
-	uint8_t* pd = (uint8_t*)dest;
-	uint8_t* ps = (uint8_t*)src;
+	const byte* ps = (const byte*)src;
+	byte* pd = (byte*)dest;
 
 	for (; size; --size, ++pd, ++ps)
 	{
-		uint8_t z = (uint8_t)(255 - *ps);
-		*pd = (uint8_t)(z >> 4 | (z & 0xF) << 4);
+		const byte z = (byte)(255 - *ps);
+		*pd = (byte)(z >> 4 | (z & 0xF) << 4);
 	}
 
 	return dest;
@@ -25,13 +25,13 @@ void* qn_memenc(void* dest, const void* src, size_t size)
 //
 void* qn_memdec(void* dest, const void* src, size_t size)
 {
-	uint8_t* pd = (uint8_t*)dest;
-	uint8_t* ps = (uint8_t*)src;
+	const byte* ps = (const byte*)src;
+	byte* pd = (byte*)dest;
 
 	for (; size; --size, ++pd, ++ps)
 	{
-		uint8_t z = (uint8_t)(255 - *ps);
-		*pd = (uint8_t)(z << 4 | (z & 0xF0) >> 4);
+		const byte z = (byte)(255 - *ps);
+		*pd = (byte)(z << 4 | (z & 0xF0) >> 4);
 	}
 
 	return dest;
@@ -46,8 +46,8 @@ void* qn_memzcpr(const void* src, size_t srcsize, /*NULLABLE*/size_t* destsize)
 	uLong tmp = ((uLong)srcsize + 12) / 1000;
 	tmp += tmp == 0 ? (uLong)srcsize + 13 : (uLong)srcsize + 12;
 
-	uint8_t* p = qn_alloc(tmp, uint8_t);
-	if (compress((Bytef*)p, &tmp, (Bytef*)src, (uLong)srcsize) != Z_OK)
+	byte* p = qn_alloc(tmp, byte);
+	if (compress((Bytef*)p, &tmp, (const Bytef*)src, (uLong)srcsize) != Z_OK)
 	{
 		qn_free(p);
 		return NULL;
@@ -66,7 +66,7 @@ void* qn_memzucp(const void* src, size_t srcsize, size_t bufsize, /*NULLABLE*/si
 	qn_retval_if_fail(srcsize > 0, NULL);
 
 	uLong size = bufsize == 0 ? (uLong)srcsize * 5 + 12 : (uLong)bufsize;
-	uint8_t* p = qn_alloc(size, uint8_t);
+	byte* p = qn_alloc(size, byte);
 	if (uncompress((Bytef*)p, &size, (const Bytef*)src, (uLong)srcsize) != Z_OK)
 	{
 		qn_free(p);
@@ -82,10 +82,10 @@ void* qn_memzucp(const void* src, size_t srcsize, size_t bufsize, /*NULLABLE*/si
 //
 size_t qn_memagn(size_t size)
 {
-	size_t align = size % 16;
+	const size_t align = size % 16;
 	if (align == 0)
 		return 0;
-	size_t advice = (size + 16 - 1) & ~(16 - 1);
+	const size_t advice = (size + 16 - 1) & ~(16 - 1);
 	return advice;
 }
 
@@ -124,12 +124,12 @@ char* qn_memdmp(const void* ptr, size_t size, char* outbuf, size_t buflen)
 		return outbuf;
 	}
 
-	const uint8_t* mem = (const uint8_t*)ptr;
+	const byte* mem = (const byte*)ptr;
 	char* ind = outbuf;
 	for (size_t i = 0, cnt = 1; i < size && cnt < buflen; i++, cnt++)
 	{
-		uint8_t m = *mem;
-		*ind = (m < 0x20 || m>0x7F) ? '.' : (char)m;
+		const byte m = *mem;
+		*ind = (m < 0x20 || m>0x7F) ? '.' : (const char)m;  // NOLINT
 		mem++;
 		ind++;
 	}
@@ -142,7 +142,7 @@ char* qn_memdmp(const void* ptr, size_t size, char* outbuf, size_t buflen)
 //////////////////////////////////////////////////////////////////////////
 // 메모리 처리
 
-static struct qnMemProof
+static struct QnMemProof
 {
 	memBlock* frst;
 	memBlock* last;
@@ -154,12 +154,12 @@ static struct qnMemProof
 	HANDLE			heap;
 #endif
 
-#if USE_MP_LOCK
+#ifdef USE_MP_LOCK
 	mtx_t			lock;
 #endif
-} _qn_mp = { NULL, };
+} _qn_mp = { NULL, };  // NOLINT
 
-#if USE_MP_LOCK
+#ifdef USE_MP_LOCK
 #define MP_LOCK				mtx_lock(&_qn_mp.lock)
 #define MP_UNLOCK			mtx_unlock(&_qn_mp.lock)
 #else
@@ -167,9 +167,9 @@ static struct qnMemProof
 #define MP_UNLOCK
 #endif
 
-void _qn_mp_init(void)
+void qn_mp_init(void)
 {
-#if USE_MP_LOCK
+#ifdef USE_MP_LOCK
 	mtx_init(&_qn_mp.lock, mtx_plaine | mtx_recursive);
 #endif
 
@@ -180,7 +180,7 @@ void _qn_mp_init(void)
 #endif
 }
 
-static void _qn_mp_clear(void)
+static void qn_mp_clear(void)
 {
 	if (_qn_mp.count == 0 && _qn_mp.frst == NULL && _qn_mp.last == NULL)
 		return;
@@ -208,16 +208,16 @@ static void _qn_mp_clear(void)
 	}
 
 	double size;
-	char usage = qn_memhrb(sum, &size);
+	const char usage = qn_memhrb(sum, &size);
 	if (usage == ' ')
 		qn_debug_outputf(true, "Memory Profiler", "total block size: %Lu bytes", sum);
 	else
 		qn_debug_outputf(true, "Memory Profiler", "total block size: %.2f %cbytes", size, usage);
 }
 
-void _qn_mp_dispose(void)
+void qn_mp_dispose(void)
 {
-	_qn_mp_clear();
+	qn_mp_clear();
 
 #if _QN_WINDOWS_
 	if (_qn_mp.heap)
@@ -229,12 +229,12 @@ void _qn_mp_dispose(void)
 	}
 #endif
 
-#if USE_MP_LOCK
+#ifdef USE_MP_LOCK
 	mtx_destroy(&_qn_mp.lock);
 #endif
 }
 
-static void _qn_mp_add(memBlock* node)
+static void qn_mp_node_link(memBlock* node)
 {
 	MP_LOCK;
 	if (_qn_mp.frst)
@@ -251,7 +251,7 @@ static void _qn_mp_add(memBlock* node)
 	MP_UNLOCK;
 }
 
-static void _qn_mp_del(memBlock* node)
+static void qn_mp_node_unlink(const memBlock* node)
 {
 	MP_LOCK;
 	if (node->next)
@@ -306,7 +306,7 @@ void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 	node->index = _qn_mp.index;
 	node->size = size;
 	node->block = block;
-	_qn_mp_add(node);
+	qn_mp_node_link(node);
 
 	return _memptr(node);
 }
@@ -391,7 +391,7 @@ void qn_mpffree(void* ptr)
 #endif
 
 	node->sign = MEMORY_SIGN_FREE;
-	_qn_mp_del(node);
+	qn_mp_node_unlink(node);
 
 #if _QN_WINDOWS_
 	HeapFree(_qn_mp.heap, 0, node);

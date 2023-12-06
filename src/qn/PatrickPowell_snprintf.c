@@ -81,13 +81,13 @@
 * dopr(): poor man's version of doprintf
 */
 
-#if !_QN_MOBILE_			// 모바일에서 로캘 안됨
+#ifndef _QN_MOBILE_			// 모바일에서 로캘 안됨
 #define USE_LOCALE_INFO	1
 #else
 #define USE_LOCALE_INFO	0
 #endif
 
-#if _MSC_VER				// MSVC만 와이드 로캘
+#ifdef _MSC_VER				// MSVC만 와이드 로캘
 #define USE_WIDE_LOCALE	1
 #else
 #define USE_WIDE_LOCALE	0
@@ -182,22 +182,23 @@ QN_INLINE double pp_pow10(int exp)
 
 QN_INLINE double pp_round(double value)
 {
-	ullong intpart = (ullong)value;
-	value = value - intpart;
+	const ullong intpart = (ullong)value;
+	value = value - (double)intpart;
 	return (double)(value >= 0.5 ? intpart + 1 : intpart);
 }
 
-QN_INLINE bool pp_is_nan(double value)
+QN_INLINE bool pp_is_nan(const double value)
 {
+	// ReSharper disable once CppIdenticalOperandsInBinaryExpression
 	return value != value;
 }
 
-QN_INLINE bool pp_is_inf(double value)
+QN_INLINE bool pp_is_inf(const double value)
 {
-	return value != 0.0 && value + value == value;
+	return value != 0.0 && value + value == value;  // NOLINT
 }
 
-QN_INLINE int pp_exponent(double value)
+QN_INLINE int pp_exponent(const double value)
 {
 	double d = value < 0.0 ? -value : value;
 	int exp = 0;
@@ -206,12 +207,12 @@ QN_INLINE int pp_exponent(double value)
 	return exp;
 }
 
-QN_INLINE ullong pp_intpart(double value)
+QN_INLINE ullong pp_intpart(const double value)
 {
 	if (value >= (double)UINT64_MAX)
 		return UINT64_MAX;
-	ullong res = (ullong)value;
-	return res <= value ? res : res - 1;
+	const ullong res = (ullong)value;
+	return (const double)res <= value ? res : res - 1;
 }
 
 
@@ -222,7 +223,7 @@ QN_INLINE ullong pp_intpart(double value)
 #define char_to_int(p)	((p) - '0')
 
 // 진수별 처리
-static const char* _str_number[2] =
+static const char* pp_str_base_num[2] =
 {
 	"0123456789abcdef",
 	"0123456789ABCDEF",
@@ -230,15 +231,15 @@ static const char* _str_number[2] =
 
 // 포인터 표시를 어떤거 쓰나
 #if _QN_64_
-#define _str_fmt_size		_str_fmt_long
+#define pp_str_fmt_size		pp_str_fmt_long
 #else
-#define _str_fmt_size		_str_fmt_int
+#define pp_str_fmt_size		pp_str_fmt_int
 #endif
 
 // 32비트 숫자를 문자열로
-static int _str_to_int(uint value, char* buf, int size, int base, bool caps)
+static int pp_str_to_int(uint value, char* buf, int size, int base, bool caps)
 {
-	const char* bts = _str_number[caps ? 1 : 0];
+	const char* bts = pp_str_base_num[caps ? 1 : 0];
 	int pos = 0;
 
 	do
@@ -253,9 +254,9 @@ static int _str_to_int(uint value, char* buf, int size, int base, bool caps)
 }
 
 // 64비트 숫자를 문자열로
-static int _str_to_long(ullong value, char* buf, int size, int base, bool caps)
+static int pp_str_to_long(ullong value, char* buf, int size, int base, bool caps)
 {
-	const char* bts = _str_number[caps ? 1 : 0];
+	const char* bts = pp_str_base_num[caps ? 1 : 0];
 	int pos = 0;
 
 	do
@@ -270,9 +271,9 @@ static int _str_to_long(ullong value, char* buf, int size, int base, bool caps)
 }
 
 // 숫자 분리 (보통 천단위 통화 분리자, 한자 문화권은 만단위가 좋은데)
-static int _str_quote_seps(int value, int flags
+static int pp_str_quote(int value, int flags
 #if USE_LOCALE_INFO
-	, struct lconv* lc
+	, const struct lconv* lc
 #endif
 )
 {
@@ -293,7 +294,7 @@ static int _str_quote_seps(int value, int flags
 }
 
 // 글자 넣기
-static void _str_outch(char* buffer, size_t* currlen, size_t maxlen, char ch)
+static void pp_str_outch(char* buffer, size_t* currlen, size_t maxlen, char ch)
 {
 	if (*currlen < maxlen)
 		buffer[(*currlen)] = ch;
@@ -301,7 +302,7 @@ static void _str_outch(char* buffer, size_t* currlen, size_t maxlen, char ch)
 }
 
 // 문자열 널기
-static void _str_outs(char* buffer, size_t* currlen, size_t maxlen, const char* value, int len, int flags, int vmin, int vmax)
+static void pp_str_outs(char* buffer, size_t* currlen, size_t maxlen, const char* value, int len, int flags, int vmin, int vmax)
 {
 	int padlen = vmin - len;
 
@@ -313,40 +314,40 @@ static void _str_outs(char* buffer, size_t* currlen, size_t maxlen, const char* 
 	int cnt = 0;
 	while (padlen > 0 && cnt < vmax)
 	{
-		_str_outch(buffer, currlen, maxlen, ' ');
+		pp_str_outch(buffer, currlen, maxlen, ' ');
 		--padlen;
 		++cnt;
 	}
 	while (*value && cnt < vmax)
 	{
-		_str_outch(buffer, currlen, maxlen, *value++);
+		pp_str_outch(buffer, currlen, maxlen, *value++);
 		++cnt;
 	}
 	while (padlen < 0 && cnt < vmax)
 	{
-		_str_outch(buffer, currlen, maxlen, ' ');
+		pp_str_outch(buffer, currlen, maxlen, ' ');
 		++padlen;
 		++cnt;
 	}
 }
 
 // 글자 변환
-static void _str_fmt_char(char* buffer, size_t* currlen, size_t maxlen, int ch, int flags)
+static void pp_str_fmt_char(char* buffer, size_t* currlen, size_t maxlen, int ch, int flags)
 {
 	if ((flags & DP_F_UNICODE) == 0)
-		_str_outch(buffer, currlen, maxlen, (char)ch);
+		pp_str_outch(buffer, currlen, maxlen, (char)ch);
 	else
 	{
-		wchar_t wcs[2] = { (wchar)ch, L'\0' };
+		const wchar_t wcs[2] = { (wchar)ch, L'\0' };
 		char mbs[6];
-		int len = (int)qn_wcstombs(mbs, 6, wcs);
+		const int len = (int)qn_wcstombs(mbs, 6, wcs, 1);
 		if (len > 0)
-			_str_outs(buffer, currlen, maxlen, mbs, len, 0, 0, len);
+			pp_str_outs(buffer, currlen, maxlen, mbs, len, 0, 0, len);
 	}
 }
 
 // 문자열 변환
-static void _str_fmt_str(char* buffer, size_t* currlen, size_t maxlen, const char* value, int flags, int vmin, int vmax)
+static void pp_str_fmt_str(char* buffer, size_t* currlen, size_t maxlen, const void* value, int flags, int vmin, int vmax)
 {
 	if (!value)
 	{
@@ -356,48 +357,48 @@ static void _str_fmt_str(char* buffer, size_t* currlen, size_t maxlen, const cha
 			vmax = 6;
 		if (vmin > 0 && vmin > vmax)
 			vmax = vmin;
-		_str_outs(buffer, currlen, maxlen, value, 6, flags, vmin, vmax);
+		pp_str_outs(buffer, currlen, maxlen, value, 6, flags, vmin, vmax);
 	}
 	else if ((flags & DP_F_UNICODE) == 0)
 	{
 		// 그냥 문자
-		int len = (int)strlen(value);
+		const int len = (int)strlen(value);
 		if (vmax < 0)
 			vmax = len;
 		if (vmin > 0 && vmin > vmax)
 			vmax = vmin;
-		_str_outs(buffer, currlen, maxlen, value, len, flags, vmin, vmax);
+		pp_str_outs(buffer, currlen, maxlen, value, len, flags, vmin, vmax);
 	}
 	else
 	{
 		// 와이드 문자
-		const wchar* w = (const wchar*)value;
-		int len = (int)qn_wcstombs(NULL, 0, w);
-		if (vmax < 0)
+		const wchar* w = value;
+		const int len = (int)qn_wcstombs(NULL, 0, w, 0);
+		if (len <= 0)
 		{
 			value = "(unicode)";
 			if (vmax < 0)
 				vmax = 9;
 			if (vmin > 0 && vmin > vmax)
 				vmax = vmin;
-			_str_outs(buffer, currlen, maxlen, value, 9, flags, vmin, vmax);
+			pp_str_outs(buffer, currlen, maxlen, value, 9, flags, vmin, vmax);
 		}
 		else
 		{
 			char* s = qn_alloca(len + 1, char);
-			qn_wcstombs(s, (size_t)len + 1, w);
+			qn_wcstombs(s, (size_t)len + 1, w, 0);
 			if (vmax < 0)
 				vmax = len;
 			if (vmin > 0 && vmin > vmax)
 				vmax = vmin;
-			_str_outs(buffer, currlen, maxlen, s, len, flags, vmin, vmax);
+			pp_str_outs(buffer, currlen, maxlen, s, len, flags, vmin, vmax);
 			qn_freea(s);
 		}
 	}
 }
 
 // 32비트 정수
-static void _str_fmt_int(char* buffer, size_t* currlen, size_t maxlen, sn_any* value, uint base, int vmin, int vmax, int flags)
+static void pp_str_fmt_int(char* buffer, size_t* currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
 {
 #define MAX_CONVERT_PLACES 40
 	uint uvalue;
@@ -409,7 +410,7 @@ static void _str_fmt_int(char* buffer, size_t* currlen, size_t maxlen, sn_any* v
 	int zpadlen;
 	int quote;
 #if USE_LOCALE_INFO
-	struct lconv* lc = localeconv();	// CRT 로캘
+	const struct lconv* lc = localeconv();	// CRT 로캘 / NOLINT
 #endif
 
 	//
@@ -440,7 +441,7 @@ static void _str_fmt_int(char* buffer, size_t* currlen, size_t maxlen, sn_any* v
 		}
 	}
 
-	place = _str_to_int(uvalue, convert, MAX_CONVERT_PLACES - 1, base, flags & DP_F_UP);
+	place = pp_str_to_int(uvalue, convert, MAX_CONVERT_PLACES - 1, base, flags & DP_F_UP);
 
 	// '#'이 있을때 접두사 처리
 	if ((flags & DP_F_NUM) && uvalue != 0)
@@ -460,9 +461,9 @@ static void _str_fmt_int(char* buffer, size_t* currlen, size_t maxlen, sn_any* v
 
 	//
 #if USE_LOCALE_INFO
-	quote = _str_quote_seps(place, flags, lc);
+	quote = pp_str_quote(place, flags, lc);
 #else
-	quote = _str_quote_seps(place, flags);
+	quote = pp_str_quote(place, flags);
 #endif
 	zpadlen = vmax - place - quote;
 	spadlen = vmin - quote - QN_MAX(vmax, place) - (signvalue ? 1 : 0) - (hexprefix ? 2 : 0);
@@ -482,25 +483,25 @@ static void _str_fmt_int(char* buffer, size_t* currlen, size_t maxlen, sn_any* v
 	// 선두 공백
 	while (spadlen > 0)
 	{
-		_str_outch(buffer, currlen, maxlen, ' ');
+		pp_str_outch(buffer, currlen, maxlen, ' ');
 		--spadlen;
 	}
 
 	// 부호
 	if (signvalue)
-		_str_outch(buffer, currlen, maxlen, signvalue);
+		pp_str_outch(buffer, currlen, maxlen, signvalue);
 
 	// 16진수 접두사
 	if (hexprefix)
 	{
-		_str_outch(buffer, currlen, maxlen, '0');
-		_str_outch(buffer, currlen, maxlen, hexprefix);
+		pp_str_outch(buffer, currlen, maxlen, '0');
+		pp_str_outch(buffer, currlen, maxlen, hexprefix);
 	}
 
 	// '0' 삽입
 	while (zpadlen > 0)
 	{
-		_str_outch(buffer, currlen, maxlen, '0');
+		pp_str_outch(buffer, currlen, maxlen, '0');
 		--zpadlen;
 	}
 
@@ -508,18 +509,18 @@ static void _str_fmt_int(char* buffer, size_t* currlen, size_t maxlen, sn_any* v
 	while (place > 0)
 	{
 		--place;
-		_str_outch(buffer, currlen, maxlen, convert[place]);
+		pp_str_outch(buffer, currlen, maxlen, convert[place]);
 
 		if (quote && place > 0 && (place % 3) == 0)
 		{
 #if USE_LOCALE_INFO
 			if (!lc->thousands_sep)
-				_str_outch(buffer, currlen, maxlen, ',');
+				pp_str_outch(buffer, currlen, maxlen, ',');
 			else
 				for (const char* psz = lc->thousands_sep; *psz; psz++)
-					_str_outch(buffer, currlen, maxlen, *psz);
+					pp_str_outch(buffer, currlen, maxlen, *psz);
 #else
-			_str_outch(buffer, currlen, maxlen, ',');
+			pp_str_outch(buffer, currlen, maxlen, ',');
 #endif
 		}
 	}
@@ -527,14 +528,14 @@ static void _str_fmt_int(char* buffer, size_t* currlen, size_t maxlen, sn_any* v
 	// 왼쪽 정렬에 따른 공백
 	while (spadlen < 0)
 	{
-		_str_outch(buffer, currlen, maxlen, ' ');
+		pp_str_outch(buffer, currlen, maxlen, ' ');
 		++spadlen;
 	}
 #undef MAX_CONVERT_PLACES
 }
 
 // 64비트 정수
-static void _str_fmt_long(char* buffer, size_t* currlen, size_t maxlen, sn_any* value, uint base, int vmin, int vmax, int flags)
+static void pp_str_fmt_long(char* buffer, size_t* currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
 {
 #define MAX_CONVERT_PLACES 80
 	ullong uvalue;
@@ -546,7 +547,7 @@ static void _str_fmt_long(char* buffer, size_t* currlen, size_t maxlen, sn_any* 
 	int zpadlen;
 	int quote;
 #if USE_LOCALE_INFO
-	struct lconv* lc = localeconv();
+	const struct lconv* lc = localeconv();  // NOLINT
 #endif
 
 	//
@@ -577,7 +578,7 @@ static void _str_fmt_long(char* buffer, size_t* currlen, size_t maxlen, sn_any* 
 		}
 	}
 
-	place = _str_to_long(uvalue, convert, MAX_CONVERT_PLACES - 1, base, flags & DP_F_UP);
+	place = pp_str_to_long(uvalue, convert, MAX_CONVERT_PLACES - 1, base, flags & DP_F_UP);
 
 	// '#'이 있을때 접두사 처리
 	if ((flags & DP_F_NUM) && uvalue != 0)
@@ -597,9 +598,9 @@ static void _str_fmt_long(char* buffer, size_t* currlen, size_t maxlen, sn_any* 
 
 	//
 #if USE_LOCALE_INFO
-	quote = _str_quote_seps(place, flags, lc);
+	quote = pp_str_quote(place, flags, lc);
 #else
-	quote = _str_quote_seps(place, flags);
+	quote = pp_str_quote(place, flags);
 #endif
 	zpadlen = vmax - place - quote;
 	spadlen = vmin - quote - QN_MAX(vmax, place) - (signvalue ? 1 : 0) - (hexprefix ? 2 : 0);
@@ -619,19 +620,19 @@ static void _str_fmt_long(char* buffer, size_t* currlen, size_t maxlen, sn_any* 
 	// 앞쪽 공백
 	while (spadlen > 0)
 	{
-		_str_outch(buffer, currlen, maxlen, ' ');
+		pp_str_outch(buffer, currlen, maxlen, ' ');
 		--spadlen;
 	}
 
 	// 부호
 	if (signvalue)
-		_str_outch(buffer, currlen, maxlen, signvalue);
+		pp_str_outch(buffer, currlen, maxlen, signvalue);
 
 	// 16진수 접두사
 	if (hexprefix)
 	{
-		_str_outch(buffer, currlen, maxlen, '0');
-		_str_outch(buffer, currlen, maxlen, hexprefix);
+		pp_str_outch(buffer, currlen, maxlen, '0');
+		pp_str_outch(buffer, currlen, maxlen, hexprefix);
 	}
 
 	// '0' 삽입
@@ -639,7 +640,7 @@ static void _str_fmt_long(char* buffer, size_t* currlen, size_t maxlen, sn_any* 
 	{
 		while (zpadlen > 0)
 		{
-			_str_outch(buffer, currlen, maxlen, '0');
+			pp_str_outch(buffer, currlen, maxlen, '0');
 			--zpadlen;
 		}
 	}
@@ -648,18 +649,18 @@ static void _str_fmt_long(char* buffer, size_t* currlen, size_t maxlen, sn_any* 
 	while (place > 0)
 	{
 		--place;
-		_str_outch(buffer, currlen, maxlen, convert[place]);
+		pp_str_outch(buffer, currlen, maxlen, convert[place]);
 
 		if (quote && place > 0 && (place % 3) == 0)
 		{
 #if USE_LOCALE_INFO
 			if (!lc->thousands_sep)
-				_str_outch(buffer, currlen, maxlen, ',');
+				pp_str_outch(buffer, currlen, maxlen, ',');
 			else
 				for (const char* psz = lc->thousands_sep; *psz; psz++)
-					_str_outch(buffer, currlen, maxlen, *psz);
+					pp_str_outch(buffer, currlen, maxlen, *psz);
 #else
-			_str_outch(buffer, currlen, maxlen, ',');
+			pp_str_outch(buffer, currlen, maxlen, ',');
 #endif
 		}
 	}
@@ -667,7 +668,7 @@ static void _str_fmt_long(char* buffer, size_t* currlen, size_t maxlen, sn_any* 
 	// 왼쪽 정렬에 따른 공백
 	while (spadlen < 0)
 	{
-		_str_outch(buffer, currlen, maxlen, ' ');
+		pp_str_outch(buffer, currlen, maxlen, ' ');
 		++spadlen;
 	}
 #undef MAX_CONVERT_PLACES
@@ -675,7 +676,7 @@ static void _str_fmt_long(char* buffer, size_t* currlen, size_t maxlen, sn_any* 
 
 // 64비트 실수(double)
 // 여기서는, 오직 16자리 정수만 지원. 원래는 9, 19, 38 자리수에 따라 각각 32, 64, 128비트용이 있어야함
-static void _str_fmt_fp(char* buffer, size_t* currlen, size_t maxlen, sn_any* value, int vmin, int vmax, int flags)
+static void pp_str_fmt_fp(char* buffer, size_t* currlen, size_t maxlen, sn_any* value, int vmin, int vmax, int flags)
 {
 	double fvalue;
 	double uvalue;
@@ -700,7 +701,7 @@ static void _str_fmt_fp(char* buffer, size_t* currlen, size_t maxlen, sn_any* va
 	int omitcount;
 	const char* psz;
 #if USE_LOCALE_INFO
-	struct lconv* lc = localeconv();
+	const struct lconv* lc = localeconv();  // NOLINT
 #endif
 
 	/*
@@ -737,7 +738,7 @@ static void _str_fmt_fp(char* buffer, size_t* currlen, size_t maxlen, sn_any* va
 			iconvert[iplace++] = *psz++;
 		iconvert[iplace] = '\0';
 
-		_str_outs(buffer, currlen, maxlen, iconvert, iplace, flags, vmin, iplace);
+		pp_str_outs(buffer, currlen, maxlen, iconvert, iplace, flags, vmin, iplace);
 		return;
 	}
 
@@ -771,8 +772,8 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 	if (etype)
 		uvalue /= pp_pow10(exponent);
 	intpart = pp_intpart(uvalue);
-	mask = (ullong)pp_pow10(vmax);
-	fracpart = (ullong)pp_round(mask * (uvalue - intpart));
+	mask = (ullong)pp_pow10(vmax);  // NOLINT
+	fracpart = (ullong)pp_round((double)mask * (uvalue - (double)intpart));  // NOLINT
 
 	if (fracpart >= mask)
 	{
@@ -806,7 +807,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 		else
 			esignvalue = '+';
 
-		eplace = _str_to_int(exponent, econvert, 2, 10, false);
+		eplace = pp_str_to_int(exponent, econvert, 2, 10, false);
 
 		if (eplace == 1)
 		{
@@ -825,11 +826,11 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 	}
 
 	// 정수부 처리
-	iplace = _str_to_long(intpart, iconvert, 311 - 1, 10, false);
+	iplace = pp_str_to_long(intpart, iconvert, 311 - 1, 10, false);
 
 	// 실수부 처리
 	// iplace=1 이면 fracpart==0 임.
-	fplace = fracpart == 0 ? 0 : _str_to_long(fracpart, fconvert, 311 - 1, 10, false);
+	fplace = fracpart == 0 ? 0 : pp_str_to_long(fracpart, fconvert, 311 - 1, 10, false);
 
 	// 지수부 처리
 	zleadfrac = vmax - fplace;
@@ -857,9 +858,9 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 
 	//
 #if USE_LOCALE_INFO
-	quote = _str_quote_seps(iplace, flags, lc);
+	quote = pp_str_quote(iplace, flags, lc);
 #else
-	quote = _str_quote_seps(iplace, flags);
+	quote = pp_str_quote(iplace, flags);
 #endif
 
 	// -1은 정수 포인트용, 부호를 출력하면 추가로 -1;
@@ -874,12 +875,12 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 	{
 		if (signvalue)
 		{
-			_str_outch(buffer, currlen, maxlen, signvalue);
+			pp_str_outch(buffer, currlen, maxlen, signvalue);
 			signvalue = '\0';
 		}
 		while (padlen > 0)
 		{
-			_str_outch(buffer, currlen, maxlen, '0');
+			pp_str_outch(buffer, currlen, maxlen, '0');
 			--padlen;
 		}
 	}
@@ -887,30 +888,30 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 	// 남은 패딩 공백 출력
 	while (padlen > 0)
 	{
-		_str_outch(buffer, currlen, maxlen, ' ');
+		pp_str_outch(buffer, currlen, maxlen, ' ');
 		--padlen;
 	}
 
 	// 패딩에서 부호 출력 안했으면 부호 출력
 	if (signvalue)
-		_str_outch(buffer, currlen, maxlen, signvalue);
+		pp_str_outch(buffer, currlen, maxlen, signvalue);
 
 	// 정수부 출력
 	while (iplace > 0)
 	{
 		--iplace;
-		_str_outch(buffer, currlen, maxlen, iconvert[iplace]);
+		pp_str_outch(buffer, currlen, maxlen, iconvert[iplace]);
 
 		if (quote && iplace > 0 && (iplace % 3) == 0)
 		{
 #if USE_LOCALE_INFO
 			if (!lc->thousands_sep)
-				_str_outch(buffer, currlen, maxlen, ',');
+				pp_str_outch(buffer, currlen, maxlen, ',');
 			else
 				for (psz = lc->thousands_sep; *psz; psz++)
-					_str_outch(buffer, currlen, maxlen, *psz);
+					pp_str_outch(buffer, currlen, maxlen, *psz);
 #else
-			_str_outch(buffer, currlen, maxlen, ',');
+			pp_str_outch(buffer, currlen, maxlen, ',');
 #endif
 		}
 	}
@@ -920,34 +921,34 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 	{
 #if USE_LOCALE_INFO
 		if (!lc->decimal_point)
-			_str_outch(buffer, currlen, maxlen, '.');
+			pp_str_outch(buffer, currlen, maxlen, '.');
 		else
 			for (psz = lc->decimal_point; *psz; psz++)
-				_str_outch(buffer, currlen, maxlen, *psz);
+				pp_str_outch(buffer, currlen, maxlen, *psz);
 #else
-		_str_outch(buffer, currlen, maxlen, '.');
+		pp_str_outch(buffer, currlen, maxlen, '.');
 #endif
 	}
 
 	// 실수부 앞쪽 패딩
 	while (zleadfrac > 0)
 	{
-		_str_outch(buffer, currlen, maxlen, '0');
+		pp_str_outch(buffer, currlen, maxlen, '0');
 		--zleadfrac;
 	}
 
 	// 실수부
 	while (fplace > omitcount)
-		_str_outch(buffer, currlen, maxlen, fconvert[--fplace]);
+		pp_str_outch(buffer, currlen, maxlen, fconvert[--fplace]);
 
 	// 지수값
 	while (eplace > 0)
-		_str_outch(buffer, currlen, maxlen, econvert[--eplace]);
+		pp_str_outch(buffer, currlen, maxlen, econvert[--eplace]);
 
 	// 남은 패팅
 	while (padlen < 0)
 	{
-		_str_outch(buffer, currlen, maxlen, ' ');
+		pp_str_outch(buffer, currlen, maxlen, ' ');
 		++padlen;
 	}
 }
@@ -979,7 +980,7 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 				if (ch == '%')
 					state = DP_S_FLAGS;
 				else
-					_str_outch(buffer, &currlen, maxlen, ch);
+					pp_str_outch(buffer, &currlen, maxlen, ch);
 				ch = *format++;
 				break;
 
@@ -1125,42 +1126,39 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 						{
 							case DP_C_SHORT:
 								value.i = va_arg(args, int);
-								_str_fmt_int(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_str_fmt_int(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 							case DP_C_LONG:
 								value.g = va_arg(args, long);
-								_str_fmt_size(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_str_fmt_size(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 							case DP_C_LLONG:
 								value.ll = va_arg(args, long long);
-								_str_fmt_long(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_str_fmt_long(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:
 								value.sz = va_arg(args, size_t);
-								_str_fmt_size(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_str_fmt_size(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 							case DP_C_INTMAX:   // 최대 정수, 2023년 현재 64비트
 								value.im = va_arg(args, intmax_t);
-								_str_fmt_long(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_str_fmt_long(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 							case DP_C_PTRDIFF:
 								value.ff = va_arg(args, ptrdiff_t);
-								_str_fmt_size(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_str_fmt_size(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 							case DP_C_CHAR:
-								value.i = va_arg(args, int);
-								_str_fmt_int(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
-								break;
 							default:
 								value.i = va_arg(args, int);
-								_str_fmt_int(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_str_fmt_int(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 						}
 						break;
 					case 'X':       // 대문자 부호없는 16진수
 						flags |= DP_F_UP; QN_FALL_THROUGH;
-					case 'x':       // 소문자 부호없는 16진수
+					case 'x':       // 소문자 부호없는 16진수 / NOLINT
 					case 'o':       // 부호없는 8진수
 					case 'b':       // 부호없는 2진수
 					case 'u':       // 부호없는 십진수
@@ -1170,65 +1168,65 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 						{
 							case DP_C_SHORT:
 								value.ui = (unsigned short)va_arg(args, unsigned int);
-								_str_fmt_int(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_str_fmt_int(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_LONG:
 								value.ug = va_arg(args, unsigned long);
-								_str_fmt_size(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_str_fmt_size(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_LLONG:
 								value.ull = va_arg(args, unsigned long long);
-								_str_fmt_long(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_str_fmt_long(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:
 								value.sz = va_arg(args, size_t);
-								_str_fmt_size(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_str_fmt_size(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_INTMAX:   // 64비트 취급
 								value.im = va_arg(args, intmax_t);
-								_str_fmt_long(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_str_fmt_long(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_PTRDIFF:
 								value.ff = va_arg(args, ptrdiff_t);
-								_str_fmt_size(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_str_fmt_size(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_CHAR:
 								value.ui = (unsigned char)va_arg(args, int);
-								_str_fmt_int(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_str_fmt_int(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							default:
 								value.ui = va_arg(args, unsigned int);
-								_str_fmt_int(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_str_fmt_int(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 						}
 						break;
 					case 'A':       // 실수의 대문자 16진수 표시 (미구현 '%F'로)
 					case 'F':       // 실수 대문자
 						flags |= DP_F_UP; QN_FALL_THROUGH;
-					case 'a':       // 실수의 소문자 16진수 표시 (미구현 '%f'로)
+					case 'a':       // 실수의 소문자 16진수 표시 (미구현 '%f'로) / NOLINT
 					case 'f':       // 실수
 						// long double은 지원 안함...
 						if (cflags == DP_C_LDOUBLE)
 							value.d = (double)va_arg(args, long double);
 						else
 							value.d = va_arg(args, double);
-						_str_fmt_fp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
+						pp_str_fmt_fp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
 						break;
 					case 'E':       // 지수 표시 (대문자)
 						flags |= DP_F_UP; QN_FALL_THROUGH;
-					case 'e':       // 지수 표시
+					case 'e':       // 지수 표시 / NOLINT
 						flags |= DP_F_E;
 						// long double은 지원 안함...
 						if (cflags == DP_C_LDOUBLE)
 							value.d = (double)va_arg(args, long double);
 						else
 							value.d = va_arg(args, double);
-						_str_fmt_fp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
+						pp_str_fmt_fp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
 						break;
 					case 'G':       // 지수 표시 (대문자)
 						flags |= DP_F_UP; QN_FALL_THROUGH;
-					case 'g':       // 지수 표시
+					case 'g':       // 지수 표시 / NOLINT
 						flags |= DP_F_G;
 						if (vmax == 0) // C99
 							vmax = 1;
@@ -1237,28 +1235,28 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 							value.d = (double)va_arg(args, long double);
 						else
 							value.d = va_arg(args, double);
-						_str_fmt_fp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
+						pp_str_fmt_fp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
 						break;
 					case 'c':
 						if (cflags == DP_C_LONG)
 							flags |= DP_F_UNICODE;
-						_str_fmt_char(buffer, &currlen, maxlen, va_arg(args, int), flags);
+						pp_str_fmt_char(buffer, &currlen, maxlen, va_arg(args, int), flags);
 						break;
 					case 'C':
-						_str_fmt_char(buffer, &currlen, maxlen, va_arg(args, int), flags | DP_F_UNICODE);
+						pp_str_fmt_char(buffer, &currlen, maxlen, va_arg(args, int), flags | DP_F_UNICODE);
 						break;
 					case 's':
 						if (cflags == DP_C_LONG)
 							flags |= DP_F_UNICODE;
-						_str_fmt_str(buffer, &currlen, maxlen, va_arg(args, char*), flags, vmin, vmax);
+						pp_str_fmt_str(buffer, &currlen, maxlen, va_arg(args, char*), flags, vmin, vmax);
 						break;
 					case 'S':
-						_str_fmt_str(buffer, &currlen, maxlen, va_arg(args, char*), flags | DP_F_UNICODE, vmin, vmax);
+						pp_str_fmt_str(buffer, &currlen, maxlen, va_arg(args, char*), flags | DP_F_UNICODE, vmin, vmax);
 						break;
 					case 'p':
 						flags |= DP_F_UNSIGNED | DP_F_UP;
 						value.s = va_arg(args, char*);
-						_str_fmt_size(buffer, &currlen, maxlen, &value, 16, vmin, vmax, flags);
+						pp_str_fmt_size(buffer, &currlen, maxlen, &value, 16, vmin, vmax, flags);
 						break;
 					case 'n':
 						switch (cflags)
@@ -1273,7 +1271,7 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 								break;
 							case DP_C_LLONG:
 								value.pll = (llong*)va_arg(args, long long*);
-								*value.pll = currlen;
+								*value.pll = (llong)currlen;
 								break;
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:     // C99에서 원래 부호 있는 크기(ssize_t)를 요구함
@@ -1299,7 +1297,7 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 						}
 						break;
 					case '%':
-						_str_outch(buffer, &currlen, maxlen, ch);
+						pp_str_outch(buffer, &currlen, maxlen, ch);
 						break;
 					default:    // 알수없음, 넘김
 						break;
@@ -1312,6 +1310,7 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 				break;
 
 			case DP_S_DONE:
+			default:
 				break;
 		}   // switch - state
 	}   // while
@@ -1329,7 +1328,7 @@ size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
 #define wcharo_int(p)	((p) - L'0')
 
 // 진수별 처리
-static const wchar* _wcs_number[2] =
+static const wchar* pp_wcs_base_num[2] =
 {
 	L"0123456789abcdef",
 	L"0123456789ABCDEF",
@@ -1337,15 +1336,15 @@ static const wchar* _wcs_number[2] =
 
 // 포인터 표시를 어떤거 쓰나
 #if _QN_64_
-#define _wcs_fmt_size		_wcs_fmt_long
+#define pp_wcs_fmt_size		pp_wcs_fmt_long
 #else
-#define _wcs_fmt_size		_wcs_fmt_int
+#define pp_wcs_fmt_size		pp_wcs_fmt_int
 #endif
 
 // 32비트 숫자를 문자열로
-static int _wcs_to_int(uint value, wchar* buf, int size, int base, bool caps)
+static int pp_wcs_to_int(uint value, wchar* buf, int size, int base, bool caps)
 {
-	const wchar* bts = _wcs_number[caps ? 1 : 0];
+	const wchar* bts = pp_wcs_base_num[caps ? 1 : 0];
 	int pos = 0;
 
 	do
@@ -1360,9 +1359,9 @@ static int _wcs_to_int(uint value, wchar* buf, int size, int base, bool caps)
 }
 
 // 64비트 숫자를 문자열로
-static int _wcs_to_long(ullong value, wchar* buf, int size, int base, bool caps)
+static int pp_wcs_to_long(ullong value, wchar* buf, int size, int base, bool caps)
 {
-	const wchar* bts = _wcs_number[caps ? 1 : 0];
+	const wchar* bts = pp_wcs_base_num[caps ? 1 : 0];
 	int pos = 0;
 
 	do
@@ -1377,9 +1376,9 @@ static int _wcs_to_long(ullong value, wchar* buf, int size, int base, bool caps)
 }
 
 // 숫자 분리 (보통 천단위 통화 분리자)
-static int _wcs_quote_seps(int value, int flags
+static int pp_wcs_quote(int value, int flags
 #if USE_WIDE_LOCALE
-	, struct lconv* lc
+	, const struct lconv* lc
 #endif
 )
 {
@@ -1438,22 +1437,22 @@ static void _wcs_outs(wchar* buffer, size_t* currlen, size_t maxlen, const wchar
 }
 
 // 글자 변환
-static void _wcs_fmt_char(wchar* buffer, size_t* currlen, size_t maxlen, int ch, int flags)
+static void pp_wcs_fmt_char(wchar* buffer, size_t* currlen, size_t maxlen, int ch, int flags)
 {
 	if ((flags & DP_F_UNICODE) == 0)
 		_wcs_outch(buffer, currlen, maxlen, (wchar)ch);
 	else
 	{
-		char mbs[2] = { (char)ch, '\0' };
+		const char mbs[2] = { (char)ch, '\0' };
 		wchar wcs[6];
-		int len = (int)qn_mbstowcs(wcs, 6, mbs);
+		const int len = (int)qn_mbstowcs(wcs, 6, mbs, 0);
 		if (len > 0)
 			_wcs_outs(buffer, currlen, maxlen, wcs, len, 0, 0, len);
 	}
 }
 
 // 문자열 변환
-static void _wcs_fmt_str(wchar* buffer, size_t* currlen, size_t maxlen, const wchar* value, int flags, int vmin, int vmax)
+static void pp_wcs_fmt_str(wchar* buffer, size_t* currlen, size_t maxlen, const wchar* value, int flags, int vmin, int vmax)
 {
 	if (!value)
 	{
@@ -1468,7 +1467,7 @@ static void _wcs_fmt_str(wchar* buffer, size_t* currlen, size_t maxlen, const wc
 	else if ((flags & DP_F_UNICODE) != 0)
 	{
 		// 와이드 문자
-		int len = (int)wcslen(value);
+		const int len = (int)wcslen(value);
 		if (vmax < 0)
 			vmax = len;
 		if (vmin > 0 && vmin > vmax)
@@ -1479,8 +1478,8 @@ static void _wcs_fmt_str(wchar* buffer, size_t* currlen, size_t maxlen, const wc
 	{
 		// 멀티바이트 문자
 		const char* s = (const char*)value;
-		int len = (int)qn_mbstowcs(NULL, 0, s);
-		if (vmax < 0)
+		const int len = (int)qn_mbstowcs(NULL, 0, s, 0);
+		if (len <= 0)
 		{
 			value = L"(multibyte)";
 			if (vmax < 0)
@@ -1492,7 +1491,7 @@ static void _wcs_fmt_str(wchar* buffer, size_t* currlen, size_t maxlen, const wc
 		else
 		{
 			wchar* w = qn_alloca(len + 1, wchar);
-			qn_mbstowcs(w, (size_t)len + 1, s);
+			qn_mbstowcs(w, (size_t)len + 1, s, 0);
 			if (vmax < 0)
 				vmax = len;
 			if (vmin > 0 && vmin > vmax)
@@ -1504,7 +1503,7 @@ static void _wcs_fmt_str(wchar* buffer, size_t* currlen, size_t maxlen, const wc
 }
 
 // 32비트 정수
-static void _wcs_fmt_int(wchar* buffer, size_t* currlen, size_t maxlen, sn_any* value, uint base, int vmin, int vmax, int flags)
+static void pp_wcs_fmt_int(wchar* buffer, size_t* currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
 {
 #define MAX_CONVERT_PLACES 40
 	uint uvalue;
@@ -1516,7 +1515,7 @@ static void _wcs_fmt_int(wchar* buffer, size_t* currlen, size_t maxlen, sn_any* 
 	int zpadlen;
 	int quote;
 #if USE_WIDE_LOCALE
-	struct lconv* lc = localeconv();
+	const struct lconv* lc = localeconv();  // NOLINT
 #endif
 
 	//
@@ -1547,7 +1546,7 @@ static void _wcs_fmt_int(wchar* buffer, size_t* currlen, size_t maxlen, sn_any* 
 		}
 	}
 
-	place = _wcs_to_int(uvalue, convert, MAX_CONVERT_PLACES - 1, base, flags & DP_F_UP);
+	place = pp_wcs_to_int(uvalue, convert, MAX_CONVERT_PLACES - 1, base, flags & DP_F_UP);
 
 	// '#'이 있을때 접두사 처리
 	if ((flags & DP_F_NUM) && uvalue != 0)
@@ -1567,9 +1566,9 @@ static void _wcs_fmt_int(wchar* buffer, size_t* currlen, size_t maxlen, sn_any* 
 
 	//
 #if USE_WIDE_LOCALE
-	quote = _wcs_quote_seps(place, flags, lc);
+	quote = pp_wcs_quote(place, flags, lc);
 #else
-	quote = _wcs_quote_seps(place, flags);
+	quote = pp_wcs_quote(place, flags);
 #endif
 	zpadlen = vmax - place - quote;
 	spadlen = vmin - quote - QN_MAX(vmax, place) - (signvalue ? 1 : 0) - (hexprefix ? 2 : 0);
@@ -1629,7 +1628,7 @@ static void _wcs_fmt_int(wchar* buffer, size_t* currlen, size_t maxlen, sn_any* 
 			_wcs_outch(buffer, currlen, maxlen, L',');
 #endif
 		}
-	}
+		}
 
 	// 왼쪽 정렬에 따른 공백
 	while (spadlen < 0)
@@ -1641,7 +1640,7 @@ static void _wcs_fmt_int(wchar* buffer, size_t* currlen, size_t maxlen, sn_any* 
 	}
 
 // 64비트 정수
-static void _wcs_fmt_long(wchar* buffer, size_t* currlen, size_t maxlen, sn_any* value, uint base, int vmin, int vmax, int flags)
+static void pp_wcs_fmt_long(wchar* buffer, size_t* currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
 {
 #define MAX_CONVERT_PLACES 80
 	ullong uvalue;
@@ -1653,7 +1652,7 @@ static void _wcs_fmt_long(wchar* buffer, size_t* currlen, size_t maxlen, sn_any*
 	int zpadlen;
 	int quote;
 #if USE_WIDE_LOCALE
-	struct lconv* lc = localeconv();
+	const struct lconv* lc = localeconv();  // NOLINT
 #endif
 
 	//
@@ -1684,7 +1683,7 @@ static void _wcs_fmt_long(wchar* buffer, size_t* currlen, size_t maxlen, sn_any*
 		}
 	}
 
-	place = _wcs_to_long(uvalue, convert, MAX_CONVERT_PLACES - 1, base, flags & DP_F_UP);
+	place = pp_wcs_to_long(uvalue, convert, MAX_CONVERT_PLACES - 1, base, flags & DP_F_UP);
 
 	// '#'이 있을때 접두사 처리
 	if ((flags & DP_F_NUM) && uvalue != 0)
@@ -1704,9 +1703,9 @@ static void _wcs_fmt_long(wchar* buffer, size_t* currlen, size_t maxlen, sn_any*
 
 	//
 #if USE_WIDE_LOCALE
-	quote = _wcs_quote_seps(place, flags, lc);
+	quote = pp_wcs_quote(place, flags, lc);
 #else
-	quote = _wcs_quote_seps(place, flags);
+	quote = pp_wcs_quote(place, flags);
 #endif
 	zpadlen = vmax - place - quote;
 	spadlen = vmin - quote - QN_MAX(vmax, place) - (signvalue ? 1 : 0) - (hexprefix ? 2 : 0);
@@ -1769,7 +1768,7 @@ static void _wcs_fmt_long(wchar* buffer, size_t* currlen, size_t maxlen, sn_any*
 			_wcs_outch(buffer, currlen, maxlen, L',');
 #endif
 		}
-	}
+		}
 
 	// 왼쪽 정렬에 따른 공백
 	while (spadlen < 0)
@@ -1782,7 +1781,7 @@ static void _wcs_fmt_long(wchar* buffer, size_t* currlen, size_t maxlen, sn_any*
 
 // 64비트 실수(double)
 // 여기서는, 오직 16자리 정수만 지원. 원래는 9, 19, 38 자리수에 따라 각각 32, 64, 128비트용이 있어야함
-static void _wcs_fmt_fp(wchar* buffer, size_t* currlen, size_t maxlen, sn_any* value, int vmin, int vmax, int flags)
+static void pp_wcs_fmt_fp(wchar* buffer, size_t* currlen, size_t maxlen, sn_any* value, int vmin, int vmax, int flags)
 {
 	double fvalue;
 	double uvalue;
@@ -1807,7 +1806,7 @@ static void _wcs_fmt_fp(wchar* buffer, size_t* currlen, size_t maxlen, sn_any* v
 	int omitcount;
 	const wchar* pwz;
 #if USE_WIDE_LOCALE
-	struct lconv* lc = localeconv();
+	const struct lconv* lc = localeconv();  // NOLINT
 #endif
 
 	/*
@@ -1878,8 +1877,8 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 	if (etype)
 		uvalue /= pp_pow10(exponent);
 	intpart = pp_intpart(uvalue);
-	mask = (ullong)pp_pow10(vmax);
-	fracpart = (ullong)pp_round(mask * (uvalue - intpart));
+	mask = (ullong)pp_pow10(vmax);  // NOLINT
+	fracpart = (ullong)pp_round((double)mask * (uvalue - (double)intpart));  // NOLINT
 
 	if (fracpart >= mask)
 	{
@@ -1913,7 +1912,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 		else
 			esignvalue = L'+';
 
-		eplace = _wcs_to_int(exponent, econvert, 2, 10, false);
+		eplace = pp_wcs_to_int(exponent, econvert, 2, 10, false);
 
 		if (eplace == 1)
 		{
@@ -1932,11 +1931,11 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 	}
 
 	// 정수부 처리
-	iplace = _wcs_to_long(intpart, iconvert, 311 - 1, 10, false);
+	iplace = pp_wcs_to_long(intpart, iconvert, 311 - 1, 10, false);
 
 	// 실수부 처리
 	// iplace=1 이면 fracpart==0 임.
-	fplace = fracpart == 0 ? 0 : _wcs_to_long(fracpart, fconvert, 311 - 1, 10, false);
+	fplace = fracpart == 0 ? 0 : pp_wcs_to_long(fracpart, fconvert, 311 - 1, 10, false);
 
 	// 지수부 처리
 	zleadfrac = vmax - fplace;
@@ -1964,9 +1963,9 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 
 	//
 #if USE_WIDE_LOCALE
-	quote = _wcs_quote_seps(iplace, flags, lc);
+	quote = pp_wcs_quote(iplace, flags, lc);
 #else
-	quote = _wcs_quote_seps(iplace, flags);
+	quote = pp_wcs_quote(iplace, flags);
 #endif
 
 	// -1은 정수 포인트용, 부호를 출력하면 추가로 -1;
@@ -2020,7 +2019,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 			_wcs_outch(buffer, currlen, maxlen, L',');
 #endif
 		}
-	}
+		}
 
 	// 소수점
 	if (dotpoint)
@@ -2232,42 +2231,39 @@ size_t doprw(wchar* buffer, size_t maxlen, const wchar* format, va_list args)
 						{
 							case DP_C_SHORT:
 								value.i = va_arg(args, int);
-								_wcs_fmt_int(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_wcs_fmt_int(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 							case DP_C_LONG:
 								value.g = va_arg(args, long);
-								_wcs_fmt_size(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_wcs_fmt_size(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 							case DP_C_LLONG:
 								value.ll = va_arg(args, long long);
-								_wcs_fmt_long(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_wcs_fmt_long(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:
 								value.sz = va_arg(args, size_t);
-								_wcs_fmt_size(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_wcs_fmt_size(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 							case DP_C_INTMAX:   // 최대 정수, 2023년 현재 64비트
 								value.im = va_arg(args, intmax_t);
-								_wcs_fmt_long(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_wcs_fmt_long(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 							case DP_C_PTRDIFF:
 								value.ff = va_arg(args, ptrdiff_t);
-								_wcs_fmt_size(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_wcs_fmt_size(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 							case DP_C_CHAR:
-								value.i = va_arg(args, int);
-								_wcs_fmt_int(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
-								break;
 							default:
 								value.i = va_arg(args, int);
-								_wcs_fmt_int(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pp_wcs_fmt_int(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
 								break;
 						}
 						break;
 					case L'X':       // 대문자 부호없는 16진수
 						flags |= DP_F_UP; QN_FALL_THROUGH;
-					case L'x':       // 소문자 부호없는 16진수
+					case L'x':       // 소문자 부호없는 16진수 / NOLINT
 					case L'o':       // 부호없는 8진수
 					case L'b':       // 부호없는 2진수
 					case L'u':       // 부호없는 십진수
@@ -2277,65 +2273,65 @@ size_t doprw(wchar* buffer, size_t maxlen, const wchar* format, va_list args)
 						{
 							case DP_C_SHORT:
 								value.ui = (unsigned short)va_arg(args, unsigned int);
-								_wcs_fmt_int(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_wcs_fmt_int(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_LONG:
 								value.ui = va_arg(args, unsigned long);
-								_wcs_fmt_size(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_wcs_fmt_size(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_LLONG:
 								value.ull = va_arg(args, unsigned long long);
-								_wcs_fmt_long(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_wcs_fmt_long(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:
 								value.sz = va_arg(args, size_t);
-								_wcs_fmt_size(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_wcs_fmt_size(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_INTMAX:   // 64비트
 								value.im = va_arg(args, intmax_t);
-								_wcs_fmt_long(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_wcs_fmt_long(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_PTRDIFF:
 								value.ff = va_arg(args, ptrdiff_t);
-								_wcs_fmt_size(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_wcs_fmt_size(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_CHAR:
 								value.ui = (unsigned char)va_arg(args, int);
-								_wcs_fmt_int(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_wcs_fmt_int(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							default:
 								value.ui = va_arg(args, unsigned int);
-								_wcs_fmt_int(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pp_wcs_fmt_int(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 						}
 						break;
 					case L'A':       // 실수의 대문자 16진수 표시 (미구현 '%F'로)
 					case L'F':       // 실수 대문자
 						flags |= DP_F_UP; QN_FALL_THROUGH;
-					case L'a':       // 실수의 소문자 16진수 표시 (미구현 '%f'로)
+					case L'a':       // 실수의 소문자 16진수 표시 (미구현 '%f'로) / NOLINT
 					case L'f':       // 실수
 						// long double은 지원 안함...
 						if (cflags == DP_C_LDOUBLE)
 							value.d = (double)va_arg(args, long double);
 						else
 							value.d = va_arg(args, double);
-						_wcs_fmt_fp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
+						pp_wcs_fmt_fp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
 						break;
 					case L'E':      // 지수 표시 (대문자)
 						flags |= DP_F_UP; QN_FALL_THROUGH;
-					case L'e':      // 지수 표시
+					case L'e':      // 지수 표시 / NOLINT
 						flags |= DP_F_E;
 						// long double은 지원 안함...
 						if (cflags == DP_C_LDOUBLE)
 							value.d = (double)va_arg(args, long double);
 						else
 							value.d = va_arg(args, double);
-						_wcs_fmt_fp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
+						pp_wcs_fmt_fp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
 						break;
 					case L'G':      // 지수 표시 (대문자)
 						flags |= DP_F_UP; QN_FALL_THROUGH;
-					case L'g':      // 지수 표시
+					case L'g':      // 지수 표시 / NOLINT
 						flags |= DP_F_G;
 						if (vmax == 0) // C99
 							vmax = 1;
@@ -2344,28 +2340,28 @@ size_t doprw(wchar* buffer, size_t maxlen, const wchar* format, va_list args)
 							value.d = (double)va_arg(args, long double);
 						else
 							value.d = va_arg(args, double);
-						_wcs_fmt_fp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
+						pp_wcs_fmt_fp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
 						break;
 					case L'c':
 						if (cflags != DP_C_SHORT)
 							flags |= DP_F_UNICODE;
-						_wcs_fmt_char(buffer, &currlen, maxlen, va_arg(args, int), flags);
+						pp_wcs_fmt_char(buffer, &currlen, maxlen, va_arg(args, int), flags);
 						break;
 					case L'C':
-						_wcs_fmt_char(buffer, &currlen, maxlen, va_arg(args, int), flags | DP_F_UNICODE);
+						pp_wcs_fmt_char(buffer, &currlen, maxlen, va_arg(args, int), flags | DP_F_UNICODE);
 						break;
 					case L's':
 						if (cflags != DP_C_SHORT)
 							flags |= DP_F_UNICODE;
-						_wcs_fmt_str(buffer, &currlen, maxlen, va_arg(args, wchar*), flags, vmin, vmax);
+						pp_wcs_fmt_str(buffer, &currlen, maxlen, va_arg(args, wchar*), flags, vmin, vmax);
 						break;
 					case L'S':
-						_wcs_fmt_str(buffer, &currlen, maxlen, va_arg(args, wchar*), flags | DP_F_UNICODE, vmin, vmax);
+						pp_wcs_fmt_str(buffer, &currlen, maxlen, va_arg(args, wchar*), flags | DP_F_UNICODE, vmin, vmax);
 						break;
 					case L'p':
 						flags |= DP_F_UNSIGNED | DP_F_UP;
 						value.s = va_arg(args, char*);
-						_wcs_fmt_size(buffer, &currlen, maxlen, &value, 16, vmin, vmax, flags);
+						pp_wcs_fmt_size(buffer, &currlen, maxlen, &value, 16, vmin, vmax, flags);
 						break;
 					case L'n':
 						switch (cflags)
@@ -2380,7 +2376,7 @@ size_t doprw(wchar* buffer, size_t maxlen, const wchar* format, va_list args)
 								break;
 							case DP_C_LLONG:
 								value.pll = (llong*)va_arg(args, long long*);
-								*value.pll = currlen;
+								*value.pll = (llong)currlen;
 								break;
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:     // C99에서 원래 부호 있는 크기(ssize_t)를 요구함
@@ -2419,6 +2415,7 @@ size_t doprw(wchar* buffer, size_t maxlen, const wchar* format, va_list args)
 				break;
 
 			case DP_S_DONE:
+			default:
 				break;
 		}   // switch - state
 	}   // while

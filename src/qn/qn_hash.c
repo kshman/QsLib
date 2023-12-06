@@ -11,11 +11,19 @@
  */
 size_t qn_hashptr(const void* p)
 {
+#ifdef _QN_64_
 	lldiv_t t = lldiv((long long)(size_t)p, 127773);
 	t.rem = 16807 * t.rem - 2836 * t.quot;
 
 	if (t.rem < 0)
 		t.rem += INT64_MAX;
+#else
+	ldiv_t t = ldiv((long)(size_t)p, 127773);
+	t.rem = 16807 * t.rem - 2836 * t.quot;
+
+	if (t.rem < 0)
+		t.rem += INT32_MAX;
+#endif
 
 	return (size_t)t.rem;
 }
@@ -31,23 +39,17 @@ size_t qn_hashnow(void)
 	time_t t = time(NULL);
 	clock_t c = clock();
 
-	size_t h1, h2;
-	size_t i;
-	int8_t* p;
-
-	h1 = 0;
-	p = (int8_t*)&t;
-
-	for (i = 0; i < sizeof(time_t); i++)
+	const byte* p = (byte*)&t;
+	size_t h1 = 0;
+	for (size_t i = 0; i < sizeof(time_t); i++)
 	{
 		h1 *= UINT8_MAX + 2;
 		h1 += p[i];
 	}
 
-	h2 = 0;
-	p = (int8_t*)&c;
-
-	for (i = 0; i < sizeof(clock_t); i++)
+	p = (byte*)&c;
+	size_t h2 = 0;
+	for (size_t i = 0; i < sizeof(clock_t); i++)
 	{
 		h2 *= UINT8_MAX + 2;
 		h2 += p[i];
@@ -63,11 +65,11 @@ size_t qn_hashnow(void)
  * @param[in]	data  	콜백 데이터
  * @return	해시 값
  */
-size_t qn_hashfn(int prime8, func_t func, void* data)
+size_t qn_hashfn(int prime8, func_t func, const void* data)
 {
 	// PP FF FF FF FD DD DD DD
 	size_t h = prime8 & 0xFFULL << 56ULL;
-	any_t v = { .func = func };
+	const any_t v = { .func = func };
 	h |= (qn_hashptr(v.p) & 0xFFFFFFF) << 28;
 	h |= qn_hashptr(data) & 0xFFFFFFF;
 	return h;
@@ -81,7 +83,7 @@ size_t qn_hashfn(int prime8, func_t func, void* data)
  * @param[in] size 크기
  * @return 정수 값
  */
-static uint64_t qn_crc64(const uint8_t* data, size_t size)
+static uint64_t qn_crc64(const byte* data, size_t size)
 {
 	// https://github.com/srned/baselib/blob/master/crc64.c
 	/* Redis uses the CRC64 variant with "Jones" coefficients and init value of 0.
@@ -202,7 +204,7 @@ static uint64_t qn_crc64(const uint8_t* data, size_t size)
  * @param[in] size 크기
  * @return 정수 값
  */
-static uint32_t qn_crc32(const uint8_t* data, size_t size)
+static uint32_t qn_crc32(const byte* data, size_t size)
 {
 	static const uint32_t crc32_table[] =
 	{

@@ -1,12 +1,16 @@
 ﻿#pragma once
 
-#if _MSC_VER
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4201)		// L4, nonstandard extension used : nameless struct/union
 #endif
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif
 
 #include <math.h>
-#if _MSC_VER
+#ifdef _MSC_VER
 #include <intrin.h>
 #endif
 
@@ -14,15 +18,15 @@
 // constant
 #define QN_EPSILON						0.0001
 #define QN_E							2.7182818284590452353602874713526624977572470937000
-#define QN_LOG2E						1.44269504088896340736
-#define QN_LOG10E						0.434294481903251827651
-#define QN_LOG2B10						0.30102999566398119521
+#define QN_LOG2_E						1.44269504088896340736
+#define QN_LOG10_E						0.434294481903251827651
+#define QN_LOG2_B10						0.30102999566398119521
 #define QN_LN2							0.6931471805599453094172321214581765680755001343603
 #define QN_LN10							2.3025850929940456840179914546843642076011014886288
 #define QN_PI							3.1415926535897932384626433832795028841971693993751
 #define QN_PI2							6.2831853071795864769252867665590057683943387987502
-#define QN_PIH							1.5707963267948966192313216916397514420985846996876
-#define QN_PIQ							0.7853981633974483096156608458198757210492923498438
+#define QN_PI_H							1.5707963267948966192313216916397514420985846996876
+#define QN_PI_Q							0.7853981633974483096156608458198757210492923498438
 #define QN_SQRT2						1.4142135623730950488016887242096980785696718753769
 #define QN_SQRTH						0.7071067811865475244008443621048490392848359376884
 
@@ -34,39 +38,38 @@
 #define QN_TODEGREE(radian)				((radian)*((float)QN_PI/180.0f))
 #define QN_EQEPS(a,b,epsilon)			(((a)+(epsilon)>(b)) && ((a)-(epsilon)<(b)))
 
-QN_INLINE bool qn_eqf(float a, float b) { return QN_EQEPS(a, b, (float)QN_EPSILON); }
-QN_INLINE float qn_maxf(float a, float b) { return QN_MAX(a, b); }
-QN_INLINE float qn_minf(float a, float b) { return QN_MIN(a, b); }
-QN_INLINE float qn_absf(float v) { return QN_ABS(v); }
-QN_INLINE float qn_clampf(float v, float min, float max) { return QN_CLAMP(v, min, max); }
-QN_INLINE float qn_cradf(float v) { return v < (float)-QN_PIH ? v + (float)QN_PIH : v >(float)QN_PIH ? v - (float)QN_PIH : v; }
-QN_INLINE float qn_lerpf(float l, float r, float f) { return l + f * (r - l); }
-QN_INLINE void qn_sincosf(float f, float* s, float* c) { *s = sinf(f); *c = cosf(f); }
-QN_INLINE void qn_sscf(float f, float* s, float* c) { float z = cosf(f); *s = z - (float)QN_PIH; *c = z; }
+QN_INLINE bool qn_eqf(const float a, const float b) { return QN_EQEPS(a, b, (float)QN_EPSILON); }
+QN_INLINE float qn_maxf(const float a, const float b) { return QN_MAX(a, b); }
+QN_INLINE float qn_minf(const float a, const float b) { return QN_MIN(a, b); }
+QN_INLINE float qn_absf(const float v) { return QN_ABS(v); }
+QN_INLINE float qn_clampf(const float v, const float min, const float max) { return QN_CLAMP(v, min, max); }
+QN_INLINE float qn_cradf(const float v) { return v < (float)-QN_PI_H ? v + (float)QN_PI_H : v >(float)QN_PI_H ? v - (float)QN_PI_H : v; }
+QN_INLINE float qn_lerpf(const float l, const float r, const float f) { return l + f * (r - l); }
+QN_INLINE void qn_sincosf(const float f, float* s, float* c) { *s = sinf(f); *c = cosf(f); }
 
 
 //////////////////////////////////////////////////////////////////////////
 // types
 
-typedef struct _QnVec2					QnVec2;
-typedef struct _QnVec3					QnVec3;
-typedef struct _QnVec4					QnVec4;
-typedef struct _QnQuat					QnQuat;
-typedef struct _QnMat4					QnMat4;
-typedef struct _QnPoint					QnPoint;
-typedef struct _QnRect					QnRect;
-typedef struct _QnRectF					QnRectF;
-typedef struct _QnColor					QnColor;
-typedef struct _QnKolor					QnKolor;
-typedef struct _QnPlane					QnPlane;
-typedef struct _QnLine3					QnLine3;
-typedef struct _QnTrfm					QnTrfm;
-typedef struct _QnVecH2					QnVecH2;
-typedef struct _QnVecH3					QnVecH3;
-typedef struct _QnVecH4					QnVecH4;
+typedef struct QnVec2					QnVec2;
+typedef struct QnVec3					QnVec3;
+typedef struct QnVec4					QnVec4;
+typedef struct QnQuat					QnQuat;
+typedef struct QnMat4					QnMat4;
+typedef struct QnPoint					QnPoint;
+typedef struct QnRect					QnRect;
+typedef struct QnRectF					QnRectF;
+typedef struct QnColor					QnColor;
+typedef struct QnKolor					QnKolor;
+typedef struct QnPlane					QnPlane;
+typedef struct QnLine3					QnLine3;
+typedef struct QnTrfm					QnTrfm;
+typedef struct QnVecH2					QnVecH2;
+typedef struct QnVecH3					QnVecH3;
+typedef struct QnVecH4					QnVecH4;
 
 // vector2
-struct _QnVec2
+struct QnVec2
 {
 	union
 	{
@@ -79,7 +82,7 @@ struct _QnVec2
 };
 
 // vector3
-struct _QnVec3
+struct QnVec3
 {
 	union
 	{
@@ -89,7 +92,7 @@ struct _QnVec3
 };
 
 // vector4
-struct _QnVec4
+struct QnVec4
 {
 	union
 	{
@@ -99,13 +102,13 @@ struct _QnVec4
 };
 
 // quaternion
-struct _QnQuat
+struct QnQuat
 {
 	float x, y, z, w;
 };
 
 // matrix4
-struct _QnMat4
+struct QnMat4
 {
 	union
 	{
@@ -125,7 +128,7 @@ struct _QnMat4
 };
 
 // point
-struct _QnPoint
+struct QnPoint
 {
 	union
 	{
@@ -140,25 +143,25 @@ struct _QnPoint
 };
 
 // rect
-struct _QnRect
+struct QnRect
 {
 	int left, top, right, bottom;
 };
 
 // quad
-struct _QnRectF
+struct QnRectF
 {
 	float left, top, right, bottom;
 };
 
 // color
-struct _QnColor
+struct QnColor
 {
 	float r, g, b, a;
 };
 
 // byte color
-struct _QnKolor
+struct QnKolor
 {
 	union
 	{
@@ -171,19 +174,19 @@ struct _QnKolor
 };
 
 // plane
-struct _QnPlane
+struct QnPlane
 {
 	float a, b, c, d;
 };
 
 // line3
-struct _QnLine3
+struct QnLine3
 {
 	QnVec3 begin, end;
 };
 
 // transform
-struct _QnTrfm
+struct QnTrfm
 {
 	QnVec3 loc;
 	QnQuat rot;
@@ -191,19 +194,19 @@ struct _QnTrfm
 };
 
 // half vector2
-struct _QnVecH2
+struct QnVecH2
 {
 	halfint x, y;
 };
 
 // half vector3
-struct _QnVecH3
+struct QnVecH3
 {
 	halfint x, y, z;
 };
 
 // hafl vector4
-struct _QnVecH4
+struct QnVecH4
 {
 	halfint x, y, z, w;
 };
@@ -283,7 +286,7 @@ QN_INLINE float qn_vec2_len(const QnVec2* pv)
 
 QN_INLINE void qn_vec2_norm(QnVec2* pv, const QnVec2* v)
 {
-	float f = 1.0f / qn_vec2_len(v);
+	const float f = 1.0f / qn_vec2_len(v);
 	pv->x = v->x * f;
 	pv->y = v->y * f;
 }
@@ -341,7 +344,7 @@ QN_INLINE bool qn_vec2_isi(const QnVec2* pv)
 
 QN_INLINE void qn_vec2_interpolate(QnVec2* pv, const QnVec2* left, const QnVec2* right, float s)
 {
-	float f = 1.0f - s;
+	const float f = 1.0f - s;
 	pv->x = right->x * f + left->x * s;
 	pv->y = right->y * f + left->y * s;
 }
@@ -399,7 +402,7 @@ QN_INLINE float qn_vec3_len(const QnVec3* pv)
 
 QN_INLINE void qn_vec3_norm(QnVec3* pv, const QnVec3* v)
 {
-	float f = 1.0f / qn_vec3_len(v);
+	const float f = 1.0f / qn_vec3_len(v);
 	pv->x = v->x * f;
 	pv->y = v->y * f;
 	pv->z = v->z * f;
@@ -515,9 +518,9 @@ QN_INLINE float qn_vec3_rad(const QnVec3* left, const QnVec3* right)
 
 QN_INLINE void qn_vec3_trfm(QnVec3* pv, const QnVec3* v, const QnMat4* trfm)
 {
-	float x = v->x * trfm->_11 + v->y * trfm->_21 + v->z * trfm->_31 + trfm->_41;
-	float y = v->x * trfm->_12 + v->y * trfm->_22 + v->z * trfm->_32 + trfm->_42;
-	float z = v->x * trfm->_13 + v->y * trfm->_23 + v->z * trfm->_33 + trfm->_43;
+	const float x = v->x * trfm->_11 + v->y * trfm->_21 + v->z * trfm->_31 + trfm->_41;
+	const float y = v->x * trfm->_12 + v->y * trfm->_22 + v->z * trfm->_32 + trfm->_42;
+	const float z = v->x * trfm->_13 + v->y * trfm->_23 + v->z * trfm->_33 + trfm->_43;
 	pv->x = x;
 	pv->y = y;
 	pv->z = z;
@@ -525,9 +528,9 @@ QN_INLINE void qn_vec3_trfm(QnVec3* pv, const QnVec3* v, const QnMat4* trfm)
 
 QN_INLINE void qn_vec3_trfm_norm(QnVec3* pv, const QnVec3* v, const QnMat4* trfm)
 {
-	float x = v->x * trfm->_11 + v->y * trfm->_21 + v->z * trfm->_31;
-	float y = v->x * trfm->_12 + v->y * trfm->_22 + v->z * trfm->_32;
-	float z = v->x * trfm->_13 + v->y * trfm->_23 + v->z * trfm->_33;
+	const float x = v->x * trfm->_11 + v->y * trfm->_21 + v->z * trfm->_31;
+	const float y = v->x * trfm->_12 + v->y * trfm->_22 + v->z * trfm->_32;
+	const float z = v->x * trfm->_13 + v->y * trfm->_23 + v->z * trfm->_33;
 	pv->x = x;
 	pv->y = y;
 	pv->z = z;
@@ -535,10 +538,10 @@ QN_INLINE void qn_vec3_trfm_norm(QnVec3* pv, const QnVec3* v, const QnMat4* trfm
 
 QN_INLINE void qn_vec3_quat(QnVec3* pv, const QnQuat* rot)
 {
-	float x = rot->x * rot->x;
-	float y = rot->y * rot->y;
-	float z = rot->z * rot->z;
-	float w = rot->w * rot->w;
+	const float x = rot->x * rot->x;
+	const float y = rot->y * rot->y;
+	const float z = rot->z * rot->z;
+	const float w = rot->w * rot->w;
 	pv->x = atan2f(2.0f * (rot->y * rot->z + rot->x * rot->w), -x - y + z + w);
 	pv->y = asinf(qn_clampf(-2.0f * (rot->x * rot->z + rot->y * rot->w), -1.0f, 1.0f));
 	pv->z = atan2f(2.0f * (rot->x * rot->y + rot->z * rot->w), x - y - z + w);
@@ -548,7 +551,7 @@ QN_INLINE void qn_vec3_mat4(QnVec3* pv, const QnMat4* rot)
 {
 	if (rot->_31 == 0.0f && rot->_33 == 0.0f)
 	{
-		pv->x = rot->_32 > 0.0f ? (float)(QN_PIH + QN_PI) : (float)QN_PIH;
+		pv->x = rot->_32 > 0.0f ? (float)(QN_PI_H + QN_PI) : (float)QN_PI_H;
 		pv->z = atan2f(rot->_21, rot->_23);
 		pv->y = 0.0f;
 	}
@@ -567,16 +570,16 @@ QN_INLINE void qn_vec3_quat_vec3(QnVec3* pv, const QnQuat* rot, const QnVec3* an
 		.x = angle->x * rot->w,
 		.y = angle->y * rot->w,
 		.z = angle->z * rot->w,
-		.w = -qn_vec3_dot((QnVec3*)rot, angle),
+		.w = -qn_vec3_dot((const QnVec3*)rot, angle),
 	};
 
 	QnVec3 t;
-	qn_vec3_cross(&t, (QnVec3*)rot, angle);
+	qn_vec3_cross(&t, (const QnVec3*)rot, angle);
 	q1.x += t.x;
 	q1.y += t.y;
 	q1.z += t.z;
 
-	QnQuat q2 =
+	const QnQuat q2 =
 	{
 		.x = -rot->x,
 		.y = -rot->y,
@@ -591,7 +594,7 @@ QN_INLINE void qn_vec3_quat_vec3(QnVec3* pv, const QnQuat* rot, const QnVec3* an
 
 QN_INLINE void qn_vec3_interpolate(QnVec3* pv, const QnVec3* left, const QnVec3* right, float scale)
 {
-	float f = 1.0f - scale;
+	const float f = 1.0f - scale;
 	pv->x = right->x * f + left->x * scale;
 	pv->y = right->y * f + left->y * scale;
 	pv->z = right->z * f + left->z * scale;
@@ -606,14 +609,14 @@ QN_INLINE void qn_vec3_lerp(QnVec3* pv, const QnVec3* left, const QnVec3* right,
 
 QN_INLINE float qn_vec3_yaw(const QnVec3* pv)
 {
-	return -atanf(pv->z / pv->x) + ((pv->x > 0.0f) ? (float)-QN_PIH : (float)QN_PIH);
+	return -atanf(pv->z / pv->x) + ((pv->x > 0.0f) ? (float)-QN_PI_H : (float)QN_PI_H);
 }
 
 QN_INLINE bool qn_vec3_between(const QnVec3* p, const QnVec3* begin, const QnVec3* end)
 {
 	QnVec3 t;
 	qn_vec3_sub(&t, end, begin);
-	float f = qn_vec3_len_sq(&t);
+	const float f = qn_vec3_len_sq(&t);
 	return qn_vec3_dist_sq(p, begin) <= f && qn_vec3_dist_sq(p, end) <= f;
 }
 
@@ -655,7 +658,7 @@ QN_INLINE float qn_vec4_len(const QnVec4* pv)
 
 QN_INLINE void qn_vec4_norm(QnVec4* pv, const QnVec4* v)
 {
-	float f = 1.0f / qn_vec4_len(v);
+	const float f = 1.0f / qn_vec4_len(v);
 	pv->x = v->x * f;
 	pv->y = v->y * f;
 	pv->z = v->z * f;
@@ -760,7 +763,7 @@ QN_INLINE void qn_vec4_trfm(QnVec4* pv, const QnVec4* v, const QnMat4* trfm)
 
 QN_INLINE void qn_vec4_interpolate(QnVec4* pv, const QnVec4* left, const QnVec4* right, float scale)
 {
-	float f = 1.0f - scale;
+	const float f = 1.0f - scale;
 	pv->x = right->x * f + left->x * scale;
 	pv->y = right->y * f + left->y * scale;
 	pv->z = right->z * f + left->z * scale;
@@ -813,7 +816,7 @@ QN_INLINE float qn_quat_len(const QnQuat* pq)
 
 QN_INLINE void qn_quat_norm(QnQuat* pq, const QnQuat* q)
 {
-	float f = 1.0f / qn_quat_len(q);
+	const float f = 1.0f / qn_quat_len(q);
 	pq->x = q->x * f;
 	pq->y = q->y * f;
 	pq->z = q->z * f;
@@ -931,7 +934,7 @@ QN_INLINE void qn_quat_axis_vec(QnQuat* pq, const QnVec3* v, float angle)
 QN_INLINE void qn_quat_exp(QnQuat* pq, const QnQuat* q)
 {
 	float n = sqrtf(q->x * q->x + q->y * q->y + q->z * q->z);
-	if (n)
+	if (n != 0.0)
 	{
 		float sn, cn;
 		qn_sincosf(n, &sn, &cn);
@@ -974,7 +977,7 @@ QN_INLINE void qn_quat_inv(QnQuat* pq, const QnQuat* q)
 
 QN_INLINE void qn_quat_interpolate(QnQuat* pq, const QnQuat* left, const QnQuat* right, float scale)
 {
-	float f = 1.0f - scale;
+	const float f = 1.0f - scale;
 	pq->x = right->x * f + left->x * scale;
 	pq->y = right->y * f + left->y * scale;
 	pq->z = right->z * f + left->z * scale;
@@ -1113,9 +1116,9 @@ QN_INLINE void qn_mat4_move(QnMat4* pm, float x, float y, float z)
 	pm->_43 += z;
 }
 
-QN_INLINE bool qn_mat4_eq(const QnMat4* left, const QnMat4* right)
+QN_INLINE bool qn_mat4_eq(QnMat4 const* left, QnMat4 const* right)
 {
-	return memcmp(left, right, sizeof(QnMat4)) == 0;
+	return memcmp((void const*)left, (void const*)right, sizeof(QnMat4)) == 0;
 }
 
 QN_INLINE bool qn_mat4_isi(const QnMat4* pm)
@@ -1131,13 +1134,12 @@ QN_INLINE void qn_mat4_vec(QnMat4* pm, const QnVec3* rot, const QnVec3* /*NULLAB
 {
 	float sr, sp, sy;
 	float cr, cp, cy;
-	float srsp, crsp;
 
 	qn_sincosf(rot->x, &sr, &cr);
 	qn_sincosf(rot->y, &sp, &cp);
 	qn_sincosf(rot->z, &sy, &cy);
-	srsp = sr * sp;
-	crsp = cr * sp;
+	const float srsp = sr * sp;
+	const float crsp = cr * sp;
 
 	pm->_11 = cp * cy;
 	pm->_12 = cp * sy;
@@ -1155,9 +1157,17 @@ QN_INLINE void qn_mat4_vec(QnMat4* pm, const QnVec3* rot, const QnVec3* /*NULLAB
 	pm->_34 = 0.0f;
 
 	if (loc)
-		pm->_41 = loc->x, pm->_42 = loc->y, pm->_43 = loc->z;
+	{
+		pm->_41 = loc->x;
+		pm->_42 = loc->y;
+		pm->_43 = loc->z;
+	}
 	else
-		pm->_41 = 0.0f, pm->_42 = 0.0f, pm->_43 = 0.0f;
+	{
+		pm->_41 = 0.0f;
+		pm->_42 = 0.0f;
+		pm->_43 = 0.0f;
+	}
 	pm->_44 = 1.0f;
 }
 
@@ -1179,9 +1189,17 @@ QN_INLINE void qn_mat4_quat(QnMat4* pm, const QnQuat* rot, const QnVec3* /*NULLA
 	pm->_34 = 0.0f;
 
 	if (loc)
-		pm->_41 = loc->x, pm->_42 = loc->y, pm->_43 = loc->z;
+	{
+		pm->_41 = loc->x;
+		pm->_42 = loc->y;
+		pm->_43 = loc->z;
+	}
 	else
-		pm->_41 = 0.0f, pm->_42 = 0.0f, pm->_43 = 0.0f;
+	{
+		pm->_41 = 0.0f;
+		pm->_42 = 0.0f;
+		pm->_43 = 0.0f;
+	}
 	pm->_44 = 1.0f;
 }
 
@@ -1255,8 +1273,8 @@ QN_INLINE void qn_mat4_lookat_rh(QnMat4* pm, const QnVec3* eye, const QnVec3* at
 
 QN_INLINE void qn_mat4_perspective_lh(QnMat4* pm, float fov, float aspect, float zn, float zf)
 {
-	float f = 1.0f / tanf(fov * 0.5f);
-	float q = zf / (zf - zn);
+	const float f = 1.0f / tanf(fov * 0.5f);
+	const float q = zf / (zf - zn);
 
 	pm->_11 = f / aspect;
 	pm->_12 = 0.0f;
@@ -1282,8 +1300,8 @@ QN_INLINE void qn_mat4_perspective_lh(QnMat4* pm, float fov, float aspect, float
 
 QN_INLINE void qn_mat4_perspective_rh(QnMat4* pm, float fov, float aspect, float zn, float zf)
 {
-	float f = 1.0f / tanf(fov * 0.5f);
-	float q = zf / (zn - zf);
+	const float f = 1.0f / tanf(fov * 0.5f);
+	const float q = zf / (zn - zf);
 
 	pm->_11 = f / aspect;
 	pm->_12 = 0.0f;
@@ -1424,7 +1442,7 @@ QN_INLINE void qn_mat4_viewport(QnMat4* pm, float x, float y, float width, float
 
 QN_INLINE void qn_mat4_interpolate(QnMat4* pm, const QnMat4* left, const QnMat4* right, float f)
 {
-	float d = 1.0f - f;
+	const float d = 1.0f - f;
 
 	pm->_11 = left->_11 * d + right->_11 * f;
 	pm->_12 = left->_12 * d + right->_12 * f;
@@ -1556,7 +1574,7 @@ QN_INLINE bool qn_rect_eq(const QnRect* r1, const QnRect* r2)
 
 QN_INLINE bool qn_rect_intersect(QnRect* p, const QnRect* r1, const QnRect* r2)
 {
-	bool b = r2->left < r1->right && r2->right > r1->left && r2->top < r1->bottom && r2->bottom > r1->top;
+	const bool b = r2->left < r1->right && r2->right > r1->left && r2->top < r1->bottom && r2->bottom > r1->top;
 	if (!b)
 		qn_rect_set(p, 0, 0, 0, 0);
 	else
@@ -1635,7 +1653,7 @@ QN_INLINE bool qn_rectf_in(const QnRectF* pq, float x, float y)
 
 QN_INLINE bool qn_rectf_intersect(QnRectF* p, const QnRectF* q1, const QnRectF* q2)
 {
-	bool b = q2->left < q1->right && q2->right > q1->left && q2->top < q1->bottom && q2->bottom > q1->top;
+	const bool b = q2->left < q1->right && q2->right > q1->left && q2->top < q1->bottom && q2->bottom > q1->top;
 	if (!b)
 		qn_rectf_set(p, 0.0f, 0.0f, 0.0f, 0.0f);
 	else
@@ -1659,7 +1677,7 @@ QN_INLINE void qn_color_set(QnColor* pc, float r, float g, float b, float a)
 
 QN_INLINE void qn_color_set_uint(QnColor* pc, uint value)
 {
-	float f = 1.0f / 255.0f;
+	const float f = 1.0f / 255.0f;
 	pc->b = (float)(value & 255) * f; value >>= 8;
 	pc->g = (float)(value & 255) * f; value >>= 8;
 	pc->r = (float)(value & 255) * f; value >>= 8;
@@ -1668,7 +1686,7 @@ QN_INLINE void qn_color_set_uint(QnColor* pc, uint value)
 
 QN_INLINE void qn_color_set_kolor(QnColor* pc, const QnKolor* cu)
 {
-	float f = 1.0f / 255.0f;
+	const float f = 1.0f / 255.0f;
 	pc->a = (float)cu->a * f;
 	pc->r = (float)cu->r * f;
 	pc->g = (float)cu->g * f;
@@ -1710,7 +1728,7 @@ QN_INLINE void qn_color_neg(QnColor* pc, const QnColor* c)
 QN_INLINE void qn_color_interpolate(QnColor* pc, const QnColor* left, const QnColor* right, float s)
 {
 	// left=tocolor, right=fromcolor
-	float f = 1.0f - s;
+	const float f = 1.0f - s;
 	pc->r = right->r * f + left->r * s;
 	pc->g = right->g * f + left->g * s;
 	pc->b = right->b * f + left->b * s;
@@ -1756,19 +1774,19 @@ QN_INLINE float* qn_color_float(QnColor* c)
 
 QN_INLINE uint qn_color_uint(const QnColor* pc)
 {
-	byte R = (byte)(pc->r * 255.0f + 0.5f);
-	byte G = (byte)(pc->g * 255.0f + 0.5f);
-	byte B = (byte)(pc->b * 255.0f + 0.5f);
-	byte A = (byte)(pc->a * 255.0f + 0.5f);
+	const byte R = (byte)(pc->r * 255.0f + 0.5f);
+	const byte G = (byte)(pc->g * 255.0f + 0.5f);
+	const byte B = (byte)(pc->b * 255.0f + 0.5f);
+	const byte A = (byte)(pc->a * 255.0f + 0.5f);
 	return ((uint)A << 24) | ((uint)R << 16) | ((uint)G << 8) | (uint)B;
 }
 
 QN_INLINE uint qn_color_uint_exact(const QnColor* pc)
 {
-	uint R = (pc->r >= 1.0f) ? 0xff : (pc->r <= 0.0f) ? 0x00 : (uint)(pc->r * 255.0f + 0.5f);
-	uint G = (pc->g >= 1.0f) ? 0xff : (pc->g <= 0.0f) ? 0x00 : (uint)(pc->g * 255.0f + 0.5f);
-	uint B = (pc->b >= 1.0f) ? 0xff : (pc->b <= 0.0f) ? 0x00 : (uint)(pc->b * 255.0f + 0.5f);
-	uint A = (pc->a >= 1.0f) ? 0xff : (pc->a <= 0.0f) ? 0x00 : (uint)(pc->a * 255.0f + 0.5f);
+	const uint R = (pc->r >= 1.0f) ? 0xff : (pc->r <= 0.0f) ? 0x00 : (uint)(pc->r * 255.0f + 0.5f);
+	const uint G = (pc->g >= 1.0f) ? 0xff : (pc->g <= 0.0f) ? 0x00 : (uint)(pc->g * 255.0f + 0.5f);
+	const uint B = (pc->b >= 1.0f) ? 0xff : (pc->b <= 0.0f) ? 0x00 : (uint)(pc->b * 255.0f + 0.5f);
+	const uint A = (pc->a >= 1.0f) ? 0xff : (pc->a <= 0.0f) ? 0x00 : (uint)(pc->a * 255.0f + 0.5f);
 	return (A << 24) | (R << 16) | (G << 8) | B;
 }
 
@@ -1791,7 +1809,7 @@ QN_INLINE void qn_color_contrast(QnColor* pc, const QnColor* c, float s)
 
 QN_INLINE void qn_color_saturation(QnColor* pc, const QnColor* c, float s)
 {
-	float g = c->r * 0.2125f + c->g * 0.7154f + c->b * 0.0721f;
+	const float g = c->r * 0.2125f + c->g * 0.7154f + c->b * 0.0721f;
 	pc->r = g + s * (c->r - g);
 	pc->g = g + s * (c->g - g);
 	pc->b = g + s * (c->b - g);
@@ -1810,10 +1828,10 @@ QN_INLINE void qn_kolor_set(QnKolor* pc, byte r, byte g, byte b, byte a)
 
 QN_INLINE void qn_kolor_set_float(QnKolor* pc, float r, float g, float b, float a)
 {
-	pc->r = (byte)rintf(r * 255.0f);
-	pc->g = (byte)rintf(g * 255.0f);
-	pc->b = (byte)rintf(b * 255.0f);
-	pc->a = (byte)rintf(a * 255.0f);
+	pc->r = (byte)lrintf(r * 255.0f);
+	pc->g = (byte)lrintf(g * 255.0f);
+	pc->b = (byte)lrintf(b * 255.0f);
+	pc->a = (byte)lrintf(a * 255.0f);
 }
 
 QN_INLINE void qn_kolor_set_uint(QnKolor* pc, uint value)
@@ -1823,10 +1841,10 @@ QN_INLINE void qn_kolor_set_uint(QnKolor* pc, uint value)
 
 QN_INLINE void qn_kolor_set_color(QnKolor* pc, const QnColor* cr)
 {
-	pc->r = (byte)rintf(cr->r * 255.0f);
-	pc->g = (byte)rintf(cr->g * 255.0f);
-	pc->b = (byte)rintf(cr->b * 255.0f);
-	pc->a = (byte)rintf(cr->a * 255.0f);
+	pc->r = (byte)lrintf(cr->r * 255.0f);
+	pc->g = (byte)lrintf(cr->g * 255.0f);
+	pc->b = (byte)lrintf(cr->b * 255.0f);
+	pc->a = (byte)lrintf(cr->a * 255.0f);
 }
 
 QN_INLINE void qn_kolor_add(QnKolor* pc, const QnKolor* left, const QnKolor* right)
@@ -1841,10 +1859,10 @@ QN_INLINE void qn_kolor_sub(QnKolor* pc, const QnKolor* left, const QnKolor* rig
 
 QN_INLINE void qn_kolor_mag(QnKolor* pc, const QnKolor* left, float scale)
 {
-	pc->r = (byte)rintf(left->r * scale);
-	pc->g = (byte)rintf(left->g * scale);
-	pc->b = (byte)rintf(left->b * scale);
-	pc->a = (byte)rintf(left->a * scale);
+	pc->r = (byte)lrintf((float)left->r * scale);
+	pc->g = (byte)lrintf((float)left->g * scale);
+	pc->b = (byte)lrintf((float)left->b * scale);
+	pc->a = (byte)lrintf((float)left->a * scale);
 }
 
 QN_INLINE void qn_kolor_neg(QnKolor* pc, const QnKolor* c)
@@ -1858,19 +1876,19 @@ QN_INLINE void qn_kolor_neg(QnKolor* pc, const QnKolor* c)
 QN_INLINE void qn_kolor_interpolate(QnKolor* pc, const QnKolor* left, const QnKolor* right, float s)
 {
 	// left=tocolor, right=fromcolor
-	float f = 1.0f - s;
-	pc->r = (byte)rintf(right->r * f + left->r * s);
-	pc->g = (byte)rintf(right->g * f + left->g * s);
-	pc->b = (byte)rintf(right->b * f + left->b * s);
-	pc->a = (byte)rintf(right->a * f + left->a * s);
+	const float f = 1.0f - s;
+	pc->r = (byte)lrintf((float)right->r * f + (float)left->r * s);
+	pc->g = (byte)lrintf((float)right->g * f + (float)left->g * s);
+	pc->b = (byte)lrintf((float)right->b * f + (float)left->b * s);
+	pc->a = (byte)lrintf((float)right->a * f + (float)left->a * s);
 }
 
 QN_INLINE void qn_kolor_lerp(QnKolor* pc, const QnKolor* left, const QnKolor* right, float s)
 {
-	pc->r = (byte)rintf(left->r + s * (right->r - left->r));
-	pc->g = (byte)rintf(left->g + s * (right->g - left->g));
-	pc->b = (byte)rintf(left->b + s * (right->b - left->b));
-	pc->a = (byte)rintf(left->a + s * (right->a - left->a));
+	pc->r = (byte)lrintf((float)left->r + s * (float)(right->r - left->r));
+	pc->g = (byte)lrintf((float)left->g + s * (float)(right->g - left->g));
+	pc->b = (byte)lrintf((float)left->b + s * (float)(right->b - left->b));
+	pc->a = (byte)lrintf((float)left->a + s * (float)(right->a - left->a));
 }
 
 QN_INLINE void qn_kolor_mod(QnKolor* pc, const QnKolor* left, const QnKolor* right)
@@ -1904,19 +1922,18 @@ QN_INLINE bool qn_kolor_eq(const QnKolor* left, const QnKolor* right)
 
 QN_INLINE void qn_kolor_contrast(QnKolor* pc, const QnKolor* c, float s)
 {
-	pc->r = (byte)rintf(s * (c->r - 0.5f));
-	pc->g = (byte)rintf(s * (c->g - 0.5f));
-	pc->b = (byte)rintf(s * (c->b - 0.5f));
-	pc->a = c->a;
+	QnColor cr;
+	qn_color_set_kolor(&cr, pc);
+	qn_color_contrast(&cr, &cr, s);
+	qn_kolor_set_color(pc, &cr);
 }
 
 QN_INLINE void qn_kolor_saturation(QnKolor* pc, const QnKolor* c, float s)
 {
-	float g = c->r * 0.2125f + c->g * 0.7154f + c->b * 0.0721f;
-	pc->r = (byte)rintf(g + s * (c->r - g));
-	pc->g = (byte)rintf(g + s * (c->g - g));
-	pc->b = (byte)rintf(g + s * (c->b - g));
-	pc->a = c->a;
+	QnColor cr;
+	qn_color_set_kolor(&cr, pc);
+	qn_color_saturation(&cr, &cr, s);
+	qn_kolor_set_color(pc, &cr);
 }
 
 // plane
@@ -1950,7 +1967,7 @@ QN_INLINE void qn_plane_from_point_norm(QnPlane* pp, const QnVec3* pv, const QnV
 
 QN_INLINE int qn_plane_face_point(const QnPlane* p, const QnVec3* v)
 {
-	float f = qn_vec3_dot((const QnVec3*)p, v) + p->d;
+	const float f = qn_vec3_dot((const QnVec3*)p, v) + p->d;
 	if (f < -QN_EPSILON)
 		return -1;  // back
 	if (f > QN_EPSILON)
@@ -1965,7 +1982,7 @@ QN_INLINE float qn_plane_dist(const QnPlane* p, const QnVec3* v)
 
 QN_INLINE void qn_plane_norm(QnPlane* pp, const QnPlane* p)
 {
-	float f = 1.0f / sqrtf(p->a * p->a + p->b * p->b + p->c * p->c);
+	const float f = 1.0f / sqrtf(p->a * p->a + p->b * p->b + p->c * p->c);
 	pp->a = p->a * f;
 	pp->b = p->b * f;
 	pp->c = p->c * f;
@@ -1974,7 +1991,7 @@ QN_INLINE void qn_plane_norm(QnPlane* pp, const QnPlane* p)
 
 QN_INLINE void qn_plane_rnorm(QnPlane* pp, const QnPlane* p)
 {
-	float n = -1.0f / sqrtf(p->a * p->a + p->b * p->b + p->c * p->c);
+	const float n = -1.0f / sqrtf(p->a * p->a + p->b * p->b + p->c * p->c);
 	pp->a = p->a * n;
 	pp->b = p->b * n;
 	pp->c = p->c * n;
@@ -1985,7 +2002,7 @@ QN_INLINE float qn_plane_intersect_line(const QnPlane* p, const QnVec3* v1, cons
 {
 	QnVec3 t;
 	qn_vec3_sub(&t, v2, v1);
-	float f = 1.0f / qn_vec3_dot((const QnVec3*)p, &t);
+	const float f = 1.0f / qn_vec3_dot((const QnVec3*)p, &t);
 	return -(qn_vec3_dot((const QnVec3*)p, v1) + p->d) * f;
 }
 
@@ -2050,18 +2067,11 @@ QN_INLINE bool qn_line3_in(const QnLine3* p, const QnVec3* v)
 // half
 
 // half type
-QN_INLINE halfint qn_float2half(const float v)
+QN_INLINE halfint qn_f2hf(const float v)
 {
 	QN_MEM_BARRIER();
-#if __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
-#endif
-	uint u = *(uint*)&v;
-#if __GNUC__
-#pragma GCC diagnostic pop
-#endif
-	uint s = (u & 0x80000000U) >> 16U;
+	uint u = *(const uint*)&v;
+	const uint s = (u & 0x80000000U) >> 16U;
 	u = u & 0x7FFFFFFFU;
 
 	uint r;
@@ -2073,7 +2083,7 @@ QN_INLINE halfint qn_float2half(const float v)
 			u += 0xC8000000U;
 		else
 		{
-			uint t = 113U - (u >> 23U);
+			const uint t = 113U - (u >> 23U);
 			u = (0x800000U | (u & 0x7FFFFFU)) >> t;
 		}
 
@@ -2083,7 +2093,7 @@ QN_INLINE halfint qn_float2half(const float v)
 	return (halfint)(r | s);
 }
 
-QN_INLINE float qn_half2float(const halfint v)
+QN_INLINE float qn_hf2f(const halfint v)
 {
 	QN_MEM_BARRIER();
 	uint m = (uint)(v & 0x03FF);
@@ -2107,38 +2117,34 @@ QN_INLINE float qn_half2float(const halfint v)
 		e = (uint)-112;
 
 	uint r = ((v & 0x8000) << 16) | ((e + 112) << 23) | (m << 13);
-#if __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
-#endif
 	return *(float*)&r;
-#if __GNUC__
-#pragma GCC diagnostic pop
-#endif
 }
 
 // vec half
 QN_INLINE void qn_vec2h_set(QnVecH2* p, float x, float y)
 {
-	p->x = qn_float2half(x);
-	p->y = qn_float2half(y);
+	p->x = qn_f2hf(x);
+	p->y = qn_f2hf(y);
 }
 
 QN_INLINE void qn_vec3h_set(QnVecH3* p, float x, float y, float z)
 {
-	p->x = qn_float2half(x);
-	p->y = qn_float2half(y);
-	p->z = qn_float2half(z);
+	p->x = qn_f2hf(x);
+	p->y = qn_f2hf(y);
+	p->z = qn_f2hf(z);
 }
 
 QN_INLINE void qn_vec4h_set(QnVecH4* p, float x, float y, float z, float w)
 {
-	p->x = qn_float2half(x);
-	p->y = qn_float2half(y);
-	p->z = qn_float2half(z);
-	p->w = qn_float2half(w);
+	p->x = qn_f2hf(x);
+	p->y = qn_f2hf(y);
+	p->z = qn_f2hf(z);
+	p->w = qn_f2hf(w);
 }
 
-#if _MSC_VER
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
 #endif

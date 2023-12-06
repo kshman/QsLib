@@ -38,6 +38,7 @@ static float colors[] =
 int main()
 {
 	qn_runtime(NULL);
+	qn_outputf("정수: %d, 실수: %f, 문자: %s, 유니코드: %ls", 123, 456.789, "문자", L"유니코드");
 
 	QgRdh* rdh = qg_rdh_new(NULL, "RDH", 800, 600, QGFLAG_IDLE | QGFLAG_RESIZABLE | QGFLAG_VSYNC);
 	qn_retval_if_fail(rdh, -1);

@@ -8,7 +8,7 @@
 //
 const char* qg_qik_str(QikKey key)
 {
-	static const char* KeyNames[] =
+	static const char* s_key_names[] =
 	{
 		/*00*/ "NONE", NULL, NULL, NULL, NULL, NULL, NULL, NULL, "BACK", "TAB", NULL, NULL, NULL, "RETURN", NULL, NULL,
 		/*10*/ NULL, NULL, NULL, "PAUSE", "CAPSLOCK", NULL, NULL, NULL, NULL, NULL, NULL, "ESCAPE", NULL, NULL, NULL, NULL,
@@ -28,13 +28,13 @@ const char* qg_qik_str(QikKey key)
 		/*F0*/ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	};
 
-	return !KeyNames[key] ? KeyNames[0] : KeyNames[key];
+	return !s_key_names[key] ? s_key_names[0] : s_key_names[key];
 }
 
 //
 const char* qg_qim_str(QimButton button)
 {
-	static const char* ButtonNames[] =
+	static const char* s_button_names[] =
 	{
 		"UNKNOWN",
 		"LEFT",
@@ -44,13 +44,13 @@ const char* qg_qim_str(QimButton button)
 		"X2"
 	};
 
-	return ButtonNames[button < QN_COUNTOF(ButtonNames) ? button : 0];
+	return s_button_names[(size_t)button < QN_COUNTOF(s_button_names) ? button : 0];
 }
 
 //
 const char* qg_qic_str(QicButton button)
 {
-	static const char* ButtonNames[] =
+	static const char* s_button_names[] =
 	{
 		"UNKNOWN",
 		"UP",
@@ -69,14 +69,14 @@ const char* qg_qic_str(QicButton button)
 		"Y"
 	};
 
-	return ButtonNames[button < QN_COUNTOF(ButtonNames) ? button : 0];
+	return s_button_names[(size_t)button < QN_COUNTOF(s_button_names) ? button : 0];
 }
 
-#ifdef SDL_VERSION
+#ifdef USE_SDL
 //
 QikKey sdlk_to_qik(uint sdlk)
 {
-	static byte _keycodes[] =
+	static byte s_key_codes[] =
 	{
 		/*0*/					0,
 		/*1*/					0,
@@ -207,7 +207,7 @@ QikKey sdlk_to_qik(uint sdlk)
 		/*126*/					0,
 		/*127/DELETE*/			QIK_DEL,
 	};
-	static byte _scancodes57[] =
+	static byte s_scan_code_57[] =
 	{
 		/*0/57/CAPSLOCK*/		QIK_CAPSLOCK,
 		/*1/58/F1*/				QIK_F1,
@@ -269,7 +269,7 @@ QikKey sdlk_to_qik(uint sdlk)
 		/*57/114/F23*/			QIK_F23,
 		/*58/115/F24*/			QIK_F24,
 	};
-	static byte _scancodes224[] =
+	static byte s_scan_code_224[] =
 	{
 		/*0/224/LCTRL*/			QIK_LCTRL,
 		/*1/225/LSHIFT*/		QIK_LSHIFT,
@@ -281,17 +281,17 @@ QikKey sdlk_to_qik(uint sdlk)
 		/*7/231/RGUI*/			QIK_RWIN,
 	};
 	if (sdlk < 128)
-		return (QikKey)_keycodes[sdlk];
+		return (QikKey)s_key_codes[sdlk];
 	if (sdlk >= SDLK_CAPSLOCK && sdlk <= SDLK_F24)
-		return (QikKey)_scancodes57[(sdlk & ~SDLK_SCANCODE_MASK) - SDL_SCANCODE_CAPSLOCK];
+		return (QikKey)s_scan_code_57[(sdlk & ~SDLK_SCANCODE_MASK) - SDL_SCANCODE_CAPSLOCK];
 	if (sdlk >= SDLK_LCTRL && sdlk <= SDLK_RGUI)
-		return (QikKey)_scancodes224[(sdlk & ~SDLK_SCANCODE_MASK) - SDL_SCANCODE_LCTRL];
+		return (QikKey)s_scan_code_224[(sdlk & ~SDLK_SCANCODE_MASK) - SDL_SCANCODE_LCTRL];
 	return QIK_NONE;
 }
 
 QikMask sdl_kmod_to_qikm(int modifier)
 {
-	QikMask m = 0;
+	QikMask m = (QikMask)0;
 	if (modifier & (KMOD_LSHIFT | KMOD_RSHIFT)) m |= QIKM_SHIFT;
 	if (modifier & (KMOD_LCTRL | KMOD_RCTRL)) m |= QIKM_CTRL;
 	if (modifier & (KMOD_LALT | KMOD_RALT)) m |= QIKM_ALT;

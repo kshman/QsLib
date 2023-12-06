@@ -1,6 +1,6 @@
 ﻿#include "pch.h"
 #include "qs_qn.h"
-#if _QN_UNIX_
+#ifdef _QN_UNIX_
 #include <unistd.h>
 #include <errno.h>
 #endif
@@ -12,13 +12,10 @@
  */
 void qn_localtime(struct tm* ptm, const time_t tt)
 {
-#if _MSC_VER
-	localtime_s(ptm, &tt);
-#elif __GNUC__
-	localtime_r(&tt, ptm);
+#ifdef _MSC_VER
+	(void)localtime_s(ptm, &tt);
 #else
-	if (ptm)
-		*ptm = *localtime(&tt);
+	(void)localtime_r(&tt, ptm);
 #endif
 }
 
@@ -29,13 +26,10 @@ void qn_localtime(struct tm* ptm, const time_t tt)
  */
 void qn_gmtime(struct tm* ptm, const time_t tt)
 {
-#if _MSC_VER
-	gmtime_s(ptm, &tt);
-#elif __GNUC__
-	gmtime_r(&tt, ptm);
+#ifdef _MSC_VER
+	(void)gmtime_s(ptm, &tt);
 #else
-	if (ptm)
-		ptm = gmtime(&tt);
+	(void)gmtime_r(&tt, ptm);
 #endif
 }
 
@@ -47,7 +41,7 @@ void qn_now(QnDateTime* dt)
 {
 	qn_ret_if_fail(dt != NULL);
 
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 	SYSTEMTIME st;
 	GetLocalTime(&st);
 
@@ -84,7 +78,7 @@ void qn_utc(QnDateTime* dt)
 {
 	qn_ret_if_fail(dt != NULL);
 
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 	SYSTEMTIME st;
 	GetSystemTime(&st);
 
@@ -122,7 +116,7 @@ void qn_stod(double sec, QnDateTime* dt)
 {
 	qn_ret_if_fail(dt != NULL);
 
-	uint32_t ns = (uint32_t)sec;
+	const uint32_t ns = (uint32_t)sec;
 	dt->hour = ns / 3600;
 	dt->minute = (ns % 3600) / 60;
 	dt->second = (ns % 60);
@@ -142,7 +136,7 @@ void qn_mstod(uint msec, QnDateTime* dt)
 {
 	qn_ret_if_fail(dt != NULL);
 
-	uint ns = msec / 1000;
+	const uint ns = msec / 1000;
 	dt->hour = ns / 3600;
 	dt->minute = (ns % 3600) / 60;
 	dt->second = (ns % 60);
@@ -155,11 +149,11 @@ void qn_mstod(uint msec, QnDateTime* dt)
  */
 ullong qn_cycle(void)
 {
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 	LARGE_INTEGER ll;
 	QueryPerformanceCounter(&ll);
 	return ll.QuadPart;
-#elif _QN_BSD_
+#elif defined _QN_BSD_
 	uint64_t n;
 	struct timespec tp;
 
@@ -190,7 +184,7 @@ double qn_stick(void)
 {
 	static double s_cycle_per_tick = 0.001;
 
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 	static bool s_init = false;
 
 	if (!s_init)
@@ -204,7 +198,7 @@ double qn_stick(void)
 	}
 #endif
 
-	double t = (double)qn_cycle();
+	const double t = (double)qn_cycle();  // NOLINT
 	return t * s_cycle_per_tick;
 }
 
@@ -214,7 +208,7 @@ double qn_stick(void)
  */
 ullong qn_tick(void)
 {
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 	return (uint64_t)(qn_stick() * 1000.0);
 #else
 	return qn_cycle();
@@ -227,7 +221,7 @@ ullong qn_tick(void)
  */
 void qn_sleep(uint milliseconds)
 {
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 	Sleep(milliseconds);
 #else
 	uint32_t s = milliseconds / 1000;
@@ -243,7 +237,7 @@ void qn_sleep(uint milliseconds)
  */
 void qn_usleep(uint microseconds)
 {
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 	qn_sleep(microseconds / 1000);
 #else
 	usleep(microseconds);
@@ -265,8 +259,8 @@ void qn_ssleep(uint seconds)
  */
 void qn_msleep(ullong microseconds)
 {
-#if _QN_WINDOWS_
-	double dms = (double)microseconds;
+#ifdef _QN_WINDOWS_
+	const double dms = (double)microseconds;
 	LARGE_INTEGER t1, t2, freq;
 
 	if (!QueryPerformanceFrequency(&freq))
@@ -279,9 +273,9 @@ void qn_msleep(ullong microseconds)
 		{
 			SwitchToThread();
 			QueryPerformanceCounter(&t2);
-		} while (((double)(t2.QuadPart - t1.QuadPart) / freq.QuadPart * 1000000) < dms);
+		} while (((double)(t2.QuadPart - t1.QuadPart) / freq.QuadPart * 1000000) < dms);  // NOLINT
 	}
-#elif _QN_UNIX_
+#else
 	struct timespec ts;
 	ts.tv_sec = microseconds / 1000000;
 	ts.tv_nsec = (microseconds % 1000000) * 1000;
@@ -291,8 +285,6 @@ void qn_msleep(ullong microseconds)
 		if (errno != EINTR)
 			break;
 	}
-#else
-	usleep(microseconds);
 #endif
 }
 
@@ -330,7 +322,7 @@ QnTimer* qn_timer_new(void)
 	qnRealTimer* self = qn_alloc_1(qnRealTimer);
 	qn_retval_if_fail(self, NULL);
 
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 	LARGE_INTEGER ll;
 	if (!QueryPerformanceFrequency(&ll))
 	{
@@ -470,7 +462,7 @@ bool qn_timer_update(QnTimer* self)
  * @param[in]	self	타이머 개체
  * @return	double
  */
-double qn_timer_get_abs(QnTimer* self)
+double qn_timer_get_abs(const QnTimer* self)
 {
 	return self->abstime;
 }
@@ -480,7 +472,7 @@ double qn_timer_get_abs(QnTimer* self)
  * @param[in]	self	타이머 개체
  * @return	double
  */
-double qn_timer_get_run(QnTimer* self)
+double qn_timer_get_run(const QnTimer* self)
 {
 	return  self->runtime;
 }
@@ -490,7 +482,7 @@ double qn_timer_get_run(QnTimer* self)
  * @param[in]	self	타이머 개체
  * @return	double
  */
-double qn_timer_get_fps(QnTimer* self)
+double qn_timer_get_fps(const QnTimer* self)
 {
 	return self->fps;
 }
@@ -500,7 +492,7 @@ double qn_timer_get_fps(QnTimer* self)
  * @param[in]	self	타이머 개체
  * @return	double
  */
-double qn_timer_get_adv(QnTimer* self)
+double qn_timer_get_adv(const QnTimer* self)
 {
 	return self->advance;
 }
@@ -510,9 +502,9 @@ double qn_timer_get_adv(QnTimer* self)
  * @param[in]	self	타이머 개체
  * @return	double
  */
-double qn_timer_get_cut(QnTimer* self)
+double qn_timer_get_cut(const QnTimer* self)
 {
-	qnRealTimer* impl = (qnRealTimer*)self;
+	const qnRealTimer* impl = (const qnRealTimer*)self;
 	return impl->cut;
 }
 

@@ -1,21 +1,14 @@
 ﻿#include "pch.h"
 #include "qs_qn.h"
-#if __i386__ || _M_AMD64  || __amd64__ || __x86_64__
+#if _M_AMD64  || __amd64__ || __x86_64__ || __i386__
 #include <emmintrin.h>
 #define USE_EMM_INTRIN		1
 #endif
 #include "qs_math.h"
 
-#if USE_EMM_INTRIN
-#ifndef QN_ALIGN
-#if _MSC_VER
-#define QN_ALIGN(x)			__declspec(align(x))
-#else
-#define QN_ALIGN(x)			__attribute__ ((aligned(x)))
-#endif
-#endif
-#define _mm_ror_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((uint8_t)(i+3)%4,(uint8_t)(i+2)%4,(uint8_t)(i+1)%4,(uint8_t)(i+0)%4))) : (vec))
-#define _mm_rol_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((uint8_t)(7-i)%4,(uint8_t)(6-i)%4,(uint8_t)(5-i)%4,(uint8_t)(4-i)%4))) : (vec))
+#ifdef USE_EMM_INTRIN
+#define _mm_ror_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((byte)((i)+3)%4,(byte)((i)+2)%4,(byte)((i)+1)%4,(byte)((i)+0)%4))) : (vec))  // NOLINT
+#define _mm_rol_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((byte)(7-(i))%4,(byte)(6-(i))%4,(byte)(5-(i))%4,(byte)(4-(i))%4))) : (vec))  // NOLINT
 #endif
 
 /**
@@ -29,9 +22,9 @@ void qn_vec3_closed_line(QnVec3* pv, const QnLine3* line, const QnVec3* loc)
 	QnVec3 c, z;
 	qn_vec3_sub(&c, loc, &line->begin);
 	qn_vec3_sub(&z, &line->end, &line->begin);
-	float d = qn_vec3_len(&z);
+	const float d = qn_vec3_len(&z);
 	qn_vec3_mag(&z, &z, 1.0f / d);
-	float t = qn_vec3_dot(&z, &c);
+	const float t = qn_vec3_dot(&z, &c);
 
 	if (t < 0.0f)
 		*pv = line->begin;
@@ -88,9 +81,10 @@ void qn_vec3_form_norm(QnVec3* pv, const QnVec3* v0, const QnVec3* v1, const QnV
 */
 bool qn_vec3_reflect(QnVec3* pv, const QnVec3* in, const QnVec3* dir)
 {
+	const float len = qn_vec3_len(in);
 	QnVec3 t;
-	float dot, len = qn_vec3_len(in);
-	if (len == 0.0f)
+	float dot;
+	if (qn_eqf(len, 0.0f))
 		qn_vec3_rst(&t);
 	else
 	{
@@ -98,7 +92,7 @@ bool qn_vec3_reflect(QnVec3* pv, const QnVec3* in, const QnVec3* dir)
 		qn_vec3_mag(&t, in, dot);
 	}
 	dot = qn_vec3_dot(&t, dir);
-	if (dot >= 0.0f)
+	if (dot + QN_EPSILON > 0.0f)
 		return false;
 	else
 	{
@@ -119,15 +113,15 @@ bool qn_vec3_reflect(QnVec3* pv, const QnVec3* in, const QnVec3* dir)
 bool qn_vec3_intersect_line(QnVec3* pv, const QnPlane* plane, const QnVec3* loc, const QnVec3* dir)
 {
 	// v2->pl<-v1
-	float dot = qn_vec3_dot((const QnVec3*)plane, dir);
-	if (!dot)
+	const float dot = qn_vec3_dot((const QnVec3*)plane, dir);
+	if (qn_eqf(dot, 0.0f))
 	{
 		qn_vec3_rst(pv);
 		return false;
 	}
 	else
 	{
-		float tmp = (plane->d + qn_vec3_dot((const QnVec3*)plane, loc)) / dot;
+		const float tmp = (plane->d + qn_vec3_dot((const QnVec3*)plane, loc)) / dot;
 		pv->x = loc->x - tmp * dir->x;
 		pv->y = loc->y - tmp * dir->y;
 		pv->z = loc->z - tmp * dir->z;
@@ -166,7 +160,7 @@ bool qn_vec3_intersect_between_point(QnVec3* pv, const QnPlane* plane, const QnV
 		return false;
 	else
 	{
-		float f = qn_vec3_len_sq(&dir);
+		const float f = qn_vec3_len_sq(&dir);
 		return qn_vec3_dist_sq(pv, v1) <= f && qn_vec3_dist_sq(pv, v2) <= f;
 	}
 }
@@ -194,14 +188,14 @@ bool qn_vec3_intersect_planes(QnVec3* pv, const QnPlane* plane, const QnPlane* o
 */
 void qn_quat_slerp(QnQuat* pq, const QnQuat* left, const QnQuat* right, float change)
 {
-	float fc = qn_quat_dot(left, right);
+	float dot = qn_quat_dot(left, right);
 
 	QnQuat q1, q2;
-	if (fc < 0.0f)
+	if (dot < 0.0f)
 	{
 		qn_quat_ivt(&q1, left);
 		q2 = *right;
-		fc = -fc;
+		dot = -dot;
 	}
 	else
 	{
@@ -210,20 +204,20 @@ void qn_quat_slerp(QnQuat* pq, const QnQuat* left, const QnQuat* right, float ch
 	}
 
 	float f1, f2;
-	if ((fc + 1.0f) > 0.05f)
+	if ((dot + 1.0f) > 0.05f)
 	{
-		if ((1.0f - fc) < 0.05f)
+		if ((1.0f - dot) < 0.05f)
 		{
 			f1 = 1.0f - change;
 			f2 = change;
 		}
 		else
 		{
-			float fl = cosf(fc);
-			float fr = sinf(fl);
+			float fs, fc;
+			qn_sincosf(dot, &fs, &fc);	// fs 는 sinf(fc) 일 수도 있다
 
-			f1 = sinf(fl * (1.0f - change)) / fr;
-			f2 = sinf(fl * change) / fr;
+			f1 = sinf(fc * (1.0f - change)) / fs;
+			f2 = sinf(fc * change) / fs;
 		}
 	}
 	else
@@ -246,17 +240,14 @@ void qn_quat_slerp(QnQuat* pq, const QnQuat* left, const QnQuat* right, float ch
 */
 void qn_quat_mat4(QnQuat* pq, const QnMat4* rot)
 {
-	float diag = rot->_11 + rot->_22 + rot->_33 + 1.0f;
-	float scale = 0.0f;
-	float iscl = 0.0f;
-	float norm;
+	const float diag = rot->_11 + rot->_22 + rot->_33 + 1.0f;
 	QnQuat q;
 
 	if (diag > 0.0f)
 	{
 		// 진단값에서 안전치
-		scale = sqrtf(diag) * 2.0f;
-		iscl = 1.0f / scale;
+		const float scale = sqrtf(diag) * 2.0f;
+		const float iscl = 1.0f / scale;
 
 		q.x = (rot->_23 - rot->_32) * iscl;
 		q.y = (rot->_31 - rot->_13) * iscl;
@@ -266,11 +257,11 @@ void qn_quat_mat4(QnQuat* pq, const QnMat4* rot)
 	else
 	{
 		// 필요한 스케일 만들기
+		const float scale = sqrtf(1.0f + rot->_11 - rot->_22 - rot->_33) * 2.0f;
+		const float iscl = 1.0f / scale;
+
 		if (rot->_11 > rot->_22 && rot->_11 > rot->_33)
 		{
-			scale = sqrtf(1.0f + rot->_11 - rot->_22 - rot->_33) * 2.0f;
-			iscl = 1.0f / scale;
-
 			q.x = 0.25f * scale;
 			q.y = (rot->_12 + rot->_21) * iscl;
 			q.z = (rot->_31 + rot->_13) * iscl;
@@ -278,9 +269,6 @@ void qn_quat_mat4(QnQuat* pq, const QnMat4* rot)
 		}
 		else if (rot->_22 > rot->_33)
 		{
-			scale = sqrtf(1.0f - rot->_11 + rot->_22 - rot->_33) * 2.0f;
-			iscl = 1.0f / scale;
-
 			q.x = (rot->_12 + rot->_21) * iscl;
 			q.y = 0.25f * scale;
 			q.z = (rot->_23 + rot->_32) * iscl;
@@ -288,9 +276,6 @@ void qn_quat_mat4(QnQuat* pq, const QnMat4* rot)
 		}
 		else
 		{
-			scale = sqrtf(1.0f - rot->_11 - rot->_22 + rot->_33) * 2.0f;
-			iscl = 1.0f / scale;
-
 			q.x = (rot->_31 + rot->_13) * iscl;
 			q.y = (rot->_23 + rot->_32) * iscl;
 			q.z = 0.25f * scale;
@@ -298,7 +283,7 @@ void qn_quat_mat4(QnQuat* pq, const QnMat4* rot)
 		}
 	}
 
-	norm = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
+	float norm = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
 	if (norm == 1.0f)
 		*pq = q;
 	else
@@ -318,25 +303,22 @@ void qn_quat_mat4(QnQuat* pq, const QnMat4* rot)
 */
 void qn_quat_vec(QnQuat* pq, const QnVec3* rot)
 {
-	float angle;
 	float rs, rc;
-	float ys, yc;
-	float ps, pc;
-	float pcyc, psyc, pcys, psys;
-
-	angle = rot->x * 0.5f;
+	float angle = rot->x * 0.5f;
 	qn_sincosf(angle, &rs, &rc);
 
+	float ps, pc;
 	angle = rot->y * 0.5f;
 	qn_sincosf(angle, &ps, &pc);
 
+	float ys, yc;
 	angle = rot->z * 0.5f;
 	qn_sincosf(angle, &ys, &yc);
 
-	pcyc = pc * yc;
-	psyc = ps * yc;
-	pcys = pc * ys;
-	psys = ps * ys;
+	const float pcyc = pc * yc;
+	const float psyc = ps * yc;
+	const float pcys = pc * ys;
+	const float psys = ps * ys;
 
 	pq->x = rs * pcyc - rc * psys;
 	pq->y = rc * psyc + rs * pcys;
@@ -351,7 +333,7 @@ void qn_quat_vec(QnQuat* pq, const QnVec3* rot)
 */
 void qn_quat_ln(QnQuat* pq, const QnQuat* q)
 {
-	float n = qn_quat_len_sq(q);
+	const float n = qn_quat_len_sq(q);
 	if (n > 1.0001f)
 	{
 		pq->x = q->x;
@@ -361,8 +343,8 @@ void qn_quat_ln(QnQuat* pq, const QnQuat* q)
 	}
 	else if (n > 0.99999f)
 	{
-		float nv = sqrtf(q->x * q->x + q->y * q->y + q->z * q->z);
-		float t = atan2f(nv, q->w) / nv;
+		const float nv = sqrtf(q->x * q->x + q->y * q->y + q->z * q->z);
+		const float t = atan2f(nv, q->w) / nv;
 		pq->x = t * q->x;
 		pq->y = t * q->y;
 		pq->z = t * q->z;
@@ -386,7 +368,7 @@ void qn_quat_ln(QnQuat* pq, const QnQuat* q)
 */
 void qn_mat4_tran(QnMat4* pm, const QnMat4* m)
 {
-#if USE_EMM_INTRIN
+#ifdef USE_EMM_INTRIN
 #if 1
 	__m128 mm0 = _mm_unpacklo_ps(_mm_loadu_ps(&m->_11), _mm_loadu_ps(&m->_21));
 	__m128 mm1 = _mm_unpacklo_ps(_mm_loadu_ps(&m->_31), _mm_loadu_ps(&m->_41));
@@ -448,7 +430,7 @@ void qn_mat4_tran(QnMat4* pm, const QnMat4* m)
 */
 void qn_mat4_mul(QnMat4* pm, const QnMat4* left, const QnMat4* right)
 {
-#if USE_EMM_INTRIN
+#ifdef USE_EMM_INTRIN
 	register __m128 r1, r2;
 	register __m128 b1, b2, b3, b4;
 
@@ -513,8 +495,8 @@ void qn_mat4_mul(QnMat4* pm, const QnMat4* left, const QnMat4* right)
 */
 void qn_mat4_inv(QnMat4* pm, const QnMat4* m, float* /*NULLABLE*/determinant)
 {
-#if USE_EMM_INTRIN
-	static const QN_ALIGN(16) uint32_t s_PNNP[4] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };
+#ifdef USE_EMM_INTRIN
+	static const __m128 s_PNNP = { .m128_u32 = {0x00000000, 0x80000000, 0x80000000, 0x00000000 } };
 
 	__m128 A, B, C, D;
 	__m128 iA, iB, iC, iD;
@@ -575,7 +557,7 @@ void qn_mat4_inv(QnMat4* pm, const QnMat4* m, float* /*NULLABLE*/determinant)
 	iC = _mm_sub_ps(iC, _mm_mul_ps(_mm_shuffle_ps(A, A, 0xB1), _mm_shuffle_ps(DC, DC, 0x66)));
 
 	rd = _mm_shuffle_ps(rd, rd, 0);
-	rd = _mm_xor_ps(rd, *(__m128*) & s_PNNP);
+	rd = _mm_xor_ps(rd, s_PNNP);
 
 	iB = _mm_sub_ps(_mm_mul_ps(C, _mm_shuffle_ps(dB, dB, 0)), iB);
 	iC = _mm_sub_ps(_mm_mul_ps(B, _mm_shuffle_ps(dC, dC, 0)), iC);
@@ -597,7 +579,7 @@ void qn_mat4_inv(QnMat4* pm, const QnMat4* m, float* /*NULLABLE*/determinant)
 		(m->_11 * m->_22 - m->_21 * m->_12) * (m->_33 * m->_44 - m->_43 * m->_34) - (m->_11 * m->_32 - m->_31 * m->_12) * (m->_23 * m->_44 - m->_43 * m->_24) +
 		(m->_11 * m->_42 - m->_41 * m->_12) * (m->_23 * m->_34 - m->_33 * m->_24) + (m->_21 * m->_32 - m->_31 * m->_22) * (m->_13 * m->_44 - m->_43 * m->_14) -
 		(m->_21 * m->_42 - m->_41 * m->_22) * (m->_13 * m->_34 - m->_33 * m->_14) + (m->_31 * m->_42 - m->_41 * m->_32) * (m->_13 * m->_24 - m->_23 * m->_14);
-	if (f == 0.0f)
+	if (qn_eqf(f, 0.0f))
 	{
 		if (determinant)
 			*determinant = 0.0f;
@@ -655,7 +637,7 @@ void qn_mat4_tmul(QnMat4* pm, const QnMat4* left, const QnMat4* right)
 */
 float qn_mat4_det(const QnMat4* m)
 {
-#if USE_EMM_INTRIN
+#ifdef USE_EMM_INTRIN
 	__m128 va, vb, vc;
 	__m128 r1, r2, r3;
 	__m128 t1, t2, sum;
@@ -687,7 +669,7 @@ float qn_mat4_det(const QnMat4* m)
 		(m->_11 * m->_22 - m->_21 * m->_12) * (m->_33 * m->_44 - m->_43 * m->_34) - (m->_11 * m->_32 - m->_31 * m->_12) * (m->_23 * m->_44 - m->_43 * m->_24) +
 		(m->_11 * m->_42 - m->_41 * m->_12) * (m->_23 * m->_34 - m->_33 * m->_24) + (m->_21 * m->_32 - m->_31 * m->_22) * (m->_13 * m->_44 - m->_43 * m->_14) -
 		(m->_21 * m->_42 - m->_41 * m->_22) * (m->_13 * m->_34 - m->_33 * m->_14) + (m->_31 * m->_42 - m->_41 * m->_32) * (m->_13 * m->_24 - m->_23 * m->_14);
-	return f == 0.0f ? 0.0f : 1.0f / f;
+	return qn_eqf(f, 0.0f) ? 0.0f : 1.0f / f;
 #endif
 }
 
@@ -699,9 +681,9 @@ float qn_mat4_det(const QnMat4* m)
 */
 void qn_mat4_shadow(QnMat4* pm, const QnVec4* light, const QnPlane* plane)
 {
-	float d = plane->a * light->x + plane->b * light->y + plane->c * light->z + plane->d;
+	const float d = plane->a * light->x + plane->b * light->y + plane->c * light->z + plane->d;
 
-	if (light->w == 0.0f)
+	if (qn_eqf(light->w, 0.0f))
 	{
 		pm->_11 = -plane->a * light->x + d;
 		pm->_12 = -plane->a * light->y;
@@ -931,16 +913,16 @@ void qn_plane_points(QnPlane* pp, const QnVec3* v1, const QnVec3* v2, const QnVe
 */
 bool qn_plane_intersect(const QnPlane* p, QnVec3* loc, QnVec3* dir, const QnPlane* o)
 {
-	float f0 = qn_vec3_len((const QnVec3*)p);
-	float f1 = qn_vec3_len((const QnVec3*)o);
-	float f2 = qn_vec3_dot((const QnVec3*)p, (const QnVec3*)o);
-	float det = f0 * f1 - f2 * f2;
+	const float f0 = qn_vec3_len((const QnVec3*)p);
+	const float f1 = qn_vec3_len((const QnVec3*)o);
+	const float f2 = qn_vec3_dot((const QnVec3*)p, (const QnVec3*)o);
+	const float det = f0 * f1 - f2 * f2;
 	if (qn_absf(det) < QN_EPSILON)
 		return false;
 
-	float inv = 1.0f / det;
-	float fa = (f1 * -p->d + f2 * o->d) * inv;
-	float fb = (f0 * -o->d + f2 * p->d) * inv;
+	const float inv = 1.0f / det;
+	const float fa = (f1 * -p->d + f2 * o->d) * inv;
+	const float fb = (f0 * -o->d + f2 * p->d) * inv;
 	qn_vec3_cross(dir, (const QnVec3*)p, (const QnVec3*)o);
 	qn_vec3_set(loc, p->a * fa + o->a * fb, p->b * fa + o->b * fb, p->c * fa + o->c * fb);
 	return true;
@@ -958,13 +940,13 @@ bool qn_line3_intersect_sphere(const QnLine3* p, const QnVec3* org, float rad, f
 {
 	QnVec3 t;
 	qn_vec3_sub(&t, org, &p->begin);
-	float c = qn_vec3_len(&t);
+	const float c = qn_vec3_len(&t);
 
 	QnVec3 v;
 	qn_line3_vec(p, &v);
 	qn_vec3_norm(&v, &v);
-	float z = qn_vec3_dot(&t, &v);
-	float d = rad * rad - (c * c - z * z);
+	const float z = qn_vec3_dot(&t, &v);
+	const float d = rad * rad - (c * c - z * z);
 
 	if (d < 0.0f)
 		return false;

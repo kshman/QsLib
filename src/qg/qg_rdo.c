@@ -24,13 +24,13 @@ void qg_shd_set_intr(QgShd* self, QgVarShaderFunc func, void* data)
 {
 	if (func == NULL)
 	{
-		self->intr.func = NULL;
-		self->intr.data = NULL;
+		self->intr_func = NULL;
+		self->intr_data = NULL;
 		return;
 	}
 
-	self->intr.func = (paramfunc_t)func;
-	self->intr.data = data;
+	self->intr_func = func;
+	self->intr_data = data;
 }
 
 bool qg_shd_bind(QgShd* self, QgShdType type, const void* data, int size, int flags)
@@ -48,7 +48,7 @@ bool qg_shd_bind_file(QgShd* self, QgShdType type, const char* filename, int fla
 	int size;
 	void* data = qn_file_alloc(filename, &size);
 	qn_retval_if_fail(data, false);
-	bool ret = qvt_cast(self, QgShd)->bind(self, type, data, size, flags);
+	const bool ret = qvt_cast(self, QgShd)->bind(self, type, data, size, flags);
 	qn_free(data);
 	return ret;
 }

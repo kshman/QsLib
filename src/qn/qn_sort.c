@@ -4,22 +4,22 @@
 //////////////////////////////////////////////////////////////////////////
 // 퀵 소트
 
-#define _QSORT_STACK_SIZE (8 * sizeof(void*) - 2)
+#define QSORT_STACK_SIZE (8 * sizeof(void*) - 2)
 
-static void _qsort_swap(uint8_t* a, uint8_t* b, size_t stride)
+static void qsort_swap(uint8_t* a, uint8_t* b, size_t stride)
 {
 	if (a != b)
 	{
 		while (stride--)
 		{
-			uint8_t n = *a;
+			const uint8_t n = *a;
 			*a++ = *b;
 			*b++ = n;
 		}
 	}
 }
 
-static void _qsort_short_context(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(void*, const void*, const void*), void* context)
+static void qsort_short_context(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(void*, const void*, const void*), void* context)
 {
 	while (hi > lo)
 	{
@@ -31,7 +31,7 @@ static void _qsort_short_context(uint8_t* lo, uint8_t* hi, size_t stride, int(*f
 				max = p;
 		}
 
-		_qsort_swap(max, hi, stride);
+		qsort_swap(max, hi, stride);
 		hi -= stride;
 	}
 }
@@ -56,29 +56,28 @@ void qn_qsortc(void* ptr, size_t count, size_t stride, int(*compfunc)(void*, con
 	uint8_t* lo = (uint8_t*)ptr;
 	uint8_t* hi = (uint8_t*)ptr + stride * (count - 1);
 
-	size_t size;
-	uint8_t* lostk[_QSORT_STACK_SIZE] = { 0, };
-	uint8_t* histk[_QSORT_STACK_SIZE] = { 0, };
+	uint8_t* lostk[QSORT_STACK_SIZE] = { 0, };
+	uint8_t* histk[QSORT_STACK_SIZE] = { 0, };
 
 pos_recursive:
-	size = (hi - lo) / stride + 1;
+	const size_t size = (hi - lo) / stride + 1;
 
 	// 중간값처리를 사용해서 O(n^2) 알고리즘으로 전환
 	if (size <= 8)  // 최적화된 값을 사용해야 할 것이다 -> Cut off value
-		_qsort_short_context(lo, hi, stride, compfunc, context);
+		qsort_short_context(lo, hi, stride, compfunc, context);
 	else
 	{
 		uint8_t* mid = lo + (size / 2) * stride;
 
 		// 처음, 중간, 끝 부터 정렬 시작
 		if (compfunc(context, lo, mid) > 0)
-			_qsort_swap(lo, mid, stride);
+			qsort_swap(lo, mid, stride);
 
 		if (compfunc(context, lo, hi) > 0)
-			_qsort_swap(lo, hi, stride);
+			qsort_swap(lo, hi, stride);
 
 		if (compfunc(context, mid, hi) > 0)
-			_qsort_swap(mid, hi, stride);
+			qsort_swap(mid, hi, stride);
 
 		// 부분 정렬
 		uint8_t* lopos = lo;
@@ -110,7 +109,7 @@ pos_recursive:
 			if (hipos < lopos)
 				break;
 
-			_qsort_swap(lopos, hipos, stride);
+			qsort_swap(lopos, hipos, stride);
 
 			if (mid == hipos)
 				mid = lopos;
@@ -176,21 +175,19 @@ pos_recursive:
 	}
 }
 
-static void _qsort_short(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(const void*, const void*))
+static void qsort_short(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(const void*, const void*))
 {
-	uint8_t* p, * max;
-
 	while (hi > lo)
 	{
-		max = lo;
+		uint8_t* max = lo;
 
-		for (p = lo + stride; p <= hi; p += stride)
+		for (uint8_t* p = lo + stride; p <= hi; p += stride)
 		{
 			if ((*func)(p, max) > 0)
 				max = p;
 		}
 
-		_qsort_swap(max, hi, stride);
+		qsort_swap(max, hi, stride);
 		hi -= stride;
 	}
 }
@@ -214,29 +211,28 @@ void qn_qsort(void* ptr, size_t count, size_t stride, int(*compfunc)(const void*
 	uint8_t* lo = (uint8_t*)ptr;
 	uint8_t* hi = (uint8_t*)ptr + stride * (count - 1);
 
-	size_t size;
-	uint8_t* lostk[_QSORT_STACK_SIZE] = { 0, };
-	uint8_t* histk[_QSORT_STACK_SIZE] = { 0, };
+	uint8_t* lostk[QSORT_STACK_SIZE] = { 0, };
+	uint8_t* histk[QSORT_STACK_SIZE] = { 0, };
 
 pos_recursive:
-	size = (hi - lo) / stride + 1;
+	const size_t size = (hi - lo) / stride + 1;
 
 	// 중간값처리를 사용해서 O(n^2) 알고리즘으로 전환
 	if (size <= 8)  // 최적화된 값을 사용해야 할 것이다 -> Cut off value
-		_qsort_short(lo, hi, stride, compfunc);
+		qsort_short(lo, hi, stride, compfunc);
 	else
 	{
 		uint8_t* mid = lo + (size / 2) * stride;
 
 		// 처음, 중간, 끝 부터 정렬 시작
 		if (compfunc(lo, mid) > 0)
-			_qsort_swap(lo, mid, stride);
+			qsort_swap(lo, mid, stride);
 
 		if (compfunc(lo, hi) > 0)
-			_qsort_swap(lo, hi, stride);
+			qsort_swap(lo, hi, stride);
 
 		if (compfunc(mid, hi) > 0)
-			_qsort_swap(mid, hi, stride);
+			qsort_swap(mid, hi, stride);
 
 		// 부분 정렬
 		uint8_t* lopos = lo;
@@ -268,7 +264,7 @@ pos_recursive:
 			if (hipos < lopos)
 				break;
 
-			_qsort_swap(lopos, hipos, stride);
+			qsort_swap(lopos, hipos, stride);
 
 			if (mid == hipos)
 				mid = lopos;

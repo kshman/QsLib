@@ -1,20 +1,10 @@
 ﻿#pragma once
 
-typedef enum _QikKey					QikKey;
-typedef enum _QikMask					QikMask;
-typedef enum _QimButton					QimButton;
-typedef enum _QimMask					QimMask;
-typedef enum _QimTrack					QimTrack;
-typedef enum _QimTouch					QimTouch;
-typedef enum _QicButton					QicButton;
-typedef enum _QicMask					QicMask;
-
-
 //////////////////////////////////////////////////////////////////////////
 // key board 
 
 // 수정 대상: VK키를 다른 종류로 바꾸는게 좋겟음. 예컨데 스캔코드
-enum _QikKey
+enum QikKey
 {
 	QIK_NONE						= 0,
 	QIK_BS							= 0x08,	// BACKSPACE
@@ -53,13 +43,13 @@ enum _QikKey
 	QIK_F							= 0x46,
 	QIK_G							= 0x47,
 	QIK_H							= 0x48,
-	QIK_I							= 0x49,
+	QIK_I							= 0x49,	// Alphabet I / NOLINT
 	QIK_J							= 0x4A,
 	QIK_K							= 0x4B,
 	QIK_L							= 0x4C,
 	QIK_M							= 0x4D,
 	QIK_N							= 0x4E,
-	QIK_O							= 0x4F,
+	QIK_O							= 0x4F,	// Alphabet O / NOLINT
 	QIK_P							= 0x50,
 	QIK_Q							= 0x51,
 	QIK_R							= 0x52,
@@ -136,7 +126,7 @@ enum _QikKey
 	QIK_MAX_VALUE					= 0xFF,
 };
 
-enum _QikMask
+enum QikMask
 {
 	QIKM_SHIFT						= QN_BIT(0),
 	QIKM_CTRL						= QN_BIT(1),
@@ -146,10 +136,13 @@ enum _QikMask
 	QIKM_NUM						= QN_BIT(14),
 };
 
+typedef enum QikKey						QikKey;
+typedef enum QikMask					QikMask;
+
 
 //////////////////////////////////////////////////////////////////////////
 // mouse button
-enum _QimButton
+enum QimButton
 {
 	QIM_NONE						= 0,
 	QIM_LEFT						= 1,
@@ -159,7 +152,7 @@ enum _QimButton
 	QIM_X2							= 5,
 };
 
-enum _QimMask
+enum QimMask
 {
 	QIMM_LEFT						= QN_BIT(QIM_LEFT),
 	QIMM_RIGHT						= QN_BIT(QIM_RIGHT),
@@ -172,25 +165,30 @@ enum _QimMask
 	QIMM_DOUBLE						= 0x1000,
 };
 
-enum _QimTrack
+enum QimTrack
 {
 	QIMT_MOVE						= 0,
 	QIMT_DOWN						= 1,
 	QIMT_UP							= 2,
 };
 
-enum _QimTouch
+enum QimTouch
 {
 	QITT_BEGIN						= 1,
 	QITT_MOVE						= 2,
 	QITT_END						= 3,
 };
 
+typedef enum QimButton					QimButton;
+typedef enum QimMask					QimMask;
+typedef enum QimTrack					QimTrack;
+typedef enum QimTouch					QimTouch;
+
 
 //////////////////////////////////////////////////////////////////////////
 // controller key
 
-enum _QicButton
+enum QicButton
 {
 	QIC_NONE						= 0,
 	QIC_UP							= 1,
@@ -209,7 +207,7 @@ enum _QicButton
 	QIC_Y							= 14,
 };
 
-enum _QicMask
+enum QicMask
 {
 	QICM_UP							 = QN_BIT(QIC_UP),
 	QICM_DOWN						 = QN_BIT(QIC_DOWN),
@@ -226,6 +224,9 @@ enum _QicMask
 	QICM_X							 = QN_BIT(QIC_X),
 	QICM_Y							 = QN_BIT(QIC_Y),
 };
+
+typedef enum QicButton					QicButton;
+typedef enum QicMask					QicMask;
 
 
 //////////////////////////////////////////////////////////////////////////

@@ -2,10 +2,10 @@
 #include "qs_qn.h"
 
 //
-extern void _qn_mp_init(void);
-extern void _qn_mp_dispose(void);
-extern void _qn_dbg_init(void);
-extern void _qn_dbg_dispose(void);
+extern void qn_mp_init(void);
+extern void qn_mp_dispose(void);
+extern void qn_dbg_init(void);
+extern void qn_dbg_dispose(void);
 
 // 닫아라
 struct Closure
@@ -20,50 +20,50 @@ static struct QnRuntime
 	bool			inited;
 	struct Closure* closures;
 	struct Closure* preclosures;
-} _qn_rt = { false, NULL, NULL };
+} _qn_rt = { false, NULL, NULL };  // NOLINT
 
 //
-static void _qn_dispose(void)
+static void qn_dispose(void)
 {
 	qn_ret_if_fail(_qn_rt.inited);
 
-	for (struct Closure *prev = NULL, *node = _qn_rt.closures; node; node = prev)
+	for (struct Closure *prev, *node = _qn_rt.closures; node; node = prev)
 	{
 		prev = node->prev;
 		node->fp.func(node->fp.data);
 		qn_free(node);
 	}
 
-	for (struct Closure *prev = NULL, *node = _qn_rt.preclosures; node; node = prev)
+	for (struct Closure *prev, *node = _qn_rt.preclosures; node; node = prev)
 	{
 		prev = node->prev;
 		node->fp.func(node->fp.data);
 		qn_free(node);
 	}
 
-	_qn_mp_dispose();
-	_qn_dbg_dispose();
+	qn_mp_dispose();
+	qn_dbg_dispose();
 }
 
 //
-static void _qn_init(void)
+static void qn_init(void)
 {
 	_qn_rt.inited = true;
 
-	_qn_dbg_init();
-	_qn_mp_init();
+	qn_dbg_init();
+	qn_mp_init();
 
-#if _LIB || _STATIC
-	(void)atexit(_qn_dispose);
+#if defined _LIB || defined _STATIC
+	(void)atexit(qn_dispose);
 #endif
 }
 
 //
 void qn_runtime(int v[2])
 {
-#if _LIB || _STATIC
+#if defined _LIB || defined _STATIC
 	if (!_qn_rt.inited)
-		_qn_init();
+		qn_init();
 #endif
 
 	enum Version
@@ -117,20 +117,20 @@ size_t qn_number(void)
 }
 
 //
-#if !_LIB && !_STATIC
-#if _QN_WINDOWS
+#if !defined _LIB || !defined _STATIC
+#ifdef _QN_WINDOWS
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
 	switch (ul_reason_for_call)
 	{
 		case DLL_PROCESS_ATTACH:
-			_qn_init();
+			qn_init();
 			break;
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:
 			break;
 		case DLL_PROCESS_DETACH:
-			_qn_disp();
+			qn_disp();
 			break;
 	}
 	return true;
@@ -138,12 +138,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 #elif __GNUC__
 void __attribute__((constructor)) _attach(void)
 {
-	_qn_init();
+	qn_init();
 }
 
 void __attribute__((destructor)) _detach(void)
 {
-	_qn_dispose();
+	qn_dispose();
 }
 #endif
 #endif

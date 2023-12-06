@@ -11,7 +11,7 @@ int qn_vsnprintf(char* out, size_t len, const char* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, -1);
 
-	size_t res = dopr(out, len, fmt, va);
+	const size_t res = dopr(out, len, fmt, va);
 	if (len)
 		len--;
 
@@ -46,7 +46,7 @@ char* qn_vapsprintf(const char* fmt, va_list va)
 
 	va_list vq;
 	va_copy(vq, va);
-	size_t len = dopr(NULL, 0, fmt, vq);
+	const size_t len = dopr(NULL, 0, fmt, vq);
 	va_end(vq);
 	if (len == 0)
 		return NULL;
@@ -62,7 +62,7 @@ int qn_snprintf(char* out, size_t len, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
-	int ret = qn_vsnprintf(out, len, fmt, va);
+	const int ret = qn_vsnprintf(out, len, fmt, va);
 	va_end(va);
 
 	return ret;
@@ -73,7 +73,7 @@ int qn_asprintf(char** out, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
-	int ret = qn_vasprintf(out, fmt, va);
+	const int ret = qn_vasprintf(out, fmt, va);
 	va_end(va);
 
 	return ret;
@@ -93,11 +93,10 @@ char* qn_apsprintf(const char* fmt, ...)
 /** @brief 글자로 채우기 */
 size_t qn_strfll(char* dest, size_t pos, size_t end, int ch)
 {
-	size_t i, cnt;
 	if (pos >= end)
 		return pos;
-	cnt = end - pos;
-	for (i = 0; i < cnt; i++)
+	const size_t cnt = end - pos;
+	for (size_t i = 0; i < cnt; i++)
 		dest[pos + i] = (char)ch;
 	return pos + cnt;
 }
@@ -106,7 +105,7 @@ size_t qn_strfll(char* dest, size_t pos, size_t end, int ch)
 size_t qn_strhash(const char* p)
 {
 	const char* sz = p;
-	size_t h = *sz++;
+	size_t h = (size_t)*sz++;
 	if (!h)
 		return 0;
 	else
@@ -138,24 +137,24 @@ size_t qn_strihash(const char* p)
 }
 
 /** @brief strbrk */
-char* qn_strbrk(const char* p, const char* c)
+const char* qn_strbrk(const char* p, const char* c)
 {
 #if 1
 	// microsoft c library 13.10
 	const char* str = p;
 	const char* ctn = c;
-	char map[32] = { 0, };
+	int map[32] = { 0, };
 
 	while (*ctn)
 	{
-		map[*ctn >> 3] |= (1 << (*ctn & 7));
+		map[*ctn >> 3] |= 1 << (*ctn & 7);
 		ctn++;
 	}
 
 	while (*str)
 	{
 		if (map[*str >> 3] & (1 << (*str & 7)))
-			return ((char*)str);
+			return str;
 		str++;
 	}
 
@@ -178,7 +177,7 @@ char* qn_strbrk(const char* p, const char* c)
 /** @brief strmid */
 char* qn_strmid(char* dest, size_t destsize, const char* src, size_t pos, size_t len)
 {
-	size_t size = strlen(src);
+	const size_t size = strlen(src);
 
 	if (pos > size)
 		*dest = '\0';
@@ -195,7 +194,7 @@ char* qn_strmid(char* dest, size_t destsize, const char* src, size_t pos, size_t
 char* qn_strltm(char* dest)
 {
 	char* s;
-	for (s = dest; *s && isspace(*s); s++);
+	for (s = dest; *s && isspace(*s); s++) {}
 	if (dest != s)
 		memmove(dest, s, strlen(s) + 1);
 	return dest;
@@ -223,7 +222,7 @@ char* qn_strtrm(char* dest)
 /** @brief strrem */
 char* qn_strrem(char* p, const char* rmlist)
 {
-	char* p1 = p;
+	const char* p1 = p;
 	char* p2 = p;
 
 	while (*p1)
@@ -266,34 +265,29 @@ char* qn_strpcpy(char* dest, const char* src)
 /** @brief 여러 문자열의 strdup */
 char* qn_strcat(const char* p, ...)
 {
-	va_list va;
-	char* str;
-	char* s, * c;
-	size_t size;
-
-	size = strlen(p) + 1;
+	va_list va, vq;
 	va_start(va, p);
-	s = va_arg(va, char*);
+	va_copy(vq, va);
+
+	size_t size = strlen(p) + 1;
+	const char* s = va_arg(va, char*);
 	while (s)
 	{
 		size += strlen(s);
 		s = va_arg(va, char*);
 	}
-	va_end(va);
 
-	str = qn_alloc(size, char);
-	c = str;
-
-	c = qn_strpcpy(c, p);
-	va_start(va, p);
-	s = va_arg(va, char*);
+	char* str = qn_alloc(size, char);
+	char* c = qn_strpcpy(str, p);
+	s = va_arg(vq, char*);
 	while (s)
 	{
 		c = qn_strpcpy(c, s);
-		s = va_arg(va, char*);
+		s = va_arg(vq, char*);
 	}
-	va_end(va);
+	va_end(vq);
 
+	va_end(va);
 	return str;
 }
 
@@ -389,12 +383,11 @@ int qn_striwcm(const char* string, const char* wild)
 int qn_strfnd(const char* src, const char* find, size_t index)
 {
 	const char* p = src + index;
-	const char* s1, *s2;
 
 	while (*p)
 	{
-		s1 = p;
-		s2 = find;
+		const char* s1 = p;
+		const char* s2 = find;
 
 		while (*s1 && *s2 && !(*s1 - *s2))
 		{
@@ -409,7 +402,7 @@ int qn_strfnd(const char* src, const char* find, size_t index)
 	return -1;
 }
 
-#if !_MSC_VER
+#ifndef _MSC_VER
 /** @brief 문자열을 대문자로 */
 char* qn_strupr(char* p, size_t size)
 {
@@ -486,7 +479,7 @@ int qn_strnicmp(const char* p1, const char* p2, size_t len)
 // 유니코드 문자열
 //
 
-#if !_MSC_VER
+#ifndef _MSC_VER
 #define towupper(c)					((((c)>=L'a') && ((c)<=L'z')) ? ((c)-L'a'+L'A') : (c))
 #define towlower(c)					((((c)>=L'A') && ((c)<=L'Z')) ? ((c)-L'A'+L'a') : (c))
 #endif
@@ -498,7 +491,7 @@ int qn_vsnwprintf(wchar* out, size_t len, const wchar* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, -1);
 
-	size_t res = doprw(out, len, fmt, va);
+	const size_t res = doprw(out, len, fmt, va);
 	if (len)
 		len--;
 
@@ -528,7 +521,7 @@ wchar* qn_vapswprintf(const wchar* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, NULL);
 
-	size_t len = doprw(NULL, 0, fmt, va);
+	const size_t len = doprw(NULL, 0, fmt, va);
 	if (len == 0)
 		return NULL;
 
@@ -542,10 +535,9 @@ wchar* qn_vapswprintf(const wchar* fmt, va_list va)
 int qn_snwprintf(wchar* out, size_t len, const wchar* fmt, ...)
 {
 	va_list va;
-	int ret;
 
 	va_start(va, fmt);
-	ret = qn_vsnwprintf(out, len, fmt, va);
+	const int ret = qn_vsnwprintf(out, len, fmt, va);
 	va_end(va);
 
 	return ret;
@@ -555,10 +547,9 @@ int qn_snwprintf(wchar* out, size_t len, const wchar* fmt, ...)
 int qn_aswprintf(wchar** out, const wchar* fmt, ...)
 {
 	va_list va;
-	int ret;
 
 	va_start(va, fmt);
-	ret = qn_vaswprintf(out, fmt, va);
+	const int ret = qn_vaswprintf(out, fmt, va);
 	va_end(va);
 
 	return ret;
@@ -568,10 +559,9 @@ int qn_aswprintf(wchar** out, const wchar* fmt, ...)
 wchar* qn_apswprintf(const wchar* fmt, ...)
 {
 	va_list va;
-	wchar* ret;
 
 	va_start(va, fmt);
-	ret = qn_vapswprintf(fmt, va);
+	wchar* ret = qn_vapswprintf(fmt, va);
 	va_end(va);
 
 	return ret;
@@ -580,11 +570,10 @@ wchar* qn_apswprintf(const wchar* fmt, ...)
 /** @brief 빈칸으로 채우기 */
 size_t qn_wcsfll(wchar* dest, size_t pos, size_t end, int ch)
 {
-	size_t i, cnt;
 	if (pos >= end)
 		return pos;
-	cnt = end - pos;
-	for (i = 0; i < cnt; i++)
+	const size_t cnt = end - pos;
+	for (size_t i = 0; i < cnt; i++)
 		dest[pos + i] = (wchar)ch;
 	return pos + cnt;
 }
@@ -625,15 +614,14 @@ size_t qn_wcsihash(const wchar* p)
 }
 
 /** @brief wcsbrk */
-wchar* qn_wcsbrk(const wchar* p, const wchar* c)
+const wchar* qn_wcsbrk(const wchar* p, const wchar* c)
 {
-	wchar* t;
 	while (*p)
 	{
-		for (t = (wchar*)c; *t; t++)
+		for (const wchar* t = c; *t; t++)
 		{
 			if (*t == *p)
-				return (wchar*)p;
+				return p;
 		}
 		p++;
 	}
@@ -643,7 +631,7 @@ wchar* qn_wcsbrk(const wchar* p, const wchar* c)
 /** @brief wcsmid */
 wchar* qn_wcsmid(wchar* dest, size_t destsize, const wchar* src, size_t pos, size_t len)
 {
-	size_t size = wcslen(src);
+	const size_t size = wcslen(src);
 
 	if (pos > size)
 		*dest = L'\0';
@@ -660,7 +648,7 @@ wchar* qn_wcsmid(wchar* dest, size_t destsize, const wchar* src, size_t pos, siz
 wchar* qn_wcsltm(wchar* dest)
 {
 	wchar* s;
-	for (s = dest; *s && iswspace(*s); s++);
+	for (s = dest; *s && iswspace(*s); s++) {}
 	if (dest != s)
 		memmove(dest, s, (wcslen(s) + 1) * sizeof(wchar));
 	return dest;
@@ -688,7 +676,7 @@ wchar* qn_wcstrm(wchar* dest)
 /** @brief wcsrem */
 wchar* qn_wcsrem(wchar* p, const wchar* rmlist)
 {
-	wchar* p1 = p;
+	const wchar* p1 = p;
 	wchar* p2 = p;
 
 	while (*p1)
@@ -731,34 +719,29 @@ wchar* qn_wcspcpy(wchar* dest, const wchar* src)
 /** @brief 여러 문자열의 strdup */
 wchar* qn_wcscat(const wchar* p, ...)
 {
-	va_list va;
-	wchar* str;
-	wchar* s, * c;
-	size_t size;
-
-	size = wcslen(p) + 1;
+	va_list va, vq;
 	va_start(va, p);
-	s = va_arg(va, wchar*);
+	va_copy(vq, va);
+
+	size_t size = wcslen(p) + 1;
+	const wchar* s = va_arg(va, wchar*);
 	while (s)
 	{
 		size += wcslen(s);
 		s = va_arg(va, wchar*);
 	}
-	va_end(va);
 
-	str = qn_alloc(size, wchar);
-	c = str;
-
-	c = qn_wcspcpy(c, p);
-	va_start(va, p);
-	s = va_arg(va, wchar*);
+	wchar* str = qn_alloc(size, wchar);
+	wchar* c = qn_wcspcpy(str, p);
+	s = va_arg(vq, wchar*);
 	while (s)
 	{
 		c = qn_wcspcpy(c, s);
-		s = va_arg(va, wchar*);
+		s = va_arg(vq, wchar*);
 	}
-	va_end(va);
+	va_end(vq);
 
+	va_end(va);
 	return str;
 }
 
@@ -854,12 +837,11 @@ int qn_wcsiwcm(const wchar* string, const wchar* wild)
 int qn_wcsfnd(const wchar* src, const wchar* find, size_t index)
 {
 	const wchar* p = src + index;
-	const wchar* s1, *s2;
 
 	while (*p)
 	{
-		s1 = p;
-		s2 = find;
+		const wchar* s1 = p;
+		const wchar* s2 = find;
 
 		while (*s1 && *s2 && !(*s1 - *s2))
 		{
@@ -874,7 +856,7 @@ int qn_wcsfnd(const wchar* src, const wchar* find, size_t index)
 	return -1;
 }
 
-#if !_MSC_VER
+#ifndef _MSC_VER
 /** @brief 문자열을 대문자로 */
 wchar* qn_wcsupr(wchar* p, size_t size)
 {
@@ -956,14 +938,12 @@ size_t qn_u8len(const char* s)
 {
 #define MASK    ((size_t)(-1)/0xFF)
 	const char* t;
-	size_t cnt = 0;
-	size_t i;
-	uint8_t b;
+	size_t cnt;
 
 	// 초기 정렬되지 않은 아무 바이트 계산
-	for (t = s; (uintptr_t)t & (sizeof(size_t) - 1); t++)
+	for (cnt = 0, t = s; (uintptr_t)t & (sizeof(size_t) - 1); t++)
 	{
-		b = *t;
+		const byte b = *t;
 
 		if (b == '\0')
 			goto pos_done;
@@ -978,7 +958,7 @@ size_t qn_u8len(const char* s)
 		__builtin_prefetch(&t[256], 0, 0);
 #endif
 
-		i = *(size_t*)(t);
+		size_t i = *(size_t*)(t);  // NOLINT
 
 		if ((i - MASK) & (~i) & (MASK * 0x80))
 			break;
@@ -990,7 +970,7 @@ size_t qn_u8len(const char* s)
 	//
 	for (;; t++)
 	{
-		b = *t;
+		const byte b = *t;
 
 		if (b == '\0')
 			break;
@@ -1011,7 +991,7 @@ pos_done:
 uchar4 qn_u8cbn(const char* p)
 {
 	int len, mask;
-	uint8_t ch = *(uint8_t*)p;
+	const byte ch = (byte)*p;
 
 	if (ch < 128)
 	{
@@ -1076,7 +1056,7 @@ uchar4 qn_u8cbn(const char* p)
 }
 
 /** @brief UTF-8 다음 글자 */
-char* qn_u8nch(const char* s)
+const char* qn_u8nch(const char* s)
 {
 	static const char s_skips[256] =
 	{
@@ -1089,7 +1069,7 @@ char* qn_u8nch(const char* s)
 		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 		3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 1, 1
 	};
-	return (char*)(s + s_skips[*(const uint8_t*)s]);
+	return s + s_skips[*(const byte*)s];
 }
 
 /**
@@ -1137,7 +1117,7 @@ int qn_u8ucb(uchar4 c, char* out)
 	{
 		for (int i = len - 1; i > 0; --i)
 		{
-			out[i] = (c & 0x3f) | 0x80;
+			out[i] = (char)((c & 0x3f) | 0x80);
 			c >>= 6;
 		}
 
@@ -1158,21 +1138,35 @@ static uchar4 _utf16_surrogate(uchar2 h, uchar2 l)
 // 문자열 변환
 
 //
-size_t qn_mbstowcs(wchar* outwcs, size_t outsize, const char* inmbs)
+size_t qn_mbstowcs(wchar* outwcs, size_t outsize, const char* inmbs, size_t insize)
 {
-	size_t len = mbstowcs(outwcs, inmbs, outsize);
+#ifdef _QN_WINDOWS_
+	int len = MultiByteToWideChar(CP_THREAD_ACP, 0, inmbs, insize == 0 ? -1 : (int)insize, outwcs, (int)outsize);
+	if (outwcs && len >= 0 && outsize > 0)
+		outwcs[QN_MIN(outsize - 1, len)] = L'\0';
+	return (int)len;
+#else
+	const size_t len = mbstowcs(outwcs, inmbs, outsize);
 	if (outwcs && len >= 0 && outsize > 0)
 		outwcs[QN_MIN(outsize - 1, len)] = L'\0';
 	return (size_t)len;
+#endif
 }
 
 //
-size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar* inwcs)
+size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar* inwcs, size_t insize)
 {
+#ifdef _QN_WINDOWS_
+	int len = WideCharToMultiByte(CP_THREAD_ACP, 0, inwcs, insize == 0 ? -1 : (int)insize, outmbs, (int)outsize, NULL, NULL);
+	if (outmbs && len >= 0 && outsize > 0)
+		outmbs[QN_MIN(outsize - 1, len)] = '\0';
+	return (int)len;
+#else
 	size_t len = wcstombs(outmbs, inwcs, outsize);
 	if (outmbs && len >= 0 && outsize > 0)
 		outmbs[QN_MIN(outsize - 1, len)] = L'\0';
 	return (size_t)len;
+#endif
 }
 
 /**
@@ -1194,13 +1188,13 @@ size_t qn_u8to32(uchar4* dest, size_t destsize, const char* src, size_t srclen)
 	}
 	else
 	{
-		const char* t;
-		size_t i, size;
 
 		if (srclen == 0)
 			srclen = qn_u8len(src);
 
-		size = QN_MIN(destsize, srclen);
+		const size_t size = QN_MIN(destsize, srclen);
+		const char* t;
+		size_t i;
 
 		for (t = src, i = 0; i < size; i++)
 		{
@@ -1234,17 +1228,16 @@ size_t qn_u8to16(uchar2* dest, size_t destsize, const char* src, size_t srclen)
 	}
 	else
 	{
-		const char* t;
-		size_t i, size;
-
 		if (srclen == 0)
 			srclen = qn_u8len(src);
 
-		size = QN_MIN(destsize, srclen);
+		const size_t size = QN_MIN(destsize, srclen);
+		const char* t;
+		size_t i;
 
 		for (t = src, i = 0; i < size;)
 		{
-			uchar4 ch = qn_u8cbn(t);
+			const uchar4 ch = qn_u8cbn(t);
 
 			if (ch < 0x010000)
 				dest[i++] = (uchar2)ch;
@@ -1268,22 +1261,21 @@ size_t qn_u8to16(uchar2* dest, size_t destsize, const char* src, size_t srclen)
  * @param[out]	dest	(널값이 아니면) 대상 버퍼 (utf8)
  * @param	destsize		대상 버퍼 크기
  * @param	src				원본 (ucs4)
- * @param	srclen			원본 길이. 0으로 지정할 수 있음
+ * @param	srclen_org		원본 길이. 0으로 지정할 수 있음
  * @return	변환한 길이 또는 변환에 필요한 길이
  */
 size_t qn_u32to8(char* dest, size_t destsize, const uchar4* src, size_t srclen_org)
 {
-	size_t z, n, size;
-	intptr_t i, srclen;
-	uchar4 uc;
-
 	qn_retval_if_fail(src, 0);
 
-	srclen = (intptr_t)srclen_org;
+	const nint srclen = (nint)srclen_org;
+	size_t n, size;
+	intptr_t i;
+	uchar4 uc;
 
 	if (destsize > 0)
 	{
-		for (z = 0, size = 0, i = 0; srclen == 0 || i < srclen; i++)
+		for (size = 0, i = 0; srclen == 0 || i < srclen; i++)
 		{
 			uc = src[i];
 
@@ -1304,7 +1296,7 @@ size_t qn_u32to8(char* dest, size_t destsize, const uchar4* src, size_t srclen_o
 				(uc < 0x04000000) ? 5 :
 				6;
 
-			z = size + n;
+			const size_t z = size + n;
 
 			if (z > destsize)
 				break;
@@ -1362,21 +1354,18 @@ size_t qn_u32to8(char* dest, size_t destsize, const uchar4* src, size_t srclen_o
  */
 size_t qn_u16to8(char* dest, size_t destsize, const uchar2* src, size_t srclen)
 {
-	const uchar2* cp;
-	char* p;
-	uchar4 hsg, uc;
-	uchar2 ch;
-	size_t size, n, z;
-
 	qn_retval_if_fail(src, 0);
 
-	cp = src;
-	hsg = 0;
-	size = 0;
+	const uchar2* cp = src;
+	uchar4 hsg = 0;
+	size_t size = 0;
+	uchar4 uc;
+	uchar2 ch;
+	size_t n;
 
 	if (destsize > 0)
 	{
-		for (z = 0; (srclen == 0 || (size_t)(cp - src) < srclen) && *cp; cp++)
+		for (; (srclen == 0 || (size_t)(cp - src) < srclen) && *cp; cp++)
 		{
 			ch = *cp;
 
@@ -1422,11 +1411,9 @@ size_t qn_u16to8(char* dest, size_t destsize, const uchar2* src, size_t srclen)
 				(uc < 0x04000000) ? 5 :
 				6;
 
-			z = size + n;
-
+			const size_t z = size + n;
 			if (z > destsize)
 				break;
-
 			size = z;
 		}
 	}
@@ -1491,8 +1478,8 @@ size_t qn_u16to8(char* dest, size_t destsize, const uchar2* src, size_t srclen)
 
 	if (destsize > 0 && dest)
 	{
+		char* p = dest;
 		hsg = 0;
-		p = dest;
 		cp = src;
 
 		for (; p < dest + size; cp++)
@@ -1536,30 +1523,23 @@ size_t qn_u16to8(char* dest, size_t destsize, const uchar2* src, size_t srclen)
  */
 size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, size_t srclen)
 {
-	const uchar2* cp;
-	uchar4* p;
-	uchar4 hsg, uc;
-	uchar2 ch;
-	size_t size, z;
-
 	qn_retval_if_fail(src, 0);
 
-	cp = src;
-	hsg = 0;
-	size = 0;
+	uchar4 hsg = 0;
+	size_t size = 0;
 
 	if (destsize > 0)
 	{
-		for (z = 0; (srclen == 0 || (size_t)(cp - src) < srclen) && *cp; cp++)
+		for (const uchar2* cp = src; (srclen == 0 || (size_t)(cp - src) < srclen) && *cp; cp++)
 		{
-			ch = *cp;
+			const uchar2 ch = *cp;
 
 			if (ch >= 0xDC00 && ch < 0xE000)
 			{
 				// 하위 서로게이트
 				if (hsg)
 				{
-					uc = _utf16_surrogate((uchar2)hsg, ch);
+					_utf16_surrogate((uchar2)hsg, ch);
 					hsg = 0;
 				}
 				else
@@ -1585,11 +1565,9 @@ size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, size_t srcle
 					hsg = ch;
 					continue;
 				}
-
-				uc = ch;
 			}
 
-			z = size + 1;
+			const size_t z = size + 1;
 
 			if (z > destsize)
 				break;
@@ -1599,16 +1577,16 @@ size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, size_t srcle
 	}
 	else
 	{
-		for (; (srclen == 0 || (size_t)(cp - src) < srclen) && *cp; cp++)
+		for (const uchar2* cp = src; (srclen == 0 || (size_t)(cp - src) < srclen) && *cp; cp++)
 		{
-			ch = *cp;
+			const uchar2 ch = *cp;
 
 			if (ch >= 0xDC00 && ch < 0xE000)
 			{
 				// 하위 서로게이트
 				if (hsg)
 				{
-					uc = _utf16_surrogate((uchar2)hsg, ch);
+					_utf16_surrogate((uchar2)hsg, ch);
 					hsg = 0;
 				}
 				else
@@ -1634,8 +1612,6 @@ size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, size_t srcle
 					hsg = ch;
 					continue;
 				}
-
-				uc = ch;
 			}
 
 
@@ -1652,13 +1628,14 @@ size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, size_t srcle
 
 	if (destsize > 0 && dest)
 	{
-		hsg = 0;
-		p = dest;
-		cp = src;
+		uchar4* p = dest;
+		uchar4 uc;
 
-		for (; p < dest + size; cp++)
+		hsg = 0;
+
+		for (const uchar2* cp = src; p < dest + size; cp++)
 		{
-			ch = *cp;
+			const uchar2 ch = *cp;
 
 			if (ch >= 0xDC00 && ch < 0xE000)
 			{
@@ -1698,44 +1675,33 @@ size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, size_t srcle
  */
 size_t qn_u32to16(uchar2* dest, size_t destsize, const uchar4* src, size_t srclen_org)
 {
-	uchar2* p;
-	uchar4 uc;
-	size_t size, z;
-	intptr_t i, srclen;
-
 	qn_retval_if_fail(src, 0);
 
-	size = 0;
-	srclen = (intptr_t)srclen_org;
+	size_t size = 0;
+	const intptr_t srclen = (intptr_t)srclen_org;
+	size_t z;
+	intptr_t i;
 
 	if (destsize > 0)
 	{
 		for (i = 0; (srclen == 0 || i < srclen) && src[i]; i++)
 		{
-			uc = src[i];
+			const uchar4 uc = src[i];
 
 			if (uc < 0xD800)
-				z = 1;
+				z = 1;		// NOLINT(bugprone-branch-clone)
 			else if (uc < 0xE000)
-			{
-				// 음..
-				return 0;
-			}
+				return 0;	// NOLINT(bugprone-branch-clone)
 			else if (uc < 0x010000)
 				z = 1;
 			else if (uc < 0x110000)
 				z = 2;
 			else
-			{
-				// 음...
 				return 0;
-			}
 
 			z += size;
-
 			if (z > destsize)
 				break;
-
 			size = z;
 		}
 	}
@@ -1743,32 +1709,27 @@ size_t qn_u32to16(uchar2* dest, size_t destsize, const uchar4* src, size_t srcle
 	{
 		for (i = 0; (srclen == 0 || i < srclen) && src[i]; i++)
 		{
-			uc = src[i];
+			const uchar4 uc = src[i];
 
 			if (uc < 0xD800)
-				size++;
+				size++;		// NOLINT(bugprone-branch-clone)
 			else if (uc < 0xE000)
-			{
-				// 음..
-				return 0;
-			}
+				return 0;	// NOLINT(bugprone-branch-clone)
 			else if (uc < 0x010000)
 				size++;
 			else if (uc < 0x110000)
 				size += 2;
 			else
-			{
-				// 음...
 				return 0;
-			}
 		}
 	}
 
 	if (destsize > 0 && dest)
 	{
+		uchar2* p;
 		for (p = dest, i = 0, z = 0; z < size; i++)
 		{
-			uc = src[i];
+			const uchar4 uc = src[i];
 
 			if (uc < 0x010000)
 				p[z++] = (uchar2)uc;

@@ -5,11 +5,11 @@ QN_INLINE int gl_get_version(GLenum name, const char* name1, const char* name2)
 {
 	const char* s = (const char*)GLFUNC(glGetString)(name);
 	qn_retval_if_fail(s, 0);
-	float f =
-		qn_strnicmp(s, name1, strlen(name1)) == 0 ? (float)atof(s + strlen(name1)) :
-		qn_strnicmp(s, name2, strlen(name2)) == 0 ? (float)atof(s + strlen(name2)) :
-		(float)atof(s);
-	return (int)(floor(f) * 100.0f + (QN_FRACT(f) * 10.0));
+	const float f =
+		qn_strnicmp(s, name1, strlen(name1)) == 0 ? strtof(s + strlen(name1), NULL) :
+		qn_strnicmp(s, name2, strlen(name2)) == 0 ? strtof(s + strlen(name2), NULL) :
+		(float)strtof(s, NULL);
+	return (int)(floorf(f) * 100.0f + (QN_FRACT(f) * 10.0));
 }
 
 // GetString

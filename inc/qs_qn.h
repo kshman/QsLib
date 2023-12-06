@@ -1,6 +1,7 @@
 ﻿#pragma once
+// ReSharper disable CppUnusedIncludeDirective
 
-#if _MSC_VER
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4201)		// L4, nonstandard extension used : nameless struct/union
 #endif
@@ -17,58 +18,60 @@
 #include <time.h>
 #include <signal.h>
 #include <wchar.h>
-#if __unix__
+#ifdef __unix__
 #include <sys/time.h>
 #endif
 
 
 //////////////////////////////////////////////////////////////////////////
 // typedefs
-typedef union _vint16_t					vint16_t, vshort;
-typedef union _vint32_t					vint32_t, vint;
-typedef union _vint64_t					vint64_t, vlong;
-typedef union _any_t					any_t;
-typedef struct _funcparam_t				funcparam_t;
-typedef struct _QnDateTime				QnDateTime;
-typedef struct _QnTimer					QnTimer;
-typedef struct _QnDir					QnDir;
-typedef struct _QnFile					QnFile;
-typedef struct _QnFileInfo				QnFileInfo;
-typedef struct _QnFileAccess			QnFileAccess;
-typedef enum _QnSeek					QnSeek;
-typedef enum _QnFileFlag				QnFileFlag;
-typedef struct _QnMlu					QnMlu;
-typedef struct _QnMlTag					QnMlTag;
-typedef struct _QmGam					QmGam;
+
+// union
+typedef union vint16_t					vint16_t, vshort;
+typedef union vint32_t					vint32_t, vint;
+typedef union vint64_t					vint64_t, vlong;
+typedef union any_t						any_t;
+
+// struct
+typedef struct funcparam_t				funcparam_t;
+typedef struct QnDateTime				QnDateTime;
+typedef struct QnTimer					QnTimer;
+typedef struct QnDir					QnDir;
+typedef struct QnFile					QnFile;
+typedef struct QnFileInfo				QnFileInfo;
+typedef struct QnFileAccess				QnFileAccess;
+typedef struct QnMlu					QnMlu;
+typedef struct QnMlTag					QnMlTag;
+typedef struct QmGam					QmGam;
 
 
 //////////////////////////////////////////////////////////////////////////
 // compiler configuration
 
 // check
-#if !(_MSC_VER || __GNUC__)
+#if !defined _MSC_VER && !defined __GNUC__
 #error unknown compiler! (support: MSVC, CLANG, GCC)
 #endif
 
 // platform
-#if _WIN32
+#ifdef _WIN32
 #	define _QN_WINDOWS_					1
 #endif
 
-#if __FreeBSD__ || __OpenBSD__
+#if defined __FreeBSD__ || defined __OpenBSD__
 #	define _QN_BSD_						1
 #endif
 
-#if __linux__
+#ifdef __linux__
 #	define _QN_LINUX_					1
 #endif
 
-#if __android__
+#ifdef __android__
 #	define _QN_ANDROID_					1
 #	define _QN_MOBILE_					1
 #endif
 
-#if __unix__
+#ifdef __unix__
 #	define _QN_UNIX_					1
 #endif
 
@@ -81,7 +84,7 @@ typedef struct _QmGam					QmGam;
 #endif
 
 // compiler specific
-#if _MSC_VER
+#ifdef _MSC_VER
 #	define QN_RESTRICT					__restrict
 #	define QN_INLINE					__inline
 #	define QN_FORCE_LINE				__forceinline
@@ -89,7 +92,7 @@ typedef struct _QmGam					QmGam;
 #	define QN_MEM_BARRIER()				_ReadWriteBarrier()
 #	define QN_STATIC_ASSERT				static_assert
 #	define QN_FALL_THROUGH
-#elif __GNUC__
+#elif defined __GNUC__
 #	define QN_RESTRICT					restrict
 #ifndef __cplusplus
 #	define QN_INLINE					static inline
@@ -110,7 +113,7 @@ typedef struct _QmGam					QmGam;
 #	define QN_FALL_THROUGH				__attribute__((fallthrough))
 #endif
 
-#if defined(__cplusplus)
+#ifdef __cplusplus
 #	define QN_EXTC						extern "C"
 #	define QN_EXTC_BEGIN				extern "C" {
 #	define QN_EXTC_END					}
@@ -121,14 +124,13 @@ typedef struct _QmGam					QmGam;
 #endif
 
 // path separator
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 #	define QN_PATH_SEP					'\\'
 #else
 #	define QN_PATH_SEP					'/'
 #endif
 
 QN_EXTC_BEGIN
-
 
 //////////////////////////////////////////////////////////////////////////
 // macro
@@ -162,7 +164,7 @@ QN_EXTC_BEGIN
 #define QN_CLAMP(v,vmin,vmax)			((v)<(vmin)?(vmin):(v)>(vmax)?(vmax):(v))
 
 #define QN_BIT(bit)						(1<<(bit))
-#define QN_MASK(v,mask)					((mask==0)?(v):(v)&(mask))
+#define QN_MASK(v,mask)					(((mask)==0)?(v):(v)&(mask))
 #define QN_SET_BIT(pv,bit,isset)		((isset)?((*(pv))|=(1<<(bit))):((*(pv))&=~(1<<(bit))))
 #define QN_SET_MASK(pv,mask,isset)		((isset)?((*(pv))|=(mask)):((*(pv))&=~(mask)))
 #define QN_TEST_BIT(v,bit)				(((v)&(1<<(bit)))!=0)
@@ -196,7 +198,7 @@ typedef intptr_t						nint;				/** @brief platform pointer signed int */
 typedef uintptr_t						nuint;				/** @brief platform pointer unsigned int */
 
 typedef wchar_t							wchar;
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 typedef uint32_t						uchar4;				/** @brief 4byte(32bit) unicode */
 typedef wchar_t							uchar2;				/** @brief 2byte(16bit) unicode */
 #else
@@ -207,7 +209,7 @@ typedef uint16_t						uchar2;				/** @brief 2byte(16bit) unicode */
 typedef uint16_t						halfint;			/** @brief 16bit half int */
 
 /** @brief variant 16bit short */
-union _vint16_t
+union vint16_t
 {
 	struct
 	{
@@ -217,7 +219,7 @@ union _vint16_t
 };
 
 /** @brief variant 32bit int */
-union _vint32_t
+union vint32_t
 {
 	struct
 	{
@@ -231,7 +233,7 @@ union _vint32_t
 };
 
 /** @brief variant 64bit long long */
-union _vint64_t
+union vint64_t
 {
 	struct
 	{
@@ -250,7 +252,7 @@ union _vint64_t
 };
 
 /** @brief any value */
-union _any_t
+union any_t
 {
 	bool				b;
 	int					i;
@@ -271,7 +273,7 @@ union _any_t
 };
 
 /** @brief function parameter */
-struct _funcparam_t
+struct funcparam_t
 {
 	paramfunc_t			func;
 	void*				data;
@@ -284,7 +286,7 @@ struct _funcparam_t
 #define qn_ptrcast_float(v)				(*(float*)&(v))
 #define qn_castptr(v)					((nint)(v))
 #define qn_castptr_float(v)				(*(nint*)&(v))
-#if _QN_64_
+#ifdef _QN_64_
 #define qn_ptrcast_llong(v)				((llong)(nint)(v))
 #define qn_ptrcast_ullong(v)			((ullong)(nuint)(v))
 #define qn_ptrcast_double(v)			(*(double*)&(v))
@@ -297,7 +299,7 @@ struct _funcparam_t
 #define qn_retval_if_fail(x,r)			QN_STMT_BEGIN{ if (!(x)) return (r); }QN_STMT_END
 #define qn_retval_if_ok(x,r)			QN_STMT_BEGIN{ if ((x)) return (r); }QN_STMT_END
 
-#if _DEBUG
+#ifdef _DEBUG
 #define qn_assert(expr,mesg)			QN_STMT_BEGIN{if (!(expr)) qn_debug_assert(#expr, mesg, __FILE__, __LINE__);}QN_STMT_END
 #define qn_verify(expr)					QN_STMT_BEGIN{if (!(expr)) qn_debug_assert(#expr, NULL, __FILE__, __LINE__);}QN_STMT_END
 #else
@@ -333,7 +335,7 @@ QSAPI int qn_outputf(const char* fmt, ...);
 #define qn_free(ptr)					qn_mpffree((void*)(ptr))
 #define qn_free_ptr(pptr)				QN_STMT_BEGIN{ qn_mpffree((void*)*(pptr)); *(pptr)=NULL; }QN_STMT_END
 
-#if _MSC_VER
+#ifdef _MSC_VER
 #define qn_alloca(cnt,type)				(type*)_malloca((cnt)*sizeof(type))
 #define qn_freea(ptr)					_freea(ptr)
 #else
@@ -363,7 +365,7 @@ QSAPI void qn_mpffree(void* ptr);
 // hash & sort
 QSAPI size_t qn_hashptr(const void* p);
 QSAPI size_t qn_hashnow(void);
-QSAPI size_t qn_hashfn(int prime8, func_t func, void* data);
+QSAPI size_t qn_hashfn(int prime8, func_t func, const void* data);
 QSAPI size_t qn_hashcrc(const byte* data, size_t size);
 QSAPI uint32_t qn_primenear(uint32_t value);
 QSAPI uint32_t qn_primeshift(uint32_t value, uint32_t min, uint32_t* shift);
@@ -383,7 +385,7 @@ QSAPI char* qn_apsprintf(const char* fmt, ...);
 QSAPI size_t qn_strfll(char* dest, size_t pos, size_t end, int ch);
 QSAPI size_t qn_strhash(const char* p);
 QSAPI size_t qn_strihash(const char* p);
-QSAPI char* qn_strbrk(const char* p, const char* c);
+QSAPI const char* qn_strbrk(const char* p, const char* c);
 QSAPI char* qn_strmid(char* dest, size_t destsize, const char* src, size_t pos, size_t len);
 QSAPI char* qn_strltm(char* dest);
 QSAPI char* qn_strrtm(char* dest);
@@ -394,7 +396,7 @@ QSAPI char* qn_strcat(const char* p, ...);
 QSAPI int qn_strwcm(const char* string, const char* wild);
 QSAPI int qn_striwcm(const char* string, const char* wild);
 QSAPI int qn_strfnd(const char* src, const char* find, size_t index);
-#if _MSC_VER
+#ifdef _MSC_VER
 #define qn_strcpy						strcpy_s
 #define qn_strncpy						strncpy_s
 #define qn_strdup						_strdup
@@ -423,7 +425,7 @@ QSAPI wchar* qn_apswprintf(const wchar* fmt, ...);
 QSAPI size_t qn_wcsfll(wchar* dest, size_t pos, size_t end, int ch);
 QSAPI size_t qn_wcshash(const wchar* p);
 QSAPI size_t qn_wcsihash(const wchar* p);
-QSAPI wchar* qn_wcsbrk(const wchar* p, const wchar* c);
+QSAPI const wchar* qn_wcsbrk(const wchar* p, const wchar* c);
 QSAPI wchar* qn_wcsmid(wchar* dest, size_t destsize, const wchar* src, size_t pos, size_t len);
 QSAPI wchar* qn_wcsltm(wchar* dest);
 QSAPI wchar* qn_wcsrtm(wchar* dest);
@@ -434,7 +436,7 @@ QSAPI wchar* qn_wcscat(const wchar* p, ...);
 QSAPI int qn_wcswcm(const wchar* string, const wchar* wild);
 QSAPI int qn_wcsiwcm(const wchar* string, const wchar* wild);
 QSAPI int qn_wcsfnd(const wchar* src, const wchar* find, size_t index);
-#if _MSC_VER
+#ifdef _MSC_VER
 #define qn_wcscpy						wcscpy_s
 #define qn_wcsncpy						wcsncpy_s
 #define qn_wcsdup						_wcsdup
@@ -456,11 +458,11 @@ QSAPI int qn_wcsnicmp(const wchar* p1, const wchar* p2, size_t len);
 
 QSAPI size_t qn_u8len(const char* s);
 QSAPI uchar4 qn_u8cbn(const char* p);
-QSAPI char* qn_u8nch(const char* s);
+QSAPI const char* qn_u8nch(const char* s);
 QSAPI int qn_u8ucb(uchar4 c, char* out);
 
-QSAPI size_t qn_mbstowcs(wchar* outwcs, size_t outsize, const char* inmbs);
-QSAPI size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar* inwcs);
+QSAPI size_t qn_mbstowcs(wchar* outwcs, size_t outsize, const char* inmbs, size_t insize);
+QSAPI size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar* inwcs, size_t insize);
 QSAPI size_t qn_u8to32(uchar4* dest, size_t destsize, const char* src, size_t srclen);
 QSAPI size_t qn_u8to16(uchar2* dest, size_t destsize, const char* src, size_t srclen);
 QSAPI size_t qn_u32to8(char* dest, size_t destsize, const uchar4* src, size_t srclen);
@@ -472,8 +474,8 @@ QSAPI size_t qn_u32to16(uchar2* dest, size_t destsize, const uchar4* src, size_t
 //////////////////////////////////////////////////////////////////////////
 // time
 
-QSAPI void qn_localtime(struct tm* ptm, const time_t tt);
-QSAPI void qn_gmtime(struct tm* ptm, const time_t tt);
+QSAPI void qn_localtime(struct tm* ptm, time_t tt);
+QSAPI void qn_gmtime(struct tm* ptm, time_t tt);
 
 QSAPI ullong qn_cycle(void);
 QSAPI ullong qn_tick(void);
@@ -485,7 +487,7 @@ QSAPI void qn_ssleep(uint seconds);
 QSAPI void qn_msleep(ullong microseconds);
 
 /** @brief date time */
-struct _QnDateTime
+struct QnDateTime
 {
 	union
 	{
@@ -516,7 +518,7 @@ QSAPI void qn_stod(double sec, QnDateTime* dt);
 QSAPI void qn_mstod(uint msec, QnDateTime* dt);
 
 /** @brief timer */
-struct _QnTimer
+struct QnTimer
 {
 	double				abstime;
 	double				runtime;
@@ -530,11 +532,11 @@ QSAPI void qn_timer_reset(QnTimer* self);
 QSAPI void qn_timer_start(QnTimer* self);
 QSAPI void qn_timer_stop(QnTimer* self);
 QSAPI bool qn_timer_update(QnTimer* self);
-QSAPI double qn_timer_get_abs(QnTimer* self);
-QSAPI double qn_timer_get_run(QnTimer* self);
-QSAPI double qn_timer_get_fps(QnTimer* self);
-QSAPI double qn_timer_get_adv(QnTimer* self);
-QSAPI double qn_timer_get_cut(QnTimer* self);
+QSAPI double qn_timer_get_abs(const QnTimer* self);
+QSAPI double qn_timer_get_run(const QnTimer* self);
+QSAPI double qn_timer_get_fps(const QnTimer* self);
+QSAPI double qn_timer_get_adv(const QnTimer* self);
+QSAPI double qn_timer_get_cut(const QnTimer* self);
 QSAPI void qn_timer_set_cut(QnTimer* self, double cut);
 QSAPI void qn_timer_set_manual(QnTimer* self, bool value);
 
@@ -543,7 +545,7 @@ QSAPI void qn_timer_set_manual(QnTimer* self, bool value);
 // disk i/o
 
 /** @brief file info */
-struct _QnFileInfo
+struct QnFileInfo
 {
 	short				type;
 	ushort				len;
@@ -555,9 +557,9 @@ struct _QnFileInfo
 };
 
 /** @brief file access */
-struct _QnFileAccess
+struct QnFileAccess
 {
-#if _MSC_VER
+#ifdef _MSC_VER
 	uint				mode;
 	uint				share;
 	uint				access;
@@ -569,15 +571,16 @@ struct _QnFileAccess
 };
 
 /** @brief seek */
-enum _QnSeek
+enum QnSeek
 {
 	QNSEEK_BEGIN = 0,
 	QNSEEK_CUR = 1,
 	QNSEEK_END = 2,
 };
+typedef enum QnSeek						QnSeek;
 
 /** @brief file flag */
-enum _QnFileFlag
+enum QnFileFlag
 {
 	QNFF_READ = 0x1,
 	QNFF_WRITE = 0x2,
@@ -585,19 +588,20 @@ enum _QnFileFlag
 	QNFF_ALL = QNFF_READ | QNFF_WRITE | QNFF_SEEK,
 	QNFF_RDONLY = QNFF_READ | QNFF_SEEK,
 };
+typedef enum QnFileFlag					QnFileFlag;
 
 // file
 QSAPI QnFile* qn_file_new(const char* filename, const char* mode);
 QSAPI QnFile* qn_file_new_dup(QnFile* org);
 QSAPI void qn_file_delete(QnFile* self);
-QSAPI int qn_file_flags(QnFile* self, int mask);
-QSAPI const char* qn_file_name(QnFile* self);
+QSAPI int qn_file_get_flags(const QnFile* self, int mask);
+QSAPI const char* qn_file_get_name(const QnFile* self);
 QSAPI int qn_file_read(QnFile* self, void* buffer, int offset, int size);
 QSAPI int qn_file_write(QnFile* self, const void* buffer, int offset, int size);
 QSAPI int64_t qn_file_size(QnFile* self);
 QSAPI int64_t qn_file_tell(QnFile* self);
 QSAPI int64_t qn_file_seek(QnFile* self, llong offset, int org);
-QSAPI bool qn_file_flush(QnFile* self);
+QSAPI bool qn_file_flush(const QnFile* self);
 QSAPI int qn_file_printf(QnFile* self, const char* fmt, ...);
 QSAPI int qn_file_vprintf(QnFile* self, const char* fmt, va_list va);
 QSAPI bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir);
@@ -622,7 +626,7 @@ QSAPI const wchar_t* qn_dir_read_l(QnDir* self);
 //////////////////////////////////////////////////////////////////////////
 // xml
 
-struct _QnMlTag
+struct QnMlTag
 {
 	char*				name;
 	char*				cntx;
@@ -642,18 +646,18 @@ QSAPI void qn_mlu_delete(QnMlu* self);
 QSAPI void qn_mlu_clean_tags(QnMlu* self);
 QSAPI void qn_mlu_clean_errs(QnMlu* self);
 QSAPI bool qn_mlu_load_buffer(QnMlu* self, const void* data, int size);
-QSAPI bool qn_mlu_write_file(QnMlu* self, const char* filename);
+QSAPI bool qn_mlu_write_file(const QnMlu* self, const char* filename);
 
-QSAPI int qn_mlu_get_count(QnMlu* self);
-QSAPI const char* qn_mlu_get_err(QnMlu* self, int at);
-QSAPI QnMlTag* qn_mlu_get_tag(QnMlu* self, const char* name);
-QSAPI QnMlTag* qn_mlu_get_tag_nth(QnMlu* self, int at);
-QSAPI const char* qn_mlu_get_context(QnMlu* self, const char* name, const char* ifnotexist);
-QSAPI const char* qn_mlu_get_context_nth(QnMlu* self, int at, const char* ifnotexist);
-QSAPI int qn_mlu_contains(QnMlu* self, QnMlTag* tag);
+QSAPI int qn_mlu_get_count(const QnMlu* self);
+QSAPI const char* qn_mlu_get_err(const QnMlu* self, int at);
+QSAPI QnMlTag* qn_mlu_get_tag(const QnMlu* self, const char* name);
+QSAPI QnMlTag* qn_mlu_get_tag_nth(const QnMlu* self, int at);
+QSAPI const char* qn_mlu_get_context(const QnMlu* self, const char* name, const char* ifnotexist);
+QSAPI const char* qn_mlu_get_context_nth(const QnMlu* self, int at, const char* ifnotexist);
+QSAPI int qn_mlu_contains(const QnMlu* self, QnMlTag* tag);
 
-QSAPI void qn_mlu_foreach(QnMlu* self, void(*func)(void*, QnMlTag*), void* userdata);
-QSAPI void qn_mlu_loopeach(QnMlu* self, void(*func)(QnMlTag* tag));
+QSAPI void qn_mlu_foreach(const QnMlu* self, void(*func)(void*, QnMlTag*), void* userdata);
+QSAPI void qn_mlu_loopeach(const QnMlu* self, void(*func)(QnMlTag* tag));
 
 QSAPI QnMlTag* qn_mlu_add(QnMlu* self, const char* name, const char* context, int line);
 QSAPI QnMlTag* qn_mlu_add_tag(QnMlu* self, QnMlTag* tag);
@@ -663,7 +667,7 @@ QSAPI bool qn_mlu_remove_tag(QnMlu* self, QnMlTag* tag, bool isdelete);
 
 QSAPI void qn_mlu_add_err(QnMlu* self, const char* msg);
 QSAPI void qn_mlu_add_errf(QnMlu* self, const char* fmt, ...);
-QSAPI void qn_mlu_print_err(QnMlu* self);
+QSAPI void qn_mlu_print_err(const QnMlu* self);
 
 QSAPI void qn_mlu_print(QnMlu* self);
 
@@ -718,7 +722,7 @@ qvt_name(QmGam)
 	void (*dispose)(QmGam*);
 };
 
-struct _QmGam
+struct QmGam
 {
 	qvt_name(QmGam)*	vt;
 	volatile nint		ref;
@@ -729,7 +733,7 @@ QSAPI QmGam* qm_stc_init(QmGam* g, void* vt);
 QSAPI QmGam* qm_stc_load(QmGam* g);
 QSAPI QmGam* qm_stc_unload(QmGam* g);
 QSAPI size_t qm_stc_get_ref(QmGam* g);
-QSAPI nuint qm_stc_get_desc(QmGam* g);
+QSAPI nuint qm_stc_get_desc(const QmGam* g);
 QSAPI nuint qm_stc_set_desc(QmGam* g, nuint ptr);
 
 /**
@@ -771,11 +775,11 @@ QSAPI nuint qm_stc_set_desc(QmGam* g, nuint ptr);
  * @param ptr description(nint)
  * @return previous description value
  */
-#define qm_set_desc(g,ptr)				qm_stc_set_desc((QmGam*)(g),(nuint)ptr)
+#define qm_set_desc(g,ptr)				qm_stc_set_desc((QmGam*)(g),(nuint)(ptr))
 
 QN_EXTC_END
 
-#if _MSC_VER
+#ifdef _MSC_VER
 #pragma warning(pop)
 #endif
 
