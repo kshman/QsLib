@@ -1,5 +1,4 @@
 ﻿#include "pch.h"
-#ifdef USE_SDL
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include "qg_stub.h"
@@ -360,5 +359,3 @@ bool stub_system_poll(void)
 	}
 	return QN_TEST_MASK(stub->base.sttis, QGSTTI_EXIT) == false;
 }
-
-#endif	// USE_SDL

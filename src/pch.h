@@ -1,8 +1,5 @@
 ﻿#pragma once
 
-#ifndef USE_SDL
-#define USE_SDL		2
-#endif
 #ifndef USE_ES2
 #define USE_ES2		1
 #endif
@@ -17,7 +14,7 @@
 #	include <mmsystem.h>
 #	include <commctrl.h>
 #	include <shellapi.h>
-#if _MSC_VER
+#if defined _MSC_VER
 #	include <intrin.h>
 #	include <crtdbg.h>
 #endif
@@ -36,34 +33,32 @@
 #include <wchar.h>
 #include <wctype.h>
 #include <math.h>
-#if __unix__
+#if defined __unix__
 #include <sys/time.h>
 #endif
 
 // ANDROID
-#if __android__
+#if defined __android__
 #	include <android/configuration.h>
 #	include <android/looper.h>
 #	include <android/native_activity.h>
 #endif
 
 // SDL
-#if USE_SDL
-#	include <SDL2/SDL.h>
-#if USE_ES2
-#	include <SDL2/SDL_opengles2.h>
-#endif
+#include <SDL2/SDL.h>
+#if defined USE_ES2
+#include <SDL2/SDL_opengles2.h>
 #endif
 
 //
 #include "qs_conf.h"
 
 //
-#if _MSC_VER
+#if defined _MSC_VER
 #pragma warning(disable:4100)		// 참조되지 않은 정식 매개 변수입니다.
 #pragma warning(disable:4127)		// 조건식이 상수입니다.
 #endif
-#if __GNUC__
+#if defined __GNUC__
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #endif

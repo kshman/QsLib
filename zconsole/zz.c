@@ -48,6 +48,8 @@ int main()
 	qg_shd_bind(shd, QGSHT_PS, ps, 0, 0);
 	qg_shd_link(shd);
 
+	qn_debug_mpfprint();
+
 	while (qg_rdh_loop(rdh))
 	{
 		QgEvent ev;

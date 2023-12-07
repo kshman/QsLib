@@ -298,7 +298,7 @@ void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 	}
 
 	node->sign = MEMORY_SIGN_HEAD;
-#if _QN_64_
+#ifdef _QN_64_
 	node->align64 = 0;
 #endif
 	node->desc = desc;
@@ -354,18 +354,18 @@ void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 #else
 		realloc(node, block);
 #endif
-		if (!node)
-		{
-			qn_debug_outputf(false, "Memory Profiler", "cannot reallocate memory : %s(%Lu) : %Lu(%Lu)", desc, line, size, block);
-			return NULL;
-		}
+	if (!node)
+	{
+		qn_debug_outputf(false, "Memory Profiler", "cannot reallocate memory : %s(%Lu) : %Lu(%Lu)", desc, line, size, block);
+		return NULL;
+	}
 
-		node->desc = desc;
-		node->line = line;
-		node->size = size;
-		node->block = block;
+	node->desc = desc;
+	node->line = line;
+	node->size = size;
+	node->block = block;
 
-		return _memptr(node);
+	return _memptr(node);
 }
 
 //
@@ -397,5 +397,40 @@ void qn_mpffree(void* ptr)
 	HeapFree(_qn_mp.heap, 0, node);
 #else
 	free(node);
+#endif
+}
+
+//
+void qn_debug_mpfprint(void)
+{
+#ifndef __EMSCRIPTEN__
+	if (_qn_mp.count == 0 && _qn_mp.frst == NULL && _qn_mp.last == NULL)
+		return;
+
+	qn_debug_outputf(false, "Memory Profiler", "found %d allocations", _qn_mp.count);
+	qn_debug_outputf(false, "Memory Profiler", " %-8s | %-8s | %-8s | %-s", "no", "size", "block", "desc");
+
+	size_t sum = 0, cnt = 1;
+	for (memBlock* next = NULL, *node = _qn_mp.frst; node; node = next, cnt++)
+	{
+		if (node->line)
+		{
+			qn_debug_outputf(false, "Memory Profiler", " %-8d | %-8zu | % -8zu | \"%s:%d\"",
+				cnt, node->size, node->block, node->desc, (int)node->line);
+		}
+		else
+		{
+			char sz[64];
+			qn_memdmp(_memptr(node), QN_MIN(32, node->size), sz, 64 - 1);
+			qn_debug_outputf(false, "Memory Profiler", " %-8d | %-8zu | % -8zu | <%s>",
+					cnt, node->size, node->block, sz);
+		}
+		next = node->next;
+		sum += node->block;
+	}
+
+	double size;
+	const char usage = qn_memhrb(sum, &size);
+	qn_debug_outputf(false, "Memory Profiler", "block size: %.3g%cbytes", size, usage);
 #endif
 }

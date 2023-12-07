@@ -72,7 +72,6 @@ const char* qg_qic_str(QicButton button)
 	return s_button_names[(size_t)button < QN_COUNTOF(s_button_names) ? button : 0];
 }
 
-#ifdef USE_SDL
 //
 QikKey sdlk_to_qik(uint sdlk)
 {
@@ -300,5 +299,4 @@ QikMask sdl_kmod_to_qikm(int modifier)
 	if (modifier & KMOD_MODE) m |= QIKM_SCRL;
 	return m;
 }
-#endif
 

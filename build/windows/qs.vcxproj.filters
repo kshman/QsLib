@@ -99,13 +99,19 @@
     <ClInclude Include="..\..\src\qg\qg_es2.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\qg_es2func.h">
+    <ClInclude Include="..\..\src\qg\qg_glfunc_list.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\qg\qg_stub.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\qg\qg_glsupp.h">
+      <Filter>헤더 파일\qg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\qg_glbase.h">
+      <Filter>헤더 파일\qg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\qg_glfunc.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
   </ItemGroup>
@@ -216,6 +222,15 @@
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qg\qges2_shd.c">
+      <Filter>소스 파일\qg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qggl_shd.c">
+      <Filter>소스 파일\qg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qggl_func.c">
+      <Filter>소스 파일\qg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qggl_base.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
   </ItemGroup>

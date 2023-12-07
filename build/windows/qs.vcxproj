@@ -179,7 +179,9 @@
     <ClInclude Include="..\..\inc\qs_math.h" />
     <ClInclude Include="..\..\src\pch.h" />
     <ClInclude Include="..\..\src\qg\qg_es2.h" />
-    <ClInclude Include="..\..\src\qg\qg_es2func.h" />
+    <ClInclude Include="..\..\src\qg\qg_glfunc_list.h" />
+    <ClInclude Include="..\..\src\qg\qg_glfunc.h" />
+    <ClInclude Include="..\..\src\qg\qg_glbase.h" />
     <ClInclude Include="..\..\src\qg\qg_glsupp.h" />
     <ClInclude Include="..\..\src\qg\qg_stub.h" />
     <ClInclude Include="..\..\src\qn\qn_mem.h" />
@@ -206,6 +208,9 @@
     <ClCompile Include="..\..\src\qg\qges2_rdh.c" />
     <ClCompile Include="..\..\src\qg\qges2_rdo.c" />
     <ClCompile Include="..\..\src\qg\qges2_shd.c" />
+    <ClCompile Include="..\..\src\qg\qggl_base.c" />
+    <ClCompile Include="..\..\src\qg\qggl_func.c" />
+    <ClCompile Include="..\..\src\qg\qggl_shd.c" />
     <ClCompile Include="..\..\src\qg\qgsdl_stub.c" />
     <ClCompile Include="..\..\src\qg\qg_kmc.c" />
     <ClCompile Include="..\..\src\qg\qg_rdh.c" />

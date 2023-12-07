@@ -361,6 +361,7 @@ QSAPI size_t qn_mpfcnt(void);
 QSAPI void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line);
 QSAPI void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line);
 QSAPI void qn_mpffree(void* ptr);
+QSAPI void qn_debug_mpfprint(void);
 
 
 //////////////////////////////////////////////////////////////////////////
