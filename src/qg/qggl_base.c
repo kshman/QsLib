@@ -8,7 +8,6 @@
 //////////////////////////////////////////////////////////////////////////
 // GL 렌더 디바이스
 
-
 // 할당
 void gl_initialize(GlRdhBase* self, SDL_Window* window, SDL_Renderer* renderer, const int flags)
 {
@@ -24,21 +23,19 @@ void gl_initialize(GlRdhBase* self, SDL_Window* window, SDL_Renderer* renderer, 
 	qn_strncpy(caps->name, QN_COUNTOF(caps->name), info.name, QN_COUNTOF(caps->name) - 1);
 	gl_copy_string(caps->renderer, QN_COUNTOF(caps->renderer), GL_RENDERER);
 	gl_copy_string(caps->vendor, QN_COUNTOF(caps->vendor), GL_VENDOR);
-	// 버텍스 세이더 버전
-	// 프래그먼트 세이더 버전
+	// caps->renderer_version 렌더러 버전 => 각자
+	// caps->shader_version 세이더 버전 => 각자
 
 	caps->max_vertex_attrs = gl_get_integer_v(GL_MAX_VERTEX_ATTRIBS);
 	caps->max_tex_dim = info.max_texture_width;
 	caps->max_tex_count = gl_get_integer_v(GL_MAX_TEXTURE_IMAGE_UNITS);
-	caps->max_off_count = gl_get_integer_v(GL_MAX_RENDERBUFFER_SIZE);
+	//caps->max_off_count 최대 FBO => 각자
 	caps->tex_image_flag = /*임시*/0;
 
 	const SDL_Surface* surface = SDL_GetWindowSurface(window);
 	caps->clrfmt = surface->format->BitsPerPixel == 16 ?
 		surface->format->Amask != 0 ? QGCF16_RGBA : QGCF16_RGB :
 		surface->format->Amask != 0 ? QGCF32_RGBA : QGCF32_RGB;
-
-	self->ss.scissor = false;
 
 	// 세이더 자동 유니폼
 	gl_shd_init_auto_uniforms();
@@ -67,22 +64,60 @@ void gl_reset(QgRdh* rdh)
 {
 	rdh_internal_reset(rdh);
 
+	GlRdhBase* self = qm_cast(rdh, GlRdhBase);
+	QgDeviceInfo* caps = &rdh_caps(self);
 	QgRenderTm* tm = &rdh->tm;
 
-	//
+	//----- 펜딩
+
+	//----- 세션
+	GlSession * ss = &self->ss;
+	// 프로그램
+	ss->program = GL_INVALID_HANDLE;
+	// 레이아웃
+	ss->layout.mask = 0;
+	memset(ss->layout.props, 0, sizeof(GlLayoutProp) * caps->max_vertex_attrs);
+	// 버퍼
+	ss->buf.array = GL_INVALID_HANDLE;
+	ss->buf.element_array = GL_INVALID_HANDLE;
+	ss->buf.pixel_unpack = GL_INVALID_HANDLE;
+	// 뎁스 스텐실
+	GlDepthStencilProp* dsm = &ss->dsm_prop;
+	dsm->depth.enable = GL_TRUE;
+	dsm->depth.write = GL_TRUE;
+	dsm->depth.func = GL_LEQUAL;
+	dsm->stencil.enable = GL_FALSE;
+	dsm->stencil.two_side = GL_FALSE;
+	dsm->stencil.front.func = GL_INVALID_ENUM;
+	dsm->stencil.front.fail = GL_INVALID_ENUM;
+	dsm->stencil.front.pass = GL_INVALID_ENUM;
+	dsm->stencil.front.z_fail = GL_INVALID_ENUM;
+	dsm->stencil.back.func = GL_INVALID_ENUM;
+	dsm->stencil.back.fail = GL_INVALID_ENUM;
+	dsm->stencil.back.pass = GL_INVALID_ENUM;
+	dsm->stencil.back.z_fail = GL_INVALID_ENUM;
+	dsm->stencil.mask.read = 0xFF;
+	dsm->stencil.mask.write = 0xFF;
+	// 가위질
+	ss->scissor = false;
+	qn_rect_set(&ss->sci_rect, 0, 0, tm->size.width, tm->size.height);
+
+	//----- TM
 	qn_mat4_ortho_lh(&tm->ortho, (float)tm->size.width, (float)tm->size.height, -1.0f, 1.0f);
 	qn_mat4_loc(&tm->ortho, -1.0f, 1.0f, 0.0f, false);
 	gl_mat4_irrcht_texture(&tm->frm, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -1.0f);
 
-	//
+	//----- 진짜 넣기
 	GL_FUNC(glPixelStorei)(GL_PACK_ALIGNMENT, 1);
 	GL_FUNC(glPixelStorei)(GL_UNPACK_ALIGNMENT, 1);
 
+	// 뎁스 스텐실
 	GL_FUNC(glEnable)(GL_DEPTH_TEST);
 	GL_FUNC(glDepthMask)(GL_TRUE);
 	GL_FUNC(glDepthFunc)(GL_LEQUAL);
-	GL_FUNC(glDisable)(GL_DEPTH_TEST);
+	GL_FUNC(glDisable)(GL_STENCIL_TEST);
 
+	// 래스터라이즈
 	GL_FUNC(glEnable)(GL_CULL_FACE);
 	GL_FUNC(glCullFace)(GL_BACK);
 
@@ -91,6 +126,7 @@ void gl_reset(QgRdh* rdh)
 	// 블렌드 상태 리셋은 각자 알아서
 	// 텍스쳐 상태도 각자 알아서
 
+	// 가위질
 	GL_FUNC(glDisable)(GL_SCISSOR_TEST);
 	GL_FUNC(glFrontFace)(GL_CW);
 }
@@ -98,7 +134,7 @@ void gl_reset(QgRdh* rdh)
 // 시작
 bool gl_begin(QgRdh* rdh, bool clear)
 {
-	//Es2Rdh* self = qm_cast(rdh, Es2Rdh);
+	//GlRdhBase* self = qm_cast(rdh, GlRdhBase);
 	if (clear)
 		gl_clear(rdh, QGCLR_DEPTH | QGCLR_STENCIL | QGCLR_RENDER, &rdh->param.bgc, 0, 1.0f);
 	return true;
@@ -248,10 +284,59 @@ bool gl_set_vertex(QgRdh* rdh, QgLoStage stage, QgBuf* buffer)
 	return true;
 }
 
+// 뎁스 스텐셀 설정
+bool gl_set_depth_stencil(QgRdh* rdh, QgDsm* depth_stencil)
+{
+	GlRdhBase* self = qm_cast(rdh, GlRdhBase);
+	GlDsm* dsm = qm_cast(depth_stencil, GlDsm);
+
+	if (dsm != NULL)
+	{
+		self->pd.dsm_prop = dsm->prop;
+		return true;
+	}
+
+	// 뎁스 스텐실의 기본값
+	static GlDepthStencilProp s_depth_stencil =
+	{
+		GL_TRUE, GL_TRUE, GL_LEQUAL,
+		false, false,
+		GL_ALWAYS, GL_KEEP, GL_KEEP, GL_KEEP,
+		GL_ALWAYS, GL_KEEP, GL_KEEP, GL_KEEP,
+		0xFF, 0xFF,
+	};
+	self->pd.dsm_prop = s_depth_stencil;
+	return false;
+}
+
+// 래스터라이저 설정
+bool gl_set_rasterizer(QgRdh* rdh, QgRsz* rasterizer)
+{
+	GlRdhBase* self = qm_cast(rdh, GlRdhBase);
+	GlRsz* rsz = qm_cast(rasterizer, GlRsz);
+
+	if (rsz != NULL)
+	{
+		self->pd.rsz_prop = rsz->prop;
+		return true;
+	}
+
+	// 래스터라이저의 기본값
+	static GlRasterizeProp s_rasterizer =
+	{
+		0,
+		GL_BACK,
+		0.0f,
+		0.0f,
+	};
+	self->pd.rsz_prop = s_rasterizer;
+	return false;
+}
+
 // 레이아웃 만들기
 QgVlo* gl_create_layout(QgRdh* rdh, int count, const QgPropLayout* layouts)
 {
-	//Es2Rdh* self = qm_cast(rdh, Es2Rdh);
+	//GlRdhBase* self = qm_cast(rdh, GlRdhBase);
 	GlVlo* vlo = gl_vlo_allocator(rdh, count, layouts);
 	// 해야함: 관리
 	return qm_cast(vlo, QgVlo);
@@ -260,7 +345,7 @@ QgVlo* gl_create_layout(QgRdh* rdh, int count, const QgPropLayout* layouts)
 // 세이더 만들기
 QgShd* gl_create_shader(QgRdh* rdh, const char* name)
 {
-	//Es2Rdh* self = qm_cast(rdh, Es2Rdh);
+	//GlRdhBase* self = qm_cast(rdh, GlRdhBase);
 	GlShd* shd = gl_shd_allocator(rdh, name);
 	// 해야함: 관리
 	return qm_cast(shd, QgShd);
@@ -269,10 +354,28 @@ QgShd* gl_create_shader(QgRdh* rdh, const char* name)
 // 버퍼 만들기
 QgBuf* gl_create_buffer(QgRdh* rdh, QgBufType type, int count, int stride, const void* data)
 {
-	//Es2Rdh* self = qm_cast(rdh, Es2Rdh);
+	//GlRdhBase* self = qm_cast(rdh, GlRdhBase);
 	GlBuf* buf = gl_buf_allocator(rdh, type, count, stride, data);
 	// 해야함: 관리
 	return qm_cast(buf, QgBuf);
+}
+
+// 뎁스 스텐실 만들기
+QgDsm* gl_create_depth_stencil(QgRdh* rdh, const QgPropDepthStencil* prop)
+{
+	//GlRdhBase* self = qm_cast(rdh, GlRdhBase);
+	GlDsm* dsm = gl_dsm_allocator(rdh, prop);
+	// 해야함: 관리
+	return qm_cast(dsm, QgDsm);
+}
+
+// 래스터라이저 만들기
+QgRsz* gl_create_rasterizer(QgRdh* rdh, const QgPropRasterizer* prop)
+{
+	//GlRdhBase* self = qm_cast(rdh, GlRdhBase);
+	GlRsz* rsz = gl_rsz_allocator(rdh, prop);
+	// 해야함: 관리
+	return qm_cast(rsz, QgRsz);
 }
 
 // 토폴로지 변환
@@ -300,6 +403,7 @@ bool gl_draw(QgRdh* rdh, QgTopology tpg, int vcount)
 
 	gl_commit_shader(self);
 	gl_commit_layout(self);
+	gl_commit_depth_stencil(self);
 
 	const GLenum gl_tpg = gl_conv_topology(tpg);
 	GL_FUNC(glDrawArrays)(gl_tpg, 0, (GLsizei)vcount);
@@ -321,6 +425,7 @@ bool gl_draw_indexed(QgRdh* rdh, QgTopology tpg, int icount)
 
 	gl_commit_shader(self);
 	gl_commit_layout(self);
+	gl_commit_depth_stencil(self);
 
 	const GLenum gl_tpg = gl_conv_topology(tpg);
 	GL_FUNC(glDrawElements)(gl_tpg, (GLint)icount, gl_index, NULL);
@@ -336,6 +441,7 @@ bool gl_ptr_draw(QgRdh* rdh, QgTopology tpg, int vcount, int vstride, const void
 
 	gl_commit_shader(self);
 	gl_commit_layout_ptr(self, vdata, vstride);
+	gl_commit_depth_stencil(self);
 
 	const GLenum gl_tpg = gl_conv_topology(tpg);
 	GL_FUNC(glDrawArrays)(gl_tpg, 0, (GLsizei)vcount);
@@ -356,6 +462,7 @@ bool gl_ptr_draw_indexed(QgRdh* rdh, QgTopology tpg, int vcount, int vstride, co
 
 	gl_commit_shader(self);
 	gl_commit_layout_ptr(self, vdata, vstride);
+	gl_commit_depth_stencil(self);
 
 	const GLenum gl_tpg = gl_conv_topology(tpg);
 	GL_FUNC(glDrawElements)(gl_tpg, (GLint)icount, gl_index, idata);
@@ -368,24 +475,24 @@ void gl_bind_buffer(GlRdhBase* self, GLenum gl_type, GLuint gl_id)
 	switch (gl_type)
 	{
 		case GL_ARRAY_BUFFER:
-			if (self->ss.buf_array != gl_id)
+			if (self->ss.buf.array != gl_id)
 			{
+				self->ss.buf.array = gl_id;
 				GL_FUNC(glBindBuffer)(GL_ARRAY_BUFFER, gl_id);
-				self->ss.buf_array = gl_id;
 			}
 			break;
 		case GL_ELEMENT_ARRAY_BUFFER:
-			if (self->ss.buf_element_array != gl_id)
+			if (self->ss.buf.element_array != gl_id)
 			{
+				self->ss.buf.element_array = gl_id;
 				GL_FUNC(glBindBuffer)(GL_ELEMENT_ARRAY_BUFFER, gl_id);
-				self->ss.buf_element_array = gl_id;
 			}
 			break;
 		case GL_PIXEL_UNPACK_BUFFER_NV:
-			if (self->ss.buf_pixel_unpack != gl_id)
+			if (self->ss.buf.pixel_unpack != gl_id)
 			{
+				self->ss.buf.pixel_unpack = gl_id;
 				GL_FUNC(glBindBuffer)(GL_PIXEL_UNPACK_BUFFER_NV, gl_id);
-				self->ss.buf_pixel_unpack = gl_id;
 			}
 			break;
 		default:
@@ -442,7 +549,7 @@ void gl_commit_layout(GlRdhBase* self)
 
 				const GLint gl_attr = qn_ctnr_nth(shd_attrs, index).attrib;
 				ok |= QN_BIT(gl_attr);
-				GlLayoutProperty* lp = &self->ss.layout.props[gl_attr];
+				GlLayoutProp* lp = &self->ss.layout.props[gl_attr];
 				const nuint pointer = (nuint)le->offset;
 				if (QN_TEST_BIT(self->ss.layout.mask, gl_attr) == false)
 				{
@@ -467,11 +574,11 @@ void gl_commit_layout(GlRdhBase* self)
 					lp->size = le->size;
 					lp->format = le->format;
 					lp->normalized = le->normalized;
-			}
+				}
 
 				index++;
+			}
 		}
-	}
 		else
 		{
 			// 버퍼 엄네
@@ -506,7 +613,7 @@ void gl_commit_layout(GlRdhBase* self)
 				index++;
 			}
 		}
-}
+	}
 
 	// 정리
 	uint aftermask = self->ss.layout.mask & ~ok;
@@ -563,7 +670,7 @@ void gl_commit_layout_ptr(GlRdhBase* self, const void* buffer, GLsizei gl_stride
 
 		const GLint gl_attr = qn_ctnr_nth(shd_attrs, index).attrib;
 		ok |= QN_BIT(gl_attr);
-		GlLayoutProperty* lp = &self->ss.layout.props[gl_attr];
+		GlLayoutProp* lp = &self->ss.layout.props[gl_attr];
 		const nuint pointer = (nuint)((const byte*)buffer + le->offset);
 		if (QN_TEST_BIT(self->ss.layout.mask, gl_attr) == false)
 		{
@@ -588,10 +695,10 @@ void gl_commit_layout_ptr(GlRdhBase* self, const void* buffer, GLsizei gl_stride
 			lp->size = le->size;
 			lp->format = le->format;
 			lp->normalized = le->normalized;
-	}
+		}
 
 		index++;
-}
+	}
 
 	// 정리
 	uint aftermask = self->ss.layout.mask & ~ok;
@@ -631,3 +738,119 @@ void gl_commit_shader(GlRdhBase* self)
 	// 세이더 값 여기서 넣는다!!!
 	gl_shd_process_uniforms(shd);
 }
+
+//
+void gl_commit_depth_stencil(GlRdhBase* self)
+{
+	const GlDepthStencilProp* pd = &self->pd.dsm_prop;
+	GlDepthStencilProp* ss = &self->ss.dsm_prop;
+
+	// 뎁스
+	if (ss->depth.enable != pd->depth.enable)
+	{
+		if (pd->depth.enable)
+		{
+			ss->depth.enable = true;
+			GL_FUNC(glEnable)(GL_DEPTH_TEST);
+
+			if (ss->depth.func != pd->depth.func)
+			{
+				ss->depth.func = pd->depth.func;
+				GL_FUNC(glDepthFunc)(pd->depth.func);
+			}
+		}
+		else
+		{
+			ss->depth.enable = false;
+			GL_FUNC(glDisable)(GL_DEPTH_TEST);
+		}
+	}
+	if (ss->depth.write != pd->depth.write)
+	{
+		ss->depth.write = pd->depth.write;
+		GL_FUNC(glDepthMask)(pd->depth.write);
+	}
+
+	// 스텐실
+	if (ss->stencil.enable != pd->stencil.enable)
+	{
+		ss->stencil.enable = pd->stencil.enable;
+		if (ss->stencil.two_side != pd->stencil.two_side)
+		{
+			ss->stencil.two_side = pd->stencil.two_side;
+			ss->stencil.front.func = GL_INVALID_ENUM;
+			ss->stencil.front.fail = GL_INVALID_ENUM;
+			ss->stencil.front.pass = GL_INVALID_ENUM;
+			ss->stencil.front.z_fail = GL_INVALID_ENUM;
+			ss->stencil.back.func = GL_INVALID_ENUM;
+			ss->stencil.back.fail = GL_INVALID_ENUM;
+			ss->stencil.back.pass = GL_INVALID_ENUM;
+			ss->stencil.back.z_fail = GL_INVALID_ENUM;
+		}
+
+		if (pd->stencil.enable == false)
+			GL_FUNC(glDisable)(GL_STENCIL_TEST);
+		else
+		{
+			if (pd->stencil.two_side) // 양면
+			{
+				// 앞변
+				const struct GlStencilValue* pf = &pd->stencil.front;
+				struct GlStencilValue* sf = &ss->stencil.front;
+				if (sf->func != pf->func || ss->stencil.mask.read != pd->stencil.mask.read)
+				{
+					ss->stencil.front.func = pd->stencil.front.func;
+					GL_FUNC(glStencilFuncSeparate)(GL_BACK, pf->func, 0, pd->stencil.mask.read);
+				}
+				if (sf->pass != pf->pass || sf->fail != pf->fail || sf->z_fail != pf->z_fail)
+				{
+					sf->pass = pf->pass;
+					sf->fail = pf->fail;
+					sf->z_fail = pf->z_fail;
+					GL_FUNC(glStencilOpSeparate)(GL_BACK, pf->fail, pf->z_fail, pf->pass);
+				}
+
+				// 뒷면
+				const struct GlStencilValue* pb = &pd->stencil.back;
+				struct GlStencilValue* sb = &ss->stencil.back;
+				if (sb->func != pb->func || ss->stencil.mask.read != pd->stencil.mask.read)
+				{
+					ss->stencil.front.func = pd->stencil.front.func;
+					GL_FUNC(glStencilFuncSeparate)(GL_FRONT, pb->func, 0, pd->stencil.mask.read);
+				}
+				if (sb->pass != pb->pass || sb->fail != pb->fail || sb->z_fail != pb->z_fail)
+				{
+					sb->pass = pb->pass;
+					sb->fail = pb->fail;
+					sb->z_fail = pb->z_fail;
+					GL_FUNC(glStencilOpSeparate)(GL_FRONT, pb->fail, pb->z_fail, pb->pass);
+				}
+			}
+			else // 단면
+			{
+				const struct GlStencilValue* pf = &pd->stencil.front;
+				struct GlStencilValue* sf = &ss->stencil.front;
+				if (sf->func != pf->func || ss->stencil.mask.read != pd->stencil.mask.read)
+				{
+					ss->stencil.front.func = pd->stencil.front.func;
+					GL_FUNC(glStencilFunc)(pf->func, 0, pd->stencil.mask.read);
+				}
+				if (sf->pass != pf->pass || sf->fail != pf->fail || sf->z_fail != pf->z_fail)
+				{
+					sf->pass = pf->pass;
+					sf->fail = pf->fail;
+					sf->z_fail = pf->z_fail;
+					GL_FUNC(glStencilOp)(pf->fail, pf->z_fail, pf->pass);
+				}
+			}
+			if (ss->stencil.mask.write != pd->stencil.mask.write)
+			{
+				ss->stencil.mask.write = pd->stencil.mask.write;
+				GL_FUNC(glStencilMask)(pd->stencil.mask.write);
+			}
+
+			ss->stencil.mask.read = pd->stencil.mask.read;
+		}
+	}
+}
+

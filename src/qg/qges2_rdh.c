@@ -28,10 +28,14 @@ qvt_name(QgRdh) vt_es2_rdh =
 	.create_layout = gl_create_layout,
 	.create_shader = gl_create_shader,
 	.create_buffer = gl_create_buffer,
+	.create_depth_stencil = gl_create_depth_stencil,
+	.create_rasterizer = gl_create_rasterizer,
 
 	.set_shader = gl_set_shader,
 	.set_index = gl_set_index,
 	.set_vertex = gl_set_vertex,
+	.set_depth_stencil = gl_set_depth_stencil,
+	.set_rasterizer = gl_set_rasterizer,
 
 	.draw = gl_draw,
 	.draw_indexed = gl_draw_indexed,
@@ -113,6 +117,7 @@ QgRdh* es2_allocator(void* oshandle, const int flags)
 	QgDeviceInfo* caps = &rdh_caps(self);
 	caps->renderer_version = gl_get_version(GL_VERSION, "OPENGLES", "OPENGL ES");
 	caps->shader_version = gl_get_version(GL_SHADING_LANGUAGE_VERSION, "OPENGL ES GLSL ES ", "OPENGL ES GLSL ");
+	caps->max_off_count = 1;
 
 	if (caps->max_vertex_attrs > QGMAX_ES2_VERTEX_ATTRIBUTE)
 		caps->max_vertex_attrs = QGMAX_ES2_VERTEX_ATTRIBUTE;
@@ -120,8 +125,9 @@ QgRdh* es2_allocator(void* oshandle, const int flags)
 	// session
 	GlSession* ss = &self->base.ss;
 	ss->layout.count = caps->max_vertex_attrs;
-	ss->layout.props = qn_alloc_zero(caps->max_vertex_attrs, GlLayoutProperty);	
+	ss->layout.props = qn_alloc_zero(caps->max_vertex_attrs, GlLayoutProp);
 
+	es2_reset(qm_cast(self, QgRdh));
 	return qm_init(self, QgRdh, &vt_es2_rdh);
 }
 

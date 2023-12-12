@@ -114,14 +114,7 @@ static int qn_dbg_out_trace(const char* head, const char* text)
 	return (int)len;
 }
 
-/**
- * @brief 오류처리용 assert
- * @param	expr		표현
- * @param	mesg		오류 내용
- * @param	filename	파일의 파일 이름
- * @param	line		파일의 줄 번호
- * @return	int
- */
+///
 int qn_debug_assert(const char* expr, const char* mesg, const char* filename, int line)
 {
 	qn_retval_if_fail(expr, -1);
@@ -136,37 +129,38 @@ int qn_debug_assert(const char* expr, const char* mesg, const char* filename, in
 	qn_dbg_out_str(buf);
 	qn_freea(buf);
 
+#ifndef __EMSCRIPTEN__
 	if (_qn_dbg.debugger) debug_break();
+#endif
 
 	return 0;
 }
 
-/**
- * @brief HALT 메시지
- * @param	cls	클래스 이름
- * @param	msg	출력할 메시지
- */
+//
 #if _MSC_VER
 __declspec(noreturn)
 #endif
-void qn_debug_halt(const char* cls, const char* msg)
+void qn_debug_halt(const char* head, const char* mesg)
 {
-	if (!cls)
-		cls = "unknown";
-	if (!msg)
-		msg = "";
+	if (!head)
+		head = "unknown";
+	if (!mesg)
+		mesg = "";
 
 	const char* fmt = "HALT [%s] %s\n";
-	const size_t len = qn_snprintf(NULL, 0, fmt, cls, msg);
+	const size_t len = qn_snprintf(NULL, 0, fmt, head, mesg);
 	char* buf = qn_alloca(len + 1, char);
-	qn_snprintf(buf, len + 1, fmt, cls, msg);
+	qn_snprintf(buf, len + 1, fmt, head, mesg);
 	qn_dbg_out_str(buf);
 	qn_freea(buf);
 
+#ifndef __EMSCRIPTEN__
 	if (_qn_dbg.debugger) debug_break();
 	abort();
+#endif
 }
 
+//
 int qn_debug_outputs(bool breakpoint, const char* head, const char* mesg)
 {
 	const int len = qn_dbg_out_trace(head, mesg);
@@ -178,6 +172,7 @@ int qn_debug_outputs(bool breakpoint, const char* head, const char* mesg)
 	return len;
 }
 
+//
 int qn_debug_outputf(bool breakpoint, const char* head, const char* fmt, ...)
 {
 	va_list va, vq;
@@ -192,12 +187,15 @@ int qn_debug_outputf(bool breakpoint, const char* head, const char* fmt, ...)
 	qn_freea(buf);
 	qn_dbg_out_ch('\n');
 
+#ifndef __EMSCRIPTEN__
 	if (breakpoint && _qn_dbg.debugger)
 		debug_break();
+#endif
 
 	return (int)size;
 }
 
+//
 int qn_outputs(const char* mesg)
 {
 	const int len = qn_dbg_out_str(mesg);
@@ -205,6 +203,7 @@ int qn_outputs(const char* mesg)
 	return len;
 }
 
+//
 int qn_outputf(const char* fmt, ...)
 {
 	va_list va, vq;

@@ -144,8 +144,8 @@ char* qn_memdmp(const void* ptr, size_t size, char* outbuf, size_t buflen)
 
 static struct QnMemProof
 {
-	memBlock* frst;
-	memBlock* last;
+	memBlock*		frst;
+	memBlock*		last;
 	size_t			index;
 	size_t			count;
 	size_t			block_size;
@@ -190,6 +190,7 @@ static void qn_mp_clear(void)
 	size_t sum = 0;
 	for (memBlock* next = NULL, *node = _qn_mp.frst; node; node = next)
 	{
+#ifndef __EMSCRIPTEN__
 		if (node->line)
 			qn_debug_outputf(false, "Memory Profiler", "\t%s(%Lu) : %Lu(%Lu) : 0x%p", node->desc, node->line, node->size, node->block, _memptr(node));
 		else
@@ -197,6 +198,7 @@ static void qn_mp_clear(void)
 		char sz[64];
 		qn_memdmp(_memptr(node), QN_MIN(32, node->size), sz, 64 - 1);
 		qn_debug_outputf(false, "Memory Profiler", "\t\t{%s}", sz);
+#endif
 		next = node->next;
 		sum += node->block;
 

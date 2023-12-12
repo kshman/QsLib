@@ -6,7 +6,7 @@
 
 extern size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args);
 
-/** @brief vsnprintf */
+//
 int qn_vsnprintf(char* out, size_t len, const char* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, -1);
@@ -18,7 +18,7 @@ int qn_vsnprintf(char* out, size_t len, const char* fmt, va_list va)
 	return out ? (int)QN_MIN(res, len) : (int)res;
 }
 
-/** @brief vaprintf */
+//
 int qn_vasprintf(char** out, const char* fmt, va_list va)
 {
 	qn_retval_if_fail(out != NULL, -2);
@@ -39,7 +39,7 @@ int qn_vasprintf(char** out, const char* fmt, va_list va)
 	return (int)len;
 }
 
-/** @brief vaprintf */
+//
 char* qn_vapsprintf(const char* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, NULL);
@@ -57,7 +57,7 @@ char* qn_vapsprintf(const char* fmt, va_list va)
 	return ret;
 }
 
-/** @brief snprintf */
+//
 int qn_snprintf(char* out, size_t len, const char* fmt, ...)
 {
 	va_list va;
@@ -68,7 +68,7 @@ int qn_snprintf(char* out, size_t len, const char* fmt, ...)
 	return ret;
 }
 
-/** @brief asprintf */
+//
 int qn_asprintf(char** out, const char* fmt, ...)
 {
 	va_list va;
@@ -79,7 +79,7 @@ int qn_asprintf(char** out, const char* fmt, ...)
 	return ret;
 }
 
-/** @brief asprintf */
+//
 char* qn_apsprintf(const char* fmt, ...)
 {
 	va_list va;
@@ -90,7 +90,7 @@ char* qn_apsprintf(const char* fmt, ...)
 	return ret;
 }
 
-/** @brief 글자로 채우기 */
+//
 size_t qn_strfll(char* dest, size_t pos, size_t end, int ch)
 {
 	if (pos >= end)
@@ -101,7 +101,7 @@ size_t qn_strfll(char* dest, size_t pos, size_t end, int ch)
 	return pos + cnt;
 }
 
-/** @brief 문자열 해시 */
+//
 size_t qn_strhash(const char* p)
 {
 	const char* sz = p;
@@ -118,7 +118,7 @@ size_t qn_strhash(const char* p)
 	}
 }
 
-/** @brief 문자열 해시 (대소문자구별안함) */
+//
 size_t qn_strihash(const char* p)
 {
 	const char* sz = p;
@@ -136,7 +136,7 @@ size_t qn_strihash(const char* p)
 	}
 }
 
-/** @brief strbrk */
+//
 const char* qn_strbrk(const char* p, const char* c)
 {
 #if 1
@@ -174,7 +174,7 @@ const char* qn_strbrk(const char* p, const char* c)
 #endif
 }
 
-/** @brief strmid */
+//
 char* qn_strmid(char* dest, size_t destsize, const char* src, size_t pos, size_t len)
 {
 	const size_t size = strlen(src);
@@ -190,7 +190,7 @@ char* qn_strmid(char* dest, size_t destsize, const char* src, size_t pos, size_t
 	return dest;
 }
 
-/** @brief strltrim */
+//
 char* qn_strltm(char* dest)
 {
 	char* s;
@@ -200,7 +200,7 @@ char* qn_strltm(char* dest)
 	return dest;
 }
 
-/** @brief strrtrim */
+//
 char* qn_strrtm(char* dest)
 {
 	size_t len = strlen(dest);
@@ -213,13 +213,13 @@ char* qn_strrtm(char* dest)
 	return dest;
 }
 
-/** @brief strtrim */
+//
 char* qn_strtrm(char* dest)
 {
 	return qn_strrtm(qn_strltm(dest));
 }
 
-/** @brief strrem */
+//
 char* qn_strrem(char* p, const char* rmlist)
 {
 	const char* p1 = p;
@@ -254,7 +254,7 @@ char* qn_strrem(char* p, const char* rmlist)
 	return p;
 }
 
-/** @brief 복사하고 끝 부분 반환 */
+//
 char* qn_strpcpy(char* dest, const char* src)
 {
 	do (*dest++ = *src);
@@ -262,7 +262,7 @@ char* qn_strpcpy(char* dest, const char* src)
 	return dest - 1;
 }
 
-/** @brief 여러 문자열의 strdup */
+//
 char* qn_strcat(const char* p, ...)
 {
 	va_list va, vq;
@@ -291,11 +291,7 @@ char* qn_strcat(const char* p, ...)
 	return str;
 }
 
-/**
- * @brief 문자열에서 와일드 카드 찾기.
- * Written by Jack Handy - jakkhandy@hotmail.com
- * (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
- */
+//
 int qn_strwcm(const char* string, const char* wild)
 {
 	const char *cp = NULL, *mp = NULL;
@@ -335,11 +331,7 @@ int qn_strwcm(const char* string, const char* wild)
 	return !*wild;
 }
 
-/**
- * @brief 문자열에서 와일드 카드 찾기.
- * Written by Jack Handy - jakkhandy@hotmail.com
- * (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
- */
+//
 int qn_striwcm(const char* string, const char* wild)
 {
 	const char *cp = NULL, *mp = NULL;
@@ -379,7 +371,7 @@ int qn_striwcm(const char* string, const char* wild)
 	return !*wild;
 }
 
-/** @brief strfind */
+//
 int qn_strfnd(const char* src, const char* find, size_t index)
 {
 	const char* p = src + index;
@@ -486,7 +478,7 @@ int qn_strnicmp(const char* p1, const char* p2, size_t len)
 
 extern size_t doprw(wchar* buffer, size_t maxlen, const wchar* format, va_list args);
 
-/** @brief vsnwprintf */
+//
 int qn_vsnwprintf(wchar* out, size_t len, const wchar* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, -1);
@@ -498,7 +490,7 @@ int qn_vsnwprintf(wchar* out, size_t len, const wchar* fmt, va_list va)
 	return out ? (int)QN_MIN(res, len) : (int)res;
 }
 
-/** @brief vaswprintf */
+//
 int qn_vaswprintf(wchar** out, const wchar* fmt, va_list va)
 {
 	qn_retval_if_fail(out != NULL, -2);
@@ -516,7 +508,7 @@ int qn_vaswprintf(wchar** out, const wchar* fmt, va_list va)
 	return (int)len;
 }
 
-/** @brief vaspwprintf */
+//
 wchar* qn_vapswprintf(const wchar* fmt, va_list va)
 {
 	qn_retval_if_fail(fmt != NULL, NULL);
@@ -531,7 +523,7 @@ wchar* qn_vapswprintf(const wchar* fmt, va_list va)
 	return ret;
 }
 
-/** @brief snwprintf */
+//
 int qn_snwprintf(wchar* out, size_t len, const wchar* fmt, ...)
 {
 	va_list va;
@@ -543,7 +535,7 @@ int qn_snwprintf(wchar* out, size_t len, const wchar* fmt, ...)
 	return ret;
 }
 
-/** @brief aswprintf */
+//
 int qn_aswprintf(wchar** out, const wchar* fmt, ...)
 {
 	va_list va;
@@ -555,7 +547,7 @@ int qn_aswprintf(wchar** out, const wchar* fmt, ...)
 	return ret;
 }
 
-/** @brief aspwprintf */
+//
 wchar* qn_apswprintf(const wchar* fmt, ...)
 {
 	va_list va;
@@ -567,7 +559,7 @@ wchar* qn_apswprintf(const wchar* fmt, ...)
 	return ret;
 }
 
-/** @brief 빈칸으로 채우기 */
+//
 size_t qn_wcsfll(wchar* dest, size_t pos, size_t end, int ch)
 {
 	if (pos >= end)
@@ -578,7 +570,7 @@ size_t qn_wcsfll(wchar* dest, size_t pos, size_t end, int ch)
 	return pos + cnt;
 }
 
-/** @brief 문자열 해시 */
+//
 size_t qn_wcshash(const wchar* p)
 {
 	const wchar* sz = p;
@@ -595,7 +587,7 @@ size_t qn_wcshash(const wchar* p)
 	}
 }
 
-/** @brief 문자열 해시 (대소문자구별안함) */
+//
 size_t qn_wcsihash(const wchar* p)
 {
 	const wchar* sz = p;
@@ -613,7 +605,7 @@ size_t qn_wcsihash(const wchar* p)
 	}
 }
 
-/** @brief wcsbrk */
+//
 const wchar* qn_wcsbrk(const wchar* p, const wchar* c)
 {
 	while (*p)
@@ -628,7 +620,7 @@ const wchar* qn_wcsbrk(const wchar* p, const wchar* c)
 	return NULL;
 }
 
-/** @brief wcsmid */
+//
 wchar* qn_wcsmid(wchar* dest, size_t destsize, const wchar* src, size_t pos, size_t len)
 {
 	const size_t size = wcslen(src);
@@ -644,7 +636,7 @@ wchar* qn_wcsmid(wchar* dest, size_t destsize, const wchar* src, size_t pos, siz
 	return dest;
 }
 
-/** @brief wcsltrim */
+//
 wchar* qn_wcsltm(wchar* dest)
 {
 	wchar* s;
@@ -654,7 +646,7 @@ wchar* qn_wcsltm(wchar* dest)
 	return dest;
 }
 
-/** @brief wcsrtrim */
+//
 wchar* qn_wcsrtm(wchar* dest)
 {
 	size_t len = wcslen(dest);
@@ -667,13 +659,13 @@ wchar* qn_wcsrtm(wchar* dest)
 	return dest;
 }
 
-/** @brief wcstrim */
+//
 wchar* qn_wcstrm(wchar* dest)
 {
 	return qn_wcsrtm(qn_wcsltm(dest));
 }
 
-/** @brief wcsrem */
+//
 wchar* qn_wcsrem(wchar* p, const wchar* rmlist)
 {
 	const wchar* p1 = p;
@@ -708,7 +700,7 @@ wchar* qn_wcsrem(wchar* p, const wchar* rmlist)
 	return p;
 }
 
-/** @brief wcspcpy */
+//
 wchar* qn_wcspcpy(wchar* dest, const wchar* src)
 {
 	do (*dest++ = *src);
@@ -716,7 +708,7 @@ wchar* qn_wcspcpy(wchar* dest, const wchar* src)
 	return dest - 1;
 }
 
-/** @brief 여러 문자열의 strdup */
+//
 wchar* qn_wcscat(const wchar* p, ...)
 {
 	va_list va, vq;
@@ -745,11 +737,7 @@ wchar* qn_wcscat(const wchar* p, ...)
 	return str;
 }
 
-/**
- * @brief 문자열에서 와일드 카드 찾기.
- * Written by Jack Handy - jakkhandy@hotmail.com
- * (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
- */
+//
 int qn_wcswcm(const wchar* string, const wchar* wild)
 {
 	const wchar *cp = NULL, *mp = NULL;
@@ -789,11 +777,7 @@ int qn_wcswcm(const wchar* string, const wchar* wild)
 	return !*wild;
 }
 
-/**
- * @brief 문자열에서 와일드 카드 찾기.
- * Written by Jack Handy - jakkhandy@hotmail.com
- * (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
- */
+//
 int qn_wcsiwcm(const wchar* string, const wchar* wild)
 {
 	const wchar *cp = NULL, *mp = NULL;
@@ -833,7 +817,7 @@ int qn_wcsiwcm(const wchar* string, const wchar* wild)
 	return !*wild;
 }
 
-/** @brief wcsfind */
+//
 int qn_wcsfnd(const wchar* src, const wchar* find, size_t index)
 {
 	const wchar* p = src + index;
@@ -930,10 +914,7 @@ int qn_wcsnicmp(const wchar* p1, const wchar* p2, size_t len)
 //////////////////////////////////////////////////////////////////////////
 // 유니코드
 
-/**
- * @brief UTF-8 글자 길이
- * @author cp_strlen_utf8 (http://www.daemonology.net/blog/2008-06-05-faster-utf8-strlen.html)
- */
+//
 size_t qn_u8len(const char* s)
 {
 #define MASK    ((size_t)(-1)/0xFF)
@@ -983,11 +964,7 @@ pos_done:
 #undef MASK
 }
 
-/**
- * @brief UTF-8 문자를 UCS-4 문자로.
- * @param	p	utf8 문자.
- * @return	ucs4 문자.
- */
+//
 uchar4 qn_u8cbn(const char* p)
 {
 	int len, mask;
@@ -1055,7 +1032,7 @@ uchar4 qn_u8cbn(const char* p)
 	}
 }
 
-/** @brief UTF-8 다음 글자 */
+//
 const char* qn_u8nch(const char* s)
 {
 	static const char s_skips[256] =
@@ -1072,12 +1049,7 @@ const char* qn_u8nch(const char* s)
 	return s + s_skips[*(const byte*)s];
 }
 
-/**
- * @brief UCS-4 문자를 UTF-8 문자로
- * @param	c		   	ucs4 문자.
- * @param[out]	out	utf8 문자가 들어갈 배열. 최소 6개 항목의 배열이어야 한다
- * @return	utf8문자를 구성하는 문자열의 길이.
- */
+//
 int qn_u8ucb(uchar4 c, char* out)
 {
 	int first, len;
@@ -1169,14 +1141,7 @@ size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar* inwcs, size_t insi
 #endif
 }
 
-/**
- * @brief utf8 -> ucs4 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
- * @param[out]	dest	(널값이 아니면) 대상 버퍼 (ucs4)
- * @param	destsize		대상 버퍼 크기
- * @param	src				원본 (utf8)
- * @param	srclen			원본 길이. 0으로 지정할 수 있음
- * @return	변환한 길이 또는 변환에 필요한 길이
- */
+//
 size_t qn_u8to32(uchar4* dest, size_t destsize, const char* src, size_t srclen)
 {
 	qn_retval_if_fail(src, 0);
@@ -1208,14 +1173,7 @@ size_t qn_u8to32(uchar4* dest, size_t destsize, const char* src, size_t srclen)
 	}
 }
 
-/**
- * @brief utf8 -> utf16 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
- * @param[out]	dest	(널값이 아니면) 대상 버퍼 (utf16)
- * @param	destsize		대상 버퍼 크기
- * @param	src				원본 (utf8)
- * @param	srclen			원본 길이. 0으로 지정할 수 있음
- * @return	변환한 길이 또는 변환에 필요한 길이
- */
+//
 size_t qn_u8to16(uchar2* dest, size_t destsize, const char* src, size_t srclen)
 {
 	qn_retval_if_fail(src, 0);
@@ -1256,14 +1214,7 @@ size_t qn_u8to16(uchar2* dest, size_t destsize, const char* src, size_t srclen)
 	}
 }
 
-/**
- * @brief ucs4 -> utf8 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
- * @param[out]	dest	(널값이 아니면) 대상 버퍼 (utf8)
- * @param	destsize		대상 버퍼 크기
- * @param	src				원본 (ucs4)
- * @param	srclen_org		원본 길이. 0으로 지정할 수 있음
- * @return	변환한 길이 또는 변환에 필요한 길이
- */
+//
 size_t qn_u32to8(char* dest, size_t destsize, const uchar4* src, size_t srclen_org)
 {
 	qn_retval_if_fail(src, 0);
@@ -1344,14 +1295,7 @@ size_t qn_u32to8(char* dest, size_t destsize, const uchar4* src, size_t srclen_o
 	return size;
 }
 
-/**
- * @brief utf16 -> utf8 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
- * @param[out]	dest	(널값이 아니면) 대상 버퍼 (utf8)
- * @param	destsize		대상 버퍼 크기
- * @param	src				원본 (utf16)
- * @param	srclen			원본 길이. 0으로 지정할 수 있음
- * @return	변환한 길이 또는 변환에 필요한 길이
- */
+//
 size_t qn_u16to8(char* dest, size_t destsize, const uchar2* src, size_t srclen)
 {
 	qn_retval_if_fail(src, 0);
@@ -1513,14 +1457,7 @@ size_t qn_u16to8(char* dest, size_t destsize, const uchar2* src, size_t srclen)
 	return size;
 }
 
-/**
- * @brief utf16 -> ucs4 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
- * @param[out]	dest	(널값이 아니면) 대상 버퍼 (ucs4)
- * @param	destsize		대상 버퍼 크기
- * @param	src				원본 (utf16)
- * @param	srclen			원본 길이. 0으로 지정할 수 있음
- * @return	변환한 길이 또는 변환에 필요한 길이
- */
+//
 size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, size_t srclen)
 {
 	qn_retval_if_fail(src, 0);
@@ -1665,14 +1602,7 @@ size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, size_t srcle
 	return size;
 }
 
-/**
- * @brief utf16 -> ucs4 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
- * @param[out]	dest	(널값이 아니면) 대상 버퍼 (utf16)
- * @param	destsize		대상 버퍼 크기
- * @param	src				원본 (ucs4)
- * @param	srclen_org		원본 길이. 0으로 지정할 수 있음
- * @return	변환한 길이 또는 변환에 필요한 길이
- */
+//
 size_t qn_u32to16(uchar2* dest, size_t destsize, const uchar4* src, size_t srclen_org)
 {
 	qn_retval_if_fail(src, 0);

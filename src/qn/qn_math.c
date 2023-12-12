@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 #include "qs_qn.h"
-#if _M_AMD64  || __amd64__ || __x86_64__ || __i386__
-#include <emmintrin.h>
+#if defined _M_IX86 || defined _M_X64  || defined __amd64__ || defined __x86_64__ || defined __i386__
+#include <intrin.h>
 #define USE_EMM_INTRIN		1
 #endif
 #include "qs_math.h"

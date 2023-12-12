@@ -206,7 +206,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\src\qg\qges2_rdh.c" />
-    <ClCompile Include="..\..\src\qg\qges2_rdo.c" />
+    <ClCompile Include="..\..\src\qg\qggl_rdo.c" />
     <ClCompile Include="..\..\src\qg\qges2_shd.c" />
     <ClCompile Include="..\..\src\qg\qggl_base.c" />
     <ClCompile Include="..\..\src\qg\qggl_func.c" />

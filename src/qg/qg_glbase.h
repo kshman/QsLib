@@ -8,9 +8,11 @@ typedef struct GlRefHandle				GlRefHandle;
 typedef struct GlUniformSession			GlUniformSession;
 typedef struct GlUniformPending			GlUniformPending;
 typedef struct GlLayoutElement			GlLayoutElement;
-typedef struct GlLayoutProperty			GlLayoutProperty;
+typedef struct GlLayoutProp				GlLayoutProp;
 typedef struct GlUniform				GlUniform;
 typedef struct GlAttrib					GlAttrib;
+typedef struct GlDepthStencilProp		GlDepthStencilProp;
+typedef struct GlRasterizeProp			GlRasterizeProp;
 typedef struct GlSession				GlSession;
 typedef struct GlPending				GlPending;
 typedef void(*gl_shd_auto_func)(const QgRdh*, GLint, const QgVarShader*);
@@ -19,6 +21,12 @@ typedef struct GlRdhBase				GlRdhBase;
 typedef struct GlVlo					GlVlo;
 typedef struct GlShd					GlShd;
 typedef struct GlBuf					GlBuf;
+typedef struct GlDsm					GlDsm;
+typedef struct GlRsz					GlRsz;
+
+#ifndef GL_INVALID_HANDLE
+#define GL_INVALID_HANDLE				(GLuint)-1
+#endif
 
 #define GLBASE_RDH_INSTANCE				((GlRdhBase*)qg_rdh_instance)
 
@@ -48,7 +56,7 @@ struct GlLayoutElement
 };
 
 // 레이아웃 프로퍼티
-struct GlLayoutProperty
+struct GlLayoutProp
 {
 	nuint				pointer;
 	GLuint				buffer;
@@ -82,24 +90,65 @@ struct GlAttrib
 QN_DECL_CTNR(GlCtnUniform, GlUniform)
 QN_DECL_CTNR(GlCtnAttrib, GlAttrib)
 
+// 뎁스 스텐셀
+struct GlDepthStencilProp
+{
+	struct GlDepth
+	{
+		GLboolean			enable;
+		GLboolean			write;
+		GLenum				func;
+	}					depth;
+	struct GlStencilInfo
+	{
+		GLboolean			enable;
+		GLboolean			two_side;
+		struct GlStencilValue
+		{
+			GLenum				func;
+			GLenum				fail;
+			GLenum				pass;
+			GLenum				z_fail;
+		}					front, back;
+		struct GlStencilMask
+		{
+			uint				read : 8;
+			uint				write : 8;
+		}					mask;
+	}					stencil;
+};
+
+// 래스터라이저
+struct GlRasterizeProp
+{
+	GLenum				fill;
+	GLenum				cull;
+	float				depth_bias;
+	float				slope_scale;
+};
+
 // 세션 데이터
 struct GlSession
 {
 	GLuint				program;
-
-	struct LayoutSession
+	struct GlSessionLayout
 	{
 		uint				mask;
 		uint				count;
-		GlLayoutProperty*	props;
+		GlLayoutProp*		props;
 	}					layout;
+	struct GlSessionBuffer
+	{
+		GLuint				array;
+		GLuint				element_array;
+		GLuint				pixel_unpack;
+	}					buf;
 
-	GLuint				buf_array;
-	GLuint				buf_element_array;
-	GLuint				buf_pixel_unpack;
+	GlDepthStencilProp	dsm_prop;
+	GlRasterizeProp		rsz_prop;
 
 	bool				scissor;
-	QnRect				scirect;
+	QnRect				sci_rect;
 };
 
 // 펜딩 데이터
@@ -107,18 +156,11 @@ struct GlPending
 {
 	GlShd*				shd;
 	GlVlo*				vlo;
-
 	GlBuf*				ib;
 	GlBuf*				vb[QGLOS_MAX_VALUE];
 
-	int					tpg;
-	int					vcount;
-	int					vstride;
-	int					vsize;
-	int					istride;
-	int					isize;
-	void*				vdata;
-	void*				idata;
+	GlDepthStencilProp	dsm_prop;
+	GlRasterizeProp		rsz_prop;
 };
 
 
@@ -150,10 +192,14 @@ extern void gl_flush(QgRdh* rdh);
 extern QgVlo* gl_create_layout(QgRdh* rdh, int count, const QgPropLayout* layouts);
 extern QgShd* gl_create_shader(QgRdh* rdh, const char* name);
 extern QgBuf* gl_create_buffer(QgRdh* rdh, QgBufType type, int count, int stride, const void* data);
+extern QgDsm* gl_create_depth_stencil(QgRdh* rdh, const QgPropDepthStencil* prop);
+extern QgRsz* gl_create_rasterizer(QgRdh* rdh, const QgPropRasterizer* prop);
 
 extern void gl_set_shader(QgRdh* rdh, QgShd* shader, QgVlo* layout);
 extern bool gl_set_index(QgRdh* rdh, QgBuf* buffer);
 extern bool gl_set_vertex(QgRdh* rdh, QgLoStage stage, QgBuf* buffer);
+extern bool gl_set_depth_stencil(QgRdh* rdh, QgDsm* depth_stencil);
+extern bool gl_set_rasterizer(QgRdh* rdh, QgRsz* rasterizer);
 
 extern bool gl_draw(QgRdh* rdh, QgTopology tpg, int vcount);
 extern bool gl_draw_indexed(QgRdh* rdh, QgTopology tpg, int icount);
@@ -164,6 +210,7 @@ extern void gl_bind_buffer(GlRdhBase* self, GLenum type, GLuint id);
 extern void gl_commit_layout(GlRdhBase* self);
 extern void gl_commit_layout_ptr(GlRdhBase* self, const void* buffer, GLsizei stride);
 extern void gl_commit_shader(GlRdhBase* self);
+extern void gl_commit_depth_stencil(GlRdhBase* self);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -206,7 +253,25 @@ struct GlBuf
 	GLenum				gl_type;
 	GLenum				gl_usage;
 
-	void*				lockbuf;
+	void*				lock_buf;
 };
 extern GlBuf* gl_buf_allocator(QgRdh* rdh, QgBufType type, int count, int stride, const void* data);
+
+// 뎁스 스텐실
+struct GlDsm
+{
+	QgDsm				base;
+
+	GlDepthStencilProp	prop;
+};
+extern GlDsm* gl_dsm_allocator(QgRdh* rdh, const QgPropDepthStencil* prop);
+
+// 래스터라이즈
+struct GlRsz
+{
+	QgRsz				base;
+
+	GlRasterizeProp		prop;
+};
+extern GlRsz* gl_rsz_allocator(QgRdh* rdh, const QgPropRasterizer* prop);
 

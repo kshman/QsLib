@@ -215,7 +215,7 @@
     <ClCompile Include="..\..\src\qg\qges2_rdh.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qges2_rdo.c">
+    <ClCompile Include="..\..\src\qg\qggl_rdo.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qg\qgsdl_stub.c">

@@ -36,14 +36,7 @@ static void qsort_short_context(uint8_t* lo, uint8_t* hi, size_t stride, int(*fu
 	}
 }
 
-/**
- * @brief 콘텍스트 입력 받는 퀵정렬
- * @param	ptr				정렬할 데이터의 포인터
- * @param	count			데이터의 갯수
- * @param	stride			데이터의 폭
- * @param[in]	compfunc	비교 연산 콜백 함수
- * @param	context			콜백 함수용 콘텍스트
- */
+//
 void qn_qsortc(void* ptr, size_t count, size_t stride, int(*compfunc)(void*, const void*, const void*), void* context)
 {
 	qn_ret_if_fail(ptr);
@@ -193,13 +186,7 @@ static void qsort_short(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(cons
 	}
 }
 
-/**
- * @brief 퀵정렬
- * @param	ptr				정렬할 데이터의 포인터
- * @param	count			데이터의 갯수
- * @param	stride			데이터의 폭
- * @param[in]	compfunc	비교 연산 콜백 함수
- */
+//
 void qn_qsort(void* ptr, size_t count, size_t stride, int(*compfunc)(const void*, const void*))
 {
 	qn_ret_if_fail(ptr);

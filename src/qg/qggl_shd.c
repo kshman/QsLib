@@ -9,9 +9,9 @@
 
 static void gl_vlo_dispose(QmGam* g);
 
-qvt_name(QmGam) vt_es2_vlo =
+qvt_name(QmGam) vt_gl_vlo =
 {
-	.name = "ES2Vlo",
+	.name = "GLVlo",
 	.dispose = gl_vlo_dispose,
 };
 
@@ -103,7 +103,7 @@ GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgPropLayout* layouts)
 	for (size_t i = 0; i < QGLOS_MAX_VALUE; i++)
 		self->base.stride[i] = (ushort)offset[i];
 
-	return qm_init(self, GlVlo, &vt_es2_vlo);
+	return qm_init(self, GlVlo, &vt_gl_vlo);
 }
 
 //
@@ -126,9 +126,9 @@ static void gl_shd_dispose(QmGam* g);
 static bool gl_shd_bind(QgShd* g, QgShdType type, const void* data, int size, int flags);
 static bool gl_shd_bind_shd(QgShd* g, QgShdType type, QgShd* shaderptr);
 
-qvt_name(QgShd) vt_es2_shd =
+qvt_name(QgShd) vt_gl_shd =
 {
-	.base.name = "ES2Shd",
+	.base.name = "GLShd",
 	.base.dispose = gl_shd_dispose,
 	.bind = gl_shd_bind,
 	.bind_shd = gl_shd_bind_shd,
@@ -148,7 +148,7 @@ GlShd* gl_shd_allocator(QgRdh* rdh, const char* name)
 #else
 	qm_set_desc(self, GL_FUNC(glCreateProgram)());	// 이렇게 하면 LINT에 걸려버렷
 #endif
-	return qm_init(self, GlShd, &vt_es2_shd);
+	return qm_init(self, GlShd, &vt_gl_shd);
 }
 
 //
@@ -183,12 +183,12 @@ static GlRefHandle* gl_shd_compile(GlShd* self, GLenum gl_type, const char* src,
 		const char* progress = gl_type == GL_VERTEX_SHADER ? "vertex" : gl_type == GL_FRAGMENT_SHADER ? "fragment" : "(unknown)";
 		GLsizei gl_log_len = gl_get_shader_iv(gl_shader, GL_INFO_LOG_LENGTH);
 		if (gl_log_len <= 0)
-			qn_debug_outputf(true, "ES2Shd", "%s shader error", progress);
+			qn_debug_outputf(true, "GLShd", "%s shader error", progress);
 		else
 		{
 			GLchar* psz = qn_alloca(gl_log_len, GLchar);
 			GL_FUNC(glGetShaderInfoLog)(gl_shader, gl_log_len, &gl_log_len, psz);
-			qn_debug_outputf(true, "ES2Shd", "%s shader error in %s", psz, progress);
+			qn_debug_outputf(true, "GLShd", "%s shader error in %s", psz, progress);
 			qn_freea(psz);
 		}
 		return NULL;
@@ -338,11 +338,11 @@ bool gl_shd_link(QgShd* g)
 	{
 		GLsizei gl_log_len = gl_get_program_iv(gl_program, GL_INFO_LOG_LENGTH);
 		if (gl_log_len <= 0)
-			qn_debug_outputs(true, "ES2Shd", "program link error");
+			qn_debug_outputs(true, "GLShd", "program link error");
 		else
 		{
 			GL_FUNC(glGetProgramInfoLog)(gl_program, QN_COUNTOF(sz) - 1, &gl_log_len, sz);
-			qn_debug_outputf(true, "ES2Shd" "program link error '%s'", sz);
+			qn_debug_outputf(true, "GLShd" "program link error '%s'", sz);
 		}
 		return false;
 	}
@@ -364,7 +364,7 @@ bool gl_shd_link(QgShd* g)
 			if (cnst == QGSHC_UNKNOWN)
 			{
 				// 사용할 수 없는 유니폼
-				qn_debug_outputf(true, "ES2Shd", "not supported uniform type '%X' in '%s'", gl_type, sz);
+				qn_debug_outputf(true, "GLShd", "not supported uniform type '%X' in '%s'", gl_type, sz);
 				continue;
 			}
 
@@ -400,7 +400,7 @@ bool gl_shd_link(QgShd* g)
 			if (cnst == QGSHC_UNKNOWN)
 			{
 				// 사용할 수 없는 어트리뷰트
-				qn_debug_outputf(true, "ES2Shd", "not supported attribute type '%X' in '%s'", gl_type, sz);
+				qn_debug_outputf(true, "GLShd", "not supported attribute type '%X' in '%s'", gl_type, sz);
 				continue;
 			}
 
@@ -408,7 +408,7 @@ bool gl_shd_link(QgShd* g)
 			if ((size_t)gl_attrib >= max_vertex_attrs)
 			{
 				// 이 어트리뷰트는 못쓴다
-				qn_debug_outputf(true, "ES2Shd", "invalid attribute id '%d' in '%s'", gl_attrib, sz);
+				qn_debug_outputf(true, "GLShd", "invalid attribute id '%d' in '%s'", gl_attrib, sz);
 				continue;
 			}
 
@@ -693,9 +693,9 @@ static void* gl_buf_map(QgBuf* g);
 static bool gl_buf_unmap(QgBuf* g);
 static bool gl_buf_data(QgBuf* g, const void* data);
 
-qvt_name(QgBuf) vt_es2_buf =
+qvt_name(QgBuf) vt_gl_buf =
 {
-	.base.name = "ES2Buf",
+	.base.name = "GLBuf",
 	.base.dispose = gl_buf_dispose,
 	.map = gl_buf_map,
 	.unmap = gl_buf_unmap,
@@ -751,15 +751,15 @@ GlBuf* gl_buf_allocator(QgRdh* rdh, QgBufType type, int count, int stride, const
 	self->gl_type = gl_type;
 	self->gl_usage = gl_usage;
 
-	return qm_init(self, GlBuf, &vt_es2_buf);
+	return qm_init(self, GlBuf, &vt_gl_buf);
 }
 
 static void gl_buf_dispose(QmGam* g)
 {
 	GlBuf* self = qm_cast(g, GlBuf);
 
-	if (self->lockbuf)
-		qn_free(self->lockbuf);
+	if (self->lock_buf)
+		qn_free(self->lock_buf);
 
 	const GLuint gl_handle = qm_get_desc(self, GLuint);
 	GL_FUNC(glDeleteBuffers)(1, &gl_handle);
@@ -771,23 +771,23 @@ static void* gl_buf_map(QgBuf* g)
 {
 	GlBuf* self = qm_cast(g, GlBuf);
 
-	if (self->lockbuf != NULL)
+	if (self->lock_buf != NULL)
 		return NULL;
 	if (self->gl_usage != GL_DYNAMIC_DRAW)
 		return NULL;
 
-	return self->lockbuf = qn_alloc(self->base.size, byte);
+	return self->lock_buf = qn_alloc(self->base.size, byte);
 }
 
 static bool gl_buf_unmap(QgBuf* g)
 {
 	GlBuf* self = qm_cast(g, GlBuf);
-	qn_retval_if_fail(self->lockbuf == NULL, false);
+	qn_retval_if_fail(self->lock_buf == NULL, false);
 
 	gl_bind_buffer(GLBASE_RDH_INSTANCE, self->gl_type, qm_get_desc(self, GLuint));
-	GL_FUNC(glBufferData)(self->gl_type, self->base.size, self->lockbuf, self->gl_usage);
+	GL_FUNC(glBufferData)(self->gl_type, self->base.size, self->lock_buf, self->gl_usage);
 
-	qn_free_ptr(&self->lockbuf);
+	qn_free_ptr(&self->lock_buf);
 
 	return true;
 }
@@ -796,7 +796,7 @@ static bool gl_buf_data(QgBuf* g, const void* data)
 {
 	qn_retval_if_fail(data, false);
 	GlBuf* self = qm_cast(g, GlBuf);
-	qn_retval_if_fail(self->lockbuf == NULL, false);
+	qn_retval_if_fail(self->lock_buf == NULL, false);
 	qn_retval_if_fail(self->gl_usage == GL_DYNAMIC_DRAW, false);
 
 	gl_bind_buffer(GLBASE_RDH_INSTANCE, self->gl_type, qm_get_desc(self, GLuint));

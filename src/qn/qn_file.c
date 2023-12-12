@@ -440,12 +440,7 @@ static void qn_file_access_parse_l(const wchar* mode, QnFileAccess* self, int* f
 #endif
 }
 
-/**
- * @brief 새 파일 처리 구조를 만든다
- * @param	filename	파일의 이름
- * @param	mode		파일 처리 모드
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnFile*
- */
+//
 QnFile* qn_file_new(const char* filename, const char* mode)
 {
 	qn_retval_if_fail(filename, NULL);
@@ -476,12 +471,7 @@ QnFile* qn_file_new(const char* filename, const char* mode)
 	return self;
 }
 
-/**
- * @brief 유니코드용 새 파일 구조를 만든다
- * @param	filename	파일의 이름
- * @param	mode		파일 처리 모드
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnFile*
- */
+//
 QnFile* qn_file_new_l(const wchar* filename, const wchar* mode)
 {
 	qn_retval_if_fail(filename, NULL);
@@ -513,11 +503,7 @@ QnFile* qn_file_new_l(const wchar* filename, const wchar* mode)
 	return self;
 }
 
-/**
- * @brief 파일 복제. 핸들을 복제하여 따로 사용할 수 있도록 한다
- * @param[in]	src	(널값이 아닌) 원본
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnFile*
- */
+//
 QnFile* qn_file_new_dup(QnFile* src)
 {
 	QnFile* self = qn_alloc_1(QnFile);
@@ -552,10 +538,7 @@ QnFile* qn_file_new_dup(QnFile* src)
 	return self;
 }
 
-/**
- * @brief 파일 구조를 제거한다. 더 이상 파일 관리를 하지 않을 때 사용한다
- * @param[in]	self	파일 개체
- */
+//
 void qn_file_delete(QnFile* self)
 {
 #ifdef _QN_WINDOWS_
@@ -570,35 +553,19 @@ void qn_file_delete(QnFile* self)
 	qn_free(self);
 }
 
-/**
- * @brief 파일 플래그를 가져온다
- * @param[in]	self	파일 개체
- * @param	mask		플래그의 마스크
- * @return	파일 플래그
- */
+//
 int qn_file_get_flags(const QnFile* self, int mask)
 {
 	return (self->flag & mask) != 0;
 }
 
-/**
- * @brief 파일 이름을 얻는다
- * @param[in]	self	파일 개체
- * @return	파일의 이름
- */
+//
 const char* qn_file_get_name(const QnFile* self)
 {
 	return self->name;
 }
 
-/**
- * @brief 파일에서 읽는다
- * @param[in]	self	파일 개체
- * @param	buffer  	읽은 데이터를 저장할 버퍼
- * @param	offset  	버퍼의 옵셋
- * @param	size		읽을 크기
- * @return	실제 읽은 길이를 반환
- */
+//
 int qn_file_read(QnFile* self, void* buffer, int offset, int size)
 {
 	qn_retval_if_fail(buffer != NULL, -1);
@@ -613,14 +580,7 @@ int qn_file_read(QnFile* self, void* buffer, int offset, int size)
 #endif
 }
 
-/**
- * @brief 파일에 쓴다
- * @param[in]	self	파일 개체
- * @param	buffer  	쓸 데이터가 들어 있는 버퍼
- * @param	offset  	버퍼의 옵셋
- * @param	size		쓸 크기
- * @return	실제 쓴 길이를 반환
- */
+//
 int qn_file_write(QnFile* self, const void* buffer, int offset, int size)
 {
 	qn_retval_if_fail(buffer != NULL, -1);
@@ -635,11 +595,7 @@ int qn_file_write(QnFile* self, const void* buffer, int offset, int size)
 #endif
 }
 
-/**
- * @brief 파일 크기를 얻는다
- * @param[in]	self	파일 개체
- * @return	파일의 길이
- */
+//
 llong qn_file_size(QnFile* self)
 {
 #ifdef _QN_WINDOWS_
@@ -660,11 +616,7 @@ llong qn_file_size(QnFile* self)
 #endif
 }
 
-/**
- * @brief 파일 위치 얻기
- * @param[in]	self	파일 개체
- * @return	현재 파일의 읽고 쓰는 위치
- */
+//
 llong qn_file_tell(QnFile* self)
 {
 #ifdef _QN_WINDOWS_
@@ -676,14 +628,8 @@ llong qn_file_tell(QnFile* self)
 #endif
 }
 
-/**
- * @brief 파일 위치 변경
- * @param[in]	self	파일 개체
- * @param	offset  	이동할 위치
- * @param	org			방식 (C형식 SEEK와 동일)
- * @return	변경된 위치.
- */
-llong qn_file_seek(QnFile* self, llong offset, int org)
+//
+llong qn_file_seek(QnFile* self, llong offset, QnSeek org)
 {
 #ifdef _QN_WINDOWS_
 	const LARGE_INTEGER* po = (LARGE_INTEGER*)&offset;
@@ -695,11 +641,7 @@ llong qn_file_seek(QnFile* self, llong offset, int org)
 #endif
 }
 
-/**
- * @brief 파일 갱신. 파일 내용을 갱신한다. 쓰기 버퍼의 남은 데이터를 모두 쓴다
- * @param[in]	self	파일 개체
- * @return	성공하면 참, 실패하면 거짓
- */
+//
 bool qn_file_flush(const QnFile* self)
 {
 #ifdef _QN_WINDOWS_
@@ -712,13 +654,7 @@ bool qn_file_flush(const QnFile* self)
 #endif
 }
 
-/**
- * @brief 파일에 포맷된 문자열 쓰기
- * @param[in]	self	파일 개체
- * @param	fmt			포맷 문자열
- * @param ...
- * @return	실제 쓴 길이
- */
+//
 int qn_file_printf(QnFile* self, const char* fmt, ...)
 {
 	va_list va;
@@ -739,13 +675,7 @@ int qn_file_printf(QnFile* self, const char* fmt, ...)
 	return len;
 }
 
-/**
- * @brief 파일에 포맷된 문자열 쓰기 가변형
- * @param[in]	self	파일 개체
- * @param	fmt			포맷 문자열
- * @param	va			가변 인수
- * @return	실제 쓴 길이
- */
+//
 int qn_file_vprintf(QnFile* self, const char* fmt, va_list va)
 {
 	int len = qn_vsnprintf(NULL, 0, fmt, va);
@@ -760,12 +690,7 @@ int qn_file_vprintf(QnFile* self, const char* fmt, va_list va)
 	return len;
 }
 
-/**
- * @brief 파일이 있나 조사한다
- * @param	filename	파일의 이름
- * @param[out]	isdir 	(널값이 아니면) 파일 처리 플래그로 KFAS_로 시작하는 마스크 플래그
- * @return	성공하면 참, 실패하면 거짓
- */
+//
 bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 {
 	qn_retval_if_fail(filename, false);
@@ -802,14 +727,9 @@ bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 		return true;
 	}
 #endif
-	}
+}
 
-/**
- * @brief 파일이 있나 조사한다. 유니코드 버전
- * @param	filename	파일의 이름
- * @param[out]	isdir 	(널값이 아니면) 파일 처리 플래그로 KFAS_로 시작하는 마스크 플래그
- * @return	성공하면 참, 실패하면 거짓
- */
+//
 bool qn_file_exist_l(const wchar* filename, /*RET-NULLABLE*/bool* isdir)
 {
 	qn_retval_if_fail(filename, false);
@@ -846,32 +766,21 @@ bool qn_file_exist_l(const wchar* filename, /*RET-NULLABLE*/bool* isdir)
 		return true;
 	}
 #endif
-	}
+}
 
-/**
- * @brief qn_file_alloc 함수에서 사용하는 파일 읽기 최대 할당 크기
- * @return	최대 할당 크기
- */
+//
 size_t qn_file_get_max_alloc_size(void)
 {
 	return max_file_alloc_size;
 }
 
-/**
- * @brief qn_file_alloc 함수에서 사용할 파일 읽기 최대 할당 크기 설정
- * @param	n	할당할 크기
- */
+//
 void qn_file_set_max_alloc_size(size_t n)
 {
 	max_file_alloc_size = n == 0 ? (512ULL * 1024ULL * 1024ULL) : n;
 }
 
-/**
- * @brief 파일 할당. 즉, 파일 전체를 읽어 메모리에 할당한 후 반환한다
- * @param	filename	파일의 이름
- * @param[out]	size	(널값이 아니면) 읽은 파일의 크기
- * @return	읽은 버퍼. 사용한 다음 k_free 함수로 해제해야한다
- */
+//
 void* qn_file_alloc(const char* filename, int* size)
 {
 	qn_retval_if_fail(filename != NULL, NULL);
@@ -897,12 +806,7 @@ void* qn_file_alloc(const char* filename, int* size)
 	return buf;
 }
 
-/**
- * @brief 파일 할당. 즉, 파일 전체를 읽어 메모리에 할당한 후 반환한다. 유니코드 버전
- * @param	filename	파일의 이름
- * @param[out]	size	(널값이 아니면) 읽은 파일의 크기
- * @return	읽은 버퍼. 사용한 다음 k_free 함수로 해제해야한다
- */
+//
 void* qn_file_alloc_l(const wchar* filename, int* size)
 {
 	qn_retval_if_fail(filename, NULL);
@@ -948,11 +852,7 @@ struct QnDir
 #endif
 };
 
-/**
- * @brief 디렉토리를 새로 만든다
- * @param	path 	디렉토리의 완전한 경로 이름
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 개체
- */
+//
 QnDir* qn_dir_new(const char* path)
 {
 #ifdef _QN_WINDOWS_
@@ -1009,11 +909,7 @@ QnDir* qn_dir_new(const char* path)
 	return self;
 }
 
-/**
- * @brief 디렉토리를 새로 만든다 (유니코드 사용)
- * @param	path 	디렉토리의 완전한 경로 이름
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 개체
- */
+//
 QnDir* qn_dir_new_l(const wchar* path)
 {
 #ifdef _QN_WINDOWS_
@@ -1069,10 +965,7 @@ QnDir* qn_dir_new_l(const wchar* path)
 	return self;
 }
 
-/**
- * @brief 디렉토리 개체 제거
- * @param[in]	self	디렉토리 개체
- */
+//
 void qn_dir_delete(QnDir* self)
 {
 #ifdef _QN_WINDOWS_
@@ -1087,11 +980,7 @@ void qn_dir_delete(QnDir* self)
 	qn_free(self);
 }
 
-/**
- * @brief 디렉토리에서 항목 읽기
- * @param[in]	self	디렉토리 개체
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 파일 이름
- */
+//
 const char* qn_dir_read(QnDir* self)
 {
 #ifdef _QN_WINDOWS_
@@ -1135,13 +1024,9 @@ const char* qn_dir_read(QnDir* self)
 
 	return ent ? ent->d_name : NULL;
 #endif
-	}
+}
 
-/**
- * @brief 디렉토리에서 항목 읽기 (유니코드)
- * @param[in]	self	디렉토리 개체
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 파일 이름
- */
+//
 const wchar* qn_dir_read_l(QnDir* self)
 {
 #ifdef _QN_WINDOWS_
@@ -1189,12 +1074,9 @@ const wchar* qn_dir_read_l(QnDir* self)
 		return self->ufile;
 	}
 #endif
-		}
+}
 
-/**
- * @brief 디렉토리를 첫 항목으로 감기
- * @param[in]	self	디렉토리 개체
- */
+//
 void qn_dir_rewind(QnDir* self)
 {
 #ifdef _QN_WINDOWS_
@@ -1206,13 +1088,9 @@ void qn_dir_rewind(QnDir* self)
 #else
 	rewinddir(self->pd);
 #endif
-	}
+}
 
-/**
- * @brief 디렉토리에서 몇번째 항목인지 얻기
- * @param[in]	self	디렉토리 개체
- * @return	항목 순서
- */
+//
 int qn_dir_tell(QnDir* self)
 {
 #ifdef _QN_WINDOWS_
@@ -1224,11 +1102,7 @@ int qn_dir_tell(QnDir* self)
 #endif
 }
 
-/**
- * @brief 디렉토리에서 순서 항목으로 찾아가기
- * @param[in]	self	디렉토리 개체
- * @param	pos			찾아갈 위치
- */
+//
 void qn_dir_seek(QnDir* self, int pos)
 {
 #ifdef _QN_WINDOWS_

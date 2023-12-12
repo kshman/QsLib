@@ -319,6 +319,56 @@ QgBuf* qg_rdh_create_buffer(QgRdh* self, QgBufType type, int count, int stride, 
 }
 
 //
+QgDsm* qg_rdh_create_depth_stencil(QgRdh* self, const QgPropDepthStencil* prop)
+{
+	qn_retval_if_fail(prop, NULL);
+
+#define CHK_DSM_PARAM(section,name,maxvalue)\
+	if ((size_t)prop->section##_##name < maxvalue) {\
+		qn_debug_outputf(true, "QgRdh", "invalid '%s %s' value: %d", #section, #name, prop->section##_##name); return NULL; }
+
+	if (prop->depth_write)
+		CHK_DSM_PARAM(depth, func, QGCMP_MAX_VALUE);
+
+	if (prop->front_enable)
+	{
+		CHK_DSM_PARAM(front, func, QGCMP_MAX_VALUE);
+		CHK_DSM_PARAM(front, pass, QGSTP_MAX_VALUE);
+		CHK_DSM_PARAM(front, fail, QGSTP_MAX_VALUE);
+		CHK_DSM_PARAM(front, depth, QGSTP_MAX_VALUE);
+	}
+
+	if (prop->back_enable)
+	{
+		CHK_DSM_PARAM(back, func, QGCMP_MAX_VALUE);
+		CHK_DSM_PARAM(back, pass, QGSTP_MAX_VALUE);
+		CHK_DSM_PARAM(back, fail, QGSTP_MAX_VALUE);
+		CHK_DSM_PARAM(back, depth, QGSTP_MAX_VALUE);
+	}
+#undef CHK_DSM_PARAM
+
+	self->invokes.invokes++;
+	return qvt_cast(self, QgRdh)->create_depth_stencil(self, prop);
+}
+
+//
+QgRsz* qg_rdh_create_rasterizer(QgRdh* self, const QgPropRasterizer* prop)
+{
+	qn_retval_if_fail(prop, NULL);
+
+#define CHK_RSZ_PARAM(name,maxvalue)\
+	if ((size_t)prop->name < maxvalue) {\
+		qn_debug_outputf(true, "QgRdh", "invalid '%s' value: %d", #name, prop->name); return NULL; }
+
+	CHK_RSZ_PARAM(fill, QGFLL_MAX_VALUE);
+	CHK_RSZ_PARAM(cull, QGCUL_MAX_VALUE);
+#undef CHK_RSZ_PARAM
+
+	self->invokes.invokes++;
+	return qvt_cast(self, QgRdh)->create_rasterizer(self, prop);
+}
+
+//
 void qg_rdh_set_shader(QgRdh* self, QgShd* shader, QgVlo* layout)
 {
 	self->invokes.invokes++;
@@ -342,46 +392,62 @@ bool qg_rdh_set_vertex(QgRdh* self, QgLoStage stage, QgBuf* buffer)
 }
 
 //
-bool qg_rdh_draw(QgRdh* self, QgTopology tpg, int vcount)
+bool qg_rdh_set_depth_stencil(QgRdh* self, QgDsm* depth_stencil)
 {
-	qn_retval_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_retval_if_fail(vcount > 0, false);
 	self->invokes.invokes++;
-	self->invokes.draws++;
-	return qvt_cast(self, QgRdh)->draw(self, tpg, vcount);
+	return qvt_cast(self, QgRdh)->set_depth_stencil(self, depth_stencil);
 }
 
 //
-bool qg_rdh_draw_indexed(QgRdh* self, QgTopology tpg, int icount)
+bool qg_rdh_set_rasterizer(QgRdh* self, QgRsz* rasterizer)
 {
-	qn_retval_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_retval_if_fail(icount > 0, false);
 	self->invokes.invokes++;
-	self->invokes.draws++;
-	return qvt_cast(self, QgRdh)->draw_indexed(self, tpg, icount);
+	return qvt_cast(self, QgRdh)->set_rasterizer(self, rasterizer);
 }
 
 //
-bool qg_rdh_ptr_draw(QgRdh* self, QgTopology tpg, int vcount, int vstride, const void* vdata)
+bool qg_rdh_draw(QgRdh* self, QgTopology tpg, int vertices)
 {
 	qn_retval_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_retval_if_fail(vcount > 0 && vstride >= 0 && vdata, false);
+	qn_retval_if_fail(vertices > 0, false);
+	self->invokes.invokes++;
+	self->invokes.draws++;
+	return qvt_cast(self, QgRdh)->draw(self, tpg, vertices);
+}
+
+//
+bool qg_rdh_draw_indexed(QgRdh* self, QgTopology tpg, int indices)
+{
+	qn_retval_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
+	qn_retval_if_fail(indices > 0, false);
+	self->invokes.invokes++;
+	self->invokes.draws++;
+	return qvt_cast(self, QgRdh)->draw_indexed(self, tpg, indices);
+}
+
+//
+bool qg_rdh_ptr_draw(QgRdh* self, QgTopology tpg, int vertices, int stride, const void* vertex_data)
+{
+	qn_retval_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
+	qn_retval_if_fail(vertices > 0 && stride >= 0 && vertex_data, false);
 
 	self->invokes.invokes++;
 	self->invokes.draws++;
-	return qvt_cast(self, QgRdh)->ptr_draw(self, tpg, vcount, vstride, vdata);
+	return qvt_cast(self, QgRdh)->ptr_draw(self, tpg, vertices, stride, vertex_data);
 
 }
 
 //
-bool qg_rdh_ptr_draw_indexed(QgRdh* self, QgTopology tpg, int vcount, int vstride, const void* vdata, int icount, int istride, const void* idata)
+bool qg_rdh_ptr_draw_indexed(QgRdh* self, QgTopology tpg,
+	int vertices, int vertex_stride, const void* vertex_data,
+	int indices, int index_stride, const void* index_data)
 {
 	qn_retval_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_retval_if_fail(vcount > 0 && vstride >= 0 && vdata, false);
-	qn_retval_if_fail(icount > 0 && idata, false);
+	qn_retval_if_fail(vertices > 0 && vertex_stride >= 0 && vertex_data, false);
+	qn_retval_if_fail(indices > 0 && index_data, false);
 
 	self->invokes.invokes++;
 	self->invokes.draws++;
-	return qvt_cast(self, QgRdh)->ptr_draw_indexed(self, tpg, vcount, vstride, vdata, icount, istride, idata);
+	return qvt_cast(self, QgRdh)->ptr_draw_indexed(self, tpg, vertices, vertex_stride, vertex_data, indices, index_stride, index_data);
 }
 

@@ -63,6 +63,7 @@ int main()
 		{
 			qg_rdh_set_shader(rdh, shd, vlo);
 			qg_rdh_set_vertex(rdh, QGLOS_1, buf);
+			qg_rdh_set_depth_stencil(rdh, NULL);
 			qg_rdh_draw(rdh, QGTPG_TRI, 3);
 
 			qg_rdh_end(rdh);
