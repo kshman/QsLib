@@ -32,7 +32,7 @@
 
 
 //////////////////////////////////////////////////////////////////////////
-// macro & iline
+// macro & inline
 #define QN_FRACT(f)						((f)-floorf(f))
 #define QN_TORADIAN(degree)				((degree)*(180.0f/(float)QN_PI))
 #define QN_TODEGREE(radian)				((radian)*((float)QN_PI/180.0f))
@@ -60,6 +60,7 @@ typedef struct QnPoint					QnPoint;
 typedef struct QnSize					QnSize;
 typedef struct QnRect					QnRect;
 typedef struct QnRectF					QnRectF;
+typedef struct QnDepth					QnDepth;
 typedef struct QnCoord					QnCoord;
 typedef struct QnColor					QnColor;
 typedef struct QnKolor					QnKolor;
@@ -71,32 +72,32 @@ typedef struct QnVecH2					QnVecH2;
 typedef struct QnVecH3					QnVecH3;
 typedef struct QnVecH4					QnVecH4;
 
-// vector2
+/** @brief vector2 */
 struct QnVec2
 {
 	float x, y;
 };
 
-// vector3
+/** @brief vector3 */
 struct QnVec3
 {
 	float x, y, z;
 };
 
-// vector4
-struct QnVec4
+/** @brief vector4 */
+struct QN_ALIGN(16) QnVec4
 {
 	float x, y, z, w;
 };
 
-// quaternion
-struct QnQuat
+/** @brief quaternion */
+struct QN_ALIGN(16) QnQuat
 {
 	float x, y, z, w;
 };
 
-// matrix4
-struct QnMat4
+/** @brief matrix4 */
+struct QN_ALIGN(16) QnMat4
 {
 	union
 	{
@@ -115,22 +116,28 @@ struct QnMat4
 	};
 };
 
-// point
+/** @brief point */
 struct QnPoint
 {
 	int x, y;
 };
 
-// size
+/** @brief size */
 struct QnSize
 {
 	int width, height;
 };
 
-// rect
+/** @brief rect */
 struct QnRect
 {
 	int left, top, right, bottom;
+};
+
+/** @brief depth */
+struct QnDepth
+{
+	float depth_near, depth_far;
 };
 
 //
@@ -139,19 +146,19 @@ struct QnCoord
 	float u, v;
 };
 
-// color
-struct QnColor
+/** @brief color */
+struct QN_ALIGN(16) QnColor
 {
 	float r, g, b, a;
 };
 
-// byte color
+/** @brief byte color */
 struct QN_ALIGN(4) QnKolor
 {
 	byte b, g, r, a;
 };
 
-// byte color uni
+/** @brief unified byte color */
 struct QnKolorU
 {
 	union
@@ -161,39 +168,40 @@ struct QnKolorU
 	};
 };
 
-// plane
+/** @brief plane */
 struct QnPlane
 {
 	float a, b, c, d;
 };
 
-// line3
+/** @brief line3 */
 struct QnLine3
 {
 	QnVec3 begin, end;
 };
 
-// transform
+/** @brief transform */
 struct QnTrfm
 {
-	QnVec3 loc;
 	QnQuat rot;
+	QnVec3 loc;
 	QnVec3 scl;
+	QnVec2 __pad;
 };
 
-// half vector2
+/** @brief half vector2 */
 struct QnVecH2
 {
 	halfint x, y;
 };
 
-// half vector3
+/** @brief half vector3 */
 struct QnVecH3
 {
 	halfint x, y, z;
 };
 
-// hafl vector4
+/** @brief half vector4 */
 struct QnVecH4
 {
 	halfint x, y, z, w;
@@ -1500,12 +1508,20 @@ QN_INLINE void qn_rect_set(QnRect* prt, int left, int top, int right, int bottom
 	prt->bottom = bottom;
 }
 
-QN_INLINE void qn_rect_set_size(QnRect* p, int x, int y, int w, int h)
+QN_INLINE void qn_rect_set_size(QnRect* p, int x, int y, int width, int height)
 {
 	p->left = x;
 	p->top = y;
-	p->right = x + w;
-	p->bottom = y + h;
+	p->right = x + width;
+	p->bottom = y + height;
+}
+
+QN_INLINE void qn_rect_set_qn(QnRect* p, const QnPoint* pos, const QnSize* size)
+{
+	p->left = pos->x;
+	p->top = pos->y;
+	p->right = pos->x + size->width;
+	p->bottom = pos->y + size->height;
 }
 
 QN_INLINE void qn_rect_zero(QnRect* prt)
@@ -1546,6 +1562,12 @@ QN_INLINE void qn_rect_offset(QnRect* p, const QnRect* rt, int l, int t, int r, 
 	p->top = rt->top + t;
 	p->right = rt->right + r;
 	p->bottom = rt->bottom + b;
+}
+
+QN_INLINE void qn_rect_size(QnRect* p, int width, int height)
+{
+	p->right = p->left + width;
+	p->bottom = p->top + height;
 }
 
 QN_INLINE int qn_rect_width(const QnRect* prt)

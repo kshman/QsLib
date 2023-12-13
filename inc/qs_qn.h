@@ -51,7 +51,7 @@
 #	define _QN_UNIX_					1
 #endif
 
-#if _WIN64 || __LP64__ || __amd64__ || __x86_64__ || __aarch64__
+#if defined _WIN64 || defined __LP64__ || defined __amd64__ || defined __x86_64__ || defined __aarch64__
 #	define _QN_64_						1
 #endif
 
@@ -977,8 +977,8 @@ typedef struct QnFile					QnFile;
 typedef struct QnFileInfo				QnFileInfo;
 struct QnFileInfo
 {
-	short				type;			/** @brief 파일 타입 */
-	ushort				len;
+	int					type;			/** @brief 파일 타입 */
+	uint				len;
 	llong				size;			/** @brief 파일 크기 */
 	llong				cmpr;			/** @brief 압축된 크기 */
 	ullong				stc;			/** @brief 만든 날짜 타임 스탬프 */

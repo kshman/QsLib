@@ -136,7 +136,7 @@ bool gl_begin(QgRdh* rdh, bool clear)
 {
 	//GlRdhBase* self = qm_cast(rdh, GlRdhBase);
 	if (clear)
-		gl_clear(rdh, QGCLR_DEPTH | QGCLR_STENCIL | QGCLR_RENDER, &rdh->param.bgc, 0, 1.0f);
+		gl_clear(rdh, QGCLEAR_DEPTH | QGCLEAR_STENCIL | QGCLEAR_RENDER, &rdh->param.bgc, 0, 1.0f);
 	return true;
 }
 
@@ -159,18 +159,18 @@ void gl_clear(QgRdh* rdh, int flag, const QnColor* color, int stencil, float dep
 	// 도움: https://open.gl/depthstencils
 	GLbitfield cf = 0;
 
-	if (QN_TEST_MASK(flag, QGCLR_STENCIL))
+	if (QN_TEST_MASK(flag, QGCLEAR_STENCIL))
 	{
 		GL_FUNC(glStencilMaskSeparate)(GL_FRONT_AND_BACK, stencil);
 		cf |= GL_STENCIL_BUFFER_BIT;
 	}
-	if (QN_TEST_MASK(flag, QGCLR_DEPTH))
+	if (QN_TEST_MASK(flag, QGCLEAR_DEPTH))
 	{
 		GL_FUNC(glDepthMask)(GL_TRUE);
 		GL_FUNC(glClearDepthf)(depth);
 		cf |= GL_DEPTH_BUFFER_BIT;
 	}
-	if (QN_TEST_MASK(flag, QGCLR_RENDER))
+	if (QN_TEST_MASK(flag, QGCLEAR_RENDER))
 	{
 		if (color == NULL)
 			color = &rdh->param.bgc;
@@ -242,7 +242,7 @@ bool gl_set_index(QgRdh* rdh, QgBuf* buffer)
 	}
 	else
 	{
-		qn_retval_if_fail(buf->base.type == QGBUF_INDEX, false);
+		qn_retval_if_fail(buf->base.type == QGBUFFER_INDEX, false);
 
 		if (self->pd.ib != buf)
 		{
@@ -271,7 +271,7 @@ bool gl_set_vertex(QgRdh* rdh, QgLoStage stage, QgBuf* buffer)
 	}
 	else
 	{
-		qn_retval_if_fail(buf->base.type == QGBUF_VERTEX, false);
+		qn_retval_if_fail(buf->base.type == QGBUFFER_VERTEX, false);
 
 		if (self->pd.vb[stage] != buf)
 		{
@@ -334,7 +334,7 @@ bool gl_set_rasterizer(QgRdh* rdh, QgRsz* rasterizer)
 }
 
 // 레이아웃 만들기
-QgVlo* gl_create_layout(QgRdh* rdh, int count, const QgPropLayout* layouts)
+QgVlo* gl_create_layout(QgRdh* rdh, int count, const QgLayoutElement* layouts)
 {
 	//GlRdhBase* self = qm_cast(rdh, GlRdhBase);
 	GlVlo* vlo = gl_vlo_allocator(rdh, count, layouts);
@@ -361,7 +361,7 @@ QgBuf* gl_create_buffer(QgRdh* rdh, QgBufType type, int count, int stride, const
 }
 
 // 뎁스 스텐실 만들기
-QgDsm* gl_create_depth_stencil(QgRdh* rdh, const QgPropDepthStencil* prop)
+QgDsm* gl_create_depth_stencil(QgRdh* rdh, const QgDepthStencilProp* prop)
 {
 	//GlRdhBase* self = qm_cast(rdh, GlRdhBase);
 	GlDsm* dsm = gl_dsm_allocator(rdh, prop);
@@ -370,7 +370,7 @@ QgDsm* gl_create_depth_stencil(QgRdh* rdh, const QgPropDepthStencil* prop)
 }
 
 // 래스터라이저 만들기
-QgRsz* gl_create_rasterizer(QgRdh* rdh, const QgPropRasterizer* prop)
+QgRsz* gl_create_rasterizer(QgRdh* rdh, const QgRasterizerProp* prop)
 {
 	//GlRdhBase* self = qm_cast(rdh, GlRdhBase);
 	GlRsz* rsz = gl_rsz_allocator(rdh, prop);

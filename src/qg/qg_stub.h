@@ -2,30 +2,49 @@
 
 #include <qs_ctn.h>
 
+//////////////////////////////////////////////////////////////////////////
+// SDL
+#if USE_SDL2
+/**
+ * @brief SDLK를 QIK로
+ * @param sdlk SDLK
+ * @return 변환한 QIK
+*/
+extern QikKey sdlk_to_qik(uint32_t sdlk);
+/**
+ * @brief 
+ * @param modifier 
+ * @return 
+*/
+extern QikMask kmod_to_qikm(int modifier);
+#endif
+
+
+//////////////////////////////////////////////////////////////////////////
 // 스터브
 QN_DECL_LIST(qgListEvent, QgEvent);
 
+/** @brief 기본 스터브 형식 */
+typedef struct StubBase StubBase;
 struct StubBase
 {
-	bool				inited;
-
-	void*				oshandle;
+	void*				handle;
 
 	QgFlag				flags;
-	QgStubStat			sttis;
+	QgStubStat			stats;
 	uint				delay;
-	int					padding[1];
 
 	QnTimer*			timer;
-	double				fps;
-	double				run;
-	double				active;
+	double				run;								/** @brief 실행 시간 */
+	double				fps;								/** @brief 프레임 당 시간 */
+	double				active;								/** @brief 활성화된 시간 */
 
-	float				refadv;
-	float				advance;
+	float				reference;							/** @brief 프레임 시간 */
+	float				advance;							/** @brief 프레임 시간, 포즈 상태일 때는 0 */
 
-	QnRect				bound;
+	QnPoint				pos;
 	QnSize				size;
+	QnRect				bound;
 
 	QgUimKey			key;
 	QgUimMouse			mouse;
@@ -33,6 +52,8 @@ struct StubBase
 	qgListEvent			events;
 };
 
+/** @brief 스터브 만들기 파라미터 */
+typedef struct StubParam StubParam;
 struct StubParam
 {
 	const char*		title;
@@ -41,15 +62,35 @@ struct StubParam
 	int				flags;
 };
 
-extern struct StubBase* qg_stub_instance;
+/** @brief 스터브 인스턴스 */
+extern StubBase* qg_stub_instance;
 
-extern struct StubBase* stub_system_open(struct StubParam* param);
+/**
+ * @brief 시스템 스터브를 연다
+ * @param param 스터브 파라미터
+ * @return 만들어진 스터브
+*/
+extern StubBase* stub_system_open(const StubParam* param);
+/**
+ * @brief 시스템 스터브를 정리한다
+*/
 extern void stub_system_finalize(void);
+/**
+ * @brief 시스템 스터브 폴링
+ * @return 프로그램이 종료되면 거짓
+*/
 extern bool stub_system_poll(void);
 
+/**
+ * @brief 내부적으로 마우스 눌림을 연산한다
+ * @param button 눌린 마우스
+ * @param track 추적할 방식
+ * @return 더블 클릭이면 참, 한번 클릭이면 거짓
+*/
 extern bool stub_internal_mouse_clicks(QimButton button, QimTrack track);
 
 
+//////////////////////////////////////////////////////////////////////////
 // 렌더 디바이스
 extern QgRdh* qg_rdh_instance;
 
@@ -65,8 +106,3 @@ extern QgRdh* es2_allocator(void* oshandle, int flags);
 
 #define rdh_set_flush(rdh,v)	(qm_cast(rdh, QgRdh)->invokes.fluash=(v))
 #define rdh_inc_ends(rdh)		(qm_cast(rdh, QgRdh)->invokes.ends++)
-
-
-// SDL
-extern QikKey sdlk_to_qik(uint32_t sdlk);
-extern QikMask sdl_kmod_to_qikm(int modifier);

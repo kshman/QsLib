@@ -1,7 +1,27 @@
 ﻿#pragma once
 
+#ifndef USE_SDL2
+#define USE_SDL2	1
+#endif
+
 #ifndef USE_ES2
 #define USE_ES2		1
+#endif
+
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <signal.h>
+#include <wchar.h>
+#include <wctype.h>
+#include <math.h>
+#if defined __unix__
+#include <sys/time.h>
 #endif
 
 // Windows
@@ -20,23 +40,6 @@
 #endif
 #endif
 
-// comon
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-#include <signal.h>
-#include <wchar.h>
-#include <wctype.h>
-#include <math.h>
-#if defined __unix__
-#include <sys/time.h>
-#endif
-
 // ANDROID
 #if defined __android__
 #	include <android/configuration.h>
@@ -45,9 +48,11 @@
 #endif
 
 // SDL
-#include <SDL2/SDL.h>
+#ifdef USE_SDL2
+#	include <SDL2/SDL.h>
 #if defined USE_ES2
-#include <SDL2/SDL_opengles2.h>
+#	include <SDL2/SDL_opengles2.h>
+#endif
 #endif
 
 //

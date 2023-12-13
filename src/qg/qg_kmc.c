@@ -1,4 +1,9 @@
-﻿#include "pch.h"
+﻿//
+// qg_kmc.c - 키보드/마우스/컨트롤러
+// 2023-12-13 by kim
+//
+
+#include "pch.h"
 #include "qs_qn.h"
 #include "qs_kmc.h"
 
@@ -8,9 +13,10 @@
 //
 const char* qg_qik_str(QikKey key)
 {
+#ifndef __EMSCRIPTEN__
 	static const char* s_key_names[] =
 	{
-		/*00*/ "NONE", NULL, NULL, NULL, NULL, NULL, NULL, NULL, "BACK", "TAB", NULL, NULL, NULL, "RETURN", NULL, NULL,
+		/*00*/ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "BACK", "TAB", NULL, NULL, NULL, "RETURN", NULL, NULL,
 		/*10*/ NULL, NULL, NULL, "PAUSE", "CAPSLOCK", NULL, NULL, NULL, NULL, NULL, NULL, "ESCAPE", NULL, NULL, NULL, NULL,
 		/*20*/ "SPACE", "PGUP", "PGDN", "END", "HOME", "LEFT", "UP", "RIGHT", "DOWN", NULL, NULL, NULL, "PRTSCR", "INS", "DEL", NULL,
 		/*30*/ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", NULL, NULL, NULL, NULL, NULL, NULL,
@@ -28,31 +34,38 @@ const char* qg_qik_str(QikKey key)
 		/*F0*/ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	};
 
-	return !s_key_names[key] ? s_key_names[0] : s_key_names[key];
+	return s_key_names[(byte)key];
+#else
+	return NULL;
+#endif
 }
 
 //
 const char* qg_qim_str(QimButton button)
 {
+#ifndef __EMSCRIPTEN__
 	static const char* s_button_names[] =
 	{
-		"UNKNOWN",
+		NULL,
 		"LEFT",
 		"RIGHT",
 		"MIDDLE",
 		"X1",
 		"X2"
 	};
-
 	return s_button_names[(size_t)button < QN_COUNTOF(s_button_names) ? button : 0];
+#else
+	return NULL;
+#endif
 }
 
 //
 const char* qg_qic_str(QicButton button)
 {
+#ifndef __EMSCRIPTEN__
 	static const char* s_button_names[] =
 	{
-		"UNKNOWN",
+		NULL,
 		"UP",
 		"DOWN",
 		"LEFT",
@@ -68,10 +81,13 @@ const char* qg_qic_str(QicButton button)
 		"X",
 		"Y"
 	};
-
 	return s_button_names[(size_t)button < QN_COUNTOF(s_button_names) ? button : 0];
+#else
+	return NULL;
+#endif;
 }
 
+#if USE_SDL2
 //
 QikKey sdlk_to_qik(uint sdlk)
 {
@@ -288,7 +304,8 @@ QikKey sdlk_to_qik(uint sdlk)
 	return QIK_NONE;
 }
 
-QikMask sdl_kmod_to_qikm(int modifier)
+//
+QikMask kmod_to_qikm(int modifier)
 {
 	QikMask m = (QikMask)0;
 	if (modifier & (KMOD_LSHIFT | KMOD_RSHIFT)) m |= QIKM_SHIFT;
@@ -299,4 +316,5 @@ QikMask sdl_kmod_to_qikm(int modifier)
 	if (modifier & KMOD_MODE) m |= QIKM_SCRL;
 	return m;
 }
+#endif
 

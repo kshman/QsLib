@@ -37,7 +37,7 @@ QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, 
 	}
 
 	// 개별 디바이스
-	QgRdh* self = allocator(qg_stub_instance->oshandle, flags);
+	QgRdh* self = allocator(qg_stub_instance->handle, flags);
 	if (self == NULL)
 		return NULL;
 
@@ -75,8 +75,8 @@ void rdh_internal_reset(QgRdh* self)
 	const float aspect = qn_size_aspect(&tm->size);
 	qn_mat4_rst(&tm->world);
 	qn_mat4_rst(&tm->view);
-	qn_mat4_perspective_lh(&tm->proj, QN_PI_H, aspect, tm->z.znear, tm->z.zfar);
-	tm->vipr = tm->proj;
+	qn_mat4_perspective_lh(&tm->project, QN_PI_H, aspect, tm->z.znear, tm->z.zfar);
+	tm->view_project = tm->project;
 	qn_mat4_rst(&tm->inv);
 	qn_mat4_rst(&tm->ortho);
 	qn_mat4_rst(&tm->frm);
@@ -86,7 +86,7 @@ void rdh_internal_reset(QgRdh* self)
 	// param
 	QgRenderParam* param = &self->param;
 	param->bones = 0;
-	param->bonptr = NULL;
+	param->bone_ptr = NULL;
 	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)
 		qn_vec4_rst(&param->v[i]);
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)
@@ -233,7 +233,7 @@ void qg_rdh_set_param_weight(QgRdh* self, int count, QnMat4* weight)
 {
 	qn_ret_if_fail(weight && count > 0);
 	self->param.bones = count;
-	self->param.bonptr = weight;
+	self->param.bone_ptr = weight;
 	self->invokes.invokes++;
 }
 
@@ -251,10 +251,10 @@ void qg_rdh_set_background(QgRdh* self, const QnColor* color)
 void qg_rdh_set_view_proj(QgRdh* self, const QnMat4* proj, const QnMat4* view)
 {
 	qn_ret_if_fail(proj && view);
-	self->tm.proj = *proj;
+	self->tm.project = *proj;
 	self->tm.view = *view;
 	qn_mat4_inv(&self->tm.inv, view, NULL);
-	qn_mat4_mul(&self->tm.vipr, proj, view);
+	qn_mat4_mul(&self->tm.view_project, proj, view);
 	self->invokes.invokes++;
 	self->invokes.transforms++;
 }
@@ -263,8 +263,8 @@ void qg_rdh_set_view_proj(QgRdh* self, const QnMat4* proj, const QnMat4* view)
 void qg_rdh_set_proj(QgRdh* self, const QnMat4* proj)
 {
 	qn_ret_if_fail(proj);
-	self->tm.proj = *proj;
-	qn_mat4_mul(&self->tm.vipr, &self->tm.view, proj);
+	self->tm.project = *proj;
+	qn_mat4_mul(&self->tm.view_project, &self->tm.view, proj);
 	self->invokes.invokes++;
 	self->invokes.transforms++;
 }
@@ -275,7 +275,7 @@ void qg_rdh_set_view(QgRdh* self, const QnMat4* view)
 	qn_ret_if_fail(view);
 	self->tm.view = *view;
 	qn_mat4_inv(&self->tm.inv, view, NULL);
-	qn_mat4_mul(&self->tm.vipr, view, &self->tm.proj);
+	qn_mat4_mul(&self->tm.view_project, view, &self->tm.project);
 	self->invokes.invokes++;
 	self->invokes.transforms++;
 }
@@ -290,7 +290,7 @@ void qg_rdh_set_world(QgRdh* self, const QnMat4* world)
 }
 
 //
-QgVlo* qg_rdh_create_layout(QgRdh* self, int count, const QgPropLayout* layouts)
+QgVlo* qg_rdh_create_layout(QgRdh* self, int count, const QgLayoutElement* layouts)
 {
 	qn_retval_if_fail(layouts && count > 0, false);
 	self->invokes.invokes++;
@@ -319,7 +319,7 @@ QgBuf* qg_rdh_create_buffer(QgRdh* self, QgBufType type, int count, int stride, 
 }
 
 //
-QgDsm* qg_rdh_create_depth_stencil(QgRdh* self, const QgPropDepthStencil* prop)
+QgDsm* qg_rdh_create_depth_stencil(QgRdh* self, const QgDepthStencilProp* prop)
 {
 	qn_retval_if_fail(prop, NULL);
 
@@ -352,7 +352,7 @@ QgDsm* qg_rdh_create_depth_stencil(QgRdh* self, const QgPropDepthStencil* prop)
 }
 
 //
-QgRsz* qg_rdh_create_rasterizer(QgRdh* self, const QgPropRasterizer* prop)
+QgRsz* qg_rdh_create_rasterizer(QgRdh* self, const QgRasterizerProp* prop)
 {
 	qn_retval_if_fail(prop, NULL);
 
@@ -360,8 +360,8 @@ QgRsz* qg_rdh_create_rasterizer(QgRdh* self, const QgPropRasterizer* prop)
 	if ((size_t)prop->name < maxvalue) {\
 		qn_debug_outputf(true, "QgRdh", "invalid '%s' value: %d", #name, prop->name); return NULL; }
 
-	CHK_RSZ_PARAM(fill, QGFLL_MAX_VALUE);
-	CHK_RSZ_PARAM(cull, QGCUL_MAX_VALUE);
+	CHK_RSZ_PARAM(fill, QGFILL_MAX_VALUE);
+	CHK_RSZ_PARAM(cull, QGCULL_MAX_VALUE);
 #undef CHK_RSZ_PARAM
 
 	self->invokes.invokes++;

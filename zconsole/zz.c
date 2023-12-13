@@ -42,10 +42,10 @@ int main()
 	qn_retval_if_fail(rdh, -1);
 
 	QgVlo* vlo = qg_rdh_create_layout(rdh, QN_COUNTOF(layout), layout);
-	QgBuf* buf = qg_rdh_create_buffer(rdh, QGBUF_VERTEX, QN_COUNTOF(vertices), sizeof(struct vertextype), vertices);
+	QgBuf* buf = qg_rdh_create_buffer(rdh, QGBUFFER_VERTEX, QN_COUNTOF(vertices), sizeof(struct vertextype), vertices);
 	QgShd* shd = qg_rdh_create_shader(rdh, NULL);
-	qg_shd_bind(shd, QGSHT_VS, vs, 0, 0);
-	qg_shd_bind(shd, QGSHT_PS, ps, 0, 0);
+	qg_shd_bind(shd, QGSHADER_VS, vs, 0, 0);
+	qg_shd_bind(shd, QGSHADER_PS, ps, 0, 0);
 	qg_shd_link(shd);
 
 	qn_debug_mpfprint();

@@ -14,7 +14,7 @@ qvt_name(QmGam) vt_gl_dsm =
 };
 
 //
-GlDsm* gl_dsm_allocator(QgRdh* rdh, const QgPropDepthStencil* prop)
+GlDsm* gl_dsm_allocator(QgRdh* rdh, const QgDepthStencilProp* prop)
 {
 	static const GLenum s_compare_op[] =
 	{
@@ -92,17 +92,17 @@ qvt_name(QmGam) vt_gl_rsz =
 	.dispose = gl_rsz_dispose,
 };
 
-GlRsz* gl_rsz_allocator(QgRdh* rdh, const QgPropRasterizer* prop)
+GlRsz* gl_rsz_allocator(QgRdh* rdh, const QgRasterizerProp* prop)
 {
 	GlRsz* self = qn_alloc_zero_1(GlRsz);
 	GlRasterizeProp* p = &self->prop;
 
 #if defined GL_FILL
-	p->fill = prop->fill == QGFLL_SOLID ? GL_FILL : prop->fill == QGFLL_POINT : GL_POINT : GL_LINE;
+	p->fill = prop->fill == QGFILL_SOLID ? GL_FILL : prop->fill == QGFILL_POINT : GL_POINT : GL_LINE;
 #else
 	p->fill = 0;
 #endif
-	p->cull = prop->cull == QGCUL_FRONT ? GL_FRONT : prop->cull == QGCUL_BACK ? GL_BACK : GL_NONE;
+	p->cull = prop->cull == QGCULL_FRONT ? GL_FRONT : prop->cull == QGCULL_BACK ? GL_BACK : GL_NONE;
 	p->depth_bias = prop->depth_bias;
 	p->slope_scale = prop->slope_scale;
 

@@ -82,7 +82,7 @@ struct GlAttrib
 	GLint				attrib : 8;
 	GLint				size : 8;
 	QgLoUsage			usage : 16;
-	QgShdConst			cnst : 16;
+	QgShdConstType			cnst : 16;
 	size_t				hash;
 };
 
@@ -189,11 +189,11 @@ extern bool gl_begin(QgRdh* rdh, bool clear);
 extern void gl_end(QgRdh* rdh);
 extern void gl_flush(QgRdh* rdh);
 
-extern QgVlo* gl_create_layout(QgRdh* rdh, int count, const QgPropLayout* layouts);
+extern QgVlo* gl_create_layout(QgRdh* rdh, int count, const QgLayoutElement* layouts);
 extern QgShd* gl_create_shader(QgRdh* rdh, const char* name);
 extern QgBuf* gl_create_buffer(QgRdh* rdh, QgBufType type, int count, int stride, const void* data);
-extern QgDsm* gl_create_depth_stencil(QgRdh* rdh, const QgPropDepthStencil* prop);
-extern QgRsz* gl_create_rasterizer(QgRdh* rdh, const QgPropRasterizer* prop);
+extern QgDsm* gl_create_depth_stencil(QgRdh* rdh, const QgDepthStencilProp* prop);
+extern QgRsz* gl_create_rasterizer(QgRdh* rdh, const QgRasterizerProp* prop);
 
 extern void gl_set_shader(QgRdh* rdh, QgShd* shader, QgVlo* layout);
 extern bool gl_set_index(QgRdh* rdh, QgBuf* buffer);
@@ -224,7 +224,7 @@ struct GlVlo
 	int					es_cnt[QGLOS_MAX_VALUE];
 	GlLayoutElement*	es_elm[QGLOS_MAX_VALUE];
 };
-extern GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgPropLayout* layouts);
+extern GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgLayoutElement* layouts);
 
 // 세이더
 struct GlShd
@@ -264,7 +264,7 @@ struct GlDsm
 
 	GlDepthStencilProp	prop;
 };
-extern GlDsm* gl_dsm_allocator(QgRdh* rdh, const QgPropDepthStencil* prop);
+extern GlDsm* gl_dsm_allocator(QgRdh* rdh, const QgDepthStencilProp* prop);
 
 // 래스터라이즈
 struct GlRsz
@@ -273,5 +273,5 @@ struct GlRsz
 
 	GlRasterizeProp		prop;
 };
-extern GlRsz* gl_rsz_allocator(QgRdh* rdh, const QgPropRasterizer* prop);
+extern GlRsz* gl_rsz_allocator(QgRdh* rdh, const QgRasterizerProp* prop);
 

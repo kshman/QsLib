@@ -1,4 +1,9 @@
-﻿#include "pch.h"
+﻿//
+// qg_stub.c - 스터브
+// 2023-12-13 by kim
+//
+
+#include "pch.h"
 #include "qs_qg.h"
 #include "qg_stub.h"
 
@@ -9,6 +14,7 @@ bool qg_stub_atexit = false;
 //////////////////////////////////////////////////////////////////////////
 // 스터브
 
+/** @brief atexit에 등록할 스터브 정리 함수 */
 static void _stub_atexit(void* dummy);
 
 //
@@ -26,19 +32,19 @@ bool qg_open_stub(const char* title, int width, int height, int flags)
 	struct StubBase* stub = stub_system_open(&param);
 
 	stub->flags = flags;
-	stub->sttis = QGSTTI_ACTIVE;
+	stub->stats = QGSTTI_ACTIVE;
 	stub->delay = 10;
 
 	stub->timer = qn_timer_new();
-	qn_timer_set_manual(stub->timer, true);
+	qn_timer_set_manual(stub->timer, true);					// 유닉스 계열에서는 매뉴얼 밖에 안된다. 첨부터 매뉴얼로 만들껄 그랬나
 	stub->active = qn_timer_get_abs(stub->timer);
 
-	stub->mouse.lim.move = /*제한 이동 거리(포인트)의 제곱*/5 * 5;
-	stub->mouse.lim.tick = /*제한 클릭 시간(밀리초)*/500;
+	stub->mouse.lim.move = 5 * 5;							// 제한 이동 거리(포인트)의 제곱
+	stub->mouse.lim.tick = 500;								// 제한 클릭 시간(밀리초)
 
 	qn_list_init(qgListEvent, &stub->events);
 
-	if (!qg_stub_atexit)
+	if (qg_stub_atexit == false)
 	{
 		qg_stub_atexit = true;
 		qn_atexitp(_stub_atexit, NULL);
@@ -48,11 +54,13 @@ bool qg_open_stub(const char* title, int width, int height, int flags)
 	return true;
 }
 
+//
 static void _stub_atexit(void* dummy)
 {
 	qg_close_stub();
 }
 
+//
 void qg_close_stub(void)
 {
 	qn_ret_if_fail(qg_stub_instance);
@@ -65,6 +73,7 @@ void qg_close_stub(void)
 	qg_stub_instance = NULL;
 }
 
+//
 bool stub_internal_mouse_clicks(QimButton button, QimTrack track)
 {
 	QgUimMouse* m = &qg_stub_instance->mouse;
@@ -76,8 +85,11 @@ bool stub_internal_mouse_clicks(QimButton button, QimTrack track)
 			const int dx = m->clk.loc.x - m->pt.x;
 			const int dy = m->clk.loc.y - m->pt.y;
 			const int d = dx * dx + dy * dy;
-			if (d > m->lim.move)	// 마우스가 lim_move 움직이면 두번 누르기 취소
+			if (d > m->lim.move)
+			{
+				// 마우스가 move 만큼 움직이면 두번 누르기 취소
 				m->clk.tick = 0;
+			}
 		}
 	}
 	else if (track == QIMT_DOWN)
@@ -112,21 +124,22 @@ bool stub_internal_mouse_clicks(QimButton button, QimTrack track)
 	return false;
 }
 
+//
 void qg_exit_loop(void)
 {
 	qn_ret_if_fail(qg_stub_instance);
-	QN_SET_MASK(&qg_stub_instance->sttis, QGSTTI_EXIT, true);
+	QN_SET_MASK(&qg_stub_instance->stats, QGSTTI_EXIT, true);
 }
 
 //
 bool qg_loop(void)
 {
-	struct StubBase* stub = qg_stub_instance;
+	StubBase* stub = qg_stub_instance;
 	qn_retval_if_fail(stub, false);
 
-	if (QN_TEST_MASK(stub->sttis, QGSTTI_VIRTUAL) == false)
+	if (QN_TEST_MASK(stub->stats, QGSTTI_VIRTUAL) == false)
 	{
-		if (!stub_system_poll() || QN_TEST_MASK(stub->sttis, QGSTTI_EXIT))
+		if (!stub_system_poll() || QN_TEST_MASK(stub->stats, QGSTTI_EXIT))
 			return false;
 	}
 
@@ -134,13 +147,11 @@ bool qg_loop(void)
 	const float adv = (float)qn_timer_get_adv(stub->timer);
 	stub->run = qn_timer_get_run(stub->timer);
 	stub->fps = qn_timer_get_fps(stub->timer);
-	stub->refadv = adv;
-
-	if (QN_TEST_MASK(stub->sttis, QGSTTI_PAUSE) == false)
-		stub->advance = adv;
+	stub->reference = adv;
+	stub->advance = QN_TEST_MASK(stub->stats, QGSTTI_PAUSE) == false ? adv : 0.0f;
 
 	if (QN_TEST_MASK(stub->flags, QGFLAG_IDLE))
-		qn_sleep(QN_TEST_MASK(stub->sttis, QGSTTI_ACTIVE | QGSTTI_VIRTUAL) == false ? stub->delay : 1);
+		qn_sleep(QN_TEST_MASK(stub->stats, QGSTTI_ACTIVE | QGSTTI_VIRTUAL) == false ? stub->delay : 1);
 
 	return true;
 }
@@ -149,7 +160,8 @@ bool qg_loop(void)
 bool qg_poll(QgEvent* ev)
 {
 	qn_retval_if_fail(ev, false);
-	struct StubBase* stub = qg_stub_instance;
+
+	StubBase* stub = qg_stub_instance;
 	qn_retval_if_fail(stub, false);
 
 	if (qn_list_is_empty(&stub->events))
@@ -175,11 +187,23 @@ const QgUimMouse* qg_get_mouse_info(void)
 //
 bool qg_test_key(QikKey key)
 {
-	return (uint)key < QIK_MAX_VALUE ? qg_stub_instance->key.key[key] : false;
+	qn_retval_if_fail((size_t)key < QIK_MAX_VALUE && key != QIK_NONE, false);
+	byte nth = (byte)key >> 3;
+	byte mask = (byte)key & ~(nth << 3);
+	return QN_TEST_MASK(qg_stub_instance->key.key[nth], mask);
 }
 
 //
-double qg_get_run_time(void)
+void qg_set_key(QikKey key, bool down)
+{
+	qn_ret_if_fail((size_t)key < QIK_MAX_VALUE && key != QIK_NONE);
+	byte nth = (byte)key >> 3;
+	byte mask = (byte)key & ~(nth << 3);
+	QN_SET_MASK(&qg_stub_instance->key.key[nth], mask, down);
+}
+
+//
+double qg_get_run(void)
 {
 	return qg_stub_instance->run;
 }
@@ -191,9 +215,9 @@ double qg_get_fps(void)
 }
 
 //
-double qg_get_ref_adv(void)
+double qg_get_reference(void)
 {
-	return qg_stub_instance->refadv;
+	return qg_stub_instance->reference;
 }
 
 //

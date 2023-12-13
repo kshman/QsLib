@@ -231,6 +231,22 @@ typedef enum QicMask					QicMask;
 
 //////////////////////////////////////////////////////////////////////////
 // function
+
+/**
+ * @brief QikKey를 문자열로
+ * @param key QikKey
+ * @return QikKey의 이름
+*/
 QSAPI const char* qg_qik_str(QikKey key);
+/**
+ * @brief QimButton를 문자열로
+ * @param button QimButton
+ * @return QimButton의 이름
+*/
 QSAPI const char* qg_qim_str(QimButton button);
+/**
+ * @brief QicButton를 문자열로
+ * @param button QicButton
+ * @return QicButton의 이름
+*/
 QSAPI const char* qg_qic_str(QicButton button);

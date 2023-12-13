@@ -16,7 +16,7 @@ qvt_name(QmGam) vt_gl_vlo =
 };
 
 //
-GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgPropLayout* layouts)
+GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgLayoutElement* layouts)
 {
 	static GLenum s_format[QGLOT_MAX_VALUE] =
 	{
@@ -63,7 +63,7 @@ GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgPropLayout* layouts)
 	byte accum[QGLOS_MAX_VALUE] = { 0, };
 	for (int i = 0; i < count; i++)
 	{
-		const QgPropLayout* l = &layouts[i];
+		const QgLayoutElement* l = &layouts[i];
 		if ((size_t)l->stage >= QGLOS_MAX_VALUE)
 			return NULL;
 		accum[l->stage]++;
@@ -86,7 +86,7 @@ GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgPropLayout* layouts)
 	ushort offset[QGLOS_MAX_VALUE] = { 0, };
 	for (int i = 0; i < count; i++)
 	{
-		const QgPropLayout* l = &layouts[i];
+		const QgLayoutElement* l = &layouts[i];
 		GlLayoutElement* e = elms[l->stage]++;
 		e->stage = l->stage;
 		e->usage = l->usage;
@@ -208,14 +208,14 @@ static bool gl_shd_bind(QgShd* g, QgShdType type, const void* data, int size, in
 	GlShd* self = qm_cast(g, GlShd);
 	const GLuint handle = qm_get_desc(self, GLuint);
 
-	if (type == QGSHT_VS)
+	if (type == QGSHADER_VS)
 	{
 		gl_shd_handle_unload(self->rvertex, handle);
 		if ((self->rvertex = gl_shd_compile(self, GL_VERTEX_SHADER, (const char*)data, (GLint)size)) == NULL)
 			return false;
 		GL_FUNC(glAttachShader)(handle, self->rvertex->handle);
 	}
-	else if (type == QGSHT_PS)
+	else if (type == QGSHADER_PS)
 	{
 		gl_shd_handle_unload(self->rfragment, handle);
 		if ((self->rfragment = gl_shd_compile(self, GL_FRAGMENT_SHADER, (const char*)data, (GLint)size)) == NULL)
@@ -241,7 +241,7 @@ static bool gl_shd_bind_shd(QgShd* g, QgShdType type, QgShd* shaderptr)
 	const GLuint handle = qm_get_desc(self, GLuint);
 	bool ok = false;
 
-	if (QN_TEST_MASK(type, QGSHT_VS))
+	if (QN_TEST_MASK(type, QGSHADER_VS))
 	{
 		qn_retval_if_fail(shader->rvertex, false);
 		gl_shd_handle_unload(self->rvertex, handle);
@@ -251,7 +251,7 @@ static bool gl_shd_bind_shd(QgShd* g, QgShdType type, QgShd* shaderptr)
 		ok = true;
 	}
 
-	if (QN_TEST_MASK(type, QGSHT_PS))
+	if (QN_TEST_MASK(type, QGSHADER_PS))
 	{
 		qn_retval_if_fail(shader->rfragment, false);
 		gl_shd_handle_unload(self->rfragment, handle);
@@ -269,15 +269,15 @@ static bool gl_shd_bind_shd(QgShd* g, QgShdType type, QgShd* shaderptr)
 }
 
 //
-static QgShdConst gl_shd_enum_to_const(GLenum gl_type)
+static QgShdConstType gl_shd_enum_to_const(GLenum gl_type)
 {
 	switch (gl_type)
 	{
-		case GL_FLOAT:				return QGSHC_FLOAT1;
-		case GL_FLOAT_VEC2:			return QGSHC_FLOAT2;
-		case GL_FLOAT_VEC3:			return QGSHC_FLOAT3;
-		case GL_FLOAT_VEC4:			return QGSHC_FLOAT4;
-		case GL_FLOAT_MAT4:			return QGSHC_FLOAT16;
+		case GL_FLOAT:				return QGSCT_FLOAT1;
+		case GL_FLOAT_VEC2:			return QGSCT_FLOAT2;
+		case GL_FLOAT_VEC3:			return QGSCT_FLOAT3;
+		case GL_FLOAT_VEC4:			return QGSCT_FLOAT4;
+		case GL_FLOAT_MAT4:			return QGSCT_FLOAT16;
 #ifdef GL_SAMPLER_1D
 		case GL_SAMPLER_1D:
 #endif
@@ -292,15 +292,15 @@ static QgShdConst gl_shd_enum_to_const(GLenum gl_type)
 #ifdef GL_SAMPLER_3D
 		case GL_SAMPLER_3D:
 #endif
-		case GL_INT:				return QGSHC_INT1;
-		case GL_INT_VEC2:			return QGSHC_INT2;
-		case GL_INT_VEC3:			return QGSHC_INT3;
-		case GL_INT_VEC4:			return QGSHC_INT4;
-		case GL_BOOL:				return QGSHC_BYTE1;
-		case GL_BOOL_VEC2:			return QGSHC_BYTE2;
-		case GL_BOOL_VEC3:			return QGSHC_BYTE3;
-		case GL_BOOL_VEC4:			return QGSHC_BYTE4;
-		default:					return QGSHC_UNKNOWN;
+		case GL_INT:				return QGSCT_INT1;
+		case GL_INT_VEC2:			return QGSCT_INT2;
+		case GL_INT_VEC3:			return QGSCT_INT3;
+		case GL_INT_VEC4:			return QGSCT_INT4;
+		case GL_BOOL:				return QGSCT_BYTE1;
+		case GL_BOOL_VEC2:			return QGSCT_BYTE2;
+		case GL_BOOL_VEC3:			return QGSCT_BYTE3;
+		case GL_BOOL_VEC4:			return QGSCT_BYTE4;
+		default:					return QGSCT_UNKNOWN;
 	}
 }
 
@@ -360,8 +360,8 @@ bool gl_shd_link(QgShd* g)
 			GLenum gl_type;
 			GL_FUNC(glGetActiveUniform)(gl_program, i, QN_COUNTOF(sz) - 1, NULL, &gl_size, &gl_type, sz);
 
-			const QgShdConst cnst = gl_shd_enum_to_const(gl_type);
-			if (cnst == QGSHC_UNKNOWN)
+			const QgShdConstType cnst = gl_shd_enum_to_const(gl_type);
+			if (cnst == QGSCT_UNKNOWN)
 			{
 				// 사용할 수 없는 유니폼
 				qn_debug_outputf(true, "GLShd", "not supported uniform type '%X' in '%s'", gl_type, sz);
@@ -370,7 +370,7 @@ bool gl_shd_link(QgShd* g)
 
 			GlUniform* u = &qn_ctnr_nth(&self->uniforms, index);
 			qn_strncpy(u->base.name, QN_COUNTOF(u->base.name), sz, QN_COUNTOF(u->base.name) - 1);
-			u->base.cnst = cnst;
+			u->base.type = cnst;
 			u->base.size = (ushort)gl_size;
 			u->base.offset = (uint)GL_FUNC(glGetUniformLocation)(gl_program, sz);
 			u->hash = qn_strihash(u->base.name);
@@ -396,8 +396,8 @@ bool gl_shd_link(QgShd* g)
 			GLsizei gl_len;
 			GL_FUNC(glGetActiveAttrib)(gl_program, i, QN_COUNTOF(sz) - 1, &gl_len, &gl_size, &gl_type, sz);
 
-			const QgShdConst cnst = gl_shd_enum_to_const(gl_type);
-			if (cnst == QGSHC_UNKNOWN)
+			const QgShdConstType cnst = gl_shd_enum_to_const(gl_type);
+			if (cnst == QGSCT_UNKNOWN)
 			{
 				// 사용할 수 없는 어트리뷰트
 				qn_debug_outputf(true, "GLShd", "not supported attribute type '%X' in '%s'", gl_type, sz);
@@ -444,173 +444,173 @@ void gl_shd_process_uniforms(GlShd* self)
 
 // 자동 변수들
 
-// QGSHA_ORTHO_PROJ
+// QGSCA_ORTHO_PROJ
 static void gl_shd_auto_otho_proj(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT16); qn_verify(v->size == 1);
+	qn_verify(v->type == QGSCT_FLOAT16); qn_verify(v->size == 1);
 	GL_FUNC(glUniformMatrix4fv)(handle, 1, false, (const GLfloat*)&rdh->tm.ortho);
 }
 
-// QGSHA_WORLD
+// QGSCA_WORLD
 static void gl_shd_auto_world(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT16); qn_verify(v->size == 1);
+	qn_verify(v->type == QGSCT_FLOAT16); qn_verify(v->size == 1);
 	GL_FUNC(glUniformMatrix4fv)(handle, 1, false, (const GLfloat*)&rdh->tm.world);
 }
 
-// QGSHA_VIEW
+// QGSCA_VIEW
 static void gl_shd_auto_view(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT16); qn_verify(v->size == 1);
+	qn_verify(v->type == QGSCT_FLOAT16); qn_verify(v->size == 1);
 	GL_FUNC(glUniformMatrix4fv)(handle, 1, false, (const GLfloat*)&rdh->tm.view);
 }
 
-// QGSHA_PROJ
+// QGSCA_PROJ
 static void gl_shd_auto_proj(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT16); qn_verify(v->size == 1);
-	GL_FUNC(glUniformMatrix4fv)(handle, 1, false, (const GLfloat*)&rdh->tm.proj);
+	qn_verify(v->type == QGSCT_FLOAT16); qn_verify(v->size == 1);
+	GL_FUNC(glUniformMatrix4fv)(handle, 1, false, (const GLfloat*)&rdh->tm.project);
 }
 
-// QGSHA_VIEW_PROJ
+// QGSCA_VIEW_PROJ
 static void gl_shd_auto_view_proj(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT16); qn_verify(v->size == 1);
-	GL_FUNC(glUniformMatrix4fv)(handle, 1, false, (const GLfloat*)&rdh->tm.vipr);
+	qn_verify(v->type == QGSCT_FLOAT16); qn_verify(v->size == 1);
+	GL_FUNC(glUniformMatrix4fv)(handle, 1, false, (const GLfloat*)&rdh->tm.view_project);
 }
 
-// QGSHA_INV_VIEW
+// QGSCA_INV_VIEW
 static void gl_shd_auto_inv_view(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT16); qn_verify(v->size == 1);
+	qn_verify(v->type == QGSCT_FLOAT16); qn_verify(v->size == 1);
 	GL_FUNC(glUniformMatrix4fv)(handle, 1, false, (const GLfloat*)&rdh->tm.inv);
 }
 
-// QGSHA_WORLD_VIEW_PROJ
+// QGSCA_WORLD_VIEW_PROJ
 static void gl_shd_auto_world_view_proj(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT16); qn_verify(v->size == 1);
+	qn_verify(v->type == QGSCT_FLOAT16); qn_verify(v->size == 1);
 	QnMat4 m;
-	qn_mat4_mul(&m, &rdh->tm.world, &rdh->tm.vipr);
+	qn_mat4_mul(&m, &rdh->tm.world, &rdh->tm.view_project);
 	GL_FUNC(glUniformMatrix4fv)(handle, 1, false, (const GLfloat*)&m);
 }
 
-// QGSHA_TEX0
+// QGSCA_TEX0
 static void gl_shd_auto_tex_0(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_INT1);
+	qn_verify(v->type == QGSCT_INT1);
 	GL_FUNC(glUniform1i)(handle, 0);
 }
 
-// QGSHA_TEX1
+// QGSCA_TEX1
 static void gl_shd_auto_tex_1(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_INT1);
+	qn_verify(v->type == QGSCT_INT1);
 	GL_FUNC(glUniform1i)(handle, 1);
 }
 
-// QGSHA_TEX2
+// QGSCA_TEX2
 static void gl_shd_auto_tex_2(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_INT1);
+	qn_verify(v->type == QGSCT_INT1);
 	GL_FUNC(glUniform1i)(handle, 2);
 }
 
-// QGSHA_TEX3
+// QGSCA_TEX3
 static void gl_shd_auto_tex_3(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_INT1);
+	qn_verify(v->type == QGSCT_INT1);
 	GL_FUNC(glUniform1i)(handle, 3);
 }
 
-// QGSHA_TEX4
+// QGSCA_TEX4
 static void gl_shd_auto_tex_4(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_INT1);
+	qn_verify(v->type == QGSCT_INT1);
 	GL_FUNC(glUniform1i)(handle, 4);
 }
 
-// QGSHA_TEX5
+// QGSCA_TEX5
 static void gl_shd_auto_tex_5(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_INT1);
+	qn_verify(v->type == QGSCT_INT1);
 	GL_FUNC(glUniform1i)(handle, 5);
 }
 
-// QGSHA_TEX6
+// QGSCA_TEX6
 static void gl_shd_auto_tex_6(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_INT1);
+	qn_verify(v->type == QGSCT_INT1);
 	GL_FUNC(glUniform1i)(handle, 6);
 }
 
-// QGSHA_TEX7
+// QGSCA_TEX7
 static void gl_shd_auto_tex_7(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_INT1);
+	qn_verify(v->type == QGSCT_INT1);
 	GL_FUNC(glUniform1i)(handle, 7);
 }
 
-// QGSHA_PROP_VEC0
+// QGSCA_PROP_VEC0
 static void gl_shd_auto_prop_vec_0(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT4);
+	qn_verify(v->type == QGSCT_FLOAT4);
 	GL_FUNC(glUniform4fv)(handle, 1, (const GLfloat*)&rdh->param.v[0]);
 }
 
-// QGSHA_PROP_VEC1
+// QGSCA_PROP_VEC1
 static void gl_shd_auto_prop_vec_1(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT4);
+	qn_verify(v->type == QGSCT_FLOAT4);
 	GL_FUNC(glUniform4fv)(handle, 1, (const GLfloat*)&rdh->param.v[1]);
 }
 
-// QGSHA_PROP_VEC2
+// QGSCA_PROP_VEC2
 static void gl_shd_auto_prop_vec_2(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT4);
+	qn_verify(v->type == QGSCT_FLOAT4);
 	GL_FUNC(glUniform4fv)(handle, 1, (const GLfloat*)&rdh->param.v[2]);
 }
 
-// QGSHA_PROP_VEC3
+// QGSCA_PROP_VEC3
 static void gl_shd_auto_prop_vec_3(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT4);
+	qn_verify(v->type == QGSCT_FLOAT4);
 	GL_FUNC(glUniform4fv)(handle, 1, (const GLfloat*)&rdh->param.v[3]);
 }
 
-// QGSHA_PROP_MAT0
+// QGSCA_PROP_MAT0
 static void gl_shd_auto_prop_mat_0(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT16);
+	qn_verify(v->type == QGSCT_FLOAT16);
 	GL_FUNC(glUniformMatrix4fv)(handle, 1, false, (const GLfloat*)&rdh->param.m[0]);
 }
 
-// QGSHA_PROP_MAT1
+// QGSCA_PROP_MAT1
 static void gl_shd_auto_prop_mat_1(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT16);
+	qn_verify(v->type == QGSCT_FLOAT16);
 	GL_FUNC(glUniformMatrix4fv)(handle, 1, false, (const GLfloat*)&rdh->param.m[1]);
 }
 
-// QGSHA_PROP_MAT2
+// QGSCA_PROP_MAT2
 static void gl_shd_auto_prop_mat_2(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT16);
+	qn_verify(v->type == QGSCT_FLOAT16);
 	GL_FUNC(glUniformMatrix4fv)(handle, 1, false, (const GLfloat*)&rdh->param.m[2]);
 }
 
-// QGSHA_PROP_MAT3
+// QGSCA_PROP_MAT3
 static void gl_shd_auto_prop_mat_3(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	qn_verify(v->cnst == QGSHC_FLOAT16);
+	qn_verify(v->type == QGSCT_FLOAT16);
 	GL_FUNC(glUniformMatrix4fv)(handle, 1, false, (const GLfloat*)&rdh->param.m[3]);
 }
 
-// QGSHA_MAT_PALETTE
+// QGSCA_MAT_PALETTE
 static void gl_shd_auto_mat_palette(const QgRdh* rdh, const GLint handle, const QgVarShader* v)
 {
-	GL_FUNC(glUniformMatrix4fv)(handle, rdh->param.bones, false, (const GLfloat*)rdh->param.bonptr);
+	GL_FUNC(glUniformMatrix4fv)(handle, rdh->param.bones, false, (const GLfloat*)rdh->param.bone_ptr);
 }
 
 // 자동 변수
@@ -620,39 +620,39 @@ static struct GlShaderAutoUniforms
 	struct AutoInfo
 	{
 		const char*			name;
-		QgShdAuto			type;
+		QgShdConstAuto			type;
 		void(*func)(const QgRdh*, GLint, const QgVarShader*);
 		size_t				hash;
-	}					autos[QGSHA_MAX_VALUE];
+	}					autos[QGSCA_MAX_VALUE];
 } gl_shd_auto_uniforms =
 {
 	false,
 	{
 #define ES2_AUTO_FUNC(name, type, func) { "s" QN_STRING(name), type, func, 0 }
-		ES2_AUTO_FUNC(OrthoProj, QGSHA_ORTHO_PROJ, gl_shd_auto_otho_proj),
-		ES2_AUTO_FUNC(World, QGSHA_WORLD, gl_shd_auto_world),
-		ES2_AUTO_FUNC(View, QGSHA_VIEW, gl_shd_auto_view),
-		ES2_AUTO_FUNC(Proj, QGSHA_PROJ, gl_shd_auto_proj),
-		ES2_AUTO_FUNC(ViewProj, QGSHA_VIEW_PROJ, gl_shd_auto_view_proj),
-		ES2_AUTO_FUNC(InvView, QGSHA_INV_VIEW, gl_shd_auto_inv_view),
-		ES2_AUTO_FUNC(WorldViewProj, QGSHA_WORLD_VIEW_PROJ, gl_shd_auto_world_view_proj),
-		ES2_AUTO_FUNC(Tex0, QGSHA_TEX0, gl_shd_auto_tex_0),
-		ES2_AUTO_FUNC(Tex1, QGSHA_TEX1, gl_shd_auto_tex_1),
-		ES2_AUTO_FUNC(Tex2, QGSHA_TEX2, gl_shd_auto_tex_2),
-		ES2_AUTO_FUNC(Tex3, QGSHA_TEX3, gl_shd_auto_tex_3),
-		ES2_AUTO_FUNC(Tex4, QGSHA_TEX4, gl_shd_auto_tex_4),
-		ES2_AUTO_FUNC(Tex5, QGSHA_TEX5, gl_shd_auto_tex_5),
-		ES2_AUTO_FUNC(Tex6, QGSHA_TEX6, gl_shd_auto_tex_6),
-		ES2_AUTO_FUNC(Tex7, QGSHA_TEX7, gl_shd_auto_tex_7),
-		ES2_AUTO_FUNC(PropVec0, QGSHA_PROP_VEC0, gl_shd_auto_prop_vec_0),
-		ES2_AUTO_FUNC(PropVec1, QGSHA_PROP_VEC1, gl_shd_auto_prop_vec_1),
-		ES2_AUTO_FUNC(PropVec2, QGSHA_PROP_VEC2, gl_shd_auto_prop_vec_2),
-		ES2_AUTO_FUNC(PropVec3, QGSHA_PROP_VEC3, gl_shd_auto_prop_vec_3),
-		ES2_AUTO_FUNC(PropMat0, QGSHA_PROP_MAT0, gl_shd_auto_prop_mat_0),
-		ES2_AUTO_FUNC(PropMat1, QGSHA_PROP_MAT1, gl_shd_auto_prop_mat_1),
-		ES2_AUTO_FUNC(PropMat2, QGSHA_PROP_MAT2, gl_shd_auto_prop_mat_2),
-		ES2_AUTO_FUNC(PropMat3, QGSHA_PROP_MAT3, gl_shd_auto_prop_mat_3),
-		ES2_AUTO_FUNC(MatPalette, QGSHA_MAT_PALETTE, gl_shd_auto_mat_palette),
+		ES2_AUTO_FUNC(OrthoProj, QGSCA_ORTHO_PROJ, gl_shd_auto_otho_proj),
+		ES2_AUTO_FUNC(World, QGSCA_WORLD, gl_shd_auto_world),
+		ES2_AUTO_FUNC(View, QGSCA_VIEW, gl_shd_auto_view),
+		ES2_AUTO_FUNC(Proj, QGSCA_PROJ, gl_shd_auto_proj),
+		ES2_AUTO_FUNC(ViewProj, QGSCA_VIEW_PROJ, gl_shd_auto_view_proj),
+		ES2_AUTO_FUNC(InvView, QGSCA_INV_VIEW, gl_shd_auto_inv_view),
+		ES2_AUTO_FUNC(WorldViewProj, QGSCA_WORLD_VIEW_PROJ, gl_shd_auto_world_view_proj),
+		ES2_AUTO_FUNC(Tex0, QGSCA_TEX0, gl_shd_auto_tex_0),
+		ES2_AUTO_FUNC(Tex1, QGSCA_TEX1, gl_shd_auto_tex_1),
+		ES2_AUTO_FUNC(Tex2, QGSCA_TEX2, gl_shd_auto_tex_2),
+		ES2_AUTO_FUNC(Tex3, QGSCA_TEX3, gl_shd_auto_tex_3),
+		ES2_AUTO_FUNC(Tex4, QGSCA_TEX4, gl_shd_auto_tex_4),
+		ES2_AUTO_FUNC(Tex5, QGSCA_TEX5, gl_shd_auto_tex_5),
+		ES2_AUTO_FUNC(Tex6, QGSCA_TEX6, gl_shd_auto_tex_6),
+		ES2_AUTO_FUNC(Tex7, QGSCA_TEX7, gl_shd_auto_tex_7),
+		ES2_AUTO_FUNC(PropVec0, QGSCA_PROP_VEC0, gl_shd_auto_prop_vec_0),
+		ES2_AUTO_FUNC(PropVec1, QGSCA_PROP_VEC1, gl_shd_auto_prop_vec_1),
+		ES2_AUTO_FUNC(PropVec2, QGSCA_PROP_VEC2, gl_shd_auto_prop_vec_2),
+		ES2_AUTO_FUNC(PropVec3, QGSCA_PROP_VEC3, gl_shd_auto_prop_vec_3),
+		ES2_AUTO_FUNC(PropMat0, QGSCA_PROP_MAT0, gl_shd_auto_prop_mat_0),
+		ES2_AUTO_FUNC(PropMat1, QGSCA_PROP_MAT1, gl_shd_auto_prop_mat_1),
+		ES2_AUTO_FUNC(PropMat2, QGSCA_PROP_MAT2, gl_shd_auto_prop_mat_2),
+		ES2_AUTO_FUNC(PropMat3, QGSCA_PROP_MAT3, gl_shd_auto_prop_mat_3),
+		ES2_AUTO_FUNC(MatPalette, QGSCA_MAT_PALETTE, gl_shd_auto_mat_palette),
 #undef ES2_AUTO_FUNC
 	}
 };
@@ -663,14 +663,14 @@ void gl_shd_init_auto_uniforms(void)
 	qn_ret_if_ok(gl_shd_auto_uniforms.inited);
 	gl_shd_auto_uniforms.inited = true;
 
-	for (size_t i = 0; i < QGSHA_MAX_VALUE; i++)
+	for (size_t i = 0; i < QGSCA_MAX_VALUE; i++)
 		gl_shd_auto_uniforms.autos[i].hash = qn_strihash(gl_shd_auto_uniforms.autos[i].name);
 }
 
 // 자동 함수
 static void gl_shd_match_auto_uniform(GlUniform* u)
 {
-	for (size_t i = 0; i < QGSHA_MAX_VALUE; i++)
+	for (size_t i = 0; i < QGSCA_MAX_VALUE; i++)
 	{
 		if (u->hash == gl_shd_auto_uniforms.autos[i].hash && qn_stricmp(u->base.name, gl_shd_auto_uniforms.autos[i].name) == 0)
 		{
@@ -706,9 +706,9 @@ GlBuf* gl_buf_allocator(QgRdh* rdh, QgBufType type, int count, int stride, const
 {
 	// 타입
 	GLenum gl_type;
-	if (type == QGBUF_INDEX)
+	if (type == QGBUFFER_INDEX)
 		gl_type = GL_ELEMENT_ARRAY_BUFFER;
-	else if (type == QGBUF_VERTEX)
+	else if (type == QGBUFFER_VERTEX)
 		gl_type = GL_ARRAY_BUFFER;
 	else
 		return NULL;
