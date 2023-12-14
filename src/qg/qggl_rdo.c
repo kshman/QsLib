@@ -7,7 +7,7 @@
 
 static void gl_dsm_dispose(QmGam* g);
 
-qvt_name(QmGam) vt_gl_dsm =
+qv_name(QmGam) vt_gl_dsm =
 {
 	.name = "GLDsm",
 	.dispose = gl_dsm_dispose,
@@ -86,7 +86,7 @@ static void gl_dsm_dispose(QmGam* g)
 
 static void gl_rsz_dispose(QmGam* g);
 
-qvt_name(QmGam) vt_gl_rsz =
+qv_name(QmGam) vt_gl_rsz =
 {
 	.name = "GLRsz",
 	.dispose = gl_rsz_dispose,

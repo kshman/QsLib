@@ -39,7 +39,7 @@ int main()
 	qn_runtime(NULL);
 
 	QgRdh* rdh = qg_rdh_new(NULL, "RDH", 800, 600, QGFLAG_IDLE | QGFLAG_RESIZABLE | QGFLAG_VSYNC);
-	qn_retval_if_fail(rdh, -1);
+	qn_val_if_fail(rdh, -1);
 
 	QgVlo* vlo = qg_rdh_create_layout(rdh, QN_COUNTOF(layout), layout);
 	QgBuf* buf = qg_rdh_create_buffer(rdh, QGBUFFER_VERTEX, QN_COUNTOF(vertices), sizeof(struct vertextype), vertices);

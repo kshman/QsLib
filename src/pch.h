@@ -1,4 +1,14 @@
-﻿#pragma once
+﻿//
+// pch.h - 미리 컴파일한 헤더
+// 2023-11-14 by kim
+//
+
+#pragma once
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4820)
+#endif
 
 #ifndef USE_SDL2
 #define USE_SDL2	1
@@ -60,8 +70,10 @@
 
 //
 #if defined _MSC_VER
+#pragma warning(pop)
 #pragma warning(disable:4100)		// 참조되지 않은 정식 매개 변수입니다.
 #pragma warning(disable:4127)		// 조건식이 상수입니다.
+#pragma warning(disable:5045)		// 컴파일러는 /Qspectre 스위치가 지정된 경우 메모리 로드를 위해 스펙터 완화를 삽입합니다.
 #endif
 #if defined __GNUC__
 #pragma GCC diagnostic ignored "-Wunused-parameter"

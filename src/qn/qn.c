@@ -17,10 +17,11 @@ struct Closure
 // 구현
 static struct QnRuntime
 {
-	bool			inited;
+	BOOL			inited;
+	QN_PADDING_64(4, 0)
 	struct Closure* closures;
 	struct Closure* preclosures;
-} _qn_rt = { false, NULL, NULL };  // NOLINT
+} _qn_rt = { false, };  // NOLINT
 
 //
 static void qn_dispose(void)

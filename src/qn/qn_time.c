@@ -245,12 +245,14 @@ void qn_msleep(ullong microseconds)
 #endif
 }
 
+
+//////////////////////////////////////////////////////////////////////////
 // 타이머
 typedef struct QnRealTimer
 {
 	QnTimer				base;
 
-	bool				stop;
+	BOOL				stop;
 	int					past;
 	double              cut;
 
@@ -260,21 +262,22 @@ typedef struct QnRealTimer
 	vint64_t			curtime;
 	vint64_t			frmtime;
 
-	uint32_t			count;
-
 	double				tick;
 	vint64_t			frame;
 
-	bool				manual;
 	double				fps_abs;
 	int					fps_frame;
+
+	uint32_t			count;
+	BOOL				manual;
+	QN_PADDING(4, 0)
 } qnRealTimer;
 
 //
 QnTimer* qn_timer_new(void)
 {
 	qnRealTimer* self = qn_alloc_1(qnRealTimer);
-	qn_retval_if_fail(self, NULL);
+	qn_val_if_fail(self, NULL);
 
 #ifdef _QN_WINDOWS_
 	LARGE_INTEGER ll;

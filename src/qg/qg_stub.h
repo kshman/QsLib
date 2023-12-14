@@ -35,8 +35,8 @@ struct StubBase
 	uint				delay;
 
 	QnTimer*			timer;
+	float				fps;								/** @brief 프레임 당 시간 */
 	double				run;								/** @brief 실행 시간 */
-	double				fps;								/** @brief 프레임 당 시간 */
 	double				active;								/** @brief 활성화된 시간 */
 
 	float				reference;							/** @brief 프레임 시간 */

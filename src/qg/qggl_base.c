@@ -159,18 +159,18 @@ void gl_clear(QgRdh* rdh, int flag, const QnColor* color, int stencil, float dep
 	// 도움: https://open.gl/depthstencils
 	GLbitfield cf = 0;
 
-	if (QN_TEST_MASK(flag, QGCLEAR_STENCIL))
+	if (QN_TMASK(flag, QGCLEAR_STENCIL))
 	{
 		GL_FUNC(glStencilMaskSeparate)(GL_FRONT_AND_BACK, stencil);
 		cf |= GL_STENCIL_BUFFER_BIT;
 	}
-	if (QN_TEST_MASK(flag, QGCLEAR_DEPTH))
+	if (QN_TMASK(flag, QGCLEAR_DEPTH))
 	{
 		GL_FUNC(glDepthMask)(GL_TRUE);
 		GL_FUNC(glClearDepthf)(depth);
 		cf |= GL_DEPTH_BUFFER_BIT;
 	}
-	if (QN_TEST_MASK(flag, QGCLEAR_RENDER))
+	if (QN_TMASK(flag, QGCLEAR_RENDER))
 	{
 		if (color == NULL)
 			color = &rdh->param.bgc;
@@ -242,7 +242,7 @@ bool gl_set_index(QgRdh* rdh, QgBuf* buffer)
 	}
 	else
 	{
-		qn_retval_if_fail(buf->base.type == QGBUFFER_INDEX, false);
+		qn_val_if_fail(buf->base.type == QGBUFFER_INDEX, false);
 
 		if (self->pd.ib != buf)
 		{
@@ -271,7 +271,7 @@ bool gl_set_vertex(QgRdh* rdh, QgLoStage stage, QgBuf* buffer)
 	}
 	else
 	{
-		qn_retval_if_fail(buf->base.type == QGBUFFER_VERTEX, false);
+		qn_val_if_fail(buf->base.type == QGBUFFER_VERTEX, false);
 
 		if (self->pd.vb[stage] != buf)
 		{
@@ -399,7 +399,7 @@ bool gl_draw(QgRdh* rdh, QgTopology tpg, int vcount)
 {
 	GlRdhBase* self = qm_cast(rdh, GlRdhBase);
 	const GlPending* pd = &self->pd;
-	qn_retval_if_fail(pd->vlo && pd->shd, false);
+	qn_val_if_fail(pd->vlo && pd->shd, false);
 
 	gl_commit_shader(self);
 	gl_commit_layout(self);
@@ -415,12 +415,12 @@ bool gl_draw_indexed(QgRdh* rdh, QgTopology tpg, int icount)
 {
 	GlRdhBase* self = qm_cast(rdh, GlRdhBase);
 	const GlPending* pd = &self->pd;
-	qn_retval_if_fail(pd->vlo && pd->shd && pd->ib, false);
+	qn_val_if_fail(pd->vlo && pd->shd && pd->ib, false);
 
 	const GLenum gl_index =
 		pd->ib->base.stride == sizeof(ushort) ? GL_UNSIGNED_SHORT :
 		pd->ib->base.stride == sizeof(uint) ? GL_UNSIGNED_INT : 0;
-	qn_retval_if_fail(gl_index != 0, false);
+	qn_val_if_fail(gl_index != 0, false);
 	gl_bind_buffer(self, GL_ELEMENT_ARRAY_BUFFER, qm_get_desc(pd->ib, GLuint));
 
 	gl_commit_shader(self);
@@ -437,7 +437,7 @@ bool gl_ptr_draw(QgRdh* rdh, QgTopology tpg, int vcount, int vstride, const void
 {
 	GlRdhBase* self = qm_cast(rdh, GlRdhBase);
 	const GlPending* pd = &self->pd;
-	qn_retval_if_fail(pd->vlo && pd->shd, false);
+	qn_val_if_fail(pd->vlo && pd->shd, false);
 
 	gl_commit_shader(self);
 	gl_commit_layout_ptr(self, vdata, vstride);
@@ -458,7 +458,7 @@ bool gl_ptr_draw_indexed(QgRdh* rdh, QgTopology tpg, int vcount, int vstride, co
 
 	GlRdhBase* self = qm_cast(rdh, GlRdhBase);
 	const GlPending* pd = &self->pd;
-	qn_retval_if_fail(pd->vlo && pd->shd, false);
+	qn_val_if_fail(pd->vlo && pd->shd, false);
 
 	gl_commit_shader(self);
 	gl_commit_layout_ptr(self, vdata, vstride);
@@ -535,7 +535,7 @@ void gl_commit_layout(GlRdhBase* self)
 				const GlLayoutElement* le = &stelm[i];
 				if (rdh_caps(self).test_stage_valid)
 				{
-					if (QN_TEST_BIT(shd->attr_mask, index) == false)	// 세이더에 해당 데이터가 없으면 패스
+					if (QN_TBIT(shd->attr_mask, index) == false)	// 세이더에 해당 데이터가 없으면 패스
 					{
 						qn_debug_outputf(true, "ES2Rdh", "unmatched vertex attribute index %d", index);
 						continue;
@@ -551,9 +551,9 @@ void gl_commit_layout(GlRdhBase* self)
 				ok |= QN_BIT(gl_attr);
 				GlLayoutProp* lp = &self->ss.layout.props[gl_attr];
 				const nuint pointer = (nuint)le->offset;
-				if (QN_TEST_BIT(self->ss.layout.mask, gl_attr) == false)
+				if (QN_TBIT(self->ss.layout.mask, gl_attr) == false)
 				{
-					QN_SET_BIT(&self->ss.layout.mask, gl_attr, true);
+					QN_SBIT(&self->ss.layout.mask, gl_attr, true);
 					GL_FUNC(glEnableVertexAttribArray)(gl_attr);
 				}
 				if (lp->pointer != pointer ||
@@ -589,7 +589,7 @@ void gl_commit_layout(GlRdhBase* self)
 
 				if (rdh_caps(self).test_stage_valid)
 				{
-					if (QN_TEST_BIT(shd->attr_mask, index) == false)	// 세이더에 해당 데이터가 없으면 패스
+					if (QN_TBIT(shd->attr_mask, index) == false)	// 세이더에 해당 데이터가 없으면 패스
 					{
 						qn_debug_outputf(true, "ES2Rdh", "unmatched vertex attribute index %d", index);
 						continue;
@@ -602,9 +602,9 @@ void gl_commit_layout(GlRdhBase* self)
 				}
 
 				const GLint gl_attr = qn_ctnr_nth(shd_attrs, index).attrib;
-				if (QN_TEST_BIT(self->ss.layout.mask, gl_attr))
+				if (QN_TBIT(self->ss.layout.mask, gl_attr))
 				{
-					QN_SET_BIT(&self->ss.layout.mask, gl_attr, false);
+					QN_SBIT(&self->ss.layout.mask, gl_attr, false);
 					GL_FUNC(glDisableVertexAttribArray)(gl_attr);
 				}
 				const GLfloat tmp[4] = { 0.0f, };
@@ -619,9 +619,9 @@ void gl_commit_layout(GlRdhBase* self)
 	uint aftermask = self->ss.layout.mask & ~ok;
 	for (int i = 0; i < max_attrs && aftermask; i++)
 	{
-		if (QN_TEST_BIT(aftermask, 0))
+		if (QN_TBIT(aftermask, 0))
 		{
-			QN_SET_BIT(&self->ss.layout.mask, i, false);
+			QN_SBIT(&self->ss.layout.mask, i, false);
 			GL_FUNC(glDisableVertexAttribArray)(i);
 		}
 		aftermask >>= 1;
@@ -656,7 +656,7 @@ void gl_commit_layout_ptr(GlRdhBase* self, const void* buffer, GLsizei gl_stride
 		const GlLayoutElement* le = &stelm[s];
 		if (rdh_caps(self).test_stage_valid)
 		{
-			if (QN_TEST_BIT(shd->attr_mask, index) == false)	// 세이더에 해당 데이터가 없으면 패스
+			if (QN_TBIT(shd->attr_mask, index) == false)	// 세이더에 해당 데이터가 없으면 패스
 			{
 				qn_debug_outputf(true, "ES2Rdh", "unmatched vertex attribute index %d", index);
 				continue;
@@ -672,9 +672,9 @@ void gl_commit_layout_ptr(GlRdhBase* self, const void* buffer, GLsizei gl_stride
 		ok |= QN_BIT(gl_attr);
 		GlLayoutProp* lp = &self->ss.layout.props[gl_attr];
 		const nuint pointer = (nuint)((const byte*)buffer + le->offset);
-		if (QN_TEST_BIT(self->ss.layout.mask, gl_attr) == false)
+		if (QN_TBIT(self->ss.layout.mask, gl_attr) == false)
 		{
-			QN_SET_BIT(&self->ss.layout.mask, gl_attr, true);
+			QN_SBIT(&self->ss.layout.mask, gl_attr, true);
 			GL_FUNC(glEnableVertexAttribArray)(gl_attr);
 		}
 		if (lp->pointer != pointer ||
@@ -704,9 +704,9 @@ void gl_commit_layout_ptr(GlRdhBase* self, const void* buffer, GLsizei gl_stride
 	uint aftermask = self->ss.layout.mask & ~ok;
 	for (int i = 0; i < max_attrs && aftermask; i++)
 	{
-		if (QN_TEST_BIT(aftermask, 0))
+		if (QN_TBIT(aftermask, 0))
 		{
-			QN_SET_BIT(&self->ss.layout.mask, i, false);
+			QN_SBIT(&self->ss.layout.mask, i, false);
 			GL_FUNC(glDisableVertexAttribArray)(i);
 		}
 		aftermask >>= 1;

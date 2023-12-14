@@ -11,9 +11,7 @@
 typedef struct memBlock
 {
 	uint32_t			sign;
-#if _QN_64_
-	uint32_t			align64;
-#endif
+	QN_PADDING_64(4, 0)
 
 	const char*			desc;
 	size_t				line;

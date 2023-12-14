@@ -376,7 +376,7 @@ static void pp_str_fmt_str(char* buffer, size_t* currlen, size_t maxlen, const v
 		const int len = (int)qn_wcstombs(NULL, 0, w, 0);
 		if (len <= 0)
 		{
-			value = "(unicode)";
+			value = "(UNICODE)";
 			if (vmax < 0)
 				vmax = 9;
 			if (vmin > 0 && vmin > vmax)
@@ -385,14 +385,13 @@ static void pp_str_fmt_str(char* buffer, size_t* currlen, size_t maxlen, const v
 		}
 		else
 		{
-			char* s = qn_alloca(len + 1, char);
-			qn_wcstombs(s, (size_t)len + 1, w, 0);
+			char s[1024];
+			qn_wcstombs(s, (size_t)QN_COUNTOF(s), w, 0);
 			if (vmax < 0)
 				vmax = len;
 			if (vmin > 0 && vmin > vmax)
 				vmax = vmin;
 			pp_str_outs(buffer, currlen, maxlen, s, len, flags, vmin, vmax);
-			qn_freea(s);
 		}
 	}
 }
@@ -1490,14 +1489,13 @@ static void pp_wcs_fmt_str(wchar* buffer, size_t* currlen, size_t maxlen, const 
 		}
 		else
 		{
-			wchar* w = qn_alloca(len + 1, wchar);
-			qn_mbstowcs(w, (size_t)len + 1, s, 0);
+			wchar w[1024];
+			qn_mbstowcs(w, QN_COUNTOF(w), s, 0);
 			if (vmax < 0)
 				vmax = len;
 			if (vmin > 0 && vmin > vmax)
 				vmax = vmin;
 			_wcs_outs(buffer, currlen, maxlen, w, len, flags, vmin, vmax);
-			qn_freea(w);
 		}
 	}
 }

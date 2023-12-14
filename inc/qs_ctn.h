@@ -3,8 +3,10 @@
 
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable:4127)	// conditional expression is constant
-#pragma warning(disable:4200)	// nonstandard extension used : zero-sized array in struct/union
+#pragma warning(disable:4127)		// L4, conditional expression is constant
+#pragma warning(disable:4200)		// L4, nonstandard extension used : zero-sized array in struct/union
+#pragma warning(disable:4514)		// L4, 'function' : unreferenced inline function has been removed
+#pragma warning(disable:4710)		// L4, 'function' : function not inlined
 #endif
 
 QN_EXTC_BEGIN
@@ -2827,7 +2829,7 @@ QN_INLINE void qn_inl_mukum_resize(qnInlineMukum* p)
 QN_DECL_BSTR(, )
 QN_DECL_BSTR(64, 64)
 QN_DECL_BSTR(128, 128)
-QN_DECL_BSTR(260, 260)
+QN_DECL_BSTR(260, 264)
 QN_DECL_BSTR(1k, 1024)
 QN_DECL_BSTR(2k, 2048)
 QN_DECL_BSTR(4k, 4096)
@@ -3008,10 +3010,10 @@ QN_INLINE int qn_bstr_find_char(const void* p, size_t at, char ch)
 	qn_inl_bstr_sub_bstr(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, (const qnBstr*)(s), pos, len)
 QN_INLINE bool qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, size_t pos, nint len)
 {
-	qn_retval_if_fail(s->len >= pos, false);
+	qn_val_if_fail(s->len >= pos, false);
 
 	if (len > 0)
-		qn_retval_if_fail(s->len >= (pos + len), false);
+		qn_val_if_fail(s->len >= (pos + len), false);
 	else
 		len = (nint)(s->len - pos);
 
@@ -3210,10 +3212,10 @@ QN_INLINE int qn_bwcs_find_char(const void* p, size_t at, wchar_t ch)
 	qn_inl_bstr_sub_bstr(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, ((qnBwcs*)(s)), pos, len)
 QN_INLINE bool qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, size_t pos, nint len)
 {
-	qn_retval_if_fail(s->len >= pos, false);
+	qn_val_if_fail(s->len >= pos, false);
 
 	if (len > 0)
-		qn_retval_if_fail(s->len >= (pos + len), false);
+		qn_val_if_fail(s->len >= (pos + len), false);
 	else
 		len = (nint)(s->len - pos);
 

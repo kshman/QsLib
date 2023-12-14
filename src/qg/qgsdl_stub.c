@@ -39,13 +39,13 @@ StubBase* stub_system_open(const StubParam* param)
 
 	const char* title = param->title ? param->title : "STUB Window";
 	int wflags = SDL_WINDOW_OPENGL;
-	if (QN_TEST_MASK(param->flags, QGFLAG_FULLSCREEN))
+	if (QN_TMASK(param->flags, QGFLAG_FULLSCREEN))
 		wflags |= SDL_WINDOW_FULLSCREEN;
-	if (QN_TEST_MASK(param->flags, QGFLAG_BORDERLESS))
+	if (QN_TMASK(param->flags, QGFLAG_BORDERLESS))
 		wflags |= SDL_WINDOW_BORDERLESS;
-	if (QN_TEST_MASK(param->flags, QGFLAG_RESIZABLE))
+	if (QN_TMASK(param->flags, QGFLAG_RESIZABLE))
 		wflags |= SDL_WINDOW_RESIZABLE;
-	if (QN_TEST_MASK(param->flags, QGFLAG_FOCUS))
+	if (QN_TMASK(param->flags, QGFLAG_FOCUS))
 		wflags |= SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS;
 
 	stub->window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, param->width, param->height, wflags);
@@ -83,7 +83,7 @@ static double sdl_mesg_active(bool isactive)
 	const double now = qn_timer_get_abs(stub->base.timer);
 	const double adv = now - stub->base.active;
 	stub->base.active = now;
-	QN_SET_MASK(&stub->base.stats, QGSTTI_ACTIVE, isactive);
+	QN_SMASK(&stub->base.stats, QGSTTI_ACTIVE, isactive);
 
 	const QgEvent e =
 	{
@@ -156,19 +156,19 @@ static QimButton sdl_set_mouse_button(int button, bool down)
 	switch (button)
 	{
 		case SDL_BUTTON_LEFT:
-			QN_SET_MASK(&stub->mouse.mask, QIMM_LEFT, down);
+			QN_SMASK(&stub->mouse.mask, QIMM_LEFT, down);
 			return QIM_LEFT;
 		case SDL_BUTTON_RIGHT:
-			QN_SET_MASK(&stub->mouse.mask, QIMM_RIGHT, down);
+			QN_SMASK(&stub->mouse.mask, QIMM_RIGHT, down);
 			return QIM_RIGHT;
 		case SDL_BUTTON_MIDDLE:
-			QN_SET_MASK(&stub->mouse.mask, QIMM_MIDDLE, down);
+			QN_SMASK(&stub->mouse.mask, QIMM_MIDDLE, down);
 			return QIM_MIDDLE;
 		case SDL_BUTTON_X1:
-			QN_SET_MASK(&stub->mouse.mask, QIMM_X1, down);
+			QN_SMASK(&stub->mouse.mask, QIMM_X1, down);
 			return QIM_X1;
 		case SDL_BUTTON_X2:
-			QN_SET_MASK(&stub->mouse.mask, QIMM_X2, down);
+			QN_SMASK(&stub->mouse.mask, QIMM_X2, down);
 			return QIM_X2;
 		default:
 			return QIM_NONE;
@@ -271,11 +271,11 @@ bool stub_system_poll(void)
 
 						byte nth = (byte)i >> 3;
 						byte mask = (byte)i & (~nth <<3);
-						if (QN_TEST_MASK(k->key[nth], mask) == false)
+						if (QN_TMASK(k->key[nth], mask) == false)
 							continue;
 
 						k->key[nth] &= ~mask;
-						QN_SET_MASK(&k->key[nth], mask, false);
+						QN_SMASK(&k->key[nth], mask, false);
 
 						e.key.key = (QikKey)i;
 						qg_add_event(&e);
@@ -360,7 +360,7 @@ bool stub_system_poll(void)
 #endif
 
 			case SDL_QUIT:
-				QN_SET_MASK(&stub->stats, QGSTTI_EXIT, true);
+				QN_SMASK(&stub->stats, QGSTTI_EXIT, true);
 				qg_add_event_type(QGEV_EXIT);
 				return false;
 
@@ -368,7 +368,7 @@ bool stub_system_poll(void)
 				break;
 		}
 	}
-	return QN_TEST_MASK(stub->stats, QGSTTI_EXIT) == false;
+	return QN_TMASK(stub->stats, QGSTTI_EXIT) == false;
 }
 
 #endif

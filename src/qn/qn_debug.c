@@ -21,7 +21,14 @@ static struct QnDebugImpl
 
 	bool			debugger;
 	bool			redirect;
-} _qn_dbg = { NULL, 3, "qs", };  // NOLINT
+	QN_PADDING(2, 0)
+}
+_qn_dbg =
+{
+	NULL,
+	3,
+	"QS",
+};
 
 //
 void qn_dbg_init(void)
@@ -103,31 +110,29 @@ static int qn_dbg_out_trace(const char* head, const char* text)
 {
 	if (head == NULL)
 		head = "unknown";
-
-	const char* fmt = "[%s] %s";
-	const size_t len = qn_snprintf(NULL, 0, fmt, head, text);
-	char* buf = qn_alloca(len + 1, char);
-	qn_snprintf(buf, len + 1, fmt, head, text);
-	qn_dbg_out_str(buf);
-	qn_freea(buf);
-
-	return (int)len;
+	int len = 0;
+	len += qn_dbg_out_ch('[');
+	len += qn_dbg_out_str(head);
+	len += qn_dbg_out_str("] ");
+	len += qn_dbg_out_str(text);
+	return len;
 }
 
 ///
 int qn_debug_assert(const char* expr, const char* mesg, const char* filename, int line)
 {
-	qn_retval_if_fail(expr, -1);
-
-	if (!mesg)
-		mesg = "";
-
-	const char* fmt = "%s: %s(filename=\"%s\", line=%d)\n";
-	const size_t len = qn_snprintf(NULL, 0, fmt, expr, mesg, filename, line);
-	char* buf = qn_alloca(len + 1, char);
-	qn_snprintf(buf, len + 1, fmt, expr, mesg, filename, line);
-	qn_dbg_out_str(buf);
-	qn_freea(buf);
+	qn_val_if_fail(expr, -1);
+	qn_dbg_out_str(expr);
+	qn_dbg_out_str(": ");
+	if (mesg != NULL)
+		qn_dbg_out_str(mesg);
+	qn_dbg_out_str("(filename=\"");
+	qn_dbg_out_str(filename);
+	qn_dbg_out_str("\", line=");
+	char sz[32];
+	qn_itoa(sz, QN_COUNTOF(sz), line, 10);
+	qn_dbg_out_str(sz);
+	qn_dbg_out_ch('\n');
 
 #ifndef __EMSCRIPTEN__
 	if (_qn_dbg.debugger) debug_break();
@@ -142,17 +147,14 @@ __declspec(noreturn)
 #endif
 void qn_debug_halt(const char* head, const char* mesg)
 {
-	if (!head)
+	if (head == NULL)
 		head = "unknown";
-	if (!mesg)
-		mesg = "";
-
-	const char* fmt = "HALT [%s] %s\n";
-	const size_t len = qn_snprintf(NULL, 0, fmt, head, mesg);
-	char* buf = qn_alloca(len + 1, char);
-	qn_snprintf(buf, len + 1, fmt, head, mesg);
-	qn_dbg_out_str(buf);
-	qn_freea(buf);
+	qn_dbg_out_str("HALT [");
+	qn_dbg_out_str(head);
+	qn_dbg_out_str("] ");
+	if (mesg != NULL)
+		qn_dbg_out_str(mesg);
+	qn_dbg_out_ch('\n');
 
 #ifndef __EMSCRIPTEN__
 	if (_qn_dbg.debugger) debug_break();
@@ -180,11 +182,10 @@ int qn_debug_outputf(bool breakpoint, const char* head, const char* fmt, ...)
 	va_copy(vq, va);
 	const size_t size = qn_vsnprintf(NULL, 0, fmt, vq);
 	va_end(vq);
-	char* buf = qn_alloca(size + 1, char);
-	qn_vsnprintf(buf, size + 1, fmt, va);
+	char buf[1024];
+	qn_vsnprintf(buf, QN_COUNTOF(buf), fmt, va);
 	va_end(va);
 	qn_dbg_out_trace(head, buf);
-	qn_freea(buf);
 	qn_dbg_out_ch('\n');
 
 #ifndef __EMSCRIPTEN__
@@ -211,11 +212,10 @@ int qn_outputf(const char* fmt, ...)
 	va_copy(vq, va);
 	const size_t size = qn_vsnprintf(NULL, 0, fmt, vq);
 	va_end(vq);
-	char* buf = qn_alloca(size + 1, char);
-	qn_vsnprintf(buf, size + 1, fmt, va);
+	char buf[1024];
+	qn_vsnprintf(buf, QN_COUNTOF(buf), fmt, va);
 	va_end(va);
 	qn_dbg_out_str(buf);
-	qn_freea(buf);
 	qn_dbg_out_ch('\n');
 	return (int)size;
 }

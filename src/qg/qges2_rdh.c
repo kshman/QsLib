@@ -13,7 +13,7 @@
 static void es2_dispose(QmGam* g);
 static void es2_reset(QgRdh* rdh);
 
-qvt_name(QgRdh) vt_es2_rdh =
+qv_name(QgRdh) vt_es2_rdh =
 {
 	.base.name = "ES2Device",
 	.base.dispose = es2_dispose,
@@ -49,7 +49,7 @@ static SDL_Renderer* es2_create_renderer(SDL_Window* window, const int flags)
 	SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengles2");
 
 	//
-	if (QN_TEST_MASK(flags, QGFLAG_DITHER))
+	if (QN_TMASK(flags, QGFLAG_DITHER))
 	{
 		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 4);
 		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 4);
@@ -68,14 +68,14 @@ static SDL_Renderer* es2_create_renderer(SDL_Window* window, const int flags)
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 
-	if (QN_TEST_MASK(flags, QGFLAG_MSAA))
+	if (QN_TMASK(flags, QGFLAG_MSAA))
 	{
 		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 	}
 
 	Uint32 sdl_flag = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
-	if (QN_TEST_MASK(flags, QGFLAG_VSYNC))
+	if (QN_TMASK(flags, QGFLAG_VSYNC))
 		sdl_flag |= SDL_RENDERER_PRESENTVSYNC;
 
 	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, sdl_flag);
@@ -101,7 +101,7 @@ static SDL_Renderer* es2_create_renderer(SDL_Window* window, const int flags)
 QgRdh* es2_allocator(void* oshandle, const int flags)
 {
 	Es2Rdh* self = qn_alloc_zero_1(Es2Rdh);
-	qn_retval_if_fail(self, NULL);
+	qn_val_if_fail(self, NULL);
 
 	SDL_Window* window = (SDL_Window*)oshandle;
 	SDL_Renderer* renderer = es2_create_renderer(window, flags);

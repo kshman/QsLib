@@ -9,7 +9,7 @@
 
 static void gl_vlo_dispose(QmGam* g);
 
-qvt_name(QmGam) vt_gl_vlo =
+qv_name(QmGam) vt_gl_vlo =
 {
 	.name = "GLVlo",
 	.dispose = gl_vlo_dispose,
@@ -70,7 +70,7 @@ GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgLayoutElement* layouts)
 	}
 
 	GlVlo* self = qn_alloc_zero_1(GlVlo);
-	qn_retval_if_fail(self, NULL);
+	qn_val_if_fail(self, NULL);
 
 	// 스테이지 할당
 	GlLayoutElement* elms[QGLOS_MAX_VALUE] = { NULL, };
@@ -126,7 +126,7 @@ static void gl_shd_dispose(QmGam* g);
 static bool gl_shd_bind(QgShd* g, QgShdType type, const void* data, int size, int flags);
 static bool gl_shd_bind_shd(QgShd* g, QgShdType type, QgShd* shaderptr);
 
-qvt_name(QgShd) vt_gl_shd =
+qv_name(QgShd) vt_gl_shd =
 {
 	.base.name = "GLShd",
 	.base.dispose = gl_shd_dispose,
@@ -142,7 +142,7 @@ qvt_name(QgShd) vt_gl_shd =
 GlShd* gl_shd_allocator(QgRdh* rdh, const char* name)
 {
 	GlShd* self = qn_alloc_zero_1(GlShd);
-	qn_retval_if_fail(self, NULL);
+	qn_val_if_fail(self, NULL);
 #ifdef _MSC_VER
 	qm_set_desc(self, gl_func.glCreateProgram());
 #else
@@ -173,7 +173,7 @@ static GlRefHandle* gl_shd_compile(GlShd* self, GLenum gl_type, const char* src,
 {
 	// http://msdn.microsoft.com/ko-kr/library/windows/apps/dn166905.aspx
 	const GLuint gl_shader = GL_FUNC(glCreateShader)(gl_type);
-	qn_retval_if_fail(gl_shader != 0, NULL);
+	qn_val_if_fail(gl_shader != 0, NULL);
 
 	GL_FUNC(glShaderSource)(gl_shader, 1, &src, gl_len == 0 ? NULL : &gl_len);
 	GL_FUNC(glCompileShader)(gl_shader);
@@ -204,7 +204,7 @@ static bool gl_shd_bind(QgShd* g, QgShdType type, const void* data, int size, in
 	// 해야함: 인클루트
 	// 해야함: 플래그
 	// 해야함: 보관
-	qn_retval_if_fail(data != NULL && size >= 0, false);
+	qn_val_if_fail(data != NULL && size >= 0, false);
 	GlShd* self = qm_cast(g, GlShd);
 	const GLuint handle = qm_get_desc(self, GLuint);
 
@@ -235,15 +235,15 @@ static bool gl_shd_bind(QgShd* g, QgShdType type, const void* data, int size, in
 //
 static bool gl_shd_bind_shd(QgShd* g, QgShdType type, QgShd* shaderptr)
 {
-	qn_retval_if_fail(shaderptr, false);
+	qn_val_if_fail(shaderptr, false);
 	GlShd* self = qm_cast(g, GlShd);
 	const GlShd* shader = qm_cast(shaderptr, GlShd);
 	const GLuint handle = qm_get_desc(self, GLuint);
 	bool ok = false;
 
-	if (QN_TEST_MASK(type, QGSHADER_VS))
+	if (QN_TMASK(type, QGSHADER_VS))
 	{
-		qn_retval_if_fail(shader->rvertex, false);
+		qn_val_if_fail(shader->rvertex, false);
 		gl_shd_handle_unload(self->rvertex, handle);
 
 		self->rvertex->ref++;
@@ -251,9 +251,9 @@ static bool gl_shd_bind_shd(QgShd* g, QgShdType type, QgShd* shaderptr)
 		ok = true;
 	}
 
-	if (QN_TEST_MASK(type, QGSHADER_PS))
+	if (QN_TMASK(type, QGSHADER_PS))
 	{
-		qn_retval_if_fail(shader->rfragment, false);
+		qn_val_if_fail(shader->rfragment, false);
 		gl_shd_handle_unload(self->rfragment, handle);
 
 		self->rfragment->ref++;
@@ -325,8 +325,8 @@ QgLoUsage gl_shd_attrib_to_usage(const char* name)
 bool gl_shd_link(QgShd* g)
 {
 	GlShd* self = qm_cast(g, GlShd);
-	qn_retval_if_ok(self->linked, true);
-	qn_retval_if_fail(self->rvertex && self->rfragment, false);
+	qn_val_if_ok(self->linked, true);
+	qn_val_if_fail(self->rvertex && self->rfragment, false);
 
 	GLchar sz[1024];
 
@@ -693,7 +693,7 @@ static void* gl_buf_map(QgBuf* g);
 static bool gl_buf_unmap(QgBuf* g);
 static bool gl_buf_data(QgBuf* g, const void* data);
 
-qvt_name(QgBuf) vt_gl_buf =
+qv_name(QgBuf) vt_gl_buf =
 {
 	.base.name = "GLBuf",
 	.base.dispose = gl_buf_dispose,
@@ -716,7 +716,7 @@ GlBuf* gl_buf_allocator(QgRdh* rdh, QgBufType type, int count, int stride, const
 	// 만들고 바인드
 	GLuint gl_id;
 	GL_FUNC(glGenBuffers)(1, &gl_id);
-	qn_retval_if_fail(gl_id != 0, NULL);
+	qn_val_if_fail(gl_id != 0, NULL);
 	gl_bind_buffer(GLBASE_RDH_INSTANCE, gl_type, gl_id);
 
 	// 데이터
@@ -782,7 +782,7 @@ static void* gl_buf_map(QgBuf* g)
 static bool gl_buf_unmap(QgBuf* g)
 {
 	GlBuf* self = qm_cast(g, GlBuf);
-	qn_retval_if_fail(self->lock_buf == NULL, false);
+	qn_val_if_fail(self->lock_buf == NULL, false);
 
 	gl_bind_buffer(GLBASE_RDH_INSTANCE, self->gl_type, qm_get_desc(self, GLuint));
 	GL_FUNC(glBufferData)(self->gl_type, self->base.size, self->lock_buf, self->gl_usage);
@@ -794,10 +794,10 @@ static bool gl_buf_unmap(QgBuf* g)
 
 static bool gl_buf_data(QgBuf* g, const void* data)
 {
-	qn_retval_if_fail(data, false);
+	qn_val_if_fail(data, false);
 	GlBuf* self = qm_cast(g, GlBuf);
-	qn_retval_if_fail(self->lock_buf == NULL, false);
-	qn_retval_if_fail(self->gl_usage == GL_DYNAMIC_DRAW, false);
+	qn_val_if_fail(self->lock_buf == NULL, false);
+	qn_val_if_fail(self->gl_usage == GL_DYNAMIC_DRAW, false);
 
 	gl_bind_buffer(GLBASE_RDH_INSTANCE, self->gl_type, qm_get_desc(self, GLuint));
 	GL_FUNC(glBufferData)(self->gl_type, self->base.size, data, self->gl_usage);

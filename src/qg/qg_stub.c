@@ -128,30 +128,30 @@ bool stub_internal_mouse_clicks(QimButton button, QimTrack track)
 void qg_exit_loop(void)
 {
 	qn_ret_if_fail(qg_stub_instance);
-	QN_SET_MASK(&qg_stub_instance->stats, QGSTTI_EXIT, true);
+	QN_SMASK(&qg_stub_instance->stats, QGSTTI_EXIT, true);
 }
 
 //
 bool qg_loop(void)
 {
 	StubBase* stub = qg_stub_instance;
-	qn_retval_if_fail(stub, false);
+	qn_val_if_fail(stub, false);
 
-	if (QN_TEST_MASK(stub->stats, QGSTTI_VIRTUAL) == false)
+	if (QN_TMASK(stub->stats, QGSTTI_VIRTUAL) == false)
 	{
-		if (!stub_system_poll() || QN_TEST_MASK(stub->stats, QGSTTI_EXIT))
+		if (!stub_system_poll() || QN_TMASK(stub->stats, QGSTTI_EXIT))
 			return false;
 	}
 
 	qn_timer_update(stub->timer);
 	const float adv = (float)qn_timer_get_adv(stub->timer);
 	stub->run = qn_timer_get_run(stub->timer);
-	stub->fps = qn_timer_get_fps(stub->timer);
+	stub->fps = (float)qn_timer_get_fps(stub->timer);
 	stub->reference = adv;
-	stub->advance = QN_TEST_MASK(stub->stats, QGSTTI_PAUSE) == false ? adv : 0.0f;
+	stub->advance = QN_TMASK(stub->stats, QGSTTI_PAUSE) == false ? adv : 0.0f;
 
-	if (QN_TEST_MASK(stub->flags, QGFLAG_IDLE))
-		qn_sleep(QN_TEST_MASK(stub->stats, QGSTTI_ACTIVE | QGSTTI_VIRTUAL) == false ? stub->delay : 1);
+	if (QN_TMASK(stub->flags, QGFLAG_IDLE))
+		qn_sleep(QN_TMASK(stub->stats, QGSTTI_ACTIVE | QGSTTI_VIRTUAL) == false ? stub->delay : 1);
 
 	return true;
 }
@@ -159,10 +159,10 @@ bool qg_loop(void)
 //
 bool qg_poll(QgEvent* ev)
 {
-	qn_retval_if_fail(ev, false);
+	qn_val_if_fail(ev, false);
 
 	StubBase* stub = qg_stub_instance;
-	qn_retval_if_fail(stub, false);
+	qn_val_if_fail(stub, false);
 
 	if (qn_list_is_empty(&stub->events))
 		return false;
@@ -187,10 +187,10 @@ const QgUimMouse* qg_get_mouse_info(void)
 //
 bool qg_test_key(QikKey key)
 {
-	qn_retval_if_fail((size_t)key < QIK_MAX_VALUE && key != QIK_NONE, false);
+	qn_val_if_fail((size_t)key < QIK_MAX_VALUE && key != QIK_NONE, false);
 	byte nth = (byte)key >> 3;
 	byte mask = (byte)key & ~(nth << 3);
-	return QN_TEST_MASK(qg_stub_instance->key.key[nth], mask);
+	return QN_TMASK(qg_stub_instance->key.key[nth], mask);
 }
 
 //
@@ -199,19 +199,19 @@ void qg_set_key(QikKey key, bool down)
 	qn_ret_if_fail((size_t)key < QIK_MAX_VALUE && key != QIK_NONE);
 	byte nth = (byte)key >> 3;
 	byte mask = (byte)key & ~(nth << 3);
-	QN_SET_MASK(&qg_stub_instance->key.key[nth], mask, down);
+	QN_SMASK(&qg_stub_instance->key.key[nth], mask, down);
+}
+
+//
+float qg_get_fps(void)
+{
+	return qg_stub_instance->fps;
 }
 
 //
 double qg_get_run(void)
 {
 	return qg_stub_instance->run;
-}
-
-//
-double qg_get_fps(void)
-{
-	return qg_stub_instance->fps;
 }
 
 //
@@ -247,7 +247,7 @@ int qg_left_events(void)
 //
 int qg_add_event(const QgEvent* ev)
 {
-	qn_retval_if_fail(ev, -1);
+	qn_val_if_fail(ev, -1);
 	const int cnt = (int)qn_list_count(&qg_stub_instance->events);
 	if (cnt >= QGMAX_EVENTS)
 		return -1;
@@ -269,7 +269,7 @@ int qg_add_event_type(QgEventType type)
 //
 bool qg_pop_event(QgEvent* ev)
 {
-	qn_retval_if_fail(ev, false);
+	qn_val_if_fail(ev, false);
 	if (qn_list_is_empty(&qg_stub_instance->events))
 		return false;
 	*ev = qn_list_data_first(&qg_stub_instance->events);

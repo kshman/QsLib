@@ -1,7 +1,10 @@
 ﻿#include "pch.h"
 #include "qs_qn.h"
 #ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4820)
 #include "zlib/zlib.h"
+#pragma warning(pop)
 #else
 #include <zlib.h>
 #endif
@@ -40,8 +43,8 @@ void* qn_memdec(void* dest, const void* src, size_t size)
 //
 void* qn_memzcpr(const void* src, size_t srcsize, /*NULLABLE*/size_t* destsize)
 {
-	qn_retval_if_fail(src != NULL, NULL);
-	qn_retval_if_fail(srcsize > 0, NULL);
+	qn_val_if_fail(src != NULL, NULL);
+	qn_val_if_fail(srcsize > 0, NULL);
 
 	uLong tmp = ((uLong)srcsize + 12) / 1000;
 	tmp += tmp == 0 ? (uLong)srcsize + 13 : (uLong)srcsize + 12;
@@ -62,8 +65,8 @@ void* qn_memzcpr(const void* src, size_t srcsize, /*NULLABLE*/size_t* destsize)
 //
 void* qn_memzucp(const void* src, size_t srcsize, size_t bufsize, /*NULLABLE*/size_t* destsize)
 {
-	qn_retval_if_fail(src != NULL, NULL);
-	qn_retval_if_fail(srcsize > 0, NULL);
+	qn_val_if_fail(src != NULL, NULL);
+	qn_val_if_fail(srcsize > 0, NULL);
 
 	uLong size = bufsize == 0 ? (uLong)srcsize * 5 + 12 : (uLong)bufsize;
 	byte* p = qn_alloc(size, byte);
@@ -92,7 +95,7 @@ size_t qn_memagn(size_t size)
 //
 char qn_memhrb(size_t size, double* out)
 {
-	qn_retval_if_fail(out != NULL, ' ');
+	qn_val_if_fail(out != NULL, ' ');
 	if (size > 1024ULL * 1024ULL * 1024ULL)
 	{
 		*out = (double)size / (double)(1024ULL * 1024ULL * 1024ULL);
@@ -115,8 +118,8 @@ char qn_memhrb(size_t size, double* out)
 //
 char* qn_memdmp(const void* ptr, size_t size, char* outbuf, size_t buflen)
 {
-	qn_retval_if_fail(ptr != NULL, NULL);
-	qn_retval_if_fail(outbuf != NULL, NULL);
+	qn_val_if_fail(ptr != NULL, NULL);
+	qn_val_if_fail(outbuf != NULL, NULL);
 
 	if (size == 0 || buflen == 0)
 	{
@@ -284,7 +287,7 @@ size_t qn_mpfcnt(void)
 //
 void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 {
-	qn_retval_if_fail(size, NULL);
+	qn_val_if_fail(size, NULL);
 
 	size_t block = _memsize(size);
 	memBlock* node = (memBlock*)
@@ -300,9 +303,6 @@ void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 	}
 
 	node->sign = MEMORY_SIGN_HEAD;
-#ifdef _QN_64_
-	node->align64 = 0;
-#endif
 	node->desc = desc;
 	node->line = line;
 	node->index = _qn_mp.index;
@@ -425,7 +425,7 @@ void qn_debug_mpfprint(void)
 			char sz[64];
 			qn_memdmp(_memptr(node), QN_MIN(32, node->size), sz, 64 - 1);
 			qn_debug_outputf(false, "Memory Profiler", " %-8d | %-8zu | % -8zu | <%s>",
-					cnt, node->size, node->block, sz);
+				cnt, node->size, node->block, sz);
 		}
 		next = node->next;
 		sum += node->block;

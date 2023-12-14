@@ -3,6 +3,7 @@
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4201)		// L4, nonstandard extension used : nameless struct/union
+#pragma warning(disable:4514)		// L4, 'function' : unreferenced inline function has been removed
 #endif
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -85,19 +86,19 @@ struct QnVec3
 };
 
 /** @brief vector4 */
-struct QN_ALIGN(16) QnVec4
+struct QN_ALIGNAS(16) QnVec4
 {
 	float x, y, z, w;
 };
 
 /** @brief quaternion */
-struct QN_ALIGN(16) QnQuat
+struct QN_ALIGNAS(16) QnQuat
 {
 	float x, y, z, w;
 };
 
 /** @brief matrix4 */
-struct QN_ALIGN(16) QnMat4
+struct QN_ALIGNAS(16) QnMat4
 {
 	union
 	{
@@ -147,13 +148,13 @@ struct QnCoord
 };
 
 /** @brief color */
-struct QN_ALIGN(16) QnColor
+struct QN_ALIGNAS(16) QnColor
 {
 	float r, g, b, a;
 };
 
 /** @brief byte color */
-struct QN_ALIGN(4) QnKolor
+struct QN_ALIGNAS(4) QnKolor
 {
 	byte b, g, r, a;
 };
@@ -2010,7 +2011,7 @@ QN_INLINE bool qn_line3_in(const QnLine3* p, const QnVec3* v)
 // half type
 QN_INLINE halfint qn_f2hf(const float v)
 {
-	QN_MEM_BARRIER();
+	QN_BARRIER;
 	uint u = *(const uint*)&v;
 	const uint s = (u & 0x80000000U) >> 16U;
 	u = u & 0x7FFFFFFFU;
@@ -2036,7 +2037,7 @@ QN_INLINE halfint qn_f2hf(const float v)
 
 QN_INLINE float qn_hf2f(const halfint v)
 {
-	QN_MEM_BARRIER();
+	QN_BARRIER;
 	uint m = (uint)(v & 0x03FF);
 	uint e;
 

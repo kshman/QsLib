@@ -287,8 +287,8 @@ typedef enum QgEventType
 /** @brief 픽셀 포맷 */
 typedef struct QgPropPixel
 {
-	QgClrFmt			fmt : 16;
-	uint				bpp : 16;
+	QgClrFmt			fmt;
+	uint				bpp;
 	byte				rr, rl;
 	byte				gr, gl;
 	byte				br, bl;
@@ -305,10 +305,10 @@ typedef struct QgCodeData
 /** @brief 레이아웃 요소 */
 typedef struct QgLayoutElement
 {
-	QgLoStage			stage : 8;							/** @brief 스테이지 구분 */
-	int					index : 8;							/** @brief 스테이지에서 인덱스 */
-	QgLoUsage			usage : 8;							/** @brief 사용법 */
-	QgLoType			type : 8;							/** @brief 데이터 타입 */
+	QgLoStage			stage;								/** @brief 스테이지 구분 */
+	int					index;								/** @brief 스테이지에서 인덱스 */
+	QgLoUsage			usage;								/** @brief 사용법 */
+	QgLoType			type;								/** @brief 데이터 타입 */
 } QgLayoutElement;
 
 /** @brief 레이아웃 */
@@ -321,17 +321,16 @@ typedef struct QgPropLayout
 /** @brief 블렌드 */
 typedef struct QgPropBlend
 {
-	bool				use_coverage;						/** @brief sample coverage / alpha to coverage */
-	bool				separate;							/** @brief 거짓이면 rb[0]만 사용 */
-	ushort				__pad[1];
+	BOOL				use_coverage;						/** @brief sample coverage / alpha to coverage */
+	BOOL				separate;							/** @brief 거짓이면 rb[0]만 사용 */
 	QgBlend				rb[QGRVS_MAX_VALUE];
 } QgPropBlend;
 
 /** @brief 래스터라이저 */
 typedef struct QgPropRasterizer
 {
-	QgFill				fill : 16;
-	QgCull				cull : 16;
+	QgFill				fill;
+	QgCull				cull;
 	float				depth_bias;							/** @brief 주어진 픽셀에 추가하는 깊이 값 */
 	float				slope_scale;						/** @brief 픽셀 경사면에 주어지는 스칼라 값 */
 } QgPropRasterizer;
@@ -380,8 +379,7 @@ typedef union QgEvent
 	struct QgEventActive
 	{
 		QgEventType			ev;
-		bool				active;							/** @brief 활성 상태면 참 */
-		byte				__pad[3];
+		BOOL				active;							/** @brief 활성 상태면 참 */
 		double				delta;							/** @brief 마지막 활성 상태로 부터의 지난 시간(초) */
 	}					active;								/** @brief 액티브 이벤트 */
 	struct QgEventLayout
@@ -392,11 +390,10 @@ typedef union QgEvent
 	struct QgEventKeyboard
 	{
 		QgEventType			ev;
-		bool				pressed;						/** @brief 눌려 있었다면 참 */
-		bool				repeat;							/** @brief 계속 눌려 있었다면 참 */
-		byte				__pad[2];
 		QikKey				key;							/** @brief 이벤트에 해당하는 키 */
 		QikMask				state;							/** @brief 특수키 상태 */
+		BOOL				pressed;						/** @brief 눌려 있었다면 참 */
+		BOOL				repeat;							/** @brief 계속 눌려 있었다면 참 */
 	}					key;								/** @brief 키 눌림 떼임 이벤트 */
 	struct QgEventMouseMove
 	{
@@ -600,15 +597,15 @@ QSAPI bool qg_test_key(QikKey key);
 */
 QSAPI void qg_set_key(QikKey key, bool down);
 /**
+ * @brief 초당 프레임(FPS)를 얻는다
+ * @return 초당 프레임 수
+*/
+QSAPI float qg_get_fps(void);
+/**
  * @brief 실행 시간을 얻는다
  * @return 실행 시간
 */
 QSAPI double qg_get_run(void);
-/**
- * @brief 초당 프레임(FPS)를 얻는다
- * @return 초당 프레임 수
-*/
-QSAPI double qg_get_fps(void);
 /**
  * @brief 프레임 당 시간을 얻는다
  * @return 리퍼런스 시간

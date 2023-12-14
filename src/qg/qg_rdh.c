@@ -12,7 +12,7 @@ QgRdh* qg_rdh_instance = NULL;
 QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, int flags)
 {
 	qg_open_stub(title, width, height, flags);
-	qn_retval_if_fail(qg_stub_instance, NULL);
+	qn_val_if_fail(qg_stub_instance, NULL);
 
 	static struct
 	{
@@ -49,7 +49,7 @@ QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, 
 	self->tm.z.znear = 1.0f;
 	self->tm.z.zfar = 100000.0f;
 
-	qvt_cast(self, QgRdh)->reset(self);
+	qv_cast(self, QgRdh)->reset(self);
 
 	return self;
 }
@@ -148,7 +148,7 @@ bool qg_rdh_poll(QgRdh* self, QgEvent* ev)
 		return false;
 
 	if (ev->ev == QGEV_LAYOUT && !qn_size_eq(&self->tm.size, &qg_stub_instance->size))
-		qvt_cast(self, QgRdh)->reset(self);
+		qv_cast(self, QgRdh)->reset(self);
 
 	return ret;
 }
@@ -165,7 +165,7 @@ bool qg_rdh_begin(QgRdh* self, bool clear)
 	self->invokes.invokes++;
 	self->invokes.begins++;
 	self->invokes.flush = false;
-	return qvt_cast(self, QgRdh)->begin(self, clear);
+	return qv_cast(self, QgRdh)->begin(self, clear);
 }
 
 //
@@ -174,7 +174,7 @@ void qg_rdh_end(QgRdh* self)
 	self->invokes.invokes++;
 	self->invokes.ends++;
 	self->invokes.flush = true;
-	qvt_cast(self, QgRdh)->end(self);
+	qv_cast(self, QgRdh)->end(self);
 }
 
 //
@@ -185,7 +185,7 @@ void qg_rdh_flush(QgRdh* self)
 		qn_debug_outputs(true, "RDH", "use end before flush");
 		qg_rdh_end(self);
 	}
-	qvt_cast(self, QgRdh)->flush(self);
+	qv_cast(self, QgRdh)->flush(self);
 	self->invokes.invokes++;
 	self->invokes.frames++;
 }
@@ -194,14 +194,14 @@ void qg_rdh_flush(QgRdh* self)
 void qg_rdh_reset(QgRdh* self)
 {
 	self->invokes.invokes++;
-	qvt_cast(self, QgRdh)->reset(self);
+	qv_cast(self, QgRdh)->reset(self);
 }
 
 //
 void qg_rdh_clear(QgRdh* self, QgClear clear, const QnColor* color, int stencil, float depth)
 {
 	self->invokes.invokes++;
-	qvt_cast(self, QgRdh)->clear(self, clear, color, stencil, depth);
+	qv_cast(self, QgRdh)->clear(self, clear, color, stencil, depth);
 }
 
 //
@@ -292,9 +292,9 @@ void qg_rdh_set_world(QgRdh* self, const QnMat4* world)
 //
 QgVlo* qg_rdh_create_layout(QgRdh* self, int count, const QgLayoutElement* layouts)
 {
-	qn_retval_if_fail(layouts && count > 0, false);
+	qn_val_if_fail(layouts && count > 0, false);
 	self->invokes.invokes++;
-	return qvt_cast(self, QgRdh)->create_layout(self, count, layouts);
+	return qv_cast(self, QgRdh)->create_layout(self, count, layouts);
 }
 
 //
@@ -307,21 +307,21 @@ QgShd* qg_rdh_create_shader(QgRdh* self, const char* name)
 		name = tmpname;
 	}
 	self->invokes.invokes++;
-	return qvt_cast(self, QgRdh)->create_shader(self, name);
+	return qv_cast(self, QgRdh)->create_shader(self, name);
 }
 
 //
 QgBuf* qg_rdh_create_buffer(QgRdh* self, QgBufType type, int count, int stride, const void* data)
 {
-	qn_retval_if_fail(count > 0 && stride > 0, NULL);
+	qn_val_if_fail(count > 0 && stride > 0, NULL);
 	self->invokes.invokes++;
-	return qvt_cast(self, QgRdh)->create_buffer(self, type, count, stride, data);
+	return qv_cast(self, QgRdh)->create_buffer(self, type, count, stride, data);
 }
 
 //
 QgDsm* qg_rdh_create_depth_stencil(QgRdh* self, const QgDepthStencilProp* prop)
 {
-	qn_retval_if_fail(prop, NULL);
+	qn_val_if_fail(prop, NULL);
 
 #define CHK_DSM_PARAM(section,name,maxvalue)\
 	if ((size_t)prop->section##_##name < maxvalue) {\
@@ -348,13 +348,13 @@ QgDsm* qg_rdh_create_depth_stencil(QgRdh* self, const QgDepthStencilProp* prop)
 #undef CHK_DSM_PARAM
 
 	self->invokes.invokes++;
-	return qvt_cast(self, QgRdh)->create_depth_stencil(self, prop);
+	return qv_cast(self, QgRdh)->create_depth_stencil(self, prop);
 }
 
 //
 QgRsz* qg_rdh_create_rasterizer(QgRdh* self, const QgRasterizerProp* prop)
 {
-	qn_retval_if_fail(prop, NULL);
+	qn_val_if_fail(prop, NULL);
 
 #define CHK_RSZ_PARAM(name,maxvalue)\
 	if ((size_t)prop->name < maxvalue) {\
@@ -365,7 +365,7 @@ QgRsz* qg_rdh_create_rasterizer(QgRdh* self, const QgRasterizerProp* prop)
 #undef CHK_RSZ_PARAM
 
 	self->invokes.invokes++;
-	return qvt_cast(self, QgRdh)->create_rasterizer(self, prop);
+	return qv_cast(self, QgRdh)->create_rasterizer(self, prop);
 }
 
 //
@@ -373,67 +373,67 @@ void qg_rdh_set_shader(QgRdh* self, QgShd* shader, QgVlo* layout)
 {
 	self->invokes.invokes++;
 	self->invokes.shaders++;
-	qvt_cast(self, QgRdh)->set_shader(self, shader, layout);
+	qv_cast(self, QgRdh)->set_shader(self, shader, layout);
 }
 
 //
 bool qg_rdh_set_index(QgRdh* self, QgBuf* buffer)
 {
 	self->invokes.invokes++;
-	return qvt_cast(self, QgRdh)->set_index(self, buffer);
+	return qv_cast(self, QgRdh)->set_index(self, buffer);
 }
 
 //
 bool qg_rdh_set_vertex(QgRdh* self, QgLoStage stage, QgBuf* buffer)
 {
-	qn_retval_if_fail((size_t)stage < QGLOS_MAX_VALUE, false);
+	qn_val_if_fail((size_t)stage < QGLOS_MAX_VALUE, false);
 	self->invokes.invokes++;
-	return qvt_cast(self, QgRdh)->set_vertex(self, stage, buffer);
+	return qv_cast(self, QgRdh)->set_vertex(self, stage, buffer);
 }
 
 //
 bool qg_rdh_set_depth_stencil(QgRdh* self, QgDsm* depth_stencil)
 {
 	self->invokes.invokes++;
-	return qvt_cast(self, QgRdh)->set_depth_stencil(self, depth_stencil);
+	return qv_cast(self, QgRdh)->set_depth_stencil(self, depth_stencil);
 }
 
 //
 bool qg_rdh_set_rasterizer(QgRdh* self, QgRsz* rasterizer)
 {
 	self->invokes.invokes++;
-	return qvt_cast(self, QgRdh)->set_rasterizer(self, rasterizer);
+	return qv_cast(self, QgRdh)->set_rasterizer(self, rasterizer);
 }
 
 //
 bool qg_rdh_draw(QgRdh* self, QgTopology tpg, int vertices)
 {
-	qn_retval_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_retval_if_fail(vertices > 0, false);
+	qn_val_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
+	qn_val_if_fail(vertices > 0, false);
 	self->invokes.invokes++;
 	self->invokes.draws++;
-	return qvt_cast(self, QgRdh)->draw(self, tpg, vertices);
+	return qv_cast(self, QgRdh)->draw(self, tpg, vertices);
 }
 
 //
 bool qg_rdh_draw_indexed(QgRdh* self, QgTopology tpg, int indices)
 {
-	qn_retval_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_retval_if_fail(indices > 0, false);
+	qn_val_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
+	qn_val_if_fail(indices > 0, false);
 	self->invokes.invokes++;
 	self->invokes.draws++;
-	return qvt_cast(self, QgRdh)->draw_indexed(self, tpg, indices);
+	return qv_cast(self, QgRdh)->draw_indexed(self, tpg, indices);
 }
 
 //
 bool qg_rdh_ptr_draw(QgRdh* self, QgTopology tpg, int vertices, int stride, const void* vertex_data)
 {
-	qn_retval_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_retval_if_fail(vertices > 0 && stride >= 0 && vertex_data, false);
+	qn_val_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
+	qn_val_if_fail(vertices > 0 && stride >= 0 && vertex_data, false);
 
 	self->invokes.invokes++;
 	self->invokes.draws++;
-	return qvt_cast(self, QgRdh)->ptr_draw(self, tpg, vertices, stride, vertex_data);
+	return qv_cast(self, QgRdh)->ptr_draw(self, tpg, vertices, stride, vertex_data);
 
 }
 
@@ -442,12 +442,12 @@ bool qg_rdh_ptr_draw_indexed(QgRdh* self, QgTopology tpg,
 	int vertices, int vertex_stride, const void* vertex_data,
 	int indices, int index_stride, const void* index_data)
 {
-	qn_retval_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_retval_if_fail(vertices > 0 && vertex_stride >= 0 && vertex_data, false);
-	qn_retval_if_fail(indices > 0 && index_data, false);
+	qn_val_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
+	qn_val_if_fail(vertices > 0 && vertex_stride >= 0 && vertex_data, false);
+	qn_val_if_fail(indices > 0 && index_data, false);
 
 	self->invokes.invokes++;
 	self->invokes.draws++;
-	return qvt_cast(self, QgRdh)->ptr_draw_indexed(self, tpg, vertices, vertex_stride, vertex_data, indices, index_stride, index_data);
+	return qv_cast(self, QgRdh)->ptr_draw_indexed(self, tpg, vertices, vertex_stride, vertex_data, indices, index_stride, index_data);
 }
 
