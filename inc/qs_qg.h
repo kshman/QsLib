@@ -1,4 +1,16 @@
-﻿#pragma once
+﻿/*
+ * QsLib <QG Layer>
+ * Made by kim 2004-2024
+ *
+ * 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
+ * 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
+ */
+/**
+ * @file qs_qg.h
+ *
+ * <QG Layer>는 공통 그래픽 구현을 목표로 합니다.
+ */
+#pragma once
 
 #include <qs_qn.h>
 #include <qs_math.h>
@@ -7,15 +19,15 @@
 QN_EXTC_BEGIN
 
 //
-typedef struct QgRdh					QgRdh;				/** @Brief 렌더러 */
-typedef struct QgGam					QgGam;				/** @Brief 런더 감 */
-typedef struct QgDsm					QgDsm;				/** @Brief 뎁스 스텐실 */
-typedef struct QgRsz					QgRsz;				/** @Brief 래스터라이저 */
-typedef struct QgBld					QgBld;				/** @Brief 블렌드 */
-typedef struct QgSpr					QgSpr;				/** @Brief 샘플러 */
-typedef struct QgShd					QgShd;				/** @Brief 세이더 */
-typedef struct QgVlo					QgVlo;				/** @Brief 정점 레이아웃 */
-typedef struct QgBuf					QgBuf;				/** @Brief 버퍼 */
+typedef struct QgRdh		QgRdh;							/** @Brief 렌더러 */
+typedef struct QgGam		QgGam;							/** @Brief 런더 감 */
+typedef struct QgDsm		QgDsm;							/** @Brief 뎁스 스텐실 */
+typedef struct QgRsz		QgRsz;							/** @Brief 래스터라이저 */
+typedef struct QgBld		QgBld;							/** @Brief 블렌드 */
+typedef struct QgSpr		QgSpr;							/** @Brief 샘플러 */
+typedef struct QgShd		QgShd;							/** @Brief 세이더 */
+typedef struct QgVlo		QgVlo;							/** @Brief 정점 레이아웃 */
+typedef struct QgBuf		QgBuf;							/** @Brief 버퍼 */
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -25,69 +37,66 @@ typedef struct QgBuf					QgBuf;				/** @Brief 버퍼 */
 typedef enum QgClrFmt
 {
 	QGCF_NONE,
-	QGCF8_L,
-	QGCF16_L,
-	QGCF16_RGB,
-	QGCF16_RGBA,
-	QGCF32_RGB,
-	QGCF32_RGBA,
-	QGCF32_BGRA,
-	QGCF16F_R,
-	QGCF32F_R,
-	QGCF64F_BGRA,
-	QGCF128F_BGRA,
-	QGCF_DXT1,
-	QGCF_DXT3,
-	QGCF_DXT5,
+	QGCF8_L,												/** @brief 8비트 루미넌스 */
+	QGCF16_L,												/** @brief 16비트 루미넌스 */
+	QGCF16_RGB,												/** @brief 16비트 RGBX */
+	QGCF16_RGBA,											/** @brief 16비트 RGBA */
+	QGCF32_RGB,												/** @brief 32비트 RGBX */
+	QGCF32_RGBA,											/** @brief 32비트 RGBA */
+	QGCF32_BGRA,											/** @brief 32비트 BGRA */
+	QGCF16F_R,												/** @brief 16비트 실수 R */
+	QGCF32F_R,												/** @brief 32비트 실수 R */
+	QGCF64F_BGRA,											/** @brief 64비트 실수 BGRA */
+	QGCF128F_BGRA,											/** @brief 128비트 실수 BGRA */
 	QGCF_MAX_VALUE,
 } QgClrFmt;
 
 /** @brief 토폴로지 */
 typedef enum QgTopology
 {
-	QGTPG_POINT,
-	QGTPG_LINE,
-	QGTPG_LINE_STRIP,
-	QGTPG_TRI,
-	QGTPG_TRI_STRIP,
+	QGTPG_POINT,											/** @brief 점 */
+	QGTPG_LINE,												/** @brief 선분 */
+	QGTPG_LINE_STRIP,										/** @brief 연결된 선분 */
+	QGTPG_TRI,												/** @brief 삼각형 */
+	QGTPG_TRI_STRIP,										/** @brief 연결된 삼각형 */
 	QGTPG_MAX_VALUE,
 } QgTopology;
 
 /** @brief 렌더 스테이지 */
 typedef enum QgRvStage
 {
-	QGRVS_1,
-	QGRVS_2,
-	QGRVS_3,
-	QGRVS_4,
+	QGRVS_1,												/** @brief 스테이지 1 */
+	QGRVS_2,												/** @brief 스테이지 2 */
+	QGRVS_3,												/** @brief 스테이지 3 */
+	QGRVS_4,												/** @brief 스테이지 4 */
 	QGRVS_MAX_VALUE,
 } QgRvStage;
 
 /** @brief 채우기 방식 */
 typedef enum QgFill
 {
-	QGFILL_POINT,
-	QGFILL_WIRE,
-	QGFILL_SOLID,
+	QGFILL_POINT,											/** @brief 꼭짓점 */
+	QGFILL_WIRE,											/** @brief 외곽선 */
+	QGFILL_SOLID,											/** @brief 채우기 */
 	QGFILL_MAX_VALUE,
 } QgFill;
 
 /** @brief 면 제거 방법 */
 typedef enum QgCull
 {
-	QGCULL_NONE,
-	QGCULL_FRONT,
-	QGCULL_BACK,
+	QGCULL_NONE,											/** @brief 몇 제거 없음 */
+	QGCULL_FRONT,											/** @brief 앞면 제거 */
+	QGCULL_BACK,											/** @brief 뒷면 제거 */
 	QGCULL_MAX_VALUE
 } QgCull;
 
 /** @brief 레이아웃 스테이지 */
 typedef enum QgLoStage
 {
-	QGLOS_1,
-	QGLOS_2,
-	QGLOS_3,
-	QGLOS_4,
+	QGLOS_1,												/** @brief 레이아웃 1 */
+	QGLOS_2,												/** @brief 레이아웃 2 */
+	QGLOS_3,												/** @brief 레이아웃 3 */
+	QGLOS_4,												/** @brief 레이아웃 4 */
 	QGLOS_MAX_VALUE,
 } QgLoStage;
 
@@ -108,20 +117,20 @@ typedef enum QgLoUsage
 /** @brief 레아아웃 타입 */
 typedef enum QgLoType
 {
-	QGLOT_FLOAT1,
-	QGLOT_FLOAT2,
-	QGLOT_FLOAT3,
-	QGLOT_FLOAT4,
-	QGLOT_HALF2,
-	QGLOT_HALF4,
-	QGLOT_BYTE2,
-	QGLOT_BYTE4,
-	QGLOT_BYTE4_N,
-	QGLOT_SHORT2,
-	QGLOT_SHORT4,
-	QGLOT_SHORT2_N,
-	QGLOT_COLOR,
-	QGLOT_COLORN,
+	QGLOT_FLOAT1,											/** @brief 1개의 실수 */											
+	QGLOT_FLOAT2,											/** @brief 2개의 실수(Vector2) */
+	QGLOT_FLOAT3,											/** @brief 3개의 실수(Vector3) */
+	QGLOT_FLOAT4,											/** @brief 4개의 실수(Vector4) */
+	QGLOT_HALF2,											/** @brief 2개의 하프 정수 */
+	QGLOT_HALF4,											/** @brief 4개의 하프 정수 */
+	QGLOT_BYTE2,											/** @brief 2개의 바이트 */
+	QGLOT_BYTE4,											/** @brief 4개의 바이트 */
+	QGLOT_BYTE4_N,											/** @brief 4개의 정규화된 바이트(Kolor) */
+	QGLOT_SHORT2,											/** @brief 2개의 16비트 정수 */
+	QGLOT_SHORT4,											/** @brief 4개의 16비트 정수 */
+	QGLOT_SHORT2_N,											/** @brief 2개의 정규화된 16비트 정수(Texture Coordinate) */
+	QGLOT_COLOR,											/** @brief 색깔 */
+	QGLOT_COLORN,											/** @brief 정규화된 색깔 */
 	QGLOT_MAX_VALUE
 } QgLoType;
 
@@ -160,78 +169,78 @@ typedef enum QgStencil
 /** @brief 세이더 타입 */
 typedef enum QgShdType
 {
-	QGSHADER_VS = QN_BIT(0),
-	QGSHADER_PS = QN_BIT(1),
-	QGSHADER_ALL = QGSHADER_VS | QGSHADER_PS,
+	QGSHADER_VS = QN_BIT(0),								/** @brief 정점 세이더 */
+	QGSHADER_PS = QN_BIT(1),								/** @brief 픽셀(프래그먼트) 세이더 */
+	QGSHADER_ALL = QGSHADER_VS | QGSHADER_PS,				/** @brief 모든 세이더 대리 */
 } QgShdType;
 
 /** @brief 세이더 전역 변수 타입 */
 typedef enum QgShdConstType
 {
-	QGSCT_UNKNOWN,
-	QGSCT_FLOAT1,
-	QGSCT_FLOAT2,
-	QGSCT_FLOAT3,
-	QGSCT_FLOAT4,
-	QGSCT_FLOAT16,
-	QGSCT_INT1,
-	QGSCT_INT2,
-	QGSCT_INT3,
-	QGSCT_INT4,
-	QGSCT_BYTE1,
-	QGSCT_BYTE2,
-	QGSCT_BYTE3,
-	QGSCT_BYTE4,
-	QGSCT_SPLR_1D,
-	QGSCT_SPLR_2D,
-	QGSCT_SPLR_3D,
-	QGSCT_SPLR_CUBE,
+	QGSCT_UNKNOWN,											/** @brief 알 수 없음 */
+	QGSCT_FLOAT1,											/** @brief 1개의 실수 */
+	QGSCT_FLOAT2,											/** @brief 2개의 실수(Vector2) */
+	QGSCT_FLOAT3,											/** @brief 3개의 실수(Vector3) */
+	QGSCT_FLOAT4,											/** @brief 4개의 실수(Vector4) */
+	QGSCT_FLOAT16,											/** @brief 16개의 실수(Matrix4x4) */
+	QGSCT_INT1,												/** @brief 1개의 정수 */
+	QGSCT_INT2,												/** @brief 2개의 정수 */
+	QGSCT_INT3,												/** @brief 3개의 정수 */
+	QGSCT_INT4,												/** @brief 4개의 정수 */
+	QGSCT_BYTE1,											/** @brief 1개의 바이트 */
+	QGSCT_BYTE2,											/** @brief 2개의 바이트 */
+	QGSCT_BYTE3,											/** @brief 3개의 바이트 */
+	QGSCT_BYTE4,											/** @brief 4개의 바이트 */
+	QGSCT_SPLR_1D,											/** @brief 1D 텍스쳐 샘플러 */
+	QGSCT_SPLR_2D,											/** @brief 2D 텍스쳐 샘플러 */
+	QGSCT_SPLR_3D,											/** @brief 3D 텍스쳐 샘플러 */
+	QGSCT_SPLR_CUBE,										/** @brief 큐브 텍스쳐 샘플러 */
 	QGSCT_MAX_VALUE
 } QgShdConstType;
 
 /** @brief 세이더 자동처리 전역 변수 */
 typedef enum QgShdConstAuto
 {
-	QGSCA_ORTHO_PROJ,
-	QGSCA_WORLD,
-	QGSCA_VIEW,
-	QGSCA_PROJ,
-	QGSCA_VIEW_PROJ,
-	QGSCA_INV_VIEW,
-	QGSCA_WORLD_VIEW_PROJ,
-	QGSCA_TEX0,
-	QGSCA_TEX1,
-	QGSCA_TEX2,
-	QGSCA_TEX3,
-	QGSCA_TEX4,
-	QGSCA_TEX5,
-	QGSCA_TEX6,
-	QGSCA_TEX7,
-	QGSCA_PROP_VEC0,
-	QGSCA_PROP_VEC1,
-	QGSCA_PROP_VEC2,
-	QGSCA_PROP_VEC3,
-	QGSCA_PROP_MAT0,
-	QGSCA_PROP_MAT1,
-	QGSCA_PROP_MAT2,
-	QGSCA_PROP_MAT3,
-	QGSCA_MAT_PALETTE,
+	QGSCA_ORTHO_PROJ,										/** @brief 평면 투영 행렬 */
+	QGSCA_WORLD,											/** @brief 월드 행렬 */
+	QGSCA_VIEW,												/** @brief 뷰 행렬 */
+	QGSCA_PROJ,												/** @brief 투영 행렬 */
+	QGSCA_VIEW_PROJ,										/** @brief 뷰와 투영의 곱행렬 */
+	QGSCA_INV_VIEW,											/** @brief 뷰의 역행렬 */
+	QGSCA_WORLD_VIEW_PROJ,									/** @brief 전역 투영 */
+	QGSCA_TEX1,												/** @brief 텍스쳐 1번 */
+	QGSCA_TEX2,												/** @brief 텍스쳐 2번 */
+	QGSCA_TEX3,												/** @brief 텍스쳐 3번 */
+	QGSCA_TEX4,												/** @brief 텍스쳐 4번 */
+	QGSCA_TEX5,												/** @brief 텍스쳐 5번 */
+	QGSCA_TEX6,												/** @brief 텍스쳐 6번 */
+	QGSCA_TEX7,												/** @brief 텍스쳐 7번 */
+	QGSCA_TEX8,												/** @brief 텍스쳐 8번 */
+	QGSCA_PROP_VEC1,										/** @brief 4개 실수 1번 */
+	QGSCA_PROP_VEC2,										/** @brief 4개 실수 2번 */
+	QGSCA_PROP_VEC3,										/** @brief 4개 실수 3번 */
+	QGSCA_PROP_VEC4,										/** @brief 4개 실수 4번 */
+	QGSCA_PROP_MAT1,										/** @brief 행렬 1번 */
+	QGSCA_PROP_MAT2,										/** @brief 행렬 2번 */
+	QGSCA_PROP_MAT3,										/** @brief 행렬 3번 */
+	QGSCA_PROP_MAT4,										/** @brief 행렬 4번 */
+	QGSCA_MAT_PALETTE,										/** @brief 행렬 팔레트 */
 	QGSCA_MAX_VALUE
 } QgShdConstAuto;
 
 /** @brief 버퍼 타입 */
 typedef enum QgBufType
 {
-	QGBUFFER_INDEX,
-	QGBUFFER_VERTEX,
+	QGBUFFER_INDEX,											/** @brief 인덱스 버퍼 */
+	QGBUFFER_VERTEX,										/** @brief 정점 버퍼 */
 } QgBufType;
 
 /** @brief 지우기 역할 */
 typedef enum QgClear
 {
-	QGCLEAR_DEPTH = QN_BIT(0),
-	QGCLEAR_STENCIL = QN_BIT(1),
-	QGCLEAR_RENDER = QN_BIT(2),
+	QGCLEAR_DEPTH = QN_BIT(0),								/** @brief 뎁스 버퍼 지우기 */
+	QGCLEAR_STENCIL = QN_BIT(1),							/** @brief 스텐실 버퍼 지우기 */
+	QGCLEAR_RENDER = QN_BIT(2),								/** @brief 렌더 타겟 영영 지우기 */
 } QgClear;
 
 /** @brief 스터브와 렌더러 플래그 */
@@ -278,7 +287,7 @@ typedef enum QgEventType
 } QgEventType;
 
 /** @brief 최대 이벤트 갯수 */
-#define QGMAX_EVENTS					5000
+#define QGMAX_EVENTS		5000
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -287,86 +296,87 @@ typedef enum QgEventType
 /** @brief 픽셀 포맷 */
 typedef struct QgPropPixel
 {
-	QgClrFmt			fmt;
-	uint				bpp;
-	byte				rr, rl;
-	byte				gr, gl;
-	byte				br, bl;
-	byte				ar, al;
+	QgClrFmt		fmt;									/** @brief 픽셀 포맷 */
+	uint			bpp;									/** @brief 픽셀 당 비트 수 */
+	byte			rr, rl;									/** @brief 빨강 */
+	byte			gr, gl;									/** @brief 녹색 */
+	byte			br, bl;									/** @brief 파랑 */
+	byte			ar, al;									/** @brief 알파 */
 } QgPropPixel;
 
 /** @brief 코드 데이터 */
 typedef struct QgCodeData
 {
-	size_t				size;								/** @brief code 길이 */
-	const void*			code;
+	size_t			size;									/** @brief code 길이 */
+	const void*		code;									/** @brief 코드 데이터 포인터 */
 } QgCodeData;
 
 /** @brief 레이아웃 요소 */
-typedef struct QgLayoutElement
+typedef struct QgLayoutInput
 {
-	QgLoStage			stage;								/** @brief 스테이지 구분 */
-	int					index;								/** @brief 스테이지에서 인덱스 */
-	QgLoUsage			usage;								/** @brief 사용법 */
-	QgLoType			type;								/** @brief 데이터 타입 */
-} QgLayoutElement;
+	QgLoStage		stage;									/** @brief 스테이지 구분 */
+	int				index;									/** @brief 스테이지에서 인덱스 */
+	QgLoUsage		usage;									/** @brief 사용법 */
+	QgLoType		type;									/** @brief 데이터 타입 */
+} QgLayoutInput;
 
 /** @brief 레이아웃 */
 typedef struct QgPropLayout
 {
-	size_t				count;								/** @brief elements 갯수 */
-	QgLayoutElement*	elements;
+	size_t			count;									/** @brief 요소 갯수 */
+	QgLayoutInput*	elements;								/** @brief 요소 데이터 포인트 */
 } QgPropLayout;
 
 /** @brief 블렌드 */
 typedef struct QgPropBlend
 {
-	BOOL				use_coverage;						/** @brief sample coverage / alpha to coverage */
-	BOOL				separate;							/** @brief 거짓이면 rb[0]만 사용 */
-	QgBlend				rb[QGRVS_MAX_VALUE];
+	BOOL			use_coverage;							/** @brief sample coverage / alpha to coverage */
+	BOOL			separate;								/** @brief 거짓이면 rb[0]만 사용 */
+	QgBlend			rb[QGRVS_MAX_VALUE];					/** @brief 스테이지 별 블렌드 정보 */
 } QgPropBlend;
 
 /** @brief 래스터라이저 */
-typedef struct QgPropRasterizer
+typedef struct QgPropRaster
 {
-	QgFill				fill;
-	QgCull				cull;
-	float				depth_bias;							/** @brief 주어진 픽셀에 추가하는 깊이 값 */
-	float				slope_scale;						/** @brief 픽셀 경사면에 주어지는 스칼라 값 */
-} QgPropRasterizer;
+	QgFill			fill;									/** @brief 채우기 방법 */
+	QgCull			cull;									/** @brief 면 제거 방법 */
+	float			depth_bias;								/** @brief 주어진 픽셀에 추가하는 깊이 값 */
+	float			slope_scale;							/** @brief 픽셀 경사면에 주어지는 스칼라 값 */
+} QgPropRaster;
 
 /** @brief 렌더 포맷 */
 typedef struct QgPropRvFormat
 {
-	size_t				count;								/** @brief rtv 갯수 */
-	QgClrFmt			rtv[QGRVS_MAX_VALUE];				/** @brief Render Target (color) Value */
-	QgClrFmt			dsv;								/** @brief Depth Stencil (color) Value */
+	uint			count;									/** @brief rtv 갯수 */
+	QgClrFmt		rtv[QGRVS_MAX_VALUE];					/** @brief Render Target (color) Value */
+	QgClrFmt		dsv;									/** @brief Depth Stencil (color) Value */
 } QgPropRvFormat;
 
 /** @brief 파이프라인 */
 typedef struct QgRenderPipeline
 {
-	QgCodeData			vs;									/** @brief 정점 세이더 데이터 */
-	QgCodeData			ps;									/** @brief 픽셀 세이더 데이터 */
-	QgPropBlend			blend;								/** @brief 블렌드 */
-	QgPropRasterizer	rasterizer;							/** @brief 래스터라이저 */
-	QgDepth				depth;								/** @brief 뎁스 */
-	QgStencil			stencil;							/** @brief 스텐실 */
-	QgPropLayout		layout;								/** @brief 정점 레이아웃 */
-	QgTopology			topology;							/** @brief 토폴로지 */
-	QgPropRvFormat		format;								/** @brief 렌더 포맷 */
+	QgCodeData		vs;										/** @brief 정점 세이더 데이터 */
+	QgCodeData		ps;										/** @brief 픽셀 세이더 데이터 */
+	QgPropBlend		blend;									/** @brief 블렌드 */
+	QgPropRaster	rasterizer;								/** @brief 래스터라이저 */
+	QgDepth			depth;									/** @brief 뎁스 */
+	QgStencil		stencil;								/** @brief 스텐실 */
+	QgPropLayout	layout;									/** @brief 정점 레이아웃 */
+	QgPropRvFormat	format;									/** @brief 렌더 포맷 */
+	QgTopology		topology;								/** @brief 토폴로지 */
+	uint			__mask;									/** @brief 용도 못 찾음 */
 } QgRenderPipeline;
 
 /** @brief 세이더 변수 */
 typedef struct QgVarShader
 {
-	char				name[64];
+	char				name[64];							/** @brief 변수 이름 */
 
-	uint				offset;								/** @brief variable offset */
-	ushort				size;
+	uint				offset;								/** @brief 변수 옵셋 */
+	ushort				size;								/** @brief 변수의 크기 */
 
-	ushort				manual;
-	QgShdConstType		type;
+	ushort				manual;								/** @brief 수동 모드 여부 */
+	QgShdConstType		type;								/** @brief 변수 타입 */
 } QgVarShader;
 
 /** @brief 세이더 변수 콜백 함수 */
@@ -420,7 +430,7 @@ typedef union QgEvent
 /** @brief 키 상태 */
 typedef struct QgUimKey
 {
-	QikMask				mask : 16;							/** @brief 특수 키 상태 */
+	QikMask				mask;								/** @brief 특수 키 상태 */
 	byte				key[QIK_MAX_VALUE / 8 + 1];			/** @brief 전체 키 상태 배열 */
 } QgUimKey;
 
@@ -434,9 +444,10 @@ typedef struct QgUimMouse
 
 	struct				QgUimMouseClick
 	{
-		uint				tick;
-		QimButton			btn;
-		QnPoint				loc;
+		uint				tick;							/** @brief 첫번째 눌렸을 때 */
+		uint				ltick;							/** @brief 마지막으로 두번 눌렸을 때 */
+		QimButton			btn;							/** @brief 두번 검새 때 눌린 마우스 버튼 */
+		QnPoint				loc;							/** @brief 두번 검사 때 마우스 위치 */
 	}					clk;								/** @brief 마우스 눌림 정보 */
 	struct				QgUimMouseLimit
 	{
@@ -495,18 +506,17 @@ typedef struct QgDeviceInfo
 /** @brief 렌더러 추적 정보 */
 typedef struct QgRenderInvoke
 {
-	nint				invokes;
-	nint				begins;
-	nint				ends;
-	nint				shaders;
-	nint				params;
-	nint				transforms;
-	nint				draws;
-	nint				primitives;
+	uint				invokes;
+	uint				begins;
+	uint				ends;
+	uint				shaders;
+	uint				params;
+	uint				transforms;
+	uint				draws;
+	uint				primitives;
 
-	nint				frames;
-	bool				flush;
-	byte				__pad[3];
+	uint				frames;
+	BOOL				flush;
 } QgRenderInvoke;
 
 /** @brief 렌더러 트랜스 포매이션 */
@@ -530,9 +540,11 @@ typedef struct QgRenderParam
 	QnColor				bgc;
 	QnVec4				v[4];
 	QnMat4				m[4];
-	int					bones;
 	QnMat4*				bone_ptr;
-	int					__pad[2];
+	int					bone_count;
+
+	QN_PADDING_32(8, 0)
+	QN_PADDING_64(4, 0)
 } QgRenderParam;
 
 

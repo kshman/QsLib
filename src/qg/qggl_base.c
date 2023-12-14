@@ -334,7 +334,7 @@ bool gl_set_rasterizer(QgRdh* rdh, QgRsz* rasterizer)
 }
 
 // 레이아웃 만들기
-QgVlo* gl_create_layout(QgRdh* rdh, int count, const QgLayoutElement* layouts)
+QgVlo* gl_create_layout(QgRdh* rdh, int count, const QgLayoutInput* layouts)
 {
 	//GlRdhBase* self = qm_cast(rdh, GlRdhBase);
 	GlVlo* vlo = gl_vlo_allocator(rdh, count, layouts);

@@ -48,205 +48,202 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\pch.h">
+    <ClInclude Include="pch.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\inc\qs_ctn.h">
+    <ClInclude Include="..\inc\qs_ctn.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\inc\qs_math.h">
+    <ClInclude Include="..\inc\qs_math.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\inc\qs_qn.h">
+    <ClInclude Include="..\inc\qs_qn.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\inc\qs.h">
+    <ClInclude Include="..\inc\qs.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\qn_mem.h">
+    <ClInclude Include="qn\qn_mem.h">
       <Filter>헤더 파일\qn</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\zutil.h">
+    <ClInclude Include="qn\zlib\zutil.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\zstub.h">
+    <ClInclude Include="qn\zlib\zstub.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\zlib.h">
+    <ClInclude Include="qn\zlib\zlib.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\zconf.h">
+    <ClInclude Include="qn\zlib\zconf.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\trees.h">
+    <ClInclude Include="qn\zlib\trees.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\inftrees.h">
+    <ClInclude Include="qn\zlib\inftrees.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\inflate.h">
+    <ClInclude Include="qn\zlib\inflate.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\inffixed.h">
+    <ClInclude Include="qn\zlib\inffixed.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\inffast.h">
+    <ClInclude Include="qn\zlib\inffast.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\gzguts.h">
+    <ClInclude Include="qn\zlib\gzguts.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\deflate.h">
+    <ClInclude Include="qn\zlib\deflate.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\crc32.h">
+    <ClInclude Include="qn\zlib\crc32.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\inc\qs_kmc.h">
+    <ClInclude Include="..\inc\qs_kmc.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\inc\qs_qg.h">
+    <ClInclude Include="..\inc\qs_qg.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\qg_es2.h">
+    <ClInclude Include="qg\qg_es2.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\qg_glfunc_list.h">
+    <ClInclude Include="qg\qg_glfunc_list.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\qg_stub.h">
+    <ClInclude Include="qg\qg_stub.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\qg_glsupp.h">
+    <ClInclude Include="qg\qg_glsupp.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\qg_glbase.h">
+    <ClInclude Include="qg\qg_glbase.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\qg_glfunc.h">
+    <ClInclude Include="qg\qg_glfunc.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\pch.c">
+    <ClCompile Include="pch.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn.c">
+    <ClCompile Include="qn\qn.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_time.c">
+    <ClCompile Include="qn\qn_time.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_debug.c">
+    <ClCompile Include="qn\qn_debug.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_file.c">
+    <ClCompile Include="qn\qn_file.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_gam.c">
+    <ClCompile Include="qn\qn_gam.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_hash.c">
+    <ClCompile Include="qn\qn_hash.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_math.c">
+    <ClCompile Include="qn\qn_math.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_mem.c">
+    <ClCompile Include="qn\qn_mem.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_mlu.c">
+    <ClCompile Include="qn\qn_mlu.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_sort.c">
+    <ClCompile Include="qn\qn_sort.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_str.c">
+    <ClCompile Include="qn\qn_str.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\adler32.c">
+    <ClCompile Include="qn\zlib\adler32.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\compress.c">
+    <ClCompile Include="qn\zlib\compress.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\crc32.c">
+    <ClCompile Include="qn\zlib\crc32.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\deflate.c">
+    <ClCompile Include="qn\zlib\deflate.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\gzclose.c">
+    <ClCompile Include="qn\zlib\gzclose.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\gzlib.c">
+    <ClCompile Include="qn\zlib\gzlib.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\gzread.c">
+    <ClCompile Include="qn\zlib\gzread.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\gzwrite.c">
+    <ClCompile Include="qn\zlib\gzwrite.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\infback.c">
+    <ClCompile Include="qn\zlib\infback.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\inffast.c">
+    <ClCompile Include="qn\zlib\inffast.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\inflate.c">
+    <ClCompile Include="qn\zlib\inflate.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\inftrees.c">
+    <ClCompile Include="qn\zlib\inftrees.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\trees.c">
+    <ClCompile Include="qn\zlib\trees.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\uncompr.c">
+    <ClCompile Include="qn\zlib\uncompr.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\zutil.c">
+    <ClCompile Include="qn\zlib\zutil.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\PatrickPowell_snprintf.c">
+    <ClCompile Include="qn\PatrickPowell_snprintf.c">
       <Filter>소스 파일\qn\PatrickPowell</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qg_kmc.c">
+    <ClCompile Include="qg\qg_kmc.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qgsdl_stub.c">
+    <ClCompile Include="qg\qgsdl_stub.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qggl_base.c">
+    <ClCompile Include="qg\qggl_base.c">
       <Filter>소스 파일\qg\gl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qggl_func.c">
+    <ClCompile Include="qg\qggl_func.c">
       <Filter>소스 파일\qg\gl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qggl_rdo.c">
+    <ClCompile Include="qg\qggl_rdo.c">
       <Filter>소스 파일\qg\gl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qggl_shd.c">
+    <ClCompile Include="qg\qggl_shd.c">
       <Filter>소스 파일\qg\gl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qg_rdh.c">
+    <ClCompile Include="qg\qg_rdh.c">
       <Filter>소스 파일\qg\rdh</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qg_rdo.c">
+    <ClCompile Include="qg\qg_rdo.c">
       <Filter>소스 파일\qg\rdh</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qg_stub.c">
+    <ClCompile Include="qg\qg_stub.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qges2_rdh.c">
+    <ClCompile Include="qg\qges2_rdh.c">
       <Filter>소스 파일\qg\gles</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qges2_shd.c">
+    <ClCompile Include="qg\qges2_shd.c">
       <Filter>소스 파일\qg\gles</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

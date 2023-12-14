@@ -1,4 +1,16 @@
-﻿#pragma once
+﻿/*
+ * QsLib <MATH Layer>
+ * Made by kim 2004-2024
+ *
+ * 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
+ * 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
+ */
+/**
+ * @file qs_math.h
+ *
+ * <MATH Layer>는 <QG Layer>에서 사용할 수학 기능 구현을 목표로 합니다.
+ */
+#pragma once
 
 #ifdef _MSC_VER
 #pragma warning(push)

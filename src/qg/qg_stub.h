@@ -22,19 +22,19 @@ extern QikMask kmod_to_qikm(int modifier);
 
 //////////////////////////////////////////////////////////////////////////
 // 스터브
-QN_DECL_LIST(qgListEvent, QgEvent);
+QN_DECL_LIST(QgListEvent, QgEvent);
 
 /** @brief 기본 스터브 형식 */
 typedef struct StubBase StubBase;
 struct StubBase
 {
 	void*				handle;
+	QnTimer*			timer;
 
 	QgFlag				flags;
 	QgStubStat			stats;
 	uint				delay;
 
-	QnTimer*			timer;
 	float				fps;								/** @brief 프레임 당 시간 */
 	double				run;								/** @brief 실행 시간 */
 	double				active;								/** @brief 활성화된 시간 */
@@ -49,17 +49,9 @@ struct StubBase
 	QgUimKey			key;
 	QgUimMouse			mouse;
 
-	qgListEvent			events;
-};
+	QgListEvent			events;
 
-/** @brief 스터브 만들기 파라미터 */
-typedef struct StubParam StubParam;
-struct StubParam
-{
-	const char*		title;
-	int				width;
-	int				height;
-	int				flags;
+	QN_PADDING_32(4, 0)
 };
 
 /** @brief 스터브 인스턴스 */
@@ -67,10 +59,13 @@ extern StubBase* qg_stub_instance;
 
 /**
  * @brief 시스템 스터브를 연다
- * @param param 스터브 파라미터
+ * @param title 윈도우 제목
+ * @param width 윈도우 너비
+ * @param height 윈도우 높이
+ * @param flags 스터브 플래그
  * @return 만들어진 스터브
 */
-extern StubBase* stub_system_open(const StubParam* param);
+extern StubBase* stub_system_open(const char* title, int width, int height, int flags);
 /**
  * @brief 시스템 스터브를 정리한다
 */

@@ -8,8 +8,15 @@
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include "qg_stub.h"
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4820)
+#endif
 #include "SDL2/SDL_syswm.h"
 #include "SDL2/SDL_keyboard.h"
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 // SDL 스터브
@@ -22,10 +29,12 @@ struct SdlStub
 
 	SDL_Window*			window;
 	SDL_SysWMinfo		wminfo;
+
+	QN_PADDING_32(4, 0)
 };
 
 //
-StubBase* stub_system_open(const StubParam* param)
+StubBase* stub_system_open(const char* title, int width, int height, int flags)
 {
 	static SdlStub s_stub;
 
@@ -37,18 +46,18 @@ StubBase* stub_system_open(const StubParam* param)
 	SdlStub* stub = &s_stub;
 	qn_zero_1(stub);
 
-	const char* title = param->title ? param->title : "STUB Window";
+	const char* wtitle = title != NULL ? title : "STUB Window";
 	int wflags = SDL_WINDOW_OPENGL;
-	if (QN_TMASK(param->flags, QGFLAG_FULLSCREEN))
+	if (QN_TMASK(flags, QGFLAG_FULLSCREEN))
 		wflags |= SDL_WINDOW_FULLSCREEN;
-	if (QN_TMASK(param->flags, QGFLAG_BORDERLESS))
+	if (QN_TMASK(flags, QGFLAG_BORDERLESS))
 		wflags |= SDL_WINDOW_BORDERLESS;
-	if (QN_TMASK(param->flags, QGFLAG_RESIZABLE))
+	if (QN_TMASK(flags, QGFLAG_RESIZABLE))
 		wflags |= SDL_WINDOW_RESIZABLE;
-	if (QN_TMASK(param->flags, QGFLAG_FOCUS))
+	if (QN_TMASK(flags, QGFLAG_FOCUS))
 		wflags |= SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS;
 
-	stub->window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, param->width, param->height, wflags);
+	stub->window = SDL_CreateWindow(wtitle, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, wflags);
 	if (stub->window == NULL)
 	{
 		qn_debug_outputf(false, "SDL", "unable to initialize (%d)", SDL_GetError());
@@ -263,22 +272,20 @@ bool stub_system_poll(void)
 						.key.repeat = 0,
 					};
 					QgUimKey* k = &stub->key;
-					for (int i = 0; i < QIK_MAX_VALUE; i++)
+					for (int i = 0; i < (QIK_MAX_VALUE + 1) / 8; i++)
 					{
-						const char* keyname = qg_qik_str((QikKey)i);
-						if (keyname == NULL)
+						if (k->key[i] == 0)
 							continue;
 
-						byte nth = (byte)i >> 3;
-						byte mask = (byte)i & (~nth <<3);
-						if (QN_TMASK(k->key[nth], mask) == false)
-							continue;
+						for (int u = 0; u < 8; u++)
+						{
+							if (QN_TBIT(k->key[i], u) == false)
+								continue;
+							QN_SBIT(&k->key[i], u, false);
 
-						k->key[nth] &= ~mask;
-						QN_SMASK(&k->key[nth], mask, false);
-
-						e.key.key = (QikKey)i;
-						qg_add_event(&e);
+							e.key.key = (QikKey)(i * 8 + u);
+							qg_add_event(&e);
+						}
 					}
 					// 액티브 메시지는 키보드 처리 다음에
 					sdl_mesg_active(false);

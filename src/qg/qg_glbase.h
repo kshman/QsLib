@@ -189,7 +189,7 @@ extern bool gl_begin(QgRdh* rdh, bool clear);
 extern void gl_end(QgRdh* rdh);
 extern void gl_flush(QgRdh* rdh);
 
-extern QgVlo* gl_create_layout(QgRdh* rdh, int count, const QgLayoutElement* layouts);
+extern QgVlo* gl_create_layout(QgRdh* rdh, int count, const QgLayoutInput* layouts);
 extern QgShd* gl_create_shader(QgRdh* rdh, const char* name);
 extern QgBuf* gl_create_buffer(QgRdh* rdh, QgBufType type, int count, int stride, const void* data);
 extern QgDsm* gl_create_depth_stencil(QgRdh* rdh, const QgDepthStencilProp* prop);
@@ -224,7 +224,7 @@ struct GlVlo
 	int					es_cnt[QGLOS_MAX_VALUE];
 	GlLayoutElement*	es_elm[QGLOS_MAX_VALUE];
 };
-extern GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgLayoutElement* layouts);
+extern GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgLayoutInput* layouts);
 
 // 세이더
 struct GlShd

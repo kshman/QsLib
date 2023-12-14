@@ -16,7 +16,7 @@ qv_name(QmGam) vt_gl_vlo =
 };
 
 //
-GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgLayoutElement* layouts)
+GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgLayoutInput* layouts)
 {
 	static GLenum s_format[QGLOT_MAX_VALUE] =
 	{
@@ -63,7 +63,7 @@ GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgLayoutElement* layouts)
 	byte accum[QGLOS_MAX_VALUE] = { 0, };
 	for (int i = 0; i < count; i++)
 	{
-		const QgLayoutElement* l = &layouts[i];
+		const QgLayoutInput* l = &layouts[i];
 		if ((size_t)l->stage >= QGLOS_MAX_VALUE)
 			return NULL;
 		accum[l->stage]++;
@@ -86,7 +86,7 @@ GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgLayoutElement* layouts)
 	ushort offset[QGLOS_MAX_VALUE] = { 0, };
 	for (int i = 0; i < count; i++)
 	{
-		const QgLayoutElement* l = &layouts[i];
+		const QgLayoutInput* l = &layouts[i];
 		GlLayoutElement* e = elms[l->stage]++;
 		e->stage = l->stage;
 		e->usage = l->usage;

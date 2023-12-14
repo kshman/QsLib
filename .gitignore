@@ -224,3 +224,8 @@ ClientBin/
 *.pfx
 *.publishsettings
 orleans.codegen.cs
+
+#doxygen
+build/doxygen/html
+build/doxygen/latex
+build/doxygen/rtf

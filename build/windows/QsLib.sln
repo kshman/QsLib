@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34316.72
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "QS", "qs.vcxproj", "{C9C24C4B-32DC-414B-8F21-3F3F9BDFC86C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "QS", "..\..\src\qs.vcxproj", "{C9C24C4B-32DC-414B-8F21-3F3F9BDFC86C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zconsole", "..\..\zconsole\zconsole.vcxproj", "{483DAF28-9007-4602-A5AF-FA23CE78BEEE}"
 	ProjectSection(ProjectDependencies) = postProject

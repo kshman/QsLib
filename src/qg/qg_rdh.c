@@ -85,7 +85,7 @@ void rdh_internal_reset(QgRdh* self)
 
 	// param
 	QgRenderParam* param = &self->param;
-	param->bones = 0;
+	param->bone_count = 0;
 	param->bone_ptr = NULL;
 	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)
 		qn_vec4_rst(&param->v[i]);
@@ -290,7 +290,7 @@ void qg_rdh_set_world(QgRdh* self, const QnMat4* world)
 }
 
 //
-QgVlo* qg_rdh_create_layout(QgRdh* self, int count, const QgLayoutElement* layouts)
+QgVlo* qg_rdh_create_layout(QgRdh* self, int count, const QgLayoutInput* layouts)
 {
 	qn_val_if_fail(layouts && count > 0, false);
 	self->invokes.invokes++;

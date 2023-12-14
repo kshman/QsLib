@@ -230,7 +230,7 @@ static const char* pp_str_base_num[2] =
 };
 
 // 포인터 표시를 어떤거 쓰나
-#if _QN_64_
+#ifdef _QN_64_
 #define pp_str_fmt_size		pp_str_fmt_long
 #else
 #define pp_str_fmt_size		pp_str_fmt_int
@@ -1334,7 +1334,7 @@ static const wchar* pp_wcs_base_num[2] =
 };
 
 // 포인터 표시를 어떤거 쓰나
-#if _QN_64_
+#ifdef _QN_64_
 #define pp_wcs_fmt_size		pp_wcs_fmt_long
 #else
 #define pp_wcs_fmt_size		pp_wcs_fmt_int
