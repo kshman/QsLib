@@ -89,14 +89,28 @@ extern bool stub_internal_mouse_clicks(QimButton button, QimTrack track);
 // 렌더 디바이스
 extern QgRdh* qg_rdh_instance;
 
+/**
+ * @brief 렌더러 최종 제거
+ * @param g 렌더러
+*/
 extern void rdh_internal_dispose(QmGam* g);
+/**
+ * @brief 렌더러 내부 리셋
+ * @param self 렌더러
+*/
 extern void rdh_internal_reset(QgRdh* self);
 
+/**
+ * @brief OPENGL ES2 할당
+ * @param oshandle OS 핸들
+ * @param flags 스터브 & 렌더러 플래그
+ * @return 만들어진 ES2 렌더러
+*/
 extern QgRdh* es2_allocator(void* oshandle, int flags);
 
 #define rdh_caps(rdh)			(qm_cast(rdh, QgRdh)->caps)
 #define rdh_tm(rdh)				(qm_cast(rdh, QgRdh)->tm)
-#define rdh_param(rdh)			(qm_cast(rdh, QgRdh)->tm)
+#define rdh_param(rdh)			(qm_cast(rdh, QgRdh)->param)
 #define rdh_invokes(rdh)		(qm_cast(rdh, QgRdh)->invokes)
 
 #define rdh_set_flush(rdh,v)	(qm_cast(rdh, QgRdh)->invokes.fluash=(v))

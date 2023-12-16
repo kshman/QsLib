@@ -122,16 +122,34 @@ void qn_mstod(uint msec, QnDateTime* dt)
 }
 
 //
+static struct QnCycleImpl
+{
+	ullong				tick_count;		// 초 당 틱
+	ullong				start_count;	// 시작 카운트
+}
+qn_cycle_impl = { 0, };
+
+//
+void qn_cycle_init(void)
+{
+#ifdef _QN_WINDOWS_
+	QueryPerformanceFrequency((LARGE_INTEGER*)&qn_cycle_impl.tick_count);
+#else
+	qn_cycle_impl.tick_count = 1000;
+#endif
+	qn_cycle_impl.start_count = qn_cycle();
+}
+
+//
 ullong qn_cycle(void)
 {
 #ifdef _QN_WINDOWS_
 	LARGE_INTEGER ll;
 	QueryPerformanceCounter(&ll);
 	return ll.QuadPart;
-#elif defined _QN_BSD_
+#else
 	uint64_t n;
 	struct timespec tp;
-
 	if (clock_gettime(CLOCK_REALTIME, &tp) == 0)
 		n = ((uint64_t)tp.tv_sec * 1000) + ((uint64_t)tp.tv_nsec / 1000000);
 	else
@@ -140,48 +158,15 @@ ullong qn_cycle(void)
 		gettimeofday(&tv, 0);
 		n = ((uint64_t)tv.tv_sec * 1000) + ((uint64_t)tv.tv_usec / 1000);
 	}
-
-	return n;
-#else
-	uint64_t n;
-	struct timeval tv;
-	gettimeofday(&tv, 0);
-	n = (uint64_t)tv.tv_sec * 1000 + (uint64_t)tv.tv_usec / 1000;
 	return n;
 #endif
-}
-
-//
-double qn_stick(void)
-{
-	static double s_cycle_per_tick = 0.001;
-
-#ifdef _QN_WINDOWS_
-	static bool s_init = false;
-
-	if (!s_init)
-	{
-		LARGE_INTEGER ll;
-
-		if (QueryPerformanceFrequency(&ll))
-			s_cycle_per_tick = 1.0 / (double)ll.QuadPart;
-
-		s_init = true;
-	}
-#endif
-
-	const double t = (double)qn_cycle();  // NOLINT
-	return t * s_cycle_per_tick;
 }
 
 //
 ullong qn_tick(void)
 {
-#ifdef _QN_WINDOWS_
-	return (uint64_t)(qn_stick() * 1000.0);
-#else
-	return qn_cycle();
-#endif
+	ullong cycle = qn_cycle();
+	return ((cycle - qn_cycle_impl.start_count) * 1000) / qn_cycle_impl.tick_count;
 }
 
 //
@@ -190,20 +175,29 @@ void qn_sleep(uint milliseconds)
 #ifdef _QN_WINDOWS_
 	Sleep(milliseconds);
 #else
-	uint32_t s = milliseconds / 1000;
-	uint32_t u = (milliseconds % 1000) * 1000;
-	sleep(s);
-	usleep(u);
+#if defined __EMSCRIPTEN__
+	if (emscripten_has_asyncify())
+	{
+		emscripten_sleep(ms);
+		return;
+	}
 #endif
-}
-
-//
-void qn_usleep(uint microseconds)
-{
-#ifdef _QN_WINDOWS_
-	qn_sleep(microseconds / 1000);
-#else
-	usleep(microseconds);
+	struct timespec ts =
+	{
+		.tv_sec = ms / 1000,
+		.tv_nsec = (ms % 1000) * 1000000,
+	};
+	int error;
+	do
+	{
+		errno = 0;
+		struct timespec es =
+		{
+			.tv_sec = ts.tv_sec,
+			.tv_nsec = ts.tv_nsec,
+		};
+		error = nanosleep(&es, &ts);
+	} while (error && (errno == EINTR));
 #endif
 }
 
@@ -218,30 +212,38 @@ void qn_msleep(ullong microseconds)
 {
 #ifdef _QN_WINDOWS_
 	const double dms = (double)microseconds;
-	LARGE_INTEGER t1, t2, freq;
-
-	if (!QueryPerformanceFrequency(&freq))
-		qn_usleep((uint32_t)microseconds);
-	else
+	LARGE_INTEGER t1, t2;
+	QueryPerformanceCounter(&t1);
+	do
 	{
-		QueryPerformanceCounter(&t1);
-
-		do
-		{
-			SwitchToThread();
-			QueryPerformanceCounter(&t2);
-		} while (((double)(t2.QuadPart - t1.QuadPart) / freq.QuadPart * 1000000) < dms);  // NOLINT
-	}
+		if (SwitchToThread())
+			qn_pause();
+		QueryPerformanceCounter(&t2);
+	} while (((double)(t2.QuadPart - t1.QuadPart) / qn_cycle_impl.tick_count * 1000000) < dms);
 #else
-	struct timespec ts;
-	ts.tv_sec = microseconds / 1000000;
-	ts.tv_nsec = (microseconds % 1000000) * 1000;
-
-	while (nanosleep(&ts, &ts))
+#if defined __EMSCRIPTEN__
+	if (emscripten_has_asyncify())
 	{
-		if (errno != EINTR)
-			break;
+		emscripten_sleep(ms * 1000 / QN_USEC_PER_SEC);
+		return;
 	}
+#endif
+	struct timespec ts =
+	{
+		.tv_sec = microseconds / 1000000;
+		.tv_nsec = (microseconds % 1000000) * 1000;
+	};
+	int error;
+	do
+	{
+		errno = 0;
+		struct timespec es =
+		{
+			.tv_sec = ts.tv_sec,
+			.tv_nsec = ts.tv_nsec,
+		};
+		error = nanosleep(&es, &ts);
+	} while (error && (errno == EINTR));
 #endif
 }
 
@@ -269,8 +271,6 @@ typedef struct QnRealTimer
 	int					fps_frame;
 
 	uint32_t			count;
-	BOOL				manual;
-	QN_PADDING(4, 0)
 } qnRealTimer;
 
 //
@@ -279,27 +279,12 @@ QnTimer* qn_timer_new(void)
 	qnRealTimer* self = qn_alloc_1(qnRealTimer);
 	qn_val_if_fail(self, NULL);
 
-#ifdef _QN_WINDOWS_
-	LARGE_INTEGER ll;
-	if (!QueryPerformanceFrequency(&ll))
-	{
-		self->frame.q = 1000;
-		self->tick = 0.001;
-	}
-	else
-	{
-		self->frame.q = ll.QuadPart;
-		self->tick = 1.0 / (double)ll.QuadPart;
-	}
-#else
-	self->frame.q = 1000;
-	self->tick = 0.001;
-#endif
+	self->frame.q = qn_cycle_impl.tick_count;
+	self->tick = 1.0 / (double)qn_cycle_impl.tick_count;
 
 	self->curtime.q = qn_cycle();
 	self->basetime.q = self->curtime.q;
 	self->lasttime.q = self->curtime.q;
-	self->count = self->curtime.dw.l;
 
 	self->cut = 9999999.0;  //10.0;
 
@@ -357,7 +342,7 @@ void qn_timer_stop(QnTimer* self)
 }
 
 //
-bool qn_timer_update(QnTimer* self)
+bool qn_timer_update(QnTimer* self, bool manual)
 {
 	qnRealTimer* impl = (qnRealTimer*)self;
 	bool ret;
@@ -366,7 +351,7 @@ bool qn_timer_update(QnTimer* self)
 	impl->base.abstime = (double)impl->curtime.q * impl->tick;
 	impl->base.runtime = (double)(impl->curtime.q - impl->basetime.q) * impl->tick;
 
-	if (!impl->manual)
+	if (manual == false)
 		impl->base.fps = (double)impl->frame.dw.l / (double)(impl->curtime.dw.l - impl->count);
 	else
 	{
@@ -399,30 +384,6 @@ bool qn_timer_update(QnTimer* self)
 }
 
 //
-double qn_timer_get_abs(const QnTimer* self)
-{
-	return self->abstime;
-}
-
-//
-double qn_timer_get_run(const QnTimer* self)
-{
-	return  self->runtime;
-}
-
-//
-double qn_timer_get_fps(const QnTimer* self)
-{
-	return self->fps;
-}
-
-//
-double qn_timer_get_adv(const QnTimer* self)
-{
-	return self->advance;
-}
-
-//
 double qn_timer_get_cut(const QnTimer* self)
 {
 	const qnRealTimer* impl = (const qnRealTimer*)self;
@@ -435,11 +396,3 @@ void qn_timer_set_cut(QnTimer* self, double cut)
 	qnRealTimer* impl = (qnRealTimer*)self;
 	impl->cut = cut;
 }
-
-//
-void qn_timer_set_manual(QnTimer* self, bool value)
-{
-	qnRealTimer* impl = (qnRealTimer*)self;
-	impl->manual = value;
-}
-

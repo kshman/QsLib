@@ -272,7 +272,7 @@ bool stub_system_poll(void)
 						.key.repeat = 0,
 					};
 					QgUimKey* k = &stub->key;
-					for (int i = 0; i < (QIK_MAX_VALUE + 1) / 8; i++)
+					for (int i = 0; i < QIK_MAX_VALUE / 8 + 1; i++)
 					{
 						if (k->key[i] == 0)
 							continue;

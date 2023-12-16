@@ -157,14 +157,14 @@ static struct QnMemProof
 	HANDLE			heap;
 #endif
 
-#ifdef USE_MP_LOCK
-	mtx_t			lock;
+#ifndef _QN_NO_THREAD_
+	QnSpinLock		lock;
 #endif
 } _qn_mp = { NULL, };  // NOLINT
 
-#ifdef USE_MP_LOCK
-#define MP_LOCK				mtx_lock(&_qn_mp.lock)
-#define MP_UNLOCK			mtx_unlock(&_qn_mp.lock)
+#ifndef _QN_NO_THREAD_
+#define MP_LOCK				qn_spinlock_enter(&_qn_mp.lock)
+#define MP_UNLOCK			qn_spinlock_leave(&_qn_mp.lock)
 #else
 #define MP_LOCK
 #define MP_UNLOCK
@@ -177,7 +177,7 @@ void qn_mp_init(void)
 #endif
 
 #if _QN_WINDOWS_
-	_qn_mp.heap = HeapCreate(0/*|HEAP_NO_SERIALIZE*/, MEMORY_BLOCK_SIZE, 0);
+	_qn_mp.heap = HeapCreate(HEAP_GENERATE_EXCEPTIONS/*|HEAP_NO_SERIALIZE*/, MEMORY_BLOCK_SIZE, 0);
 	ULONG hfv = 2;
 	HeapSetInformation(_qn_mp.heap, HeapCompatibilityInformation, &hfv, sizeof(ULONG));
 #endif
@@ -188,19 +188,19 @@ static void qn_mp_clear(void)
 	if (_qn_mp.count == 0 && _qn_mp.frst == NULL && _qn_mp.last == NULL)
 		return;
 
-	qn_debug_outputf(false, "Memory Profiler", "found %d allocations", _qn_mp.count);
+	qn_debug_outputf(false, "MEMORY PROFILER", "found %d allocations", _qn_mp.count);
 
 	size_t sum = 0;
 	for (memBlock* next = NULL, *node = _qn_mp.frst; node; node = next)
 	{
 #ifndef __EMSCRIPTEN__
 		if (node->line)
-			qn_debug_outputf(false, "Memory Profiler", "\t%s(%Lu) : %Lu(%Lu) : 0x%p", node->desc, node->line, node->size, node->block, _memptr(node));
+			qn_debug_outputf(false, "MEMORY PROFILER", "\t%s(%Lu) : %Lu(%Lu) : 0x%p", node->desc, node->line, node->size, node->block, _memptr(node));
 		else
-			qn_debug_outputf(false, "Memory Profiler", "\t%Lu(%Lu) : 0x%p", node->size, node->block, _memptr(node));
+			qn_debug_outputf(false, "MEMORY PROFILER", "\t%Lu(%Lu) : 0x%p", node->size, node->block, _memptr(node));
 		char sz[64];
 		qn_memdmp(_memptr(node), QN_MIN(32, node->size), sz, 64 - 1);
-		qn_debug_outputf(false, "Memory Profiler", "\t\t{%s}", sz);
+		qn_debug_outputf(false, "MEMORY PROFILER", "\t\t{%s}", sz);
 #endif
 		next = node->next;
 		sum += node->block;
@@ -215,9 +215,9 @@ static void qn_mp_clear(void)
 	double size;
 	const char usage = qn_memhrb(sum, &size);
 	if (usage == ' ')
-		qn_debug_outputf(true, "Memory Profiler", "total block size: %Lu bytes", sum);
+		qn_debug_outputf(true, "MEMORY PROFILER", "total block size: %Lu bytes", sum);
 	else
-		qn_debug_outputf(true, "Memory Profiler", "total block size: %.2f %cbytes", size, usage);
+		qn_debug_outputf(true, "MEMORY PROFILER", "total block size: %.2f %cbytes", size, usage);
 }
 
 void qn_mp_dispose(void)
@@ -229,7 +229,7 @@ void qn_mp_dispose(void)
 	{
 		SIZE_T s;
 		if (HeapQueryInformation(_qn_mp.heap, HeapEnableTerminationOnCorruption, NULL, 0, &s))
-			qn_debug_outputf(true, "Memory Profiler", "heap allocation left: %d", (int)s);
+			qn_debug_outputf(true, "MEMORY PROFILER", "heap allocation left: %d", (int)s);
 		HeapDestroy(_qn_mp.heap);
 	}
 #endif
@@ -284,21 +284,53 @@ size_t qn_mpfcnt(void)
 	return _qn_mp.count;
 }
 
+#ifdef _QN_WINDOWS_
+//
+static DWORD qn_windows_mpf_exception(DWORD ex, const char* desc, size_t line, size_t size, size_t block)
+{
+	char sz[1024];
+	if (ex == STATUS_NO_MEMORY)
+		qn_snprintf(sz, QN_COUNTOF(sz) - 1, "out of memory : %s(%Lu) : %Lu(%Lu)", desc, line, size, block);
+	else if (ex == STATUS_ACCESS_VIOLATION)
+		qn_snprintf(sz, QN_COUNTOF(sz) - 1, "access violation : %s(%Lu) : %Lu(%Lu)", desc, line, size, block);
+	else
+		return EXCEPTION_CONTINUE_SEARCH;
+	qn_debug_halt("MEMORY PROFILER", sz);
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+#endif
+
+//
+static void qn_mpf_out_of_memory(const char* desc, size_t line, size_t size, size_t block)
+{
+	char sz[1024];
+	qn_snprintf(sz, QN_COUNTOF(sz) - 1, "out of memory : %s(%Lu) : %Lu(%Lu)", desc, line, size, block);
+	qn_debug_halt("MEMORY PROFILER", sz);
+}
+
 //
 void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 {
 	qn_val_if_fail(size, NULL);
 
 	size_t block = _memsize(size);
-	memBlock* node = (memBlock*)
-#if _QN_WINDOWS_
-		HeapAlloc(_qn_mp.heap, zero ? HEAP_ZERO_MEMORY : 0, block);
-#else
-		(zero ? calloc(block, 1) : malloc(block));
-#endif
-	if (!node)
+	memBlock* node;
+
+#ifdef _QN_WINDOWS_
+	__try
 	{
-		qn_debug_outputf(false, "Memory Profiler", "cannot allocate memory : %s(%Lu) : %Lu(%Lu)", desc, line, size, block);
+		node = (memBlock*)HeapAlloc(_qn_mp.heap, zero ? HEAP_ZERO_MEMORY : 0, block);
+	}
+	__except (qn_windows_mpf_exception(_exception_code(), desc, line, size, block))
+	{
+		node = NULL;
+	}
+#else
+	node = (memBlock*)(zero ? calloc(block, 1) : malloc(block));
+#endif
+	if (node == NULL)
+	{
+		qn_mpf_out_of_memory(desc, line, size, block);
 		return NULL;
 	}
 
@@ -311,7 +343,7 @@ void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 	qn_mp_node_link(node);
 
 	return _memptr(node);
-}
+	}
 
 //
 void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
@@ -327,16 +359,16 @@ void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 	memBlock* node = _memhdr(ptr);
 	if (node == NULL)
 	{
-		qn_debug_outputf(true, "Memory Profiler", "try to realloc null memory node : 0x%p", ptr);
+		qn_debug_outputf(true, "MEMORY PROFILER", "try to realloc null memory node : 0x%p", ptr);
 		return NULL;
 	}
 #if _QN_WINDOWS_
 	if (HeapValidate(_qn_mp.heap, 0, node) == 0 || node->sign != MEMORY_SIGN_HEAD)
 	{
-		qn_debug_outputf(false, "Memory Profiler", "try to realloc invalid memory : 0x%p", ptr);
+		qn_debug_outputf(false, "MEMORY PROFILER", "try to realloc invalid memory : 0x%p", ptr);
 		char sz[260];
 		qn_memdmp(ptr, 19, sz, 260 - 1);
-		qn_debug_outputf(true, "Memory Profiler", "\t\t{%s}", sz);
+		qn_debug_outputf(true, "MEMORY PROFILER", "\t\t{%s}", sz);
 		return NULL;
 	}
 #endif
@@ -350,15 +382,21 @@ void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 	}
 
 	// 재할당 하거나 새 메모리
-	node = (memBlock*)
 #if _QN_WINDOWS_
-		HeapReAlloc(_qn_mp.heap, 0, node, block);
-#else
-		realloc(node, block);
-#endif
-	if (!node)
+	__try
 	{
-		qn_debug_outputf(false, "Memory Profiler", "cannot reallocate memory : %s(%Lu) : %Lu(%Lu)", desc, line, size, block);
+		node = (memBlock*)HeapReAlloc(_qn_mp.heap, 0, node, block);
+	}
+	__except (qn_windows_mpf_exception(_exception_code(), desc, line, size, block))
+	{
+		node = NULL;
+	}
+#else
+	node = (memBlock*)realloc(node, block);
+#endif
+	if (node == NULL)
+	{
+		qn_mpf_out_of_memory(desc, line, size, block);
 		return NULL;
 	}
 
@@ -378,16 +416,16 @@ void qn_mpffree(void* ptr)
 	memBlock* node = _memhdr(ptr);
 	if (node == NULL)
 	{
-		qn_debug_outputf(true, "Memory Profiler", "try to free null memory node : 0x%p", ptr);
+		qn_debug_outputf(true, "MEMORY PROFILER", "try to free null memory node : 0x%p", ptr);
 		return;
 	}
 #if _QN_WINDOWS_
 	if (HeapValidate(_qn_mp.heap, 0, node) == 0 || node->sign != MEMORY_SIGN_HEAD)
 	{
-		qn_debug_outputf(false, "Memory Profiler", "try to free invalid memory : 0x%p", ptr);
+		qn_debug_outputf(false, "MEMORY PROFILER", "try to free invalid memory : 0x%p", ptr);
 		char sz[260];
 		qn_memdmp(ptr, 19, sz, 260 - 1);
-		qn_debug_outputf(true, "Memory Profiler", "\t\t{%s}", sz);
+		qn_debug_outputf(true, "MEMORY PROFILER", "\t\t{%s}", sz);
 		return;
 	}
 #endif
@@ -409,30 +447,32 @@ void qn_debug_mpfprint(void)
 	if (_qn_mp.count == 0 && _qn_mp.frst == NULL && _qn_mp.last == NULL)
 		return;
 
-	qn_debug_outputf(false, "Memory Profiler", "found %d allocations", _qn_mp.count);
-	qn_debug_outputf(false, "Memory Profiler", " %-8s | %-8s | %-8s | %-s", "no", "size", "block", "desc");
+	qn_debug_outputf(false, "MEMORY PROFILER", "found %d allocations", _qn_mp.count);
+	qn_debug_outputf(false, "MEMORY PROFILER", " %-8s | %-8s | %-8s | %-s", "no", "size", "block", "desc");
 
+	MP_LOCK;
 	size_t sum = 0, cnt = 1;
 	for (memBlock* next = NULL, *node = _qn_mp.frst; node; node = next, cnt++)
 	{
 		if (node->line)
 		{
-			qn_debug_outputf(false, "Memory Profiler", " %-8d | %-8zu | % -8zu | \"%s:%d\"",
+			qn_debug_outputf(false, "MEMORY PROFILER", " %-8d | %-8zu | % -8zu | \"%s:%d\"",
 				cnt, node->size, node->block, node->desc, (int)node->line);
 		}
 		else
 		{
 			char sz[64];
 			qn_memdmp(_memptr(node), QN_MIN(32, node->size), sz, 64 - 1);
-			qn_debug_outputf(false, "Memory Profiler", " %-8d | %-8zu | % -8zu | <%s>",
+			qn_debug_outputf(false, "MEMORY PROFILER", " %-8d | %-8zu | % -8zu | <%s>",
 				cnt, node->size, node->block, sz);
 		}
 		next = node->next;
 		sum += node->block;
 	}
+	MP_UNLOCK;
 
 	double size;
 	const char usage = qn_memhrb(sum, &size);
-	qn_debug_outputf(false, "Memory Profiler", "block size: %.3g%cbytes", size, usage);
+	qn_debug_outputf(false, "MEMORY PROFILER", "block size: %.3g%cbytes", size, usage);
 #endif
 }

@@ -10,14 +10,6 @@
 #pragma warning(disable:4820)
 #endif
 
-#ifndef USE_SDL2
-#define USE_SDL2	1
-#endif
-
-#ifndef USE_ES2
-#define USE_ES2		1
-#endif
-
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -30,39 +22,36 @@
 #include <wchar.h>
 #include <wctype.h>
 #include <math.h>
+#if defined _MSC_VER
+#include <intrin.h>
+#include <crtdbg.h>
+#endif
 #if defined __unix__
 #include <sys/time.h>
 #endif
 
 // Windows
 #if defined _WIN32
-#	define STRICT
-#	define WIN32_LEAN_AND_MEAN
-#	include <excpt.h>
-#	include <sdkddkver.h>
-#	include <windows.h>
-#	include <mmsystem.h>
-#	include <commctrl.h>
-#	include <shellapi.h>
-#if defined _MSC_VER
-#	include <intrin.h>
-#	include <crtdbg.h>
-#endif
+#define STRICT
+#define WIN32_LEAN_AND_MEAN
+#include <excpt.h>
+#include <sdkddkver.h>
+#include <windows.h>
+#include <mmsystem.h>
+#include <commctrl.h>
+#include <shellapi.h>
 #endif
 
 // ANDROID
 #if defined __android__
-#	include <android/configuration.h>
-#	include <android/looper.h>
-#	include <android/native_activity.h>
+#include <android/configuration.h>
+#include <android/looper.h>
+#include <android/native_activity.h>
 #endif
 
-// SDL
-#ifdef USE_SDL2
-#	include <SDL2/SDL.h>
-#if defined USE_ES2
-#	include <SDL2/SDL_opengles2.h>
-#endif
+// EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
 #endif
 
 //

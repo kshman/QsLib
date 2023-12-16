@@ -2,10 +2,13 @@
 #include "qs_qn.h"
 
 //
+extern void qn_cycle_init(void);
 extern void qn_mp_init(void);
 extern void qn_mp_dispose(void);
 extern void qn_dbg_init(void);
 extern void qn_dbg_dispose(void);
+extern void qn_thd_init(void);
+extern void qn_thd_dispose(void);
 
 // 닫아라
 struct Closure
@@ -18,15 +21,17 @@ struct Closure
 static struct QnRuntime
 {
 	BOOL			inited;
-	QN_PADDING_64(4, 0)
 	struct Closure* closures;
 	struct Closure* preclosures;
-} _qn_rt = { false, };  // NOLINT
+	QnSpinLock		lock;
+} _qn_rt = { false, }; 
 
 //
 static void qn_dispose(void)
 {
 	qn_ret_if_fail(_qn_rt.inited);
+
+	qn_spinlock_enter(&_qn_rt.lock);
 
 	for (struct Closure *prev, *node = _qn_rt.closures; node; node = prev)
 	{
@@ -42,8 +47,12 @@ static void qn_dispose(void)
 		qn_free(node);
 	}
 
+	qn_thd_dispose();
 	qn_mp_dispose();
 	qn_dbg_dispose();
+
+	qn_spinlock_leave(&_qn_rt.lock);
+	_qn_rt.inited = false;
 }
 
 //
@@ -51,8 +60,10 @@ static void qn_init(void)
 {
 	_qn_rt.inited = true;
 
+	qn_cycle_init();
 	qn_dbg_init();
 	qn_mp_init();
+	qn_thd_init();
 
 #if defined _LIB || defined _STATIC
 	(void)atexit(qn_dispose);
@@ -92,8 +103,11 @@ void qn_atexit(paramfunc_t func, void* data)
 
 	node->fp.func = func;
 	node->fp.data = data;
+
+	qn_spinlock_enter(&_qn_rt.lock);
 	node->prev = _qn_rt.closures;
 	_qn_rt.closures = node;
+	qn_spinlock_leave(&_qn_rt.lock);
 }
 
 //
@@ -106,8 +120,11 @@ void qn_atexitp(paramfunc_t func, void* data)
 
 	node->fp.func = func;
 	node->fp.data = data;
+
+	qn_spinlock_enter(&_qn_rt.lock);
 	node->prev = _qn_rt.preclosures;
 	_qn_rt.preclosures = node;
+	qn_spinlock_leave(&_qn_rt.lock);
 }
 
 //

@@ -5,11 +5,11 @@
  * 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
  * 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
  */
-/**
- * @file qs_math.h
- *
- * <CONTAINER Layer>는 C 매크로 및 인라인으로 컨테이너 구현을 목표로 합니다.
- */
+ /**
+  * @file qs_math.h
+  *
+  * <CONTAINER Layer>는 C 매크로 및 인라인으로 컨테이너 구현을 목표로 합니다.
+  */
 #pragma once
 
 #ifdef _MSC_VER
@@ -25,26 +25,28 @@ QN_EXTC_BEGIN
 //////////////////////////////////////////////////////////////////////////
 // array
 
+/**
+ * @brief 동적 배열 정의
+ * @param name 배열 이름
+ * @param type 배열 요소 타입
+ */
 #define QN_DECL_ARR(name,type)\
 	typedef struct _##name name;\
 	typedef type _##name##Type;\
 	struct _##name { size_t count; size_t capa; type* data; };
-QN_DECL_ARR(qnPtrArr, void*)
-QN_DECL_ARR(qnByteArr, byte)
-QN_DECL_ARR(qnIntArr, int)
-QN_DECL_ARR(qnUintArr, uint)
-QN_DECL_ARR(qnPcharArr, char*)			// qnPtrArr
-QN_DECL_ARR(qnPccharArr, const char*)	// qnPtrArr
-QN_DECL_ARR(qnAnyArr, any_t)
+	QN_DECL_ARR(QnPtrArr, void*)								/** @brief 포인터 배열 */
+	QN_DECL_ARR(QnByteArr, byte)								/** @brief 바이트 배열 */
+	QN_DECL_ARR(QnIntArr, int)									/** @brief 정수 배열 */
+	QN_DECL_ARR(QnAnyArr, any_t)								/** @brief any_t 배열 */
 
 #define qn_arr_nth(p,n)					(((p)->data)[(size_t)(n)])
-#define qn_arr_inv(p,n)					(((p)->data)[((p)->count-1-(size_t)(n))])
+#define qn_arr_inv(p,n)					(((p)->data)[((p)->count - 1 - (size_t)(n))])
 #define qn_arr_count(p)					((p)->count)
 #define qn_arr_capacity(p)				((p)->capa)
 #define qn_arr_data(p)					((p)->data)
 #define qn_arr_sizeof(name)				(sizeof(_##name##Type))
-#define qn_arr_is_empty(p)				((p)->count==0)
-#define qn_arr_is_have(p)				((p)->count!=0)
+#define qn_arr_is_empty(p)				((p)->count == 0)
+#define qn_arr_is_have(p)				((p)->count != 0)
 
 #define qn_arr_init(name,p,initcapa)\
 	QN_STMT_BEGIN{\
@@ -131,7 +133,7 @@ QN_DECL_ARR(qnAnyArr, any_t)
 #define qn_arr_sort_context(name,p,func,userdata)\
 	(qn_qsortc((p)->data, (p)->count, qn_arr_sizeof(name), func, userdata))
 
-/* value type */
+	/* value type */
 #define qn_arr_add(name,p,item)\
 	QN_STMT_BEGIN{\
 		if ((p)->count>=(p)->capa)\
@@ -231,9 +233,9 @@ QN_DECL_ARR(qnAnyArr, any_t)
 			func_ptr(&qn_arr_nth(p,__i));\
 	}QN_STMT_END
 
-QN_INLINE void qn_inl_arr_expand(void* arr, size_t size, size_t cnt)
+	QN_INLINE void qn_inl_arr_expand(void* arr, size_t size, size_t cnt)
 {
-	qnByteArr* p = (qnByteArr*)arr;
+	QnByteArr* p = (QnByteArr*)arr;
 	if (p->count < cnt)
 	{
 		p->capa = p->capa + p->capa / 2;
@@ -249,45 +251,45 @@ QN_INLINE void qn_inl_arr_expand(void* arr, size_t size, size_t cnt)
 #define qn_parr_is_empty(p)				qn_arr_is_empty(p)
 #define qn_parr_is_have(p)				qn_arr_is_have(p)
 
-#define qn_parr_init(p, capacity)		qn_arr_init(qnPtrArr, p, capacity)
-#define qn_parr_disp(p)					qn_arr_disp(qnPtrArr, p)
-#define qn_parr_clear(p)				qn_arr_clear(qnPtrArr, p)
-#define qn_parr_set_capacity(p,capa)	qn_arr_set_capacity(qnPtrArr, p, capa)
-#define qn_parr_set_count(p,count)		qn_arr_set_count(qnPtrArr, p, count)
-#define qn_parr_remove_nth(p, index)	qn_arr_remove_nth(qnPtrArr, p, index)
+#define qn_parr_init(p, capacity)		qn_arr_init(QnPtrArr, p, capacity)
+#define qn_parr_disp(p)					qn_arr_disp(QnPtrArr, p)
+#define qn_parr_clear(p)				qn_arr_clear(QnPtrArr, p)
+#define qn_parr_set_capacity(p,capa)	qn_arr_set_capacity(QnPtrArr, p, capa)
+#define qn_parr_set_count(p,count)		qn_arr_set_count(QnPtrArr, p, count)
+#define qn_parr_remove_nth(p, index)	qn_arr_remove_nth(QnPtrArr, p, index)
 #define qn_parr_remove_range(p, index, count)\
-										qn_arr_remove_range(qnPtrArr, p, index, count)
-#define qn_parr_remove(p, item)			qn_arr_remove(qnPtrArr, p, item)
-#define qn_parr_add(p, item)			qn_arr_add(qnPtrArr, p, item)
-#define qn_parr_reserve(p)				qn_arr_reserve(qnPtrArr, p)
-#define qn_parr_insert(p, index, item)	qn_arr_insert(qnPtrArr, index, item)
-#define qn_parr_sort(p, func)			qn_arr_sort(qnPtrArr, p, func)
+										qn_arr_remove_range(QnPtrArr, p, index, count)
+#define qn_parr_remove(p, item)			qn_arr_remove(QnPtrArr, p, item)
+#define qn_parr_add(p, item)			qn_arr_add(QnPtrArr, p, item)
+#define qn_parr_reserve(p)				qn_arr_reserve(QnPtrArr, p)
+#define qn_parr_insert(p, index, item)	qn_arr_insert(QnPtrArr, index, item)
+#define qn_parr_sort(p, func)			qn_arr_sort(QnPtrArr, p, func)
 #define qn_parr_sort_context(p, func, userdata)\
-										qn_arr_sort_context(qnPtrArr, p, func, userdata)
+										qn_arr_sort_context(QnPtrArr, p, func, userdata)
 #define qn_parr_find(p, start, pred_ud_ptr, userdata, ret)\
-										qn_arr_find(qnPtrArr, p, start, pred_ud_ptr, userdata, ret)
-#define qn_parr_contains(p, data, ret)	qn_arr_contains(qnPtrArr, p, data, ret)
-#define qn_parr_copy(p, o)				qn_arr_copy(qnPtrArr, p, o)
+										qn_arr_find(QnPtrArr, p, start, pred_ud_ptr, userdata, ret)
+#define qn_parr_contains(p, data, ret)	qn_arr_contains(QnPtrArr, p, data, ret)
+#define qn_parr_copy(p, o)				qn_arr_copy(QnPtrArr, p, o)
 
 #define qn_parr_swap_data(p, newdata, newcount, olddataptr)\
 	QN_STMT_BEGIN{\
-		void* __save=((qnPtrArr*)(p))->data;\
-		((qnPtrArr*)(p))->data=data;\
-		((qnPtrArr*)(p))->count=newcount;\
-		((qnPtrArr*)(p))->capa=newcount;\
+		void* __save=((QnPtrArr*)(p))->data;\
+		((QnPtrArr*)(p))->data=data;\
+		((QnPtrArr*)(p))->count=newcount;\
+		((QnPtrArr*)(p))->capa=newcount;\
 		if (*(olddataptr)) *(olddataptr)=__save;\
 	}QN_STMT_END
 
 #define qn_parr_foreach(p,func_ud_ptr,userdata)\
 	QN_STMT_BEGIN{\
-		size_t __i, __cnt=((qnPtrArr*)(p))->count;\
+		size_t __i, __cnt=((QnPtrArr*)(p))->count;\
 		for (__i=0; __i<__cnt; __i++)\
 			func(userdata, qn_arr_nth(p,__i));\
 	}QN_STMT_END
 
 #define qn_parr_loopeach(p,func_ptr)\
 	QN_STMT_BEGIN{\
-		size_t __i, __cnt=((qnPtrArr*)(p))->count;\
+		size_t __i, __cnt=((QnPtrArr*)(p))->count;\
 		for (__i=0; __i<__cnt; __i++)\
 			func_ptr(qn_arr_nth(p,__i));\
 	}QN_STMT_END
@@ -295,20 +297,24 @@ QN_INLINE void qn_inl_arr_expand(void* arr, size_t size, size_t cnt)
 
 //////////////////////////////////////////////////////////////////////////
 // container
+
+/**
+ * @brief 정정 배열 정의(컨테이너)
+ * @param name 배열 이름
+ * @param type 배열 요소 타입
+ */
 #define QN_DECL_CTNR(name,type)\
 	typedef struct _##name name;\
 	typedef type _##name##Type;\
 	struct _##name { size_t count; type* data; };
-QN_DECL_CTNR(qnPtrCtnr, void*)
-QN_DECL_CTNR(qnByteCtn, byte)
-QN_DECL_CTNR(qnIntCtn, int)
-QN_DECL_CTNR(qnUintCtn, uint)
-QN_DECL_CTNR(qnPcharCtn, char*)			// qnPtrCtnr
-QN_DECL_CTNR(qnPccharCtn, const char*)	// qnPtrCtnr
-QN_DECL_CTNR(qnAnyCtn, any_t)
+QN_DECL_CTNR(QnPtrCtnr, void*)								/** @brief 포인터 배열 */
+QN_DECL_CTNR(QnByteCtn, byte)								/** @brief 바이트 배열 */
+QN_DECL_CTNR(QnIntCtn, int)									/** @brief 정수 배열 */
+QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #ifdef _DEBUG
-#define qn_ctnr_nth_safe(p,n)			(((p)->data)[((size_t)(n)<(p)->count) ? (size_t)(n) : qn_debug_assert(#n, "overflow", __FILE__, __LINE__)])
+#define qn_ctnr_nth_safe(p,n)\
+	(((p)->data)[((size_t)(n)<(p)->count) ? (size_t)(n) : qn_debug_assert(#n, "overflow", __FILE__, __LINE__)])
 #else
 #define qn_ctnr_nth_safe(p,n)			(((p)->data)[(size_t)(n)])
 #endif
@@ -445,8 +451,14 @@ QN_DECL_CTNR(qnAnyCtn, any_t)
 #define qn_pctnr_loopeach(p, func)		qn_ctnr_loopeach(qnPtrCtnr, (qnPtrCtnr*)(p), func)
 
 
-//////////////////////////////////////////////////////////////////////////
-// list
+	//////////////////////////////////////////////////////////////////////////
+	// list
+
+	/**
+	 * @brief 이중 연결 리스트 정의
+	 * @param name 리스트 이름
+	 * @param type 리스트 요소 타입
+	 */
 #define QN_DECL_LIST(name,type)\
 	typedef struct _##name name;\
 	typedef type _##name##Type;\
@@ -515,7 +527,7 @@ QN_DECL_CTNR(qnAnyCtn, any_t)
 #define qn_list_remove_last(name,p)\
 	qn_list_remove_node(name, p, (p)->frst)
 
-// value type
+	 // value type
 #define qn_list_disp_cb(name,p,func_user_data,userdata)\
 	QN_STMT_BEGIN{\
 		struct _##name##Node *__node, *__next;\
@@ -738,11 +750,17 @@ QN_DECL_CTNR(qnAnyCtn, any_t)
 
 //////////////////////////////////////////////////////////////////////////
 // node list
+
+/**
+ * @brief 노드 리스트 정의
+ * @param name 노드 리스트 이름
+ * @param type 노드 리스트 요소 타입
+ */
 #define QN_DECL_NODELIST(name,type)\
 	typedef struct _##name name;\
 	typedef type _##name##Type;\
 	struct _##name { type* frst; type* last; size_t count; };
-QN_DECL_LIST(qnPtrList, void*)
+	QN_DECL_LIST(qnPtrList, void*)
 
 #define qn_nodelist_count(p)			((p)->count)
 #define qn_nodelist_first(p)			((p)->last)
@@ -931,7 +949,7 @@ QN_DECL_LIST(qnPtrList, void*)
 										qn_list_foreach(qnPtrList, p, func_user_data, userdata)
 #define qn_plist_loopeach(p,func_data)	qn_list_loopeach(qnPtrList, p, func_data)
 
-QN_INLINE bool qn_plist_contains(const qnPtrList* p, const void* item)
+	QN_INLINE bool qn_plist_contains(const qnPtrList* p, const void* item)
 {
 	const struct _qnPtrListNode* node = NULL;
 	qn_list_contains(qnPtrList, p, item, &node);
@@ -948,6 +966,12 @@ QN_INLINE bool qn_plist_find(const qnPtrList* p, bool (*pred)(void*, void*), voi
 
 //////////////////////////////////////////////////////////////////////////
 // solo list
+
+/**
+ * @brief 단일 리스트 정의
+ * @param name 단일 리스트 이름
+ * @param type 단일 리스트 요소 타입
+ */
 #define QN_DECL_SLIST(name,type)\
 	typedef struct _##name name;\
 	typedef type _##name##Type;\
@@ -1386,6 +1410,12 @@ QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, const void* item)
 
 //////////////////////////////////////////////////////////////////////////
 // fixed slice
+
+/**
+ * @brief 슬라이스(최대 개수를 지정할 수 있는 반-동적 배열) 정의
+ * @param name 슬라이스 이름
+ * @param type 슬라이스 요소 타입
+ */
 #define QN_DECL_SLICE(name, type)\
 	typedef struct _##name name;\
 	typedef type _##name##Type;\
@@ -1634,6 +1664,13 @@ QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, const void* item)
 
 //////////////////////////////////////////////////////////////////////////
 // hash
+
+/**
+ * @brief 해시 리스트 정의
+ * @param name 해시 리스트 이름
+ * @param keytype 키 타입
+ * @param valuetype 값 타입
+ */
 #define QN_DECL_HASH(name,keytype,valuetype)\
 	typedef struct _##name name;\
 	typedef keytype _##name##Key;\
@@ -2218,7 +2255,7 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t)
 			qn_inl_hash_resize((qnInlineHash*)(p));\
 	}QN_STMT_END
 
-QN_INLINE void qn_inl_hash_resize(qnInlineHash* p)
+	QN_INLINE void qn_inl_hash_resize(qnInlineHash* p)
 {
 	size_t newbucket = qn_primenear((uint32_t)p->count);
 	newbucket = QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
@@ -2243,6 +2280,13 @@ QN_INLINE void qn_inl_hash_resize(qnInlineHash* p)
 
 //////////////////////////////////////////////////////////////////////////
 // mukum
+
+/**
+ * @brief 묶음 정의
+ * @param name 묶음 이름
+ * @param keytype 키 타입
+ * @param valuetype 값 타입
+ */
 #define QN_DECL_MUKUM(name,keytype,valuetype)\
 	typedef struct _##name name;\
 	typedef keytype _##name##Key;\
@@ -2553,7 +2597,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t)
 		memset((p)->nodes, 0, (p)->bucket*sizeof(struct _##name##Node*));\
 	}QN_STMT_END
 
-// 
+//
 #define qn_mukum_ptr_disp(name,p)\
 	QN_STMT_BEGIN{\
 		size_t __i;\
@@ -2810,7 +2854,7 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t)
 			qn_inl_mukum_resize((qnMukum*)(p));\
 	}QN_STMT_END
 
-QN_INLINE void qn_inl_mukum_resize(qnInlineMukum* p)
+	QN_INLINE void qn_inl_mukum_resize(qnInlineMukum* p)
 {
 	size_t newbucket = qn_primenear((uint32_t)p->count);
 	newbucket = QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
@@ -2835,6 +2879,12 @@ QN_INLINE void qn_inl_mukum_resize(qnInlineMukum* p)
 
 //////////////////////////////////////////////////////////////////////////
 // blue string
+
+/**
+ * @brief 고정 문자열 정의
+ * @param name 고정 문자열 이름
+ * @param size 고정 문자열 최대 길이
+ */
 #define QN_DECL_BSTR(name,size)\
 	typedef struct _qnBstr##name qnBstr##name;\
 	struct _qnBstr##name { size_t len; char data[size]; };
@@ -2954,7 +3004,7 @@ QN_DECL_BSTR(4k, 4096)
 
 #define qn_bstr_format(p, fmt, ...)\
 	qn_inl_bstr_format(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
-QN_INLINE void qn_inl_bstr_format(qnBstr* p, size_t size, const char* fmt, ...)
+	QN_INLINE void qn_inl_bstr_format(qnBstr* p, size_t size, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -3037,13 +3087,19 @@ QN_INLINE bool qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, si
 
 //////////////////////////////////////////////////////////////////////////
 // blue wcs
+
+/**
+ * @brief 고정 문자열 정의
+ * @param name 고정 문자열 이름
+ * @param size 고정 문자열 최대 길이
+ */
 #define QN_DECL_BWCS(name,size)\
 	typedef struct _qnBwcs##name qnBwcs##name;\
 	struct _qnBwcs##name { size_t len; wchar data[size]; };
 QN_DECL_BWCS(, )
 QN_DECL_BWCS(64, 64)
 QN_DECL_BWCS(128, 128)
-QN_DECL_BWCS(260, 260)
+QN_DECL_BWCS(260, 264)
 QN_DECL_BWCS(1k, 1024)
 QN_DECL_BWCS(2k, 2048)
 QN_DECL_BWCS(4k, 4096)
@@ -3156,7 +3212,7 @@ QN_DECL_BWCS(4k, 4096)
 
 #define qn_bwcs_format(p, fmt, ...)\
 	qn_inl_bwcs_format(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
-QN_INLINE void qn_inl_bwcs_format(qnBwcs* p, size_t size, const wchar_t* fmt, ...)
+	QN_INLINE void qn_inl_bwcs_format(qnBwcs* p, size_t size, const wchar_t* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);

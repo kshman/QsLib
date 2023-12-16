@@ -5,11 +5,11 @@
  * 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
  * 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
  */
-/**
- * @file qs_math.h
- *
- * <MATH Layer>는 <QG Layer>에서 사용할 수학 기능 구현을 목표로 합니다.
- */
+ /**
+  * @file qs_math.h
+  *
+  * <MATH Layer>는 <QG Layer>에서 사용할 수학 기능 구현을 목표로 합니다.
+  */
 #pragma once
 
 #ifdef _MSC_VER
@@ -27,8 +27,8 @@
 #include <intrin.h>
 #endif
 
-//////////////////////////////////////////////////////////////////////////
-// constant
+  //////////////////////////////////////////////////////////////////////////
+  // constant
 #define QN_EPSILON						0.0001
 #define QN_E							2.7182818284590452353602874713526624977572470937000
 #define QN_LOG2_E						1.44269504088896340736
@@ -64,26 +64,26 @@ QN_INLINE void qn_sincosf(const float f, float* s, float* c) { *s = sinf(f); *c 
 //////////////////////////////////////////////////////////////////////////
 // types
 
-typedef struct QnVec2					QnVec2;
-typedef struct QnVec3					QnVec3;
-typedef struct QnVec4					QnVec4;
-typedef struct QnQuat					QnQuat;
-typedef struct QnMat4					QnMat4;
-typedef struct QnPoint					QnPoint;
-typedef struct QnSize					QnSize;
-typedef struct QnRect					QnRect;
-typedef struct QnRectF					QnRectF;
-typedef struct QnDepth					QnDepth;
-typedef struct QnCoord					QnCoord;
-typedef struct QnColor					QnColor;
-typedef struct QnKolor					QnKolor;
-typedef struct QnKolorU					QnKolorU;
-typedef struct QnPlane					QnPlane;
-typedef struct QnLine3					QnLine3;
-typedef struct QnTrfm					QnTrfm;
-typedef struct QnVecH2					QnVecH2;
-typedef struct QnVecH3					QnVecH3;
-typedef struct QnVecH4					QnVecH4;
+typedef struct QnVec2	QnVec2;
+typedef struct QnVec3	QnVec3;
+typedef struct QnVec4	QnVec4;
+typedef struct QnQuat	QnQuat;
+typedef struct QnMat4	QnMat4;
+typedef struct QnPoint	QnPoint;
+typedef struct QnSize	QnSize;
+typedef struct QnRect	QnRect;
+typedef struct QnRectF	QnRectF;
+typedef struct QnDepth	QnDepth;
+typedef struct QnCoord	QnCoord;
+typedef struct QnColor	QnColor;
+typedef struct QnKolor	QnKolor;
+typedef struct QnKolorU	QnKolorU;
+typedef struct QnPlane	QnPlane;
+typedef struct QnLine3	QnLine3;
+typedef struct QnTrfm	QnTrfm;
+typedef struct QnVecH2	QnVecH2;
+typedef struct QnVecH3	QnVecH3;
+typedef struct QnVecH4	QnVecH4;
 
 /** @brief vector2 */
 struct QnVec2
@@ -150,10 +150,11 @@ struct QnRect
 /** @brief depth */
 struct QnDepth
 {
-	float depth_near, depth_far;
+	// unfortunately lower near & far are empty macros in Windows
+	float Near, Far;
 };
 
-//
+/** @brief coordinate */
 struct QnCoord
 {
 	float u, v;
@@ -199,7 +200,7 @@ struct QnTrfm
 	QnQuat rot;
 	QnVec3 loc;
 	QnVec3 scl;
-	QnVec2 __pad;
+	float unused[2];
 };
 
 /** @brief half vector2 */
@@ -266,7 +267,13 @@ QN_INLINE void qn_vec2_set(QnVec2* pv, float x, float y)
 	pv->y = y;
 }
 
-QN_INLINE void qn_vec2_rst(QnVec2* pv) // identify
+QN_INLINE void qn_vec2_set_size(QnVec2* pv, const QnSize* size)
+{
+	pv->x = (float)size->width;
+	pv->y = (float)size->height;
+}
+
+QN_INLINE void qn_vec2_rst(QnVec2* pv)		// identify
 {
 	pv->x = 0.0f;
 	pv->y = 0.0f;
@@ -385,7 +392,7 @@ QN_INLINE void qn_vec3_set(QnVec3* pv, float x, float y, float z)
 	pv->z = z;
 }
 
-QN_INLINE void qn_vec3_rst(QnVec3* pv)	// identify
+QN_INLINE void qn_vec3_rst(QnVec3* pv)		// identify
 {
 	pv->x = 0.0f;
 	pv->y = 0.0f;
@@ -639,7 +646,7 @@ QN_INLINE void qn_vec4_set(QnVec4* pv, float x, float y, float z, float w)
 	pv->w = w;
 }
 
-QN_INLINE void qn_vec4_rst(QnVec4* pv)	// identify
+QN_INLINE void qn_vec4_rst(QnVec4* pv)		// identify
 {
 	pv->x = 0.0f;
 	pv->y = 0.0f;
@@ -805,7 +812,7 @@ QN_INLINE void qn_quat_zero(QnQuat* pq)
 	pq->w = 0.0f;
 }
 
-QN_INLINE void qn_quat_rst(QnQuat* pq)	// identify
+QN_INLINE void qn_quat_rst(QnQuat* pq)		// identify
 {
 	pq->x = 0.0f;
 	pq->y = 0.0f;
@@ -1011,7 +1018,7 @@ QN_INLINE void qn_mat4_zero(QnMat4* pm)
 	pm->_41 = pm->_42 = pm->_43 = pm->_44 = 0.0f;
 }
 
-QN_INLINE void qn_mat4_rst(QnMat4* pm)	// identify
+QN_INLINE void qn_mat4_rst(QnMat4* pm)		// identify
 {
 	pm->_12 = pm->_13 = pm->_14 = 0.0f;
 	pm->_21 = pm->_23 = pm->_24 = 0.0f;
@@ -1280,10 +1287,10 @@ QN_INLINE void qn_mat4_lookat_rh(QnMat4* pm, const QnVec3* eye, const QnVec3* at
 	pm->_44 = 1.0f;
 }
 
-QN_INLINE void qn_mat4_perspective_lh(QnMat4* pm, float fov, float aspect, float zn, float zf)
+QN_INLINE void qn_mat4_perspective_lh(QnMat4* pm, float fov, float aspect, const QnDepth* depth)
 {
 	const float f = 1.0f / tanf(fov * 0.5f);
-	const float q = zf / (zf - zn);
+	const float q = depth->Far / (depth->Far - depth->Near);
 
 	pm->_11 = f / aspect;
 	pm->_12 = 0.0f;
@@ -1302,15 +1309,14 @@ QN_INLINE void qn_mat4_perspective_lh(QnMat4* pm, float fov, float aspect, float
 
 	pm->_41 = 0.0f;
 	pm->_42 = 0.0f;
-	pm->_43 = -zn * q;
+	pm->_43 = -depth->Far * q;
 	pm->_44 = 0.0f;
-
 }
 
-QN_INLINE void qn_mat4_perspective_rh(QnMat4* pm, float fov, float aspect, float zn, float zf)
+QN_INLINE void qn_mat4_perspective_rh(QnMat4* pm, float fov, float aspect, const QnDepth* depth)
 {
 	const float f = 1.0f / tanf(fov * 0.5f);
-	const float q = zf / (zn - zf);
+	const float q = depth->Far / (depth->Near - depth->Far);
 
 	pm->_11 = f / aspect;
 	pm->_12 = 0.0f;
@@ -1329,9 +1335,8 @@ QN_INLINE void qn_mat4_perspective_rh(QnMat4* pm, float fov, float aspect, float
 
 	pm->_41 = 0.0f;
 	pm->_42 = 0.0f;
-	pm->_43 = zn * q;
+	pm->_43 = depth->Near * q;
 	pm->_44 = 0.0f;
-
 }
 
 QN_INLINE void qn_mat4_ortho_lh(QnMat4* pm, float width, float height, float zn, float zf)
@@ -1633,7 +1638,7 @@ QN_INLINE void qn_color_set_uint(QnColor* pc, uint value)
 	pc->b = (float)(value & 255) * f; value >>= 8;
 	pc->g = (float)(value & 255) * f; value >>= 8;
 	pc->r = (float)(value & 255) * f; value >>= 8;
-	pc->a = (float)(value & 255) * f; //value >>= 8;
+	pc->a = (float)(value & 255) * f;
 }
 
 QN_INLINE void qn_color_set_kolor(QnColor* pc, const QnKolor* cu)
@@ -2023,7 +2028,7 @@ QN_INLINE bool qn_line3_in(const QnLine3* p, const QnVec3* v)
 // half type
 QN_INLINE halfint qn_f2hf(const float v)
 {
-	QN_BARRIER;
+	qn_barrier();
 	uint u = *(const uint*)&v;
 	const uint s = (u & 0x80000000U) >> 16U;
 	u = u & 0x7FFFFFFFU;
@@ -2049,7 +2054,7 @@ QN_INLINE halfint qn_f2hf(const float v)
 
 QN_INLINE float qn_hf2f(const halfint v)
 {
-	QN_BARRIER;
+	qn_barrier();
 	uint m = (uint)(v & 0x03FF);
 	uint e;
 

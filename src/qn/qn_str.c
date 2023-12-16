@@ -263,6 +263,16 @@ char* qn_strpcpy(char* dest, const char* src)
 }
 
 //
+char* qn_strdup(const char* p)
+{
+	qn_val_if_fail(p!=NULL, NULL);
+	size_t len=strlen(p)+1;
+	char* d = qn_alloc(len, char);
+	qn_strcpy(d, len, p);
+	return d;
+}
+
+//
 char* qn_strcat(const char* p, ...)
 {
 	va_list va, vq;
@@ -763,6 +773,16 @@ wchar* qn_wcspcpy(wchar* dest, const wchar* src)
 }
 
 //
+wchar* qn_wcsdup(const wchar* p)
+{
+	qn_val_if_fail(p != NULL, NULL);
+	size_t len = wcslen(p) + 1;
+	char* d = qn_alloc(len, wchar);
+	qn_wcscpy(d, len, p);
+	return d;
+}
+
+//
 wchar* qn_wcscat(const wchar* p, ...)
 {
 	va_list va, vq;
@@ -776,7 +796,7 @@ wchar* qn_wcscat(const wchar* p, ...)
 		size += wcslen(s);
 		s = va_arg(va, wchar*);
 	}
-
+	
 	wchar* str = qn_alloc(size, wchar);
 	wchar* c = qn_wcspcpy(str, p);
 	s = va_arg(vq, wchar*);

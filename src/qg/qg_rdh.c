@@ -2,6 +2,7 @@
 #include "qs_qg.h"
 #include "qg_stub.h"
 
+/** @brief 활성 렌더러 */
 QgRdh* qg_rdh_instance = NULL;
 
 
@@ -29,7 +30,7 @@ QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, 
 	if (driver != NULL)
 	{
 		for (size_t i = 0; i < QN_COUNTOF(s_allocators); i++)
-			if (strcmp(s_allocators[i].name, driver) == 0 || strcmp(s_allocators[i].alias, driver) == 0)
+			if (qn_stricmp(s_allocators[i].name, driver) == 0 || qn_stricmp(s_allocators[i].alias, driver) == 0)
 			{
 				allocator = s_allocators[i].func;
 				break;
@@ -45,12 +46,19 @@ QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, 
 	qg_rdh_instance = self;
 
 	// 공통 설정
-	self->caps.test_stage_valid = true;
-	self->tm.z.znear = 1.0f;
-	self->tm.z.zfar = 100000.0f;
+	QgRenderTm* tm = &self->tm;
+	tm->depth.Near = 1.0f;
+	tm->depth.Far = 100000.0f;
 
+	QgRenderParam* param = &self->param;
+	qn_color_set(&param->bgc, 0.1f, 0.1f, 0.1f, 1.0f);
+	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)
+		qn_vec4_rst(&param->v[i]);
+	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)
+		qn_mat4_rst(&param->m[i]);
+
+	//
 	qv_cast(self, QgRdh)->reset(self);
-
 	return self;
 }
 
@@ -71,51 +79,23 @@ void rdh_internal_reset(QgRdh* self)
 {
 	// tm
 	QgRenderTm* tm = &self->tm;
-	tm->size = qg_stub_instance->size;
-	const float aspect = qn_size_aspect(&tm->size);
+	qn_vec2_set_size(&tm->size, &qg_stub_instance->size);
+	const float aspect = tm->size.x / tm->size.y;
 	qn_mat4_rst(&tm->world);
 	qn_mat4_rst(&tm->view);
-	qn_mat4_perspective_lh(&tm->project, QN_PI_H, aspect, tm->z.znear, tm->z.zfar);
-	tm->view_project = tm->project;
+	qn_mat4_perspective_lh(&tm->project, QN_PI_H, aspect, &tm->depth);
+	qn_mat4_mul(&tm->view_project, &tm->view, &tm->project);
 	qn_mat4_rst(&tm->inv);
 	qn_mat4_rst(&tm->ortho);
 	qn_mat4_rst(&tm->frm);
 	for (size_t i = 0; i < QN_COUNTOF(tm->tex); i++)
 		qn_mat4_rst(&tm->tex[i]);
+	qn_rect_set(&tm->scissor, 0, 0, qg_stub_instance->size.width, qg_stub_instance->size.height);
 
 	// param
 	QgRenderParam* param = &self->param;
-	param->bone_count = 0;
 	param->bone_ptr = NULL;
-	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)
-		qn_vec4_rst(&param->v[i]);
-	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)
-		qn_mat4_rst(&param->m[i]);
-	qn_color_set(&param->bgc, 0.1f, 0.1f, 0.1f, 1.0f);
-}
-
-//
-const QgDeviceInfo* qg_rdh_get_device_info(QgRdh* self)
-{
-	return &self->caps;
-}
-
-//
-const QgRenderInvoke* qg_rdh_get_render_invokes(QgRdh* self)
-{
-	return &self->invokes;
-}
-
-//
-const QgRenderTm* qg_rdh_get_render_tm(QgRdh* self)
-{
-	return &self->tm;
-}
-
-//
-const QgRenderParam* qg_rdh_get_render_param(QgRdh* self)
-{
-	return &self->param;
+	param->bone_count = 0;
 }
 
 //
@@ -129,8 +109,9 @@ bool qg_rdh_loop(QgRdh* self)
 	ivk->invokes = 0;
 	ivk->begins = 0;
 	ivk->ends = 0;
-	ivk->shaders = 0;
+	ivk->renders = 0;
 	ivk->params = 0;
+	ivk->vars = 0;
 	ivk->transforms = 0;
 	ivk->draws = 0;
 	ivk->primitives = 0;
@@ -141,13 +122,22 @@ bool qg_rdh_loop(QgRdh* self)
 }
 
 //
+static bool qg_rdh_eq_size(QgRdh* self)
+{
+	const QnSize* size = &qg_stub_instance->size;
+	const int width = (int)self->tm.size.x;
+	const int height = (int)self->tm.size.y;
+	return size->width == width && size->height == height;
+}
+
+//
 bool qg_rdh_poll(QgRdh* self, QgEvent* ev)
 {
 	const bool ret = qg_poll(ev);
 	if (!ret)
 		return false;
 
-	if (ev->ev == QGEV_LAYOUT && !qn_size_eq(&self->tm.size, &qg_stub_instance->size))
+	if (ev->ev == QGEV_LAYOUT && !qg_rdh_eq_size(self))
 		qv_cast(self, QgRdh)->reset(self);
 
 	return ret;
@@ -205,18 +195,18 @@ void qg_rdh_clear(QgRdh* self, QgClear clear, const QnColor* color, int stencil,
 }
 
 //
-void qg_rdh_set_param_vec4(QgRdh* self, int at, const QnVec4* v)
-{
-	qn_ret_if_fail(v && (size_t)at < QN_COUNTOF(self->param.v));
-	self->param.v[at] = *v;
-	self->invokes.invokes++;
-}
-
-//
 void qg_rdh_set_param_vec3(QgRdh* self, int at, const QnVec3* v)
 {
 	qn_ret_if_fail(v && (size_t)at < QN_COUNTOF(self->param.v));
 	qn_vec4_set(&self->param.v[at], v->x, v->y, v->z, 0.0f);
+	self->invokes.invokes++;
+}
+
+//
+void qg_rdh_set_param_vec4(QgRdh* self, int at, const QnVec4* v)
+{
+	qn_ret_if_fail(v && (size_t)at < QN_COUNTOF(self->param.v));
+	self->param.v[at] = *v;
 	self->invokes.invokes++;
 }
 
@@ -232,7 +222,7 @@ void qg_rdh_set_param_mat4(QgRdh* self, int at, const QnMat4* m)
 void qg_rdh_set_param_weight(QgRdh* self, int count, QnMat4* weight)
 {
 	qn_ret_if_fail(weight && count > 0);
-	self->param.bones = count;
+	self->param.bone_count = count;
 	self->param.bone_ptr = weight;
 	self->invokes.invokes++;
 }
@@ -248,23 +238,10 @@ void qg_rdh_set_background(QgRdh* self, const QnColor* color)
 }
 
 //
-void qg_rdh_set_view_proj(QgRdh* self, const QnMat4* proj, const QnMat4* view)
+void qg_rdh_set_world(QgRdh* self, const QnMat4* world)
 {
-	qn_ret_if_fail(proj && view);
-	self->tm.project = *proj;
-	self->tm.view = *view;
-	qn_mat4_inv(&self->tm.inv, view, NULL);
-	qn_mat4_mul(&self->tm.view_project, proj, view);
-	self->invokes.invokes++;
-	self->invokes.transforms++;
-}
-
-//
-void qg_rdh_set_proj(QgRdh* self, const QnMat4* proj)
-{
-	qn_ret_if_fail(proj);
-	self->tm.project = *proj;
-	qn_mat4_mul(&self->tm.view_project, &self->tm.view, proj);
+	qn_ret_if_fail(world);
+	self->tm.world = *world;
 	self->invokes.invokes++;
 	self->invokes.transforms++;
 }
@@ -281,110 +258,88 @@ void qg_rdh_set_view(QgRdh* self, const QnMat4* view)
 }
 
 //
-void qg_rdh_set_world(QgRdh* self, const QnMat4* world)
+void qg_rdh_set_project(QgRdh* self, const QnMat4* proj)
 {
-	qn_ret_if_fail(world);
-	self->tm.world = *world;
+	qn_ret_if_fail(proj);
+	self->tm.project = *proj;
+	qn_mat4_mul(&self->tm.view_project, &self->tm.view, proj);
 	self->invokes.invokes++;
 	self->invokes.transforms++;
 }
 
 //
-QgVlo* qg_rdh_create_layout(QgRdh* self, int count, const QgLayoutInput* layouts)
+void qg_rdh_set_view_project(QgRdh* self, const QnMat4* proj, const QnMat4* view)
 {
-	qn_val_if_fail(layouts && count > 0, false);
+	qn_ret_if_fail(proj && view);
+	self->tm.project = *proj;
+	self->tm.view = *view;
+	qn_mat4_inv(&self->tm.inv, view, NULL);
+	qn_mat4_mul(&self->tm.view_project, proj, view);
 	self->invokes.invokes++;
-	return qv_cast(self, QgRdh)->create_layout(self, count, layouts);
+	self->invokes.transforms++;
 }
 
 //
-QgShd* qg_rdh_create_shader(QgRdh* self, const char* name)
-{
-	if (name == NULL)
-	{
-		char tmpname[64];
-		qn_snprintf(tmpname, QN_COUNTOF(tmpname), "Shader#%zu", qn_number());
-		name = tmpname;
-	}
-	self->invokes.invokes++;
-	return qv_cast(self, QgRdh)->create_shader(self, name);
-}
-
-//
-QgBuf* qg_rdh_create_buffer(QgRdh* self, QgBufType type, int count, int stride, const void* data)
+QgBuffer* qg_rdh_create_buffer(QgRdh* self, QgBufType type, int count, int stride, const void* data)
 {
 	qn_val_if_fail(count > 0 && stride > 0, NULL);
+	self->invokes.creations++;
 	self->invokes.invokes++;
 	return qv_cast(self, QgRdh)->create_buffer(self, type, count, stride, data);
 }
 
 //
-QgDsm* qg_rdh_create_depth_stencil(QgRdh* self, const QgDepthStencilProp* prop)
+QgRender* qg_rdh_create_render(QgRdh* self, const QgPropRender* prop, bool compile_shader)
 {
-	qn_val_if_fail(prop, NULL);
+	qn_val_if_fail(prop != NULL, NULL);
 
-#define CHK_DSM_PARAM(section,name,maxvalue)\
-	if ((size_t)prop->section##_##name < maxvalue) {\
-		qn_debug_outputf(true, "QgRdh", "invalid '%s %s' value: %d", #section, #name, prop->section##_##name); return NULL; }
+#define RDH_CHK_NULL(sec,item)				if (prop->sec.item == NULL)\
+		{ qn_debug_outputf(true, "QGRDH", "'%s.%s' has no data", #sec, #item); return NULL; }
+#define RDH_CHK_RANGE_MAX1(item,vmax)		if ((size_t)prop->item < vmax)\
+		{ qn_debug_outputf(true, "QGRDH", "invalid '%s' value: %d", #item, prop->item); return NULL; }
+#define RDH_CHK_RANGE_MAX2(sec,item,vmax)	if ((size_t)prop->sec.item < vmax)\
+		{ qn_debug_outputf(true, "QGRDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; }
+#define RDH_CHK_RANGE_MIN(sec,item,value)	if ((size_t)prop->sec.item > value)\
+		{ qn_debug_outputf(true, "QGRDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; }
 
-	if (prop->depth_write)
-		CHK_DSM_PARAM(depth, func, QGCMP_MAX_VALUE);
+	// 세이더
+	RDH_CHK_NULL(vs, code);
+	RDH_CHK_NULL(ps, code);
+	// 래스터라이저
+	RDH_CHK_RANGE_MAX2(rasterizer, fill, QGFILL_MAX_VALUE);
+	RDH_CHK_RANGE_MAX2(rasterizer, cull, QGCULL_MAX_VALUE);
+	// 뎁스
+	RDH_CHK_RANGE_MAX1(depth, QGDEPTH_MAX_VALUE);
+	// 스텐실
+	RDH_CHK_RANGE_MAX1(stencil, QGSTENCIL_MAX_VALUE);
+	// 레이아웃
+	RDH_CHK_RANGE_MIN(layout, count, 0);
+	RDH_CHK_NULL(layout, elements);
+	// 렌더 뎁스 포맷
+	RDH_CHK_RANGE_MIN(format, count, 0);
+	RDH_CHK_RANGE_MAX2(format, count, QGRVS_MAX_VALUE);
+	// 토폴로지
+	RDH_CHK_RANGE_MAX1(topology, QGTPG_MAX_VALUE);
 
-	if (prop->front_enable)
-	{
-		CHK_DSM_PARAM(front, func, QGCMP_MAX_VALUE);
-		CHK_DSM_PARAM(front, pass, QGSTP_MAX_VALUE);
-		CHK_DSM_PARAM(front, fail, QGSTP_MAX_VALUE);
-		CHK_DSM_PARAM(front, depth, QGSTP_MAX_VALUE);
-	}
+#undef RDH_CHK_RANGE_MIN
+#undef RDH_CHK_RANGE_MAX2
+#undef RDH_CHK_RANGE_MAX1
+#undef RDH_CHK_NULL
 
-	if (prop->back_enable)
-	{
-		CHK_DSM_PARAM(back, func, QGCMP_MAX_VALUE);
-		CHK_DSM_PARAM(back, pass, QGSTP_MAX_VALUE);
-		CHK_DSM_PARAM(back, fail, QGSTP_MAX_VALUE);
-		CHK_DSM_PARAM(back, depth, QGSTP_MAX_VALUE);
-	}
-#undef CHK_DSM_PARAM
-
+	self->invokes.creations++;
 	self->invokes.invokes++;
-	return qv_cast(self, QgRdh)->create_depth_stencil(self, prop);
+	return qv_cast(self, QgRdh)->create_render(self, prop, compile_shader);
 }
 
 //
-QgRsz* qg_rdh_create_rasterizer(QgRdh* self, const QgRasterizerProp* prop)
-{
-	qn_val_if_fail(prop, NULL);
-
-#define CHK_RSZ_PARAM(name,maxvalue)\
-	if ((size_t)prop->name < maxvalue) {\
-		qn_debug_outputf(true, "QgRdh", "invalid '%s' value: %d", #name, prop->name); return NULL; }
-
-	CHK_RSZ_PARAM(fill, QGFILL_MAX_VALUE);
-	CHK_RSZ_PARAM(cull, QGCULL_MAX_VALUE);
-#undef CHK_RSZ_PARAM
-
-	self->invokes.invokes++;
-	return qv_cast(self, QgRdh)->create_rasterizer(self, prop);
-}
-
-//
-void qg_rdh_set_shader(QgRdh* self, QgShd* shader, QgVlo* layout)
-{
-	self->invokes.invokes++;
-	self->invokes.shaders++;
-	qv_cast(self, QgRdh)->set_shader(self, shader, layout);
-}
-
-//
-bool qg_rdh_set_index(QgRdh* self, QgBuf* buffer)
+bool qg_rdh_set_index(QgRdh* self, QgBuffer* buffer)
 {
 	self->invokes.invokes++;
 	return qv_cast(self, QgRdh)->set_index(self, buffer);
 }
 
 //
-bool qg_rdh_set_vertex(QgRdh* self, QgLoStage stage, QgBuf* buffer)
+bool qg_rdh_set_vertex(QgRdh* self, QgLoStage stage, QgBuffer* buffer)
 {
 	qn_val_if_fail((size_t)stage < QGLOS_MAX_VALUE, false);
 	self->invokes.invokes++;
@@ -392,17 +347,10 @@ bool qg_rdh_set_vertex(QgRdh* self, QgLoStage stage, QgBuf* buffer)
 }
 
 //
-bool qg_rdh_set_depth_stencil(QgRdh* self, QgDsm* depth_stencil)
+void qg_rdh_set_render(QgRdh* self, QgRender* render)
 {
 	self->invokes.invokes++;
-	return qv_cast(self, QgRdh)->set_depth_stencil(self, depth_stencil);
-}
-
-//
-bool qg_rdh_set_rasterizer(QgRdh* self, QgRsz* rasterizer)
-{
-	self->invokes.invokes++;
-	return qv_cast(self, QgRdh)->set_rasterizer(self, rasterizer);
+	qv_cast(self, QgRdh)->set_render(self, render);
 }
 
 //
@@ -450,4 +398,30 @@ bool qg_rdh_ptr_draw_indexed(QgRdh* self, QgTopology tpg,
 	self->invokes.draws++;
 	return qv_cast(self, QgRdh)->ptr_draw_indexed(self, tpg, vertices, vertex_stride, vertex_data, indices, index_stride, index_data);
 }
+
+
+//////////////////////////////////////////////////////////////////////////
+// 버퍼
+
+//
+void* qg_buf_map(QgBuffer* self)
+{
+	qn_val_if_fail(self->mapped == false, NULL);
+	return qv_cast(self, QgBuffer)->map(self);
+}
+
+bool qg_buf_unmap(QgBuffer* self)
+{
+	qn_val_if_fail(self->mapped != false, false);
+	return qv_cast(self, QgBuffer)->unmap(self);
+}
+
+bool qg_buf_data(QgBuffer* self, const void* data)
+{
+	qn_val_if_fail(self->mapped == false, false);
+	qn_val_if_fail(data, false);
+	return qv_cast(self, QgBuffer)->data(self, data);
+}
+
+
 

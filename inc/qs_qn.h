@@ -29,9 +29,17 @@
 #include <time.h>
 #include <signal.h>
 #include <wchar.h>
+#if defined _MSC_VER
+#include <intrin.h>
+#include <crtdbg.h>
+#endif
 #ifdef __unix__
 #include <sys/time.h>
 #endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////
 // compiler configuration
@@ -46,6 +54,10 @@
 #define _QN_WINDOWS_		1
 #endif
 
+#ifdef __unix__
+#define _QN_UNIX_			1
+#endif
+
 #if defined __FreeBSD__ || defined __OpenBSD__
 #define _QN_BSD_			1
 #endif
@@ -54,16 +66,16 @@
 #define _QN_LINUX_			1
 #endif
 
+#ifdef __MACOSX__
+#define _QN_OSX_			1
+#endif
+
 #ifdef __android__
 #define _QN_ANDROID_		1
 #define _QN_MOBILE_			1
 #endif
 
-#ifdef __unix__
-#define _QN_UNIX_			1
-#endif
-
-#if defined _WIN64 || defined __LP64__ || defined __amd64__ || defined __x86_64__ || defined __aarch64__
+#if defined _WIN64 || defined _M_X64 || defined __LP64__ || defined __amd64__ || defined __x86_64__ || defined __aarch64__
 #define _QN_64_				1
 #endif
 
@@ -77,7 +89,6 @@
 #define QN_INLINE			__inline						/** @brief 인라인 */
 #define QN_FORCE_LINE		__forceinline					/** @brief 강제 인라인 */
 #define QN_FNAME			__FUNCTION__					/** @brief 함수이름 */
-#define QN_BARRIER			_ReadWriteBarrier()				/** @brief 메모리 바리어 */
 #define QN_STATIC_ASSERT	static_assert					/** @brief 정적 검사 */
 #define QN_FALL_THROUGH										/** @brief C 폴 스루 */
 #define QN_ALIGNAS(x)		__declspec(align(x))			/** @brief 메모리 정렬 */
@@ -92,13 +103,7 @@
 #define QN_FORCE_LINE		inline __attribute__ ((always_inline))
 #endif
 #define QN_FNAME			__FUNCTION__/* __PRETTY_FUNCTION__ */
-#if defined __X86__ || defined _M_X86 || defined __amd64__ || defined __x86_64__
-#define QN_BARRIER			__asm__ __volatile__("" : : : "memory");
-#elif __aarch64__
-#define QN_BARRIER			__asm__ __volatile__("dsb sy" : : : "memory")
-#else
-#define QN_BARRIER			__sync_synchronize();
-#endif
+
 #define QN_STATIC_ASSERT	_Static_assert
 #define QN_FALL_THROUGH		__attribute__((fallthrough))
 #define QN_ALIGNAS(x)		__attribute__((aligned(x)))
@@ -215,44 +220,44 @@ typedef uint16_t			halfint;						/** @brief 16bit half int */
 /** @brief 하위 변형 있는 16비트 정수 */
 typedef union vint16_t
 {
-	struct
+	struct vint16_t_byte
 	{
-		byte			l, h;
-	}				b;
-	ushort			w;
+		byte			l, h;								/** @brief 바이트 (h=msb) */
+	}				b;										/** @brief 바이트 집합 */
+	ushort			w;										/** @brief 워드 */
 } vint16_t, vshort;
 
 /** @brief 하위 변형 있는 32비트 정수 */
 typedef union vint32_t
 {
-	struct
+	struct vint32_t_byte
 	{
-		byte			a, b, c, d; // d=msb
-	}				b;
-	struct
+		byte			a, b, c, d;							/** @brief 바이트 (d=msb) */
+	}				b;										/** @brief 바이트 집합 */
+	struct vint32_t_word
 	{
-		ushort			l, h;
-	}				w;
-	uint			dw;
+		ushort			l, h;								/** @brief 워드 */
+	}				w;										/** @brief 워드 집합 */
+	uint			dw;										/** @brief 더블 워드 */
 } vint32_t, vint;
 
 /** @brief 하위 변형 있는 64비트 정수 */
 typedef union vint64_t
 {
-	struct
+	struct vint64_t_byte
 	{
-		byte			la, lb, lc, ld;
-		byte			ha, hb, hc, hd; // hd=msb
-	}				b;
-	struct
+		byte			la, lb, lc, ld;						/** @brief 하위 바이트 */
+		byte			ha, hb, hc, hd;						/** @brief 상위 바이트 (hd=msb) */
+	}				b;										/** @brief 바이트 집합 */
+	struct vint64_t_word
 	{
-		ushort			a, b, c, d;
-	}				w;
-	struct
+		ushort			a, b, c, d;							/** @brief 워드 */
+	}				w;										/** @brief 워드 집합 */
+	struct vint64_t_double_word
 	{
-		ushort			l, h;
-	} dw;
-	ullong			q;
+		ushort			l, h;								/** @brief 더블 워드 */
+	}				dw;										/** @brief 더블 워드 집합 */
+	ullong			q;										/** @brief 쿼드 워드 */
 } vint64_t, vllong;
 
 /** @brief 아무값이나 넣기 위한 타입 */
@@ -296,7 +301,7 @@ typedef struct funcparam_t
 #define qn_assert(expr,m)
 #define qn_verify(expr)
 #endif
-#define QN_ASSERT_SIZE(t,s)	QN_STATIC_ASSERT(sizeof(t) == s, #t " size is not match")
+#define QN_ASSERT_SIZE(t,s)	QN_STATIC_ASSERT(sizeof(t) == s, #t " size is not match need " #s " bytes")
 
 // type check
 QN_ASSERT_SIZE(BOOL, 4);
@@ -692,6 +697,14 @@ QSAPI char* qn_strrem(char* p, const char* rmlist);
 */
 QSAPI char* qn_strpcpy(char* dest, const char* src);
 /**
+ * @brief 문자열을 복제한다
+ * @param p 복제할 문자열
+ * @return 복제한 새로운 문자열
+ * @retval NULL 인수 p 가 NULL
+ * @note qn_free 함수로 헤재해야 한다
+*/
+QSAPI char* qn_strdup(const char* p);
+/**
  * @brief 여러 문자열을 이어서 붙인다
  * @param[in] p 첫 문자열
  * @note qn_free 함수로 해제해야 한다
@@ -744,7 +757,6 @@ QSAPI int qn_lltoa(char* p, int size, llong n, int base);
 #ifdef _MSC_VER
 #define qn_strcpy			strcpy_s						/** @brief strcpy */
 #define qn_strncpy			strncpy_s						/** @brief strncpy */
-#define qn_strdup			_strdup							/** @brief strdup */
 #define qn_strupr			_strupr_s						/** @brief strupr */
 #define qn_strlwr			_strlwr_s						/** @brief strlwr */
 #define qn_strncmp			strncmp							/** @brief strncmp */
@@ -753,7 +765,6 @@ QSAPI int qn_lltoa(char* p, int size, llong n, int base);
 #else
 #define qn_strcpy(a,b,c)	strcpy(a,c)
 #define qn_strncpy(a,b,c,d)	strncpy(a,c,d)
-#define qn_strdup			strdup
 QSAPI char* qn_strupr(char* p, size_t size);
 QSAPI char* qn_strlwr(char* p, size_t size);
 QSAPI int qn_strncmp(const char* p1, const char* p2, size_t len);
@@ -887,6 +898,14 @@ QSAPI wchar* qn_wcsrem(wchar* p, const wchar* rmlist);
 */
 QSAPI wchar* qn_wcspcpy(wchar* dest, const wchar* src);
 /**
+ * @brief 문자열을 복제한다
+ * @param p 복제할 문자열
+ * @return 복제한 새로운 문자열
+ * @retval NULL 인수 p 가 NULL
+ * @note qn_free 함수로 헤재해야 한다
+*/
+QSAPI wchar* qn_wcsdup(const wchar* p);
+/**
  * @brief 여러 문자열을 이어서 붙인다
  * @param[in] p 첫 문자열
  * @note qn_free 함수로 해제해야 한다
@@ -919,7 +938,6 @@ QSAPI int qn_wcsfnd(const wchar* src, const wchar* find, size_t index);
 #ifdef _MSC_VER
 #define qn_wcscpy			wcscpy_s						/** @brief wcscpy */
 #define qn_wcsncpy			wcsncpy_s						/** @brief wcsncpy */
-#define qn_wcsdup			_wcsdup							/** @brief wcsdup */
 #define qn_wcsupr			_wcsupr_s						/** @brief wcsupr */
 #define qn_wcslrw			_wcslwr_s						/** @brief wcslwr */
 #define qn_wcsncmp			wcsncmp							/** @brief wcsncmp */
@@ -928,7 +946,6 @@ QSAPI int qn_wcsfnd(const wchar* src, const wchar* find, size_t index);
 #else
 #define qn_wcscpy(a,b,c)	wcscpy(a,c)
 #define qn_wcsncpy(a,b,c,d)	wcsncpy(a,c,d)
-#define qn_wcsdup			qwcsdup
 QSAPI wchar* qn_wcsupr(wchar* p, size_t size);
 QSAPI wchar* qn_wcslwr(wchar* p, size_t size);
 QSAPI int qn_wcsncmp(const wchar* p1, const wchar* p2, size_t len);
@@ -1057,31 +1074,21 @@ QSAPI void qn_localtime(struct tm* ptm, time_t tt);
 QSAPI void qn_gmtime(struct tm* ptm, time_t tt);
 
 /**
- * @brief 사이클 64비트
- * @return	현재의 사이클 TICK
+ * @brief 현재 시간 사이클
+ * @return	현재의 사이클
  */
 QSAPI ullong qn_cycle(void);
 /**
- * @brief 초단위 TICK
- * @return	현재의 TICK
+ * @brief 프로그램 시작부터 시간 틱
+ * @return	현재의 틱
  */
 QSAPI ullong qn_tick(void);
-/**
- * @brief 밀리초 단위의 TICK
- * @return	현재의 TICK
- */
-QSAPI double qn_stick(void);
 
 /**
  * @brief 밀리초 슬립
  * @param[in]	milliseconds	밀리초 단위로 처리되는 millisecond
  */
 QSAPI void qn_sleep(uint milliseconds);
-/**
- * @brief 마이크로초 슬립
- * @param[in]	microseconds	마이크로초 단위로 처리되는 microsecond
- */
-QSAPI void qn_usleep(uint microseconds);
 /**
  * @brief 초(second) 슬립
  * @param[in]	seconds	초 단위로 처리되는 second
@@ -1147,9 +1154,9 @@ QSAPI void qn_mstod(uint msec, QnDateTime* dt);
 typedef struct QnTimer QnTimer;
 struct QnTimer
 {
-	double			abstime;								/** @brief 타이머 시간 */
-	double			runtime;								/** @brief 타이머 시작부터 시간 */
-	double			advance;								/** @brief 진행 시간 (프레임 당 시간) */
+	double			abstime;								/** @brief 타이머 절대 시간 */
+	double			runtime;								/** @brief 타이머 시작부터 수행 시간 */
+	double			advance;								/** @brief 타이머 갱신에 따른 시간 (프레임 당 시간) */
 	double			fps;									/** @brief 초 당 프레임 수 */
 };
 
@@ -1180,38 +1187,15 @@ QSAPI void qn_timer_start(QnTimer* self);
 QSAPI void qn_timer_stop(QnTimer* self);
 /**
  * @brief 타이머 갱신
- * @param[in]	self	타이머 개체
+ * @param[in] self 타이머 개체
+ * @param[in] manual FPS를 자동으로 계산하려면 false, 아니면 true
  * @return	성공 여부 반화
  * @retval true 성공
  * @retval false 실패
  */
-QSAPI bool qn_timer_update(QnTimer* self);
+QSAPI bool qn_timer_update(QnTimer* self, bool manual);
 /**
  * @brief 타이머의 절대 시간
- * @param[in]	self	타이머 개체
- * @return	double
- */
-QSAPI double qn_timer_get_abs(const QnTimer* self);
-/**
- * @brief 타이머의 시작 부터의 실행 시간
- * @param[in]	self	타이머 개체
- * @return	double
- */
-QSAPI double qn_timer_get_run(const QnTimer* self);
-/**
- * @brief 타이머 갱신의 시간 주기(Frame Per Second)
- * @param[in]	self	타이머 개체
- * @return	double
- */
-QSAPI double qn_timer_get_fps(const QnTimer* self);
-/**
- * @brief 타이머 갱신에 따른 경과 값
- * @param[in]	self	타이머 개체
- * @return	double
- */
-QSAPI double qn_timer_get_adv(const QnTimer* self);
-/**
- * @brief 타이머의 과다 수행에 따른 갱신 경과의 제한 값
  * @param[in]	self	타이머 개체
  * @return	double
  */
@@ -1222,13 +1206,6 @@ QSAPI double qn_timer_get_cut(const QnTimer* self);
  * @param	cut			제한 값
  */
 QSAPI void qn_timer_set_cut(QnTimer* self, double cut);
-
-/**
- * @brief 타이머 매뉴얼 타입 FPS 측정
- * @param[in]	self	타이머 개체
- * @param	value   	기능을 쓰려면 참으로 넣는다
- */
-QSAPI void qn_timer_set_manual(QnTimer* self, bool value);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1922,6 +1899,142 @@ QSAPI void qn_mltag_set_arg(QnMlTag* ptr, const char* name, const char* value);
  * @retval false 인수 제거의 실패
  */
 QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* name);
+
+
+//////////////////////////////////////////////////////////////////////////
+// thread
+
+#if defined _MSC_VER
+#define qn_barrier()		_ReadWriteBarrier()
+#if defined _M_IX86 || defined _M_X64
+#define qn_pause()			_mm_pause()
+#elif defined _M_ARM || defined _M_ARM64
+#define qn_pause()			_yield()
+#endif
+#elif defined __GNUC__
+#if defined __i386__ || defined __x86_64__
+#define qn_barrier()		__asm__ __volatile__("" : : : "memory");
+#define qn_pause()			__asm__ __volatile__ ("pause\n")
+#elif defined __aarch64__
+#define qn_barrier()		__asm__ __volatile__("dsb sy" : : : "memory")
+#define qn_pause()			__asm__ __volatile__ ("yield" ::: "memory")
+#elif defined __EMSCRIPTEN__
+#define qn_barrier()
+#define qn_pause()
+#else
+#error unknown platform
+#endif
+#else
+#error unknown compiler
+#endif
+
+/** @brief spin lock */
+typedef volatile int		QnSpinLock;
+
+/**
+ * @brief 스핀락을 걸어본다
+ * @param lock 스핀락
+ * @return 걸렸으면 참
+*/
+QSAPI bool qn_spinlock_try(QnSpinLock* lock);
+/**
+ * @brief 스핀락을 건다
+ * @param lock 스핀락
+ * @returns 스핀락이 들어갈 때까지 걸린 횟수
+ * @note 걸릴 때까지 대기한다
+*/
+QSAPI size_t qn_spinlock_enter(QnSpinLock* lock);
+/**
+ * @brief 스핀락을 푼다
+ * @param lock 스핀락
+*/
+QSAPI void qn_spinlock_leave(QnSpinLock* lock);
+
+
+/** @brief TLS */
+typedef void*				QnTls;
+
+/**
+ * @brief TLS를 만든다
+ * @param callback TLS가 제거될 때 필요한 콜백 (NULL 허용)
+ * @return TLS 값
+*/
+QSAPI QnTls* qn_tls(paramfunc_t callback);
+/**
+ * @brief TLS에 값을 쓴다
+ * @param tls 대상 TLS
+ * @param data 넣을 값
+*/
+QSAPI void qn_tlsset(QnTls* tls, void* data);
+/**
+ * @brief TLS에서 값을 읽는다
+ * @param tls 대상 TLS
+ * @return 읽은 값
+*/
+QSAPI void* qn_tlsget(QnTls* tls);
+
+
+/** @brief 스레드 콜백 */
+typedef void* (*QnThreadCallback)(void*);
+
+/** @brief 스레드 */
+typedef struct QnThread		QnThread;
+struct QnThread
+{
+	bool				canwait;
+	bool				managed;
+	ushort				unused;
+
+	int					busy;
+	int					stack_size;
+
+	QnThreadCallback	cb_func;
+	void*				cb_data;
+	void*				cb_ret;
+};
+
+QSAPI QnThread* qn_thread_self(void);
+QSAPI QnThread* qn_thread_new(QnThreadCallback func, void* data, uint stack_size, int busy);
+QSAPI void qn_thread_delete(QnThread* self);
+QSAPI bool qn_thread_once(const char* name, QnThreadCallback func, void* data, uint stack_size, int busy);
+QSAPI bool qn_thread_start(QnThread* self, const char* name);
+QSAPI void* qn_thread_wait(QnThread* self);
+QSAPI void qn_thread_exit(void* ret);
+QSAPI int qn_thread_get_busy(QnThread* self);
+QSAPI bool qn_thread_set_busy(QnThread* self, int busy);
+
+
+/** @brief 뮤텍스 */
+typedef struct QnMutex		QnMutex;
+
+QSAPI QnMutex* qn_mutex_new(void);
+QSAPI void qn_mutex_delete(QnMutex* self);
+QSAPI bool qn_mutex_try(QnMutex* self);
+QSAPI void qn_mutex_enter(QnMutex* self);
+QSAPI void qn_mutex_leave(QnMutex* self);
+
+
+/** @brief 컨디션 */
+typedef struct QnCond		QnCond;
+
+QSAPI QnCond* qn_cond_new(void);
+QSAPI void qn_cond_delete(QnCond* self);
+QSAPI void qn_cond_signal(QnCond* self);
+QSAPI void qn_cond_broadcast(QnCond* self);
+QSAPI bool qn_cond_wait_for(QnCond* self, QnMutex* lock, uint milliseconds);
+QSAPI void qn_cond_wait(QnCond* self, QnMutex* lock);
+
+
+/** @brief 세마포어 */
+typedef struct QnSem		QnSem;
+
+QSAPI QnSem* qn_sem_new(int initial);
+QSAPI void qn_sem_delete(QnSem* self);
+QSAPI bool qn_sem_wait_for(QnSem* self, uint milliseconds);
+QSAPI bool qn_sem_wait(QnSem* self);
+QSAPI bool qn_sem_try(QnSem* self);
+QSAPI int qn_sem_count(QnSem* self);
+QSAPI bool qn_sem_post(QnSem* self);
 
 
 //////////////////////////////////////////////////////////////////////////
