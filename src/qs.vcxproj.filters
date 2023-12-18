@@ -215,7 +215,7 @@
     <ClCompile Include="qg\qg_kmc.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
-    <ClCompile Include="qg\qgsdl_stub.c">
+    <ClCompile Include="qg\qg_stub_windows.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
     <ClCompile Include="qg\qggl_base.c">
@@ -245,5 +245,8 @@
     <ClCompile Include="qn\qn_thd.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

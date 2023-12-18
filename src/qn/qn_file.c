@@ -1128,3 +1128,420 @@ void qn_dir_seek(QnDir* self, int pos)
 	seekdir(self->pd, pos);
 #endif
 }
+
+//
+#ifndef _QN_WINDOWS_
+static char* qn_internal_read_sym_link(const char* path)
+{
+	char* buf = NULL;
+	ssize_t len = 64;
+	ssize_t rc = -1;
+	while (true)
+	{
+		buf = qn_realloc(buf, (size_t)len, char);
+		rc = readlink(path, buf, len);
+		if (rc == -1)
+			break;
+		else if (rc < len)
+		{
+			buf[rc] = '\0';
+			return buf;
+		}
+		len *= 2;
+	}
+	qn_free(buf);
+	return NULL;
+}
+#endif
+
+//
+char* qn_dir_base_path(void)
+{
+	char* path = NULL;
+#ifdef _QN_WINDOWS_
+	DWORD len = 128;
+	wchar* pw = NULL;
+	while (true)
+	{
+		pw = qn_realloc(pw, len, wchar);
+		len = GetModuleFileName(NULL, pw, len);
+		if (len < len - 1)
+			break;
+		len *= 2;
+	}
+	if (len == 0)
+	{
+		qn_free(pw);
+		return NULL;
+	}
+	DWORD i;
+	for (i = len - 1; i > 0; i--)
+	{
+		if (pw[i] == L'\\')
+			break;
+	}
+	qn_assert(i > 0, "invalid base path");
+	pw[i + 1] = L'\0';
+
+	size_t sz = qn_u16to8(NULL, 0, pw, 0);
+	path = qn_alloc(sz + 1, char);
+	qn_u16to8(path, sz + 1, pw, 0);
+	qn_free(pw);
+#else
+#if defined _QN_FREEBSD_
+	QN_STMT_BEGIN{
+		char fullpath[MAX_PATH];
+		size_t len = QN_COUNTOF(fullpath);
+		const int sns[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
+		if (sysctl(sns, QN_COUNTOF(sns), fullpath, &len, NULL, 0) != -1)
+			path = qn_strdup(fullpath);
+	}QN_STMT_END;
+#endif
+	if (path == NULL && (access("/proc", F_OK) == 0))
+	{
+#if defined _QN_FREEBSD_
+		path = qn_internal_read_sym_link("/proc/curproc/file");
+#elif defined _QN_LINUX_
+		path = qn_internal_read_sym_link("/proc/self/exe");
+		if (path == NULL)
+		{
+			char path[64];
+			int rc = qn_snprintf(path, QN_COUNTOF(path), "/proc/%llu/exe", (ullong)getpid());
+			if (rc > 0 && rc < QN_COUNTOF(path))
+				path = qn_internal_read_sym_link(path);
+		}
+#else
+#error unknown platform
+#endif
+	}
+	if (path != NULL)
+	{
+		char* p = strrchr(path, '/');
+		if (p != NULL)
+			*(p + 1) = '\0';
+		else
+		{
+			// 못찾겟어.
+			qn_free(path);
+			path = NULL;
+		}
+	}
+#endif
+	return path;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// 모듈
+
+enum QnModFlag
+{
+	QNMDF_INFO = QN_BIT(1),
+	QNMDF_NO_CLOSURE = QN_BIT(2),
+	QNMDF_RESIDENT = QN_BIT(3),
+};
+
+struct QnModule
+{
+	char*				filename;
+	int					ref;
+	int					flags;
+#ifdef _QN_WINDOWS_
+	HMODULE				handle;
+#else
+	void*				handle;
+#endif
+
+	QnModule*			next;
+};
+
+static struct QnModuleImpl
+{
+	BOOL				inited;
+	QnModule*			self;
+	QnModule*			modules;
+	QnTls*				error;
+	QnSpinLock			lock;
+}
+_qn_mod = { false, };
+
+//
+static void qn_internal_mod_delete(QnModule* self, bool dispose);
+
+//
+static void qn_module_dispose(void* dummy)
+{
+	qn_ret_if_fail(_qn_mod.inited);
+
+	QnModule *next, *node = _qn_mod.modules;
+	while (node)
+	{
+		if (QN_TMASK(node->flags, QNMDF_NO_CLOSURE | QNMDF_INFO))
+			qn_debug_outputf(false, "QNMODULE", "module not deleted [%s] (ref: %d)", node->filename, node->ref);
+		next = node->next;
+		qn_internal_mod_delete(node, true);
+	}
+
+	if (_qn_mod.self != NULL)
+	{
+		qn_free(_qn_mod.self->filename);
+		qn_free(_qn_mod.self);
+	}
+}
+
+//
+static void qn_module_init(void)
+{
+	qn_ret_if_fail(_qn_mod.inited);
+	_qn_mod.inited = true;
+	_qn_mod.error = qn_tls(qn_mpffree);
+	qn_internal_atexit(qn_module_dispose, NULL);
+}
+
+//
+static void qn_internal_mod_reset_error(void)
+{
+	qn_module_init();
+	char* prev = (char*)qn_tlsget(_qn_mod.error);
+	qn_free(prev);
+	qn_tlsset(_qn_mod.error, NULL);
+}
+
+//
+static void qn_internal_mod_set_error(void)
+{
+	qn_module_init();
+	char* prev = (char*)qn_tlsget(_qn_mod.error);
+	qn_free(prev);
+#ifdef _QN_WINDOWS_
+	qn_tlsset(_qn_mod.error, qn_syserr(0, NULL));
+#else
+	const char* err = dlerror();
+	qn_tlsset(_qn_mod.error, err == NULL ? qn_syserr(0, NULL) : qn_strdup(err));
+#endif
+}
+
+//
+#ifdef _QN_WINDOWS_
+static QnModule* qn_internal_find_by_handle(HMODULE handle)
+#else
+static QnModule* qn_internal_find_by_handle(void* handle)
+#endif
+{
+	QnModule* find = NULL;
+	QN_LOCK(_qn_mod.lock);
+	if (_qn_mod.self && _qn_mod.self->handle == handle)
+		find = _qn_mod.self;
+	else
+	{
+		for (QnModule* node = _qn_mod.modules; node; node = node->next)
+		{
+			if (node->handle != handle)
+				continue;
+			find = node;
+			break;
+		}
+	}
+	QN_UNLOCK(_qn_mod.lock);
+	return find;
+}
+
+//
+static QnModule* qn_internal_find_by_filename(const char* filename)
+{
+	QnModule* find = NULL;
+	QN_LOCK(_qn_mod.lock);
+	for (QnModule* node = _qn_mod.modules; node; node = node->next)
+	{
+		if (qn_streqv(node->filename, filename) == false)
+			continue;
+		find = node;
+		break;
+	}
+	QN_UNLOCK(_qn_mod.lock);
+	return find;
+}
+
+//
+QnModule* qn_mod_self(void)
+{
+	qn_internal_mod_reset_error();
+
+	if (_qn_mod.self != NULL)
+	{
+		_qn_mod.self->ref++;
+		return _qn_mod.self;
+	}
+
+#ifdef _QN_WINDOWS_
+	HMODULE handle = (HMODULE)0x9;
+#else
+	void* handle = dlopen(NULL, RTLD_GLOBAL | RTLD_LAZY);
+	if (handle == NULL)
+	{
+		qn_internal_mod_set_error();
+		return NULL;
+	}
+#endif
+
+	QnModule* self = qn_alloc_zero_1(QnModule);
+	self->handle = handle;
+	self->ref = 1;
+	self->flags = QNMDF_RESIDENT;
+
+	QN_LOCK(_qn_mod.lock);
+	_qn_mod.self = self;
+	QN_UNLOCK(_qn_mod.lock);
+
+	return self;
+}
+
+//
+QnModule* qn_mod_open(const char* filename, int flags)
+{
+	qn_val_if_fail(filename != NULL, NULL);
+
+	qn_internal_mod_reset_error();
+
+	QnModule* self = qn_internal_find_by_filename(filename);
+	if (self != NULL)
+	{
+		self->ref++;
+		self->flags = QNMDF_NO_CLOSURE | QNMDF_RESIDENT;
+		return self;
+	}
+
+#ifdef _QN_WINDOWS_
+	wchar* pw;
+	size_t size = qn_u8to16(NULL, 0, filename, 0) + 1;
+	pw = qn_alloc(size, wchar);
+	qn_u8to16(pw, size, filename, 0);
+#ifdef __WINRT__
+	HMODULE handle = LoadPackagedLibrary(pw, 0);
+#else
+	HMODULE handle = LoadLibrary(pw);
+#endif
+	qn_free(pw);
+#else
+	void* handle = dlopen(filename, RTLD_LOCAL | RTLD_NOW);
+#endif
+	if (handle == NULL)
+	{
+		qn_debug_output_syserr(true, "QNMODULE", 0);
+		return NULL;
+	}
+
+	self = qn_internal_find_by_handle(handle);
+	if (self != NULL)
+	{
+		qn_internal_mod_delete(self, false);
+		self->ref++;
+		self->flags |= QNMDF_NO_CLOSURE | QNMDF_RESIDENT | QNMDF_INFO;
+		return self;
+	}
+
+	self = qn_alloc_1(QnModule);
+	self->filename = qn_strdup(filename);
+	self->ref = 1;
+	self->flags = flags;
+	self->handle = handle;
+
+	QN_LOCK(_qn_mod.lock);
+	self->next = _qn_mod.modules;
+	_qn_mod.modules = self;
+	QN_UNLOCK(_qn_mod.lock);
+	return self;
+}
+
+//
+static void qn_internal_mod_delete(QnModule* self, bool dispose)
+{
+	if (self->handle != NULL)
+	{
+#ifdef _QN_WINDOWS_
+		if (FreeLibrary(self->handle) == FALSE)
+#else
+		if (dlclose(self->handle) != 0)
+#endif
+			qn_internal_mod_set_error();
+	}
+	if (dispose)
+	{
+		qn_free(self->filename);
+		qn_free(self);
+	}
+}
+
+//
+bool qn_mod_unload(QnModule* self)
+{
+	qn_val_if_fail(self->ref > 0, false);
+
+	self->ref--;
+	if (self->ref > 0)
+		return true;
+
+	QN_LOCK(_qn_mod.lock);
+	for (QnModule *last = NULL, *node = _qn_mod.modules; node; )
+	{
+		if (node == self)
+		{
+			if (last)
+				last->next = node->next;
+			else
+				_qn_mod.modules = node->next;
+			break;
+		}
+		last = node;
+		node = node->next;
+	}
+	self->next = NULL;
+	QN_UNLOCK(_qn_mod.lock);
+
+	qn_internal_mod_delete(self, true);
+	return true;
+}
+
+//
+void* qn_mod_func(QnModule* self, const char* name)
+{
+	qn_val_if_fail(name != NULL && *name != '\0', NULL);
+
+	qn_internal_mod_reset_error();
+
+	void* ptr;
+#ifdef _QN_WINDOWS_
+	if (self->handle != (HMODULE)0x9)
+		ptr = (void*)GetProcAddress(self->handle, name);
+	else
+	{
+#ifdef __WINRT__
+		ptr = (void*)GetProcAddress(NULL, name);
+#else
+		ptr = (void*)GetProcAddress(GetModuleHandle(NULL), name);
+#endif
+	}
+#else
+	const char* err = dlerror();
+	ptr = dlsym(self->handle, name);
+#endif
+
+	if (ptr == NULL)
+		qn_internal_mod_set_error();
+	return ptr;
+}
+
+//
+const char* qn_mod_error(void)
+{
+	qn_module_init();
+	return (const char*)qn_tlsget(_qn_mod.error);
+}
+
+//
+int qn_mod_ref(QnModule* self)
+{
+	return self->ref;
+}
+
+

@@ -1,15 +1,15 @@
 ﻿/*
- * QsLib <QN Layer>
+ * QsLib [QN Layer]
  * Made by kim 2004-2024
  *
  * 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
  * 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
  */
-/**
- * @file qs_qn.h
- *
- * <QN Layer>는 CRT의 부족한 부분을 보충합니다.
- */
+ /**
+  * @file qs_qn.h
+  *
+  * [QN Layer]는 CRT의 부족한 부분을 보충합니다.
+  */
 #pragma once
 
 #ifdef _MSC_VER
@@ -18,8 +18,8 @@
 #endif
 
 
-//////////////////////////////////////////////////////////////////////////
-// includes
+  //////////////////////////////////////////////////////////////////////////
+  // includes
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdarg.h>
@@ -60,6 +60,12 @@
 
 #if defined __FreeBSD__ || defined __OpenBSD__
 #define _QN_BSD_			1
+#if defined __FreeBSD__
+#define _QN_FREEBSD_		1
+#endif
+#if defined __OpenBSD__
+#define _QN_OPENBSD_		1
+#endif
 #endif
 
 #ifdef __linux__
@@ -73,6 +79,10 @@
 #ifdef __android__
 #define _QN_ANDROID_		1
 #define _QN_MOBILE_			1
+#endif
+
+#if defined __XBOXONE__ || defined __XBOXSERIES__
+#define _QN_XBOX_			1
 #endif
 
 #if defined _WIN64 || defined _M_X64 || defined __LP64__ || defined __amd64__ || defined __x86_64__ || defined __aarch64__
@@ -309,13 +319,22 @@ QN_ASSERT_SIZE(byte, 1);
 QN_ASSERT_SIZE(ushort, 2);
 QN_ASSERT_SIZE(uint, 4);
 QN_ASSERT_SIZE(ullong, 8);
-QN_ASSERT_SIZE(nuint, sizeof(size_t));
 QN_ASSERT_SIZE(halfint, 2);
 QN_ASSERT_SIZE(vshort, 2);
 QN_ASSERT_SIZE(vint, 4);
 QN_ASSERT_SIZE(vllong, 8);
-QN_ASSERT_SIZE(any_t, sizeof(long double));
-QN_ASSERT_SIZE(funcparam_t, sizeof(size_t) * 2);
+#ifdef _MSC_VER
+QN_ASSERT_SIZE(any_t, 8);
+#else
+QN_ASSERT_SIZE(any_t, 16);
+#endif
+#ifdef _QN_64_
+QN_ASSERT_SIZE(nuint, 8);
+QN_ASSERT_SIZE(funcparam_t, 16);
+#else
+QN_ASSERT_SIZE(nuint, 4);
+QN_ASSERT_SIZE(funcparam_t, 8);
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -337,7 +356,7 @@ QSAPI void qn_atexit(paramfunc_t func, void* data);
  * @param[in] func 실핼할 함수
  * @param[in] data 함수에 전달할 데이터
 */
-QSAPI void qn_atexitp(paramfunc_t func, void* data);
+QSAPI void qn_internal_atexit(paramfunc_t func, void* data);
 /**
  * @brief size_t형으로 순서 값을 얻는다
  * @return 순서값
@@ -345,6 +364,21 @@ QSAPI void qn_atexitp(paramfunc_t func, void* data);
 */
 QSAPI size_t qn_number(void);
 
+/**
+ * @brief 디버그용 검사 출력
+ * @param[in] expr 검사한 표현
+ * @param[in] mesg 오류 내용
+ * @param[in] filename 파일 이름이나 함수 이름
+ * @param[in] line 줄 번호
+ * @return 출력한 문자열 길이
+*/
+QSAPI int qn_debug_assert(const char* expr, const char* mesg, const char* filename, int line);
+/**
+ * @brief HALT 메시지
+ * @param[in] head 머릿글
+ * @param[in] mesg 메시지
+*/
+QSAPI void qn_debug_halt(const char* head, const char* mesg);
 /**
  * @brief 디버그용 문자열 출력
  * @param[in] breakpoint 참이면 디버거 연결시 중단점 표시
@@ -362,20 +396,13 @@ QSAPI int qn_debug_outputs(bool breakpoint, const char* head, const char* mesg);
 */
 QSAPI int qn_debug_outputf(bool breakpoint, const char* head, const char* fmt, ...);
 /**
- * @brief 디버그용 검사 출력
- * @param[in] expr 검사한 표현
- * @param[in] mesg 오류 내용
- * @param[in] filename 파일 이름이나 함수 이름
- * @param[in] line 줄 번호
+ * @brief 시스템 에러 메시지를 출력한다
+ * @param breakpoint  참이면 디버거 연결시 중단점 표시
+ * @param head 머릿글
+ * @param errcode 에러 코드. 이 값이 0이면 현재 에러코드를 알아서 가져온다
  * @return 출력한 문자열 길이
 */
-QSAPI int qn_debug_assert(const char* expr, const char* mesg, const char* filename, int line);
-/**
- * @brief HALT 메시지
- * @param[in] head 머릿글
- * @param[in] mesg 메시지
-*/
-QSAPI void qn_debug_halt(const char* head, const char* mesg);
+QSAPI int qn_debug_output_syserr(bool breakpoint, const char* head, int errcode);
 
 /**
  * @brief 문자열을 출력한다 (디버그 메시지 포함)
@@ -389,6 +416,14 @@ QSAPI int qn_outputs(const char* mesg);
  * @return 출력한 문자열 길이
 */
 QSAPI int qn_outputf(const char* fmt, ...);
+/**
+ * @brief 시스템 에러 메시지를 얻는다
+ * @param errcode 에러 코드. 이 값이 0이면 현재 에러코드를 사용한다
+ * @param len 메시지의 길이
+ * @return 메시지 버퍼를 반환한다. 이 문자열은 qn_free 함수로 해제해야한다
+ * @warning 반드시 리턴값은 qn_free 함수로 해제하세요
+*/
+QSAPI char* qn_syserr(int errcode, int* len);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -736,6 +771,20 @@ QSAPI bool qn_striwcm(const char* string, const char* wild);
 */
 QSAPI int qn_strfnd(const char* src, const char* find, size_t index);
 /**
+ * @brief 문자열이 서로 같은지 비교
+ * @param p1 왼쪽 문자열
+ * @param p2 오른쪽 문자열
+ * @return 서로 같으면 참을 반환
+*/
+QSAPI bool qn_streqv(const char* p1, const char* p2);
+/**
+ * @brief 문자열이 서로 같은지 대소문자 무시하고 비교
+ * @param p1 왼쪽 문자열
+ * @param p2 오른쪽 문자열
+ * @return 서로 같으면 참을 반환
+*/
+QSAPI bool qn_strieqv(const char* p1, const char* p2);
+/**
  * @brief 32비트 정수를 문자열로 변환
  * @param p 문자열 버퍼
  * @param size 문자열 버퍼 크기
@@ -935,6 +984,20 @@ QSAPI bool qn_wcsiwcm(const wchar* string, const wchar* wild);
  * @return 찾으면 찾은 위치를. 찾지 못하면 -1
 */
 QSAPI int qn_wcsfnd(const wchar* src, const wchar* find, size_t index);
+/**
+ * @brief 문자열이 서로 같은지 비교
+ * @param p1 왼쪽 문자열
+ * @param p2 오른쪽 문자열
+ * @return 서로 같으면 참을 반환
+*/
+QSAPI bool qn_wcseqv(const wchar* p1, const wchar* p2);
+/**
+ * @brief 문자열이 서로 같은지 대소문자 무시하고 비교
+ * @param p1 왼쪽 문자열
+ * @param p2 오른쪽 문자열
+ * @return 서로 같으면 참을 반환
+*/
+QSAPI bool qn_wcsieqv(const wchar* p1, const wchar* p2);
 #ifdef _MSC_VER
 #define qn_wcscpy			wcscpy_s						/** @brief wcscpy */
 #define qn_wcsncpy			wcsncpy_s						/** @brief wcsncpy */
@@ -1047,7 +1110,7 @@ QSAPI size_t qn_u16to8(char* dest, size_t destsize, const uchar2* src, size_t sr
  */
 QSAPI size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, size_t srclen);
 /**
- * @brief utf16 -> ucs4 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
+ * @brief ucs4 -> utf16 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
  * @param[out]	dest (널값이 아니면) 대상 버퍼 (utf16)
  * @param[in]	destsize 대상 버퍼 크기
  * @param[in]	src 원본 (ucs4)
@@ -1055,6 +1118,70 @@ QSAPI size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, size_t
  * @return	변환한 길이 또는 변환에 필요한 길이
  */
 QSAPI size_t qn_u32to16(uchar2* dest, size_t destsize, const uchar4* src, size_t srclen);
+/**
+ * @brief 멀티바이트 문자열 -> 와이드 문자열로 변환하고 버퍼 반환
+ * @param src 원본 문자열
+ * @param srclen 원본 문자열 길이
+ * @return 변환한 버퍼 메모리
+ * @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
+*/
+QSAPI wchar* qn_mbstowcs_dup(const char* src, size_t srclen);
+/**
+ * @brief 와이드 문자열 -> 멀티바이트 문자열로 변환하고 버퍼 반환
+ * @param src 원본 문자열
+ * @param srclen 원본 문자열 길이
+ * @return 변환한 버퍼 메모리
+ * @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
+*/
+QSAPI char* qn_wcstombs_dup(const wchar* src, size_t srclen);
+/**
+ * @brief utf8 -> ucs4로 변환하고 버퍼 반환
+ * @param src 원본 문자열
+ * @param srclen 원본 문자열 길이
+ * @return 변환한 버퍼 메모리
+ * @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
+*/
+QSAPI uchar4* qn_u8to32_dup(const char* src, size_t srclen);
+/**
+ * @brief utf8 -> utf16으로 변환하고 버퍼 반환
+ * @param src 원본 문자열
+ * @param srclen 원본 문자열 길이
+ * @return 변환한 버퍼 메모리
+ * @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
+*/
+QSAPI uchar2* qn_u8to16_dup(const char* src, size_t srclen);
+/**
+ * @brief ucs4 -> utf8로 변환하고 버퍼 반환
+ * @param src 원본 문자열
+ * @param srclen 원본 문자열 길이
+ * @return 변환한 버퍼 메모리
+ * @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
+*/
+QSAPI char* qn_u32to8_dup(const uchar4* src, size_t srclen);
+/**
+ * @brief utf16 -> utf8로 변환하고 버퍼 반환
+ * @param src 원본 문자열
+ * @param srclen 원본 문자열 길이
+ * @return 변환한 버퍼 메모리
+ * @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
+*/
+QSAPI char* qn_u16to8_dup(const uchar2* src, size_t srclen);
+/**
+ * @brief utf16 -> ucs4로 변환하고 버퍼 반환
+ * @param src 원본 문자열
+ * @param srclen 원본 문자열 길이
+ * @return 변환한 버퍼 메모리
+ * @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
+*/
+QSAPI uchar4* qn_u16to32_dup(const uchar2* src, size_t srclen);
+/**
+ * @brief ucs4 -> utf16으로 변환하고 버퍼 반환
+ * @param src 원본 문자열
+ * @param srclen 원본 문자열 길이
+ * @return 변환한 버퍼 메모리
+ * @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
+*/
+QSAPI uchar2* qn_u32to16_dup(const uchar4* src, size_t srclen);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1215,6 +1342,8 @@ QSAPI void qn_timer_set_cut(QnTimer* self, double cut);
 typedef struct QnDir					QnDir;
 /** @brief 파일 */
 typedef struct QnFile					QnFile;
+/** @brief 모듈 */
+typedef struct QnModule					QnModule;
 
 /** @brief 파일 정보 */
 typedef struct QnFileInfo				QnFileInfo;
@@ -1462,6 +1591,54 @@ QSAPI QnDir* qn_dir_new_l(const wchar* path);
  * @retval NULL 문제가 있거나 실패했다
  */
 QSAPI const wchar_t* qn_dir_read_l(QnDir* self);
+/**
+ * @brief 프로그램 기본 패스를 얻는다
+ * @return 기본 패스
+ * @warning 반환 값은 qn_free 함수로 해제해야한다
+*/
+QSAPI char* qn_dir_base_path(void);
+
+// module
+
+/**
+ * @brief 프로그램을 모듈로 얻는다
+ * @return 프로그람 자체 모듈
+*/
+QSAPI QnModule* qn_mod_self(void);
+/**
+ * @brief 모듈을 연다
+ * @param filename 파일 이름
+ * @param flags 플래그. 사용하지 않는다 0으로
+ * @return 만들어진 모듈
+*/
+QSAPI QnModule* qn_mod_open(const char* filename, int flags);
+/**
+ * @brief 모듈 사용을 그만한다
+ * @param self 모듈
+ * @return 성공적으로 언로드하면 참을 반환
+ * @details 모듈은 참조 방식이다
+ * @see qn_mod_ref
+*/
+QSAPI bool qn_mod_unload(QnModule* self);
+/**
+ * @brief 함수를 읽는다
+ * @param self 모듈
+ * @param name 읽을 함수 이름
+ * @return 함수 포인터
+*/
+QSAPI void* qn_mod_func(QnModule* self, const char* name);
+/**
+ * @brief 모듈 오류 메시지를 얻는다
+ * @return 모듈 오류 메시지
+ * @details 모듈 관련 함수가 NULL, false 와 같은 실패가 리턴할 경우 이 함수로 오류를 확인할 수 있다
+*/
+QSAPI const char* qn_mod_error(void);
+/**
+ * @brief 모듈의 참조값을 얻는다
+ * @param self 모듈
+ * @return 모듈의 참조값
+*/
+QSAPI int qn_mod_ref(QnModule* self);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1875,13 +2052,13 @@ QSAPI bool qn_mltag_contains_arg(QnMlTag* ptr, const char* name);
  * @param[in]	func	콜백 함수
  * @param	userdata		콜백 데이터
  */
-QSAPI void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, const char* name, const char* data), void* userdata);
+QSAPI void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, const char** name, const char** data), void* userdata);
 /**
  * @brief 인수에 대해 LoopEach 연산을 수행한다
  * @param[in]	ptr	MlTag 개체
  * @param[in]	func	콜백 함수
  */
-QSAPI void qn_mltag_loopeach_arg(QnMlTag* ptr, void(*func)(const char* name, const char* data));
+QSAPI void qn_mltag_loopeach_arg(QnMlTag* ptr, void(*func)(const char** name, const char** data));
 
 /**
  * @brief 인수를 추가한다
@@ -1905,9 +2082,9 @@ QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* name);
 // thread
 
 #if defined _MSC_VER
-#define qn_barrier()		_ReadWriteBarrier()
+#define qn_barrier()		_ReadWriteBarrier()				/** @brief 메모리 바리어 */
 #if defined _M_IX86 || defined _M_X64
-#define qn_pause()			_mm_pause()
+#define qn_pause()			_mm_pause()						/** @brief CPU 포즈 */
 #elif defined _M_ARM || defined _M_ARM64
 #define qn_pause()			_yield()
 #endif
@@ -1928,31 +2105,126 @@ QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* name);
 #error unknown compiler
 #endif
 
-/** @brief spin lock */
-typedef volatile int		QnSpinLock;
+typedef volatile int		QnSpinLock;						/** @brief 스핀락 */
+typedef void				QnTls;							/** @brief TLS */
+typedef struct QnMutex		QnMutex;						/** @brief 뮤텍스 */
+typedef struct QnCond		QnCond;							/** @brief 컨디션 */
+typedef struct QnSem		QnSem;							/** @brief 세마포어 */
+typedef struct QnThread		QnThread;						/** @brief 스레드 */
+typedef void* (*QnThreadCallback)(void*);					/** @brief 스레드 콜백 */
+
 
 /**
  * @brief 스핀락을 걸어본다
  * @param lock 스핀락
  * @return 걸렸으면 참
 */
-QSAPI bool qn_spinlock_try(QnSpinLock* lock);
+QSAPI bool qn_spin_try(QnSpinLock* lock);
 /**
  * @brief 스핀락을 건다
  * @param lock 스핀락
  * @returns 스핀락이 들어갈 때까지 걸린 횟수
  * @note 걸릴 때까지 대기한다
 */
-QSAPI size_t qn_spinlock_enter(QnSpinLock* lock);
+QSAPI size_t qn_spin_enter(QnSpinLock* lock);
 /**
  * @brief 스핀락을 푼다
  * @param lock 스핀락
 */
-QSAPI void qn_spinlock_leave(QnSpinLock* lock);
+QSAPI void qn_spin_leave(QnSpinLock* lock);
+
+/** @brief 스핀락 들어간다 */
+#define QN_LOCK(sp)			qn_spin_enter(&sp)
+/** @brief 스핀락 나온다 */
+#define QN_UNLOCK(sp)		qn_spin_leave(&sp);
 
 
-/** @brief TLS */
-typedef void*				QnTls;
+/** @brief 스레드 */
+struct QnThread
+{
+	BOOL				canwait;
+
+	int					busy;
+	int					stack_size;
+
+	QnThreadCallback	cb_func;
+	void*				cb_data;
+	void*				cb_ret;
+};
+
+/**
+ * @brief 현재 스레드를 얻는다
+ * @return 현재 스레드 포인터
+*/
+QSAPI QnThread* qn_thread_self(void);
+/**
+ * @brief 스레드를 만든다
+ * @param func 스레드 콜백 함수
+ * @param data 콜백 데이터
+ * @param stack_size 스택 크기 (보통 0을 넣어도 무방)
+ * @param busy 우선순위
+ * @return 만들어진 스레드
+ *
+ * | busy | 우선순위  |
+ * | ----:|:-------- |
+ * | -2   | 아주 낮음 |
+ * | -1   | 낮음     |
+ * | 0    | 보통     |
+ * | 1    | 높음     |
+ * | 2    | 아주 높음 |
+*/
+QSAPI QnThread* qn_thread_new(QnThreadCallback func, void* data, uint stack_size, int busy);
+/**
+ * @brief 스레드를 제거한다. 실행 중이면 끝날 때 까지 대기한다
+ * @param self 스레드
+*/
+QSAPI void qn_thread_delete(QnThread* self);
+/**
+ * @brief 스레드를 바로 실행한다
+ * @param name 스레드 이름
+ * @param func 스레드 콜백 함수
+ * @param data 콜백 데이터
+ * @param stack_size 스택 크기 (보통 0을 넣어도 된다)
+ * @param busy 우선 순위
+ * @return 성공적으로 실행했으면 참
+ * @see qn_thread_new qn_thread_start
+*/
+QSAPI bool qn_thread_once(const char* name, QnThreadCallback func, void* data, uint stack_size, int busy);
+/**
+ * @brief 스레드를 실행한다
+ * @param self 스레드
+ * @param name 스레드 이름
+ * @return 성공적으로 실행했으면 참
+ * @see qn_thread_new
+*/
+QSAPI bool qn_thread_start(QnThread* self, const char* name);
+/**
+ * @brief 스레드가 끝날 때까지 대기한다
+ * @param self 스레드
+ * @return 스레드가 보내온 반환값
+*/
+QSAPI void* qn_thread_wait(QnThread* self);
+/**
+ * @brief 스레드를 끝낸다. 이 함수는 스레드 안에서 사용해야한다
+ * @param ret 스레드 반환 값
+ * @warning 메인 스레드에서 사용하면 안된다
+*/
+QSAPI void qn_thread_exit(void* ret);
+/**
+ * @brief 스레드 우선 순위를 얻는다
+ * @param self 스레드
+ * @return 우선 순위 (-2 ~ 2)
+*/
+QSAPI int qn_thread_get_busy(QnThread* self);
+/**
+ * @brief 스레드 우선 순위를 설정한다
+ * @param self 스레드
+ * @param busy 우선 순위 (-2 ~ 2)
+ * @return 성공하면 참
+*/
+QSAPI bool qn_thread_set_busy(QnThread* self, int busy);
+
+// tls
 
 /**
  * @brief TLS를 만든다
@@ -1973,67 +2245,124 @@ QSAPI void qn_tlsset(QnTls* tls, void* data);
 */
 QSAPI void* qn_tlsget(QnTls* tls);
 
+// mutex
 
-/** @brief 스레드 콜백 */
-typedef void* (*QnThreadCallback)(void*);
-
-/** @brief 스레드 */
-typedef struct QnThread		QnThread;
-struct QnThread
-{
-	bool				canwait;
-	bool				managed;
-	ushort				unused;
-
-	int					busy;
-	int					stack_size;
-
-	QnThreadCallback	cb_func;
-	void*				cb_data;
-	void*				cb_ret;
-};
-
-QSAPI QnThread* qn_thread_self(void);
-QSAPI QnThread* qn_thread_new(QnThreadCallback func, void* data, uint stack_size, int busy);
-QSAPI void qn_thread_delete(QnThread* self);
-QSAPI bool qn_thread_once(const char* name, QnThreadCallback func, void* data, uint stack_size, int busy);
-QSAPI bool qn_thread_start(QnThread* self, const char* name);
-QSAPI void* qn_thread_wait(QnThread* self);
-QSAPI void qn_thread_exit(void* ret);
-QSAPI int qn_thread_get_busy(QnThread* self);
-QSAPI bool qn_thread_set_busy(QnThread* self, int busy);
-
-
-/** @brief 뮤텍스 */
-typedef struct QnMutex		QnMutex;
-
+/**
+ * @brief 뮤텍스를 만든다. 이 뮤텍스는 RECURSIVE 타입이다
+ * @return 만들어진 뮤텍스
+*/
 QSAPI QnMutex* qn_mutex_new(void);
+/**
+ * @brief 뮤텍스를 삭제한다
+ * @param self 뮤텍스
+*/
 QSAPI void qn_mutex_delete(QnMutex* self);
+/**
+ * @brief 뮤텍스를 잠궈 본다
+ * @param self 뮤텍스
+ * @return 잠금 상태
+ * @retval true 잠겼다
+ * @retval false 잠기지 않았다
+*/
 QSAPI bool qn_mutex_try(QnMutex* self);
+/**
+ * @brief 뮤텍스를 잠근다. 다른 스레드에서 잠겨있으면 잠글 수 있을 때까지 대기한다
+ * @param self 뮤텍스
+*/
 QSAPI void qn_mutex_enter(QnMutex* self);
+/**
+ * @brief 뮤텍스 잠김을 푼다
+ * @param self 뮤텍스
+*/
 QSAPI void qn_mutex_leave(QnMutex* self);
 
+// condition
 
-/** @brief 컨디션 */
-typedef struct QnCond		QnCond;
-
+/**
+ * @brief 조건을 만든다
+ * @return 만들어진 조건
+*/
 QSAPI QnCond* qn_cond_new(void);
+/**
+ * @brief 조건을 삭제한다
+ * @param self 조건
+*/
 QSAPI void qn_cond_delete(QnCond* self);
+/**
+ * @brief 조건에 신호를 1번만 보낸다
+ * @param self 조건
+ * @note 가장 최근 수행한 스레드가 신호를 받는다
+*/
 QSAPI void qn_cond_signal(QnCond* self);
+/**
+ * @brief 모든 스레드에 신호를 보낸다.
+ * @param self 조건
+*/
 QSAPI void qn_cond_broadcast(QnCond* self);
+/**
+ * @brief 각자 스레드가 조건에 해당하는지 기다린다
+ * @param self 조건
+ * @param lock 조건을 잠글 뮤텍스
+ * @param milliseconds 기다릴 시간 (밀리초)
+ * @return 조건 대기 및 시간 제한을 반환
+ * @retval true 조건이 들어왔다
+ * @retval false 조건이 들어오지 않았고. 시간 제한이 됐다
+*/
 QSAPI bool qn_cond_wait_for(QnCond* self, QnMutex* lock, uint milliseconds);
+/**
+ * @brief 각자 스레드가 조건을 기다린다
+ * @param self 조건
+ * @param lock 조건을 잠글 뮤텍스
+*/
 QSAPI void qn_cond_wait(QnCond* self, QnMutex* lock);
 
+// semaphore
 
-/** @brief 세마포어 */
-typedef struct QnSem		QnSem;
-
+/**
+ * @brief 세마포어를 만든다
+ * @param initial 초기값
+ * @return 만들어진 세마포어
+*/
 QSAPI QnSem* qn_sem_new(int initial);
+/**
+ * @brief 세마포어를 삭제한다
+ * @param self 세마포어
+*/
 QSAPI void qn_sem_delete(QnSem* self);
+/**
+ * @brief 세마포어를 지정한 시간 만큼 대기해 본다
+ * @param self 세마포어
+ * @param milliseconds 대기할 시간 (밀리초)
+ * @return 대기 결과
+ * @retval true 신호가 떴다
+ * @retval false 신호가 오지 않았고 시간 제한을 넘었다
+*/
 QSAPI bool qn_sem_wait_for(QnSem* self, uint milliseconds);
+/**
+ * @brief 세마포어를 대기한다
+ * @param self 세마포어
+ * @return 대기 결과. 다만 별로 신경 쓰지 않아도 좋다
+*/
 QSAPI bool qn_sem_wait(QnSem* self);
+/**
+ * @brief 세마포어가 기다릴 수 있는지 조시한다
+ * @param self 세마포어
+ * @return 기다릴 수 있는지 여부
+ * @retval true 기다릴 수 있다
+ * @retval false 기다릴 수 없다
+*/
 QSAPI bool qn_sem_try(QnSem* self);
+/**
+ * @brief 세마포어 갯수를 반환한다
+ * @param self 세마포어
+ * @return 세마포어 갯수
+*/
 QSAPI int qn_sem_count(QnSem* self);
+/**
+ * @brief 세마포어를 알린다
+ * @param self 세마포어
+ * @return 성공하면 참
+*/
 QSAPI bool qn_sem_post(QnSem* self);
 
 

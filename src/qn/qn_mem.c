@@ -2,6 +2,7 @@
 #include "qs_qn.h"
 #ifdef _MSC_VER
 #pragma warning(push)
+#pragma warning(disable:4702)
 #pragma warning(disable:4820)
 #include "zlib/zlib.h"
 #pragma warning(pop)
@@ -9,6 +10,10 @@
 #include <zlib.h>
 #endif
 #include "qn_mem.h"
+
+#ifdef _MSC_VER
+#pragma warning(disable:4702)
+#endif
 
 //
 void* qn_memenc(void* dest, const void* src, size_t size)
@@ -163,14 +168,14 @@ static struct QnMemProof
 } _qn_mp = { NULL, };  // NOLINT
 
 #ifndef _QN_NO_THREAD_
-#define MP_LOCK				qn_spinlock_enter(&_qn_mp.lock)
-#define MP_UNLOCK			qn_spinlock_leave(&_qn_mp.lock)
+#define MP_LOCK				qn_spin_enter(&_qn_mp.lock)
+#define MP_UNLOCK			qn_spin_leave(&_qn_mp.lock)
 #else
 #define MP_LOCK
 #define MP_UNLOCK
 #endif
 
-void qn_mp_init(void)
+void qn_mpf_init(void)
 {
 #ifdef USE_MP_LOCK
 	mtx_init(&_qn_mp.lock, mtx_plaine | mtx_recursive);
@@ -183,7 +188,7 @@ void qn_mp_init(void)
 #endif
 }
 
-static void qn_mp_clear(void)
+static void qn_mpf_clear(void)
 {
 	if (_qn_mp.count == 0 && _qn_mp.frst == NULL && _qn_mp.last == NULL)
 		return;
@@ -220,9 +225,9 @@ static void qn_mp_clear(void)
 		qn_debug_outputf(true, "MEMORY PROFILER", "total block size: %.2f %cbytes", size, usage);
 }
 
-void qn_mp_dispose(void)
+void qn_mpf_dispose(void)
 {
-	qn_mp_clear();
+	qn_mpf_clear();
 
 #if _QN_WINDOWS_
 	if (_qn_mp.heap)

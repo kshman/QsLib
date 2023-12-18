@@ -1,5 +1,5 @@
 ﻿/*
- * QsLib <CONTAINER Layer>
+ * QsLib [CONTAINER Layer]
  * Made by kim 2004-2024
  *
  * 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
@@ -8,7 +8,7 @@
  /**
   * @file qs_math.h
   *
-  * <CONTAINER Layer>는 C 매크로 및 인라인으로 컨테이너 구현을 목표로 합니다.
+  * [CONTAINER Layer]는 C 매크로 및 인라인으로 컨테이너 구현을 목표로 합니다.
   */
 #pragma once
 
@@ -31,20 +31,20 @@ QN_EXTC_BEGIN
  * @param type 배열 요소 타입
  */
 #define QN_DECL_ARR(name,type)\
-	typedef struct _##name name;\
-	typedef type _##name##Type;\
-	struct _##name { size_t count; size_t capa; type* data; };
-	QN_DECL_ARR(QnPtrArr, void*)								/** @brief 포인터 배열 */
-	QN_DECL_ARR(QnByteArr, byte)								/** @brief 바이트 배열 */
-	QN_DECL_ARR(QnIntArr, int)									/** @brief 정수 배열 */
-	QN_DECL_ARR(QnAnyArr, any_t)								/** @brief any_t 배열 */
+	typedef struct name name;\
+	typedef type name##Type;\
+	struct name { size_t count; size_t capa; type* data; };
+QN_DECL_ARR(QnPtrArr, void*)								/** @brief 포인터 배열 */
+QN_DECL_ARR(QnByteArr, byte)								/** @brief 바이트 배열 */
+QN_DECL_ARR(QnIntArr, int)									/** @brief 정수 배열 */
+QN_DECL_ARR(QnAnyArr, any_t)								/** @brief any_t 배열 */
 
 #define qn_arr_nth(p,n)					(((p)->data)[(size_t)(n)])
 #define qn_arr_inv(p,n)					(((p)->data)[((p)->count - 1 - (size_t)(n))])
 #define qn_arr_count(p)					((p)->count)
 #define qn_arr_capacity(p)				((p)->capa)
 #define qn_arr_data(p)					((p)->data)
-#define qn_arr_sizeof(name)				(sizeof(_##name##Type))
+#define qn_arr_sizeof(name)				(sizeof(name##Type))
 #define qn_arr_is_empty(p)				((p)->count == 0)
 #define qn_arr_is_have(p)				((p)->count != 0)
 
@@ -92,7 +92,7 @@ QN_EXTC_BEGIN
 	QN_STMT_BEGIN{\
 		qn_assert((size_t)(n)<(p)->count, "remove index overflow!");\
 		{\
-			_##name##Type* __t=&qn_arr_nth(p,n);\
+			name##Type* __t=&qn_arr_nth(p,n);\
 			if ((size_t)(n)!=(p)->count-1)\
 				memmove(__t, __t+1, qn_arr_sizeof(name)*((p)->count-((size_t)(n)+1)));\
 			(p)->count--;\
@@ -168,7 +168,7 @@ QN_EXTC_BEGIN
 		{\
 			if (qn_arr_nth(p,__i)==(item))\
 			{\
-				_##name##Type* __t=&qn_arr_nth(p,__i);\
+				name##Type* __t=&qn_arr_nth(p,__i);\
 				memmove(__t, __t+1, qn_arr_sizeof(name)*(__cnt-(__i+1)));\
 				__cnt--;\
 				break;\
@@ -182,7 +182,7 @@ QN_EXTC_BEGIN
 		size_t __i, __cnt=(p)->count;\
 		for (__i=0; __i<__cnt; __i++)\
 		{\
-			_##name##Type* __t=&qn_arr_nth(p,__i);\
+			name##Type* __t=&qn_arr_nth(p,__i);\
 			if (func_ptr_item(__t,(item)))\
 			{\
 				memmove(__t, __t+1, qn_arr_sizeof(name)*(__cnt-(__i+1)));\
@@ -304,9 +304,9 @@ QN_EXTC_BEGIN
  * @param type 배열 요소 타입
  */
 #define QN_DECL_CTNR(name,type)\
-	typedef struct _##name name;\
-	typedef type _##name##Type;\
-	struct _##name { size_t count; type* data; };
+	typedef struct name name;\
+	typedef type name##Type;\
+	struct name { size_t count; type* data; };
 QN_DECL_CTNR(QnPtrCtnr, void*)								/** @brief 포인터 배열 */
 QN_DECL_CTNR(QnByteCtn, byte)								/** @brief 바이트 배열 */
 QN_DECL_CTNR(QnIntCtn, int)									/** @brief 정수 배열 */
@@ -330,7 +330,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 	QN_STMT_BEGIN{\
 		if ((size_t)(cnt)>0)\
 		{\
-			(p)->data=qn_alloc((size_t)(cnt), _##name##Type);\
+			(p)->data=qn_alloc((size_t)(cnt), name##Type);\
 			(p)->count=(size_t)(cnt);\
 		}\
 		else\
@@ -344,7 +344,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 	QN_STMT_BEGIN{\
 		if ((size_t)(cnt)>0)\
 		{\
-			(p)->data=qn_alloc_zero((size_t)(cnt), _##name##Type);\
+			(p)->data=qn_alloc_zero((size_t)(cnt), name##Type);\
 			(p)->count=(size_t)(cnt);\
 		}\
 		else\
@@ -370,7 +370,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 	QN_STMT_BEGIN{\
 		if ((p)->count!=(size_t)(cnt))\
 		{\
-			(p)->data=qn_realloc((p)->data, (size_t)(cnt), _##name##Type);\
+			(p)->data=qn_realloc((p)->data, (size_t)(cnt), name##Type);\
 			(p)->count=(size_t)(cnt);\
 		}\
 	}QN_STMT_END
@@ -379,7 +379,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 	QN_STMT_BEGIN{\
 		if ((size_t)(cnt)!=0)\
 		{\
-			(p)->data=qn_realloc((p)->data, (p)->count+(size_t)(cnt), _##name##Type);\
+			(p)->data=qn_realloc((p)->data, (p)->count+(size_t)(cnt), name##Type);\
 			(p)->count+=(size_t)(cnt);\
 		}\
 	}QN_STMT_END
@@ -391,7 +391,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 	}QN_STMT_END
 
 #define qn_ctnr_zero(name, p)\
-	memset((p)->data, 0, (p)->count*sizeof(_##name##Type))
+	memset((p)->data, 0, (p)->count*sizeof(name##Type))
 
 #define qn_ctnr_contains(name,p,item,ret)\
 	QN_STMT_BEGIN{\
@@ -451,19 +451,19 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 #define qn_pctnr_loopeach(p, func)		qn_ctnr_loopeach(qnPtrCtnr, (qnPtrCtnr*)(p), func)
 
 
-	//////////////////////////////////////////////////////////////////////////
-	// list
+//////////////////////////////////////////////////////////////////////////
+// list
 
-	/**
-	 * @brief 이중 연결 리스트 정의
-	 * @param name 리스트 이름
-	 * @param type 리스트 요소 타입
-	 */
+/**
+ * @brief 이중 연결 리스트 정의
+ * @param name 리스트 이름
+ * @param type 리스트 요소 타입
+ */
 #define QN_DECL_LIST(name,type)\
-	typedef struct _##name name;\
-	typedef type _##name##Type;\
-	struct _##name##Node { struct _##name##Node *next, *prev; type data; };\
-	struct _##name { struct _##name##Node *frst, *last; size_t count; };
+	typedef struct name name;\
+	typedef type name##Type;\
+	struct name##Node { struct name##Node *next, *prev; type data; };\
+	struct name { struct name##Node *frst, *last; size_t count; };
 
 #define qn_list_count(p)					((p)->count)
 #define qn_list_node_first(p)				((p)->last)
@@ -482,7 +482,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_disp(name,p)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node *__node, *__next;\
+		struct name##Node *__node, *__next;\
 		for (__node=(p)->frst; __node; __node=__next)\
 		{\
 			__next=__node->next;\
@@ -499,7 +499,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_remove_node(name,p,node)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node=(node);\
+		struct name##Node* __node=(node);\
 		if (__node)\
 		{\
 			if (__node->next)\
@@ -527,10 +527,10 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 #define qn_list_remove_last(name,p)\
 	qn_list_remove_node(name, p, (p)->frst)
 
-	 // value type
+// value type
 #define qn_list_disp_cb(name,p,func_user_data,userdata)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node *__node, *__next;\
+		struct name##Node *__node, *__next;\
 		for (__node=(p)->frst; __node; __node=__next)\
 		{\
 			__next=__node->next;\
@@ -541,7 +541,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_append(name,p,item)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node=qn_alloc_1(struct _##name##Node);\
+		struct name##Node* __node=qn_alloc_1(struct name##Node);\
 		if (__node) {\
 			__node->data=item;\
 			if ((p)->frst)\
@@ -557,7 +557,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_prepend(name,p,item)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node=qn_alloc_1(struct _##name##Node);\
+		struct name##Node* __node=qn_alloc_1(struct name##Node);\
 		if (__node) {\
 			__node->data=item;\
 			if ((p)->last)\
@@ -573,7 +573,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_remove(name,p,item)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
+		struct name##Node* __node;\
 		for (__node=(p)->frst; __node; __node=__node->next)\
 		{\
 			if (__node->data==(item))\
@@ -586,7 +586,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_remove_cmp(name,p,func_data_item,item)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
+		struct name##Node* __node;\
 		for (__node=(p)->frst; __node; __node=__node->next)\
 		{\
 			if (func_data_pitem(__node->data, item))\
@@ -599,7 +599,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_contains(name,p,item,retnode)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
+		struct name##Node* __node;\
 		for (*(retnode)=NULL, __node=(p)->frst; __node; __node=__node->next)\
 		{\
 			if (__node->data==(item))\
@@ -612,7 +612,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_find(name,p,predicate_user_data,userdata,retnode)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
+		struct name##Node* __node;\
 		for (*(retnode)=NULL, __node=(p)->frst; __node; __node=__node->next)\
 		{\
 			if (predicate_user_data(userdata, __node->data))\
@@ -625,14 +625,14 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_foreach(name,p,func_user_data,userdata)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
+		struct name##Node* __node;\
 		for (__node=(p)->last; __node; __node=__node->prev)\
 			func_user_data(userdata, __node->data);\
 	}QN_STMT_END
 
 #define qn_list_loopeach(name,p,func_data)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
+		struct name##Node* __node;\
 		for (__node=(p)->last; __node; __node=__node->prev)\
 			func_data(__node->data);\
 	}QN_STMT_END
@@ -640,7 +640,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 // reference type
 #define qn_list_ref_disp_cb(name,p,func_user_pdata,userdata)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node *__node, *__next;\
+		struct name##Node *__node, *__next;\
 		for (__node=(p)->frst; __node; __node=__next)\
 		{\
 			__next=__node->next;\
@@ -651,9 +651,9 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_ref_append(name,p,pitem)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node=qn_alloc_1(struct _##name##Node);\
+		struct name##Node* __node=qn_alloc_1(struct name##Node);\
 		if (__node){\
-			memcpy(&__node->data, pitem, sizeof(_##name##Type));\
+			memcpy(&__node->data, pitem, sizeof(name##Type));\
 			if ((p)->frst)\
 				(p)->frst->prev=__node;\
 			else\
@@ -667,9 +667,9 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_ref_prepend(name,p,pitem)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node=qn_alloc_1(struct _##name##Node);\
+		struct name##Node* __node=qn_alloc_1(struct name##Node);\
 		if (__node){\
-			memcpy(&__node->data, pitem, sizeof(_##name##Type));\
+			memcpy(&__node->data, pitem, sizeof(name##Type));\
 			if ((p)->last)\
 				(p)->last->next=__node;\
 			else\
@@ -683,7 +683,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_ref_remove(name,p,pitem)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
+		struct name##Node* __node;\
 		for (__node=(p)->frst; __node; __node=__node->next)\
 		{\
 			if (memcmp(&__node->data, pitem)==0)\
@@ -696,7 +696,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_ref_remove_cmp(name,p,func_pdata_pitem,pitem)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __rcnode;\
+		struct name##Node* __rcnode;\
 		for (__rcnode=(p)->frst; __rcnode; __rcnode=__rcnode->next)\
 		{\
 			if (func_pdata_pitem(&__rcnode->data, pitem))\
@@ -709,7 +709,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_ref_contains(name,p,pitem,retnode)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
+		struct name##Node* __node;\
 		for (*(retnode)=NULL, __node=(p)->frst; __node; __node=__node->next)\
 		{\
 			if (memcmp(&__node->data, pitem)==0)\
@@ -722,7 +722,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_ref_find(name,p,predicate_user_pdata,userdata,retnode)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
+		struct name##Node* __node;\
 		for (*(retnode)=NULL, __node=(p)->frst; __node; __node=__node->next)\
 		{\
 			if (predicate_user_pdata(userdata, &__node->data))\
@@ -735,14 +735,14 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_list_ref_foreach(name,p,func_user_pdata,userdata)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
+		struct name##Node* __node;\
 		for (__node=(p)->last; __node; __node=__node->prev)\
 			func_user_pdata(userdata, &__node->data);\
 	}QN_STMT_END
 
 #define qn_list_ref_loopeach(name,p,func_pdata)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
+		struct name##Node* __node;\
 		for (__node=(p)->last; __node; __node=__node->prev)\
 			func_pdata(&__node->data);\
 	}QN_STMT_END
@@ -757,10 +757,10 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
  * @param type 노드 리스트 요소 타입
  */
 #define QN_DECL_NODELIST(name,type)\
-	typedef struct _##name name;\
-	typedef type _##name##Type;\
-	struct _##name { type* frst; type* last; size_t count; };
-	QN_DECL_LIST(qnPtrList, void*)
+	typedef struct name name;\
+	typedef type name##Type;\
+	struct name { type* frst; type* last; size_t count; };
+QN_DECL_LIST(QnPtrList, void*)
 
 #define qn_nodelist_count(p)			((p)->count)
 #define qn_nodelist_first(p)			((p)->last)
@@ -777,7 +777,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_nodelist_disp(name,p)\
 	QN_STMT_BEGIN{\
-		_##name##Type *__node, *__next;\
+		name##Type *__node, *__next;\
 		for (__node=(p)->frst; __node; __node=__next)\
 		{\
 			__next=__node->next;\
@@ -787,7 +787,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_nodelist_disp_cb(name,p,func1)\
 	QN_STMT_BEGIN{\
-		_##name##Type *__node, *__next;\
+		name##Type *__node, *__next;\
 		for (__node=(p)->frst; __node; __node=__next)\
 		{\
 			__next=__node->next;\
@@ -837,7 +837,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 	QN_STMT_BEGIN{\
 		if (item)\
 		{\
-			_##name##Type* __node=(name##Type*)(item);\
+			name##Type* __node=(name##Type*)(item);\
 			if (__node->next)\
 				__node->next->prev=__node->prev;\
 			else\
@@ -867,7 +867,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 	QN_STMT_BEGIN{\
 		if (item)\
 		{\
-			_##name##Type* __node=(name##Type*)(item);\
+			name##Type* __node=(name##Type*)(item);\
 			if (__node->next)\
 				__node->next->prev=__node->prev;\
 			else\
@@ -889,7 +889,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_nodelist_contains(name,p,item,retbool)\
 	QN_STMT_BEGIN{\
-		_##name##Type* __node;\
+		name##Type* __node;\
 		for (*(retbool)=false, __node=(p)->frst; __node; __node=__node->next)\
 		{\
 			if (__node==(item))\
@@ -902,7 +902,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_nodelist_find(name,p,predicate_user_node,userdata,retbool)\
 	QN_STMT_BEGIN{\
-		_##name##Type* __node;\
+		name##Type* __node;\
 		for (*(retbool)=false, __node=(p)->last; __node; __node=__node->prev)\
 		{\
 			if (predicate_user_node(userdata,__node))\
@@ -915,14 +915,14 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 
 #define qn_nodelist_foreach(name,p,func_user_node,userdata)\
 	QN_STMT_BEGIN{\
-		_##name##Type* __node;\
+		name##Type* __node;\
 		for (__node=(p)->last; __node; __node=__node->prev)\
 			func_user_node(userdata,__node);\
 	}QN_STMT_END
 
 #define qn_nodelist_loopeach(name,p,func_node)\
 	QN_STMT_BEGIN{\
-		_##name##Type* __node;\
+		name##Type* __node;\
 		for (__node=(p)->last; __node; __node=__node->prev)\
 			func_node(__node);\
 	}QN_STMT_END
@@ -935,31 +935,31 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 #define qn_plist_is_have(p)				qn_list_is_have(p)
 #define qn_plist_is_empty(p)			qn_list_is_empty(p)
 
-#define qn_plist_init(p)				qn_list_init(qnPtrList, p)
-#define qn_plist_disp(p)				qn_list_disp(qnPtrList, p)
+#define qn_plist_init(p)				qn_list_init(QnPtrList, p)
+#define qn_plist_disp(p)				qn_list_disp(QnPtrList, p)
 #define qn_plist_disp_cb(p,func_user_data,userdata)\
-										qn_list_disp_cb(qnPtrList, p, func_user_data, userdata)
-#define qn_plist_append(p,item)			qn_list_append(qnPtrList, p, item)
-#define qn_plist_prepend(p,item)		qn_list_prepend(qnPtrList, p, item)
-#define qn_plist_clear(p)				qn_list_clear(qnPtrList, p)
-#define qn_plist_remove(p,item)			qn_list_remove(qnPtrList, p, item)
-#define qn_plist_remove_first(p)		qn_list_remove_first(qnPtrList, p)
-#define qn_plist_remove_last(p)			qn_list_remove_last(qnPtrList, p)
+										qn_list_disp_cb(QnPtrList, p, func_user_data, userdata)
+#define qn_plist_append(p,item)			qn_list_append(QnPtrList, p, item)
+#define qn_plist_prepend(p,item)		qn_list_prepend(QnPtrList, p, item)
+#define qn_plist_clear(p)				qn_list_clear(QnPtrList, p)
+#define qn_plist_remove(p,item)			qn_list_remove(QnPtrList, p, item)
+#define qn_plist_remove_first(p)		qn_list_remove_first(QnPtrList, p)
+#define qn_plist_remove_last(p)			qn_list_remove_last(QnPtrList, p)
 #define qn_plist_foreach(p,func_user_data,userdata)\
-										qn_list_foreach(qnPtrList, p, func_user_data, userdata)
-#define qn_plist_loopeach(p,func_data)	qn_list_loopeach(qnPtrList, p, func_data)
+										qn_list_foreach(QnPtrList, p, func_user_data, userdata)
+#define qn_plist_loopeach(p,func_data)	qn_list_loopeach(QnPtrList, p, func_data)
 
-	QN_INLINE bool qn_plist_contains(const qnPtrList* p, const void* item)
+QN_INLINE bool qn_plist_contains(const QnPtrList* p, const void* item)
 {
-	const struct _qnPtrListNode* node = NULL;
-	qn_list_contains(qnPtrList, p, item, &node);
+	const struct QnPtrListNode* node = NULL;
+	qn_list_contains(QnPtrList, p, item, &node);
 	return node != NULL;
 }
 
-QN_INLINE bool qn_plist_find(const qnPtrList* p, bool (*pred)(void*, void*), void* userdata)
+QN_INLINE bool qn_plist_find(const QnPtrList* p, bool (*pred)(void*, void*), void* userdata)
 {
-	const struct _qnPtrListNode* node = NULL;
-	qn_list_find(qnPtrList, p, pred, userdata, &node);
+	const struct QnPtrListNode* node = NULL;
+	qn_list_find(QnPtrList, p, pred, userdata, &node);
 	return node != NULL;
 }
 
@@ -973,10 +973,10 @@ QN_INLINE bool qn_plist_find(const qnPtrList* p, bool (*pred)(void*, void*), voi
  * @param type 단일 리스트 요소 타입
  */
 #define QN_DECL_SLIST(name,type)\
-	typedef struct _##name name;\
-	typedef type _##name##Type;\
-	struct _##name { struct _##name* next; type data; };
-QN_DECL_SLIST(qnPtrSlist, void*)
+	typedef struct name name;\
+	typedef type name##Type;\
+	struct name { struct name* next; type data; };
+QN_DECL_SLIST(QnPtrSlist, void*)
 
 #define qn_slist_last(p)				qn_inl_slist_last(p)
 #define qn_slist_nth(p,nth)				qn_inl_slist_nth(p, nth)
@@ -1291,7 +1291,7 @@ QN_DECL_SLIST(qnPtrSlist, void*)
 
 QN_INLINE void* qn_inl_slist_last(void* ptr)
 {
-	qnPtrSlist* p = (qnPtrSlist*)ptr;
+	QnPtrSlist* p = (QnPtrSlist*)ptr;
 	while (p->next)
 		p = p->next;
 	return p;
@@ -1299,7 +1299,7 @@ QN_INLINE void* qn_inl_slist_last(void* ptr)
 
 QN_INLINE void* qn_inl_slist_nth(void* ptr, size_t nth)
 {
-	qnPtrSlist* p = (qnPtrSlist*)ptr;
+	QnPtrSlist* p = (QnPtrSlist*)ptr;
 	while (nth-- > 0 && p)
 		p = p->next;
 	return (void*)p;
@@ -1307,7 +1307,7 @@ QN_INLINE void* qn_inl_slist_nth(void* ptr, size_t nth)
 
 QN_INLINE size_t qn_inl_slist_count(void* ptr)
 {
-	const qnPtrSlist* p = (qnPtrSlist*)ptr;
+	const QnPtrSlist* p = (QnPtrSlist*)ptr;
 	size_t n = 0;
 	while (p)
 	{
@@ -1322,21 +1322,21 @@ QN_INLINE size_t qn_inl_slist_count(void* ptr)
 #define qn_pslist_data(p, nth)			qn_slist_data(p, nth)
 #define qn_pslist_count(p)				qn_slist_count(p)
 
-QN_INLINE qnPtrSlist* qn_pslist_delete(qnPtrSlist* p)
+QN_INLINE QnPtrSlist* qn_pslist_delete(QnPtrSlist* p)
 {
-	qn_slist_delete(qnPtrSlist, p, &p);
+	qn_slist_delete(QnPtrSlist, p, &p);
 	return p;
 }
 
-QN_INLINE void qn_pslist_disp(qnPtrSlist* p, void (*func_1)(void*))
+QN_INLINE void qn_pslist_disp(QnPtrSlist* p, void (*func_1)(void*))
 {
 	if (!func_1)
 	{
-		qn_slist_disp(qnPtrSlist, p);
+		qn_slist_disp(QnPtrSlist, p);
 	}
 	else
 	{
-		for (qnPtrSlist* n; p; p = n)
+		for (QnPtrSlist* n; p; p = n)
 		{
 			n = p->next;
 			if (func_1)
@@ -1346,66 +1346,66 @@ QN_INLINE void qn_pslist_disp(qnPtrSlist* p, void (*func_1)(void*))
 	}
 }
 
-QN_INLINE qnPtrSlist* qn_pslist_concat(qnPtrSlist* p1, qnPtrSlist* p2)
+QN_INLINE QnPtrSlist* qn_pslist_concat(QnPtrSlist* p1, QnPtrSlist* p2)
 {
-	qn_slist_concat(qnPtrSlist, p1, p2, &p1);
+	qn_slist_concat(QnPtrSlist, p1, p2, &p1);
 	return p1;
 }
 
-QN_INLINE qnPtrSlist* qn_pslist_append(qnPtrSlist* p, void* item)
+QN_INLINE QnPtrSlist* qn_pslist_append(QnPtrSlist* p, void* item)
 {
-	qn_slist_append(qnPtrSlist, p, item, &p);
+	qn_slist_append(QnPtrSlist, p, item, &p);
 	return p;
 }
 
-QN_INLINE qnPtrSlist* qn_pslist_prepend(qnPtrSlist* p, void* item)
+QN_INLINE QnPtrSlist* qn_pslist_prepend(QnPtrSlist* p, void* item)
 {
-	qn_slist_prepend(qnPtrSlist, p, item, &p);
+	qn_slist_prepend(QnPtrSlist, p, item, &p);
 	return p;
 }
 
-QN_INLINE qnPtrSlist* qn_pslist_insert(qnPtrSlist* p, const qnPtrSlist* sib, void* item)
+QN_INLINE QnPtrSlist* qn_pslist_insert(QnPtrSlist* p, const QnPtrSlist* sib, void* item)
 {
-	qn_slist_insert(qnPtrSlist, p, sib, item, &p);
+	qn_slist_insert(QnPtrSlist, p, sib, item, &p);
 	return p;
 }
 
-QN_INLINE qnPtrSlist* qn_pslist_insert_nth(qnPtrSlist* p, int nth, void* item)
+QN_INLINE QnPtrSlist* qn_pslist_insert_nth(QnPtrSlist* p, int nth, void* item)
 {
-	qn_slist_insert_nth(qnPtrSlist, p, nth, item, &p);
+	qn_slist_insert_nth(QnPtrSlist, p, nth, item, &p);
 	return p;
 }
 
-QN_INLINE qnPtrSlist* qn_pslist_remove(qnPtrSlist* p, const void* item)
+QN_INLINE QnPtrSlist* qn_pslist_remove(QnPtrSlist* p, const void* item)
 {
-	qn_slist_remove(qnPtrSlist, p, item, &p);
+	qn_slist_remove(QnPtrSlist, p, item, &p);
 	return p;
 }
 
-QN_INLINE qnPtrSlist* qn_pslist_remove_link(qnPtrSlist* p, qnPtrSlist* link)
+QN_INLINE QnPtrSlist* qn_pslist_remove_link(QnPtrSlist* p, QnPtrSlist* link)
 {
-	qn_slist_remove_link(qnPtrSlist, p, link, &p);
+	qn_slist_remove_link(QnPtrSlist, p, link, &p);
 	return p;
 }
 
-QN_INLINE qnPtrSlist* qn_pslist_copy(const qnPtrSlist* p)
+QN_INLINE QnPtrSlist* qn_pslist_copy(const QnPtrSlist* p)
 {
-	qnPtrSlist* n = NULL;
-	qn_slist_copy(qnPtrSlist, p, &n);
+	QnPtrSlist* n = NULL;
+	qn_slist_copy(QnPtrSlist, p, &n);
 	return n;
 }
 
-QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, const void* item)
+QN_INLINE QnPtrSlist* qn_pslist_contains(QnPtrSlist* p, const void* item)
 {
-	qn_slist_contains(qnPtrSlist, p, item, &p);
+	qn_slist_contains(QnPtrSlist, p, item, &p);
 	return p;
 }
 
 #define qn_pslist_foreach(p,func_2,userdata)\
-	qn_slist_foreach(qnPtrSlist, p, func_2, userdata)
+	qn_slist_foreach(QnPtrSlist, p, func_2, userdata)
 
 #define qn_pslist_loopeach(p,func_1)\
-	qn_slist_loopeach(qnPtrSlist, p, func_1);
+	qn_slist_loopeach(QnPtrSlist, p, func_1);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1417,8 +1417,8 @@ QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, const void* item)
  * @param type 슬라이스 요소 타입
  */
 #define QN_DECL_SLICE(name, type)\
-	typedef struct _##name name;\
-	typedef type _##name##Type;\
+	typedef struct name name;\
+	typedef type name##Type;\
 	struct name { size_t max; size_t count; type* data; };
 
 #define qn_slice_nth(p,n)				(((p)->data)[(size_t)(n)])
@@ -1433,7 +1433,7 @@ QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, const void* item)
 #define qn_slice_test_init(name,p,_max)\
 	QN_STMT_BEGIN{\
 		qn_assert((p)->data==NULL && (p)->max==0 && (p)->count==0, "uninitialized slice memory.");\
-		(p)->data=qn_alloc(_max, _##name##Type);\
+		(p)->data=qn_alloc(_max, name##Type);\
 		(p)->max=_max;\
 	}QN_STMT_END
 
@@ -1441,7 +1441,7 @@ QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, const void* item)
 	QN_STMT_BEGIN{\
 		(p)->max=_max;\
 		(p)->count=0;\
-		(p)->data=qn_alloc((p)->max, _##name##Type);\
+		(p)->data=qn_alloc((p)->max, name##Type);\
 	}QN_STMT_END
 
 #define qn_slice_disp(name,p)\
@@ -1457,7 +1457,7 @@ QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, const void* item)
 	QN_STMT_BEGIN{\
 		if ((p)->count>(newmax))\
 			(p)->count=(newmax);\
-		(p)->data=qn_realloc((p)->data, newmax, _##name##Type);\
+		(p)->data=qn_realloc((p)->data, newmax, name##Type);\
 		(p)->max=(newmax);\
 	}QN_STMT_END
 
@@ -1536,7 +1536,7 @@ QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, const void* item)
 		size_t __i, __cnt=(p)->count;\
 		for (*(retintref)=-1, __i=0; __i<__cnt; __i++)\
 		{\
-			if (memcmp(&qn_slice_nth(p,__i), itemptr, sizeof(_##name##Type))==0)\
+			if (memcmp(&qn_slice_nth(p,__i), itemptr, sizeof(name##Type))==0)\
 			{\
 				*(retintref)=(int)__i;\
 				break;\
@@ -1662,252 +1662,282 @@ QN_INLINE qnPtrSlist* qn_pslist_contains(qnPtrSlist* p, const void* item)
 	}QN_STMT_END
 
 
-//////////////////////////////////////////////////////////////////////////
-// hash
+ //////////////////////////////////////////////////////////////////////////
+ // hash
 
-/**
- * @brief 해시 리스트 정의
- * @param name 해시 리스트 이름
- * @param keytype 키 타입
- * @param valuetype 값 타입
- */
+ /**
+  * @brief 해시 리스트 정의
+  * @param name 해시 리스트 이름
+  * @param keytype 키 타입
+  * @param valuetype 값 타입
+  */
 #define QN_DECL_HASH(name,keytype,valuetype)\
-	typedef struct _##name name;\
-	typedef keytype _##name##Key;\
-	typedef valuetype _##name##Value;\
-	struct _##name##Node { struct _##name##Node *sib, *next, *prev; size_t hash; _##name##Key key; _##name##Value value; };\
-	struct _##name { size_t revision; size_t bucket; size_t count; struct _##name##Node **nodes, *frst, *last; };
-QN_DECL_HASH(qnInlineHash, size_t, size_t)
+	typedef struct name name;\
+	typedef keytype name##Key;\
+	typedef valuetype name##Value;\
+	struct name##Node { struct name##Node *sib, *next, *prev; size_t hash; name##Key key; name##Value value; };\
+	struct name { size_t revision; size_t bucket; size_t count; struct name##Node **nodes, *frst, *last; };
+QN_DECL_HASH(QnInlineHash, size_t, size_t)
 
-#define QN_DECL_HASH_HASH(name,func1)	QN_INLINE size_t _##name##_hash_hash(_##name##Key* key) { return func1(key); }
-#define QN_DECL_HASH_HASH_PURE(name)	QN_INLINE size_t _##name##_hash_hash(_##name##Key* key) { return (size_t)(uintptr_t)(*key); }
-#define QN_DECL_HASH_EQ(name,func2)		QN_INLINE bool _##name##_hash_eq(_##name##Key* k1, _##name##Key* k2) { return func2(k1, k2); }
-#define QN_DECL_HASH_EQ_PURE(name)		QN_INLINE bool _##name##_hash_eq(_##name##Key* k1, _##name##Key* k2) { return *k1==*k2; }
-#define QN_DECL_HASH_KEY(name,func1)	QN_INLINE void _##name##_hash_key(_##name##Key* key) { func1(key); }
-#define QN_DECL_HASH_KEY_DELETE(name)	QN_INLINE void _##name##_hash_key(_##name##Key* key) { qn_free(*key); }
-#define QN_DECL_HASH_KEY_NONE(name)		QN_INLINE void _##name##_hash_key(_##name##Key* key) { (void)key; }
-#define QN_DECL_HASH_VALUE(name,func1)	QN_INLINE void _##name##_hash_value(_##name##Value* value) { func1(value); }
-#define QN_DECL_HASH_VALUE_DELETE(name)	QN_INLINE void _##name##_hash_value(_##name##Value* value) { qn_free(*value); }
-#define QN_DECL_HASH_VALUE_NONE(name)	QN_INLINE void _##name##_hash_value(_##name##Value* value) { (void)value; }
+/** @brief 키 해시 */
+#define QN_HASH_HASH(name,fn1)			QN_INLINE size_t name##_hash(const name##Key* key) { return fn1(*key); }
+/** @brief 키 비교 */
+#define QN_HASH_EQ(name,fn2)			QN_INLINE bool name##_eq(const name##Key* l, const name##Key* r) { return fn2(*l, *r); }
+/** @brief 키 지우기 */
+#define QN_HASH_KEY(name,fn1)			QN_INLINE void name##_key(name##Key* key) { fn1(*key); }
+#define QN_HASH_KEY_FREE(name)			QN_INLINE void name##_key(name##Key* key) { qn_free(*key); }
+#define QN_HASH_KEY_NONE(name)			QN_INLINE void name##_key(name##Key* key) { }
+/** @brief 값 지우기 */
+#define QN_HASH_VALUE(name,fn1)			QN_INLINE void name##_value(name##Value* value) { fn1(*value); }
+#define QN_HASH_VALUE_FREE(name)		QN_INLINE void name##_value(name##Value* value) { qn_free(*value); }
+#define QN_HASH_VALUE_NONE(name)		QN_INLINE void name##_value(name##Value* value) { }
+/** @brief 정수 키의 해시/비교 */
+#define QN_HASH_INT_KEY(name)			QN_INLINE size_t name##_hash(const int* key) { return (size_t)(*key); }\
+										QN_INLINE bool name##_eq(const int* k1, const int* k2) { return (*k1)==(*k2); }
+/** @brief 부호없는 정수 키의 해시/비교 */
+#define QN_HASH_UINT_KEY(name)			QN_INLINE size_t name##_hash(const uint* key) { return (size_t)(*key); }\
+										QN_INLINE bool name##_eq(const uint* k1, const uint* k2) { return *k1==*k2; }
+/** @brief size_t 키의 해시/비교 */
+#define QN_HASH_SIZE_T_KEY(name)		QN_INLINE size_t name##_hash(const size_t* key) { return *key; }\
+										QN_INLINE bool name##_eq(const size_t* k1, const size_t* k2) { return (*k1)==(*k2); }
+/** @brief char* 키의 해시/비교 */
+#define QN_HASH_CHAR_PTR_KEY(name)		QN_INLINE size_t name##_hash(char* const* key) { return qn_strhash(*key); }\
+										QN_INLINE bool name##_eq(char* const* k1, char* const* k2) { return qn_streqv(*k1, *k2); }
+/** @brief wchar* 키의 해시/비교 */
+#define QN_HASH_WCHAR_PTR_KEY(name)		QN_INLINE size_t name##_hash(const wchar** key) { return qn_wcshash(*key); }\
+										QN_INLINE bool name##_eq(const wchar** k1, const wchar** k2) { return qn_wcseqv(*k1, *k2); }
 
-#define QN_DECL_HASH_HASHER_INT(name)\
-										QN_INLINE size_t _##name##_hash_hash(int* key) { return (size_t)(*key); }\
-										QN_INLINE bool _##name##_hash_eq(int* k1, int* k2) { return (*k1)==(*k2); }
-#define QN_DECL_HASH_HASHER_UINT(name)	QN_INLINE size_t _##name##_hash_hash(kuint* key) { return (size_t)(*key); }\
-										QN_INLINE bool _##name##_hash_eq(kuint* k1, kuint* k2) { return ((int)*k1)==((int)*k2); }
-#define QN_DECL_HASH_HASHER_SIZE_T(name)\
-										QN_INLINE size_t _##name##_hash_hash(size_t* key) { return *key; }\
-										QN_INLINE bool _##name##_hash_eq(size_t* k1, size_t* k2) { return (*k1)==(*k2); }
-#define QN_DECL_HASH_HASHER_CHAR_PTR(name)\
-										QN_INLINE size_t _##name##_hash_hash(const void* key) { return qn_strhash(*(const char**)key); }\
-										 QN_INLINE bool _##name##_hash_eq(const void* k1, const void* k2) { return strcmp(*(const char**)k1, *(const char**)k2)==0; }
-#define QN_DECL_HASH_HASHER_WCHAR_PTR(name)\
-										QN_INLINE size_t _##name##_hash_hash(const void* key) { return qn_wcshash(*(const wchar_t**)key); }\
-										QN_INLINE bool _##name##_hash_eq(const void* k1, const void* k2) { return wcscmp(*(const wchar_t**)k1, *(const wchar_t**)k2)==0; }
-#define QN_DECL_HASH_HASHER_CHAR_PTR_INCASE(name)\
-										QN_INLINE size_t _##name##_hash_hash(const char** key) { return qn_strihash(*key); }\
-										QN_INLINE bool _##name##_hash_eq(const char** k1, const char** k2) { return qn_stricmp(*k1, *k2)==0; }
-#define QN_DECL_HASH_HASHER_WCHAR_PTR_INCASE(name)\
-										QN_INLINE size_t _##name##_hash_hash(const wchar_t** key) { return qn_wcsihash(*key); }\
-										QN_INLINE bool _##name##_hash_eq(const wchar_t** k1, const wchar_t** k2) { return wcsicmp(*k1, *k2)==0; }
-#define QN_DECL_HASH_BOTH_NONE(name)	QN_DECL_HASH_KEY_NONE(name); QN_DECL_HASH_VALUE_NONE(name)
-
-#define QN_DECL_PHASH_HASH(name,func1)	QN_INLINE size_t _##name##_ptrhash_hash(name##Key key) { return func1(key); }
-#define QN_DECL_PHASH_HASH_PURE(name)	QN_INLINE size_t _##name##_ptrhash_hash(name##Key key) { return (size_t)(uintptr_t)(key); }
-#define QN_DECL_PHASH_EQ(name,func2)	QN_INLINE bool _##name##_ptrhash_eq(name##Key k1, name##Key k2) { return func2(k1, k2); }
-#define QN_DECL_PHASH_EQ_PURE(name)		QN_INLINE bool _##name##_ptrhash_eq(name##Key k1, name##Key k2) { return k1==k2; }
-#define QN_DECL_PHASH_KEY(name,func1)	QN_INLINE void _##name##_ptrhash_key(name##Key key) { func1(key); }
-#define QN_DECL_PHASH_KEY_DELETE(name)	QN_INLINE void _##name##_ptrhash_key(name##Key key) { qn_free(key); }
-#define QN_DECL_PHASH_KEY_NONE(name)	QN_INLINE void _##name##_ptrhash_key(name##Key key) { (void)key; }
-#define QN_DECL_PHASH_VALUE(name,func1)	QN_INLINE void _##name##_ptrhash_value(name##Value value) { func1(value); }
-#define QN_DECL_PHASH_VALUE_DELETE(name)\
-										QN_INLINE void _##name##_ptrhash_value(name##Value value) { qn_free(value); }
-#define QN_DECL_PHASH_VALUE_NONE(name)	QN_INLINE void _##name##_ptrhash_value(name##Value value) { (void)value; }
-#define QN_DECL_PHASH_HASHER_CHAR_PTR(name)\
-										QN_INLINE size_t _##name##_ptrhash_hash(const char* key) { return qn_strhash(key); }\
-										QN_INLINE bool _##name##_ptrhash_eq(const char* k1, const char* k2) { return strcmp(k1, k2)==0; }
-#define QN_DECL_PHASH_HASHER_WCHAR_PTR(name)\
-										QN_INLINE size_t _##name##_ptrhash_hash(const wchar_t* key) { return qn_wcshash(key); }\
-										QN_INLINE bool _##name##_ptrhash_eq(const wchar_t* k1, const wchar_t* k2) { return wcscmp(k1, k2)==0; }
-#define QN_DECL_PHASH_BOTH_NONE(name)	QN_DECL_HASH_PTR_KEY_NONE(name) QN_DECL_HASH_PTR_VALUE_NONE(name)
-
-//
+/** @brief 아이템 갯수 */
 #define qn_hash_count(p)				((p)->count)
+/** @brief 해시 버킷수 */
 #define qn_hash_bucket(p)				((p)->bucket)
+/** @brief 해시 변경치 */
 #define qn_hash_revision(p)				((p)->revision)
+/** @brief 첫 노드 */
 #define qn_hash_node_first(p)			((p)->last)
+/** @brief 마지막 노드 */
 #define qn_hash_node_last(p)			((p)->frst)
 
+/** @brief 해시 초기화 */
 #define qn_hash_init(name,p)\
 	QN_STMT_BEGIN{\
 		(p)->revision=0;\
 		(p)->count=0;\
 		(p)->bucket=QN_MIN_HASH;\
-		(p)->nodes=qn_alloc_zero(QN_MIN_HASH, struct _##name##Node*);\
+		(p)->nodes=qn_alloc_zero(QN_MIN_HASH, struct name##Node*);\
 		(p)->frst=(p)->last=NULL;\
 	}QN_STMT_END
 
-//
+/** @brief 해시 제거 */
 #define qn_hash_disp(name,p)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		struct _##name##Node* __next;\
-		for (__node=(p)->frst; __node; __node=__next)\
+		for (struct name##Node* __next, *__node=(p)->frst; __node; __node=__next)\
 		{\
 			__next=__node->next;\
-			_##name##_hash_key(&__node->key);\
-			_##name##_hash_value(&__node->value);\
+			name##_key(&__node->key);\
+			name##_value(&__node->value);\
 			qn_free(__node);\
 		}\
 		qn_free((p)->nodes);\
 	}QN_STMT_END
 
-#define qn_hash_remove_node(name,p,node)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node** __en=&(node);\
-		qn_inl_hash_erase_node(name,p,&__en);\
-		qn_inl_hash_test_size(name,p);\
-	}QN_STMT_END
-
+/** @brief 해시 비우기 */
 #define qn_hash_clear(name,p)\
+	qn_inl_hash_erase_all(name,p); qn_inl_hash_test_size(name,p)
+
+/**
+ * @brief 해시 for each
+ * @param func3 for each 함수 포인터. 인수는(data,keyptr,valueptr)
+ * @param data for each 함수 포인터 첫 인수
+ * @return
+ */
+#define qn_hash_foreach(name,p,func3,data)\
 	QN_STMT_BEGIN{\
-		qn_inl_hash_erase_all(name,p);\
-		qn_inl_hash_test_size(name,p);\
+		for (struct name##Node* __node=(p)->last; __node; __node=__node->prev) func3(data, &__node->key, &__node->value);\
 	}QN_STMT_END
 
-#define qn_hash_foreach(name,p,func3,userdata)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		for (__node=(p)->last; __node; __node=__node->prev)\
-			func3(userdata, &__node->key, &__node->value);\
-	}QN_STMT_END
-
+ /**
+  * @brief 해시 loop each
+  * @param func2 loop each 함수 포인터. 인수는(keyptr,valueptr)
+  * @return
+  */
 #define qn_hash_loopeach(name,p,func2)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		for (__node=(p)->last; __node; __node=__node->prev)\
-			func2(&__node->key, &__node->value);\
+		for (struct name##Node* __node=(p)->last; __node; __node=__node->prev) func2(&__node->key, &__node->value);\
 	}QN_STMT_END
 
-#define qn_hash_foreach_value(name,p,func2,userdata)\
+/**
+ * @brief 값만 for each
+ * @param func2 for each 함수 포인터. 인수는(data,valueptr)
+ * @param data for each 함수 포인터 첫 인수
+ * @return
+ */
+#define qn_hash_foreach_value(name,p,func2,data)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		for (__node=(p)->last; __node; __node=__node->prev)\
-			func2(userdata, &__node->value);\
+		for (struct name##Node* __node=(p)->last; __node; __node=__node->prev) func2(data, &__node->value);\
 	}QN_STMT_END
 
+ /**
+  * @brief 값만 loop each
+  * @param func1 loop each 함수 포인터. 인수는(valueptr)
+  * @return
+ */
 #define qn_hash_loopeach_value(name,p,func1)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		for (__node=(p)->last; __node; __node=__node->prev)\
-			func1(&__node->value);\
+		for (struct name##Node* __node=(p)->last; __node; __node=__node->prev) func1(&__node->value);\
 	}QN_STMT_END
 
-#define qn_hash_node(name,p,keyptr,retnode)\
+/**
+ * @brief 해시 얻기
+ * @param keyptr 키 포인터
+ * @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 ㅓㅅ
+ * @return
+ */
+#define qn_hash_get_ptr(name,p,keyptr,retval)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node** __gn;\
+		struct name##Node** __gn;\
 		qn_inl_hash_lookup(name,p,keyptr,__gn);\
-		(retnode)=*__gn;\
+		struct name##Node* __node=*__gn;\
+		*(retval)=(__node) ? &__node->value : NULL;\
 	}QN_STMT_END
 
-#define qn_hash_get(name,p,keyptr,retvalue)\
-	QN_STMT_BEGIN{\
-		/* retvalue: pointer of 'value' */\
-		struct _##name##Node **__gn, *__node;\
-		qn_inl_hash_lookup(name,p,keyptr,__gn);\
-		__node=*__gn;\
-		*(retvalue)=(__node) ? &__node->value : NULL;\
-	}QN_STMT_END
-
-#define qn_hash_add(name,p,keyptr,valueptr)\
+/** @brief 해시 추가 (중복 항목 안 덮어씀) */
+#define qn_hash_add_ptr(name,p,keyptr,valueptr)\
 	qn_inl_hash_set(name,p,keyptr,valueptr,false)
 
-#define qn_hash_set(name,p,keyptr,valueptr)\
+/** @brief 해시 설정 (중복 항목 덮어씀) */
+#define qn_hash_set_ptr(name,p,keyptr,valueptr)\
 	qn_inl_hash_set(name,p,keyptr,valueptr,true)
 
-#define qn_hash_remove(name,p,keyptr,retbool_can_be_null)\
+/**
+ * @brief 해시 얻기
+ * @param key 키
+ * @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 것
+ * @return
+ */
+#define qn_hash_get(name,p,key,retval)\
 	QN_STMT_BEGIN{\
-		qn_inl_hash_erase(name,p,keyptr,retbool_can_be_null);\
+		const name##Key __k = (const name##Key)key; const name##Key* __kp = &__k;\
+		qn_hash_get_ptr(name,p,__kp,retval);\
+	}QN_STMT_END
+
+/** @brief 해시 추가 (중복 항목 안 덮어씀) */
+#define qn_hash_add(name,p,key,value)\
+	QN_STMT_BEGIN{\
+		name##Key __key = key; name##Value __value = value;\
+		qn_hash_add_ptr(name,p,&__key,&__value);\
+	}QN_STMT_END
+
+/** @brief 해시 설정 (중복 항목 덮어씀) */
+#define qn_hash_set(name,p,key,value)\
+	QN_STMT_BEGIN{\
+		name##Key __key = key; name##Value __value = value;\
+		qn_hash_set_ptr(name,p,&__key,&__value);\
+	}QN_STMT_END
+
+/**
+ * @brief 해시 삭제
+ * @param key 키
+ * @param ret_bool_ptr 삭제 결과를 담을 bool 타입 포인터. 필요없으면 NULL
+ */
+#define qn_hash_remove(name,p,key,ret_bool_ptr)\
+	QN_STMT_BEGIN{\
+		name##Key* __kp = &key;\
+		qn_inl_hash_erase(name,p,__kp,ret_bool_ptr);\
 		qn_inl_hash_test_size(name,p);\
 	}QN_STMT_END
 
-#define qn_hash_find(name,p,func,userdata,retkey,gotoname)\
+ /**
+  * @brief 해시 검색
+  * @param func3 bool (data, keyptr, valueptr) 타입의 검색 함수
+  * @param data 검색 함수 첫 항목
+  * @param ret_key_ptr 반환 키 포인터
+  * @return
+  */
+#define qn_hash_find(name,p,func3,data,ret_key_ptr)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		for (__node=(p)->last; __node; __node=__node->prev)\
+		for (struct name##Node* __node=(p)->last; __node; __node=__node->prev)\
 		{\
-			if (func(userdata, &__node->key, &__node->value))\
+			if (func3(data, &__node->key, &__node->value))\
 			{\
-				(retkey)=&__node->key;\
-				goto K_CONCAT(pos_hash_find_exit,gotoname);\
+				(ret_key_ptr)=&__node->key;\
+				goto QN_CONCAT(pos_hash_find_exit_,__LINE__);\
 			}\
 		}\
-		(retkey)=NULL;\
-		K_CONCAT(pos_hash_find_exit,gotoname):;\
+		(ret_key_ptr)=NULL;\
+		QN_CONCAT(pos_hash_find_exit_,__LINE__):;\
 	}QN_STMT_END
 
-//
-#define qn_inl_hash_lookup(name,p,keyptr,retnode)\
+/**
+ * @brief 해시 룩업
+ * @param keyptr 키 포인터
+ * @param ret_node 반환값 노드 포인터
+ */
+#define qn_inl_hash_lookup(name,p,keyptr,ret_node)\
 	QN_STMT_BEGIN{\
-		/* keyptr: pointer of key */\
-		/* retnode: pointer's pointer of Node */\
-		size_t __lh=_##name##_hash_hash(keyptr);\
-		struct _##name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
+		size_t __lh=name##_hash(keyptr);\
+		struct name##Node *__lnn,**__ln=&(p)->nodes[__lh%(p)->bucket];\
 		while ((__lnn=*__ln)!=NULL)\
 		{\
-			if (__lnn->hash==__lh && _##name##_hash_eq(&__lnn->key, keyptr)) break;\
+			if (__lnn->hash==__lh && name##_eq(&__lnn->key, keyptr)) break;\
 			__ln=&__lnn->sib;\
 		}\
-		(retnode)=__ln;\
+		(ret_node)=__ln;\
 	}QN_STMT_END
 
-#define qn_inl_hash_lookup_hash(name,p,keyptr,retnode,rethash)\
+/**
+ * @brief 해시 룩업
+ * @param keyptr 키 포인터
+ * @param ret_node 반환값 노드 포인터
+ * @param ret_hash 반환값 해시
+ */
+#define qn_inl_hash_lookup_hash(name,p,keyptr,ret_node,ret_hash)\
 	QN_STMT_BEGIN{\
-		/* keyptr: pointer of key */\
-		/* retnode: pointer's pointer of Node */\
-		/* rethash: pointer of kuint */\
 		if ((p)->nodes) {\
-			size_t __lh=_##name##_hash_hash(keyptr);\
-			struct _##name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
+			size_t __lh=name##_hash(keyptr);\
+			struct name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
 			while ((__lnn=*__ln)!=NULL)\
 			{\
-				if (__lnn->hash==__lh && _##name##_hash_eq(&__lnn->key, keyptr)) break;\
+				if (__lnn->hash==__lh && name##_eq(&__lnn->key, keyptr)) break;\
 				__ln=&__lnn->sib;\
 			}\
-			(retnode)=__ln;\
-			*(rethash)=__lh;\
+			(ret_node)=__ln;\
+			*(ret_hash)=__lh;\
 		}\
 	}QN_STMT_END
 
+ /**
+ * @brief 해시 설정
+ * @param keyptr 키 포인터
+ * @param valueptr 값 포인터
+ * @param replace 참=원래 키/값을 덮어씀, 거짓=주어진 키/값 삭제
+ * @return
+ */
 #define qn_inl_hash_set(name,p,keyptr,valueptr,replace)\
 	QN_STMT_BEGIN{\
-		/* keyptr: pointer of key */\
-		/* valuedata : data of value */\
-		/* replace: true=replace original key, false=discard given key */\
-		size_t __ah=0;\
-		struct _##name##Node** __an=NULL;\
+		size_t __ah; struct name##Node** __an;\
 		qn_inl_hash_lookup_hash(name,p,keyptr,__an,&__ah);\
 		if (__an) {\
-			struct _##name##Node* __ann=*__an;\
+			struct name##Node* __ann=*__an;\
 			if (__ann)\
 			{\
 				if (replace)\
 				{\
-					_##name##_hash_key(&__ann->key);\
+					name##_key(&__ann->key);\
 					__ann->key=*(keyptr);\
-					_##name##_hash_value(&__ann->value);\
+					name##_value(&__ann->value);\
 					__ann->value=*(valueptr);\
 				}\
 				else\
 				{\
-					_##name##_hash_key(keyptr);\
-					_##name##_hash_value(valueptr);\
+					name##_key(keyptr);\
+					name##_value(valueptr);\
 				}\
 			}\
 			else\
 			{\
 				/* step 1*/\
-				__ann=qn_alloc_1(struct _##name##Node);\
+				__ann=qn_alloc_1(struct name##Node);\
 				if (__ann) {\
 					__ann->sib=NULL;\
 					__ann->hash=__ah;\
@@ -1932,33 +1962,42 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t)
 		}\
 	}QN_STMT_END
 
-#define qn_inl_hash_erase(name,p,keyptr,retbool)\
+ /**
+ * @brief 해시 삭제
+ * @param keyptr 키 포인터
+ * @param ret_bool_ptr 결과를 담을 bool 타입 포인터
+ */
+#define qn_inl_hash_erase(name,p,keyptr,ret_bool_ptr)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node** __rn;\
+		struct name##Node** __rn;\
 		qn_inl_hash_lookup(name,p,keyptr,__rn);\
 		if (*__rn==NULL)\
 		{\
-			if (retbool)\
+			if (ret_bool_ptr)\
 			{\
-				bool* __c=retbool;\
+				bool* __c=ret_bool_ptr;\
 				*__c=false;\
 			}\
 		}\
 		else\
 		{\
 			qn_inl_hash_erase_node(name,p,&__rn);\
-			if (retbool)\
+			if (ret_bool_ptr)\
 			{\
-				bool* __c=retbool;\
+				bool* __c=ret_bool_ptr;\
 				*__c=true;\
 			}\
 		}\
 	}QN_STMT_END
 
+ /**
+ * @brief 해시 노드 삭제
+ * @param pppnode 노드의 포인터의 포인터의 포인터
+ */
 #define qn_inl_hash_erase_node(name,p,pppnode)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node** __en=*(pppnode);\
-		struct _##name##Node* __enn=*__en;\
+		struct name##Node** __en=*(pppnode);\
+		struct name##Node* __enn=*__en;\
 		/* step 1 */\
 		*__en=__enn->sib;\
 		/* step 2 */\
@@ -1977,294 +2016,49 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t)
 			(p)->frst=__enn->next;\
 		}\
 		/* step3 */\
-		_##name##_hash_key(&__enn->key);\
-		_##name##_hash_value(&__enn->value);\
+		name##_key(&__enn->key);\
+		name##_value(&__enn->value);\
 		qn_free(__enn);\
 		(p)->count--;\
 		(p)->revision++;\
 	}QN_STMT_END
 
+/** @brief 모두 삭제 */
 #define qn_inl_hash_erase_all(name,p)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __enn;\
-		struct _##name##Node* __enx;\
-		for (__enn=(p)->frst; __enn; __enn=__enx)\
+		for (struct name##Node *__enx, *__enn=(p)->frst; __enn; __enn=__enx)\
 		{\
 			__enx=__enn->next;\
-			_##name##_hash_key(&__enn->key);\
-			_##name##_hash_value(&__enn->value);\
+			name##_key(&__enn->key);\
+			name##_value(&__enn->value);\
 			qn_free(__enn);\
 		}\
 		(p)->frst=(p)->last=NULL;\
 		(p)->count=0;\
-		memset((p)->nodes, 0, (p)->bucket*sizeof(struct _##name##Node*));\
+		memset((p)->nodes, 0, (p)->bucket*sizeof(struct name##Node*));\
 	}QN_STMT_END
 
-//
-#define qn_hash_ptr_disp(name,p)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		struct _##name##Node* __next;\
-		for (__node=(p)->frst; __node; __node=__next)\
-		{\
-			__next=__node->next;\
-			_##name##_ptrhash_key(__node->key);\
-			_##name##_ptrhash_value(__node->value);\
-			qn_free(__node);\
-		}\
-		qn_free((p)->nodes);\
-	}QN_STMT_END
-
-#define qn_hash_ptr_remove_node(name,p,node)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node** __en=&(node);\
-		qn_inl_hash_ptr_erase_node(name,p,&__en);\
-		qn_inl_hash_test_size(name,p);\
-	}QN_STMT_END
-
-#define qn_hash_ptr_clear(name,p)\
-	QN_STMT_BEGIN{\
-		qn_inl_hash_ptr_erase_all(name,p);\
-		qn_inl_hash_test_size(name,p);\
-	}QN_STMT_END
-
-#define qn_hash_ptr_foreach(name,p,func3,userdata)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		for (__node=(p)->last; __node; __node=__node->prev)\
-			func3(userdata, __node->key, __node->value);\
-	}QN_STMT_END
-
-#define qn_hash_ptr_loopeach(name,p,func2)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		for (__node=(p)->last; __node; __node=__node->prev)\
-			func2(__node->key, __node->value);\
-	}QN_STMT_END
-
-#define qn_hash_ptr_foreach_value(name,p,func2,userdata)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		for (__node=(p)->last; __node; __node=__node->prev)\
-			func2(userdata, __node->value);\
-	}QN_STMT_END
-
-#define qn_hash_ptr_loopeach_value(name,p,func1)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		for (__node=(p)->last; __node; __node=__node->prev)\
-			func1(__node->value);\
-	}QN_STMT_END
-
-#define qn_hash_ptr_loopeach_inv_value(name,p,func1)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		for (__node=(p)->frst; __node; __node=__node->next)\
-			func1(__node->value);\
-	}QN_STMT_END
-
-#define qn_hash_ptr_node(name,p,keyptr,retnode)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node** __gn;\
-		qn_inl_hash_ptr_lookup(name,p,keyptr,__gn);\
-		(retnode)=*__gn;\
-	}QN_STMT_END
-
-#define qn_hash_ptr_get(name,p,keyptr,retvalue)\
-	QN_STMT_BEGIN{\
-		/* retvalue: pointer of 'value' */\
-		struct _##name##Node** __gn;\
-		struct _##name##Node* __node;\
-		qn_inl_hash_ptr_lookup(name,p,keyptr,__gn);\
-		__node=*__gn;\
-		*(retvalue)=(__node) ? __node->value : NULL;\
-	}QN_STMT_END
-
-#define qn_hash_ptr_add(name,p,keyptr,valueptr)\
-	qn_inl_hash_ptr_set(name,p,keyptr,valueptr,false)
-
-#define qn_hash_ptr_set(name,p,keyptr,valueptr)\
-	qn_inl_hash_ptr_set(name,p,keyptr,valueptr,true);
-
-#define qn_hash_ptr_remove(name,p,keyptr,retbool_can_be_null)\
-	QN_STMT_BEGIN{\
-		qn_inl_hash_ptr_erase(name,p,keyptr,retbool_can_be_null);\
-		qn_inl_hash_test_size(name,p);\
-	}QN_STMT_END
-
-//
-#define qn_inl_hash_ptr_lookup(name,p,keyptr,retnode)\
-	QN_STMT_BEGIN{\
-		/* keyptr: pointer of key */\
-		/* retnode: pointer's pointer of Node */\
-		size_t __lh=_##name##_ptrhash_hash(keyptr);\
-		struct _##name##Node** __ln=&(p)->nodes[__lh%(p)->bucket];\
-		struct _##name##Node* __lnn;\
-		while ((__lnn=*__ln)!=NULL)\
-		{\
-			if (__lnn->hash==__lh && _##name##_ptrhash_eq(__lnn->key, keyptr))\
-				break;\
-			__ln=&__lnn->sib;\
-		}\
-		(retnode)=__ln;\
-	}QN_STMT_END
-
-#define qn_inl_hash_ptr_lookup_hash(name,p,keyptr,retnode,rethash)\
-	QN_STMT_BEGIN{\
-		/* keyptr: pointer of key */\
-		/* retnode: pointer's pointer of Node */\
-		/* rethash: pointer of kuint */\
-		size_t __lh=_##name##_ptrhash_hash(keyptr);\
-		struct _##name##Node** __ln=&(p)->nodes[__lh%(p)->bucket];\
-		struct _##name##Node* __lnn;\
-		while ((__lnn=*__ln)!=NULL)\
-		{\
-			if (__lnn->hash==__lh && _##name##_ptrhash_eq(__lnn->key, keyptr))\
-				break;\
-			__ln=&__lnn->sib;\
-		}\
-		(retnode)=__ln;\
-		*(rethash)=__lh;\
-	}QN_STMT_END
-
-#define qn_inl_hash_ptr_set(name,p,keyptr,valueptr,replace)\
-	QN_STMT_BEGIN{\
-		/* keyptr: pointer of key */\
-		/* valuedata : data of value */\
-		/* replace: true=replace original key, false=discard given key */\
-		size_t __ah;\
-		struct _##name##Node** __an;\
-		struct _##name##Node* __ann;\
-		qn_inl_hash_ptr_lookup_hash(name,p,keyptr,__an,&__ah);\
-		__ann=*__an;\
-		if (__ann)\
-		{\
-			if (replace)\
-			{\
-				_##name##_ptrhash_key(__ann->key);\
-				__ann->key=keyptr;\
-				_##name##_ptrhash_value(__ann->value);\
-				__ann->value=valueptr;\
-			}\
-			else\
-			{\
-				_##name##_ptrhash_key(keyptr);\
-				_##name##_ptrhash_value(valueptr);\
-			}\
-		}\
-		else\
-		{\
-			/* step 1*/\
-			__ann=qn_alloc_1(struct _##name##Node);\
-			__ann->sib=NULL;\
-			__ann->hash=__ah;\
-			__ann->key=keyptr;\
-			__ann->value=valueptr;\
-			/* step 2*/\
-			if ((p)->frst)\
-				(p)->frst->prev=__ann;\
-			else\
-				(p)->last=__ann;\
-			__ann->next=(p)->frst;\
-			__ann->prev=NULL;\
-			(p)->frst=__ann;\
-			/* step 3 */\
-			*__an=__ann;\
-			(p)->revision++;\
-			(p)->count++;\
-			/* step 4 */\
-			qn_inl_hash_test_size(name,p);\
-		}\
-	}QN_STMT_END
-
-#define qn_inl_hash_ptr_erase(name,p,keyptr,retbool)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node** __rn;\
-		qn_inl_hash_ptr_lookup(name,p,keyptr,__rn);\
-		if (*__rn==NULL)\
-		{\
-			if (retbool)\
-			{\
-				bool* __c=retbool;\
-				*__c=false;\
-			}\
-		}\
-		else\
-		{\
-			qn_inl_hash_ptr_erase_node(name,p,&__rn);\
-			if (retbool)\
-			{\
-				bool* __c=retbool;\
-				*__c=true;\
-			}\
-		}\
-	}QN_STMT_END
-
-#define qn_inl_hash_ptr_erase_node(name,p,pppnode)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node** __en=*(pppnode);\
-		struct _##name##Node* __enn=*__en;\
-		/* step 1 */\
-		*__en=__enn->sib;\
-		/* step 2 */\
-		if (__enn->next)\
-			__enn->next->prev=__enn->prev;\
-		else\
-		{\
-			qn_assert((p)->last == __enn, NULL);\
-			(p)->last=__enn->prev;\
-		}\
-		if (__enn->prev)\
-			__enn->prev->next=__enn->next;\
-		else\
-		{\
-			qn_assert((p)->frst == __enn, NULL);\
-			(p)->frst=__enn->next;\
-		}\
-		/* step3 */\
-		_##name##_ptrhash_key(__enn->key);\
-		_##name##_ptrhash_value(__enn->value);\
-		qn_free(__enn);\
-		(p)->count--;\
-		(p)->revision++;\
-	}QN_STMT_END
-
-#define qn_inl_hash_ptr_erase_all(name,p)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node* __enn;\
-		struct _##name##Node* __enx;\
-		for (__enn=(p)->frst; __enn; __enn=__enx)\
-		{\
-			__enx=__enn->next;\
-			_##name##_ptrhash_key(__enn->key);\
-			_##name##_ptrhash_value(__enn->value);\
-			qn_free(__enn);\
-		}\
-		(p)->frst=(p)->last=NULL;\
-		(p)->count=0;\
-		memset((p)->nodes, 0, (p)->bucket*sizeof(struct _##name##Node*));\
-	}QN_STMT_END
-
-//
+/** @brief 해시 크기 검사 */
 #define qn_inl_hash_test_size(name,p)\
 	QN_STMT_BEGIN{\
 		size_t __cnt=(p)->count;\
 		size_t __bkt=(p)->bucket;\
 		if ((__bkt>=3*__cnt && __bkt>QN_MIN_HASH) ||\
 			(3*__bkt<=__cnt && __bkt<QN_MAX_HASH))\
-			qn_inl_hash_resize((qnInlineHash*)(p));\
+			qn_inl_hash_resize((QnInlineHash*)(p));\
 	}QN_STMT_END
 
-	QN_INLINE void qn_inl_hash_resize(qnInlineHash* p)
+/** @brief 해시 리사이즈 */
+QN_INLINE void qn_inl_hash_resize(QnInlineHash* p)
 {
 	size_t newbucket = qn_primenear((uint32_t)p->count);
 	newbucket = QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
-	struct _qnInlineHashNode** 	newnodes = qn_alloc_zero(newbucket, struct _qnInlineHashNode*);
+	struct QnInlineHashNode **newnodes = qn_alloc_zero(newbucket, struct QnInlineHashNode*);
 	if (!newnodes)
 		return;
 	for (size_t i = 0; i < p->bucket; i++)
 	{
-		for (struct _qnInlineHashNode *node = p->nodes[i], *next; node; node = next)
+		for (struct QnInlineHashNode *node = p->nodes[i], *next; node; node = next)
 		{
 			next = node->sib;
 			const size_t hashmask = node->hash % newbucket;
@@ -2288,247 +2082,272 @@ QN_DECL_HASH(qnInlineHash, size_t, size_t)
  * @param valuetype 값 타입
  */
 #define QN_DECL_MUKUM(name,keytype,valuetype)\
-	typedef struct _##name name;\
-	typedef keytype _##name##Key;\
-	typedef valuetype _##name##Value;\
-	struct _##name##Node { struct _##name##Node* sib; size_t hash; _##name##Key key; _##name##Value value; };\
-	struct _##name { size_t revision; size_t bucket; size_t count; struct _##name##Node** nodes; };
-QN_DECL_MUKUM(qnInlineMukum, size_t, size_t)
+	typedef struct name name;\
+	typedef keytype name##Key;\
+	typedef valuetype name##Value;\
+	struct name##Node { struct name##Node* sib; size_t hash; name##Key key; name##Value value; };\
+	struct name { size_t revision; size_t bucket; size_t count; struct name##Node** nodes; };
+QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 
-#define QN_DECL_MUKUM_HASH(name,func1)	QN_DECL_HASH_HASH(name,func1)
-#define QN_DECL_MUKUM_HASH_PURE(name)	QN_DECL_HASH_HASH_PURE(name)
-#define QN_DECL_MUKUM_EQ(name,func2)	QN_DECL_HASH_EQ(name,func2)
-#define QN_DECL_MUKUM_EQ_PURE(name)		QN_DECL_HASH_EQ_PURE(name)
-#define QN_DECL_MUKUM_KEY(name,func1)	QN_DECL_HASH_KEY(name,func1)
-#define QN_DECL_MUKUM_KEY_DELETE(name)	QN_DECL_HASH_KEY_DELETE(name)
-#define QN_DECL_MUKUM_KEY_NONE(name)	QN_DECL_HASH_KEY_NONE(name)
-#define QN_DECL_MUKUM_VALUE(name,func1)	QN_DECL_HASH_VALUE(name,func1)
-#define QN_DECL_MUKUM_VALUE_DELETE(name)\
-										QN_DECL_HASH_VALUE_DELETE(name)
-#define QN_DECL_MUKUM_VALUE_NONE(name)	QN_DECL_HASH_VALUE_NONE(name)
+#define QN_MUKUM_HASH					QN_HASH_HASH
+#define QN_MUKUM_EQ						QN_HASH_EQ
+#define QN_MUKUM_KEY					QN_HASH_KEY
+#define QN_MUKUM_KEY_FREE				QN_HASH_KEY_FREE
+#define QN_MUKUM_KEY_NONE				QN_HASH_KEY_NONE
+#define QN_MUKUM_VALUE					QN_HASH_VALUE
+#define QN_MUKUM_VALUE_FREE				QN_HASH_VALUE_FREE
+#define QN_MUKUM_VALUE_NONE				QN_HASH_VALUE_NONE
+#define QN_MUKUM_INT_KEY				QN_HASH_INT_KEY
+#define QN_MUKUM_UINT_KEY				QN_HASH_UINT_KEY
+#define QN_MUKUM_SIZE_T_KEY				QN_HASH_SIZE_T_KEY
+#define QN_MUKUM_CHAR_PTR_KEY			QN_HASH_CHAR_PTR_KEY
+#define QN_MUKUM_WCHAR_PTR_KEY			QN_HASH_WCHAR_PTR_KEY
 
-#define QN_DECL_MUKUM_HASHER_INT(name)	QN_DECL_HASH_HASHER_INT(name)
-#define QN_DECL_MUKUM_HASHER_UINT(name)	QN_DECL_HASH_HASHER_UINT(name)
-#define QN_DECL_MUKUM_HASHER_CHAR_PTR(name)\
-										QN_DECL_HASH_HASHER_CHAR_PTR(name)
-#define QN_DECL_MUKUM_HASHER_WCHAR_PTR(name)\
-										QN_DECL_HASH_HASHER_WCHAR_PTR(name)
-#define QN_DECL_MUKUM_HASHER_CHAR_PTR_INCASE(name)\
-										QN_DECL_HASH_HASHER_CHAR_PTR_INCASE(name)
-#define QN_DECL_MUKUM_HASHER_WCHAR_PTR_INCASE(name)\
-										QN_DECL_HASH_HASHER_WCHAR_PTR_INCASE(name)
-#define QN_DECL_MUKUM_BOTH_NONE(name)	QN_DECL_HASH_BOTH_NONE(name)
-
-#define QN_DECL_PMUKUM_HASH(name,func1)	QN_DECL_PHASH_HASH(name,func1)
-#define QN_DECL_PMUKUM_HASH_PURE(name)	QN_DECL_PHASH_HASH_PURE(name)
-#define QN_DECL_PMUKUM_EQ(name,func2)	QN_DECL_PHASH_EQ(name,func2)
-#define QN_DECL_PMUKUM_EQ_PURE(name)	QN_DECL_PHASH_EQ_PURE(name)
-#define QN_DECL_PMUKUM_KEY(name,func1)	QN_DECL_PHASH_KEY(name,func1)
-#define QN_DECL_PMUKUM_KEY_DELETE(name)	QN_DECL_PHASH_KEY_DELETE(name)
-#define QN_DECL_PMUKUM_KEY_NONE(name)	QN_DECL_PHASH_KEY_NONE(name)
-#define QN_DECL_PMUKUM_VALUE(name,func1)\
-										QN_DECL_PHASH_VALUE(name,func1)
-#define QN_DECL_PMUKUM_VALUE_DELETE(name)\
-										QN_DECL_PHASH_VALUE_DELETE(name)
-#define QN_DECL_PMUKUM_VALUE_NONE(name)	QN_DECL_PHASH_VALUE_NONE(name)
-#define QN_DECL_PMUKUM_HASHER_CHAR_PTR(name)\
-										QN_DECL_PHASH_HASHER_CHAR_PTR(name)
-#define QN_DECL_PMUKUM_HASHER_WCHAR_PTR(name)\
-										QN_DECL_PHASH_HASHER_WCHAR_PTR(name)
-#define QN_DECL_PMUKUM_BOTH_NONE(name)	QN_DECL_PHASH_BOTH_NONE(name)
-
-//
+/** @brief 아이템 갯수 */
 #define qn_mukum_count(p)				((p)->count)
+/** @brief 묶음 버킷수 */
 #define qn_mukum_bucket(p)				((p)->bucket)
+/** @brief 묶음 변경치 */
 #define qn_mukum_revision(p)			((p)->revision)
 
+/** @brief 묶음 초기화 */
 #define qn_mukum_init(name,p)\
 	QN_STMT_BEGIN{\
 		(p)->revision=0;\
 		(p)->count=0;\
 		(p)->bucket=QN_MIN_HASH;\
-		(p)->nodes=qn_alloc_zero(QN_MIN_HASH, struct _##name##Node*);\
+		(p)->nodes=qn_alloc_zero(QN_MIN_HASH, struct name##Node*);\
 	}QN_STMT_END
 
-//
+/** @brief 묶음 제거 */
 #define qn_mukum_disp(name,p)\
 	QN_STMT_BEGIN{\
-		size_t __i;\
-		struct _##name##Node* __node;\
-		struct _##name##Node* __next;\
-		for (__i=0; __i<(p)->bucket; __i++)\
-			for (__node=(p)->nodes[__i]; __node; __node=__next)\
+		for (size_t __i=0; __i<(p)->bucket; __i++)\
+			for (struct name##Node *__next, *__node=(p)->nodes[__i]; __node; __node=__next)\
 			{\
 				__next=__node->sib;\
-				_##name##_hash_key(&__node->key);\
-				_##name##_hash_value(&__node->value);\
+				name##_key(&__node->key);\
+				name##_value(&__node->value);\
 				qn_free(__node);\
 			}\
 		qn_free((p)->nodes);\
 	}QN_STMT_END
 
-#define qn_mukum_remove_node(name,p,node)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node** __en=&(node);\
-		qn_inl_mukum_erase_node(name,p,&__en);\
-		qn_inl_mukum_test_size(name,p);\
-	}QN_STMT_END
-
+/** @brief 묶음 비우기 */
 #define qn_mukum_clear(name,p)\
-	QN_STMT_BEGIN{\
-		qn_inl_mukum_erase_all(name,p);\
-		qn_inl_mukum_test_size(name,p);\
-	}QN_STMT_END
+	qn_inl_mukum_erase_all(name,p); qn_inl_mukum_test_size(name,p)
 
+/**
+ * @brief 묶음 for each
+ * @param func3 for each 함수 포인터. 인수는(data,keyptr,valueptr)
+ * @param data for each 함수 포인터 첫 인수
+ * @return
+ */
 #define qn_mukum_foreach(name,p,func3,userdata)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		size_t __i;\
-		for (__i=0; __i<(p)->bucket; __i++)\
-			for (__node=(p)->nodes[__i]; __node; __node=__node->sib)\
+		for (size_t __i=0; __i<(p)->bucket; __i++)\
+			for (struct name##Node* __node=(p)->nodes[__i]; __node; __node=__node->sib)\
 				func3(userdata, &__node->key, &__node->value);\
 	}QN_STMT_END
-
+	
+ /**
+  * @brief 묶음 loop each
+  * @param func2 loop each 함수 포인터. 인수는(keyptr,valueptr)
+  * @return
+  */
 #define qn_mukum_loopeach(name,p,func2)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		size_t __i;\
-		for (__i=0; __i<(p)->bucket; __i++)\
-			for (__node=(p)->nodes[__i]; __node; __node=__node->sib)\
+		for (size_t __i=0; __i<(p)->bucket; __i++)\
+			for (struct name##Node* __node=(p)->nodes[__i]; __node; __node=__node->sib)\
 				func2(&__node->key, &__node->value);\
 	}QN_STMT_END
-
+	
+/**
+ * @brief 값만 for each
+ * @param func2 for each 함수 포인터. 인수는(data,valueptr)
+ * @param data for each 함수 포인터 첫 인수
+ * @return
+ */
 #define qn_mukum_foreach_value(name,p,func2,userdata)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		size_t __i;\
-		for (__i=0; __i<(p)->bucket; __i++)\
-			for (__node=(p)->nodes[__i]; __node; __node=__node->sib)\
+		for (size_t __i=0; __i<(p)->bucket; __i++)\
+			for (struct name##Node* __node=(p)->nodes[__i]; __node; __node=__node->sib)\
 				func2(userdata, &__node->value);\
 	}QN_STMT_END
-
+	
+ /**
+  * @brief 값만 loop each
+  * @param func1 loop each 함수 포인터. 인수는(valueptr)
+  * @return
+ */
 #define qn_mukum_loopeach_value(name,p,func1)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		size_t __i;\
-		for (__i=0; __i<(p)->bucket; __i++)\
-			for (__node=(p)->nodes[__i]; __node; __node=__node->sib)\
+		for (size_t __i=0; __i<(p)->bucket; __i++)\
+			for (struct name##Node* __node=(p)->nodes[__i]; __node; __node=__node->sib)\
 				func1(&__node->value);\
 	}QN_STMT_END
-
-// value type
-#define qn_mukum_node(name,p,keyptr,retnode)\
+	
+/**
+ * @brief 묶음 얻기
+ * @param keyptr 키 포인터
+ * @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 것
+ * @return
+ */
+#define qn_mukum_get_ptr(name,p,keyptr,retval)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node** __gn;\
-		qn_inl_mukum_lookup(name,p,keyptr,__gn);\
-		(retnode)=*__gn;\
-	}QN_STMT_END
-
-#define qn_mukum_get(name,p,keyptr,retvalue)\
-	QN_STMT_BEGIN{\
-		/* retvalue: pointer of 'value' */\
-		struct _##name##Node** __gn;\
-		struct _##name##Node* __node;\
+		struct name##Node **__gn, *__node;\
 		qn_inl_mukum_lookup(name,p,keyptr,__gn);\
 		__node=*__gn;\
-		*(retvalue)=(__node) ? &__node->value : NULL;\
+		*(retval)=(__node) ? &__node->value : NULL;\
 	}QN_STMT_END
 
-#define qn_mukum_add(name,p,keyptr,valueptr)\
+ /** @brief 묶음 추가 (중복 항목 안 덮어씀) */
+#define qn_mukum_add_ptr(name,p,keyptr,valueptr)\
 	qn_inl_mukum_set(name,p,keyptr,valueptr,false);
 
-#define qn_mukum_set(name,p,keyptr,valueptr)\
+/** @brief 묶음 설정 (중복 항목 덮어씀) */
+#define qn_mukum_set_ptr(name,p,keyptr,valueptr)\
 	qn_inl_mukum_set(name,p,keyptr,valueptr,true);\
 
-#define qn_mukum_remove(name,p,keyptr,retbool_can_be_null)\
+/**
+ * @brief 묶음 삭제
+ * @param keyptr 키 포인터
+ * @param ret_bool_ptr 삭제 결과를 담을 bool 타입 포인터. 필요없으면 NULL
+ */
+#define qn_mukum_remove_ptr(name,p,keyptr,ret_bool_ptr)\
 	QN_STMT_BEGIN{\
-		qn_inl_mukum_erase(name,p,keyptr,retbool_can_be_null);\
+		qn_inl_mukum_erase(name,p,keyptr,ret_bool_ptr);\
 		qn_inl_mukum_test_size(name,p);\
 	}QN_STMT_END
 
-#define qn_mukum_find(name,p,func,userdata,retkey,gotoname)\
+/**
+ * @brief 묶음 얻기
+ * @param key 키
+ * @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 것
+ * @return
+ */
+#define qn_mukum_get(name,p,key,retval)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		size_t __i;\
-		for (__i=0; __i<(p)->bucket; __i++)\
+		const name##Key __k = (const name##Key)key; const name##Key* __kp = &__k;\
+		qn_mukum_get_ptr(name,p,__kp,retval);\
+	}QN_STMT_END
+
+/** @brief 묶음 추가 (중복 항목 안 덮어씀) */
+#define qn_mukum_add(name,p,key,value)\
+	QN_STMT_BEGIN{\
+		name##Key __key = key; name##Value __value = value;\
+		qn_mukum_add_ptr(name,p,&__key,&__value);\
+	}QN_STMT_END
+
+/** @brief 묶음 설정 (중복 항목 덮어씀) */
+#define qn_mukum_set(name,p,key,value)\
+	QN_STMT_BEGIN{\
+		name##Key __key = key; name##Value __value = value;\
+		qn_mukum_set_ptr(name,p,&__key,&__value);\
+	}QN_STMT_END
+
+/**
+ * @brief 묶음 삭제
+ * @param key 키
+ * @param ret_bool_ptr 삭제 결과를 담을 bool 타입 포인터. 필요없으면 NULL
+ */
+#define qn_mukum_remove(name,p,key,ret_bool_ptr)\
+	QN_STMT_BEGIN{\
+		name##Key* __kp = &key;\
+		qn_mukum_remove_ptr(name,p,__kp,ret_bool_ptr);\
+	}QN_STMT_END
+
+ /**
+  * @brief 묶음 검색
+  * @param func3 bool (data, keyptr, valueptr) 타입의 검색 함수
+  * @param data 검색 함수 첫 항목
+  * @param ret_key_ptr 반환 키 포인터
+  * @return
+  */
+#define qn_mukum_find(name,p,func3,data,ret_key_ptr)\
+	QN_STMT_BEGIN{\
+		for (size_t __i=0; __i<(p)->bucket; __i++)\
 		{\
-			for (__node=(p)->nodes[__i]; __node; __node=__node->sib)\
+			for (struct name##Node* __node=(p)->nodes[__i]; __node; __node=__node->sib)\
 			{\
-				if (func(userdata, &__node->key, &__node->value))\
+				if (func3(data, &__node->key, &__node->value))\
 				{\
-					(retkey)=&__node->key;\
-					goto K_CONCAT(pos_mukum_find_exit,gotoname);\
+					(ret_key_ptr)=&__node->key;\
+					goto QN_CONCAT(pos_mukum_find_exit,__LINE__);\
 				}\
 			}\
 		}\
-		(retkey)=NULL;\
-	K_CONCAT(pos_mukum_find_exit,gotoname):;\
+		(ret_key_ptr)=NULL;\
+		QN_CONCAT(pos_mukum_find_exit,__LINE__):;\
 	}QN_STMT_END
 
-//
-#define qn_inl_mukum_lookup(name,p,keyptr,retnode)\
+/**
+ * @brief 묶음 룩업
+ * @param keyptr 키 포인터
+ * @param ret_node 반환값 노드 포인터
+ */
+#define qn_inl_mukum_lookup(name,p,keyptr,ret_node)\
 	QN_STMT_BEGIN{\
-		/* keyptr: pointer of key */\
-		/* retnode: pointer's pointer of Node */\
-		size_t __lh=_##name##_hash_hash(keyptr);\
-		struct _##name##Node** __ln=&(p)->nodes[__lh%(p)->bucket];\
-		struct _##name##Node* __lnn;\
+		size_t __lh=name##_hash(keyptr);\
+		struct name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
 		while ((__lnn=*__ln)!=NULL)\
 		{\
-			if (__lnn->hash==__lh && _##name##_hash_eq(&__lnn->key, keyptr))\
+			if (__lnn->hash==__lh && name##_eq(&__lnn->key, keyptr))\
 				break;\
 			__ln=&__lnn->sib;\
 		}\
-		(retnode)=__ln;\
+		(ret_node)=__ln;\
 	}QN_STMT_END
 
-#define qn_inl_mukum_lookup_hash(name,p,keyptr,retnode,rethash)\
+/**
+ * @brief 묶음 룩업
+ * @param keyptr 키 포인터
+ * @param ret_node 반환값 노드 포인터
+ * @param ret_hash 반환값 묶음
+ */
+#define qn_inl_mukum_lookup_hash(name,p,keyptr,ret_node,ret_hash)\
 	QN_STMT_BEGIN{\
-		/* keyptr: pointer of key */\
-		/* retnode: pointer's pointer of Node */\
-		/* rethash: pointer of kuint */\
-		size_t __lh=_##name##_hash_hash(keyptr);\
-		struct _##name##Node** __ln=&(p)->nodes[__lh%(p)->bucket];\
-		struct _##name##Node* __lnn;\
+		size_t __lh=name##_hash(keyptr);\
+		struct name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
 		while ((__lnn=*__ln)!=NULL)\
 		{\
-			if (__lnn->hash==__lh && _##name##_hash_eq(&__lnn->key, keyptr))\
+			if (__lnn->hash==__lh && name##_eq(&__lnn->key, keyptr))\
 				break;\
 			__ln=&__lnn->sib;\
 		}\
-		(retnode)=__ln;\
-		*(rethash)=__lh;\
+		(ret_node)=__ln;\
+		*(ret_hash)=__lh;\
 	}QN_STMT_END
 
+/**
+ * @brief 묶음 설정
+ * @param keyptr 키 포인터
+ * @param valueptr 값 포인터
+ * @param replace 참=원래 키/값을 덮어씀, 거짓=주어진 키/값 삭제
+ * @return
+ */
 #define qn_inl_mukum_set(name,p,keyptr,valueptr,replace)\
 	QN_STMT_BEGIN{\
-		/* keyptr: pointer of key */\
-		/* valuedata : data of value */\
-		/* replace: true=replace original key, false=discard given key */\
-		size_t __ah;\
-		struct _##name##Node** __an;\
-		struct _##name##Node* __ann;\
+		size_t __ah; struct name##Node** __an;\
 		qn_inl_mukum_lookup_hash(name,p,keyptr,__an,&__ah);\
-		__ann=*__an;\
+		struct name##Node* __ann=*__an;\
 		if (__ann)\
 		{\
 			if (replace)\
 			{\
-				_##name##_hash_key(&__ann->key);\
-				__ann->key=*(keyptr);\
-				_##name##_hash_value(&__ann->value);\
-				__ann->value=*(valueptr);\
+				name##_key(&__ann->key);		__ann->key=*(keyptr);\
+				name##_value(&__ann->value);	__ann->value=*(valueptr);\
 			}\
 			else\
 			{\
-				_##name##_hash_key(keyptr);\
-				_##name##_hash_value(valueptr);\
+				name##_key(keyptr);\
+				name##_value(valueptr);\
 			}\
 		}\
 		else\
 		{\
 			/* step 1*/\
-			__ann=qn_alloc_1(struct _##name##Node);\
+			__ann=qn_alloc_1(struct name##Node);\
 			__ann->sib=NULL;\
 			__ann->hash=__ah;\
 			__ann->key=*(keyptr);\
@@ -2542,328 +2361,89 @@ QN_DECL_MUKUM(qnInlineMukum, size_t, size_t)
 		}\
 	}QN_STMT_END
 
-#define qn_inl_mukum_erase(name,p,keyptr,retbool)\
+/**
+ * @brief 묶음 삭제
+ * @param keyptr 키 포인터
+ * @param ret_bool_ptr 결과를 담을 bool 타입 포인터
+ */
+#define qn_inl_mukum_erase(name,p,keyptr,ret_bool_ptr)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node** __rn;\
+		struct name##Node** __rn;\
 		qn_inl_mukum_lookup(name,p,keyptr,__rn);\
 		if (*__rn==NULL)\
 		{\
-			if (retbool)\
+			if (ret_bool_ptr)\
 			{\
-				bool* __c=retbool;\
+				bool* __c=ret_bool_ptr;\
 				*__c=false;\
 			}\
 		}\
 		else\
 		{\
 			qn_inl_mukum_erase_node(name,p,&__rn);\
-			if (retbool)\
+			if (ret_bool_ptr)\
 			{\
-				bool* __c=retbool;\
+				bool* __c=ret_bool_ptr;\
 				*__c=true;\
 			}\
 		}\
 	}QN_STMT_END
 
+/**
+ * @brief 묶음 노드 삭제
+ * @param pppnode 노드의 포인터의 포인터의 포인터
+ */
 #define qn_inl_mukum_erase_node(name,p,pppnode)\
 	QN_STMT_BEGIN{\
-		struct _##name##Node** __en=*(pppnode);\
-		struct _##name##Node* __enn=*__en;\
+		struct name##Node** __en=*(pppnode);\
+		struct name##Node* __enn=*__en;\
 		/* step 1 */\
 		*__en=__enn->sib;\
 		/* step 2 */\
-		_##name##_hash_key(&__enn->key);\
-		_##name##_hash_value(&__enn->value);\
+		name##_key(&__enn->key);\
+		name##_value(&__enn->value);\
 		qn_free(__enn);\
 		(p)->count--;\
 		(p)->revision++;\
 	}QN_STMT_END
 
+ /** @brief 모두 삭제 */
 #define qn_inl_mukum_erase_all(name,p)\
 	QN_STMT_BEGIN{\
-		size_t __i;\
-		struct _##name##Node* __node;\
-		struct _##name##Node* __next;\
-		for (__i=0; __i<(p)->bucket; __i++)\
-			for (__node=(p)->nodes[__i]; __node; __node=__next)\
+		for (size_t __i=0; __i<(p)->bucket; __i++)\
+			for (struct name##Node *__next, *__node=(p)->nodes[__i]; __node; __node=__next)\
 			{\
 				__next=__node->sib;\
-				_##name##_hash_key(&__node->key);\
-				_##name##_hash_value(&__node->value);\
+				name##_key(&__node->key);\
+				name##_value(&__node->value);\
 				qn_free(__node);\
 			}\
 		(p)->count=0;\
 		(p)->revision++;\
-		memset((p)->nodes, 0, (p)->bucket*sizeof(struct _##name##Node*));\
+		memset((p)->nodes, 0, (p)->bucket*sizeof(struct name##Node*));\
 	}QN_STMT_END
 
-//
-#define qn_mukum_ptr_disp(name,p)\
-	QN_STMT_BEGIN{\
-		size_t __i;\
-		struct _##name##Node* __node;\
-		struct _##name##Node* __next;\
-		for (__i=0; __i<(p)->bucket; __i++)\
-			for (__node=(p)->nodes[__i]; __node; __node=__next)\
-			{\
-				__next=__node->sib;\
-				_##name##_ptrhash_key(__node->key);\
-				_##name##_ptrhash_value(__node->value);\
-				qn_free(__node);\
-			}\
-		qn_free((p)->nodes);\
-	}QN_STMT_END
-
-#define qn_mukum_ptr_remove_node(name,p,node)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node** __en=&(node);\
-		qn_inl_mukum_ptr_erase_node(name,p,&__en);\
-		qn_inl_mukum_test_size(name,p);\
-	}QN_STMT_END
-
-#define qn_mukum_ptr_clear(name,p)\
-	QN_STMT_BEGIN{\
-		qn_inl_mukum_ptr_erase_all(name,p);\
-		qn_inl_mukum_test_size(name,p);\
-	}QN_STMT_END
-
-#define qn_mukum_ptr_foreach(name,p,func3,userdata)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		size_t __i;\
-		for (__i=0; __i<(p)->bucket; __i++)\
-			for (__node=(p)->nodes[__i]; __node; __node=__node->sib)\
-				func3(userdata, __node->key, __node->value);\
-	}QN_STMT_END
-
-#define qn_mukum_ptr_loopeach(name,p,func2)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		size_t __i;\
-		for (__i=0; __i<(p)->bucket; __i++)\
-			for (__node=(p)->nodes[__i]; __node; __node=__node->sib)\
-				func2(__node->key, __node->value);\
-	}QN_STMT_END
-
-#define qn_mukum_ptr_foreach_value(name,p,func2,userdata)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		size_t __i;\
-		for (__i=0; __i<(p)->bucket; __i++)\
-			for (__node=(p)->nodes[__i]; __node; __node=__node->sib)\
-				func2(userdata, __node->value);\
-	}QN_STMT_END
-
-#define qn_mukum_ptr_loopeach_value(name,p,func1)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		size_t __i;\
-		for (__i=0; __i<(p)->bucket; __i++)\
-			for (__node=(p)->nodes[__i]; __node; __node=__node->sib)\
-				func1(__node->value);\
-	}QN_STMT_END
-
-// value type
-#define qn_mukum_ptr_node(name,p,keyptr,retnode)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node** __gn;\
-		qn_inl_mukum_ptr_lookup(name,p,keyptr,__gn);\
-		(retnode)=*__gn;\
-	}QN_STMT_END
-
-#define qn_mukum_ptr_get(name,p,keyptr,retvalue)\
-	QN_STMT_BEGIN{\
-		/* retvalue: pointer of 'value' */\
-		struct _##name##Node** __gn;\
-		struct _##name##Node* __node;\
-		qn_inl_mukum_ptr_lookup(name,p,keyptr,__gn);\
-		__node=*__gn;\
-		*(retvalue)=(__node) ? __node->value : NULL;\
-	}QN_STMT_END
-
-#define qn_mukum_ptr_add(name,p,keyptr,valueptr)\
-	qn_inl_mukum_ptr_set(name,p,keyptr,valueptr,false)
-
-#define qn_mukum_ptr_set(name,p,keyptr,valueptr)\
-	qn_inl_mukum_ptr_set(name,p,keyptr,valueptr,true)
-
-#define qn_mukum_ptr_remove(name,p,keyptr,retbool_can_be_null)\
-	QN_STMT_BEGIN{\
-		qn_inl_mukum_ptr_erase(name,p,keyptr,retbool_can_be_null);\
-		qn_inl_mukum_test_size(name,p);\
-	}QN_STMT_END
-
-#define qn_mukum_ptr_find(name,p,func,userdata,retkey,gotoname)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node* __node;\
-		size_t __i;\
-		for (__i=0; __i<(p)->bucket; __i++)\
-		{\
-			for (__node=(p)->nodes[__i]; __node; __node=__node->sib)\
-			{\
-				if (func(userdata, __node->key, __node->value))\
-				{\
-					*(retkey)=__node->key;\
-					goto K_CONCAT(pos_mukum_find_exit,gotoname);\
-				}\
-			}\
-		}\
-		(retkey)=NULL;\
-		K_CONCAT(pos_mukum_find_exit,gotoname):;\
-	}QN_STMT_END
-
-//
-#define qn_inl_mukum_ptr_lookup(name,p,keyptr,retnode)\
-	QN_STMT_BEGIN{\
-		/* keyptr: pointer of key */\
-		/* retnode: pointer's pointer of Node */\
-		size_t __lh=_##name##_ptrhash_hash(keyptr);\
-		struct _##name##Node** __ln=&(p)->nodes[__lh%(p)->bucket];\
-		struct _##name##Node* __lnn;\
-		while ((__lnn=*__ln)!=NULL)\
-		{\
-			if (__lnn->hash==__lh && _##name##_ptrhash_eq(__lnn->key, keyptr))\
-				break;\
-			__ln=&__lnn->sib;\
-		}\
-		(retnode)=__ln;\
-	}QN_STMT_END
-
-#define qn_inl_mukum_ptr_lookup_hash(name,p,keyptr,retnode,rethash)\
-	QN_STMT_BEGIN{\
-		/* keyptr: pointer of key */\
-		/* retnode: pointer's pointer of Node */\
-		/* rethash: pointer of kuint */\
-		size_t __lh=_##name##_ptrhash_hash(keyptr);\
-		struct _##name##Node** __ln=&(p)->nodes[__lh%(p)->bucket];\
-		struct _##name##Node* __lnn;\
-		while ((__lnn=*__ln)!=NULL)\
-		{\
-			if (__lnn->hash==__lh && _##name##_ptrhash_eq(__lnn->key, keyptr))\
-				break;\
-			__ln=&__lnn->sib;\
-		}\
-		(retnode)=__ln;\
-		*(rethash)=__lh;\
-	}QN_STMT_END
-
-#define qn_inl_mukum_ptr_set(name,p,keyptr,valueptr,replace)\
-	QN_STMT_BEGIN{\
-		/* keyptr: pointer of key */\
-		/* valuedata : data of value */\
-		/* replace: true=replace original key, false=discard given key */\
-		size_t __ah;\
-		struct _##name##Node** __an;\
-		struct _##name##Node* __ann;\
-		qn_inl_mukum_ptr_lookup_hash(name,p,keyptr,__an,&__ah);\
-		__ann=*__an;\
-		if (__ann)\
-		{\
-			if (replace)\
-			{\
-				_##name##_ptrhash_key(__ann->key);\
-				__ann->key=keyptr;\
-				_##name##_ptrhash_value(__ann->value);\
-				__ann->value=valueptr;\
-			}\
-			else\
-			{\
-				_##name##_ptrhash_key(keyptr);\
-				_##name##_ptrhash_value(valueptr);\
-			}\
-		}\
-		else\
-		{\
-			/* step 1*/\
-			__ann=qn_alloc_1(struct _##name##Node);\
-			__ann->sib=NULL;\
-			__ann->hash=__ah;\
-			__ann->key=keyptr;\
-			__ann->value=valueptr;\
-			/* step 2 */\
-			*__an=__ann;\
-			(p)->revision++;\
-			(p)->count++;\
-			/* step 3 */\
-			qn_inl_mukum_test_size(name,p);\
-		}\
-	}QN_STMT_END
-
-#define qn_inl_mukum_ptr_erase(name,p,keyptr,retbool)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node** __rn;\
-		qn_inl_mukum_ptr_lookup(name,p,keyptr,__rn);\
-		if (*__rn==NULL)\
-		{\
-			if (retbool)\
-			{\
-				bool* __c=retbool;\
-				*__c=false;\
-			}\
-		}\
-		else\
-		{\
-			qn_inl_mukum_ptr_erase_node(name,p,&__rn);\
-			if (retbool)\
-			{\
-				bool* __c=retbool;\
-				*__c=true;\
-			}\
-		}\
-	}QN_STMT_END
-
-#define qn_inl_mukum_ptr_erase_node(name,p,pppnode)\
-	QN_STMT_BEGIN{\
-		struct _##name##Node** __en=*(pppnode);\
-		struct _##name##Node* __enn=*__en;\
-		/* step 1 */\
-		*__en=__enn->sib;\
-		/* step 2 */\
-		_##name##_ptrhash_key(__enn->key);\
-		_##name##_ptrhash_value(__enn->value);\
-		qn_free(__enn);\
-		(p)->count--;\
-		(p)->revision++;\
-	}QN_STMT_END
-
-#define qn_inl_mukum_ptr_erase_all(name,p)\
-	QN_STMT_BEGIN{\
-		size_t __i;\
-		struct _##name##Node* __node;\
-		struct _##name##Node* __next;\
-		for (__i=0; __i<(p)->bucket; __i++)\
-			for (__node=(p)->nodes[__i]; __node; __node=__next)\
-			{\
-				__next=__node->sib;\
-				_##name##_ptrhash_key(__node->key);\
-				_##name##_ptrhash_value(__node->value);\
-				qn_free(__node);\
-			}\
-		(p)->count=0;\
-		(p)->revision++;\
-		memset((p)->nodes, 0, (p)->bucket*sizeof(struct _##name##Node*));\
-	}QN_STMT_END
-
-//
+/** @brief 묶음 크기 검사 */
 #define qn_inl_mukum_test_size(name,p)\
 	QN_STMT_BEGIN{\
 		size_t __cnt=(p)->count;\
 		size_t __bkt=(p)->bucket;\
 		if ((__bkt>=3*__cnt && __bkt>QN_MIN_HASH) ||\
 			(3*__bkt<=__cnt && __bkt<QN_MAX_HASH))\
-			qn_inl_mukum_resize((qnMukum*)(p));\
+			qn_inl_mukum_resize((QnInlineMukum*)(p));\
 	}QN_STMT_END
 
-	QN_INLINE void qn_inl_mukum_resize(qnInlineMukum* p)
+/** @brief 묶음 리사이즈 */
+QN_INLINE void qn_inl_mukum_resize(QnInlineMukum* p)
 {
 	size_t newbucket = qn_primenear((uint32_t)p->count);
 	newbucket = QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
-	struct _qnInlineMukumNode** newnodes = qn_alloc_zero(newbucket, struct _qnInlineMukumNode*);
+	struct QnInlineMukumNode** newnodes = qn_alloc_zero(newbucket, struct QnInlineMukumNode*);
 	if (!newnodes)
 		return;
 	for (size_t i = 0; i < p->bucket; i++)
 	{
-		for (struct _qnInlineMukumNode *node = p->nodes[i], *next; node; node = next)
+		for (struct QnInlineMukumNode *node = p->nodes[i], *next; node; node = next)
 		{
 			next = node->sib;
 			const size_t hashmask = node->hash % newbucket;

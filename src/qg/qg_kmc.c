@@ -87,7 +87,7 @@ const char* qg_qic_str(QicButton button)
 #endif;
 }
 
-#if USE_SDL2
+#ifdef USE_SDL2
 //
 QikKey sdlk_to_qik(uint sdlk)
 {

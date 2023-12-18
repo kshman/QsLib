@@ -1,5 +1,5 @@
 ﻿/*
- * QsLib <QG Layer>
+ * QsLib [QG Layer]
  * Made by kim 2004-2024
  *
  * 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
@@ -8,7 +8,7 @@
 /**
  * @file qs_qg.h
  *
- * <QG Layer>는 공통 그래픽 구현을 목표로 합니다.
+ * [QG Layer]는 공통 그래픽 구현을 목표로 합니다.
  */
 #pragma once
 
@@ -245,8 +245,11 @@ typedef enum QgFlag
 	QGFLAG_FULLSCREEN = QN_BIT(0),							/** @brief 전체 화면 */
 	QGFLAG_BORDERLESS = QN_BIT(1),							/** @brief 테두리 없는 윈도우 */
 	QGFLAG_RESIZABLE = QN_BIT(2),							/** @brief 크기 변경할 수 있음 */
-	QGFLAG_FOCUS = QN_BIT(3),								/** @brief 입력 포커스 받을 수 있음 */
-	QGFLAG_IDLE = QN_BIT(4),								/** @brief 활성 중이 아니면 대기 */
+	QGFLAG_FOCUS = QN_BIT(4),								/** @brief 입력 포커스 받을 수 있음 */
+	QGFLAG_IDLE = QN_BIT(5),								/** @brief 활성 중이 아니면 대기 */
+	QGFLAG_NOTITLE = QN_BIT(6),								/** @brief 타이틀 바가 없음 */
+	QGFLAG_NOACS = QN_BIT(7),								/** @brief 윈도우 도움 기능 끔 */
+	QGFLAG_DROP = QN_BIT(8),								/** @brief 드래그 드랍 */
 	QGFLAG_VSYNC = QN_BIT(16),								/** @brief VSYNC 켜기 */
 	QGFLAG_DITHER = QN_BIT(17),								/** @brief 16비트 모드 사용 */
 	QGFLAG_MSAA = QN_BIT(18),								/** @brief 멀티 샘플링 사용 */
@@ -258,7 +261,7 @@ typedef enum QgStubStat
 	QGSTTI_VIRTUAL = QN_BIT(1),								/** @brief 가상 스터브 사용중 */
 	QGSTTI_ACTIVE = QN_BIT(2),								/** @brief 스터브가 활성 상태 */
 	QGSTTI_LAYOUT = QN_BIT(3),								/** @brief 스터브 크기를 변경 */
-	QGSTTI_ACS = QN_BIT(13),								/** @brief 윈도우 도움 기능 켬 */
+	QGSTTI_NOACS = QN_BIT(13),								/** @brief 윈도우 도움 기능 끔 */
 	QGSTTI_PAUSE = QN_BIT(14),								/** @brief 포즈 중 */
 	QGSTTI_DROP = QN_BIT(15),								/** @brief 드래그 드랍 중 */
 	QGSTTI_CURSOR = QN_BIT(16),								/** @brief 커서의 표시 */

@@ -1,0 +1,17 @@
+#define QSAPI
+#define QSAPI __declspec(dllimport)
+#define QSAPI __attribute__((__visibility__("default")))
+
+#define QN_STMT_BEGIN do
+#define QN_STMT_END while(0)
+#define _QN_STRING(x) #x
+#define _QN_UNICODE(x) L##x
+#define _QN_CONCAT_2(x,y) x##y
+#define _QN_CONCAT_3(x,y,z) x##y##z
+
+#define QN_DECL_ARR(name, type) typedef struct name name; typedef type name##Type; struct name { size_t count; size_t capa; type* data; };
+#define QN_DECL_ARR(name, type) typedef struct name name; typedef type name##Type; struct name { size_t count; size_t capa; type* data; };
+#define QN_DECL_ARR(name, type) typedef struct name name; typedef type name##Type; struct name { size_t count; size_t capa; type* data; };
+#define QN_DECL_ARR(name, type) typedef struct name name; typedef type name##Type; struct name { size_t count; size_t capa; type* data; };
+
+#define qn_inl_hash_lookup_hash(name, p, keyptr, ret_node, ret_hash) QN_STMT_BEGIN{ if ((p)->nodes) { size_t __lh=name##_hash(keyptr); struct name##Node** __ln=&(p)->nodes[__lh%(p)->bucket]; while ((struct name##Node* __lnn=*__ln)!=NULL) { if (__lnn->hash==__lh && name##_eq(&__lnn->key, keyptr)) break; __ln=&__lnn->sib; } (ret_node)=__ln; *(ret_hash)=__lh; } }QN_STMT_END

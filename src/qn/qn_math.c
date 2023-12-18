@@ -1,6 +1,6 @@
 ﻿#include "pch.h"
 #include "qs_qn.h"
-#if defined _M_IX86 || defined _M_X64  || defined __amd64__ || defined __x86_64__ || defined __i386__
+#if defined _M_IX86 || defined _M_X64 || defined __i386__  || defined __amd64__ || defined __x86_64__
 #include <intrin.h>
 #define USE_EMM_INTRIN		1
 #endif
@@ -11,12 +11,7 @@
 #define _mm_rol_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((byte)(7-(i))%4,(byte)(6-(i))%4,(byte)(5-(i))%4,(byte)(4-(i))%4))) : (vec))  // NOLINT
 #endif
 
-/**
- * @brief 선에 가까운 점의 위치
- * @param pv 반환되는 근처 점
- * @param line 선
- * @param loc 점
-*/
+//
 void qn_vec3_closed_line(QnVec3* pv, const QnLine3* line, const QnVec3* loc)
 {
 	QnVec3 c, z;
@@ -37,14 +32,7 @@ void qn_vec3_closed_line(QnVec3* pv, const QnLine3* line, const QnVec3* loc)
 	}
 }
 
-/**
- * @brief 단위 벡터로 만들어 크기를 조정하고 길이 만큼 혼합
- * @param pv 결과 벡터
- * @param left 시작 벡터
- * @param right 끝 벡터
- * @param scale 크기 변화량
- * @param len 길이
-*/
+//
 void qn_vec3_lerp_len(QnVec3* pv, const QnVec3* left, const QnVec3* right, float scale, float len)
 {
 	QnVec3 v0, v1;
@@ -56,13 +44,7 @@ void qn_vec3_lerp_len(QnVec3* pv, const QnVec3* left, const QnVec3* right, float
 	qn_vec3_mag(pv, pv, len);
 }
 
-/**
- * @brief 세 벡터로 법선 벡터를 만든다
- * @param pv 얻은 법선 벡터
- * @param v0 벡터 1
- * @param v1 벡터 2
- * @param v2 벡터 3
-*/
+//
 void qn_vec3_form_norm(QnVec3* pv, const QnVec3* v0, const QnVec3* v1, const QnVec3* v2)
 {
 	QnVec3 t0, t1;
@@ -72,13 +54,7 @@ void qn_vec3_form_norm(QnVec3* pv, const QnVec3* v0, const QnVec3* v1, const QnV
 	qn_vec3_mag(pv, pv, qn_vec3_len(pv));
 }
 
-/**
- * @brief 반사 벡터를 만든다
- * @param pv 반사된 벡터
- * @param in 입력 벡터
- * @param dir 법선 벡터
- * @return 반사 벡터가 만들어지면 참
-*/
+//
 bool qn_vec3_reflect(QnVec3* pv, const QnVec3* in, const QnVec3* dir)
 {
 	const float len = qn_vec3_len(in);
@@ -102,14 +78,7 @@ bool qn_vec3_reflect(QnVec3* pv, const QnVec3* in, const QnVec3* dir)
 	}
 }
 
-/**
- * @brief 면과 선분 충돌 여부
- * @param pv 충돌 지점
- * @param plane 면
- * @param loc 선의 시작
- * @param dir 선의 방량
- * @return 충돌하면 참
-*/
+//
 bool qn_vec3_intersect_line(QnVec3* pv, const QnPlane* plane, const QnVec3* loc, const QnVec3* dir)
 {
 	// v2->pl<-v1
@@ -129,14 +98,7 @@ bool qn_vec3_intersect_line(QnVec3* pv, const QnPlane* plane, const QnVec3* loc,
 	}
 }
 
-/**
- * @brief 두 벡터 사이의 선분과 면의 충돌 여부
- * @param pv 충돌 지점
- * @param plane 면
- * @param v1 벡터1
- * @param v2 벡터2
- * @return 충돌하면 참
-*/
+//
 bool qn_vec3_intersect_point(QnVec3* pv, const QnPlane* plane, const QnVec3* v1, const QnVec3* v2)
 {
 	QnVec3 dir;
@@ -144,14 +106,7 @@ bool qn_vec3_intersect_point(QnVec3* pv, const QnPlane* plane, const QnVec3* v1,
 	return qn_vec3_intersect_line(pv, plane, v1, &dir);
 }
 
-/**
- * @brief 이거 뭔지 기억이 안난다. 뭐에 쓰던거지. 기본적으로 qn_vec3_intersect_point 에다 방향 벡터와의 거리 계산 추가
- * @param pv 충돌 지점
- * @param plane 면
- * @param v1 벡터1
- * @param v2 벡터2
- * @return 충돌하면서 방향 벡터의 거리 안쪽(?)이면 참
-*/
+//
 bool qn_vec3_intersect_between_point(QnVec3* pv, const QnPlane* plane, const QnVec3* v1, const QnVec3* v2)
 {
 	QnVec3 dir;
@@ -165,27 +120,14 @@ bool qn_vec3_intersect_between_point(QnVec3* pv, const QnPlane* plane, const QnV
 	}
 }
 
-/**
- * @brief 세 면이 충돌 하면 참
- * @param pv 충돌 위치
- * @param plane 기준 면
- * @param other1 대상 면1
- * @param other2 대상 면2
- * @return 충돌하면 참
-*/
+//
 bool qn_vec3_intersect_planes(QnVec3* pv, const QnPlane* plane, const QnPlane* other1, const QnPlane* other2)
 {
 	QnVec3 dir, loc;
 	return (qn_plane_intersect(plane, &loc, &dir, other1)) ? qn_vec3_intersect_line(pv, other2, &loc, &dir) : false;
 }
 
-/**
- * @brief 사원수의 스플라인 lerp
- * @param pq 반환 사원수
- * @param left 기준 사원수
- * @param right 대상 사원수
- * @param change 변화량
-*/
+//
 void qn_quat_slerp(QnQuat* pq, const QnQuat* left, const QnQuat* right, float change)
 {
 	float dot = qn_quat_dot(left, right);
@@ -233,11 +175,7 @@ void qn_quat_slerp(QnQuat* pq, const QnQuat* left, const QnQuat* right, float ch
 	pq->w = f1 * q1.w + f2 * q2.w;
 }
 
-/**
- * @brief 행렬로 사원수 회전
- * @param pq 반환 사원수
- * @param rot 회전할 행렬
-*/
+//
 void qn_quat_mat4(QnQuat* pq, const QnMat4* rot)
 {
 	const float diag = rot->_11 + rot->_22 + rot->_33 + 1.0f;
@@ -296,11 +234,7 @@ void qn_quat_mat4(QnQuat* pq, const QnMat4* rot)
 	}
 }
 
-/**
- * @brief 벡터로 화전
- * @param pq 반환 사원수
- * @param rot 회전 행렬
-*/
+//
 void qn_quat_vec(QnQuat* pq, const QnVec3* rot)
 {
 	float rs, rc;
@@ -326,11 +260,7 @@ void qn_quat_vec(QnQuat* pq, const QnVec3* rot)
 	pq->w = rc * pcyc + rs * psys;
 }
 
-/**
- * @brief 사원수 로그
- * @param pq 반환 사원수
- * @param q 입력 사원수
-*/
+//
 void qn_quat_ln(QnQuat* pq, const QnQuat* q)
 {
 	const float n = qn_quat_len_sq(q);
@@ -361,11 +291,7 @@ void qn_quat_ln(QnQuat* pq, const QnQuat* q)
 	}
 }
 
-/**
- * @brief 행렬 전치
- * @param pm 반환 행렬
- * @param m 전치할 행렬
-*/
+//
 void qn_mat4_tran(QnMat4* pm, const QnMat4* m)
 {
 #ifdef USE_EMM_INTRIN
@@ -422,12 +348,7 @@ void qn_mat4_tran(QnMat4* pm, const QnMat4* m)
 #endif
 }
 
-/**
- * @brief 행렬 곱
- * @param pm 반환 행렬
- * @param left 좌측 행렬
- * @param right 우측 행렬
-*/
+//
 void qn_mat4_mul(QnMat4* pm, const QnMat4* left, const QnMat4* right)
 {
 #ifdef USE_EMM_INTRIN
@@ -487,12 +408,7 @@ void qn_mat4_mul(QnMat4* pm, const QnMat4* left, const QnMat4* right)
 #endif
 }
 
-/**
- * @brief 역행렬
- * @param pm 반환 행렬
- * @param m 입력 행렬
- * @param determinant 행렬식
-*/
+//
 void qn_mat4_inv(QnMat4* pm, const QnMat4* m, float* /*NULLABLE*/determinant)
 {
 #ifdef USE_EMM_INTRIN
@@ -617,12 +533,8 @@ void qn_mat4_inv(QnMat4* pm, const QnMat4* m, float* /*NULLABLE*/determinant)
 		*determinant = f;
 #endif
 }
-/**
- * @brief 전치곱
- * @param pm 반환 행렬
- * @param left 왼쪽 행렬
- * @param right 오른쪽 행렬
-*/
+
+//
 void qn_mat4_tmul(QnMat4* pm, const QnMat4* left, const QnMat4* right)
 {
 	QnMat4 m;
@@ -630,11 +542,7 @@ void qn_mat4_tmul(QnMat4* pm, const QnMat4* left, const QnMat4* right)
 	qn_mat4_tran(pm, &m);
 }
 
-/**
- * @brief 행렬식
- * @param m 행렬
- * @return 행렬식
-*/
+//
 float qn_mat4_det(const QnMat4* m)
 {
 #ifdef USE_EMM_INTRIN
@@ -673,12 +581,7 @@ float qn_mat4_det(const QnMat4* m)
 #endif
 }
 
-/**
- * @brief 그림자 행렬을 만든다
- * @param pm 반환 행렬
- * @param light 빛의 방향
- * @param plane 투영될 면
-*/
+//
 void qn_mat4_shadow(QnMat4* pm, const QnVec4* light, const QnPlane* plane)
 {
 	const float d = plane->a * light->x + plane->b * light->y + plane->c * light->z + plane->d;
@@ -729,14 +632,7 @@ void qn_mat4_shadow(QnMat4* pm, const QnVec4* light, const QnPlane* plane)
 	}
 }
 
-/**
- * @brief 아핀 변환 행렬
- * @param pm 반환 행렬
- * @param scl 스케일
- * @param rotcenter 회전축(원점일 경우 NULL)
- * @param rot 회전
- * @param loc 위치
-*/
+//
 void qn_mat4_affine(QnMat4* pm, const QnVec3* scl, const QnVec3* rotcenter, const QnQuat* rot, const QnVec3* loc)
 {
 	QnMat4 m1, m2, m3, m4, m5, p1, p2, p3;
@@ -773,13 +669,7 @@ void qn_mat4_affine(QnMat4* pm, const QnVec3* scl, const QnVec3* rotcenter, cons
 	qn_mat4_mul(pm, &p3, &m5);
 }
 
-/**
- * @brief 행렬 트랜스폼
- * @param m 반환 행렬
- * @param loc 위치
- * @param rot 회전
- * @param scl 스케일 (1일 경우 NULL)
-*/
+//
 void qn_mat4_trfm(QnMat4* m, const QnVec3* loc, const QnQuat* rot, const QnVec3* scl)
 {
 	float* f = m->f16;
@@ -816,13 +706,7 @@ void qn_mat4_trfm(QnMat4* m, const QnVec3* loc, const QnQuat* rot, const QnVec3*
 	}
 }
 
-/**
- * @brief 행렬 트랜스폼. 단 벡터 회전
- * @param m 반환 행렬
- * @param loc 위치
- * @param rot 회전
- * @param scl 스케일 (1일 경우 NULL)
-*/
+//
 void qn_mat4_trfm_vec(QnMat4* m, const QnVec3* loc, const QnVec3* rot, const QnVec3* scl)
 {
 	float* f = m->f16;
@@ -859,12 +743,7 @@ void qn_mat4_trfm_vec(QnMat4* m, const QnVec3* loc, const QnVec3* rot, const QnV
 	}
 }
 
-/**
- * @brief 면 트랜스폼
- * @param pp 반환 면
- * @param plane 대상 면
- * @param trfm 트랜스폼 행렬
-*/
+//
 void qn_plane_trfm(QnPlane* pp, const QnPlane* plane, const QnMat4* trfm)
 {
 	QnVec3 v, n, s;
@@ -886,13 +765,7 @@ void qn_plane_trfm(QnPlane* pp, const QnPlane* plane, const QnMat4* trfm)
 	pp->d = -qn_vec3_dot(&v, (const QnVec3*)pp);
 }
 
-/**
- * @brief 점 세개로 평면을 만든다
- * @param pp 반환 면
- * @param v1 점1
- * @param v2 점2
- * @param v3 점3
-*/
+//
 void qn_plane_points(QnPlane* pp, const QnVec3* v1, const QnVec3* v2, const QnVec3* v3)
 {
 	QnVec3 t0, t1, t2;
@@ -903,14 +776,7 @@ void qn_plane_points(QnPlane* pp, const QnVec3* v1, const QnVec3* v2, const QnVe
 	qn_plane_set(pp, t2.x, t2.y, t2.z, -qn_vec3_dot(v1, &t2));
 }
 
-/**
- * @brief 벡터와 면의 충돌 평면을 만든다
- * @param p 반환 면
- * @param loc 시작 벡터
- * @param dir 방향 벡터
- * @param o 대상 평면
- * @return 만들 수 있으면 TRUE
-*/
+//
 bool qn_plane_intersect(const QnPlane* p, QnVec3* loc, QnVec3* dir, const QnPlane* o)
 {
 	const float f0 = qn_vec3_len((const QnVec3*)p);
@@ -928,14 +794,7 @@ bool qn_plane_intersect(const QnPlane* p, QnVec3* loc, QnVec3* dir, const QnPlan
 	return true;
 }
 
-/**
- * @brief 구와 충돌하는 선 판정
- * @param p 처리할 선
- * @param org 구의 중점
- * @param rad 구의 반지름
- * @param dist 충돌 거리
- * @return 충돌하면 true
-*/
+//
 bool qn_line3_intersect_sphere(const QnLine3* p, const QnVec3* org, float rad, float* dist)
 {
 	QnVec3 t;

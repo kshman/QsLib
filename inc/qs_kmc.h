@@ -1,5 +1,5 @@
 ﻿/*
- * QsLib <KMC Helper>
+ * QsLib [KMC Helper]
  * Made by kim 2004-2024
  *
  * 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
@@ -8,7 +8,7 @@
 /**
  * @file qs_kmc.h
  *
- * <KMC Helper>는 키보드/마우스/컨트롤러 정의를 목표로 합니다.
+ * [KMC Helper]는 키보드/마우스/컨트롤러 정의를 목표로 합니다.
  */
 #pragma once
 

@@ -265,8 +265,8 @@ char* qn_strpcpy(char* dest, const char* src)
 //
 char* qn_strdup(const char* p)
 {
-	qn_val_if_fail(p!=NULL, NULL);
-	size_t len=strlen(p)+1;
+	qn_val_if_fail(p != NULL, NULL);
+	size_t len = strlen(p) + 1;
 	char* d = qn_alloc(len, char);
 	qn_strcpy(d, len, p);
 	return d;
@@ -402,6 +402,18 @@ int qn_strfnd(const char* src, const char* find, size_t index)
 	}
 
 	return -1;
+}
+
+//
+bool qn_streqv(const char* p1, const char* p2)
+{
+	return p1 == p2 ? true : strcmp(p1, p2) == 0;
+}
+
+//
+bool qn_strieqv(const char* p1, const char* p2)
+{
+	return p1 == p2 ? true : qn_stricmp(p1, p2) == 0;
 }
 
 #ifndef _MSC_VER
@@ -777,7 +789,7 @@ wchar* qn_wcsdup(const wchar* p)
 {
 	qn_val_if_fail(p != NULL, NULL);
 	size_t len = wcslen(p) + 1;
-	char* d = qn_alloc(len, wchar);
+	wchar* d = qn_alloc(len, wchar);
 	qn_wcscpy(d, len, p);
 	return d;
 }
@@ -796,7 +808,7 @@ wchar* qn_wcscat(const wchar* p, ...)
 		size += wcslen(s);
 		s = va_arg(va, wchar*);
 	}
-	
+
 	wchar* str = qn_alloc(size, wchar);
 	wchar* c = qn_wcspcpy(str, p);
 	s = va_arg(vq, wchar*);
@@ -914,6 +926,18 @@ int qn_wcsfnd(const wchar* src, const wchar* find, size_t index)
 	return -1;
 }
 
+//
+bool qn_wcseqv(const wchar* p1, const wchar* p2)
+{
+	return p1 == p2 ? true : wcscmp(p1, p2) == 0;
+}
+
+//
+bool qn_wcsieqv(const wchar* p1, const wchar* p2)
+{
+	return p1 == p2 ? true : qn_wcsicmp(p1, p2) == 0;
+}
+
 #ifndef _MSC_VER
 /** @brief 문자열을 대문자로 */
 wchar* qn_wcsupr(wchar* p, size_t size)
@@ -1020,7 +1044,7 @@ size_t qn_u8len(const char* s)
 
 		i = ((i & (MASK * 0x80)) >> 7) & ((~i) >> 6);
 		cnt += (i * MASK) >> ((sizeof(size_t) - 1) * 8);
-}
+	}
 
 	//
 	for (;; t++)
@@ -1750,4 +1774,17 @@ size_t qn_u32to16(uchar2* dest, size_t destsize, const uchar4* src, size_t srcle
 	return size;
 }
 
-
+#define DEF_UTF_DUP(name, in_type, out_type)\
+	out_type* name##_dup(const in_type* src, size_t srclen) {\
+		size_t len=name(NULL,0,src,srclen)+1; qn_val_if_ok(len<2,NULL);\
+		out_type* buf=qn_alloc(len, out_type); name(buf,len,src,srclen);\
+		return buf; }
+DEF_UTF_DUP(qn_mbstowcs, char, wchar);
+DEF_UTF_DUP(qn_wcstombs, wchar, char);
+DEF_UTF_DUP(qn_u8to32, char, uchar4);
+DEF_UTF_DUP(qn_u8to16, char, uchar2);
+DEF_UTF_DUP(qn_u32to8, uchar4, char);
+DEF_UTF_DUP(qn_u16to8, uchar2, char);
+DEF_UTF_DUP(qn_u16to32, uchar2, uchar4);
+DEF_UTF_DUP(qn_u32to16, uchar4, uchar2);
+#undef DEF_UTF_DUP

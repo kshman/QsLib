@@ -2,9 +2,10 @@
 
 #include <qs_ctn.h>
 
+#ifdef USE_SDL2
 //////////////////////////////////////////////////////////////////////////
 // SDL
-#if USE_SDL2
+
 /**
  * @brief SDLK를 QIK로
  * @param sdlk SDLK

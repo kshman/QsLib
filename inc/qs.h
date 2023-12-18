@@ -45,9 +45,11 @@
 // MSVC library
 #ifdef _MSC_VER
 #pragma comment(lib, "qs")
+#ifdef USE_SDL2
 #ifdef _QN_64_
 #pragma comment(lib, "SDL2x64")
 #else
 #pragma comment(lib, "SDL2")
+#endif
 #endif
 #endif

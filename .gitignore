@@ -227,6 +227,5 @@ ClientBin/
 orleans.codegen.cs
 
 #doxygen
-build/doxygen/html
-build/doxygen/latex
-build/doxygen/rtf
+Doxyfile
+builds/doxygen/

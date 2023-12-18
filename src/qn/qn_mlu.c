@@ -9,9 +9,9 @@ QN_DECL_ARR(SubArray, QnRealTag*)
 QN_DECL_SLIST(StackList, QnRealTag*)
 
 QN_DECL_HASH(ArgHash, char*, char*)
-QN_DECL_HASH_HASHER_CHAR_PTR(ArgHash)
-QN_DECL_HASH_KEY_DELETE(ArgHash)
-QN_DECL_HASH_VALUE_DELETE(ArgHash)
+QN_HASH_CHAR_PTR_KEY(ArgHash)
+QN_HASH_KEY_FREE(ArgHash)
+QN_HASH_VALUE_FREE(ArgHash)
 
 // 스트링 제거
 static void error_array_delete_ptr(char** ptr)
@@ -1278,7 +1278,7 @@ const char* qn_mltag_get_arg(QnMlTag* ptr, const char* name, const char* ifnotex
 	qn_val_if_fail(qn_hash_count(&self->args) > 0, ifnotexist);
 
 	char** retvalue;
-	qn_hash_get(ArgHash, &self->args, &name, &retvalue);
+	qn_hash_get(ArgHash, &self->args, name, &retvalue);
 
 	return retvalue ? *retvalue : ifnotexist;
 }
@@ -1292,7 +1292,7 @@ bool qn_mltag_next_arg(QnMlTag* ptr, void** index, const char** name, const char
 		return false;
 
 	const QnRealTag* self = (QnRealTag*)ptr;
-	const struct _ArgHashNode* node = !*index ? self->args.frst : (struct _ArgHashNode*)*index;
+	const struct ArgHashNode* node = !*index ? self->args.frst : (struct ArgHashNode*)*index;
 
 	if (name) *name = node->key;
 	if (data) *data = node->value;
@@ -1309,19 +1309,19 @@ bool qn_mltag_contains_arg(QnMlTag* ptr, const char* name)
 }
 
 //
-void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, const char* name, const char* data), void* userdata)
+void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, const char** name, const char** data), void* userdata)
 {
 	const QnRealTag* self = (QnRealTag*)ptr;
 
-	qn_hash_ptr_foreach(ArgHash, &self->args, func, userdata);
+	qn_hash_foreach(ArgHash, &self->args, func, userdata);
 }
 
 //
-void qn_mltag_loopeach_arg(QnMlTag* ptr, void(*func)(const char* name, const char* data))
+void qn_mltag_loopeach_arg(QnMlTag* ptr, void(*func)(const char** name, const char** data))
 {
 	const QnRealTag* self = (QnRealTag*)ptr;
 
-	qn_hash_ptr_loopeach(ArgHash, &self->args, func);
+	qn_hash_loopeach(ArgHash, &self->args, func);
 }
 
 //
@@ -1338,7 +1338,7 @@ void qn_mltag_set_arg(QnMlTag* ptr, const char* name, const char* value)
 	if (!self->args.bucket)
 		qn_hash_init(ArgHash, &self->args);
 
-	qn_hash_set(ArgHash, &self->args, &dn, &dv);
+	qn_hash_set(ArgHash, &self->args, dn, dv);
 }
 
 //
@@ -1349,7 +1349,7 @@ bool qn_mltag_remove_arg(QnMlTag* ptr, const char* name)
 	QnRealTag* self = (QnRealTag*)ptr;
 #if _MSC_VER
 	bool ret;
-	qn_hash_remove(ArgHash, &self->args, &name, &ret);
+	qn_hash_remove(ArgHash, &self->args, name, &ret);
 
 	return ret;
 #else

@@ -31,12 +31,11 @@ bool qg_open_stub(const char* title, int width, int height, int flags)
 	struct StubBase* stub = stub_system_open(title, width, height, flags);
 
 	stub->flags = flags;
-	stub->stats = QGSTTI_ACTIVE;
+	stub->stats |= QGSTTI_ACTIVE;
 	stub->delay = 10;
 
 	stub->timer = qn_timer_new();
-	qn_timer_set_manual(stub->timer, true);					// 유닉스 계열에서는 매뉴얼 밖에 안된다. 첨부터 매뉴얼로 만들껄 그랬나
-	stub->active = qn_timer_get_abs(stub->timer);
+	stub->active = stub->timer->abstime;
 
 	stub->mouse.lim.move = 5 * 5;							// 제한 이동 거리(포인트)의 제곱
 	stub->mouse.lim.tick = 500;								// 제한 클릭 시간(밀리초)
@@ -46,7 +45,7 @@ bool qg_open_stub(const char* title, int width, int height, int flags)
 	if (qg_stub_atexit == false)
 	{
 		qg_stub_atexit = true;
-		qn_atexitp(_stub_atexit, NULL);
+		qn_internal_atexit(_stub_atexit, NULL);
 	}
 
 	qg_stub_instance = stub;
@@ -143,10 +142,10 @@ bool qg_loop(void)
 			return false;
 	}
 
-	qn_timer_update(stub->timer);
-	const float adv = (float)qn_timer_get_adv(stub->timer);
-	stub->run = qn_timer_get_run(stub->timer);
-	stub->fps = (float)qn_timer_get_fps(stub->timer);
+	qn_timer_update(stub->timer, true);
+	const float adv = (float)stub->timer->advance;
+	stub->run = stub->timer->runtime;
+	stub->fps = (float)stub->timer->fps;
 	stub->reference = adv;
 	stub->advance = QN_TMASK(stub->stats, QGSTTI_PAUSE) == false ? adv : 0.0f;
 
