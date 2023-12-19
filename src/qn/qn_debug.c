@@ -8,7 +8,7 @@
 #endif
 
 //
-static struct qnDebugImpl
+static struct QnDebugImpl
 {
 #if _QN_WINDOWS_
 	HANDLE			handle;
@@ -21,10 +21,17 @@ static struct qnDebugImpl
 
 	bool			debugger;
 	bool			redirect;
-} _qn_dbg = { NULL, 3, "qs", };
+	QN_PADDING(2, 0)
+}
+_qn_dbg =
+{
+	NULL,
+	3,
+	"QS",
+};
 
 //
-void _qn_dbg_init(void)
+void qn_debug_init(void)
 {
 #if _QN_WINDOWS_
 	_qn_dbg.handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -35,7 +42,7 @@ void _qn_dbg_init(void)
 }
 
 //
-void _qn_dbg_dispose(void)
+void qn_debug_dispose(void)
 {
 #if _QN_WINDOWS_
 	if (_qn_dbg.redirect && _qn_dbg.handle != NULL)
@@ -47,16 +54,14 @@ void _qn_dbg_dispose(void)
 }
 
 //
-static int _qn_dbg_out_str(const char* s)
+static int qn_debug_out_str(const char* s)
 {
 #if _QN_WINDOWS_
 	DWORD len = (DWORD)strlen(s);
 	if (_qn_dbg.handle != NULL)
 	{
 		DWORD wtn;
-		if (_qn_dbg.redirect)
-			WriteFile(_qn_dbg.handle, s, len, &wtn, NULL);
-		else if (WriteConsoleA(_qn_dbg.handle, s, len, &wtn, NULL) == 0)
+		if (_qn_dbg.redirect || WriteConsoleA(_qn_dbg.handle, s, len, &wtn, NULL) == 0)
 			WriteFile(_qn_dbg.handle, s, len, &wtn, NULL);
 	}
 	if (_qn_dbg.debugger)
@@ -74,20 +79,18 @@ static int _qn_dbg_out_str(const char* s)
 }
 
 //
-static int _qn_dbg_out_ch(int ch)
+static int qn_debug_out_ch(int ch)
 {
 #if _QN_WINDOWS_
 	if (_qn_dbg.handle != NULL)
 	{
 		DWORD wtn;
-		if (_qn_dbg.redirect)
-			WriteFile(_qn_dbg.handle, &ch, 1, &wtn, NULL);
-		else if (WriteConsoleA(_qn_dbg.handle, &ch, 1, &wtn, NULL) == 0)
+		if (_qn_dbg.redirect || WriteConsoleA(_qn_dbg.handle, &ch, 1, &wtn, NULL) == 0)
 			WriteFile(_qn_dbg.handle, &ch, 1, &wtn, NULL);
 	}
 	if (_qn_dbg.debugger)
 	{
-		char sz[2] = { (char)ch, '\0' };
+		const char sz[2] = { (char)ch, '\0' };
 		OutputDebugStringA(sz);
 	}
 #else
@@ -103,77 +106,67 @@ static int _qn_dbg_out_ch(int ch)
 }
 
 //
-static int _qn_dbg_out_trace(const char* head, const char* text)
+static int qn_debug_out_trace(const char* head, const char* text)
 {
 	if (head == NULL)
 		head = "unknown";
-
-	const char* fmt = "[%s] %s";
-	size_t len = qn_snprintf(NULL, 0, fmt, head, text);
-	char* buf = qn_alloca(len + 1, char);
-	qn_snprintf(buf, len + 1, fmt, head, text);
-	_qn_dbg_out_str(buf);
-	qn_freea(buf);
-
-	return (int)len;
+	int len = 0;
+	len += qn_debug_out_ch('[');
+	len += qn_debug_out_str(head);
+	len += qn_debug_out_str("] ");
+	len += qn_debug_out_str(text);
+	return len;
 }
 
-/**
- * @brief 오류처리용 assert
- * @param	expr		표현
- * @param	mesg		오류 내용
- * @param	filename	파일의 파일 이름
- * @param	line		파일의 줄 번호
- * @return	int
- */
+///
 int qn_debug_assert(const char* expr, const char* mesg, const char* filename, int line)
 {
-	qn_retval_if_fail(expr, -1);
+	qn_val_if_fail(expr, -1);
+	qn_debug_out_str(expr);
+	qn_debug_out_str(": ");
+	if (mesg != NULL)
+		qn_debug_out_str(mesg);
+	qn_debug_out_str("(filename=\"");
+	qn_debug_out_str(filename);
+	qn_debug_out_str("\", line=");
+	char sz[32];
+	qn_itoa(sz, QN_COUNTOF(sz), line, 10);
+	qn_debug_out_str(sz);
+	qn_debug_out_ch('\n');
 
-	if (!mesg)
-		mesg = "";
-
-	const char* fmt = "%s: %s(filename=\"%s\", line=%d)\n";
-	size_t len = qn_snprintf(NULL, 0, fmt, expr, mesg, filename, line);
-	char* buf = qn_alloca(len + 1, char);
-	qn_snprintf(buf, len + 1, fmt, expr, mesg, filename, line);
-	_qn_dbg_out_str(buf);
-	qn_freea(buf);
-
+#ifndef __EMSCRIPTEN__
 	if (_qn_dbg.debugger) debug_break();
+#endif
 
 	return 0;
 }
 
-/**
- * @brief HALT 메시지
- * @param	cls	클래스 이름
- * @param	msg	출력할 메시지
- */
-void qn_debug_halt(const char* cls, const char* msg)
+//
+#if _MSC_VER
+__declspec(noreturn)
+#endif
+void qn_debug_halt(const char* head, const char* mesg)
 {
-	char* buf;
+	if (head == NULL)
+		head = "unknown";
+	qn_debug_out_str("HALT [");
+	qn_debug_out_str(head);
+	qn_debug_out_str("] ");
+	if (mesg != NULL)
+		qn_debug_out_str(mesg);
+	qn_debug_out_ch('\n');
 
-	if (!cls)
-		cls = "unknown";
-	if (!msg)
-		msg = "";
-
-	const char* fmt = "HALT [%s] %s\n";
-	size_t len = qn_snprintf(NULL, 0, fmt, cls, msg);
-	buf = qn_alloca(len + 1, char);
-	qn_snprintf(buf, len + 1, fmt, cls, msg);
-	_qn_dbg_out_str(buf);
-	qn_freea(buf);
-
+#ifndef __EMSCRIPTEN__
 	if (_qn_dbg.debugger) debug_break();
 	abort();
+#endif
 }
 
+//
 int qn_debug_outputs(bool breakpoint, const char* head, const char* mesg)
 {
-	int len = _qn_dbg_out_trace(head, mesg);
-	_qn_dbg_out_ch('\n');
+	const int len = qn_debug_out_trace(head, mesg);
+	qn_debug_out_ch('\n');
 
 	if (breakpoint && _qn_dbg.debugger)
 		debug_break();
@@ -181,45 +174,112 @@ int qn_debug_outputs(bool breakpoint, const char* head, const char* mesg)
 	return len;
 }
 
+//
 int qn_debug_outputf(bool breakpoint, const char* head, const char* fmt, ...)
 {
 	va_list va, vq;
 	va_start(va, fmt);
 	va_copy(vq, va);
-	size_t size = qn_vsnprintf(NULL, 0, fmt, vq);
+	const size_t size = qn_vsnprintf(NULL, 0, fmt, vq);
 	va_end(vq);
-	char* buf = qn_alloca(size + 1, char);
-	qn_vsnprintf(buf, size + 1, fmt, va);
+	char buf[1024];
+	qn_vsnprintf(buf, QN_COUNTOF(buf), fmt, va);
 	va_end(va);
-	_qn_dbg_out_trace(head, buf);
-	qn_freea(buf);
-	_qn_dbg_out_ch('\n');
+	qn_debug_out_trace(head, buf);
+	qn_debug_out_ch('\n');
 
+#ifndef __EMSCRIPTEN__
 	if (breakpoint && _qn_dbg.debugger)
 		debug_break();
+#endif
 
 	return (int)size;
 }
 
-int qn_outputs(const char* mesg)
+//
+static char* qn_syserr_mesg(int errcode, int* size)
 {
-	int len = _qn_dbg_out_str(mesg);
-	_qn_dbg_out_ch('\n');
+	const char s_unknown[] = "unknown error";
+#ifdef _QN_WINDOWS_
+	DWORD dw = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
+		NULL, (DWORD)errcode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), NULL, 0, NULL) + 1;
+	if (dw == 1)
+	{
+		if (size != NULL) *size = QN_COUNTOF(s_unknown) - 1;	// 널터미네이트 빼야함
+		return qn_strdup(s_unknown);
+	}
+	wchar* pw = qn_alloc(dw, wchar);
+	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
+		NULL, (DWORD)errcode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), pw, dw, NULL);
+	pw[dw - 2] = L'\0';
+
+	size_t len = qn_wcstombs(NULL, 0, pw, 0) + 1;
+	char* buf = qn_alloc(len, char);
+	qn_wcstombs(buf, len, pw, 0);
+	qn_free(pw);
+
+	if (size != NULL) *size = len - 1;
+	return buf;
+#else
+	char* psz = strerror(errcode);
+	if (psz == NULL)
+	{
+		if (size != NULL) *size = QN_COUNTOF(s_unknown) - 1;	// 널터미네이트 빼야함
+		return qn_strdup(s_unknown);
+	}
+	if (size != NULL) *size = (int)strlen(psz);
+	return qn_strdup(psz);
+#endif
+}
+
+//
+char* qn_syserr(int errcode, int* len)
+{
+	if (errcode == 0)
+#ifdef _QN_WINDOWS_
+		errcode = GetLastError();
+#else
+		errno;
+#endif
+	if (errcode == 0)
+		return NULL;
+	return qn_syserr_mesg(errcode, len);
+}
+
+//
+int qn_debug_output_syserr(bool breakpoint, const char* head, int errcode)
+{
+	char* ps = qn_syserr(errcode, NULL);
+	const int len = qn_debug_out_trace(head, ps);
+	qn_debug_out_ch('\n');
+	qn_free(ps);
+
+	if (breakpoint && _qn_dbg.debugger)
+		debug_break();
+
 	return len;
 }
 
+//
+int qn_outputs(const char* mesg)
+{
+	const int len = qn_debug_out_str(mesg);
+	qn_debug_out_ch('\n');
+	return len;
+}
+
+//
 int qn_outputf(const char* fmt, ...)
 {
 	va_list va, vq;
 	va_start(va, fmt);
 	va_copy(vq, va);
-	size_t size = qn_vsnprintf(NULL, 0, fmt, vq);
+	const size_t size = qn_vsnprintf(NULL, 0, fmt, vq);
 	va_end(vq);
-	char* buf = qn_alloca(size + 1, char);
-	qn_vsnprintf(buf, size + 1, fmt, va);
+	char buf[1024];
+	qn_vsnprintf(buf, QN_COUNTOF(buf), fmt, va);
 	va_end(va);
-	_qn_dbg_out_str(buf);
-	qn_freea(buf);
-	_qn_dbg_out_ch('\n');
+	qn_debug_out_str(buf);
+	qn_debug_out_ch('\n');
 	return (int)size;
 }

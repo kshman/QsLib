@@ -2,79 +2,71 @@
 #include "qs_qn.h"
 #include "qs_ctn.h"
 
-typedef struct qnRealTag qnRealTag;
+typedef struct QnRealTag QnRealTag;
 
-QN_DECL_ARR(ErrorArray, char*);
-QN_DECL_ARR(SubArray, qnRealTag*);
-QN_DECL_SLIST(StackList, qnRealTag*);
+QN_DECL_ARR(ErrorArray, char*)
+QN_DECL_ARR(SubArray, QnRealTag*)
+QN_DECL_SLIST(StackList, QnRealTag*)
 
-QN_DECL_HASH(ArgHash, char*, char*);
-QN_DECL_HASH_HASHER_CHAR_PTR(ArgHash);
-QN_DECL_HASH_KEY_DELETE(ArgHash);
-QN_DECL_HASH_VALUE_DELETE(ArgHash);
+QN_DECL_HASH(ArgHash, char*, char*)
+QN_HASH_CHAR_PTR_KEY(ArgHash)
+QN_HASH_KEY_FREE(ArgHash)
+QN_HASH_VALUE_FREE(ArgHash)
 
 // 스트링 제거
-static void _error_array_delete_ptr(char** ptr)
+static void error_array_delete_ptr(char** ptr)
 {
 	char* s = *ptr;
 	qn_free(s);
 }
 
 // xml 버전
-static const char* _ml_header_desc = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+static const char* ml_header_desc = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
 
 
 //////////////////////////////////////////////////////////////////////////
 // 실제 노드
-struct qnRealTag
+struct QnRealTag
 {
 	QnMlTag				base;
 
 	SubArray			subs;
-	ArgHash				harg;
+	ArgHash				args;
 
-	int					idn;
-	bool				cls;
+	size_t				name_hash;
+	size_t				context_hash;
 
-	size_t				nhash;
-	size_t				chash;
+	nint				index;
 };
 
-static void _qn_realtag_delete_ptr(qnRealTag** ptr);
-static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs);
-static bool _qn_realtag_write_file(qnRealTag* self, QnFile* file, int ident);
+static void qn_realtag_delete_ptr(QnRealTag** ptr);
+static bool qn_realtag_parse_args(QnRealTag* self, qnBstr4k* bs);
+static bool qn_realtag_write_file(const QnRealTag* self, QnFile* file, int ident);
 
 
 //////////////////////////////////////////////////////////////////////////
 // RML
-struct _QnMlu
+struct QnMlu
 {
 	SubArray			tags;
 	ErrorArray			errs;
 
-	int					maxline;
+	nint				maxline;
 };
 
-/**
- * @brief RML을 만든다
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnMlu*
- */
+//
 QnMlu* qn_mlu_new(void)
 {
 	QnMlu* self = qn_alloc_zero_1(QnMlu);
 	return self;
 }
 
-/**
- * @brief 파일에서 RML을 만든다
- * @param	filename	파일의 이름
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnMlu*
- */
+//
 QnMlu* qn_mlu_new_file(const char* filename)
 {
 	int size;
 	uint8_t* data = (uint8_t*)qn_file_alloc(filename, &size);
-	qn_retval_if_fail(data, NULL);
+	qn_val_if_fail(data, NULL);
 
 	QnMlu* self = qn_mlu_new();
 	if (!self)
@@ -83,7 +75,7 @@ QnMlu* qn_mlu_new_file(const char* filename)
 		return NULL;
 	}
 
-	bool ret = qn_mlu_load_buffer(self, data, size);
+	const bool ret = qn_mlu_load_buffer(self, data, size);
 	qn_free(data);
 
 	if (!ret)
@@ -95,16 +87,12 @@ QnMlu* qn_mlu_new_file(const char* filename)
 	return self;
 }
 
-/**
- * @brief 파일에서 RML을 만든다. 유니코드 파일 이름을 사용한다
- * @param	filename	파일의 이름
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnMlu*
- */
+//
 QnMlu* qn_mlu_new_file_l(const wchar* filename)
 {
 	int size;
 	uint8_t* data = (uint8_t*)qn_file_alloc_l(filename, &size);
-	qn_retval_if_fail(data, NULL);
+	qn_val_if_fail(data, NULL);
 
 	QnMlu* self = qn_mlu_new();
 	if (!self)
@@ -113,7 +101,7 @@ QnMlu* qn_mlu_new_file_l(const wchar* filename)
 		return NULL;
 	}
 
-	bool ret = qn_mlu_load_buffer(self, data, size);
+	const bool ret = qn_mlu_load_buffer(self, data, size);
 	qn_free(data);
 
 	if (!ret)
@@ -125,31 +113,21 @@ QnMlu* qn_mlu_new_file_l(const wchar* filename)
 	return self;
 }
 
-/**
- * @brief 버퍼에서 RML을 만든다
- * @param	data	버퍼
- * @param	size	버퍼 크기
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnMlu*
- */
+//
 QnMlu* qn_mlu_new_buffer(const void* data, int size)
 {
-	QnMlu* self;
+	qn_val_if_fail(data, NULL);
+	qn_val_if_fail(size > 0, NULL);
 
-	qn_retval_if_fail(data, NULL);
-	qn_retval_if_fail(size > 0, NULL);
-
-	self = qn_mlu_new();
-	qn_retval_if_fail(self, NULL);
+	QnMlu* self = qn_mlu_new();
+	qn_val_if_fail(self, NULL);
 
 	qn_mlu_load_buffer(self, data, size);
 
 	return self;
 }
 
-/**
- * @brief RML을 제거한다
- * @param[in]	self	Mlu 개체
- */
+//
 void qn_mlu_delete(QnMlu* self)
 {
 	qn_mlu_clean_tags(self);
@@ -161,31 +139,21 @@ void qn_mlu_delete(QnMlu* self)
 	qn_free(self);
 }
 
-/**
- * @brief 모든 RML 태그를 삭제한다
- * @param[in]	self	Mlu 개체
- */
+//
 void qn_mlu_clean_tags(QnMlu* self)
 {
-	qn_arr_loopeach(SubArray, &self->tags, _qn_realtag_delete_ptr);
+	qn_arr_loopeach(SubArray, &self->tags, qn_realtag_delete_ptr);
 	qn_arr_clear(SubArray, &self->tags);
 }
 
-/**
- * @brief 모든 RML 오류를 삭제한다
- * @param[in]	self	Mlu 개체
- */
+//
 void qn_mlu_clean_errs(QnMlu* self)
 {
-	qn_arr_loopeach(ErrorArray, &self->errs, _error_array_delete_ptr);
+	qn_arr_loopeach(ErrorArray, &self->errs, error_array_delete_ptr);
 	qn_arr_clear(ErrorArray, &self->errs);
 }
 
-/**
- * @brief 오류값을 추가한다
- * @param[in]	self	Mlu 개체
- * @param	msg			메시지
- */
+//
 void qn_mlu_add_err(QnMlu* self, const char* msg)
 {
 	qn_ret_if_fail(msg);
@@ -194,11 +162,7 @@ void qn_mlu_add_err(QnMlu* self, const char* msg)
 	qn_arr_add(ErrorArray, &self->errs, dup);
 }
 
-/**
- * @brief 오류값을 포맷 방식으로 추가한다
- * @param[in]	self	Mlu 개체
- * @param	fmt			포맷 문자열
- */
+//
 void qn_mlu_add_errf(QnMlu* self, const char* fmt, ...)
 {
 	va_list va;
@@ -209,11 +173,8 @@ void qn_mlu_add_errf(QnMlu* self, const char* fmt, ...)
 	qn_arr_add(ErrorArray, &self->errs, psz);
 }
 
-/**
- * @brief 갖고 있는 오류를 디버그 콘솔로 출력한다
- * @param[in]	self	Mlu 개체
- */
-void qn_mlu_print_err(QnMlu* self)
+//
+void qn_mlu_print_err(const QnMlu* self)
 {
 	for (size_t i = 0; i < qn_arr_count(&self->errs); i++)
 	{
@@ -226,26 +187,17 @@ void qn_mlu_print_err(QnMlu* self)
 	}
 }
 
-/**
- * @brief RML 정보 구성 내용을 디버그 콘솔로 출력한다
- * @param[in]	self	Mlu 개체
- */
+//
 void qn_mlu_print(QnMlu* self)
 {
 	// NOT IMPL
 }
 
-/**
- * @brief 버퍼에서 RML을 분석하여 읽는다
- * @param[in]	self	Mlu 개체
- * @param	data		버퍼
- * @param	size		버퍼 크기
- * @return	성공하면 참을, 실패하면 거짓을 반환한다
- */
+//
 bool qn_mlu_load_buffer(QnMlu* self, const void* data, int size)
 {
-	qn_retval_if_fail(data, false);
-	qn_retval_if_fail(size > 0, false);
+	qn_val_if_fail(data, false);
+	qn_val_if_fail(size > 0, false);
 
 	qn_mlu_clean_tags(self);
 	qn_mlu_clean_errs(self);
@@ -265,22 +217,11 @@ bool qn_mlu_load_buffer(QnMlu* self, const void* data, int size)
 		// 혹시 16비트 유니코드인가?
 		i = (*(const uint16_t*)data);
 
-		if (i == 0)
+		if (i == 0 || i == 0xFEFF || i == 0xFFFE)
 		{
-			// 이건 32비트 유니코드, 아마 UTF32 BE(0x0000FEFF)
-			// 처리할 수 없다
-			return false;
-		}
-		else if (i == 0xFEFF)
-		{
-			// 이건 UTF16 LE
-			// 처리하지 않음
-			return false;
-		}
-		else if (i == 0xFFFE)
-		{
-			// 이건 UTF16 BE, 또는 UTF32 LE(0xFFFE0000)
-			// 처리 안할래
+			// 0 = 32비트 유니코드, 아마 UTF32 BE(0x0000FEFF) / 처리할 수 없다
+			// 0xFEFF = UTF16 LE / 처리 안함
+			// 0xFFFE = UTF16 BE, 또는 UTF32 LE(0xFFFE0000) / 처리 안함
 			return false;
 		}
 
@@ -290,8 +231,8 @@ bool qn_mlu_load_buffer(QnMlu* self, const void* data, int size)
 
 	//
 	StackList* stack = NULL;
-	qnRealTag* tmptag = NULL;
-	qnRealTag* curtag = NULL;
+	QnRealTag* tmptag;
+	QnRealTag* curtag = NULL;
 
 	char* cd = qn_alloc(size, char);
 	qnBstr1k* btag = qn_alloc_1(qnBstr1k);     // 태그는 1k
@@ -306,7 +247,7 @@ bool qn_mlu_load_buffer(QnMlu* self, const void* data, int size)
 
 	for (i = 0; i < size; i++)
 	{
-		char ch = pos[i];
+		const char ch = pos[i];
 
 		if (ch == '\n')
 		{
@@ -529,17 +470,17 @@ bool qn_mlu_load_buffer(QnMlu* self, const void* data, int size)
 				}
 
 				// 열기
-				curtag = (qnRealTag*)qn_mltag_new(bname->data);
+				curtag = (QnRealTag*)qn_mltag_new(bname->data);
 				if (!curtag)
 				{
 					qn_mlu_add_errf(self, "line#%d, out of memory.", line);
 					goto pos_exit;
 				}
 				curtag->base.line = line;
-				curtag->idn = idn++;
+				curtag->index = idn++;
 
 				// 인수
-				if (!_qn_realtag_parse_args(curtag, (qnBstr4k*)barg))
+				if (!qn_realtag_parse_args(curtag, (qnBstr4k*)barg))
 				{
 					qn_mlu_add_errf(self, "line#%d, invalid argument.", line);
 					goto pos_exit;
@@ -565,7 +506,7 @@ bool qn_mlu_load_buffer(QnMlu* self, const void* data, int size)
 					else
 					{
 						// 하부로 넣기
-						tmptag->cls = true;
+						tmptag->base.sibling = true;
 
 						curtag = stack->data;
 						qn_arr_add(SubArray, &curtag->subs, tmptag);
@@ -605,15 +546,13 @@ bool qn_mlu_load_buffer(QnMlu* self, const void* data, int size)
 pos_exit:
 	if (!ret)
 	{
-		StackList* n;
-
 		if (curtag)
 		{
 			if (!stack || curtag != stack->data)
 				qn_mltag_delete((QnMlTag*)curtag);
 		}
 
-		for (n = stack; n; n = n->next)
+		for (StackList* n = stack; n; n = n->next)
 			qn_mltag_delete((QnMlTag*)n->data);
 
 		qn_mlu_clean_tags(self);
@@ -630,31 +569,26 @@ pos_exit:
 	return ret;
 }
 
-/**
- * @brief RML 내용을 파일로 저장한다
- * @param[in]	self	Mlu 개체
- * @param	filename	파일의 이름
- * @return	성공하면 참을, 실패하면 거짓을 반환한다
- */
-bool qn_mlu_write_file(QnMlu* self, const char* filename)
+//
+bool qn_mlu_write_file(const QnMlu* self, const char* filename)
 {
-	qn_retval_if_fail(filename, false);
-	qn_retval_if_fail(qn_arr_count(&self->tags) > 0, false);
+	qn_val_if_fail(filename, false);
+	qn_val_if_fail(qn_arr_count(&self->tags) > 0, false);
 
 	QnFile* file = qn_file_new(filename, "w");
-	qn_retval_if_fail(file, false);
+	qn_val_if_fail(file, false);
 
 	// UTF8 BOM
-	int bom = 0x00BFBBEF;
+	const int bom = 0x00BFBBEF;
 	qn_file_write(file, &bom, 0, 3);
 
 	// xml 부호
-	qn_file_write(file, (const void*)_ml_header_desc, 0, (int)strlen(_ml_header_desc));
+	qn_file_write(file, (const void*)ml_header_desc, 0, (int)strlen(ml_header_desc));
 
 	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
-		qnRealTag* tag = qn_arr_nth(&self->tags, i);
-		_qn_realtag_write_file(tag, file, 0);
+		const QnRealTag* tag = qn_arr_nth(&self->tags, i);
+		qn_realtag_write_file(tag, file, 0);
 	}
 
 	qn_file_delete(file);
@@ -662,149 +596,97 @@ bool qn_mlu_write_file(QnMlu* self, const char* filename)
 	return true;
 }
 
-/**
- * @brief 갖고 있는 최상위 태그의 갯수를 반환한다
- * @param[in]	self	Mlu 개체
- * @return	최상위 태그 갯수
- */
-int qn_mlu_get_count(QnMlu* self)
+//
+int qn_mlu_get_count(const QnMlu* self)
 {
 	return (int)qn_arr_count(&self->tags);
 }
 
-/**
- * @brief 갖고 있는 오류를 순번으로 얻는다
- * @param[in]	self	Mlu 개체
- * @param	at			오류 순번
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 char*
- */
-const char* qn_mlu_get_err(QnMlu* self, int at)
+//
+const char* qn_mlu_get_err(const QnMlu* self, int at)
 {
 	return at >= 0 && at < (int)qn_arr_count(&self->errs) ? qn_arr_nth(&self->errs, at) : NULL;
 }
 
-/**
- * @brief 최상위 태그를 찾는다
- * @param[in]	self	Mlu 개체
- * @param	name		태그 이름
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnMlTag*
- */
-QnMlTag* qn_mlu_get_tag(QnMlu* self, const char* name)
+//
+QnMlTag* qn_mlu_get_tag(const QnMlu* self, const char* name)
 {
-	qn_retval_if_fail(name, NULL);
+	qn_val_if_fail(name, NULL);
 
-	size_t hash = qn_strhash(name);
+	const size_t hash = qn_strhash(name);
 	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
-		qnRealTag* mt = qn_arr_nth(&self->tags, i);
+		QnRealTag* mt = qn_arr_nth(&self->tags, i);
 
-		if (mt->nhash == hash && strcmp(mt->base.name, name) == 0)
+		if (mt->name_hash == hash && strcmp(mt->base.name, name) == 0)
 			return (QnMlTag*)mt;
 	}
 
 	return NULL;
 }
 
-/**
- * @brief 최상위 태그를 순번으로 얻는다
- * @param[in]	self	Mlu 개체
- * @param	at			순번
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnMlTag*
- */
-QnMlTag* qn_mlu_get_tag_nth(QnMlu* self, int at)
+//
+QnMlTag* qn_mlu_get_tag_nth(const QnMlu* self, int at)
 {
 	return at >= 0 && at < (int)qn_arr_count(&self->tags) ? (QnMlTag*)qn_arr_nth(&self->tags, at) : NULL;
 }
 
-/**
- * @brief 최상위 태그가 갖고 있는 컨텍스트를 얻는다
- * @param[in]	self  	개체나 인터페이스의 자기 자신 값
- * @param	name	  	태그 이름
- * @param	ifnotexist	태그가 존재하지 않을 경우 반환할 값
- * @return	문제가 있거나 실패하면 ifnotexist를 반환, 성공할 때 반환값은 태그 컨텍스트
- */
-const char* qn_mlu_get_context(QnMlu* self, const char* name, const char* ifnotexist)
+//
+const char* qn_mlu_get_context(const QnMlu* self, const char* name, const char* ifnotexist)
 {
-	QnMlTag* tag = qn_mlu_get_tag(self, name);
-	return tag ? tag->cntx : ifnotexist;
+	const QnMlTag* tag = qn_mlu_get_tag(self, name);
+	return tag ? tag->context : ifnotexist;
 }
 
-/**
- * @brief 최상위 태그가 갖고 있는 컨텍스트를 얻는다. 태그는 순번으로 검사한다
- * @param[in]	self  	개체나 인터페이스의 자기 자신 값
- * @param	at		  	순번
- * @param	ifnotexist	태그가 존재하지 않을 경우 반환할 값
- * @return	문제가 있거나 실패하면 ifnotexist를 반환, 성공할 때 반환값은 태그 컨텍스트
- */
-const char* qn_mlu_get_context_nth(QnMlu* self, int at, const char* ifnotexist)
+//
+const char* qn_mlu_get_context_nth(const QnMlu* self, int at, const char* ifnotexist)
 {
-	QnMlTag* tag = qn_mlu_get_tag_nth(self, at);
-	return tag ? tag->cntx : ifnotexist;
+	const QnMlTag* tag = qn_mlu_get_tag_nth(self, at);
+	return tag ? tag->context : ifnotexist;
 }
 
-/**
- * @brief 지정한 태그가 있나 검사한다
- * @param[in]	self	Mlu 개체
- * @param[in]	tag	(널값이 아님) 지정한 태그
- * @return	태그가 없으면 -1을 있으면 해당 순번을 반환한다
- */
-int qn_mlu_contains(QnMlu* self, QnMlTag* tag)
+//
+int qn_mlu_contains(const QnMlu* self, QnMlTag* tag)
 {
 	int ret;
-	qn_arr_contains(SubArray, &self->tags, (qnRealTag*)tag, &ret);
+	qn_arr_contains(SubArray, &self->tags, (QnRealTag*)tag, &ret);
 	return ret;
 }
 
-/**
- * @brief 최상위 태그에 대해 ForEach를 수행한다
- * @param[in]	self		개체나 인터페이스의 자기 자신 값
- * @param[in]	func	콜백 함수
- * @param	userdata		콜백 데이터
- */
-void qn_mlu_foreach(QnMlu* self, void(*func)(void*, QnMlTag*), void* userdata)
+//
+void qn_mlu_foreach(const QnMlu* self, void(*func)(void*, QnMlTag*), void* userdata)
 {
 	qn_ret_if_fail(func);
 
 	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
-		qnRealTag* mt = qn_arr_nth(&self->tags, i);
+		QnRealTag* mt = qn_arr_nth(&self->tags, i);
 		func(userdata, (QnMlTag*)mt);
 	}
 }
 
-/**
- * @brief 최상위 태그에 대해 LoopEach를 수행한다
- * @param[in]	self		개체나 인터페이스의 자기 자신 값
- * @param[in]	func	콜백 함수
- */
-void qn_mlu_loopeach(QnMlu* self, void(*func)(QnMlTag* tag))
+//
+void qn_mlu_loopeach(const QnMlu* self, void(*func)(QnMlTag* tag))
 {
 	qn_ret_if_fail(func);
 
 	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
-		qnRealTag* mt = qn_arr_nth(&self->tags, i);
+		QnRealTag* mt = qn_arr_nth(&self->tags, i);
 		func((QnMlTag*)mt);
 	}
 }
 
-/**
- * @brief 태그를 추가한다
- * @param[in]	self	Mlu 개체
- * @param	name		태그 이름
- * @param	context 	태그 컨텍스트
- * @param	line		줄번호
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 태그
- */
+//
 QnMlTag* qn_mlu_add(QnMlu* self, const char* name, const char* context, int line)
 {
-	qn_retval_if_fail(name, NULL);
+	qn_val_if_fail(name, NULL);
 
-	qnRealTag* tag = (qnRealTag*)qn_mltag_new(name);
-	qn_retval_if_fail(tag, NULL);
+	QnRealTag* tag = (QnRealTag*)qn_mltag_new(name);
+	qn_val_if_fail(tag, NULL);
 
 	tag->base.line = line;
-	tag->idn = -1;
+	tag->index = -1;
 
 	if (context)
 		qn_mltag_set_context((QnMlTag*)tag, context, -1);
@@ -814,39 +696,28 @@ QnMlTag* qn_mlu_add(QnMlu* self, const char* name, const char* context, int line
 	return (QnMlTag*)tag;
 }
 
-/**
- * @brief 태그를 추가한다
- * @param[in]	self   	Ml 개체
- * @param[in]	tag	(널값이 아님) 추가할 태그
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 추가한 태그
- */
+//
 QnMlTag* qn_mlu_add_tag(QnMlu* self, QnMlTag* tag)
 {
-	qn_retval_if_fail(tag, NULL);
+	qn_val_if_fail(tag, NULL);
 
-	qn_arr_add(SubArray, &self->tags, (qnRealTag*)tag);
+	qn_arr_add(SubArray, &self->tags, (QnRealTag*)tag);
 
 	return tag;
 }
 
-/**
- * @brief 태그를 제거한다
- * @param[in]	self	Mlu 개체
- * @param	name		태그 이름
- * @param	isall   	같은 이름 태그를 모두 지우려면 참으로 넣는다
- * @return	지운 태그의 갯수
- */
+//
 int qn_mlu_remove(QnMlu* self, const char* name, bool isall)
 {
-	qn_retval_if_fail(name, -1);
+	qn_val_if_fail(name, -1);
 
-	size_t hash = qn_strhash(name);
+	const size_t hash = qn_strhash(name);
 	int cnt = 0;
 	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
-		qnRealTag* tag = qn_arr_nth(&self->tags, i);
+		QnRealTag* tag = qn_arr_nth(&self->tags, i);
 
-		if (tag->nhash == hash && strcmp(tag->base.name, name) == 0)
+		if (tag->name_hash == hash && strcmp(tag->base.name, name) == 0)
 		{
 			cnt++;
 
@@ -863,36 +734,25 @@ int qn_mlu_remove(QnMlu* self, const char* name, bool isall)
 	return cnt;
 }
 
-/**
- * @brief 태그를 순번으로 제거한다
- * @param[in]	self	Mlu 개체
- * @param	at			순번
- * @return	성공하면 참을, 실패하면 거짓을 반환한다
- */
+//
 bool qn_mlu_remove_nth(QnMlu* self, int at)
 {
 	if (at < 0 || at >= (int)qn_arr_count(&self->tags))
 		return false;
 
-	qnRealTag* tag = qn_arr_nth(&self->tags, at);
+	QnRealTag* tag = qn_arr_nth(&self->tags, at);
 	qn_arr_remove_nth(SubArray, &self->tags, at);
 	qn_mltag_delete((QnMlTag*)tag);
 
 	return true;
 }
 
-/**
- * @brief 태그를 제거한다
- * @param[in]	self	Mlu 개체
- * @param[in]	tag	(널값이 아님) 지울 태그
- * @param	isdelete   	태그를 삭제하려면 참으로 넣는다
- * @return	성공하면 참을, 실패하면 거짓을 반환한다
- */
+//
 bool qn_mlu_remove_tag(QnMlu* self, QnMlTag* tag, bool isdelete)
 {
-	qn_retval_if_fail(tag, false);
+	qn_val_if_fail(tag, false);
 
-	qnRealTag* mt = (qnRealTag*)tag;
+	const QnRealTag* mt = (QnRealTag*)tag;
 	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
 		if (qn_arr_nth(&self->tags, i) == mt)
@@ -913,113 +773,96 @@ bool qn_mlu_remove_tag(QnMlu* self, QnMlTag* tag, bool isdelete)
 //////////////////////////////////////////////////////////////////////////
 // 노드
 
-/**
- * @brief 태그 노드를 만든다
- * @param	name	태그 이름
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnMlTag*
- */
+//
 QnMlTag* qn_mltag_new(const char* name)
 {
-	qnRealTag* self = qn_alloc_zero_1(qnRealTag);
-	qn_retval_if_fail(self, NULL);
+	QnRealTag* self = qn_alloc_zero_1(QnRealTag);
+	qn_val_if_fail(self, NULL);
 
 	self->base.name = qn_strdup(name);
 	qn_strupr(self->base.name, strlen(self->base.name));
 
-	self->base.nlen = (int)strlen(self->base.name);
-	self->nhash = qn_strhash(self->base.name);
+	self->base.name_len = (int)strlen(self->base.name);
+	self->name_hash = qn_strhash(self->base.name);
 
 	return (QnMlTag*)self;
 }
 
 // 제거
-static void _qn_realtag_delete_ptr(qnRealTag** ptr)
+static void qn_realtag_delete_ptr(QnRealTag** ptr)
 {
-	qnRealTag* self = *ptr;
+	QnRealTag* self = *ptr;
 
 	qn_free(self->base.name);
-	qn_free(self->base.cntx);
+	qn_free(self->base.context);
 
-	qn_arr_loopeach(SubArray, &self->subs, _qn_realtag_delete_ptr);
+	qn_arr_loopeach(SubArray, &self->subs, qn_realtag_delete_ptr);
 	qn_arr_disp(SubArray, &self->subs);
 
-	qn_hash_disp(ArgHash, &self->harg);
+	qn_hash_disp(ArgHash, &self->args);
 
 	qn_free(self);
 }
 
-/**
- * @brief 태그 노드를 제거한다
- * @param[in]	self	MlTag 개체
- */
+//
 void qn_mltag_delete(QnMlTag* self)
 {
-	qnRealTag* real = (qnRealTag*)self;
-	_qn_realtag_delete_ptr(&real);
+	QnRealTag* real = (QnRealTag*)self;
+	qn_realtag_delete_ptr(&real);
 }
 
-/**
- * @brief 태그 내용을 추가한다
- * @param[in]	ptr	MlTag 개체
- * @param	cntx	   	컨텍스트
- * @param	size	   	컨텍스트의 크기
- */
+//
 void qn_mltag_add_context(QnMlTag* ptr, const char* cntx, int size)
 {
 	qn_ret_if_fail(cntx && *cntx != '\0');
 
-	qnRealTag* self = (qnRealTag*)ptr;
+	QnRealTag* self = (QnRealTag*)ptr;
 
 	if (size <= 0)
 		size = (int)strlen(cntx);
 
-	if (self->base.cntx)
+	if (self->base.context)
 	{
-		char* psz = qn_strcat(self->base.cntx, cntx, NULL);
-		qn_free(self->base.cntx);
-		self->base.cntx = psz;
-		self->base.clen = (int)strlen(psz);
-		self->chash = qn_strhash(psz);
+		char* psz = qn_strcat(self->base.context, cntx, NULL);
+		qn_free(self->base.context);
+		self->base.context = psz;
+		self->base.context_len = (int)strlen(psz);
+		self->context_hash = qn_strhash(psz);
 	}
 	else
 	{
-		self->base.cntx = qn_alloc(size + 1, char);
-		qn_ret_if_fail(self->base.cntx);
+		self->base.context = qn_alloc(size + 1, char);
+		qn_ret_if_fail(self->base.context);
 
-		qn_strcpy(self->base.cntx, size + 1, cntx);
-		self->base.clen = size;
-		self->chash = qn_strhash(self->base.cntx);
+		qn_strcpy(self->base.context, size + 1, cntx);
+		self->base.context_len = size;
+		self->context_hash = qn_strhash(self->base.context);
 	}
 }
 
-/**
- * @brief 태그에 내용을 쓴다
- * @param[in]	ptr	MlTag 개체
- * @param	cntx	   	컨텍스트
- * @param	size	   	컨텍스트의 크기
- */
+//
 void qn_mltag_set_context(QnMlTag* ptr, const char* cntx, int size)
 {
-	qnRealTag* self = (qnRealTag*)ptr;
+	QnRealTag* self = (QnRealTag*)ptr;
 
-	if (self->base.cntx)
+	if (self->base.context)
 	{
-		qn_free(self->base.cntx);
-		self->base.cntx = NULL;
+		qn_free(self->base.context);
+		self->base.context = NULL;
 	}
 
 	qn_mltag_add_context(ptr, cntx, size);
 }
 
 // 인수 분석
-static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
+static bool qn_realtag_parse_args(QnRealTag* self, qnBstr4k* bs)
 {
-	qn_retval_if_fail(bs->len > 0, true);
+	qn_val_if_fail(bs->len > 0, true);
 
 	for (;;)
 	{
 		// 키
-		int eq = qn_bstr_find_char(bs, 0, '=');
+		const int eq = qn_bstr_find_char(bs, 0, '=');
 
 		if (eq < 0)
 		{
@@ -1050,7 +893,7 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 		else if (qn_bstr_nth(bs, 0) == '"')
 		{
 			// 이중 인용이면 다음 이중 인용까지
-			int at = qn_bstr_find_char(bs, 1, '"');
+			const int at = qn_bstr_find_char(bs, 1, '"');
 
 			if (at < 0)
 			{
@@ -1064,7 +907,7 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 		else if (qn_bstr_nth(bs, 0) == '\'')
 		{
 			// 단일 인용이면 다음 단일 인용까지
-			int at = qn_bstr_find_char(bs, 1, '\'');
+			const int at = qn_bstr_find_char(bs, 1, '\'');
 
 			if (at < 0)
 			{
@@ -1078,7 +921,7 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 		else
 		{
 			// 다음 공백까지
-			int at = qn_bstr_find_char(bs, 0, ' ');
+			const int at = qn_bstr_find_char(bs, 0, ' ');
 
 			if (at < 0)
 			{
@@ -1109,11 +952,11 @@ static bool _qn_realtag_parse_args(qnRealTag* self, qnBstr4k* bs)
 }
 
 // 인수 파일에 쓰기
-static void _qn_realtag_write_file_arg(QnFile* file, char** pk, char** pv)
+static void qn_realtag_write_file_arg(QnFile* file, char** pk, char** pv)
 {
 	char sz[3] = { 0, };
-	char* k = *pk;
-	char* v = *pv;
+	const char* k = *pk;
+	const char* v = *pv;
 
 	sz[0] = ' ';
 	qn_file_write(file, sz, 0, sizeof(char) * 1);
@@ -1128,9 +971,8 @@ static void _qn_realtag_write_file_arg(QnFile* file, char** pk, char** pv)
 }
 
 // 파일에 쓰기
-static bool _qn_realtag_write_file(qnRealTag* self, QnFile* file, int ident)
+static bool qn_realtag_write_file(const QnRealTag* self, QnFile* file, int ident)
 {
-	bool isbody = false;
 	char ch;
 	char szident[260];
 	qnBstr2k bs;
@@ -1139,16 +981,16 @@ static bool _qn_realtag_write_file(qnRealTag* self, QnFile* file, int ident)
 	szident[ident] = '\0';
 
 	// 아래 많다. 또는 내용 길다
-	isbody = qn_arr_count(&self->subs) > 0 || self->base.clen > 64 ? true : false;
+	const bool isbody = qn_arr_count(&self->subs) > 0 || self->base.context_len > 64 ? true : false;
 
 	if (!isbody)
 	{
-		if (self->base.clen > 0)
+		if (self->base.context_len > 0)
 		{
-			if (qn_hash_count(&self->harg) == 0)
+			if (qn_hash_count(&self->args) == 0)
 			{
 				qn_bstr_format(&bs, "%s<%s>%s</%s>\n",
-					szident, self->base.name, self->base.cntx, self->base.name);
+					szident, self->base.name, self->base.context, self->base.name);
 				qn_file_write(file, bs.data, 0, (int)bs.len);
 			}
 			else
@@ -1156,15 +998,15 @@ static bool _qn_realtag_write_file(qnRealTag* self, QnFile* file, int ident)
 				qn_bstr_format(&bs, "%s<%s", szident, self->base.name);
 				qn_file_write(file, bs.data, 0, (int)bs.len);
 
-				qn_hash_foreach(ArgHash, &self->harg, _qn_realtag_write_file_arg, file);
+				qn_hash_foreach(ArgHash, &self->args, qn_realtag_write_file_arg, file);
 
-				qn_bstr_format(&bs, ">%s</%s>\n", self->base.cntx, self->base.name);
+				qn_bstr_format(&bs, ">%s</%s>\n", self->base.context, self->base.name);
 				qn_file_write(file, bs.data, 0, (int)bs.len);
 			}
 		}
 		else
 		{
-			if (qn_hash_count(&self->harg) == 0)
+			if (qn_hash_count(&self->args) == 0)
 			{
 				qn_bstr_format(&bs, "%s<%s/>\n",
 					szident, self->base.name);
@@ -1175,7 +1017,7 @@ static bool _qn_realtag_write_file(qnRealTag* self, QnFile* file, int ident)
 				qn_bstr_format(&bs, "%s<%s", szident, self->base.name);
 				qn_file_write(file, bs.data, 0, (int)bs.len);
 
-				qn_hash_foreach(ArgHash, &self->harg, _qn_realtag_write_file_arg, file);
+				qn_hash_foreach(ArgHash, &self->args, qn_realtag_write_file_arg, file);
 
 				qn_bstr_set(&bs, "/>\n");
 				qn_file_write(file, bs.data, 0, (int)bs.len);
@@ -1184,7 +1026,7 @@ static bool _qn_realtag_write_file(qnRealTag* self, QnFile* file, int ident)
 	}
 	else
 	{
-		if (qn_hash_count(&self->harg) == 0)
+		if (qn_hash_count(&self->args) == 0)
 		{
 			qn_bstr_format(&bs, "%s<%s>\n", szident, self->base.name);
 			qn_file_write(file, bs.data, 0, (int)bs.len);
@@ -1194,21 +1036,21 @@ static bool _qn_realtag_write_file(qnRealTag* self, QnFile* file, int ident)
 			qn_bstr_format(&bs, "%s<%s", szident, self->base.name);
 			qn_file_write(file, bs.data, 0, (int)bs.len);
 
-			qn_hash_foreach(ArgHash, &self->harg, _qn_realtag_write_file_arg, file);
+			qn_hash_foreach(ArgHash, &self->args, qn_realtag_write_file_arg, file);
 
 			qn_bstr_set(&bs, ">\n");
 			qn_file_write(file, bs.data, 0, (int)bs.len);
 		}
 
 		// 내용
-		if (self->base.clen > 0)
+		if (self->base.context_len > 0)
 		{
 			qn_file_write(file, szident, 0, ident);
 
 			ch = '\t';
 			qn_file_write(file, &ch, 0, sizeof(char));
 
-			qn_file_write(file, self->base.cntx, 0, self->base.clen);
+			qn_file_write(file, self->base.context, 0, self->base.context_len);
 
 			ch = '\n';
 			qn_file_write(file, &ch, 0, sizeof(char));
@@ -1219,8 +1061,8 @@ static bool _qn_realtag_write_file(qnRealTag* self, QnFile* file, int ident)
 
 		for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
 		{
-			qnRealTag* tag = qn_arr_nth(&self->subs, i);
-			_qn_realtag_write_file(tag, file, ident);
+			const QnRealTag* tag = qn_arr_nth(&self->subs, i);
+			qn_realtag_write_file(tag, file, ident);
 		}
 
 		//
@@ -1231,151 +1073,104 @@ static bool _qn_realtag_write_file(qnRealTag* self, QnFile* file, int ident)
 	return true;
 }
 
-/**
- * @brief 하부 태그의 갯수를 얻는다
- * @param[in]	ptr	MlTag 개체
- * @return	하부 태그의 갯수
- */
+//
 int qn_mltag_get_sub_count(QnMlTag* ptr)
 {
-	qnRealTag* self = (qnRealTag*)ptr;
+	const QnRealTag* self = (QnRealTag*)ptr;
 
 	return (int)qn_arr_count(&self->subs);
 }
 
-/**
- * @brief 하부 태그를 찾는다
- * @param[in]	ptr	MlTag 개체
- * @param	name	   	찾을 태그 이름
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnMlTag*
- */
+//
 QnMlTag* qn_mltag_get_sub(QnMlTag* ptr, const char* name)
 {
-	qn_retval_if_fail(name, NULL);
+	qn_val_if_fail(name, NULL);
 
-	qnRealTag* self = (qnRealTag*)ptr;
+	const QnRealTag* self = (QnRealTag*)ptr;
 
-	size_t hash = qn_strhash(name);
+	const size_t hash = qn_strhash(name);
 	for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
 	{
-		qnRealTag* mt = qn_arr_nth(&self->subs, i);
+		QnRealTag* mt = qn_arr_nth(&self->subs, i);
 
-		if (mt->nhash == hash && strcmp(mt->base.name, name) == 0)
+		if (mt->name_hash == hash && strcmp(mt->base.name, name) == 0)
 			return (QnMlTag*)mt;
 	}
 
 	return NULL;
 }
 
-/**
- * @brief 하부 태그를 순번으로 찾는다
- * @param[in]	ptr	MlTag 개체
- * @param	at		   	순번
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnMlTag*
- */
+//
 QnMlTag* qn_mltag_get_sub_nth(QnMlTag* ptr, int at)
 {
-	qnRealTag* self = (qnRealTag*)ptr;
+	const QnRealTag* self = (QnRealTag*)ptr;
 	return at >= 0 && at < (int)qn_arr_count(&self->subs) ? (QnMlTag*)qn_arr_nth(&self->subs, at) : NULL;
 }
 
-/**
- * @brief 하부 태그의 컨텍스트를 얻는다
- * @param[in]	ptr	MlTag 개체
- * @param	name	   	태그 이름
- * @param	ifnotexist 	태그를 찾을 수 없으면 반환할 값
- * @return	문제가 있거나 실패하면 ifnotexit를 반환, 성공할 때 반환값은 char*
- */
+//
 const char* qn_mltag_get_sub_context(QnMlTag* ptr, const char* name, const char* ifnotexist)
 {
-	QnMlTag* tag = qn_mltag_get_sub(ptr, name);
-	return tag ? tag->cntx : ifnotexist;
+	const QnMlTag* tag = qn_mltag_get_sub(ptr, name);
+	return tag ? tag->context : ifnotexist;
 }
 
-/**
- * @brief 하부 태그의 컨텍스트를 순번으로 얻는다
- * @param[in]	ptr	MlTag 개체
- * @param	at			순번
- * @param	ifnotexist 	태그를 찾을 수 없으면 반환할 값
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 char*
- */
+//
 const char* qn_mltag_get_sub_context_nth(QnMlTag* ptr, int at, const char* ifnotexist)
 {
-	QnMlTag* tag = qn_mltag_get_sub_nth(ptr, at);
-	return tag ? tag->cntx : ifnotexist;
+	const QnMlTag* tag = qn_mltag_get_sub_nth(ptr, at);
+	return tag ? tag->context : ifnotexist;
 }
 
-/**
- * @brief 지정한 태그를 하부 태그로 갖고 있나 조사
- * @param[in]	ptr	MlTag 개체
- * @param[in]	tag	(널값이 아니면) 찾을 태그
- * @return	찾지 못하면 -1, 아니면 해당 순번을 반환
- */
+//
 int qn_mltag_contains_sub(QnMlTag* ptr, QnMlTag* tag)
 {
-	qnRealTag* self = (qnRealTag*)ptr;
+	const QnRealTag* self = (QnRealTag*)ptr;
 	int ret;
 
-	qn_arr_contains(SubArray, &self->subs, (qnRealTag*)tag, &ret);
+	qn_arr_contains(SubArray, &self->subs, (QnRealTag*)tag, &ret);
 
 	return ret;
 }
 
-/**
- * @brief 하부 태그에 대해 ForEach 연산을 수행한다
- * @param[in]	ptr	MlTag 개체
- * @param[in]	func	콜백 함수
- * @param	userdata		콜백 데이터
- */
+//
 void qn_mltag_foreach_sub(QnMlTag* ptr, void(*func)(void* userdata, QnMlTag* tag), void* userdata)
 {
 	qn_ret_if_fail(func);
 
-	qnRealTag* self = (qnRealTag*)ptr;
+	const QnRealTag* self = (QnRealTag*)ptr;
 
 	for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
 	{
-		qnRealTag* mt = qn_arr_nth(&self->subs, i);
+		QnRealTag* mt = qn_arr_nth(&self->subs, i);
 		func(userdata, (QnMlTag*)mt);
 	}
 }
 
-/**
- * @brief 하부 태그에 대해 LoopEach 연산을 수행한다
- * @param[in]	ptr	MlTag 개체
- * @param[in]	func	콜백 함수
- */
+//
 void qn_mltag_loopeach_sub(QnMlTag* ptr, void(*func)(QnMlTag* tag))
 {
 	qn_ret_if_fail(func);
 
-	qnRealTag* self = (qnRealTag*)ptr;
+	const QnRealTag* self = (QnRealTag*)ptr;
 
 	for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
 	{
-		qnRealTag* mt = qn_arr_nth(&self->subs, i);
+		QnRealTag* mt = qn_arr_nth(&self->subs, i);
 		func((QnMlTag*)mt);
 	}
 }
 
-/**
- * @brief 하부 태그를 추가한다
- * @param[in]	ptr	MlTag 개체
- * @param	name	   	태그 이름
- * @param	context	   	태그 콘텍스트
- * @param	line	   	줄 번호
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnMlTag*
- */
+//
 QnMlTag* qn_mltag_add_sub(QnMlTag* ptr, const char* name, const char* context, int line)
 {
-	qn_retval_if_fail(name, NULL);
+	qn_val_if_fail(name, NULL);
 
-	qnRealTag* self = (qnRealTag*)ptr;
-	qnRealTag* mt = (qnRealTag*)qn_mltag_new(name);
-	qn_retval_if_fail(mt, NULL);
+	QnRealTag* self = (QnRealTag*)ptr;
+	QnRealTag* mt = (QnRealTag*)qn_mltag_new(name);
+	qn_val_if_fail(mt, NULL);
 
 	mt->base.line = line;
-	mt->idn = -1;
+	mt->index = -1;
 
 	if (context)
 		qn_mltag_set_context((QnMlTag*)mt, context, -1);
@@ -1385,43 +1180,32 @@ QnMlTag* qn_mltag_add_sub(QnMlTag* ptr, const char* name, const char* context, i
 	return (QnMlTag*)mt;
 }
 
-/**
- * @brief 하부 태그를 추가한다
- * @param[in]	ptr	MlTag 개체
- * @param[in]	tag	추가할 태그
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnMlTag*
- */
+//
 QnMlTag* qn_mltag_add_sub_tag(QnMlTag* ptr, QnMlTag* tag)
 {
-	qn_retval_if_fail(tag, NULL);
+	qn_val_if_fail(tag, NULL);
 
-	qnRealTag* self = (qnRealTag*)ptr;
+	QnRealTag* self = (QnRealTag*)ptr;
 
-	qn_arr_add(SubArray, &self->subs, (qnRealTag*)tag);
+	qn_arr_add(SubArray, &self->subs, (QnRealTag*)tag);
 
 	return tag;
 }
 
-/**
- * @brief 지정한 이름의 태그를 제거한다
- * @param[in]	ptr	MlTag 개체
- * @param	name	   	태그 이름
- * @param	isall	   	같은 이름의 모든 태그를 지우려면 참으로 넣는다
- * @return	지운 태그의 갯수
- */
+//
 int qn_mltag_remove_sub(QnMlTag* ptr, const char* name, bool isall)
 {
-	qn_retval_if_fail(name, -1);
+	qn_val_if_fail(name, -1);
 
-	qnRealTag* self = (qnRealTag*)ptr;
-	size_t hash = qn_strhash(name);
+	QnRealTag* self = (QnRealTag*)ptr;
+	const size_t hash = qn_strhash(name);
 	int cnt = 0;
 
 	for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
 	{
-		qnRealTag* mt = qn_arr_nth(&self->subs, i);
+		QnRealTag* mt = qn_arr_nth(&self->subs, i);
 
-		if (mt->nhash == hash && strcmp(mt->base.name, name) == 0)
+		if (mt->name_hash == hash && strcmp(mt->base.name, name) == 0)
 		{
 			cnt++;
 
@@ -1438,39 +1222,28 @@ int qn_mltag_remove_sub(QnMlTag* ptr, const char* name, bool isall)
 	return cnt;
 }
 
-/**
- * @brief 지정한 순번의 하부 태그를 삭제한다
- * @param[in]	ptr	MlTag 개체
- * @param	at			순번
- * @return	성공하면 참을, 실패하면 거짓을 반환한다
- */
+//
 bool qn_mltag_remove_sub_nth(QnMlTag* ptr, int at)
 {
-	qnRealTag* self = (qnRealTag*)ptr;
+	QnRealTag* self = (QnRealTag*)ptr;
 
 	if (at < 0 || at >= (int)qn_arr_count(&self->subs))
 		return false;
 
-	qnRealTag* mt = qn_arr_nth(&self->subs, at);
+	QnRealTag* mt = qn_arr_nth(&self->subs, at);
 	qn_arr_remove_nth(SubArray, &self->subs, at);
 	qn_mltag_delete((QnMlTag*)mt);
 
 	return true;
 }
 
-/**
- * @brief 지정한 하부 태그를 삭제한다
- * @param[in]	ptr	MlTag 개체
- * @param [입력,반환]	tag	(널값이 아님) 지울 태그
- * @param	isdelete   	태그 자체를 삭제하려면 참으로 넣는다
- * @return	성공하면 참을, 실패하면 거짓을 반환한다
- */
+//
 bool qn_mltag_remove_sub_tag(QnMlTag* ptr, QnMlTag* tag, bool isdelete)
 {
-	qn_retval_if_fail(tag, false);
+	qn_val_if_fail(tag, false);
 
-	qnRealTag* self = (qnRealTag*)ptr;
-	qnRealTag* mt = (qnRealTag*)tag;
+	QnRealTag* self = (QnRealTag*)ptr;
+	const QnRealTag* mt = (QnRealTag*)tag;
 
 	for (size_t i = 0; i < qn_arr_count(&self->subs); i++)
 	{
@@ -1488,140 +1261,99 @@ bool qn_mltag_remove_sub_tag(QnMlTag* ptr, QnMlTag* tag, bool isdelete)
 	return false;
 }
 
-/**
- * @brief 태그의 인수의 개수를 반환한다
- * @param[in]	ptr	MlTag 개체
- * @return	인수의 개수
- */
+//
 int qn_mltag_get_arity(QnMlTag* ptr)
 {
-	qnRealTag* self = (qnRealTag*)ptr;
+	const QnRealTag* self = (QnRealTag*)ptr;
 
-	return (int)qn_hash_count(&self->harg);
+	return (int)qn_hash_count(&self->args);
 }
 
-/**
- * @brief 인수를 이름으로 찾는다
- * @param[in]	ptr	MlTag 개체
- * @param	name	   	인수 이름
- * @param	ifnotexist 	인수를 찾지 못하면 반환할 값
- * @return	문제가 있거나 실패하면 ifnotexist를 반환, 성공할 때 반환값은 인수의 데이터
- */
+//
 const char* qn_mltag_get_arg(QnMlTag* ptr, const char* name, const char* ifnotexist)
 {
-	qn_retval_if_fail(name, ifnotexist);
+	qn_val_if_fail(name, ifnotexist);
 
-	qnRealTag* self = (qnRealTag*)ptr;
-	qn_retval_if_fail(qn_hash_count(&self->harg) > 0, ifnotexist);
+	const QnRealTag* self = (QnRealTag*)ptr;
+	qn_val_if_fail(qn_hash_count(&self->args) > 0, ifnotexist);
 
 	char** retvalue;
-	qn_hash_get(ArgHash, &self->harg, &name, &retvalue);
+	qn_hash_get(ArgHash, &self->args, name, &retvalue);
 
 	return retvalue ? *retvalue : ifnotexist;
 }
 
-/**
- * @brief 다음 인수를 찾는다
- * @param[in]	ptr	MlTag 개체
- * @param [입력,반환]	index	(널값이 아님) 내부 찾기 인덱스 데이터
- * @param	name		 	인수 이름
- * @param	data		 	인수 자료
- * @return	성공하면 참을, 실패하면 거짓을 반환한다
- */
+//
 bool qn_mltag_next_arg(QnMlTag* ptr, void** index, const char** name, const char** data)
 {
-	qn_retval_if_fail(index, false);
+	qn_val_if_fail(index, false);
 
-	if (*index == (void*)(intptr_t)-1)
+	if (*index == (void*)(nint)-1)  // NOLINT
 		return false;
 
-	qnRealTag* self = (qnRealTag*)ptr;
-	struct _ArgHashNode* node = !*index ? self->harg.frst : (struct _ArgHashNode*)*index;
+	const QnRealTag* self = (QnRealTag*)ptr;
+	const struct ArgHashNode* node = !*index ? self->args.frst : (struct ArgHashNode*)*index;
 
 	if (name) *name = node->key;
 	if (data) *data = node->value;
 
-	*index = node->next ? node->next : (void*)(intptr_t)-1;
+	*index = node->next ? node->next : (void*)(intptr_t)-1;  // NOLINT
 
 	return true;
 }
 
-/**
- * @brief 이름에 해당하는 인수가 있는지 조사한다
- * @param[in]	ptr	MlTag 개체
- * @param	name	   	인수 이름
- * @return	성공하면 참을, 실패하면 거짓을 반환한다
- */
+//
 bool qn_mltag_contains_arg(QnMlTag* ptr, const char* name)
 {
 	return qn_mltag_get_arg(ptr, name, NULL) != NULL;
 }
 
-/**
- * @brief 인수에 대해 ForEach 연산을 수행한다
- * @param[in]	ptr	MlTag 개체
- * @param[in]	func	콜백 함수
- * @param	userdata		콜백 데이터
- */
-void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, const char* name, const char* data), void* userdata)
+//
+void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, const char** name, const char** data), void* userdata)
 {
-	qnRealTag* self = (qnRealTag*)ptr;
+	const QnRealTag* self = (QnRealTag*)ptr;
 
-	qn_hash_ptr_foreach(ArgHash, &self->harg, func, userdata);
+	qn_hash_foreach(ArgHash, &self->args, func, userdata);
 }
 
-/**
- * @brief 인수에 대해 LoopEach 연산을 수행한다
- * @param[in]	ptr	MlTag 개체
- * @param[in]	func	콜백 함수
- */
-void qn_mltag_loopeach_arg(QnMlTag* ptr, void(*func)(const char* name, const char* data))
+//
+void qn_mltag_loopeach_arg(QnMlTag* ptr, void(*func)(const char** name, const char** data))
 {
-	qnRealTag* self = (qnRealTag*)ptr;
+	const QnRealTag* self = (QnRealTag*)ptr;
 
-	qn_hash_ptr_loopeach(ArgHash, &self->harg, func);
+	qn_hash_loopeach(ArgHash, &self->args, func);
 }
 
-/**
- * @brief 인수를 추가한다
- * @param[in]	ptr	MlTag 개체
- * @param	name	   	인수 이름
- * @param	value	   	인수 값
- */
+//
 void qn_mltag_set_arg(QnMlTag* ptr, const char* name, const char* value)
 {
 	qn_ret_if_fail(name);
 
-	qnRealTag* self = (qnRealTag*)ptr;
+	QnRealTag* self = (QnRealTag*)ptr;
 	char* dn = qn_strdup(name);
 	char* dv = qn_strdup(value);
 
 	qn_strupr(dn, strlen(dn));
 
-	if (!self->harg.bucket)
-		qn_hash_init(ArgHash, &self->harg);
+	if (!self->args.bucket)
+		qn_hash_init(ArgHash, &self->args);
 
-	qn_hash_set(ArgHash, &self->harg, &dn, &dv);
+	qn_hash_set(ArgHash, &self->args, dn, dv);
 }
 
-/**
- * @brief 인수를 제거한다
- * @param[in]	ptr	MlTag 개체
- * @param	name	   	제거할 인수 이름
- * @return	성공하면 참을, 실패하면 거짓을 반환한다
- */
+//
 bool qn_mltag_remove_arg(QnMlTag* ptr, const char* name)
 {
-	qn_retval_if_fail(name, false);
+	qn_val_if_fail(name, false);
 
-	qnRealTag* self = (qnRealTag*)ptr;
+	QnRealTag* self = (QnRealTag*)ptr;
 #if _MSC_VER
 	bool ret;
-	qn_hash_remove(ArgHash, &self->harg, &name, &ret);
+	qn_hash_remove(ArgHash, &self->args, name, &ret);
 
 	return ret;
 #else
-	qn_hash_remove(ArgHash, &self->harg, &name, NULL);
+	qn_hash_remove(ArgHash, &self->args, &name, NULL);
 
 	return true;
 #endif

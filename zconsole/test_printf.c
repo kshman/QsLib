@@ -1,7 +1,7 @@
 ﻿// printf 와 outputf
 #include <qs.h>
 
-int main()
+int main(void)
 {
     int v[2];
     qn_runtime(v);

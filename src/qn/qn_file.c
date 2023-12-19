@@ -1,8 +1,7 @@
 ﻿#include "pch.h"
 #include "qs_qn.h"
-#include "qs_ctn.h"
 #include <fcntl.h>
-#if _QN_UNIX_
+#ifdef _QN_UNIX_
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/types.h>
@@ -13,27 +12,26 @@
 // 파일
 
 // 파일 구조체
-struct _QnFile
+struct QnFile
 {
-	char* name;
-	QnFileAccess		acs;
-	int					flag;
-#if _MSC_VER
-	HANDLE				fd;
+#ifdef _QN_WINDOWS_
+	HANDLE			fd;
 #else
-	int					fd;
+	int				fd;
 #endif
+	char*			name;
+	QnFileAccess	acs;
+	int				flag;
+	QN_PADDING_64(4, 0)
 };
 
 // 최대 할당 크기
-static size_t _max_file_alloc_size = 512ULL * 1024ULL * 1024ULL;
+static size_t max_file_alloc_size = 512ULL * 1024ULL * 1024ULL;
 
 // 분석
-static void _qn_file_access_parse(const char* mode, QnFileAccess* self, int* flag)
+static void qn_file_access_parse(const char* mode, QnFileAccess* self, int* flag)
 {
-#if _MSC_VER
-	char ch;
-
+#ifdef _QN_WINDOWS_
 	self->mode = 0;
 
 	if (mode)
@@ -42,7 +40,7 @@ static void _qn_file_access_parse(const char* mode, QnFileAccess* self, int* fla
 		self->share = FILE_SHARE_READ;
 		self->attr = FILE_ATTRIBUTE_NORMAL;
 
-		for (; *mode; ++mode)
+		for (char ch; *mode; ++mode)
 		{
 			switch (*mode)
 			{
@@ -73,18 +71,29 @@ static void _qn_file_access_parse(const char* mode, QnFileAccess* self, int* fla
 					ch = *(mode + 1);
 
 					if (ch == 'R')
-						self->share = FILE_SHARE_READ, ++mode;
+					{
+						self->share = FILE_SHARE_READ;
+						++mode;
+					}
 					else if (ch == 'W')
-						self->share = FILE_SHARE_WRITE, ++mode;
+					{
+						self->share = FILE_SHARE_WRITE;
+						++mode;
+					}
 					else if (ch == '+')
-						self->share = FILE_SHARE_READ | FILE_SHARE_WRITE, ++mode;
-
+					{
+						self->share = FILE_SHARE_READ | FILE_SHARE_WRITE;
+						++mode;
+					}
 					break;
 
 				case '!':
 					if (self->mode == CREATE_ALWAYS)
 						self->attr |= FILE_FLAG_DELETE_ON_CLOSE;
 
+					break;
+
+				default:
 					break;
 			}
 		}
@@ -226,11 +235,9 @@ static void _qn_file_access_parse(const char* mode, QnFileAccess* self, int* fla
 #endif
 }
 
-static void _qn_file_access_parse_l(const wchar* mode, QnFileAccess* self, int* flag)
+static void qn_file_access_parse_l(const wchar* mode, QnFileAccess* self, int* flag)
 {
-#if _MSC_VER
-	wchar ch;
-
+#ifdef _QN_WINDOWS_
 	self->mode = 0;
 
 	if (mode)
@@ -239,7 +246,7 @@ static void _qn_file_access_parse_l(const wchar* mode, QnFileAccess* self, int* 
 		self->share = FILE_SHARE_READ;
 		self->attr = FILE_ATTRIBUTE_NORMAL;
 
-		for (; *mode; ++mode)
+		for (wchar ch; *mode; ++mode)
 		{
 			switch (*mode)
 			{
@@ -270,18 +277,29 @@ static void _qn_file_access_parse_l(const wchar* mode, QnFileAccess* self, int* 
 					ch = *(mode + 1);
 
 					if (ch == L'R')
-						self->share = FILE_SHARE_READ, ++mode;
+					{
+						self->share = FILE_SHARE_READ;
+						++mode;
+					}
 					else if (ch == L'W')
-						self->share = FILE_SHARE_WRITE, ++mode;
+					{
+						self->share = FILE_SHARE_WRITE;
+						++mode;
+					}
 					else if (ch == L'+')
-						self->share = FILE_SHARE_READ | FILE_SHARE_WRITE, ++mode;
-
+					{
+						self->share = FILE_SHARE_READ | FILE_SHARE_WRITE;
+						++mode;
+					}
 					break;
 
 				case L'!':
 					if (self->mode == CREATE_ALWAYS)
 						self->attr |= FILE_FLAG_DELETE_ON_CLOSE;
 
+					break;
+
+				default:
 					break;
 			}
 		}
@@ -423,22 +441,17 @@ static void _qn_file_access_parse_l(const wchar* mode, QnFileAccess* self, int* 
 #endif
 }
 
-/**
- * @brief 새 파일 처리 구조를 만든다
- * @param	filename	파일의 이름
- * @param	mode		파일 처리 모드
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnFile*
- */
+//
 QnFile* qn_file_new(const char* filename, const char* mode)
 {
-	qn_retval_if_fail(filename, NULL);
+	qn_val_if_fail(filename, NULL);
 
 	QnFile* self = qn_alloc_1(QnFile);
-	qn_retval_if_fail(self, NULL);
+	qn_val_if_fail(self, NULL);
 
-	_qn_file_access_parse(mode, &self->acs, &self->flag);
+	qn_file_access_parse(mode, &self->acs, &self->flag);
 
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	wchar uni[QN_MAX_PATH];
 	qn_u8to16(uni, QN_MAX_PATH - 1, filename, 0);
 	self->fd = CreateFile(uni, self->acs.access, self->acs.share, NULL, self->acs.mode, self->acs.attr, NULL);
@@ -459,23 +472,18 @@ QnFile* qn_file_new(const char* filename, const char* mode)
 	return self;
 }
 
-/**
- * @brief 유니코드용 새 파일 구조를 만든다
- * @param	filename	파일의 이름
- * @param	mode		파일 처리 모드
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnFile*
- */
+//
 QnFile* qn_file_new_l(const wchar* filename, const wchar* mode)
 {
-	qn_retval_if_fail(filename, NULL);
+	qn_val_if_fail(filename, NULL);
 
 	QnFile* self = qn_alloc_1(QnFile);
-	qn_retval_if_fail(self, NULL);
+	qn_val_if_fail(self, NULL);
 
-	_qn_file_access_parse_l(mode, &self->acs, &self->flag);
+	qn_file_access_parse_l(mode, &self->acs, &self->flag);
 
 	char asc[QN_MAX_PATH];
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	qn_u16to8(asc, QN_MAX_PATH - 1, filename, 0);
 	self->fd = CreateFile(filename, self->acs.access, self->acs.share, NULL, self->acs.mode, self->acs.attr, NULL);
 
@@ -496,20 +504,17 @@ QnFile* qn_file_new_l(const wchar* filename, const wchar* mode)
 	return self;
 }
 
-/**
- * @brief 파일 복제. 핸들을 복제하여 따로 사용할 수 있도록 한다
- * @param[in]	src	(널값이 아닌) 원본
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 QnFile*
- */
+//
 QnFile* qn_file_new_dup(QnFile* src)
 {
 	QnFile* self = qn_alloc_1(QnFile);
-	qn_retval_if_fail(self, NULL);
+	qn_val_if_fail(self, NULL);
 
 	memcpy(self, src, sizeof(QnFile));
 
-#if _MSC_VER
-	HANDLE d, p = GetCurrentProcess();
+#ifdef _QN_WINDOWS_
+	const HANDLE p = GetCurrentProcess();
+	HANDLE d;
 	if (!DuplicateHandle(p, self->fd, p, &d, 0, false, DUPLICATE_SAME_ACCESS))
 	{
 		qn_free(self);
@@ -534,13 +539,10 @@ QnFile* qn_file_new_dup(QnFile* src)
 	return self;
 }
 
-/**
- * @brief 파일 구조를 제거한다. 더 이상 파일 관리를 하지 않을 때 사용한다
- * @param[in]	self	파일 개체
- */
+//
 void qn_file_delete(QnFile* self)
 {
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	if (self->fd && self->fd != INVALID_HANDLE_VALUE)
 		CloseHandle(self->fd);
 #else
@@ -552,42 +554,26 @@ void qn_file_delete(QnFile* self)
 	qn_free(self);
 }
 
-/**
- * @brief 파일 플래그를 가져온다
- * @param[in]	self	파일 개체
- * @param	mask		플래그의 마스크
- * @return	파일 플래그
- */
-int qn_file_flags(QnFile* self, int mask)
+//
+int qn_file_get_flags(const QnFile* self, int mask)
 {
 	return (self->flag & mask) != 0;
 }
 
-/**
- * @brief 파일 이름을 얻는다
- * @param[in]	self	파일 개체
- * @return	파일의 이름
- */
-const char* qn_file_name(QnFile* self)
+//
+const char* qn_file_get_name(const QnFile* self)
 {
 	return self->name;
 }
 
-/**
- * @brief 파일에서 읽는다
- * @param[in]	self	파일 개체
- * @param	buffer  	읽은 데이터를 저장할 버퍼
- * @param	offset  	버퍼의 옵셋
- * @param	size		읽을 크기
- * @return	실제 읽은 길이를 반환
- */
+//
 int qn_file_read(QnFile* self, void* buffer, int offset, int size)
 {
-	qn_retval_if_fail(buffer != NULL, -1);
-	qn_retval_if_fail(size >= 0, 0);
+	qn_val_if_fail(buffer != NULL, -1);
+	qn_val_if_fail(size >= 0, 0);
 
 	uint8_t* ptr = (uint8_t*)buffer;
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	DWORD ret;
 	return ReadFile(self->fd, ptr + offset, size, &ret, NULL) ? (int)ret : 0;
 #else
@@ -595,21 +581,14 @@ int qn_file_read(QnFile* self, void* buffer, int offset, int size)
 #endif
 }
 
-/**
- * @brief 파일에 쓴다
- * @param[in]	self	파일 개체
- * @param	buffer  	쓸 데이터가 들어 있는 버퍼
- * @param	offset  	버퍼의 옵셋
- * @param	size		쓸 크기
- * @return	실제 쓴 길이를 반환
- */
+//
 int qn_file_write(QnFile* self, const void* buffer, int offset, int size)
 {
-	qn_retval_if_fail(buffer != NULL, -1);
-	qn_retval_if_fail(size >= 0, 0);
+	qn_val_if_fail(buffer != NULL, -1);
+	qn_val_if_fail(size >= 0, 0);
 
 	const uint8_t* ptr = (const uint8_t*)buffer;
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	DWORD ret;
 	return WriteFile(self->fd, ptr + offset, size, &ret, NULL) ? (int)ret : 0;
 #else
@@ -617,20 +596,16 @@ int qn_file_write(QnFile* self, const void* buffer, int offset, int size)
 #endif
 }
 
-/**
- * @brief 파일 크기를 얻는다
- * @param[in]	self	파일 개체
- * @return	파일의 길이
- */
-int64_t qn_file_size(QnFile* self)
+//
+llong qn_file_size(QnFile* self)
 {
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	LARGE_INTEGER ll;
 	return GetFileSizeEx(self->fd, &ll) ? ll.QuadPart : -1;
 #else
-#if _QN_LINUX_
+#ifdef _QN_LINUX_
 	off_t save, last;
-#elif _QN_BSD_
+#elif defined _QN_BSD_
 	int save, last;
 #else
 	long save, last;
@@ -642,48 +617,35 @@ int64_t qn_file_size(QnFile* self)
 #endif
 }
 
-/**
- * @brief 파일 위치 얻기
- * @param[in]	self	파일 개체
- * @return	현재 파일의 읽고 쓰는 위치
- */
-int64_t qn_file_tell(QnFile* self)
+//
+llong qn_file_tell(QnFile* self)
 {
-#if _MSC_VER
-	LARGE_INTEGER ll, pl = { .QuadPart = 0 };
+#ifdef _QN_WINDOWS_
+	const LARGE_INTEGER pl = { .QuadPart = 0 };
+	LARGE_INTEGER ll;
 	return SetFilePointerEx(self->fd, pl, &ll, FILE_CURRENT) ? ll.QuadPart : -1;
 #else
 	return lseek(self->fd, 0, SEEK_CUR);
 #endif
 }
 
-/**
- * @brief 파일 위치 변경
- * @param[in]	self	파일 개체
- * @param	offset  	이동할 위치
- * @param	org			방식 (C형식 SEEK와 동일)
- * @return	변경된 위치.
- */
-int64_t qn_file_seek(QnFile* self, llong offset, int org)
+//
+llong qn_file_seek(QnFile* self, llong offset, QnSeek org)
 {
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
+	const LARGE_INTEGER* po = (LARGE_INTEGER*)&offset;
 	LARGE_INTEGER ll;
-	LARGE_INTEGER* po = (LARGE_INTEGER*)&offset;
-	BOOL b = SetFilePointerEx(self->fd, *po, &ll, org);
+	const BOOL b = SetFilePointerEx(self->fd, *po, &ll, org);
 	return b ? ll.QuadPart : -1;
 #else
 	return lseek(self->fd, offset, org);
 #endif
 }
 
-/**
- * @brief 파일 갱신. 파일 내용을 갱신한다. 쓰기 버퍼의 남은 데이터를 모두 쓴다
- * @param[in]	self	파일 개체
- * @return	성공하면 참, 실패하면 거짓
- */
-bool qn_file_flush(QnFile* self)
+//
+bool qn_file_flush(const QnFile* self)
 {
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	return FlushFileBuffers(self->fd) != 0;
 #else
 #if 0
@@ -693,69 +655,48 @@ bool qn_file_flush(QnFile* self)
 #endif
 }
 
-/**
- * @brief 파일에 포맷된 문자열 쓰기
- * @param[in]	self	파일 개체
- * @param	fmt			포맷 문자열
- * @return	실제 쓴 길이
- */
+//
 int qn_file_printf(QnFile* self, const char* fmt, ...)
 {
-	va_list va;
+	va_list va, vq;
 
 	va_start(va, fmt);
-	int len = qn_vsnprintf(NULL, 0, fmt, va);
-	va_end(va);
+	va_copy(vq, va);
+	int len = qn_vsnprintf(NULL, 0, fmt, vq);
+	va_end(vq);
 
-	char* buf = qn_alloca(len + 1, char);
-	va_start(va, fmt);
+	char* buf = qn_alloc(len + 1, char);
 	qn_vsnprintf(buf, len + 1, fmt, va);
 	va_end(va);
-
 	len = qn_file_write(self, buf, 0, len);
-
-	qn_freea(buf);
+	qn_free(buf);
 
 	return len;
 }
 
-/**
- * @brief 파일에 포맷된 문자열 쓰기 가변형
- * @param[in]	self	파일 개체
- * @param	fmt			포맷 문자열
- * @param	va			가변 인수
- * @return	실제 쓴 길이
- */
+//
 int qn_file_vprintf(QnFile* self, const char* fmt, va_list va)
 {
 	int len = qn_vsnprintf(NULL, 0, fmt, va);
-
-	char* buf = qn_alloca(len + 1, char);
+	char* buf = qn_alloc(len + 1, char);
 	qn_vsnprintf(buf, len + 1, fmt, va);
-
 	len = qn_file_write(self, buf, 0, len);
-
-	qn_freea(buf);
+	qn_free(buf);
 
 	return len;
 }
 
-/**
- * @brief 파일이 있나 조사한다
- * @param	filename	파일의 이름
- * @param[out]	res 	(널값이 아니면) 파일 처리 플래그로 KFAS_로 시작하는 마스크 플래그
- * @return	성공하면 참, 실패하면 거짓
- */
+//
 bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 {
-	qn_retval_if_fail(filename, false);
+	qn_val_if_fail(filename, false);
 
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	wchar uni[QN_MAX_PATH];
 	qn_u8to16(uni, QN_MAX_PATH - 1, filename, 0);
 
 	WIN32_FIND_DATA ffd = { 0, };
-	HANDLE h = FindFirstFileEx(uni, FindExInfoStandard, &ffd, FindExSearchNameMatch, NULL, 0);
+	const HANDLE h = FindFirstFileEx(uni, FindExInfoStandard, &ffd, FindExSearchNameMatch, NULL, 0);
 
 	if (h == INVALID_HANDLE_VALUE)
 		return false;
@@ -784,19 +725,14 @@ bool qn_file_exist(const char* filename, /*RET-NULLABLE*/bool* isdir)
 #endif
 }
 
-/**
- * @brief 파일이 있나 조사한다. 유니코드 버전
- * @param	filename	파일의 이름
- * @param[out]	res 	(널값이 아니면) 파일 처리 플래그로 KFAS_로 시작하는 마스크 플래그
- * @return	성공하면 참, 실패하면 거짓
- */
+//
 bool qn_file_exist_l(const wchar* filename, /*RET-NULLABLE*/bool* isdir)
 {
-	qn_retval_if_fail(filename, false);
+	qn_val_if_fail(filename, false);
 
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	WIN32_FIND_DATA ffd = { 0, };
-	HANDLE h = FindFirstFileEx(filename, FindExInfoStandard, &ffd, FindExSearchNameMatch, NULL, 0);
+	const HANDLE h = FindFirstFileEx(filename, FindExInfoStandard, &ffd, FindExSearchNameMatch, NULL, 0);
 
 	if (h == INVALID_HANDLE_VALUE)
 		return false;
@@ -828,39 +764,28 @@ bool qn_file_exist_l(const wchar* filename, /*RET-NULLABLE*/bool* isdir)
 #endif
 }
 
-/**
- * @brief qn_file_alloc 함수에서 사용하는 파일 읽기 최대 할당 크기
- * @return	최대 할당 크기
- */
+//
 size_t qn_file_get_max_alloc_size(void)
 {
-	return _max_file_alloc_size;
+	return max_file_alloc_size;
 }
 
-/**
- * @brief qn_file_alloc 함수에서 사용할 파일 읽기 최대 할당 크기 설정
- * @param	n	할당할 크기
- */
+//
 void qn_file_set_max_alloc_size(size_t n)
 {
-	_max_file_alloc_size = n == 0 ? (512ULL * 1024ULL * 1024ULL) : n;
+	max_file_alloc_size = n == 0 ? (512ULL * 1024ULL * 1024ULL) : n;
 }
 
-/**
- * @brief 파일 할당. 즉, 파일 전체를 읽어 메모리에 할당한 후 반환한다
- * @param	filename	파일의 이름
- * @param[out]	size	(널값이 아니면) 읽은 파일의 크기
- * @return	읽은 버퍼. 사용한 다음 k_free 함수로 해제해야한다
- */
+//
 void* qn_file_alloc(const char* filename, int* size)
 {
-	qn_retval_if_fail(filename != NULL, NULL);
+	qn_val_if_fail(filename != NULL, NULL);
 
 	QnFile* file = qn_file_new(filename, "rb");
-	qn_retval_if_fail(file, NULL);
+	qn_val_if_fail(file, NULL);
 
-	int64_t len = qn_file_size(file);
-	if (!len || len > (int64_t)_max_file_alloc_size)
+	const llong len = qn_file_size(file);
+	if (!len || len > (llong)max_file_alloc_size)
 	{
 		qn_file_delete(file);
 		return NULL;
@@ -877,22 +802,17 @@ void* qn_file_alloc(const char* filename, int* size)
 	return buf;
 }
 
-/**
- * @brief 파일 할당. 즉, 파일 전체를 읽어 메모리에 할당한 후 반환한다. 유니코드 버전
- * @param	filename	파일의 이름
- * @param[out]	size	(널값이 아니면) 읽은 파일의 크기
- * @return	읽은 버퍼. 사용한 다음 k_free 함수로 해제해야한다
- */
+//
 void* qn_file_alloc_l(const wchar* filename, int* size)
 {
-	qn_retval_if_fail(filename, NULL);
+	qn_val_if_fail(filename, NULL);
 
 	QnFile* file = qn_file_new_l(filename, L"rb");
-	qn_retval_if_fail(file, NULL);
+	qn_val_if_fail(file, NULL);
 
-	int64_t len = qn_file_size(file);
+	const llong len = qn_file_size(file);
 
-	if (len <= 0 || (size_t)len > _max_file_alloc_size)
+	if (len <= 0 || (size_t)len > max_file_alloc_size)
 	{
 		qn_file_delete(file);
 		return NULL;
@@ -914,30 +834,25 @@ void* qn_file_alloc_l(const wchar* filename, int* size)
 // 디렉토리
 
 // 디렉토리 구조체.
-struct _QnDir
+struct QnDir
 {
-#if _MSC_VER
-	wchar* name;
-	int					stat;
-	HANDLE				handle;
-	WIN32_FIND_DATA		ffd;
-	char				file[MAX_PATH];
+#ifdef _QN_WINDOWS_
+	HANDLE			handle;
+	WIN32_FIND_DATA	ffd;
+	wchar*			name;
+	int				stat;
+	char			file[MAX_PATH];
 #else
-	DIR* pd;
-	wchar				ufile[QN_MAX_PATH];
+	DIR*			pd;
+	wchar			ufile[QN_MAX_PATH];
 #endif
 };
 
-/**
- * @brief 디렉토리를 새로 만든다
- * @param	path 	디렉토리의 완전한 경로 이름
- * @param	flags	사용하지 않음
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 개체
- */
+//
 QnDir* qn_dir_new(const char* path)
 {
-#if _MSC_VER
-	qn_retval_if_fail(path != NULL, NULL);
+#ifdef _QN_WINDOWS_
+	qn_val_if_fail(path != NULL, NULL);
 
 	wchar uni[MAX_PATH];
 	qn_u8to16(uni, MAX_PATH - 1, path, 0);
@@ -949,11 +864,11 @@ QnDir* qn_dir_new(const char* path)
 		return NULL;
 
 	wchar fpath[MAX_PATH];
-	(void)_wfullpath(fpath, uni, MAX_PATH);
+	(void)_wfullpath(fpath, uni, MAX_PATH);  // NOLINT
 
 	size_t len = wcslen(fpath) + 1/*슬래시*/ + 1/*서픽스*/ + 1/*널*/;
 	wchar* suffix = qn_alloc(len, wchar);
-	qn_retval_if_fail(suffix, NULL);
+	qn_val_if_fail(suffix, NULL);
 
 	wcscpy_s(suffix, len, fpath);
 	len = wcslen(suffix);
@@ -978,10 +893,10 @@ QnDir* qn_dir_new(const char* path)
 	self->name = suffix;
 	self->handle = INVALID_HANDLE_VALUE;
 #else
-	qn_retval_if_fail(path, NULL);
+	qn_val_if_fail(path, NULL);
 
 	DIR* pd = opendir(path);
-	qn_retval_if_fail(pd != NULL, NULL);
+	qn_val_if_fail(pd != NULL, NULL);
 
 	QnDir* self = qn_alloc_zero_1(QnDir);
 	self->pd = pd;
@@ -990,16 +905,11 @@ QnDir* qn_dir_new(const char* path)
 	return self;
 }
 
-/**
- * @brief 디렉토리를 새로 만든다 (유니코드 사용)
- * @param	path 	디렉토리의 완전한 경로 이름
- * @param	flags	사용하지 않음
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 개체
- */
+//
 QnDir* qn_dir_new_l(const wchar* path)
 {
-#if _MSC_VER
-	qn_retval_if_fail(path != NULL, NULL);
+#ifdef _QN_WINDOWS_
+	qn_val_if_fail(path != NULL, NULL);
 
 	WIN32_FILE_ATTRIBUTE_DATA fad = { 0, };
 	if (!GetFileAttributesEx(path, GetFileExInfoStandard, &fad))
@@ -1012,7 +922,7 @@ QnDir* qn_dir_new_l(const wchar* path)
 
 	size_t len = wcslen(fpath) + 1/*슬래시*/ + 1/*서픽스*/ + 1/*널*/;
 	wchar* suffix = qn_alloc(len, wchar);
-	qn_retval_if_fail(suffix, NULL);
+	qn_val_if_fail(suffix, NULL);
 
 	wcscpy_s(suffix, len, fpath);
 	len = wcslen(suffix);
@@ -1037,12 +947,12 @@ QnDir* qn_dir_new_l(const wchar* path)
 	self->name = suffix;
 	self->handle = INVALID_HANDLE_VALUE;
 #else
-	qn_retval_if_fail(path, NULL);
+	qn_val_if_fail(path, NULL);
 
 	char asc[260];
 	qn_u32to8(asc, 260 - 1, path, 0);
 	DIR* pd = opendir(asc);
-	qn_retval_if_fail(pd != NULL, NULL);
+	qn_val_if_fail(pd != NULL, NULL);
 
 	QnDir* self = qn_alloc_zero_1(QnDir);
 	self->pd = pd;
@@ -1051,13 +961,10 @@ QnDir* qn_dir_new_l(const wchar* path)
 	return self;
 }
 
-/**
- * @brief 디렉토리 개체 제거
- * @param[in]	self	디렉토리 개체
- */
+//
 void qn_dir_delete(QnDir* self)
 {
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	if (self->handle != INVALID_HANDLE_VALUE)
 		FindClose(self->handle);
 
@@ -1069,14 +976,10 @@ void qn_dir_delete(QnDir* self)
 	qn_free(self);
 }
 
-/**
- * @brief 디렉토리에서 항목 읽기
- * @param[in]	self	디렉토리 개체
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 파일 이름
- */
+//
 const char* qn_dir_read(QnDir* self)
 {
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	for (;;)
 	{
 		if (self->stat < 0)
@@ -1119,14 +1022,10 @@ const char* qn_dir_read(QnDir* self)
 #endif
 }
 
-/**
- * @brief 디렉토리에서 항목 읽기 (유니코드)
- * @param[in]	self	디렉토리 개체
- * @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 파일 이름
- */
+//
 const wchar* qn_dir_read_l(QnDir* self)
 {
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	for (;;)
 	{
 		if (self->stat < 0)
@@ -1173,13 +1072,10 @@ const wchar* qn_dir_read_l(QnDir* self)
 #endif
 }
 
-/**
- * @brief 디렉토리를 첫 항목으로 감기
- * @param[in]	self	디렉토리 개체
- */
+//
 void qn_dir_rewind(QnDir* self)
 {
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	if (self->handle != INVALID_HANDLE_VALUE)
 		FindClose(self->handle);
 
@@ -1190,30 +1086,22 @@ void qn_dir_rewind(QnDir* self)
 #endif
 }
 
-/**
- * @brief 디렉토리에서 몇번째 항목인지 얻기
- * @param[in]	self	디렉토리 개체
- * @return	항목 순서
- */
+//
 int qn_dir_tell(QnDir* self)
 {
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	return self->stat;
-#elif _QN_ANDROID_
+#elif defined _QN_ANDROID_
 	return -1;
 #else
 	return (int)telldir(self->pd);
 #endif
 }
 
-/**
- * @brief 디렉토리에서 순서 항목으로 찾아가기
- * @param[in]	self	디렉토리 개체
- * @param	pos			찾아갈 위치
- */
+//
 void qn_dir_seek(QnDir* self, int pos)
 {
-#if _MSC_VER
+#ifdef _QN_WINDOWS_
 	if (pos < 0)
 	{
 		if (self->handle != INVALID_HANDLE_VALUE)
@@ -1240,3 +1128,421 @@ void qn_dir_seek(QnDir* self, int pos)
 	seekdir(self->pd, pos);
 #endif
 }
+
+//
+#ifndef _QN_WINDOWS_
+static char* qn_internal_read_sym_link(const char* path)
+{
+	char* buf = NULL;
+	ssize_t len = 64;
+	ssize_t rc = -1;
+	while (true)
+	{
+		buf = qn_realloc(buf, (size_t)len, char);
+		rc = readlink(path, buf, len);
+		if (rc == -1)
+			break;
+		else if (rc < len)
+		{
+			buf[rc] = '\0';
+			return buf;
+		}
+		len *= 2;
+	}
+	qn_free(buf);
+	return NULL;
+}
+#endif
+
+//
+char* qn_dir_base_path(void)
+{
+	char* path = NULL;
+#ifdef _QN_WINDOWS_
+	DWORD len = 128;
+	wchar* pw = NULL;
+	while (true)
+	{
+		pw = qn_realloc(pw, len, wchar);
+		len = GetModuleFileName(NULL, pw, len);
+		if (len < len - 1)
+			break;
+		len *= 2;
+	}
+	if (len == 0)
+	{
+		qn_free(pw);
+		return NULL;
+	}
+	DWORD i;
+	for (i = len - 1; i > 0; i--)
+	{
+		if (pw[i] == L'\\')
+			break;
+	}
+	qn_assert(i > 0, "베이스 패스가 잘못된거 같은데요!");
+	pw[i + 1] = L'\0';
+
+	size_t sz = qn_u16to8(NULL, 0, pw, 0);
+	path = qn_alloc(sz + 1, char);
+	qn_u16to8(path, sz + 1, pw, 0);
+	qn_free(pw);
+#else
+#if defined _QN_FREEBSD_
+	QN_STMT_BEGIN{
+		char fullpath[MAX_PATH];
+		size_t len = QN_COUNTOF(fullpath);
+		const int sns[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
+		if (sysctl(sns, QN_COUNTOF(sns), fullpath, &len, NULL, 0) != -1)
+			path = qn_strdup(fullpath);
+	}QN_STMT_END;
+#endif
+	if (path == NULL && (access("/proc", F_OK) == 0))
+	{
+#if defined _QN_FREEBSD_
+		path = qn_internal_read_sym_link("/proc/curproc/file");
+#elif defined _QN_LINUX_
+		path = qn_internal_read_sym_link("/proc/self/exe");
+		if (path == NULL)
+		{
+			char path[64];
+			int rc = qn_snprintf(path, QN_COUNTOF(path), "/proc/%llu/exe", (ullong)getpid());
+			if (rc > 0 && rc < QN_COUNTOF(path))
+				path = qn_internal_read_sym_link(path);
+		}
+#else
+#error unknown platform
+#endif
+	}
+	if (path != NULL)
+	{
+		char* p = strrchr(path, '/');
+		if (p != NULL)
+			*(p + 1) = '\0';
+		else
+		{
+			// 못찾겟어.
+			qn_free(path);
+			path = NULL;
+		}
+	}
+#endif
+	return path;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// 모듈
+
+enum QnModFlag
+{
+	QNMDF_INFO = QN_BIT(1),
+	QNMDF_NO_CLOSURE = QN_BIT(2),
+	QNMDF_RESIDENT = QN_BIT(3),
+};
+
+struct QnModule
+{
+	char*				filename;
+	int					ref;
+	int					flags;
+#ifdef _QN_WINDOWS_
+	HMODULE				handle;
+#else
+	void*				handle;
+#endif
+
+	QnModule*			next;
+};
+
+static struct QnModuleImpl
+{
+	BOOL				inited;
+	QnModule*			self;
+	QnModule*			modules;
+	QnTls*				error;
+	QnSpinLock			lock;
+}
+_qn_mod = { false, };
+
+//
+static void qn_internal_mod_delete(QnModule* self, bool dispose);
+
+//
+static void qn_module_dispose(void* dummy)
+{
+	qn_ret_if_fail(_qn_mod.inited);
+
+	QnModule *next, *node = _qn_mod.modules;
+	while (node)
+	{
+		if (QN_TMASK(node->flags, QNMDF_NO_CLOSURE | QNMDF_INFO))
+			qn_debug_outputf(false, "QNMODULE", "module not deleted [%s] (ref: %d)", node->filename, node->ref);
+		next = node->next;
+		qn_internal_mod_delete(node, true);
+		node = next;
+	}
+
+	if (_qn_mod.self != NULL)
+	{
+		qn_free(_qn_mod.self->filename);
+		qn_free(_qn_mod.self);
+	}
+}
+
+//
+static void qn_module_init(void)
+{
+	qn_ret_if_ok(_qn_mod.inited);
+	_qn_mod.inited = true;
+	_qn_mod.error = qn_tls(qn_mpffree);
+	qn_internal_atexit(qn_module_dispose, NULL);
+}
+
+//
+static void qn_internal_mod_reset_error(void)
+{
+	qn_module_init();
+	char* prev = (char*)qn_tlsget(_qn_mod.error);
+	qn_free(prev);
+	qn_tlsset(_qn_mod.error, NULL);
+}
+
+//
+static void qn_internal_mod_set_error(void)
+{
+	qn_module_init();
+	char* prev = (char*)qn_tlsget(_qn_mod.error);
+	qn_free(prev);
+#ifdef _QN_WINDOWS_
+	qn_tlsset(_qn_mod.error, qn_syserr(0, NULL));
+#else
+	const char* err = dlerror();
+	qn_tlsset(_qn_mod.error, err == NULL ? qn_syserr(0, NULL) : qn_strdup(err));
+#endif
+}
+
+//
+#ifdef _QN_WINDOWS_
+static QnModule* qn_internal_find_by_handle(HMODULE handle)
+#else
+static QnModule* qn_internal_find_by_handle(void* handle)
+#endif
+{
+	QnModule* find = NULL;
+	QN_LOCK(_qn_mod.lock);
+	if (_qn_mod.self && _qn_mod.self->handle == handle)
+		find = _qn_mod.self;
+	else
+	{
+		for (QnModule* node = _qn_mod.modules; node; node = node->next)
+		{
+			if (node->handle != handle)
+				continue;
+			find = node;
+			break;
+		}
+	}
+	QN_UNLOCK(_qn_mod.lock);
+	return find;
+}
+
+//
+static QnModule* qn_internal_find_by_filename(const char* filename)
+{
+	QnModule* find = NULL;
+	QN_LOCK(_qn_mod.lock);
+	for (QnModule* node = _qn_mod.modules; node; node = node->next)
+	{
+		if (qn_streqv(node->filename, filename) == false)
+			continue;
+		find = node;
+		break;
+	}
+	QN_UNLOCK(_qn_mod.lock);
+	return find;
+}
+
+//
+QnModule* qn_mod_self(void)
+{
+	qn_internal_mod_reset_error();
+
+	if (_qn_mod.self != NULL)
+	{
+		_qn_mod.self->ref++;
+		return _qn_mod.self;
+	}
+
+#ifdef _QN_WINDOWS_
+	HMODULE handle = (HMODULE)0x9;
+#else
+	void* handle = dlopen(NULL, RTLD_GLOBAL | RTLD_LAZY);
+	if (handle == NULL)
+	{
+		qn_internal_mod_set_error();
+		return NULL;
+}
+#endif
+
+	QnModule* self = qn_alloc_zero_1(QnModule);
+	self->handle = handle;
+	self->ref = 1;
+	self->flags = QNMDF_RESIDENT;
+
+	QN_LOCK(_qn_mod.lock);
+	_qn_mod.self = self;
+	QN_UNLOCK(_qn_mod.lock);
+
+	return self;
+}
+
+//
+QnModule* qn_mod_open(const char* filename, int flags)
+{
+	qn_val_if_fail(filename != NULL, NULL);
+
+	qn_internal_mod_reset_error();
+
+	QnModule* self = qn_internal_find_by_filename(filename);
+	if (self != NULL)
+	{
+		self->ref++;
+		self->flags = QNMDF_NO_CLOSURE | QNMDF_RESIDENT;
+		return self;
+	}
+
+#ifdef _QN_WINDOWS_
+	wchar* pw;
+	size_t size = qn_u8to16(NULL, 0, filename, 0) + 1;
+	pw = qn_alloc(size, wchar);
+	qn_u8to16(pw, size, filename, 0);
+#ifdef __WINRT__
+	HMODULE handle = LoadPackagedLibrary(pw, 0);
+#else
+	HMODULE handle = LoadLibrary(pw);
+#endif
+	qn_free(pw);
+#else
+	void* handle = dlopen(filename, RTLD_LOCAL | RTLD_NOW);
+#endif
+	if (handle == NULL)
+	{
+		qn_debug_output_syserr(true, "QNMODULE", 0);
+		return NULL;
+	}
+
+	self = qn_internal_find_by_handle(handle);
+	if (self != NULL)
+	{
+		qn_internal_mod_delete(self, false);
+		self->ref++;
+		self->flags |= QNMDF_NO_CLOSURE | QNMDF_RESIDENT | QNMDF_INFO;
+		return self;
+	}
+
+	self = qn_alloc_1(QnModule);
+	self->filename = qn_strdup(filename);
+	self->ref = 1;
+	self->flags = flags;
+	self->handle = handle;
+
+	QN_LOCK(_qn_mod.lock);
+	self->next = _qn_mod.modules;
+	_qn_mod.modules = self;
+	QN_UNLOCK(_qn_mod.lock);
+	return self;
+}
+
+//
+static void qn_internal_mod_delete(QnModule* self, bool dispose)
+{
+	if (self->handle != NULL)
+	{
+#ifdef _QN_WINDOWS_
+		if (FreeLibrary(self->handle) == FALSE)
+#else
+		if (dlclose(self->handle) != 0)
+#endif
+			qn_internal_mod_set_error();
+	}
+	if (dispose)
+	{
+		qn_free(self->filename);
+		qn_free(self);
+	}
+}
+
+//
+bool qn_mod_unload(QnModule* self)
+{
+	qn_val_if_fail(self->ref > 0, false);
+
+	self->ref--;
+	if (self->ref > 0)
+		return true;
+
+	QN_LOCK(_qn_mod.lock);
+	for (QnModule *last = NULL, *node = _qn_mod.modules; node; )
+	{
+		if (node == self)
+		{
+			if (last)
+				last->next = node->next;
+			else
+				_qn_mod.modules = node->next;
+			break;
+		}
+		last = node;
+		node = node->next;
+	}
+	self->next = NULL;
+	QN_UNLOCK(_qn_mod.lock);
+
+	qn_internal_mod_delete(self, true);
+	return true;
+}
+
+//
+void* qn_mod_func(QnModule* self, const char* name)
+{
+	qn_val_if_fail(name != NULL && *name != '\0', NULL);
+
+	qn_internal_mod_reset_error();
+
+	void* ptr;
+#ifdef _QN_WINDOWS_
+	if (self->handle != (HMODULE)0x9)
+		ptr = (void*)GetProcAddress(self->handle, name);
+	else
+	{
+#ifdef __WINRT__
+		ptr = (void*)GetProcAddress(NULL, name);
+#else
+		ptr = (void*)GetProcAddress(GetModuleHandle(NULL), name);
+#endif
+	}
+#else
+	const char* err = dlerror();
+	ptr = dlsym(self->handle, name);
+#endif
+
+	if (ptr == NULL)
+		qn_internal_mod_set_error();
+	return ptr;
+}
+
+//
+const char* qn_mod_error(void)
+{
+	qn_module_init();
+	return (const char*)qn_tlsget(_qn_mod.error);
+}
+
+//
+int qn_mod_ref(QnModule* self)
+{
+	return self->ref;
+}
+
+

@@ -1,5 +1,11 @@
-﻿#include "pch.h"
+﻿//
+// qg_kmc.c - 메시지 처리기
+// 2023-12-13 by kim
+//
+
+#include "pch.h"
 #include "qs_qn.h"
+#include "qs_qg.h"
 #include "qs_kmc.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -8,9 +14,10 @@
 //
 const char* qg_qik_str(QikKey key)
 {
-	static const char* KeyNames[] =
+#ifndef __EMSCRIPTEN__
+	static const char* s_key_names[] =
 	{
-		/*00*/ "NONE", NULL, NULL, NULL, NULL, NULL, NULL, NULL, "BACK", "TAB", NULL, NULL, NULL, "RETURN", NULL, NULL,
+		/*00*/ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "BACK", "TAB", NULL, NULL, NULL, "RETURN", NULL, NULL,
 		/*10*/ NULL, NULL, NULL, "PAUSE", "CAPSLOCK", NULL, NULL, NULL, NULL, NULL, NULL, "ESCAPE", NULL, NULL, NULL, NULL,
 		/*20*/ "SPACE", "PGUP", "PGDN", "END", "HOME", "LEFT", "UP", "RIGHT", "DOWN", NULL, NULL, NULL, "PRTSCR", "INS", "DEL", NULL,
 		/*30*/ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", NULL, NULL, NULL, NULL, NULL, NULL,
@@ -28,31 +35,38 @@ const char* qg_qik_str(QikKey key)
 		/*F0*/ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	};
 
-	return !KeyNames[key] ? KeyNames[0] : KeyNames[key];
+	return s_key_names[(byte)key];
+#else
+	return NULL;
+#endif
 }
 
 //
 const char* qg_qim_str(QimButton button)
 {
-	static const char* ButtonNames[] =
+#ifndef __EMSCRIPTEN__
+	static const char* s_button_names[] =
 	{
-		"UNKNOWN",
+		NULL,
 		"LEFT",
 		"RIGHT",
 		"MIDDLE",
 		"X1",
 		"X2"
 	};
-
-	return ButtonNames[button < QN_COUNTOF(ButtonNames) ? button : 0];
+	return s_button_names[(size_t)button < QN_COUNTOF(s_button_names) ? button : 0];
+#else
+	return NULL;
+#endif
 }
 
 //
 const char* qg_qic_str(QicButton button)
 {
-	static const char* ButtonNames[] =
+#ifndef __EMSCRIPTEN__
+	static const char* s_button_names[] =
 	{
-		"UNKNOWN",
+		NULL,
 		"UP",
 		"DOWN",
 		"LEFT",
@@ -68,15 +82,17 @@ const char* qg_qic_str(QicButton button)
 		"X",
 		"Y"
 	};
-
-	return ButtonNames[button < QN_COUNTOF(ButtonNames) ? button : 0];
+	return s_button_names[(size_t)button < QN_COUNTOF(s_button_names) ? button : 0];
+#else
+	return NULL;
+#endif;
 }
 
-#ifdef SDL_VERSION
+#ifdef USE_SDL2
 //
 QikKey sdlk_to_qik(uint sdlk)
 {
-	static byte _keycodes[] =
+	static byte s_key_codes[] =
 	{
 		/*0*/					0,
 		/*1*/					0,
@@ -207,7 +223,7 @@ QikKey sdlk_to_qik(uint sdlk)
 		/*126*/					0,
 		/*127/DELETE*/			QIK_DEL,
 	};
-	static byte _scancodes57[] =
+	static byte s_scan_code_57[] =
 	{
 		/*0/57/CAPSLOCK*/		QIK_CAPSLOCK,
 		/*1/58/F1*/				QIK_F1,
@@ -269,7 +285,7 @@ QikKey sdlk_to_qik(uint sdlk)
 		/*57/114/F23*/			QIK_F23,
 		/*58/115/F24*/			QIK_F24,
 	};
-	static byte _scancodes224[] =
+	static byte s_scan_code_224[] =
 	{
 		/*0/224/LCTRL*/			QIK_LCTRL,
 		/*1/225/LSHIFT*/		QIK_LSHIFT,
@@ -281,17 +297,18 @@ QikKey sdlk_to_qik(uint sdlk)
 		/*7/231/RGUI*/			QIK_RWIN,
 	};
 	if (sdlk < 128)
-		return (QikKey)_keycodes[sdlk];
+		return (QikKey)s_key_codes[sdlk];
 	if (sdlk >= SDLK_CAPSLOCK && sdlk <= SDLK_F24)
-		return (QikKey)_scancodes57[(sdlk & ~SDLK_SCANCODE_MASK) - SDL_SCANCODE_CAPSLOCK];
+		return (QikKey)s_scan_code_57[(sdlk & ~SDLK_SCANCODE_MASK) - SDL_SCANCODE_CAPSLOCK];
 	if (sdlk >= SDLK_LCTRL && sdlk <= SDLK_RGUI)
-		return (QikKey)_scancodes224[(sdlk & ~SDLK_SCANCODE_MASK) - SDL_SCANCODE_LCTRL];
+		return (QikKey)s_scan_code_224[(sdlk & ~SDLK_SCANCODE_MASK) - SDL_SCANCODE_LCTRL];
 	return QIK_NONE;
 }
 
-QikMask sdl_kmod_to_qikm(int modifier)
+//
+QikMask kmod_to_qikm(int modifier)
 {
-	QikMask m = 0;
+	QikMask m = (QikMask)0;
 	if (modifier & (KMOD_LSHIFT | KMOD_RSHIFT)) m |= QIKM_SHIFT;
 	if (modifier & (KMOD_LCTRL | KMOD_RCTRL)) m |= QIKM_CTRL;
 	if (modifier & (KMOD_LALT | KMOD_RALT)) m |= QIKM_ALT;
@@ -302,3 +319,84 @@ QikMask sdl_kmod_to_qikm(int modifier)
 }
 #endif
 
+
+//////////////////////////////////////////////////////////////////////////
+// stub
+
+//
+const char* qg_event_str(QgEventType ev)
+{
+#ifndef __EMSCRIPTEN__
+	static struct EventMap
+	{
+		QgEventType		ev;
+		const char*		str;
+	}
+	s_map[] =
+	{
+#define DEF_EVENT(ev) { QGEV_##ev, #ev }
+		DEF_EVENT(NONE),
+		DEF_EVENT(ACTIVE),
+		DEF_EVENT(LAYOUT),
+		DEF_EVENT(MOUSEMOVE),
+		DEF_EVENT(MOUSEDOWN),
+		DEF_EVENT(MOUSEUP),
+		DEF_EVENT(MOUSEWHEEL),
+		DEF_EVENT(MOUSEDOUBLE),
+		DEF_EVENT(KEYDOWN),
+		DEF_EVENT(KEYUP),
+		DEF_EVENT(TEXTINPUT),
+		DEF_EVENT(WINDOW),
+		DEF_EVENT(SYSWM),
+		DEF_EVENT(EXIT),
+		{ 0, NULL },
+#undef DEF_EVENT
+	};
+	for (const struct EventMap* p = s_map; p->str != NULL; p++)
+	{
+		if (p->ev == ev)
+			return p->str;
+	}
+	return "UNKNOWN";
+#else
+	return NULL;
+#endif
+}
+
+//
+const char* qg_window_event_str(QgWindowEventType wev)
+{
+#ifndef __EMSCRIPTEN__
+	static struct WindowEventMap
+	{
+		QgWindowEventType	wev;
+		const char*			str;
+	}
+	s_map[] =
+	{
+#define DEF_WINDOW_EVENT(ev) { QGWEV_##ev, #ev }
+		DEF_WINDOW_EVENT(NONE),
+		DEF_WINDOW_EVENT(SHOW),
+		DEF_WINDOW_EVENT(HIDE),
+		DEF_WINDOW_EVENT(PAINTED),
+		DEF_WINDOW_EVENT(RESTORED),
+		DEF_WINDOW_EVENT(MAXIMIZED),
+		DEF_WINDOW_EVENT(MINIMIZED),
+		DEF_WINDOW_EVENT(MOVED),
+		DEF_WINDOW_EVENT(SIZED),
+		DEF_WINDOW_EVENT(GOTFOCUS),
+		DEF_WINDOW_EVENT(LOSTFOCUS),
+		DEF_WINDOW_EVENT(CLOSE),
+		{ 0, NULL },
+#undef DEF_WINDOW_EVENT
+	};
+	for (const struct WindowEventMap* p = s_map; p->str != NULL; p++)
+	{
+		if (p->wev == wev)
+			return p->str;
+	}
+	return "UNKNOWN";
+#else
+	return NULL;
+#endif
+}

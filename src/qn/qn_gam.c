@@ -19,10 +19,10 @@ QmGam* qm_stc_load(QmGam* self)
 // 언로드
 QmGam* qm_stc_unload(QmGam* self)
 {
-	volatile int ref = (int)--self->ref;
+	const volatile int ref = (int)--self->ref;
 	if (ref != 0)
 	{
-		qn_assert(ref > 0, "invalid reference count!");
+		qn_assert(ref > 0, "잘못된 참조값!");
 		return self;
 	}
 	self->vt->dispose(self);
@@ -36,7 +36,7 @@ size_t qm_stc_get_ref(QmGam* self)
 }
 
 //
-nuint qm_stc_get_desc(QmGam* self)
+nuint qm_stc_get_desc(const QmGam* self)
 {
 	return self->desc;
 }
@@ -44,7 +44,7 @@ nuint qm_stc_get_desc(QmGam* self)
 //
 QSAPI nuint qm_stc_set_desc(QmGam* self, nuint ptr)
 {
-	nuint prev = self->desc;
+	const nuint prev = self->desc;
 	self->desc = ptr;
 	return prev;
 }
