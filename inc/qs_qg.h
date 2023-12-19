@@ -254,7 +254,7 @@ typedef enum QgFlag
 	QGFLAG_RESIZABLE = QN_BIT(2),							/** @brief 크기 변경할 수 있음 */
 	QGFLAG_NOTITLE = QN_BIT(3),								/** @brief 타이틀 바가 없음 */
 	QGFLAG_FOCUS = QN_BIT(4),								/** @brief 입력 포커스 받을 수 있음 */
-	QGFLAG_TEXT= QN_BIT(5),									/** @brief 텍스트 입력을 받을 수 있음 */
+	QGFLAG_TEXT = QN_BIT(5),									/** @brief 텍스트 입력을 받을 수 있음 */
 	// 렌더러 플래그 (24~30)
 	QGFLAG_VSYNC = QN_BIT(27),								/** @brief VSYNC 켜기 */
 	QGFLAG_DITHER = QN_BIT(29),								/** @brief 16비트 모드 사용 */
@@ -299,6 +299,7 @@ typedef enum QgEventType
 	QGEV_WINDOW,											/** @brief 윈도우 이벤트 */
 	QGEV_SYSWM,												/** @brief 시스템 메시지 */
 	QGEV_EXIT,												/** @brief 끝내기 */
+	QGEV_MAX_VALUE,
 } QgEventType;
 
 typedef enum QgWindowEventType
@@ -315,10 +316,11 @@ typedef enum QgWindowEventType
 	QGWEV_GOTFOCUS,
 	QGWEV_LOSTFOCUS,
 	QGWEV_CLOSE,
+	QGWEV_MAX_VALUE,
 } QgWindowEventType;
 
 /** @brief 최대 이벤트 갯수 */
-#define QGMAX_EVENTS		5000
+#define QGMAX_EVENTS		1000
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -733,6 +735,10 @@ QSAPI void qg_set_delay(int delay);
  * @return 남은 이벤트 갯수
 */
 QSAPI int qg_left_events(void);
+/**
+ * @brief 이벤트를 모두 지운다
+ */
+QSAPI void qg_flush_event(void);
 /**
  * @brief 이벤트를 추가한다
  * @param[in] ev 이벤트 정보

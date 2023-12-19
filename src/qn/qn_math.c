@@ -283,7 +283,7 @@ void qn_quat_ln(QnQuat* pq, const QnQuat* q)
 	else
 	{
 		// 법선이 1보다 작다. 이런일은 생기지 않는다!!!!
-		qn_assert(false, "qn_quat_ln: normal is below 1. what???");
+		qn_assert(false, "법선이 1보다 작은데? 어째서???");
 		pq->x = 0.0f;
 		pq->y = 0.0f;
 		pq->z = 0.0f;

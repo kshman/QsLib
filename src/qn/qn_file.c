@@ -1180,7 +1180,7 @@ char* qn_dir_base_path(void)
 		if (pw[i] == L'\\')
 			break;
 	}
-	qn_assert(i > 0, "invalid base path");
+	qn_assert(i > 0, "베이스 패스가 잘못된거 같은데요!");
 	pw[i + 1] = L'\0';
 
 	size_t sz = qn_u16to8(NULL, 0, pw, 0);

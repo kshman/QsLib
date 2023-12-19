@@ -16,19 +16,6 @@ extern QikMask kmod_to_qikm(int modifier);
 //////////////////////////////////////////////////////////////////////////
 // 스터브
 
-typedef struct QgEventArg	QgEventArg;
-struct QgEventArg
-{
-	QgEventArg*		next;
-	QgEvent			event;
-};
-
-QN_DECL_LIST(QgListEvent, QgEvent);
-QN_DECL_HASH(QgHashEvent, int, QgEvent*);
-QN_HASH_INT_KEY(QgHashEvent);
-QN_HASH_KEY_NONE(QgHashEvent);
-QN_HASH_VALUE_FREE(QgHashEvent);
-
 // 기본 스터브 형식
 typedef struct StubBase StubBase;
 struct StubBase
@@ -52,10 +39,6 @@ struct StubBase
 
 	QgUimKey			key;
 	QgUimMouse			mouse;
-
-	QgListEvent			events;
-	QgHashEvent			priors;
-	QnMutex*			lock;
 };
 
 /** @brief 스터브 인스턴스 */
