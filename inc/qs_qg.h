@@ -5,11 +5,11 @@
  * 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
  * 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
  */
-/**
- * @file qs_qg.h
- *
- * [QG Layer]는 공통 그래픽 구현을 목표로 합니다.
- */
+ /**
+  * @file qs_qg.h
+  *
+  * [QG Layer]는 공통 그래픽 구현을 목표로 합니다.
+  */
 #pragma once
 
 #include <qs_qn.h>
@@ -23,6 +23,12 @@ typedef struct QgRdh		QgRdh;							/** @Brief 렌더러 */
 typedef struct QgGam		QgGam;							/** @Brief 런더 감 */
 typedef struct QgBuffer		QgBuffer;						/** @Brief 버퍼 */
 typedef struct QgRender		QgRender;						/** @brief 렌더 파이프라인 */
+
+
+//////////////////////////////////////////////////////////////////////////
+// property
+#define QG_PROP_WINDOWS_ICON			"QG_PROP_WINDOWS_ICON"
+#define QG_PROP_WINDOWS_SMALLICON		"QG_PROP_WINDOWS_SMALLICON"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -112,7 +118,7 @@ typedef enum QgLoUsage
 /** @brief 레아아웃 타입 */
 typedef enum QgLoType
 {
-	QGLOT_FLOAT1,											/** @brief 1개의 실수 */											
+	QGLOT_FLOAT1,											/** @brief 1개의 실수 */
 	QGLOT_FLOAT2,											/** @brief 2개의 실수(Vector2) */
 	QGLOT_FLOAT3,											/** @brief 3개의 실수(Vector3) */
 	QGLOT_FLOAT4,											/** @brief 4개의 실수(Vector4) */
@@ -239,34 +245,41 @@ typedef enum QgClear
 	QGCLEAR_RENDER = QN_BIT(2),								/** @brief 렌더 타겟 영영 지우기 */
 } QgClear;
 
-/** @brief 스터브와 렌더러 플래그 */
+/** @brief 스터브와 렌더러 만들 때 플래그 */
 typedef enum QgFlag
 {
+	// 스터브 및 렌더러 플래그 (0~7)
 	QGFLAG_FULLSCREEN = QN_BIT(0),							/** @brief 전체 화면 */
 	QGFLAG_BORDERLESS = QN_BIT(1),							/** @brief 테두리 없는 윈도우 */
 	QGFLAG_RESIZABLE = QN_BIT(2),							/** @brief 크기 변경할 수 있음 */
+	QGFLAG_NOTITLE = QN_BIT(3),								/** @brief 타이틀 바가 없음 */
 	QGFLAG_FOCUS = QN_BIT(4),								/** @brief 입력 포커스 받을 수 있음 */
-	QGFLAG_IDLE = QN_BIT(5),								/** @brief 활성 중이 아니면 대기 */
-	QGFLAG_NOTITLE = QN_BIT(6),								/** @brief 타이틀 바가 없음 */
-	QGFLAG_NOACS = QN_BIT(7),								/** @brief 윈도우 도움 기능 끔 */
-	QGFLAG_DROP = QN_BIT(8),								/** @brief 드래그 드랍 */
-	QGFLAG_VSYNC = QN_BIT(16),								/** @brief VSYNC 켜기 */
-	QGFLAG_DITHER = QN_BIT(17),								/** @brief 16비트 모드 사용 */
-	QGFLAG_MSAA = QN_BIT(18),								/** @brief 멀티 샘플링 사용 */
+	QGFLAG_TEXT= QN_BIT(5),									/** @brief 텍스트 입력을 받을 수 있음 */
+	// 렌더러 플래그 (24~30)
+	QGFLAG_VSYNC = QN_BIT(27),								/** @brief VSYNC 켜기 */
+	QGFLAG_DITHER = QN_BIT(29),								/** @brief 16비트 모드 사용 */
+	QGFLAG_MSAA = QN_BIT(30),								/** @brief 멀티 샘플링 사용 */
+	// 스터브 사양 (8~15)
+	QGFEATURE_DISABLE_ACS = QN_BIT(8),						/** @brief 접근성 끄기 */
+	QGFEATURE_DISABLE_SCRSAVE = QN_BIT(9),					/** @brief 화면 보호기 끄기 */
+	QGFEATURE_ENABLE_DROP = QN_BIT(10),						/** @brief 드래그 드랍 사용 */
+	QGFEATURE_ENABLE_SYSWM = QN_BIT(11),					/** @brief 시스템 메시지 받기 */
+	QGFEATURE_ENABLE_IDLE = QN_BIT(12),						/** @brief 비활성 대기 상태 사용 */
+	// 사용자가 설정할 수 없는 플래그
+	QGSPECIFIC_VIRTUAL = QN_BIT(31),						/** @brief 가상 스터브 사용 */
 } QgFlag;
 
 /** @brief 스터브 상태 */
 typedef enum QgStubStat
 {
-	QGSTTI_VIRTUAL = QN_BIT(1),								/** @brief 가상 스터브 사용중 */
-	QGSTTI_ACTIVE = QN_BIT(2),								/** @brief 스터브가 활성 상태 */
-	QGSTTI_LAYOUT = QN_BIT(3),								/** @brief 스터브 크기를 변경 */
-	QGSTTI_NOACS = QN_BIT(13),								/** @brief 윈도우 도움 기능 끔 */
-	QGSTTI_PAUSE = QN_BIT(14),								/** @brief 포즈 중 */
-	QGSTTI_DROP = QN_BIT(15),								/** @brief 드래그 드랍 중 */
-	QGSTTI_CURSOR = QN_BIT(16),								/** @brief 커서의 표시 */
-	QGSTTI_SCRSAVE = QN_BIT(17),							/** @brief 스크린 세이브 상태 */
-	QGSTTI_EXIT = QN_BIT(30),								/** @brief (사용안함) 끝내기 */
+	QGSSTT_EXIT = QN_BIT(0),								/** @brief 끝내기 */
+	QGSSTT_ACTIVE = QN_BIT(1),								/** @brief 스터브가 활성 상태 */
+	QGSSTT_LAYOUT = QN_BIT(2),								/** @brief 스터브 크기를 변경 */
+	QGSSTT_FOCUS = QN_BIT(3),								/** @brief 스터브가 포커스 */
+	QGSSTT_PAUSE = QN_BIT(4),								/** @brief 포즈 중 */
+	QGSSTT_DROP = QN_BIT(5),								/** @brief 드래그 드랍 중 */
+	QGSSTT_CURSOR = QN_BIT(6),								/** @brief 커서의 표시 */
+	QGSSTT_MOUSEHOLD = QN_BIT(7),							/** @brief 마우스 홀드 */
 } QgStubStat;
 
 /** @brief 이벤트 타입 */
@@ -275,15 +288,34 @@ typedef enum QgEventType
 	QGEV_NONE,												/** @brief 이벤트 없음 */
 	QGEV_ACTIVE,											/** @brief 스터브 활성 상태 이벤트 */
 	QGEV_LAYOUT,											/** @brief 화면 크기 이벤트 */
-	QGEV_KEYDOWN,											/** @brief 키보드를 눌렀어요 */
-	QGEV_KEYUP,												/** @brief 키보드에서 손을 뗐어요 */
 	QGEV_MOUSEMOVE,											/** @brief 마우스를 움직여요 */
 	QGEV_MOUSEDOWN,											/** @brief 마우스 버튼을 눌렀어요 */
 	QGEV_MOUSEUP,											/** @brief 마우스 버튼을 뗏어요 */
 	QGEV_MOUSEWHEEL,										/** @brief 마우스 휠을 굴렸어요 */
 	QGEV_MOUSEDOUBLE,										/** @brief 마우스 버튼을 두번 눌렀어요 */
-	QGEV_EXIT = 255,										/** @brief (사용안함) 끝내기 */
+	QGEV_KEYDOWN,											/** @brief 키보드를 눌렀어요 */
+	QGEV_KEYUP,												/** @brief 키보드에서 손을 뗐어요 */
+	QGEV_TEXTINPUT,											/** @brief 텍스트 입력 */
+	QGEV_WINDOW,											/** @brief 윈도우 이벤트 */
+	QGEV_SYSWM,												/** @brief 시스템 메시지 */
+	QGEV_EXIT,												/** @brief 끝내기 */
 } QgEventType;
+
+typedef enum QgWindowEventType
+{
+	QGWEV_NONE,
+	QGWEV_SHOW,												/** @brief 윈도우가 보인다 */
+	QGWEV_HIDE,												/** @brief 윈도우가 안보인다 */
+	QGWEV_PAINTED,
+	QGWEV_RESTORED,
+	QGWEV_MAXIMIZED,
+	QGWEV_MINIMIZED,
+	QGWEV_MOVED,
+	QGWEV_SIZED,
+	QGWEV_GOTFOCUS,
+	QGWEV_LOSTFOCUS,
+	QGWEV_CLOSE,
+} QgWindowEventType;
 
 /** @brief 최대 이벤트 갯수 */
 #define QGMAX_EVENTS		5000
@@ -394,14 +426,14 @@ typedef union QgEvent
 	struct QgEventLayout
 	{
 		QgEventType			ev;
-		QnRect				bound;							/** @brief 변경된 윈도우 크기 */
+		QnSize				size;							/** @brief 윈도우 크기 */
+		QnRect				bound;							/** @brief 변경된 윈도우 바운드 */
 	}					layout;								/** @brief 레이아웃 이벤트 */
 	struct QgEventKeyboard
 	{
 		QgEventType			ev;
 		QikKey				key;							/** @brief 이벤트에 해당하는 키 */
-		QikMask				state;							/** @brief 특수키 상태 */
-		BOOL				pressed;						/** @brief 눌려 있었다면 참 */
+		QikMask				mask;							/** @brief 특수키 상태 */
 		BOOL				repeat;							/** @brief 계속 눌려 있었다면 참 */
 	}					key;								/** @brief 키 눌림 떼임 이벤트 */
 	struct QgEventMouseMove
@@ -409,21 +441,46 @@ typedef union QgEvent
 		QgEventType			ev;
 		QnPoint				pt;								/** @brief 마우스 좌표 */
 		QnPoint				delta;							/** @brief 마우스 이동 거리 */
-		QimMask				state;							/** @brief 마우스 버튼의 상태 */
+		QimMask				mask;							/** @brief 마우스 버튼의 상태 */
 	}					mmove;								/** @brief 마우스 이동 이벤트 */
 	struct QgEventMouseButton
 	{
 		QgEventType			ev;
 		QnPoint				pt;								/** @brief 마우스 좌표 */
 		QimButton			button;							/** @brief 이벤트에 해당하는 버튼 */
-		QimMask				state;							/** @brief 마으스 버튼의 상태 */
+		QimMask				mask;							/** @brief 마으스 버튼의 상태 */
 	}					mbutton;							/** @brief 마우스 버튼 눌림 떼임 이벤트 */
 	struct QgEventMouseWheel
 	{
 		QgEventType			ev;
 		QnPoint				pt;								/** @brief 마우스 좌표 */
-		int					dir;							/** @brief 휠 방향, 0보다 작으면 아래로 크면 위로 */
+		QnPoint				wheel;							/** @brief 휠 움직임 (Y가 기본휠, X는 틸트) */
+		QnVec2				precise;						/** @brief 정밀한 움직임 (Y가 기본휠, X는 틸트) */
+		int					direction;						/** @brief 참이면 뱡향이 반대 */
 	}					mwheel;								/** @brief 마우스 휠 이벤트 */
+	struct QgEventText
+	{
+		QgEventType			ev;
+		int					len;							/** @brief 텍스트 길이 */
+		char				data[16];						/** @brief 텍스트 내용 */
+	}					text;
+	struct QgEventWindowEvent
+	{
+		QgEventType			ev;
+		QgWindowEventType	mesg;							/** @brief 윈도우 이벤트 메시지 */
+		int					param1;							/** @brief 파라미터1 */
+		int					param2;							/** @brief 파라미터2 */
+	}					wevent;
+#if _QN_WINDOWS_
+	struct QgEventSysWm
+	{
+		QgEventType			ev;
+		void*				hwnd;							/** @brief 윈도우 핸들 */
+		uint				mesg;							/** @brief 메시지 */
+		nuint				wparam;							/** @brief WPARAM */
+		nint				lparam;							/** @brief LPARAM */
+	}					syswm;
+#endif
 } QgEvent;
 
 /** @brief 키 상태 */
@@ -437,7 +494,6 @@ typedef struct QgUimKey
 typedef struct QgUimMouse
 {
 	QimMask				mask;								/** @brief 마우스 버튼 상태 */
-	int					wheel;								/** @brief 마우스 휠 상태 */
 	QnPoint				pt;									/** @brief 마우스 좌표 */
 	QnPoint				last;								/** @brief 마우스의 이전 좌표 */
 
@@ -453,6 +509,13 @@ typedef struct QgUimMouse
 		int					move;							/** @brief 제한 이동 거리(포인트)의 제곱 */
 		uint				tick;							/** @brief 제한 클릭 시간(밀리초) */
 	}					lim;								/** @brief 마우스 더블 클릭 구현 정보 */
+	struct QgUimMouseWheel
+	{
+		QnVec2				accm;							/** @brief 가속도 */
+		QnVec2				precise;						/** @brief 정밀 값 */
+		QnPoint				integral;						/** @brief 값 */
+		BOOL				direction;						/** @brief 거짓=기본휠, 참=틸트휠 */
+	}					wheel;
 } QgUimMouse;
 
 /** @brief 컨트롤러 상태 */
@@ -548,7 +611,7 @@ typedef struct QgRenderParam
 	int					bone_count;
 
 	QN_PADDING_32(8, 0)
-	QN_PADDING_64(4, 0)
+		QN_PADDING_64(4, 0)
 } QgRenderParam;
 
 
@@ -570,6 +633,18 @@ QSAPI bool qg_open_stub(const char* title, int width, int height, int flags);
  * @see qg_open_Stub
 */
 QSAPI void qg_close_stub(void);
+/**
+ * @brief 스터브 사양을 켜고 끈다
+ * @param feature 대상 스터브 사양 (QGFEATURE_)
+ * @param enable 켜려면 참, 끄려면 거짓
+ * @return 처리한 사양 갯수
+*/
+QSAPI int qg_feature(int feature, bool enable);
+/**
+ * @brief 스터브 윈도우 타이틀 설정
+ * @param title 타이틀 문자열
+*/
+QSAPI void qg_set_title(const char* u8text);
 
 /**
  * @brief 스터브 루프를 처리한다
@@ -600,6 +675,14 @@ QSAPI const QgUimKey* qg_get_key_info(void);
  * @return
 */
 QSAPI const QgUimMouse* qg_get_mouse_info(void);
+/**
+ * @brief 마우스 더블 클릭 정밀도를 설정한다
+ * @param density 더블 클릭하면서 마우스를 움직여도 되는 거리 (포인트, 최대값 50)
+ * @param interval 클릭과 클릭 사이의 시간 (밀리초, 최대값 5000)
+ * @return 인수의 범위를 벗어나면 거짓을 반환
+ * @see qg_get_mouse_info
+*/
+QSAPI bool qg_set_double_click(int density, int interval);
 /**
  * @brief 키가 눌렸나 테스트 한다
  * @param key 테스트할 키
@@ -668,6 +751,19 @@ QSAPI int qg_add_event_type(QgEventType type);
  * @return 이벤트가 있었다면 참. 없으면 거짓
 */
 QSAPI bool qg_pop_event(QgEvent* ev);
+/**
+ * @brief 이벤트를 문자열로
+ * @param ev 이벤트
+ * @return 이벤트 문자열
+*/
+QSAPI const char* qg_event_str(QgEventType ev);
+/**
+ * @brief 윈도우 이벤트를 문자열로
+ * @param wev 윈도우 이벤트
+ * @return 윈도우 이벤트 문자열
+*/
+QSAPI const char* qg_window_event_str(QgWindowEventType wev);
+
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -785,7 +881,7 @@ QSAPI void qg_rdh_clear(QgRdh* g, QgClear clear, const QnColor* color, int stenc
 /**
  * @brief 세이더 vec3 타입 파라미터 설정
  * @param g 렌더러
- * @param at 0부터 3까지 총 4가지 
+ * @param at 0부터 3까지 총 4가지
  * @param v vec3 타입 값
  * @note 내부에서 vec4 타입으로 처리한다
  * @see qg_rdh_set_param_vec4
@@ -821,7 +917,7 @@ QSAPI void qg_rdh_set_background(QgRdh* g, const QnColor* background_color);
 /**
  * @brief 월드 행렬을 설정한다
  * @param g 렌더러
- * @param world 월드 행렬 
+ * @param world 월드 행렬
 */
 QSAPI void qg_rdh_set_world(QgRdh* g, const QnMat4* world);
 /**

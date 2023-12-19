@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+<Type Name="QgHashEvent">
+  <DisplayString>Count = {count} (Rev = {revision}, Bkt = {bucket})</DisplayString>
+  <Expand>
+    <Item Name="Count">count</Item>
+    <Item Name="Revision">revision</Item>
+    <Item Name="Bucket">bucket</Item>
+    <ArrayItems>
+      <Size>bucket</Size>
+      <ValuePointer>nodes</ValuePointer>
+    </ArrayItems>
+    <LinkedListItems>
+      <Size>count</Size>
+      <HeadPointer>frst</HeadPointer>
+      <NextPointer>next</NextPointer>
+      <ValueNode>key</ValueNode>
+    </LinkedListItems>
+  </Expand>
+</Type>
+
+<Type Name="QnMemProof">
+  <DisplayString>Count = {count} / Block Size = {block_size}</DisplayString>
+  <Expand>
+    <Item Name="Count">count</Item>
+    <LinkedListItems>
+      <Size>count</Size>
+      <HeadPointer>frst</HeadPointer>
+      <NextPointer>next</NextPointer>
+      <ValueNode>desc</ValueNode>
+    </LinkedListItems>
+  </Expand>
+</Type>
+
+<Type Name="QnDateTime">
+  <DisplayString>{year}-{month}-{day} {hour}:{minute}:{second}.{millisecond}</DisplayString>
+</Type>
+
+<Type Name="QnTimer">
+  <DisplayString>run = {runtime} / fps = {fps}</DisplayString>
+</Type>
+
+</AutoVisualizer>

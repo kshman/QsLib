@@ -1,10 +1,11 @@
 ﻿//
-// qg_kmc.c - 키보드/마우스/컨트롤러
+// qg_kmc.c - 메시지 처리기
 // 2023-12-13 by kim
 //
 
 #include "pch.h"
 #include "qs_qn.h"
+#include "qs_qg.h"
 #include "qs_kmc.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -318,3 +319,84 @@ QikMask kmod_to_qikm(int modifier)
 }
 #endif
 
+
+//////////////////////////////////////////////////////////////////////////
+// stub
+
+//
+const char* qg_event_str(QgEventType ev)
+{
+#ifndef __EMSCRIPTEN__
+	static struct EventMap
+	{
+		QgEventType		ev;
+		const char*		str;
+	}
+	s_map[] =
+	{
+#define DEF_EVENT(ev) { QGEV_##ev, #ev }
+		DEF_EVENT(NONE),
+		DEF_EVENT(ACTIVE),
+		DEF_EVENT(LAYOUT),
+		DEF_EVENT(MOUSEMOVE),
+		DEF_EVENT(MOUSEDOWN),
+		DEF_EVENT(MOUSEUP),
+		DEF_EVENT(MOUSEWHEEL),
+		DEF_EVENT(MOUSEDOUBLE),
+		DEF_EVENT(KEYDOWN),
+		DEF_EVENT(KEYUP),
+		DEF_EVENT(TEXTINPUT),
+		DEF_EVENT(WINDOW),
+		DEF_EVENT(SYSWM),
+		DEF_EVENT(EXIT),
+		{ 0, NULL },
+#undef DEF_EVENT
+	};
+	for (const struct EventMap* p = s_map; p->str != NULL; p++)
+	{
+		if (p->ev == ev)
+			return p->str;
+	}
+	return "UNKNOWN";
+#else
+	return NULL;
+#endif
+}
+
+//
+const char* qg_window_event_str(QgWindowEventType wev)
+{
+#ifndef __EMSCRIPTEN__
+	static struct WindowEventMap
+	{
+		QgWindowEventType	wev;
+		const char*			str;
+	}
+	s_map[] =
+	{
+#define DEF_WINDOW_EVENT(ev) { QGWEV_##ev, #ev }
+		DEF_WINDOW_EVENT(NONE),
+		DEF_WINDOW_EVENT(SHOW),
+		DEF_WINDOW_EVENT(HIDE),
+		DEF_WINDOW_EVENT(PAINTED),
+		DEF_WINDOW_EVENT(RESTORED),
+		DEF_WINDOW_EVENT(MAXIMIZED),
+		DEF_WINDOW_EVENT(MINIMIZED),
+		DEF_WINDOW_EVENT(MOVED),
+		DEF_WINDOW_EVENT(SIZED),
+		DEF_WINDOW_EVENT(GOTFOCUS),
+		DEF_WINDOW_EVENT(LOSTFOCUS),
+		DEF_WINDOW_EVENT(CLOSE),
+		{ 0, NULL },
+#undef DEF_WINDOW_EVENT
+	};
+	for (const struct WindowEventMap* p = s_map; p->str != NULL; p++)
+	{
+		if (p->wev == wev)
+			return p->str;
+	}
+	return "UNKNOWN";
+#else
+	return NULL;
+#endif
+}

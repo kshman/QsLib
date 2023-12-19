@@ -363,6 +363,18 @@ QSAPI void qn_internal_atexit(paramfunc_t func, void* data);
  * @retval 1 맨첨에 불렸을 때
 */
 QSAPI size_t qn_number(void);
+/**
+ * @brief 프로퍼티를 설정한다
+ * @param name 프로퍼티 이름
+ * @param value 프로퍼티 값
+*/
+QSAPI void qn_set_prop(const char* name, const char* value);
+/**
+ * @brief 프로퍼티를 얻는다
+ * @param name 프로퍼티 이름
+ * @return 문자열의 프로퍼티 값
+*/
+QSAPI const char* qn_get_prop(const char* name);
 
 /**
  * @brief 디버그용 검사 출력
@@ -802,6 +814,20 @@ QSAPI int qn_itoa(char* p, int size, int n, int base);
  * @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
 */
 QSAPI int qn_lltoa(char* p, int size, llong n, int base);
+/**
+ * @brief 문자열을 32비트 정수로
+ * @param p 문자열
+ * @param base 진수
+ * @return 바꾼 정수값
+*/
+QSAPI uint qn_strtoi(const char* p, int base);
+/**
+ * @brief 문자열을 64비트 정수로
+ * @param p 문자열
+ * @param base 진수
+ * @return 바꾼 정수값
+*/
+QSAPI ullong qn_strtoll(const char* p, int base);
 
 #ifdef _MSC_VER
 #define qn_strcpy			strcpy_s						/** @brief strcpy */
@@ -1017,12 +1043,6 @@ QSAPI int qn_wcsnicmp(const wchar* p1, const wchar* p2, size_t len);
 #endif
 
 /**
- * @brief UTF-8 글자 길이
- * @param[in] s utf8 문자열
- * @author cp_strlen_utf8 (http://www.daemonology.net/blog/2008-06-05-faster-utf8-strlen.html)
- */
-QSAPI size_t qn_u8len(const char* s);
-/**
  * @brief UTF-8 문자를 UCS-4 문자로.
  * @param[in] p utf8 문자.
  * @return ucs4 문자.
@@ -1035,12 +1055,43 @@ QSAPI uchar4 qn_u8cbn(const char* p);
 */
 QSAPI const char* qn_u8nch(const char* s);
 /**
+ * @brief UTF-8 글자 길이
+ * @param[in] s utf8 문자열
+ * @author cp_strlen_utf8 (http://www.daemonology.net/blog/2008-06-05-faster-utf8-strlen.html)
+ */
+QSAPI size_t qn_u8len(const char* s);
+/**
+ * @brief UTF-8 문자열 복사
+ * @param dest 대상 문자열
+ * @param src 원본 문자열 
+ * @param len 복사할 길이
+ * @return 대상 문자열 버퍼 그대로
+*/
+QSAPI char* qn_u8ncpy(char* dest, const char* src, size_t len);
+/**
+ * @brief UTF-8 문자열 복사
+ * @param dest 대상 문자열
+ * @param src 원본 문자열
+ * @param len 복사할 길이
+ * @return 대상 문자열의 길이
+*/
+QSAPI size_t qn_u8lcpy(char* dest, const char* src, size_t len);
+
+/**
  * @brief UCS-4 문자를 UTF-8 문자로
  * @param[in] c ucs4 문자.
  * @param[out] out	utf8 문자가 들어갈 배열. 최소 6개 항목의 배열이어야 한다
  * @return utf8문자를 구성하는 문자열의 길이.
  */
-QSAPI int qn_u8ucb(uchar4 c, char* out);
+QSAPI int qn_u32ucb(uchar4 c, char* out);
+/**
+ * @brief UTF-16 문자를 UTF-8 문자로
+ * @param[in] high UTF-16 상위 서로게이트
+ * @param[in] low UTF-16 하위 서로게이트
+ * @param[out] out	utf8 문자가 들어갈 배열. 최소 6개 항목의 배열이어야 한다
+ * @return utf8문자를 구성하는 문자열의 길이.
+*/
+QSAPI int qn_u16ucb(uchar2 high, uchar2 low, char* out);
 
 /**
  * @brief 멀티바이트 문자열을 와이드 문자열로 변환

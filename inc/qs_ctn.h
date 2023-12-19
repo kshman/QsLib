@@ -1713,6 +1713,8 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 #define qn_hash_bucket(p)				((p)->bucket)
 /** @brief 해시 변경치 */
 #define qn_hash_revision(p)				((p)->revision)
+/** @brief 아이템이 있다 */
+#define qn_hash_is_have(p)				((p)->count>0)
 /** @brief 첫 노드 */
 #define qn_hash_node_first(p)			((p)->last)
 /** @brief 마지막 노드 */
@@ -1744,6 +1746,14 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 /** @brief 해시 비우기 */
 #define qn_hash_clear(name,p)\
 	qn_inl_hash_erase_all(name,p); qn_inl_hash_test_size(name,p)
+
+/** @brief 노드 제거 */
+#define qn_hash_remove_node(name,p,node)\
+	QN_STMT_BEGIN{\
+		struct name##Node** __ppn=&(node);\
+		qn_inl_hash_erase_node(name,p,&__ppn);\
+		qn_inl_hash_test_size(name,p);\
+	}QN_STMT_END
 
 /**
  * @brief 해시 for each
@@ -1874,16 +1884,14 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
  * @param ret_node 반환값 노드 포인터
  */
 #define qn_inl_hash_lookup(name,p,keyptr,ret_node)\
-	QN_STMT_BEGIN{\
-		size_t __lh=name##_hash(keyptr);\
-		struct name##Node *__lnn,**__ln=&(p)->nodes[__lh%(p)->bucket];\
-		while ((__lnn=*__ln)!=NULL)\
-		{\
-			if (__lnn->hash==__lh && name##_eq(&__lnn->key, keyptr)) break;\
-			__ln=&__lnn->sib;\
-		}\
-		(ret_node)=__ln;\
-	}QN_STMT_END
+	size_t __lh=name##_hash(keyptr);\
+	struct name##Node *__lnn,**__ln=&(p)->nodes[__lh%(p)->bucket];\
+	while ((__lnn=*__ln)!=NULL)\
+	{\
+		if (__lnn->hash==__lh && name##_eq(&__lnn->key, keyptr)) break;\
+		__ln=&__lnn->sib;\
+	}\
+	ret_node=__ln
 
 /**
  * @brief 해시 룩업
@@ -1892,19 +1900,16 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
  * @param ret_hash 반환값 해시
  */
 #define qn_inl_hash_lookup_hash(name,p,keyptr,ret_node,ret_hash)\
-	QN_STMT_BEGIN{\
-		if ((p)->nodes) {\
-			size_t __lh=name##_hash(keyptr);\
-			struct name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
-			while ((__lnn=*__ln)!=NULL)\
-			{\
-				if (__lnn->hash==__lh && name##_eq(&__lnn->key, keyptr)) break;\
-				__ln=&__lnn->sib;\
-			}\
-			(ret_node)=__ln;\
-			*(ret_hash)=__lh;\
-		}\
-	}QN_STMT_END
+	qn_assert((p)->nodes!=NULL, "hash is not initialized");\
+	size_t __lh=name##_hash(keyptr);\
+	struct name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
+	while ((__lnn=*__ln)!=NULL)\
+	{\
+		if (__lnn->hash==__lh && name##_eq(&__lnn->key, keyptr)) break;\
+		__ln=&__lnn->sib;\
+	}\
+	ret_node=__ln;\
+	ret_hash=__lh
 
  /**
  * @brief 해시 설정
@@ -1916,7 +1921,7 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 #define qn_inl_hash_set(name,p,keyptr,valueptr,replace)\
 	QN_STMT_BEGIN{\
 		size_t __ah; struct name##Node** __an;\
-		qn_inl_hash_lookup_hash(name,p,keyptr,__an,&__ah);\
+		qn_inl_hash_lookup_hash(name,p,keyptr,__an,__ah);\
 		if (__an) {\
 			struct name##Node* __ann=*__an;\
 			if (__ann)\
@@ -2016,6 +2021,8 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 			(p)->frst=__enn->next;\
 		}\
 		/* step3 */\
+		size_t __ebkt=__enn->hash%(p)->bucket;\
+		if ((p)->nodes[__ebkt]==__enn) (p)->nodes[__ebkt] = NULL;\
 		name##_key(&__enn->key);\
 		name##_value(&__enn->value);\
 		qn_free(__enn);\
@@ -2109,6 +2116,8 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 #define qn_mukum_bucket(p)				((p)->bucket)
 /** @brief 묶음 변경치 */
 #define qn_mukum_revision(p)			((p)->revision)
+/** @brief 항목이 있다 */
+#define qn_mukum_is_have(p)				((p)->count>0)
 
 /** @brief 묶음 초기화 */
 #define qn_mukum_init(name,p)\
@@ -2287,17 +2296,15 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
  * @param ret_node 반환값 노드 포인터
  */
 #define qn_inl_mukum_lookup(name,p,keyptr,ret_node)\
-	QN_STMT_BEGIN{\
-		size_t __lh=name##_hash(keyptr);\
-		struct name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
-		while ((__lnn=*__ln)!=NULL)\
-		{\
-			if (__lnn->hash==__lh && name##_eq(&__lnn->key, keyptr))\
-				break;\
-			__ln=&__lnn->sib;\
-		}\
-		(ret_node)=__ln;\
-	}QN_STMT_END
+	size_t __lh=name##_hash(keyptr);\
+	struct name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
+	while ((__lnn=*__ln)!=NULL)\
+	{\
+		if (__lnn->hash==__lh && name##_eq(&__lnn->key, keyptr))\
+			break;\
+		__ln=&__lnn->sib;\
+	}\
+	ret_node=__ln
 
 /**
  * @brief 묶음 룩업
@@ -2306,18 +2313,17 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
  * @param ret_hash 반환값 묶음
  */
 #define qn_inl_mukum_lookup_hash(name,p,keyptr,ret_node,ret_hash)\
-	QN_STMT_BEGIN{\
-		size_t __lh=name##_hash(keyptr);\
-		struct name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
-		while ((__lnn=*__ln)!=NULL)\
-		{\
-			if (__lnn->hash==__lh && name##_eq(&__lnn->key, keyptr))\
-				break;\
-			__ln=&__lnn->sib;\
-		}\
-		(ret_node)=__ln;\
-		*(ret_hash)=__lh;\
-	}QN_STMT_END
+	qn_assert((p)->nodes!=NULL, "mukum is not initialized");\
+	size_t __lh=name##_hash(keyptr);\
+	struct name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
+	while ((__lnn=*__ln)!=NULL)\
+	{\
+		if (__lnn->hash==__lh && name##_eq(&__lnn->key, keyptr))\
+			break;\
+		__ln=&__lnn->sib;\
+	}\
+	ret_node=__ln;\
+	ret_hash=__lh
 
 /**
  * @brief 묶음 설정
@@ -2329,7 +2335,7 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 #define qn_inl_mukum_set(name,p,keyptr,valueptr,replace)\
 	QN_STMT_BEGIN{\
 		size_t __ah; struct name##Node** __an;\
-		qn_inl_mukum_lookup_hash(name,p,keyptr,__an,&__ah);\
+		qn_inl_mukum_lookup_hash(name,p,keyptr,__an,__ah);\
 		struct name##Node* __ann=*__an;\
 		if (__ann)\
 		{\
@@ -2400,6 +2406,8 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 		/* step 1 */\
 		*__en=__enn->sib;\
 		/* step 2 */\
+		size_t __ebkt=__enn->hash%(p)->bucket;\
+		if ((p)->nodes[__ebkt]==__enn) (p)->nodes[__ebkt] = NULL;\
 		name##_key(&__enn->key);\
 		name##_value(&__enn->value);\
 		qn_free(__enn);\

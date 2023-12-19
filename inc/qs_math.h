@@ -2571,6 +2571,23 @@ QN_INLINE void qn_rect_offset(QnRect* p, const QnRect* rt, int l, int t, int r, 
 }
 
 /**
+ * @brief 사각형을 움직인다
+ * @param p 움직일 사각형
+ * @param left 새 왼쪽
+ * @param top 새 오른쪽
+ * @return
+*/
+QN_INLINE void qn_rect_move(QnRect* p, int left, int top)
+{
+	int dx = left - p->left;
+	int dy = top - p->top;
+	p->left += dx;
+	p->top += dy;
+	p->right += dx;
+	p->bottom += dy;
+}
+
+/**
  * @brief 사각형의 크기를 재설정한다
  * @param p 재설정할 사각형
  * @param width 너비

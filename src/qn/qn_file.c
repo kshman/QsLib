@@ -1280,6 +1280,7 @@ static void qn_module_dispose(void* dummy)
 			qn_debug_outputf(false, "QNMODULE", "module not deleted [%s] (ref: %d)", node->filename, node->ref);
 		next = node->next;
 		qn_internal_mod_delete(node, true);
+		node = next;
 	}
 
 	if (_qn_mod.self != NULL)
@@ -1292,7 +1293,7 @@ static void qn_module_dispose(void* dummy)
 //
 static void qn_module_init(void)
 {
-	qn_ret_if_fail(_qn_mod.inited);
+	qn_ret_if_ok(_qn_mod.inited);
 	_qn_mod.inited = true;
 	_qn_mod.error = qn_tls(qn_mpffree);
 	qn_internal_atexit(qn_module_dispose, NULL);
@@ -1381,7 +1382,7 @@ QnModule* qn_mod_self(void)
 	{
 		qn_internal_mod_set_error();
 		return NULL;
-	}
+}
 #endif
 
 	QnModule* self = qn_alloc_zero_1(QnModule);

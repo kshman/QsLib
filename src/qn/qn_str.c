@@ -488,8 +488,10 @@ int qn_strnicmp(const char* p1, const char* p2, size_t len)
 }
 #endif
 
+// 숫자를 문자로 바꾸기용
 const char* s_base_str = "0123456789ABCDEF";
 
+//
 int qn_itoa(char* p, int size, int n, int base)
 {
 	char conv[32];
@@ -516,6 +518,7 @@ int qn_itoa(char* p, int size, int n, int base)
 	return QN_MIN(size - 1, place);
 }
 
+//
 int qn_lltoa(char* p, int size, llong n, int base)
 {
 	char conv[64];
@@ -540,6 +543,59 @@ int qn_lltoa(char* p, int size, llong n, int base)
 		return place;
 	qn_strncpy(p, size, conv, place);
 	return QN_MIN(size - 1, place);
+}
+
+// 문자를 숫자로 바꾸기용
+static const byte s_base_byte[] =
+{
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,	// 0~15
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 16~31
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 32~47
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 255, 255, 255, 255, 255, 255, // 48~63
+	255, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, // 64~79
+	25, 26, 27, 28, 29, 30, 31, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 80~95
+	255, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, // 96~111
+	25, 26, 27, 28, 29, 30, 31, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 112~127
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+};
+
+//
+uint qn_strtoi(const char* p, int base)
+{
+	qn_val_if_fail(p != NULL, 0);
+	qn_val_if_fail(base >= 2 && base < 32, 0);
+	uint v = 0;
+	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
+	int ch = s_base_byte[*p++];
+	while (ch < base)
+	{
+		v = v * base + ch;
+		ch = s_base_byte[*p++];
+	}
+	return v;
+}
+
+//
+ullong qn_strtoll(const char* p, int base)
+{
+	qn_val_if_fail(p != NULL, 0);
+	qn_val_if_fail(base >= 2 && base < 32, 0);
+	ullong v = 0;
+	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
+	int ch = s_base_byte[*p++];
+	while (ch < base)
+	{
+		v = v * base + ch;
+		ch = s_base_byte[*p++];
+	}
+	return v;
 }
 
 
@@ -1013,56 +1069,6 @@ int qn_wcsnicmp(const wchar* p1, const wchar* p2, size_t len)
 // 유니코드
 
 //
-size_t qn_u8len(const char* s)
-{
-#define MASK    ((size_t)(-1)/0xFF)
-	const char* t;
-	size_t cnt;
-
-	// 초기 정렬되지 않은 아무 바이트 계산
-	for (cnt = 0, t = s; (uintptr_t)t & (sizeof(size_t) - 1); t++)
-	{
-		const byte b = *t;
-
-		if (b == '\0')
-			goto pos_done;
-
-		cnt += (b >> 7) & ((~b) >> 6);
-	}
-
-	// 완전한 블럭 계산
-	for (;; t += sizeof(size_t))
-	{
-#ifdef __GNUC__
-		__builtin_prefetch(&t[256], 0, 0);
-#endif
-
-		size_t i = *(size_t*)(t);  // NOLINT
-
-		if ((i - MASK) & (~i) & (MASK * 0x80))
-			break;
-
-		i = ((i & (MASK * 0x80)) >> 7) & ((~i) >> 6);
-		cnt += (i * MASK) >> ((sizeof(size_t) - 1) * 8);
-	}
-
-	//
-	for (;; t++)
-	{
-		const byte b = *t;
-
-		if (b == '\0')
-			break;
-
-		cnt += (b >> 7) & ((~b) >> 6);
-	}
-
-pos_done:
-	return ((t - s) - cnt);
-#undef MASK
-}
-
-//
 uchar4 qn_u8cbn(const char* p)
 {
 	int len, mask;
@@ -1148,7 +1154,93 @@ const char* qn_u8nch(const char* s)
 }
 
 //
-int qn_u8ucb(uchar4 c, char* out)
+size_t qn_u8len(const char* s)
+{
+#define MASK    ((size_t)(-1)/0xFF)
+	const char* t;
+	size_t cnt;
+
+	// 초기 정렬되지 않은 아무 바이트 계산
+	for (cnt = 0, t = s; (uintptr_t)t & (sizeof(size_t) - 1); t++)
+	{
+		const byte b = *t;
+
+		if (b == '\0')
+			goto pos_done;
+
+		cnt += (b >> 7) & ((~b) >> 6);
+	}
+
+	// 완전한 블럭 계산
+	for (;; t += sizeof(size_t))
+	{
+#ifdef __GNUC__
+		__builtin_prefetch(&t[256], 0, 0);
+#endif
+
+		size_t i = *(size_t*)(t);  // NOLINT
+
+		if ((i - MASK) & (~i) & (MASK * 0x80))
+			break;
+
+		i = ((i & (MASK * 0x80)) >> 7) & ((~i) >> 6);
+		cnt += (i * MASK) >> ((sizeof(size_t) - 1) * 8);
+}
+
+	//
+	for (;; t++)
+	{
+		const byte b = *t;
+
+		if (b == '\0')
+			break;
+
+		cnt += (b >> 7) & ((~b) >> 6);
+	}
+
+pos_done:
+	return ((t - s) - cnt);
+#undef MASK
+}
+
+//
+char* qn_u8ncpy(char* dest, const char* src, size_t len)
+{
+	const char* t = src;
+
+	while (len && *t)
+	{
+		t = qn_u8nch(t);
+		len--;
+	}
+
+	len = t - src;
+	memcpy(dest, src, len);
+	dest[len] = '\0';
+
+	return dest;
+}
+
+//
+size_t qn_u8lcpy(char* dest, const char* src, size_t len)
+{
+	const char* t = src;
+
+	while (len && *t)
+	{
+		t = qn_u8nch(t);
+		len--;
+	}
+
+	len = t - src;
+	memcpy(dest, src, len);
+	dest[len] = '\0';
+
+	return len;
+}
+
+//
+int qn_u32ucb(uchar4 c, char* out)
 {
 	int first, len;
 
@@ -1201,6 +1293,13 @@ int qn_u8ucb(uchar4 c, char* out)
 static uchar4 _utf16_surrogate(uchar2 h, uchar2 l)
 {
 	return (((uchar4)h - 0xD800) * 0x0400 + (uchar4)l - 0xDC00 + 0x010000);
+}
+
+//
+int qn_u16ucb(uchar2 high, uchar2 low, char* out)
+{
+	uchar4 ucs4 = _utf16_surrogate(high, low);
+	return qn_u32ucb(ucs4, out);
 }
 
 
@@ -1385,7 +1484,7 @@ size_t qn_u32to8(char* dest, size_t destsize, const uchar4* src, size_t srclen_o
 		char* p = dest;
 
 		for (i = 0; p < (dest + size); i++)
-			p += qn_u8ucb(src[i], p);
+			p += qn_u32ucb(src[i], p);
 
 		*p = '\0';
 	}
@@ -1546,7 +1645,7 @@ size_t qn_u16to8(char* dest, size_t destsize, const uchar2* src, size_t srclen)
 				uc = ch;
 			}
 
-			p += qn_u8ucb(uc, p);
+			p += qn_u32ucb(uc, p);
 		}
 
 		*p = '\0';
