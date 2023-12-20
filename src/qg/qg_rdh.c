@@ -1,4 +1,6 @@
 ﻿#include "pch.h"
+#include "qs_qn.h"
+#include "qs_math.h"
 #include "qs_qg.h"
 #include "qg_stub.h"
 
@@ -294,13 +296,13 @@ QgRender* qg_rdh_create_render(QgRdh* self, const QgPropRender* prop, bool compi
 	qn_val_if_fail(prop != NULL, NULL);
 
 #define RDH_CHK_NULL(sec,item)				if (prop->sec.item == NULL)\
-		{ qn_debug_outputf(true, "QGRDH", "'%s.%s' has no data", #sec, #item); return NULL; }
+		{ qn_debug_outputf(true, "RDH", "'%s.%s' has no data", #sec, #item); return NULL; }
 #define RDH_CHK_RANGE_MAX1(item,vmax)		if ((size_t)prop->item < vmax)\
-		{ qn_debug_outputf(true, "QGRDH", "invalid '%s' value: %d", #item, prop->item); return NULL; }
+		{ qn_debug_outputf(true, "RDH", "invalid '%s' value: %d", #item, prop->item); return NULL; }
 #define RDH_CHK_RANGE_MAX2(sec,item,vmax)	if ((size_t)prop->sec.item < vmax)\
-		{ qn_debug_outputf(true, "QGRDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; }
+		{ qn_debug_outputf(true, "RDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; }
 #define RDH_CHK_RANGE_MIN(sec,item,value)	if ((size_t)prop->sec.item > value)\
-		{ qn_debug_outputf(true, "QGRDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; }
+		{ qn_debug_outputf(true, "RDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; }
 
 	// 세이더
 	RDH_CHK_NULL(vs, code);

@@ -1,25 +1,22 @@
 ﻿#pragma once
 
-// GL 함수 정의 & 호출 매크로
-#if _QN_WINDOWS_
-typedef struct GlFunc		GlFunc;
-struct GlFunc
-{
-#define DEF_GL_FUNC(r,f,p)	r (APIENTRY *f) p;
-#include "qggl_func.h"
-#undef DEF_GL_FUNC
-};
-extern GlFunc gl_func;
-#define GL_FUNC(f)			gl_func.##f
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include "qs_qn.h"
+#include "qs_math.h"
+#ifdef __EMSCRIPTEN__
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <GLES3/gl3.h>
+#include <GLES3/gl3ext.h>
 #else
-#define GL_FUNC(f)			f
+#include "glad/glad.h"
 #endif
+
 
 //////////////////////////////////////////////////////////////////////////
 // 함수
-
-/** @brief GL 함수 초기화 (윈도우용) */
-extern bool gl_init_func(void);
 
 /**
  * @brief GL 버전 문자열에서 숫자만
@@ -30,7 +27,7 @@ extern bool gl_init_func(void);
 */
 QN_INLINE int gl_get_version(GLenum name, const char* name1, const char* name2)
 {
-	const char* s = (const char*)GL_FUNC(glGetString)(name);
+	const char* s = (const char*)glGetString(name);
 	qn_val_if_fail(s, 0);
 	const float f =
 		qn_strnicmp(s, name1, strlen(name1)) == 0 ? strtof(s + strlen(name1), NULL) :
@@ -48,7 +45,7 @@ QN_INLINE int gl_get_version(GLenum name, const char* name1, const char* name2)
 */
 QN_INLINE char* gl_copy_string(char* buf, size_t bufsize, GLenum name)
 {
-	const char* s = (const char*)GL_FUNC(glGetString)(name);
+	const char* s = (const char*)glGetString(name);
 	if (s == NULL)
 		buf[0] = '\0';
 	else
@@ -64,7 +61,7 @@ QN_INLINE char* gl_copy_string(char* buf, size_t bufsize, GLenum name)
 QN_INLINE GLint gl_get_integer_v(GLenum name)
 {
 	GLint n;
-	GL_FUNC(glGetIntegerv)(name, &n);
+	glGetIntegerv(name, &n);
 	return n;
 }
 
@@ -77,7 +74,7 @@ QN_INLINE GLint gl_get_integer_v(GLenum name)
 QN_INLINE GLint gl_get_program_iv(GLuint program, GLenum name)
 {
 	GLint n;
-	GL_FUNC(glGetProgramiv)(program, name, &n);
+	glGetProgramiv(program, name, &n);
 	return n;
 }
 
@@ -90,7 +87,7 @@ QN_INLINE GLint gl_get_program_iv(GLuint program, GLenum name)
 QN_INLINE GLint gl_get_shader_iv(GLuint handle, GLenum name)
 {
 	GLint n;
-	GL_FUNC(glGetShaderiv)(handle, name, &n);
+	glGetShaderiv(handle, name, &n);
 	return n;
 }
 
@@ -161,11 +158,11 @@ QN_INLINE void gl_ref_handle_unload_shader(GlRefHandle* ptr, GLuint handle)
 {
 	qn_ret_if_fail(ptr);
 	if (handle > 0)
-		GL_FUNC(glDetachShader)(handle, ptr->handle);
+		glDetachShader(handle, ptr->handle);
 	const nint ref = --ptr->ref;
 	if (ref == 0)
 	{
-		GL_FUNC(glDeleteShader)(ptr->handle);
+		glDeleteShader(ptr->handle);
 		qn_free(ptr);
 	}
 }

@@ -1852,7 +1852,7 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
  */
 #define qn_hash_remove(name,p,key,ret_bool_ptr)\
 	QN_STMT_BEGIN{\
-		name##Key* __kp = &key;\
+		const name##Key* __kp = (const name##Key*)&key;\
 		qn_inl_hash_erase(name,p,__kp,ret_bool_ptr);\
 		qn_inl_hash_test_size(name,p);\
 	}QN_STMT_END
@@ -2262,7 +2262,7 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
  */
 #define qn_mukum_remove(name,p,key,ret_bool_ptr)\
 	QN_STMT_BEGIN{\
-		name##Key* __kp = &key;\
+		const name##Key* __kp = (const name##Key*)&key;\
 		qn_mukum_remove_ptr(name,p,__kp,ret_bool_ptr);\
 	}QN_STMT_END
 

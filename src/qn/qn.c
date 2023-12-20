@@ -25,7 +25,7 @@ struct Closure
 };
 
 // 구현
-static struct QnRuntime
+static struct RuntimeImpl
 {
 	BOOL			inited;
 	QnSpinLock		lock;

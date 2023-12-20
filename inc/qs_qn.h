@@ -72,10 +72,6 @@
 #define _QN_LINUX_			1
 #endif
 
-#ifdef __MACOSX__
-#define _QN_OSX_			1
-#endif
-
 #ifdef __android__
 #define _QN_ANDROID_		1
 #define _QN_MOBILE_			1
@@ -129,15 +125,6 @@
 #define QN_EXTC_BEGIN
 #define QN_EXTC_END
 #endif
-
-#ifdef _QN_64_
-#define QN_PADDING_32(c,i)
-#define QN_PADDING_64(c,i)	byte __pad##i[c];
-#else
-#define QN_PADDING_32(c,i)	byte __pad##i[c];
-#define QN_PADDING_64(c,i)
-#endif
-#define QN_PADDING(c,i)		byte __pad##i[c];
 
 QN_EXTC_BEGIN
 
@@ -270,7 +257,7 @@ typedef union vint64_t
 	ullong			q;										/** @brief 쿼드 워드 */
 } vint64_t, vllong;
 
-/** @brief 아무값이나 넣기 위한 타입 */
+/** @brief 아무값이나 넣기 위한 타입 (long double이 있으면 16, 없으면 8바이트) */
 typedef union any_t
 {
 	bool			b;
@@ -311,7 +298,7 @@ typedef struct funcparam_t
 #define qn_assert(expr,m)
 #define qn_verify(expr)
 #endif
-#define QN_ASSERT_SIZE(t,s)	QN_STATIC_ASSERT(sizeof(t) == s, #t " size is not match need " #s " bytes")
+#define QN_ASSERT_SIZE(t,s)	QN_STATIC_ASSERT(sizeof(t) == s, #t " type size must be " #s "")
 
 // type check
 QN_ASSERT_SIZE(BOOL, 4);
@@ -323,11 +310,7 @@ QN_ASSERT_SIZE(halfint, 2);
 QN_ASSERT_SIZE(vshort, 2);
 QN_ASSERT_SIZE(vint, 4);
 QN_ASSERT_SIZE(vllong, 8);
-#ifdef _MSC_VER
 QN_ASSERT_SIZE(any_t, 8);
-#else
-QN_ASSERT_SIZE(any_t, 16);
-#endif
 #ifdef _QN_64_
 QN_ASSERT_SIZE(nuint, 8);
 QN_ASSERT_SIZE(funcparam_t, 16);
@@ -2103,13 +2086,13 @@ QSAPI bool qn_mltag_contains_arg(QnMlTag* ptr, const char* name);
  * @param[in]	func	콜백 함수
  * @param	userdata		콜백 데이터
  */
-QSAPI void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, const char** name, const char** data), void* userdata);
+QSAPI void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, char* const* name, char* const* data), void* userdata);
 /**
  * @brief 인수에 대해 LoopEach 연산을 수행한다
  * @param[in]	ptr	MlTag 개체
  * @param[in]	func	콜백 함수
  */
-QSAPI void qn_mltag_loopeach_arg(QnMlTag* ptr, void(*func)(const char** name, const char** data));
+QSAPI void qn_mltag_loopeach_arg(QnMlTag* ptr, void(*func)(char* const* name, char* const* data));
 
 /**
  * @brief 인수를 추가한다
@@ -2156,7 +2139,7 @@ QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* name);
 #error unknown compiler
 #endif
 
-typedef volatile int		QnSpinLock;						/** @brief 스핀락 */
+typedef int volatile		QnSpinLock;						/** @brief 스핀락 */
 typedef void				QnTls;							/** @brief TLS */
 typedef struct QnMutex		QnMutex;						/** @brief 뮤텍스 */
 typedef struct QnCond		QnCond;							/** @brief 컨디션 */
@@ -2194,6 +2177,7 @@ QSAPI void qn_spin_leave(QnSpinLock* lock);
 struct QnThread
 {
 	BOOL				canwait;
+	BOOL				managed;
 
 	int					busy;
 	int					stack_size;

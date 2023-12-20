@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "zstub.h"
+#include "zlib_proxy.h"
 
 /* inflate.c -- zlib decompression
  * Copyright (C) 1995-2022 Mark Adler

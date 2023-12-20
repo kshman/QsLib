@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "zstub.h"
+#include "zlib_proxy.h"
 
 /* deflate.c -- compress data using the deflation algorithm
  * Copyright (C) 1995-2023 Jean-loup Gailly and Mark Adler

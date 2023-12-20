@@ -186,13 +186,13 @@
     <ClInclude Include="..\inc\qs_ctn.h" />
     <ClInclude Include="..\inc\qs_math.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="qg\glad\glad.h" />
+    <ClInclude Include="qg\glad\glad_proxy.h" />
+    <ClInclude Include="qg\glad\khrplatform.h" />
     <ClInclude Include="qg\qg_es2.h" />
-    <ClInclude Include="qg\qggl_func.h" />
     <ClInclude Include="qg\qggl_supp.h" />
     <ClInclude Include="qg\qggl_base.h" />
-    <ClInclude Include="qg\qg_glsupp.h" />
     <ClInclude Include="qg\qg_stub.h" />
-    <ClInclude Include="qn\qn_mem.h" />
     <ClInclude Include="qn\zlib\crc32.h" />
     <ClInclude Include="qn\zlib\deflate.h" />
     <ClInclude Include="qn\zlib\gzguts.h" />
@@ -203,7 +203,7 @@
     <ClInclude Include="qn\zlib\trees.h" />
     <ClInclude Include="qn\zlib\zconf.h" />
     <ClInclude Include="qn\zlib\zlib.h" />
-    <ClInclude Include="qn\zlib\zstub.h" />
+    <ClInclude Include="qn\zlib\zlib_proxy.h" />
     <ClInclude Include="qn\zlib\zutil.h" />
   </ItemGroup>
   <ItemGroup>
@@ -213,6 +213,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="qg\glad\glad.c" />
     <ClCompile Include="qg\qges2_rdh.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -252,12 +253,7 @@
     <ClCompile Include="qg\qgwin_mesg.c" />
     <ClCompile Include="qg\qgwin_stub.c" />
     <ClCompile Include="qg\qg_kmc.c" />
-    <ClCompile Include="qg\qg_rdh.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="qg\qg_rdh.c" />
     <ClCompile Include="qg\qg_stub.c" />
     <ClCompile Include="qn\PatrickPowell_snprintf.c" />
     <ClCompile Include="qn\qn.c" />

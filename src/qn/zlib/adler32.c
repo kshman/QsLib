@@ -1,5 +1,5 @@
-#include "pch.h"
-#include "zstub.h"
+﻿#include "pch.h"
+#include "zlib_proxy.h"
 
 /* adler32.c -- compute the Adler-32 checksum of a data stream
  * Copyright (C) 1995-2011, 2016 Mark Adler

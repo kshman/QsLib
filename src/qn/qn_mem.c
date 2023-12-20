@@ -9,7 +9,6 @@
 #else
 #include <zlib.h>
 #endif
-#include "qn_mem.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4702)
@@ -150,10 +149,39 @@ char* qn_memdmp(const void* ptr, size_t size, char* outbuf, size_t buflen)
 //////////////////////////////////////////////////////////////////////////
 // 메모리 처리
 
-static struct QnMemProof
+#define MEMORY_GAP				4
+#define MEMORY_BLOCK_SIZE		16
+#define MEMORY_PAGE				256
+#define MEMORY_PAGE_SIZE		(MEMORY_BLOCK_SIZE*MEMORY_PAGE)
+#define MEMORY_SIGN_HEAD		('Q' | 'M'<<8 | 'B'<<16 | '\0'<<24)
+#define MEMORY_SIGN_FREE		('B' | 'A'<<8 | 'D'<<16 | '\0'<<24)
+
+//
+typedef struct MemBlock
 {
-	memBlock*		frst;
-	memBlock*		last;
+	uint				sign;
+
+	uint				line;
+	const char*			desc;
+
+	size_t				index;
+
+	size_t				size;
+	size_t				block;
+
+	struct MemBlock*	next;
+	struct MemBlock*	prev;
+} MemBlock;
+
+#define _memhdr(ptr)			(((MemBlock*)(ptr))-1)
+#define _memptr(block)			(void*)(((MemBlock*)(block))+1)
+#define _memsize(size)			(((sizeof(MemBlock)+(size)+MEMORY_GAP)+MEMORY_BLOCK_SIZE-1)&~(MEMORY_BLOCK_SIZE-1))
+
+// 메모리 프르프
+static struct MemImpl
+{
+	MemBlock*		frst;
+	MemBlock*		last;
 	size_t			index;
 	size_t			count;
 	size_t			block_size;
@@ -196,7 +224,7 @@ static void qn_mpf_clear(void)
 	qn_debug_outputf(false, "MEMORY PROFILER", "found %d allocations", _qn_mp.count);
 
 	size_t sum = 0;
-	for (memBlock* next = NULL, *node = _qn_mp.frst; node; node = next)
+	for (MemBlock* next = NULL, *node = _qn_mp.frst; node; node = next)
 	{
 #ifndef __EMSCRIPTEN__
 		if (node->line)
@@ -244,7 +272,7 @@ void qn_mpf_dispose(void)
 #endif
 }
 
-static void qn_mp_node_link(memBlock* node)
+static void qn_mp_node_link(MemBlock* node)
 {
 	MP_LOCK;
 	if (_qn_mp.frst)
@@ -261,7 +289,7 @@ static void qn_mp_node_link(memBlock* node)
 	MP_UNLOCK;
 }
 
-static void qn_mp_node_unlink(const memBlock* node)
+static void qn_mp_node_unlink(const MemBlock* node)
 {
 	MP_LOCK;
 	if (node->next)
@@ -319,19 +347,19 @@ void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 	qn_val_if_fail(size, NULL);
 
 	size_t block = _memsize(size);
-	memBlock* node;
+	MemBlock* node;
 
 #ifdef _QN_WINDOWS_
 	__try
 	{
-		node = (memBlock*)HeapAlloc(_qn_mp.heap, zero ? HEAP_ZERO_MEMORY : 0, block);
+		node = (MemBlock*)HeapAlloc(_qn_mp.heap, zero ? HEAP_ZERO_MEMORY : 0, block);
 	}
 	__except (qn_windows_mpf_exception(_exception_code(), desc, line, size, block))
 	{
 		node = NULL;
 	}
 #else
-	node = (memBlock*)(zero ? calloc(block, 1) : malloc(block));
+	node = (MemBlock*)(zero ? calloc(block, 1) : malloc(block));
 #endif
 	if (node == NULL)
 	{
@@ -341,7 +369,7 @@ void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 
 	node->sign = MEMORY_SIGN_HEAD;
 	node->desc = desc;
-	node->line = line;
+	node->line = (uint)line;
 	node->index = _qn_mp.index;
 	node->size = size;
 	node->block = block;
@@ -361,7 +389,7 @@ void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 		return NULL;
 	}
 
-	memBlock* node = _memhdr(ptr);
+	MemBlock* node = _memhdr(ptr);
 	if (node == NULL)
 	{
 		qn_debug_outputf(true, "MEMORY PROFILER", "try to realloc null memory node : 0x%p", ptr);
@@ -390,14 +418,14 @@ void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 #if _QN_WINDOWS_
 	__try
 	{
-		node = (memBlock*)HeapReAlloc(_qn_mp.heap, 0, node, block);
+		node = (MemBlock*)HeapReAlloc(_qn_mp.heap, 0, node, block);
 	}
 	__except (qn_windows_mpf_exception(_exception_code(), desc, line, size, block))
 	{
 		node = NULL;
 	}
 #else
-	node = (memBlock*)realloc(node, block);
+	node = (MemBlock*)realloc(node, block);
 #endif
 	if (node == NULL)
 	{
@@ -406,7 +434,7 @@ void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 	}
 
 	node->desc = desc;
-	node->line = line;
+	node->line = (uint)line;
 	node->size = size;
 	node->block = block;
 
@@ -418,7 +446,7 @@ void qn_mpffree(void* ptr)
 {
 	qn_ret_if_fail(ptr);
 
-	memBlock* node = _memhdr(ptr);
+	MemBlock* node = _memhdr(ptr);
 	if (node == NULL)
 	{
 		qn_debug_outputf(true, "MEMORY PROFILER", "try to free null memory node : 0x%p", ptr);
@@ -457,7 +485,7 @@ void qn_debug_mpfprint(void)
 
 	MP_LOCK;
 	size_t sum = 0, cnt = 1;
-	for (memBlock* next = NULL, *node = _qn_mp.frst; node; node = next, cnt++)
+	for (MemBlock* next = NULL, *node = _qn_mp.frst; node; node = next, cnt++)
 	{
 		if (node->line)
 		{

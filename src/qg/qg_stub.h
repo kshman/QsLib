@@ -68,23 +68,25 @@ extern void stub_system_calc_layout(void);
 // 내부적으로 마우스 눌림을 연산한다
 extern bool stub_internal_mouse_clicks(QimButton button, QimTrack track);
 // 레이아웃 이벤트 추가
-extern int stub_internal_on_event_layout(bool enter);
+extern bool stub_internal_on_event_layout(bool enter);
 // 윈도우 이벤트 추가
-extern int stub_internal_on_window_event(QgWindowEventType type, int param1, int param2);
+extern bool stub_internal_on_window_event(QgWindowEventType type, int param1, int param2);
 // 텍스트 이벤트 추가
-extern int stub_internal_on_text(const char* text);
+extern bool stub_internal_on_text(const char* text);
 // 키보드 이벤트 추가
-extern int stub_internal_on_keyboard(QikKey key, bool down);
+extern bool stub_internal_on_keyboard(QikKey key, bool down);
 // 키보드 리셋 이벤츠 추가
-extern int stub_internal_on_reset_keys(void);
+extern bool stub_internal_on_reset_keys(void);
 // 마우스 이동 이벤트 추가
-extern int stub_internal_on_mouse_move(void);
+extern bool stub_internal_on_mouse_move(void);
 // 마우스 버튼 이벤트 추가
-extern int stub_internal_on_mouse_button(QimButton button, bool down);
+extern bool stub_internal_on_mouse_button(QimButton button, bool down);
 // 마우스 휠 이벤트 추가
-extern int stub_internal_on_mouse_wheel(float x, float y, bool direction);
+extern bool stub_internal_on_mouse_wheel(float x, float y, bool direction);
 // 액티브 이벤트 추가
-extern int stub_internal_on_active(bool active, double delta);
+extern bool stub_internal_on_active(bool active, double delta);
+// 드랍 이벤트 추가
+extern bool stub_internal_on_drop(char* data, int len, bool finish);
 
 // 내부적으로 토글을 설정한다 (완전 언세이프)
 extern void stub_internal_toggle_key(QikMask keymask, bool on);

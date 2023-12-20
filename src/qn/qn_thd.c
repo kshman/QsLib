@@ -2,6 +2,7 @@
 #include "qs_qn.h"
 #include "qs_ctn.h"
 #ifdef _QN_UNIX_
+#include <pthread.h>
 #include <semaphore.h>
 #endif
 
@@ -10,7 +11,7 @@
 #endif
 
 #ifdef _QN_WINDOWS_
-QN_STATIC_ASSERT(sizeof(long) == sizeof(QnSpinLock), "invalid SpinLock size");
+QN_STATIC_ASSERT(sizeof(long) == sizeof(QnSpinLock), "Spinlock size not equal to OS interlock");
 #endif
 
 
@@ -21,7 +22,7 @@ QN_STATIC_ASSERT(sizeof(long) == sizeof(QnSpinLock), "invalid SpinLock size");
 bool qn_spin_try(QnSpinLock* lock)
 {
 #if defined _MSC_VER && (defined _M_IX86 || defined _M_X64)
-	return _InterlockedExchange((volatile long*)lock, 1) == 0;
+	return _InterlockedExchange((long volatile*)lock, 1) == 0;
 #elif defined _MSC_VER && (defined _M_ARM || defined _M_ARM64)
 	return _InterlockedExchange_acq(lock, 1) == 0;
 #elif defined __GNUC__
@@ -39,21 +40,17 @@ bool qn_spin_try(QnSpinLock* lock)
 //
 size_t qn_spin_enter(QnSpinLock* lock)
 {
+#define MAX_INTRINSICS		64
 	size_t intrinsics;
 	for (intrinsics = 0; !qn_spin_try(lock); intrinsics++)
 	{
-		if (intrinsics < 32)
-		{
-			// 32번까지는 내부 포즈
+		if (intrinsics < MAX_INTRINSICS)
 			qn_pause();
-		}
 		else
-		{
-			// 32번 이후에는 슬립
 			qn_sleep(0);
-		}
 	}
 	return intrinsics;
+#undef MAX_INTRINSICS
 }
 
 //
@@ -85,16 +82,15 @@ struct QnRealThread
 	HANDLE				handle;
 	DWORD				id;
 #else
-	pthread_t			pth;
+	pthread_t			handle;
 #endif
 	void*				tls[64];
 
-	BOOL				managed;
 	QnRealThread*		next;
 };
 
 //
-static struct QnThreadImpl
+static struct ThreadImpl
 {
 #ifdef _QN_WINDOWS_
 	DWORD				tls;
@@ -128,7 +124,7 @@ void qn_thread_init(void)
 #ifdef _QN_WINDOWS_
 	_qn_thd.tls = TlsAlloc();
 	if (_qn_thd.tls == TLS_OUT_OF_INDEXES)
-		qn_debug_halt("QNTHREAD", "cannot allocate thread tls");
+		qn_debug_halt("THREAD", "cannot allocate thread tls");
 #else
 #ifdef _SC_THREAD_STACK_MIN
 	_qn_thd.max_stack = QN_MAX(sysconf(_SC_THREAD_STACK_MIN), 0);
@@ -235,8 +231,8 @@ static void qn_internal_thread_dispose(QnRealThread* self, uint tls_count, bool 
 		if (self->handle)
 			CloseHandle(self->handle);
 #else
-		if (qn_internal_thread_is_null(&self->pth) == false)
-			qn_internal_thread_make_null(&self->pth);
+		if (qn_internal_thread_is_null(&self->handle) == false)
+			qn_internal_thread_make_null(&self->handle);
 #endif
 		// 대기 안하는 애들은 강제로 지움
 		qn_free(self);
@@ -246,9 +242,9 @@ static void qn_internal_thread_dispose(QnRealThread* self, uint tls_count, bool 
 //
 static void qn_internal_thread_exit(QnRealThread* self, bool Exit)
 {
-	if (self->managed)
+	if (self->base.managed)
 	{
-		self->managed = false;
+		self->base.managed = false;
 		QN_LOCK(_qn_thd.lock);
 		for (QnRealThread *prev = NULL, *node = _qn_thd.threads; node; prev = node, node = node->next)
 		{
@@ -309,7 +305,7 @@ QnThread* qn_thread_self(void)
 	self->id = GetCurrentThreadId();
 	DuplicateHandle(process, GetCurrentThread(), process, &self->handle, 0, FALSE, DUPLICATE_SAME_ACCESS);
 #else
-	self->pth = pthread_self();
+	self->handle = pthread_self();
 #endif
 
 	self->base.canwait = false;
@@ -320,7 +316,7 @@ QnThread* qn_thread_self(void)
 	self->base.cb_ret = NULL;
 	qn_zero(self->tls, QN_COUNTOF(self->tls), void*);
 
-	self->managed = true;
+	self->base.managed = true;
 	QN_LOCK(_qn_thd.lock);
 	self->next = _qn_thd.threads;
 	_qn_thd.threads = self;
@@ -349,11 +345,11 @@ QnThread* qn_thread_new(QnThreadCallback func, void* data, uint stack_size, int 
 	self->handle = NULL;
 	self->id = 0;
 #else
-	qn_internal_thread_make_null(&self->pth);
+	qn_internal_thread_make_null(&self->handle);
 #endif
 	qn_zero(self->tls, QN_COUNTOF(self->tls), void*);
 
-	self->managed = true;
+	self->base.managed = true;
 	QN_LOCK(_qn_thd.lock);
 	self->next = _qn_thd.threads;
 	_qn_thd.threads = self;
@@ -370,9 +366,9 @@ void qn_thread_delete(QnThread* thread)
 
 	qn_thread_wait(thread);
 
-	if (self->managed)
+	if (self->base.managed)
 	{
-		self->managed = false;
+		self->base.managed = false;
 		QN_LOCK(_qn_thd.lock);
 		for (QnRealThread *prev = NULL, *node = _qn_thd.threads; node; prev = node, node = node->next)
 		{
@@ -405,11 +401,11 @@ bool qn_thread_once(const char* name, QnThreadCallback func, void* data, uint st
 	self->handle = NULL;
 	self->id = 0;
 #else
-	qn_internal_thread_make_null(&self->pth);
+	qn_internal_thread_make_null(&self->handle);
 #endif
 	qn_zero(self->tls, QN_COUNTOF(self->tls), void*);
 
-	self->managed = true;
+	self->base.managed = true;
 	QN_LOCK(_qn_thd.lock);
 	self->next = _qn_thd.threads;
 	_qn_thd.threads = self;
@@ -433,7 +429,7 @@ static void* qn_internal_thread_entry(void* data)
 	static const int s_signals[] = { SIGHUP, SIGINT, SIGQUIT, SIGPIPE, SIGALRM, SIGTERM, SIGCHLD, SIGWINCH, SIGVTALRM, SIGPROF };
 	sigset_t mask;
 	sigemptyset(&mask);
-	for (int i = 0; i < QN_COUNTOF(s_signals); i++)
+	for (size_t i = 0; i < QN_COUNTOF(s_signals); i++)
 		sigaddset(&mask, s_signals[i]);
 	pthread_sigmask(SIG_BLOCK, &mask, 0);
 
@@ -454,7 +450,7 @@ bool qn_thread_start(QnThread* thread, const char* name)
 	self->handle = CreateThread(NULL, self->base.stack_size, &qn_internal_thread_entry, self, 0, &self->id);
 	if (self->handle == NULL || self->handle == INVALID_HANDLE_VALUE)
 	{
-		qn_debug_halt("QNTHREAD", "cannot start thread");
+		qn_debug_halt("THREAD", "cannot start thread");
 		return FALSE;
 	}
 
@@ -468,7 +464,7 @@ bool qn_thread_start(QnThread* thread, const char* name)
 	if (qn_internal_thread_set_busy(self, self->base.busy) == false)
 		self->base.busy = qn_internal_thread_conv_busy(self);
 #else
-	qn_val_if_ok(qn_internal_thread_is_null(&self->pth), false);
+	qn_val_if_ok(qn_internal_thread_is_null(&self->handle), false);
 
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
@@ -485,12 +481,12 @@ bool qn_thread_start(QnThread* thread, const char* name)
 	int detach = self->base.canwait ? PTHREAD_CREATE_JOINABLE : PTHREAD_CREATE_DETACHED;
 	pthread_attr_setdetachstate(&attr, detach);
 
-	int result = pthread_create(&self->pth, &attr, qn_internal_thread_entry, self);
+	int result = pthread_create(&self->handle, &attr, qn_internal_thread_entry, self);
 	if (result != 0)
 		return false;
 
 	if (name != NULL && *name != '\0')
-		ppthread_setname_np(self->pth, name);
+		pthread_setname_np(self->handle, name);
 #endif
 
 	return true;
@@ -506,15 +502,15 @@ void* qn_thread_wait(QnThread* thread)
 
 	DWORD dw = WaitForSingleObjectEx(self->handle, INFINITE, FALSE);
 	if (dw != WAIT_OBJECT_0)
-		qn_debug_halt("QNTHREAD", "thread wait failed");
+		qn_debug_halt("THREAD", "thread wait failed");
 	CloseHandle(self->handle);
 	self->handle = NULL;
 #else
-	qn_val_if_ok(qn_internal_thread_is_null(&self->pth), NULL);
+	qn_val_if_ok(qn_internal_thread_is_null(&self->handle), NULL);
 
 	void* ret;
-	pthread_join(self->pth, &ret);
-	qn_internal_thread_make_null(&self->pth);
+	pthread_join(self->handle, &ret);
+	qn_internal_thread_make_null(&self->handle);
 #endif
 
 	return self->base.cb_ret;
@@ -538,7 +534,11 @@ int qn_thread_get_busy(QnThread* self)
 bool qn_thread_set_busy(QnThread* thread, int busy)
 {
 	QnRealThread* self = (QnRealThread*)thread;
+#ifdef _QN_WINDOWS_
 	qn_val_if_fail(self->handle != NULL, false);
+#else
+	qn_val_if_fail(self->handle != 0, false);
+#endif
 	if (!qn_internal_thread_set_busy(self, busy))
 		return false;
 	self->base.busy = busy;
@@ -565,11 +565,11 @@ QnTls* qn_tls(paramfunc_t callback)
 	if (_qn_thd.tls_index >= 64)
 	{
 		QN_UNLOCK(_qn_thd.lock);
-		qn_debug_halt("QNTHREAD", "too many TLS used");
+		qn_debug_halt("THREAD", "too many TLS used");
 		return NULL;
 	}
 
-	self = (void*)(_qn_thd.tls_index + 0x10);
+	self = (void*)((nuint)_qn_thd.tls_index + 0x10);
 	_qn_thd.tls_callback[_qn_thd.tls_index++] = callback;
 	QN_UNLOCK(_qn_thd.lock);
 
@@ -579,7 +579,7 @@ QnTls* qn_tls(paramfunc_t callback)
 //
 void qn_tlsset(QnTls* tls, void* data)
 {
-	uint nth = (uint)tls - 0x10;
+	uint nth = (uint)(nuint)tls - 0x10;
 	qn_ret_if_fail(nth < QN_COUNTOF(_qn_thd.tls_callback));
 
 	QnRealThread* thd = (QnRealThread*)qn_thread_self();
@@ -589,7 +589,7 @@ void qn_tlsset(QnTls* tls, void* data)
 //
 void* qn_tlsget(QnTls* tls)
 {
-	uint nth = (uint)tls - 0x10;
+	uint nth = (uint)(nuint)tls - 0x10;
 	qn_val_if_fail(nth < QN_COUNTOF(_qn_thd.tls_callback), NULL);
 
 	QnRealThread* thd = qn_internal_thread_try();
@@ -615,7 +615,10 @@ QnMutex* qn_mutex_new(void)
 #ifdef _QN_WINDOWS_
 	InitializeCriticalSectionEx(&self->cs, 4000, 0);
 #else
-	pthread_mutex_init(&self->mutex, PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP);
+	pthread_mutexattr_t attr;
+	pthread_mutexattr_init(&attr);
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutex_init(&self->mutex, &attr);
 #endif
 	return self;
 }
@@ -675,7 +678,9 @@ QnCond* qn_cond_new(void)
 {
 	QnCond* self = qn_alloc_1(QnCond);
 #ifndef _QN_WINDOWS_
-	pthread_cond_init(&self->cond, PTHREAD_COND_INITIALIZER);
+	//static const pthread_condattr_t s_attr = PTHREAD_COND_INITIALIZER;
+	//pthread_cond_init(&self->cond, &s_attr);
+	pthread_cond_init(&self->cond, NULL);
 #endif
 	return self;
 }
@@ -711,7 +716,7 @@ void qn_cond_broadcast(QnCond* self)
 
 #ifndef _QN_WINDOWS_
 //
-static void qn_timed_timeval(struct timespec ts, int milliseconds)
+static void qn_timed_timeval(struct timespec* ts, int milliseconds)
 {
 	if (clock_gettime(CLOCK_REALTIME, ts) != 0)
 	{
@@ -740,7 +745,7 @@ bool qn_cond_wait_for(QnCond* self, QnMutex* lock, uint milliseconds)
 	{
 		if (GetLastError() == ERROR_TIMEOUT)
 			return false;
-		qn_debug_outputs(true, "QNCOND", "wait failed");
+		qn_debug_outputs(true, "COND", "wait failed");
 	}
 	return true;
 #else
@@ -754,10 +759,10 @@ bool qn_cond_wait_for(QnCond* self, QnMutex* lock, uint milliseconds)
 	}
 	else
 	{
-		struct timespec sp;
-		qn_timed_timeval(&sp, milliseconds);
-		qn_val_if_fail(sp.tv_nsec < QN_NSEC_PER_SEC, true);
-		result = pthread_cond_timedwait(&self->cond, &lock->mutex, &sp);
+		struct timespec ts;
+		qn_timed_timeval(&ts, milliseconds);
+		qn_val_if_fail(ts.tv_nsec < QN_NSEC_PER_SEC, true);
+		result = pthread_cond_timedwait(&self->cond, &lock->mutex, &ts);
 		timeout = result == ETIMEDOUT;
 	}
 
@@ -779,7 +784,7 @@ struct QnSem
 {
 #ifdef _QN_WINDOWS_
 	HANDLE				handle;
-	int					count;
+	int volatile		count;
 #else
 	sem_t				sem;
 #endif
@@ -792,18 +797,18 @@ QnSem* qn_sem_new(int initial)
 	HANDLE handle = CreateSemaphoreEx(NULL, initial, 32 * 1024, NULL, 0, SEMAPHORE_ALL_ACCESS);
 	if (handle == NULL || handle == INVALID_HANDLE_VALUE)
 	{
-		qn_debug_halt("QNSEM", "semaphore creation failed");
+		qn_debug_halt("SEM", "semaphore creation failed");
 		return NULL;
 	}
 
 	QnSem* self = qn_alloc_1(QnSem);
 	self->handle = handle;
-	self->count = initial;
+	self->count = (nint)initial;
 #else
 	sem_t sem;
 	if (sem_init(&sem, 0, initial) < 0)
 	{
-		qn_debug_halt("QNSEM", "semaphore creation failed");
+		qn_debug_halt("SEM", "semaphore creation failed");
 		return NULL;
 	}
 
@@ -831,24 +836,24 @@ bool qn_sem_wait_for(QnSem* self, uint milliseconds)
 	DWORD dw = WaitForSingleObjectEx(self->handle, milliseconds, FALSE);
 	if (dw == WAIT_OBJECT_0)
 	{
-		QN_STATIC_ASSERT(sizeof(long) == sizeof(self->count), "Semaphore size is mismatch");
-		_InterlockedDecrement((volatile long*)&self->count);
+		QN_STATIC_ASSERT(sizeof(long) == sizeof(self->count), "Semaphore size not equal to OS interlock");
+		_InterlockedDecrement((long volatile*)&self->count);
 		return true;
 	}
 	if (dw != WAIT_TIMEOUT)
-		qn_debug_halt("QNSEM", "semaphore wait failed");
+		qn_debug_halt("SEM", "semaphore wait failed");
 #else
 	if (milliseconds == 0)
-		return sem_trywait(&self->s) == 0;
+		return sem_trywait(&self->sem) == 0;
 	if (milliseconds >= INT32_MAX)
 		return sem_wait(&self->sem) == 0;
 
-	struct timespec sp;
-	qn_timed_timeval(&sp, milliseconds);
+	struct timespec ts;
+	qn_timed_timeval(&ts, milliseconds);
 	int result;
 	do
 	{
-		result = sem_timedwait(&self->sem, &sp);
+		result = sem_timedwait(&self->sem, &ts);
 	} while (result < 0 && errno == EINTR);
 	if (result == 0)
 		return true;
@@ -872,7 +877,7 @@ bool qn_sem_try(QnSem* self)
 #ifdef _QN_WINDOWS_
 	return qn_sem_wait_for(self, 0);
 #else
-	return sem_trywait(&self->s) == 0;
+	return sem_trywait(&self->sem) == 0;
 #endif
 }
 
@@ -880,7 +885,7 @@ bool qn_sem_try(QnSem* self)
 int qn_sem_count(QnSem* self)
 {
 #ifdef _QN_WINDOWS_
-	return self->count;
+	return (int)self->count;
 #else
 	int count;
 	sem_getvalue(&self->sem, &count);
@@ -892,10 +897,10 @@ int qn_sem_count(QnSem* self)
 bool qn_sem_post(QnSem* self)
 {
 #ifdef _QN_WINDOWS_
-	_InterlockedIncrement((volatile long*)&self->count);
+	_InterlockedIncrement((long volatile*)&self->count);
 	if (ReleaseSemaphore(self->handle, 1, NULL))
 		return true;
-	_InterlockedDecrement((volatile long*)&self->count);
+	_InterlockedDecrement((long volatile*)&self->count);
 #else
 	if (sem_post(&self->sem) == 0)
 		return true;

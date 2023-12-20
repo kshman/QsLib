@@ -1309,7 +1309,7 @@ bool qn_mltag_contains_arg(QnMlTag* ptr, const char* name)
 }
 
 //
-void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, const char** name, const char** data), void* userdata)
+void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, char* const* name, char* const* data), void* userdata)
 {
 	const QnRealTag* self = (QnRealTag*)ptr;
 
@@ -1317,7 +1317,7 @@ void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, const char**
 }
 
 //
-void qn_mltag_loopeach_arg(QnMlTag* ptr, void(*func)(const char** name, const char** data))
+void qn_mltag_loopeach_arg(QnMlTag* ptr, void(*func)(char* const* name, char* const* data))
 {
 	const QnRealTag* self = (QnRealTag*)ptr;
 
@@ -1345,16 +1345,8 @@ void qn_mltag_set_arg(QnMlTag* ptr, const char* name, const char* value)
 bool qn_mltag_remove_arg(QnMlTag* ptr, const char* name)
 {
 	qn_val_if_fail(name, false);
-
 	QnRealTag* self = (QnRealTag*)ptr;
-#if _MSC_VER
 	bool ret;
 	qn_hash_remove(ArgHash, &self->args, name, &ret);
-
 	return ret;
-#else
-	qn_hash_remove(ArgHash, &self->args, &name, NULL);
-
-	return true;
-#endif
 }

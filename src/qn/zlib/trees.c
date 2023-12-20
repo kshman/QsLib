@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "zstub.h"
+#include "zlib_proxy.h"
 
 /* trees.c -- output deflated data using Huffman coding
  * Copyright (C) 1995-2021 Jean-loup Gailly

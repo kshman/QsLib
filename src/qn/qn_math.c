@@ -1,10 +1,9 @@
 ﻿#include "pch.h"
 #include "qs_qn.h"
-#if defined _M_IX86 || defined _M_X64 || defined __i386__  || defined __amd64__ || defined __x86_64__
-#include <intrin.h>
+#include "qs_math.h"
+#if defined __INTRIN_H_ || defined _INCLUDED_MM2 || defined __XMMINTRIN_H || defined _XMMINTRIN_H_INCLUDED
 #define USE_EMM_INTRIN		1
 #endif
-#include "qs_math.h"
 
 #ifdef USE_EMM_INTRIN
 #define _mm_ror_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((byte)((i)+3)%4,(byte)((i)+2)%4,(byte)((i)+1)%4,(byte)((i)+0)%4))) : (vec))  // NOLINT

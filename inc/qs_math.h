@@ -23,8 +23,10 @@
 #endif
 
 #include <math.h>
-#ifdef _MSC_VER
+#if defined _MSC_VER
 #include <intrin.h>
+#elif defined _M_IX86 || defined _M_X64 || defined __i386__  || defined __amd64__ || defined __x86_64__
+#include <xmmintrin.h>
 #endif
 
   //////////////////////////////////////////////////////////////////////////

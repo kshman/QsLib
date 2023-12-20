@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "zstub.h"
+#include "zlib_proxy.h"
 
 /* compress.c -- compress a memory buffer
  * Copyright (C) 1995-2005, 2014, 2016 Jean-loup Gailly, Mark Adler

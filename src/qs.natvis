@@ -1,44 +1,262 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-<Type Name="QgHashEvent">
-  <DisplayString>Count = {count} (Rev = {revision}, Bkt = {bucket})</DisplayString>
-  <Expand>
-    <Item Name="Count">count</Item>
-    <Item Name="Revision">revision</Item>
-    <Item Name="Bucket">bucket</Item>
-    <ArrayItems>
-      <Size>bucket</Size>
-      <ValuePointer>nodes</ValuePointer>
-    </ArrayItems>
-    <LinkedListItems>
-      <Size>count</Size>
-      <HeadPointer>frst</HeadPointer>
-      <NextPointer>next</NextPointer>
-      <ValueNode>key</ValueNode>
-    </LinkedListItems>
-  </Expand>
-</Type>
+  <!-- 배열 / 컨테이너 / 슬라이스 -->
+  <Type Name="QnPtrArr">
+    <AlternativeType Name="QnByteArr"/>
+    <AlternativeType Name="QnIntArr"/>
+    <AlternativeType Name="QnAnyArr"/>
+    <AlternativeType Name="QnPtrCtnr"/>
+    <AlternativeType Name="QnByteCtn"/>
+    <AlternativeType Name="QnIntCtn"/>
+    <AlternativeType Name="QnAnyCtn"/>
+    <AlternativeType Name="ErrorArray"/>
+    <AlternativeType Name="SubArray"/>
+    <DisplayString>[갯수: {count}]</DisplayString>
+    <Expand>
+      <Item Name="[갯수]">count</Item>
+      <Item Name="[용량]" Optional="true">capa</Item>
+      <Item Name="[최대]" Optional="true">max</Item>
+      <ArrayItems>
+        <Size>count</Size>
+        <ValuePointer>data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  
+  <!-- 리스트 -->
+  <Type Name="QnPtrList">
+    <DisplayString>[갯수: {count}]</DisplayString>
+    <Expand>
+      <Item Name="[갯수]">count</Item>
+      <LinkedListItems>
+        <Size>count</Size>
+        <HeadPointer>frst</HeadPointer>
+        <NextPointer>next</NextPointer>
+        <ValueNode>data</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+  
+  <!-- 해시 노드 -->
+  <Type Name="QnInlineHashNode">
+    <DisplayString>[key={key}, value={value}]</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>this</HeadPointer>
+        <NextPointer>sib</NextPointer>
+        <ValueNode>value</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
 
-<Type Name="QnMemProof">
-  <DisplayString>Count = {count} / Block Size = {block_size}</DisplayString>
-  <Expand>
-    <Item Name="Count">count</Item>
-    <LinkedListItems>
-      <Size>count</Size>
-      <HeadPointer>frst</HeadPointer>
-      <NextPointer>next</NextPointer>
-      <ValueNode>desc</ValueNode>
-    </LinkedListItems>
-  </Expand>
-</Type>
+  <!-- 해시 -->
+  <Type Name="QnInlineHash">
+    <DisplayString>[갯수: {count} (리비전: {revision}, 바구니: {bucket})]</DisplayString>
+    <Expand>
+      <Item Name="[갯수]">count</Item>
+      <Item Name="[리비전]">revision</Item>
+      <Item Name="[바구니]">bucket</Item>
+      <IndexListItems>
+        <Size>bucket</Size>
+        <ValueNode>nodes[$i]</ValueNode>
+      </IndexListItems>
+    </Expand>
+  </Type>
 
-<Type Name="QnDateTime">
-  <DisplayString>{year}-{month}-{day} {hour}:{minute}:{second}.{millisecond}</DisplayString>
-</Type>
+  <!-- 데이트 타임 -->
+  <Type Name="QnDateTime">
+    <DisplayString>[{year}-{month}-{day} {hour}:{minute}:{second}.{millisecond}]</DisplayString>
+  </Type>
 
-<Type Name="QnTimer">
-  <DisplayString>run = {runtime} / fps = {fps}</DisplayString>
-</Type>
+  <!-- 타이머 -->
+  <Type Name="QnTimer">
+    <DisplayString>[실행: {runtime} (FPS: {fps})]</DisplayString>
+  </Type>
+  
+  <!-- 메모리 블럭 -->
+  <Type Name="MemBlock">
+    <DisplayString>[{size}바이트 ({block}, {desc,s}:{line})]</DisplayString>
+    <Expand>
+      <Item Name="[사인]">(char*)&amp;sign</Item>
+      <Item Name="[크기]">size</Item>
+      <Item Name="[블럭]">block</Item>
+      <Item Name="[인덱스]">index</Item>
+      <Item Name="[위치]">desc,s</Item>
+      <Item Name="[줄번호]">line</Item>
+      <Item Name="[이전]">prev</Item>
+      <Item Name="[다음]">next</Item>
+    </Expand>
+  </Type>
+
+  <!-- 메모리 프르프 -->
+  <Type Name="MemImpl">
+    <DisplayString>[갯수: {count} (총 블럭: {block_size})]</DisplayString>
+    <Expand>
+      <Item Name="[갯수]">count</Item>
+      <Item Name="[인덱스]">index</Item>
+      <Item Name="[총 블럭]">block_size</Item>
+      <Item Name="[힙]">heap,p</Item>
+      <LinkedListItems>
+        <Size>count</Size>
+        <HeadPointer>frst</HeadPointer>
+        <NextPointer>next</NextPointer>
+        <ValueNode>this</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
+  <!-- 오브젝트 -->
+  <Type Name="QmGam">
+    <DisplayString>[{vt-&gt;name,s} (ref: {ref})]</DisplayString>
+  </Type>
+
+  <!-- vec2 -->
+  <Type Name="QnVec2">
+    <AlternativeType Name="QnVecH2"/>
+    <AlternativeType Name="QnPoint"/>
+    <DisplayString>[({x}, {y})]</DisplayString>
+    <Expand>
+      <Item Name="x">x</Item>
+      <Item Name="y">y</Item>
+    </Expand>
+  </Type>
+
+  <!-- vec3 -->
+  <Type Name="QnVec3">
+    <AlternativeType Name="QnVecH3"/>
+    <DisplayString>[({x}, {y}, {z})]</DisplayString>
+    <Expand>
+      <Item Name="x">x</Item>
+      <Item Name="y">y</Item>
+      <Item Name="z">z</Item>
+    </Expand>
+  </Type>
+
+  <!-- vec4 -->
+  <Type Name="QnVec4">
+    <AlternativeType Name="QnVecH4"/>
+    <AlternativeType Name="QnQuat"/>
+    <DisplayString>[({x}, {y}, {z}, {w})]</DisplayString>
+    <Expand>
+      <Item Name="x">x</Item>
+      <Item Name="y">y</Item>
+      <Item Name="z">z</Item>
+      <Item Name="w">w</Item>
+    </Expand>
+  </Type>
+
+  <!-- mat4 -->
+  <Type Name="QnMat4">
+    <DisplayString>[({_11}, {_12}, {_13}, {_14}) ({_21}, {_22}, {_23}, {_24}) ({_31}, {_32}, {_33}, {_34}) ({_41}, {_42}, {_43}, {_44})]</DisplayString>
+    <Expand>
+      <Item Name="11">_11</Item>
+      <Item Name="12">_12</Item>
+      <Item Name="13">_13</Item>
+      <Item Name="14">_14</Item>
+      <Item Name="21">_21</Item>
+      <Item Name="22">_22</Item>
+      <Item Name="23">_23</Item>
+      <Item Name="24">_24</Item>
+      <Item Name="31">_31</Item>
+      <Item Name="32">_32</Item>
+      <Item Name="33">_33</Item>
+      <Item Name="34">_34</Item>
+      <Item Name="41">_41</Item>
+      <Item Name="42">_42</Item>
+      <Item Name="43">_43</Item>
+      <Item Name="44">_44</Item>
+    </Expand>
+  </Type>
+
+  <!-- rect -->
+  <Type Name="QnRect">
+    <DisplayString>[({left}, {top})-({right}, {bottom})]</DisplayString>
+    <Expand>
+      <Item Name="left">left</Item>
+      <Item Name="top">top</Item>
+      <Item Name="right">right</Item>
+      <Item Name="bottom">bottom</Item>
+      <Item Name="[width]">right-left</Item>
+      <Item Name="[height]">bottom-top</Item>
+    </Expand>
+  </Type>
+
+  <!-- size -->
+  <Type Name="QnSize">
+    <DisplayString>[({width}, {height})]</DisplayString>
+    <Expand>
+      <Item Name="width">width</Item>
+      <Item Name="height">height</Item>
+    </Expand>
+  </Type>
+
+  <!-- depth -->
+  <Type Name="QnDepth">
+    <DisplayString>[({Near}, {Far})]</DisplayString>
+    <Expand>
+      <Item Name="Near">Near</Item>
+      <Item Name="Far">Far</Item>
+    </Expand>
+  </Type>
+
+  <!-- coordinate -->
+  <Type Name="QnCoord">
+    <DisplayString>[({u}, {v})]</DisplayString>
+    <Expand>
+      <Item Name="u">u</Item>
+      <Item Name="v">v</Item>
+    </Expand>
+  </Type>
+
+  <!-- color -->
+  <Type Name="QnColor">
+    <AlternativeType Name="QnKolor"/>
+    <DisplayString>[({r}, {g}, {b}, {a})]</DisplayString>
+    <Expand>
+      <Item Name="r">r</Item>
+      <Item Name="g">g</Item>
+      <Item Name="b">b</Item>
+      <Item Name="a">a</Item>
+    </Expand>
+  </Type>
+
+  <!-- unified color -->
+  <Type Name="QnKolorU">
+    <DisplayString>[{v,X}]</DisplayString>
+    <Expand>
+      <Item Name="r">k.r</Item>
+      <Item Name="g">k.g</Item>
+      <Item Name="b">k.b</Item>
+      <Item Name="a">k.a</Item>
+      <Item Name="[unified]">u</Item>
+    </Expand>
+  </Type>
+
+  <!-- plane -->
+  <Type Name="plane">
+    <DisplayString>[({a}, {b}, {c}, {d})]</DisplayString>
+    <Expand>
+      <Item Name="a">a</Item>
+      <Item Name="b">b</Item>
+      <Item Name="c">c</Item>
+      <Item Name="d">d</Item>
+    </Expand>
+  </Type>
+
+  <!-- line -->
+  <Type Name="QnLine3">
+    <DisplayString>[({begin.x},{begin.y},{begin.z})-({end.x},{end.y},{end.z})]</DisplayString>
+  </Type>
+
+  <!-- trfm -->
+  <Type Name="QnTrfm">
+    <DisplayString>[({loc.x},{loc.y},{loc.z}) ({rot.x},{rot.y},{rot.z},{rot.w}) ({scl.x},{scl.y},{scl.z})]</DisplayString>
+    <Expand>
+      <Item Name="location">loc</Item>
+      <Item Name="rotation">rot</Item>
+      <Item Name="scailing">scl</Item>
+    </Expand>
+  </Type>
 
 </AutoVisualizer>
