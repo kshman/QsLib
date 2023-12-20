@@ -9,9 +9,9 @@ MAKE=make
 OS=$(shell uname)
 
 # FreeBSD에서는 gcc46이상 쓸것 -> 기본 컴파일러가 UTF-8 BOM 지원을 안함
-#ifeq ("$(OS)", "FreeBSD")
-#MAKE=gmake
-#endif
+ifeq ("$(OS)", "FreeBSD")
+MAKE=gmake
+endif
 
 # 전체 빌드
 all: $(DEST)
