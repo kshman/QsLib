@@ -1,4 +1,6 @@
 ﻿#include "pch.h"
+#include "qs_qn.h"
+#include "qs_math.h"
 #include "qs_qg.h"
 #include "qg_stub.h"
 

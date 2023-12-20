@@ -574,7 +574,7 @@ typedef struct QgDeviceInfo
 	int					max_tex_dim;						/** @brief 최대 텍스쳐 크기 */
 	int					max_tex_count;						/** @brief 최대 텍스쳐 갯수 */
 	int					max_off_count;						/** @brief 최대 오프 텍스쳐(=렌더타겟/프레임버퍼) 갯수 */
-	QgClrFmt			clr_fmt QN_PADDING_64(4, 0);		/** @brief 색깔 포맷 */
+	QgClrFmt			clr_fmt;							/** @brief 색깔 포맷 */
 	
 } QgDeviceInfo;
 
@@ -620,7 +620,7 @@ typedef struct QgRenderParam
 	QnVec4				v[4];
 	QnMat4				m[4];
 	QnMat4*				bone_ptr;
-	int					bone_count QN_PADDING_3264(8, 4, 0);
+	int					bone_count;
 } QgRenderParam;
 
 

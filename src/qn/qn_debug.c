@@ -20,7 +20,7 @@ static struct DebugImpl
 	char			tag[32];
 
 	bool			debugger;
-	bool			redirect QN_PADDING(2, 0);
+	bool			redirect;
 }
 _qn_dbg =
 {

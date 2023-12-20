@@ -11,11 +11,7 @@
 #endif
 
 #ifdef _QN_WINDOWS_
-#ifdef _QN_64_
-QN_STATIC_ASSERT(sizeof(__int64) == sizeof(QnSpinLock), "Spinlock size not equal to OS interlock");
-#else
 QN_STATIC_ASSERT(sizeof(long) == sizeof(QnSpinLock), "Spinlock size not equal to OS interlock");
-#endif
 #endif
 
 
@@ -25,13 +21,9 @@ QN_STATIC_ASSERT(sizeof(long) == sizeof(QnSpinLock), "Spinlock size not equal to
 //
 bool qn_spin_try(QnSpinLock* lock)
 {
-#if defined _MSC_VER && defined _M_X64
-	return _InterlockedExchange64((__int64 volatile*)lock, 1) == 0;
-#elif defined _MSC_VER && defined _M_IX86
+#if defined _MSC_VER && (defined _M_IX86 || defined _M_X64)
 	return _InterlockedExchange((long volatile*)lock, 1) == 0;
-#elif defined _MSC_VER && defined _M_ARM64
-	return _InterlockedExchange64_acq(lock, 1) == 0;
-#elif defined _MSC_VER && defined _M_ARM
+#elif defined _MSC_VER && (defined _M_ARM || defined _M_ARM64)
 	return _InterlockedExchange_acq(lock, 1) == 0;
 #elif defined __GNUC__
 	return __sync_lock_test_and_set(lock, 1) != 0;
@@ -67,9 +59,7 @@ void qn_spin_leave(QnSpinLock* lock)
 #if defined _MSC_VER && (defined _M_IX86 || defined _M_X64)
 	qn_barrier();
 	*lock = 0;
-#elif defined _MSC_VER && defined _M_ARM64
-	_InterlockedExchange64_rel(lock, 0);
-#elif defined _MSC_VER && defined _M_ARM
+#elif defined _MSC_VER && (defined _M_ARM || defined _M_ARM64)
 	_InterlockedExchange_rel(lock, 0);
 #elif defined __GNUC__
 	__sync_lock_release(lock);
@@ -90,7 +80,7 @@ struct QnRealThread
 
 #ifdef _QN_WINDOWS_
 	HANDLE				handle;
-	DWORD				id QN_PADDING_64(4,0);
+	DWORD				id;
 #else
 	pthread_t			handle;
 #endif
@@ -794,7 +784,7 @@ struct QnSem
 {
 #ifdef _QN_WINDOWS_
 	HANDLE				handle;
-	nint volatile		count;
+	int volatile		count;
 #else
 	sem_t				sem;
 #endif
@@ -846,13 +836,8 @@ bool qn_sem_wait_for(QnSem* self, uint milliseconds)
 	DWORD dw = WaitForSingleObjectEx(self->handle, milliseconds, FALSE);
 	if (dw == WAIT_OBJECT_0)
 	{
-#ifdef _QN_64_
-		QN_STATIC_ASSERT(sizeof(__int64) == sizeof(self->count), "Semaphore size not equal to OS interlock");
-		_InterlockedDecrement64((__int64 volatile*)&self->count);
-#else
 		QN_STATIC_ASSERT(sizeof(long) == sizeof(self->count), "Semaphore size not equal to OS interlock");
 		_InterlockedDecrement((long volatile*)&self->count);
-#endif
 		return true;
 	}
 	if (dw != WAIT_TIMEOUT)
@@ -912,17 +897,10 @@ int qn_sem_count(QnSem* self)
 bool qn_sem_post(QnSem* self)
 {
 #ifdef _QN_WINDOWS_
-#ifdef _QN_64
-	_InterlockedIncrement64((__int64 volatile*)&self->count);
-	if (ReleaseSemaphore(self->handle, 1, NULL))
-		return true;
-	_InterlockedDecrement64((__int64 volatile*)&self->count);
-#else
 	_InterlockedIncrement((long volatile*)&self->count);
 	if (ReleaseSemaphore(self->handle, 1, NULL))
 		return true;
 	_InterlockedDecrement((long volatile*)&self->count);
-#endif
 #else
 	if (sem_post(&self->sem) == 0)
 		return true;

@@ -192,7 +192,7 @@ struct WindowsStub
 	bool				disable_scrsave;
 	bool				enable_drop;
 
-	bool				clear_background QN_PADDING(7, 0);
+	bool				clear_background;
 };
 
 // 정적 함수 미리 정의

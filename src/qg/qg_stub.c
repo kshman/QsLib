@@ -20,7 +20,7 @@ struct EventNode
 	EventNode*			prev;
 	EventNode*			next;
 	QgEvent				event;
-	size_t				key QN_PADDING_32(4, 0);
+	size_t				key;
 };
 
 //

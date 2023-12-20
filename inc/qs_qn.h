@@ -126,17 +126,6 @@
 #define QN_EXTC_END
 #endif
 
-#ifdef _QN_64_
-#define QN_PADDING_32(c,i)
-#define QN_PADDING_64(c,i)			;byte __pad##i[c]
-#define QN_PADDING_3264(c32,c64,i)	;byte __pad##i[c64]
-#else
-#define QN_PADDING_32(c,i)			;byte __pad##i[c]
-#define QN_PADDING_64(c,i)
-#define QN_PADDING_3264(c32,c64,i)	;byte __pad##i[c32]
-#endif
-#define QN_PADDING(c,i)				;byte __pad##i[c]
-
 QN_EXTC_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
@@ -2150,7 +2139,7 @@ QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* name);
 #error unknown compiler
 #endif
 
-typedef nint volatile		QnSpinLock;						/** @brief 스핀락 */
+typedef int volatile		QnSpinLock;						/** @brief 스핀락 */
 typedef void				QnTls;							/** @brief TLS */
 typedef struct QnMutex		QnMutex;						/** @brief 뮤텍스 */
 typedef struct QnCond		QnCond;							/** @brief 컨디션 */

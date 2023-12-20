@@ -22,7 +22,7 @@ struct QnFile
 #endif
 	char*			name;
 	QnFileAccess	acs;
-	int				flag QN_PADDING_64(4, 0);
+	int				flag;
 };
 
 // 최대 할당 크기
@@ -1257,7 +1257,7 @@ struct QnModule
 
 static struct ModuleImpl
 {
-	BOOL				inited QN_PADDING_64(4,0);
+	BOOL				inited;
 	QnSpinLock			lock;
 	QnModule*			self;
 	QnModule*			modules;
