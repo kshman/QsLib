@@ -114,13 +114,7 @@
     <ClInclude Include="qg\qg_es2.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
-    <ClInclude Include="qg\qggl_func.h">
-      <Filter>헤더 파일\qg</Filter>
-    </ClInclude>
     <ClInclude Include="qg\qg_stub.h">
-      <Filter>헤더 파일\qg</Filter>
-    </ClInclude>
-    <ClInclude Include="qg\qg_glsupp.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
     <ClInclude Include="qg\qggl_base.h">

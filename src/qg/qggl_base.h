@@ -1,7 +1,17 @@
 ﻿#pragma once
 
-#include "qs_ctn.h"
-#include "qggl_supp.h"
+#include <stdbool.h>
+#include "qs_qn.h"
+#include "qs_math.h"
+#include "qs_qg.h"
+#ifdef __EMSCRIPTEN__
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <GLES3/gl3.h>
+#include <GLES3/gl3ext.h>
+#else
+#include "glad/glad.h"
+#endif
 
 //
 typedef struct GlRdh		GlRdh;
@@ -11,11 +21,16 @@ typedef struct GlBuf		GlBuf;
 #define GL_INVALID_HANDLE	(GLuint)-1
 #endif
 
-#define GL_RDH_INSTANCE		((GlRdhBase*)qg_rdh_instance)
+#define GL_RDH_INSTANCE		((GlRdh*)qg_rdh_instance)
 
 
 //////////////////////////////////////////////////////////////////////////
 // 데이터 타입
+
+/// @brief GL 캐파
+typedef struct GlCaps
+{
+} GlCaps;
 
 /** @brief 세션 데이터 */
 typedef struct GlSession
@@ -48,6 +63,15 @@ struct GlRdh
 
 	nint				disposed;
 };
+
+qv_name(GlRdh)
+{
+	qv_name(QgRdh);
+
+	void (*swap_interval)(void*, int);
+	void (*swap_buffers)(void*, void*);
+}
+
 extern void gl_initialize(GlRdh* self, SDL_Window* window, SDL_Renderer* renderer, const int flags);
 extern void gl_finalize(GlRdh* self);
 extern void gl_reset(QgRdh* rdh);

@@ -190,10 +190,8 @@
     <ClInclude Include="qg\glad\glad_proxy.h" />
     <ClInclude Include="qg\glad\khrplatform.h" />
     <ClInclude Include="qg\qg_es2.h" />
-    <ClInclude Include="qg\qggl_func.h" />
     <ClInclude Include="qg\qggl_supp.h" />
     <ClInclude Include="qg\qggl_base.h" />
-    <ClInclude Include="qg\qg_glsupp.h" />
     <ClInclude Include="qg\qg_stub.h" />
     <ClInclude Include="qn\zlib\crc32.h" />
     <ClInclude Include="qn\zlib\deflate.h" />
