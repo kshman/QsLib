@@ -604,8 +604,12 @@ ullong qn_strtoll(const char* p, int base)
 //
 
 #ifndef _MSC_VER
+#ifndef towupper
 #define towupper(c)					((((c)>=L'a') && ((c)<=L'z')) ? ((c)-L'a'+L'A') : (c))
+#endif
+#ifndef towlower
 #define towlower(c)					((((c)>=L'A') && ((c)<=L'Z')) ? ((c)-L'A'+L'a') : (c))
+#endif
 #endif
 
 extern size_t doprw(wchar* buffer, size_t maxlen, const wchar* format, va_list args);

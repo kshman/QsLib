@@ -7,6 +7,9 @@
 #include <dlfcn.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef _QN_BSD_
+#include <sys/sysctl.h>
+#endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -1190,7 +1193,7 @@ char* qn_dir_base_path(void)
 #else
 #if defined _QN_FREEBSD_
 	QN_STMT_BEGIN{
-		char fullpath[MAX_PATH];
+		char fullpath[FILENAME_MAX];
 		size_t len = QN_COUNTOF(fullpath);
 		const int sns[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
 		if (sysctl(sns, QN_COUNTOF(sns), fullpath, &len, NULL, 0) != -1)

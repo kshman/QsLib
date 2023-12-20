@@ -9,6 +9,13 @@ else ifeq ("$(PLATFORM)", "amd64")
 EMM=-mavx2
 endif
 
+OS=$(shell uname)
+ifeq ("$(OS)", "FreeBSD")
+LIBPATH=/usr/local/lib
+else
+LIBPATH=/usr/lib
+endif
+
 # 기본값
 CC=cc
 DEFS=
@@ -47,8 +54,8 @@ clean:
 rebuild: clean all
 
 install: all
-	install $(DEST) /usr/lib
-	ln -sf /usr/lib/$(DEST) /usr/lib/$(SOST)
+	install $(DEST) $(LIBPATH)
+	ln -sf $(LIBPATH)/$(DEST) $(LIBPATH)/$(SOST)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o "$(*F).o" "$<"
@@ -58,3 +65,4 @@ install: all
 
 $(DEST): $(OBJ)
 	$(CC) $(LDFLAGS) -shared -Wl,-export-dynamic -Wl,-soname,$@ -o $@ $(LNK)
+
