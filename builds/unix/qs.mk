@@ -5,8 +5,8 @@
 PLATFORM=$(shell uname -m)
 ifeq ("$(PLATFORM)", "x86_64")
 EMM=-mavx2
-else
-EMM=
+else ifeq ("$(PLATFORM)", "amd64")
+EMM=-mavx2
 endif
 
 # 기본값
