@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "zstub.h"
+#include "zlib_proxy.h"
 
 /* inftrees.c -- generate Huffman trees for efficient decoding
  * Copyright (C) 1995-2023 Mark Adler

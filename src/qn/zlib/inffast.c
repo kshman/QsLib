@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "zstub.h"
+#include "zlib_proxy.h"
 
 /* inffast.c -- fast decoding
  * Copyright (C) 1995-2017 Mark Adler

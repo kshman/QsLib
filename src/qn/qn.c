@@ -25,9 +25,9 @@ struct Closure
 };
 
 // 구현
-static struct QnRuntime
+static struct RuntimeImpl
 {
-	BOOL			inited;
+	BOOL			inited QN_PADDING_64(4, 0);
 	QnSpinLock		lock;
 
 	struct Closure* closures;

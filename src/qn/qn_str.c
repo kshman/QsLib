@@ -508,8 +508,8 @@ int qn_itoa(char* p, int size, int n, int base)
 	{
 		conv[place++] = s_base_str[uvalue % base];
 		uvalue = uvalue / base;
-	} while (uvalue && place < QN_COUNTOF(conv));
-	if (place == QN_COUNTOF(conv))
+	} while (uvalue && place < (int)QN_COUNTOF(conv));
+	if (place == (int)QN_COUNTOF(conv))
 		place--;
 	conv[place] = '\0';
 	if (p == NULL)
@@ -535,8 +535,8 @@ int qn_lltoa(char* p, int size, llong n, int base)
 	{
 		conv[place++] = s_base_str[uvalue % base];
 		uvalue = uvalue / base;
-	} while (uvalue && place < QN_COUNTOF(conv));
-	if (place == QN_COUNTOF(conv))
+	} while (uvalue && place < (int)QN_COUNTOF(conv));
+	if (place == (int)QN_COUNTOF(conv))
 		place--;
 	conv[place] = '\0';
 	if (p == NULL)
@@ -573,11 +573,11 @@ uint qn_strtoi(const char* p, int base)
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	uint v = 0;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
-	int ch = s_base_byte[*p++];
+	int ch = s_base_byte[(byte)*p++];
 	while (ch < base)
 	{
 		v = v * base + ch;
-		ch = s_base_byte[*p++];
+		ch = s_base_byte[(byte)*p++];
 	}
 	return v;
 }
@@ -589,11 +589,11 @@ ullong qn_strtoll(const char* p, int base)
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	ullong v = 0;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
-	int ch = s_base_byte[*p++];
+	int ch = s_base_byte[(byte)*p++];
 	while (ch < base)
 	{
 		v = v * base + ch;
-		ch = s_base_byte[*p++];
+		ch = s_base_byte[(byte)*p++];
 	}
 	return v;
 }

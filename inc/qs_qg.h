@@ -298,6 +298,9 @@ typedef enum QgEventType
 	QGEV_TEXTINPUT,											/** @brief 텍스트 입력 */
 	QGEV_WINDOW,											/** @brief 윈도우 이벤트 */
 	QGEV_SYSWM,												/** @brief 시스템 메시지 */
+	QGEV_DROPBEGIN,											/** @brief 드랍을 시작한다 */
+	QGEV_DROPEND,											/** @brief 드랍이 끝났다 */
+	QGEV_DROPFILE,											/** @brief 파일 드랍 */
 	QGEV_EXIT,												/** @brief 끝내기 */
 	QGEV_MAX_VALUE,
 } QgEventType;
@@ -466,6 +469,12 @@ typedef union QgEvent
 		int					len;							/** @brief 텍스트 길이 */
 		char				data[16];						/** @brief 텍스트 내용 */
 	}					text;
+	struct QgEventDrop
+	{
+		QgEventType			ev;
+		int					len;							/** @brief 데이타의 길이 */
+		char*				data;							/** @brief 테이타 포인터. 데이터의 유효기간은 다음 loop 까지 */
+	}					drop;
 	struct QgEventWindowEvent
 	{
 		QgEventType			ev;
@@ -477,10 +486,10 @@ typedef union QgEvent
 	struct QgEventSysWm
 	{
 		QgEventType			ev;
-		void*				hwnd;							/** @brief 윈도우 핸들 */
 		uint				mesg;							/** @brief 메시지 */
 		nuint				wparam;							/** @brief WPARAM */
 		nint				lparam;							/** @brief LPARAM */
+		void*				hwnd;							/** @brief 윈도우 핸들 */
 	}					syswm;
 #endif
 } QgEvent;
@@ -565,7 +574,8 @@ typedef struct QgDeviceInfo
 	int					max_tex_dim;						/** @brief 최대 텍스쳐 크기 */
 	int					max_tex_count;						/** @brief 최대 텍스쳐 갯수 */
 	int					max_off_count;						/** @brief 최대 오프 텍스쳐(=렌더타겟/프레임버퍼) 갯수 */
-	QgClrFmt			clr_fmt;							/** @brief 색깔 포맷 */
+	QgClrFmt			clr_fmt QN_PADDING_64(4, 0);		/** @brief 색깔 포맷 */
+	
 } QgDeviceInfo;
 
 /** @brief 렌더러 추적 정보 */
@@ -610,10 +620,7 @@ typedef struct QgRenderParam
 	QnVec4				v[4];
 	QnMat4				m[4];
 	QnMat4*				bone_ptr;
-	int					bone_count;
-
-	QN_PADDING_32(8, 0)
-		QN_PADDING_64(4, 0)
+	int					bone_count QN_PADDING_3264(8, 4, 0);
 } QgRenderParam;
 
 

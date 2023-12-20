@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "zstub.h"
+#include "zlib_proxy.h"
 
 /* gzlib.c -- zlib functions common to reading and writing gzip files
  * Copyright (C) 2004-2019 Mark Adler

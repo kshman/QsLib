@@ -14,43 +14,49 @@ bool qg_stub_atexit = false;
 // 이벤트 노드
 
 //
-typedef struct QgNodeEvent	QgNodeEvent;
-struct QgNodeEvent
+typedef struct EventNode	EventNode;
+struct EventNode
 {
-	QgNodeEvent*		prev;
-	QgNodeEvent*		next;
-	size_t				key;
-	QN_PADDING_32(4, 0)
-		QgEvent				event;
+	EventNode*			prev;
+	EventNode*			next;
+	QgEvent				event;
+	size_t				key QN_PADDING_32(4, 0);
 };
 
 //
-struct QgShedEvent
+struct ShedEvent
 {
-	BOOL				enable;
 	QnMutex*			lock;
-	size_t				count;
+	ushort/*bool*/		enable;
+	ushort/*bool*/		loop_reset;
+	ushort				loop_count;
+	ushort				poll_count;
 	size_t				max_count;
-	QgNodeEvent*		head;
-	QgNodeEvent*		tail;
-	QgNodeEvent*		cache;
-	QgNodeEvent*		prior_head;
-	QgNodeEvent*		prior_tail;
+	size_t				queue_count;
+	EventNode*			cache;
+	EventNode*			head;
+	EventNode*			tail;
+	EventNode*			prior_head;
+	EventNode*			prior_tail;
+	QnPtrArr			reserved_mems;
 }
-s_seq = { FALSE, };
+s_seq = { NULL, };
 
 // 초기화
 static void shed_event_init(void)
 {
-	s_seq.enable = true;
 	s_seq.lock = qn_mutex_new();
-	s_seq.count = 0;
+	s_seq.enable = true;
+	s_seq.loop_count = 0;
+	s_seq.poll_count = 0;
 	s_seq.max_count = 0;
+	s_seq.queue_count = 0;
+	s_seq.cache = NULL;
 	s_seq.head = NULL;
 	s_seq.tail = NULL;
-	s_seq.cache = NULL;
 	s_seq.prior_head = NULL;
 	s_seq.prior_tail = NULL;
+	qn_parr_init(&s_seq.reserved_mems, 0);
 }
 
 // 모두 제거
@@ -60,17 +66,19 @@ static void shed_event_dispose(void)
 
 	s_seq.enable = false;
 
-	for (QgNodeEvent *n, *p = s_seq.prior_head; p; p = n)
+	qn_parr_loopeach(&s_seq.reserved_mems, qn_free);
+	qn_parr_disp(&s_seq.reserved_mems);
+	for (EventNode *n, *p = s_seq.prior_head; p; p = n)
 	{
 		n = p->next;
 		qn_free(p);
 	}
-	for (QgNodeEvent *n, *p = s_seq.head; p; p = n)
+	for (EventNode *n, *p = s_seq.head; p; p = n)
 	{
 		n = p->next;
 		qn_free(p);
 	}
-	for (QgNodeEvent *n, *p = s_seq.cache; p; p = n)
+	for (EventNode *n, *p = s_seq.cache; p; p = n)
 	{
 		n = p->next;
 		qn_free(p);
@@ -84,11 +92,11 @@ static void shed_event_queue(const QgEvent* e)
 	qn_ret_if_fail(s_seq.enable);
 	qn_mutex_enter(s_seq.lock);
 
-	if (s_seq.count < QGMAX_EVENTS)
+	if (s_seq.queue_count < QGMAX_EVENTS)
 	{
-		QgNodeEvent* node = s_seq.cache;
+		EventNode* node = s_seq.cache;
 		if (node == NULL)
-			node = qn_alloc_1(QgNodeEvent);
+			node = qn_alloc_1(EventNode);
 		else
 			s_seq.cache = node->next;
 
@@ -100,10 +108,10 @@ static void shed_event_queue(const QgEvent* e)
 		node->next = NULL;
 		node->key = 0;
 		s_seq.tail = node;
-		s_seq.count++;
+		s_seq.queue_count++;
 
-		if (s_seq.max_count < s_seq.count)
-			s_seq.max_count = s_seq.count;
+		if (s_seq.max_count < s_seq.queue_count)
+			s_seq.max_count = s_seq.queue_count;
 
 		node->event = *e;
 	}
@@ -117,8 +125,8 @@ static void shed_event_prior_queue(size_t key, const QgEvent* e)
 	qn_ret_if_fail(s_seq.enable);
 	qn_mutex_enter(s_seq.lock);
 
-	QgNodeEvent* node = NULL;
-	for (QgNodeEvent *n, *p = s_seq.prior_head; p; p = n)
+	EventNode* node = NULL;
+	for (EventNode *n, *p = s_seq.prior_head; p; p = n)
 	{
 		if (p->key == key)
 		{
@@ -132,7 +140,7 @@ static void shed_event_prior_queue(size_t key, const QgEvent* e)
 	{
 		node = s_seq.cache;
 		if (node == NULL)
-			node = qn_alloc_1(QgNodeEvent);
+			node = qn_alloc_1(EventNode);
 		else
 			s_seq.cache = node->next;
 
@@ -160,7 +168,7 @@ static bool shed_event_transition(QgEvent* e)
 
 	if (s_seq.prior_head != NULL)
 	{
-		QgNodeEvent* node = s_seq.prior_head;
+		EventNode* node = s_seq.prior_head;
 		s_seq.prior_head = node->next;
 		if (s_seq.prior_head != NULL)
 			s_seq.prior_head->prev = NULL;
@@ -175,14 +183,14 @@ static bool shed_event_transition(QgEvent* e)
 	}
 	else if (s_seq.head != NULL)
 	{
-		QgNodeEvent* node = s_seq.head;
+		EventNode* node = s_seq.head;
 		s_seq.head = node->next;
 		if (s_seq.head != NULL)
 			s_seq.head->prev = NULL;
 		if (node == s_seq.tail)
 			s_seq.tail = NULL;
-		qn_assert(s_seq.count != 0, "어... 카운트가 이상한데?");
-		s_seq.count--;
+		qn_assert(s_seq.queue_count != 0, "어... 카운트가 이상한데?");
+		s_seq.queue_count--;
 
 		node->next = s_seq.cache;
 		s_seq.cache = node;
@@ -201,19 +209,39 @@ static void shed_event_flush(void)
 {
 	qn_mutex_enter(s_seq.lock);
 
-	for (QgNodeEvent *n, *p = s_seq.prior_head; p; p = n)
+	for (EventNode *n, *p = s_seq.prior_head; p; p = n)
 	{
 		n = p->next;
 		p->next = s_seq.cache;
 		s_seq.cache = p;
 	}
-	for (QgNodeEvent *n, *p = s_seq.head; p; p = n)
+	for (EventNode *n, *p = s_seq.head; p; p = n)
 	{
 		n = p->next;
 		p->next = s_seq.cache;
 		s_seq.cache = p;
 	}
 
+	qn_mutex_leave(s_seq.lock);
+}
+
+// 보관 메모리에 넣기
+static void shed_event_reserved_mem(void* ptr)
+{
+	qn_mutex_enter(s_seq.lock);
+	qn_parr_add(&s_seq.reserved_mems, ptr);
+	qn_mutex_leave(s_seq.lock);
+}
+
+// 보관 메모리 지우기
+static void shed_event_clear_reserved_mem(void)
+{
+	qn_mutex_enter(s_seq.lock);
+	if (qn_parr_is_have(&s_seq.reserved_mems))
+	{
+		qn_parr_loopeach(&s_seq.reserved_mems, qn_free);
+		qn_parr_clear(&s_seq.reserved_mems);
+	}
 	qn_mutex_leave(s_seq.lock);
 }
 
@@ -404,6 +432,10 @@ bool qg_loop(void)
 	StubBase* stub = qg_stub_instance;
 	qn_val_if_fail(stub, false);
 
+	s_seq.loop_count++;
+	s_seq.loop_reset = true;
+	shed_event_clear_reserved_mem();
+
 	if (QN_TMASK(stub->flags, QGSPECIFIC_VIRTUAL) == false)
 	{
 		if (!stub_system_poll() || QN_TMASK(stub->stats, QGSSTT_EXIT))
@@ -428,6 +460,18 @@ bool qg_poll(QgEvent* ev)
 {
 	StubBase* stub = qg_stub_instance;
 	qn_val_if_fail(stub, false);
+
+	if (s_seq.loop_reset)
+	{
+		s_seq.loop_reset = false;
+		s_seq.poll_count++;
+	}
+	if (s_seq.poll_count != s_seq.loop_count)
+	{
+		qn_debug_outputf(true, "STUB", "Loop and poll pair not match! [poll(%d) != loop(%d)]",
+			s_seq.poll_count, s_seq.loop_count);
+		s_seq.poll_count = s_seq.loop_count;
+	}
 
 	return qg_pop_event(ev);
 }
@@ -513,7 +557,7 @@ void qg_set_delay(int delay)
 //
 int qg_left_events(void)
 {
-	return (int)s_seq.count;
+	return (int)s_seq.queue_count;
 }
 
 //
@@ -551,7 +595,7 @@ int qg_add_event(const QgEvent* ev)
 		shed_event_queue(ev);
 	}
 
-	return (int)s_seq.count;
+	return (int)s_seq.queue_count;
 }
 
 //
@@ -562,7 +606,7 @@ int qg_add_event_type(QgEventType type)
 }
 
 //
-int stub_internal_on_event_layout(bool enter)
+bool stub_internal_on_event_layout(bool enter)
 {
 	StubBase* stub = qg_stub_instance;
 
@@ -570,7 +614,7 @@ int stub_internal_on_event_layout(bool enter)
 	{
 		// 레이아웃 시작 메시지 안보냄
 		QN_SMASK(&stub->stats, QGSSTT_LAYOUT, true);
-		return 0;
+		return false;
 	}
 	QN_SMASK(&stub->stats, QGSSTT_LAYOUT, false);
 
@@ -585,14 +629,14 @@ int stub_internal_on_event_layout(bool enter)
 			.layout.size = stub->size,
 			.layout.bound = stub->bound,
 		};
-		return qg_add_event(&e);
+		return qg_add_event(&e) > 0;
 	}
 
-	return 0;
+	return false;
 }
 
 //
-extern int stub_internal_on_window_event(QgWindowEventType type, int param1, int param2)
+bool stub_internal_on_window_event(QgWindowEventType type, int param1, int param2)
 {
 	StubBase* stub = qg_stub_instance;
 
@@ -631,17 +675,17 @@ extern int stub_internal_on_window_event(QgWindowEventType type, int param1, int
 		.wevent.param1 = param1,
 		.wevent.param2 = param2,
 	};
-	return qg_add_event(&e);
+	return qg_add_event(&e) > 0;
 }
 
 //
-int stub_internal_on_text(const char* text)
+bool stub_internal_on_text(const char* text)
 {
 	StubBase* stub = qg_stub_instance;
 	qn_val_if_fail(QN_TMASK(stub->flags, QGFLAG_TEXT), 0);
 
 	QgEvent e = { .text.ev = QGEV_TEXTINPUT, };
-	int count = 0;
+	bool ret = false;
 	size_t pos = 0;
 	size_t len = qn_u8len(text);
 	while (pos < len)
@@ -650,13 +694,13 @@ int stub_internal_on_text(const char* text)
 		if (add == 0)
 			break;
 		pos += add;
-		count += qg_add_event(&e);
+		ret = qg_add_event(&e) > 0;
 	}
-	return count;
+	return ret;
 }
 
 //
-int stub_internal_on_keyboard(QikKey key, bool down)
+bool stub_internal_on_keyboard(QikKey key, bool down)
 {
 	QgUimKey* uk = &qg_stub_instance->key;
 	QgEvent e;
@@ -716,16 +760,16 @@ int stub_internal_on_keyboard(QikKey key, bool down)
 	e.key.key = key;
 	e.key.mask = uk->mask;
 
-	return qg_add_event(&e);
+	return qg_add_event(&e) > 0;
 }
 
 //
-int stub_internal_on_reset_keys(void)
+bool stub_internal_on_reset_keys(void)
 {
 	QgEvent e = { .key.ev = QGEV_KEYUP, .key.mask = 0, .key.repeat = false };
 	QgUimKey* uk = &qg_stub_instance->key;
 
-	int count = 0;
+	bool ret = false;
 	for (size_t i = 0; i < QIK_MAX_VALUE / 8 + 1; i++)
 	{
 		byte key = uk->key[i];
@@ -736,14 +780,14 @@ int stub_internal_on_reset_keys(void)
 			if (QN_TBIT(key, n) == false)
 				continue;
 			e.key.key = (QikKey)(i * 8 + n);
-			count += qg_add_event(&e);
+			ret = qg_add_event(&e) > 0;
 		}
 	}
-	return count;
+	return ret;
 }
 
 //
-int stub_internal_on_mouse_move(void)
+bool stub_internal_on_mouse_move(void)
 {
 	// 마우스 정보는 시스템 스터브에서 해와야함
 	const QgUimMouse* um = &qg_stub_instance->mouse;
@@ -756,11 +800,11 @@ int stub_internal_on_mouse_move(void)
 		.mmove.delta.x = um->last.x - um->pt.x,
 		.mmove.delta.y = um->last.y - um->pt.y,
 	};
-	return qg_add_event(&e);
+	return qg_add_event(&e) > 0;
 }
 
 //
-int stub_internal_on_mouse_button(QimButton button, bool down)
+bool stub_internal_on_mouse_button(QimButton button, bool down)
 {
 	QgUimMouse* um = &qg_stub_instance->mouse;
 	QN_SBIT(&um->mask, button, down);
@@ -772,7 +816,7 @@ int stub_internal_on_mouse_button(QimButton button, bool down)
 		.mbutton.button = button,
 		.mbutton.mask = um->mask,
 	};
-	int ret = qg_add_event(&e);
+	bool ret = qg_add_event(&e) > 0;
 
 	if (stub_internal_mouse_clicks(button, down ? QIMT_DOWN : QIMT_UP))
 	{
@@ -783,14 +827,14 @@ int stub_internal_on_mouse_button(QimButton button, bool down)
 			.mbutton.button = button,
 			.mbutton.mask = um->mask,
 		};
-		ret += qg_add_event(&de);
+		ret = qg_add_event(&de) > 0;
 	}
 
 	return ret;
 }
 
 //
-int stub_internal_on_mouse_wheel(float x, float y, bool direction)
+bool stub_internal_on_mouse_wheel(float x, float y, bool direction)
 {
 	QgUimMouse* um = &qg_stub_instance->mouse;
 
@@ -840,11 +884,11 @@ int stub_internal_on_mouse_wheel(float x, float y, bool direction)
 		.mwheel.precise = um->wheel.precise,
 		.mwheel.direction = direction,
 	};
-	return qg_add_event(&e);
+	return qg_add_event(&e) > 0;
 }
 
 //
-int stub_internal_on_active(bool active, double delta)
+bool stub_internal_on_active(bool active, double delta)
 {
 	const QgEvent e =
 	{
@@ -852,7 +896,42 @@ int stub_internal_on_active(bool active, double delta)
 		.active.active = active,
 		.active.delta = delta,
 	};
-	return qg_add_event(&e);
+	return qg_add_event(&e) > 0;
+}
+
+//
+bool stub_internal_on_drop(char* data, int len, bool finish)
+{
+	static bool s_enter = false;
+
+	if (data != NULL)
+		shed_event_reserved_mem(data);
+
+	bool ret = 0;
+	if (s_enter == false)
+	{
+		s_enter = true;
+		QN_SMASK(&qg_stub_instance->stats, QGSSTT_DROP, true);
+		const QgEvent eb = { .drop.ev = QGEV_DROPBEGIN, };
+		ret = qg_add_event(&eb) > 0;
+		if (ret == false)
+			return false;
+	}
+
+	const QgEvent e =
+	{
+		.drop.ev = finish ? QGEV_DROPEND : QGEV_DROPFILE,
+		.drop.len = len,
+		.drop.data = data,
+	};
+	ret = qg_add_event(&e) > 0;
+
+	if (finish)
+	{
+		QN_SMASK(&qg_stub_instance->stats, QGSSTT_DROP, false);
+		s_enter = false;
+	}
+	return ret;
 }
 
 //

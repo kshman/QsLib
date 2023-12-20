@@ -11,7 +11,7 @@
 #ifdef _DEBUG
 static struct WindowsMessageMap
 {
-	UINT				mesg;
+	size_t				mesg;
 	const char*			str;
 }
 s_map[] =

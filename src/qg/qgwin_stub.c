@@ -21,7 +21,7 @@
 //#define DEBUG_WINPROC_MESG
 #endif
 
-QN_STATIC_ASSERT(sizeof(RECT) == sizeof(QnRect), "Rect size is not equal");
+QN_STATIC_ASSERT(sizeof(RECT) == sizeof(QnRect), "RECT size not equal to QnRect");
 
 extern const char* windows_message_str(UINT mesg);
 
@@ -192,8 +192,7 @@ struct WindowsStub
 	bool				disable_scrsave;
 	bool				enable_drop;
 
-	bool				clear_background;
-	QN_PADDING_32(7, 0)
+	bool				clear_background QN_PADDING(7, 0);
 };
 
 // 정적 함수 미리 정의
@@ -227,7 +226,7 @@ StubBase* stub_system_open(const char* title, int width, int height, int flags)
 	{
 		QnDateTime dt;
 		qn_now(&dt);
-		stub->class_name = qn_apswprintf(L"qg_window_stub_class_%llu", dt.stamp);
+		stub->class_name = qn_apswprintf(L"qs_stub_class_%llu", dt.stamp);
 
 		WNDCLASSEX wc =
 		{
@@ -515,6 +514,7 @@ void stub_system_diable_scrsave(bool enable)
 			return;
 		stub->disable_scrsave = true;
 		QN_SMASK(&stub->base.flags, QGFEATURE_DISABLE_SCRSAVE, true);
+		SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
 	}
 	else
 	{
@@ -522,6 +522,7 @@ void stub_system_diable_scrsave(bool enable)
 			return;
 		stub->disable_scrsave = true;
 		QN_SMASK(&stub->base.flags, QGFEATURE_DISABLE_SCRSAVE, false);
+		SetThreadExecutionState(ES_CONTINUOUS);
 	}
 }
 
@@ -608,9 +609,9 @@ static void win_dpi_awareness(WindowsStub* stub)
 // 마우스 이벤트 소스
 typedef enum WindowsMouseSource
 {
-	WINDOWS_MOUSE_EVENT_SOURCE_MOUSE,
-	WINDOWS_MOUSE_EVENT_SOURCE_TOUCH,
-	WINDOWS_MOUSE_EVENT_SOURCE_PEN,
+	WINDOWS_MOUSE_SOURCE_MOUSE,
+	WINDOWS_MOUSE_SOURCE_TOUCH,
+	WINDOWS_MOUSE_SOURCE_PEN,
 } WindowsMouseSource;
 
 // 마우스 이벤트 소스
@@ -620,10 +621,10 @@ static WindowsMouseSource win_get_mouse_source(void)
 	if (IsPenEvent(info))
 	{
 		if (QN_TMASK(info, 0x80))
-			return WINDOWS_MOUSE_EVENT_SOURCE_TOUCH;
-		return WINDOWS_MOUSE_EVENT_SOURCE_PEN;
+			return WINDOWS_MOUSE_SOURCE_TOUCH;
+		return WINDOWS_MOUSE_SOURCE_PEN;
 	}
-	return WINDOWS_MOUSE_EVENT_SOURCE_MOUSE;
+	return WINDOWS_MOUSE_SOURCE_MOUSE;
 }
 
 //
@@ -749,7 +750,7 @@ static LRESULT CALLBACK win_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp
 		qn_debug_outputf(false, "WINDOW STUB", "처리안된 메시지: %s(%X)", windows_message_str(mesg), mesg);
 #endif
 		return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-}
+	}
 
 	if (QN_TMASK(stub->base.flags, QGFEATURE_ENABLE_SYSWM))
 	{
@@ -780,7 +781,7 @@ static LRESULT CALLBACK win_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp
 		}
 		else if ((mesg >= WM_LBUTTONDOWN && mesg <= WM_MBUTTONDBLCLK) || (mesg >= WM_XBUTTONDOWN && mesg <= WM_XBUTTONDBLCLK))
 		{
-			if (win_get_mouse_source() != WINDOWS_MOUSE_EVENT_SOURCE_TOUCH)
+			if (win_get_mouse_source() != WINDOWS_MOUSE_SOURCE_TOUCH)
 			{
 				win_set_mouse_point(stub, lp, false);
 				if (stub->mouse_wparam != wp)
@@ -1014,9 +1015,9 @@ static LRESULT CALLBACK win_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp
 		{
 			ushort cmd = (ushort)(wp & 0xFFFF0);
 			if (cmd == SC_KEYMENU)
-				return 0;
+				result = 0;
 			if (stub->disable_scrsave && (cmd == SC_SCREENSAVE || cmd == SC_MONITORPOWER))
-				return 0;
+				result = 0;
 		} break;
 
 		case WM_MENUCHAR:
@@ -1036,6 +1037,26 @@ static LRESULT CALLBACK win_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp
 			break;
 
 		case WM_DROPFILES:
+			if (QN_TMASK(stub->base.flags, QGFEATURE_ENABLE_DROP))
+			{
+				DragAcceptFiles(hwnd, false);
+				HDROP handle = (HDROP)wp;
+				UINT cnt = DragQueryFile(handle, 0xFFFFFFFF, NULL, 0);
+				for (UINT i = 0; i < cnt; i++)
+				{
+					UINT len = DragQueryFile(handle, i, NULL, 0) + 1;
+					LPWSTR buf = qn_alloc(len, WCHAR);
+					if (DragQueryFile(handle, i, buf, len))
+					{
+						char *filename = qn_u16to8_dup(buf, 0);
+						stub_internal_on_drop(filename, 0, false);
+					}
+					qn_free(buf);
+				}
+				stub_internal_on_drop(NULL, 0, true);
+				DragAcceptFiles(hwnd, true);
+				result = 0;
+			}
 			break;
 
 		case WM_TOUCH:
@@ -1061,6 +1082,5 @@ pos_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-	}
-
+}
 #endif

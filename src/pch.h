@@ -5,9 +5,12 @@
 
 #pragma once
 
-#ifdef _MSC_VER
+#if defined _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4820)
+#endif
+#if defined __GNUC__
+#define _GNU_SOURCE
 #endif
 
 #include <stddef.h>
@@ -19,9 +22,11 @@
 #include <string.h>
 #include <time.h>
 #include <signal.h>
+#include <ctype.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <math.h>
+#include <errno.h>
 #if defined _MSC_VER
 #include <intrin.h>
 #include <crtdbg.h>
@@ -50,7 +55,7 @@
 #endif
 
 // EMSCRIPTEN
-#ifdef __EMSCRIPTEN__
+#if defined __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 

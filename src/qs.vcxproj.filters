@@ -46,6 +46,12 @@
     <Filter Include="소스 파일\qg\gles">
       <UniqueIdentifier>{df065b92-8d8c-4efd-a518-eef5ae12cb80}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\qg\glad">
+      <UniqueIdentifier>{90557222-48b7-44f9-81cb-a6b4181d8b85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\qg\glad">
+      <UniqueIdentifier>{903faeba-30b5-4322-a198-adc65276213b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -63,13 +69,10 @@
     <ClInclude Include="..\inc\qs.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="qn\qn_mem.h">
-      <Filter>헤더 파일\qn</Filter>
-    </ClInclude>
     <ClInclude Include="qn\zlib\zutil.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="qn\zlib\zstub.h">
+    <ClInclude Include="qn\zlib\zlib_proxy.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
     <ClInclude Include="qn\zlib\zlib.h">
@@ -125,6 +128,15 @@
     </ClInclude>
     <ClInclude Include="qg\qggl_supp.h">
       <Filter>헤더 파일\qg</Filter>
+    </ClInclude>
+    <ClInclude Include="qg\glad\khrplatform.h">
+      <Filter>헤더 파일\qg\glad</Filter>
+    </ClInclude>
+    <ClInclude Include="qg\glad\glad.h">
+      <Filter>헤더 파일\qg\glad</Filter>
+    </ClInclude>
+    <ClInclude Include="qg\glad\glad_proxy.h">
+      <Filter>헤더 파일\qg\glad</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -247,6 +259,9 @@
     </ClCompile>
     <ClCompile Include="qg\qgwin_mesg.c">
       <Filter>소스 파일\qg\stub</Filter>
+    </ClCompile>
+    <ClCompile Include="qg\glad\glad.c">
+      <Filter>소스 파일\qg\glad</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

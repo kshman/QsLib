@@ -122,7 +122,7 @@ void qn_mstod(uint msec, QnDateTime* dt)
 }
 
 //
-static struct QnCycleImpl
+static struct CycleImpl
 {
 	ullong				tick_count;		// 초 당 틱
 	ullong				start_count;	// 시작 카운트
@@ -149,9 +149,9 @@ ullong qn_cycle(void)
 	return ll.QuadPart;
 #else
 	uint64_t n;
-	struct timespec tp;
-	if (clock_gettime(CLOCK_REALTIME, &tp) == 0)
-		n = ((uint64_t)tp.tv_sec * 1000) + ((uint64_t)tp.tv_nsec / 1000000);
+	struct timespec ts;
+	if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
+		n = ((uint64_t)ts.tv_sec * 1000) + ((uint64_t)ts.tv_nsec / 1000000);
 	else
 	{
 		struct timeval tv;
@@ -178,14 +178,14 @@ void qn_sleep(uint milliseconds)
 #if defined __EMSCRIPTEN__
 	if (emscripten_has_asyncify())
 	{
-		emscripten_sleep(ms);
+		emscripten_sleep(milliseconds);
 		return;
 	}
 #endif
 	struct timespec ts =
 	{
-		.tv_sec = ms / 1000,
-		.tv_nsec = (ms % 1000) * 1000000,
+		.tv_sec = milliseconds / 1000,
+		.tv_nsec = (milliseconds % 1000) * 1000000,
 	};
 	int error;
 	do
@@ -230,8 +230,8 @@ void qn_msleep(ullong microseconds)
 #endif
 	struct timespec ts =
 	{
-		.tv_sec = microseconds / 1000000;
-		.tv_nsec = (microseconds % 1000000) * 1000;
+		.tv_sec = microseconds / 1000000,
+		.tv_nsec = (microseconds % 1000000) * 1000,
 	};
 	int error;
 	do

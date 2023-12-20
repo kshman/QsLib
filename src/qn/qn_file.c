@@ -4,6 +4,7 @@
 #ifdef _QN_UNIX_
 #include <unistd.h>
 #include <dirent.h>
+#include <dlfcn.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #endif
@@ -21,8 +22,7 @@ struct QnFile
 #endif
 	char*			name;
 	QnFileAccess	acs;
-	int				flag;
-	QN_PADDING_64(4, 0)
+	int				flag QN_PADDING_64(4, 0);
 };
 
 // 최대 할당 크기
@@ -1205,10 +1205,10 @@ char* qn_dir_base_path(void)
 		path = qn_internal_read_sym_link("/proc/self/exe");
 		if (path == NULL)
 		{
-			char path[64];
-			int rc = qn_snprintf(path, QN_COUNTOF(path), "/proc/%llu/exe", (ullong)getpid());
-			if (rc > 0 && rc < QN_COUNTOF(path))
-				path = qn_internal_read_sym_link(path);
+			char tmp[64];
+			const int rc = qn_snprintf(tmp, QN_COUNTOF(tmp), "/proc/%llu/exe", (ullong)getpid());
+			if (rc > 0 && rc < (int)QN_COUNTOF(tmp))
+				path = qn_internal_read_sym_link(tmp);
 		}
 #else
 #error unknown platform
@@ -1255,13 +1255,13 @@ struct QnModule
 	QnModule*			next;
 };
 
-static struct QnModuleImpl
+static struct ModuleImpl
 {
-	BOOL				inited;
+	BOOL				inited QN_PADDING_64(4,0);
+	QnSpinLock			lock;
 	QnModule*			self;
 	QnModule*			modules;
 	QnTls*				error;
-	QnSpinLock			lock;
 }
 _qn_mod = { false, };
 
@@ -1277,7 +1277,7 @@ static void qn_module_dispose(void* dummy)
 	while (node)
 	{
 		if (QN_TMASK(node->flags, QNMDF_NO_CLOSURE | QNMDF_INFO))
-			qn_debug_outputf(false, "QNMODULE", "module not deleted [%s] (ref: %d)", node->filename, node->ref);
+			qn_debug_outputf(false, "MODULE", "module not deleted [%s] (ref: %d)", node->filename, node->ref);
 		next = node->next;
 		qn_internal_mod_delete(node, true);
 		node = next;
@@ -1428,7 +1428,7 @@ QnModule* qn_mod_open(const char* filename, int flags)
 #endif
 	if (handle == NULL)
 	{
-		qn_debug_output_syserr(true, "QNMODULE", 0);
+		qn_debug_output_syserr(true, "MODULE", 0);
 		return NULL;
 	}
 
@@ -1523,7 +1523,7 @@ void* qn_mod_func(QnModule* self, const char* name)
 #endif
 	}
 #else
-	const char* err = dlerror();
+	(void)dlerror();
 	ptr = dlsym(self->handle, name);
 #endif
 

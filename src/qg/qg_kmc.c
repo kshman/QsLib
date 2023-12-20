@@ -329,7 +329,7 @@ const char* qg_event_str(QgEventType ev)
 #ifndef __EMSCRIPTEN__
 	static struct EventMap
 	{
-		QgEventType		ev;
+		size_t			ev;
 		const char*		str;
 	}
 	s_map[] =
@@ -348,13 +348,16 @@ const char* qg_event_str(QgEventType ev)
 		DEF_EVENT(TEXTINPUT),
 		DEF_EVENT(WINDOW),
 		DEF_EVENT(SYSWM),
+		DEF_EVENT(DROPBEGIN),
+		DEF_EVENT(DROPEND),
+		DEF_EVENT(DROPFILE),
 		DEF_EVENT(EXIT),
 		{ 0, NULL },
 #undef DEF_EVENT
 	};
 	for (const struct EventMap* p = s_map; p->str != NULL; p++)
 	{
-		if (p->ev == ev)
+		if (p->ev == (size_t)ev)
 			return p->str;
 	}
 	return "UNKNOWN";
@@ -369,7 +372,7 @@ const char* qg_window_event_str(QgWindowEventType wev)
 #ifndef __EMSCRIPTEN__
 	static struct WindowEventMap
 	{
-		QgWindowEventType	wev;
+		size_t				wev;
 		const char*			str;
 	}
 	s_map[] =
@@ -392,7 +395,7 @@ const char* qg_window_event_str(QgWindowEventType wev)
 	};
 	for (const struct WindowEventMap* p = s_map; p->str != NULL; p++)
 	{
-		if (p->wev == wev)
+		if (p->wev == (size_t)wev)
 			return p->str;
 	}
 	return "UNKNOWN";

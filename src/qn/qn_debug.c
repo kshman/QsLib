@@ -8,7 +8,7 @@
 #endif
 
 //
-static struct QnDebugImpl
+static struct DebugImpl
 {
 #if _QN_WINDOWS_
 	HANDLE			handle;
@@ -20,8 +20,7 @@ static struct QnDebugImpl
 	char			tag[32];
 
 	bool			debugger;
-	bool			redirect;
-	QN_PADDING(2, 0)
+	bool			redirect QN_PADDING(2, 0);
 }
 _qn_dbg =
 {
@@ -218,7 +217,7 @@ static char* qn_syserr_mesg(int errcode, int* size)
 	qn_wcstombs(buf, len, pw, 0);
 	qn_free(pw);
 
-	if (size != NULL) *size = len - 1;
+	if (size != NULL) *size = (int)len - 1;
 	return buf;
 #else
 	char* psz = strerror(errcode);
