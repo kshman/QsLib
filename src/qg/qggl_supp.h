@@ -33,7 +33,7 @@ QN_INLINE int gl_get_version(GLenum name, const char* name1, const char* name2)
 		qn_strnicmp(s, name1, strlen(name1)) == 0 ? strtof(s + strlen(name1), NULL) :
 		qn_strnicmp(s, name2, strlen(name2)) == 0 ? strtof(s + strlen(name2), NULL) :
 		(float)strtof(s, NULL);
-	return (int)(floorf(f) * 100.0f + (QN_FRACT(f) * 10.0));
+	return (int)(floorf(f) * 100.0f + (QM_FRACT(f) * 10.0));
 }
 
 /**
@@ -99,10 +99,10 @@ QN_INLINE GLint gl_get_shader_iv(GLuint handle, GLenum name)
  * @param tx,ty 트랜스폼
  * @param sx,sy 스케일
 */
-QN_INLINE void gl_mat4_irrcht_texture(QnMat4* m, float radius, float cx, float cy, float tx, float ty, float sx, float sy)
+QN_INLINE void gl_mat4_irrcht_texture(QmMat4* m, float radius, float cx, float cy, float tx, float ty, float sx, float sy)
 {
 	float c, s;
-	qn_sincosf(radius, &s, &c);
+	qm_sincosf(radius, &s, &c);
 
 	m->_11 = c * sx;
 	m->_12 = s * sy;

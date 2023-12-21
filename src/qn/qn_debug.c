@@ -154,8 +154,8 @@ noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg
 
 #ifndef __EMSCRIPTEN__
 	if (_qn_dbg.debugger) debug_break();
-	abort();
 #endif
+	abort();
 }
 
 //

@@ -1133,7 +1133,7 @@ void qn_dir_seek(QnDir* self, int pos)
 }
 
 //
-#ifndef _QN_WINDOWS_
+#if !defined _QN_WINDOWS_ && !defined __EMSCRIPTEN__
 static char* qn_internal_read_sym_link(const char* path)
 {
 	char* buf = NULL;
@@ -1190,7 +1190,7 @@ char* qn_dir_base_path(void)
 	path = qn_alloc(sz + 1, char);
 	qn_u16to8(path, sz + 1, pw, 0);
 	qn_free(pw);
-#else
+#elif defined _QN_BSD_ || defined _QN_LINUX_
 #if defined _QN_FREEBSD_
 	QN_STMT_BEGIN{
 		char fullpath[FILENAME_MAX];
@@ -1229,6 +1229,8 @@ char* qn_dir_base_path(void)
 			path = NULL;
 		}
 	}
+#elif defined __EMSCRIPTEN__
+	path = "/";
 #endif
 	return path;
 }

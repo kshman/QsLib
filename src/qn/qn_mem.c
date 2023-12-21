@@ -1,17 +1,7 @@
 ﻿#include "pch.h"
 #include "qs_qn.h"
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4702)
-#pragma warning(disable:4820)
+#ifndef __EMSCRIPTEN__
 #include "zlib/zlib.h"
-#pragma warning(pop)
-#else
-#include <zlib.h>
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(disable:4702)
 #endif
 
 //
@@ -47,6 +37,7 @@ void* qn_memdec(void* restrict dest, const void* restrict src, size_t size)
 //
 void* qn_memzcpr(const void* src, size_t srcsize, /*NULLABLE*/size_t* destsize)
 {
+#ifndef __EMSCRIPTEN__
 	qn_val_if_fail(src != NULL, NULL);
 	qn_val_if_fail(srcsize > 0, NULL);
 
@@ -64,11 +55,15 @@ void* qn_memzcpr(const void* src, size_t srcsize, /*NULLABLE*/size_t* destsize)
 		*destsize = tmp;
 
 	return p;
+#else
+	return NULL;
+#endif
 }
 
 //
 void* qn_memzucp(const void* src, size_t srcsize, size_t bufsize, /*NULLABLE*/size_t* destsize)
 {
+#ifndef __EMSCRIPTEN__
 	qn_val_if_fail(src != NULL, NULL);
 	qn_val_if_fail(srcsize > 0, NULL);
 
@@ -84,6 +79,9 @@ void* qn_memzucp(const void* src, size_t srcsize, size_t bufsize, /*NULLABLE*/si
 		*destsize = size;
 
 	return p;
+#else
+	return NULL;
+#endif
 }
 
 //
@@ -329,7 +327,7 @@ static DWORD qn_windows_mpf_exception(DWORD ex, const char* desc, size_t line, s
 	else
 		return EXCEPTION_CONTINUE_SEARCH;
 	qn_debug_halt("MEMORY PROFILER", sz);
-	return EXCEPTION_EXECUTE_HANDLER;
+	//return EXCEPTION_EXECUTE_HANDLER;
 }
 #endif
 
@@ -376,7 +374,7 @@ void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 	qn_mp_node_link(node);
 
 	return _memptr(node);
-	}
+}
 
 //
 void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)

@@ -5,9 +5,9 @@
 //////////////////////////////////////////////////////////////////////////
 // 뎁스 스텐실
 
-static void gl_dsm_dispose(QmGam* g);
+static void gl_dsm_dispose(QsGam* g);
 
-qv_name(QmGam) vt_gl_dsm =
+qv_name(QsGam) vt_gl_dsm =
 {
 	.name = "GLDsm",
 	.dispose = gl_dsm_dispose,
@@ -71,12 +71,12 @@ GlDsm* gl_dsm_allocator(QgRdh* rdh, const QgDepthStencilProp* prop)
 	p->stencil.mask.read = prop->mask_read;
 	p->stencil.mask.write = prop->mask_write;
 
-	return qm_init(self, GlDsm, &vt_gl_dsm);
+	return qs_init(self, GlDsm, &vt_gl_dsm);
 }
 
-static void gl_dsm_dispose(QmGam* g)
+static void gl_dsm_dispose(QsGam* g)
 {
-	GlDsm* self = qm_cast(g, GlDsm);
+	GlDsm* self = qs_cast(g, GlDsm);
 	qn_free(self);
 }
 
@@ -84,9 +84,9 @@ static void gl_dsm_dispose(QmGam* g)
 //////////////////////////////////////////////////////////////////////////
 // 래스터라이저
 
-static void gl_rsz_dispose(QmGam* g);
+static void gl_rsz_dispose(QsGam* g);
 
-qv_name(QmGam) vt_gl_rsz =
+qv_name(QsGam) vt_gl_rsz =
 {
 	.name = "GLRsz",
 	.dispose = gl_rsz_dispose,
@@ -106,11 +106,11 @@ GlRsz* gl_rsz_allocator(QgRdh* rdh, const QgRasterizerProp* prop)
 	p->depth_bias = prop->depth_bias;
 	p->slope_scale = prop->slope_scale;
 
-	return qm_init(self, GlRsz, &vt_gl_rsz);
+	return qs_init(self, GlRsz, &vt_gl_rsz);
 }
 
-static void gl_rsz_dispose(QmGam* g)
+static void gl_rsz_dispose(QsGam* g)
 {
-	GlRsz* self = qm_cast(g, GlRsz);
+	GlRsz* self = qs_cast(g, GlRsz);
 	qn_free(self);
 }

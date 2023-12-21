@@ -618,7 +618,7 @@ bool stub_internal_on_event_layout(bool enter)
 	}
 	QN_SMASK(&stub->stats, QGSSTT_LAYOUT, false);
 
-	QnSize prev = stub->size;
+	QmSize prev = stub->size;
 	stub_system_calc_layout();
 	if (prev.width != stub->size.width || prev.height != stub->size.height)
 	{
@@ -656,12 +656,12 @@ bool stub_internal_on_window_event(QgWindowEventType type, int param1, int param
 		case QGWEV_MOVED:
 			if (stub->window_bound.left == param1 && stub->window_bound.top == param2)
 				return 0;
-			qn_rect_move(&stub->window_bound, param1, param2);
+			qm_rect_move(&stub->window_bound, param1, param2);
 			break;
 		case QGWEV_SIZED:
-			if (qn_rect_width(&stub->window_bound) == param1 && qn_rect_height(&stub->window_bound) == param2)
+			if (qm_rect_width(&stub->window_bound) == param1 && qm_rect_height(&stub->window_bound) == param2)
 				return 0;
-			qn_rect_size(&stub->window_bound, param1, param2);
+			qm_rect_size(&stub->window_bound, param1, param2);
 			break;
 			//case QGWEV_GOTFOCUS:
 			//case QGWEV_LOSTFOCUS:
@@ -838,7 +838,7 @@ bool stub_internal_on_mouse_wheel(float x, float y, bool direction)
 {
 	QgUimMouse* um = &qg_stub_instance->mouse;
 
-	if (qn_eqf(x, 0.0f) && qn_eqf(y, 0.0f))
+	if (qm_eqf(x, 0.0f) && qm_eqf(y, 0.0f))
 		return 0;
 
 	if (x > 0.0f)
@@ -873,8 +873,8 @@ bool stub_internal_on_mouse_wheel(float x, float y, bool direction)
 		(um->wheel.accm.y < 0.0f) ? (int)ceilf(um->wheel.accm.y) : 0;
 	um->wheel.accm.y -= iy;
 
-	qn_point_set(&um->wheel.integral, ix, iy);
-	qn_vec2_set(&um->wheel.precise, x, y);
+	qm_point_set(&um->wheel.integral, ix, iy);
+	qm_vec2_set(&um->wheel.precise, x, y);
 
 	const QgEvent e =
 	{

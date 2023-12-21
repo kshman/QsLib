@@ -2,7 +2,7 @@
 #include "qs_qn.h"
 
 // 만들었슴
-QmGam* qm_stc_init(QmGam* restrict self, void* restrict vt)
+QsGam* qs_sc_init(QsGam* restrict self, void* restrict vt)
 {
 	self->vt = vt;
 	self->ref = 1;
@@ -10,14 +10,14 @@ QmGam* qm_stc_init(QmGam* restrict self, void* restrict vt)
 }
 
 // 로드
-QmGam* qm_stc_load(QmGam* restrict self)
+QsGam* qs_sc_load(QsGam* restrict self)
 {
 	self->ref++;
 	return self;
 }
 
 // 언로드
-QmGam* qm_stc_unload(QmGam* restrict self)
+QsGam* qs_sc_unload(QsGam* restrict self)
 {
 	const volatile int ref = (int)--self->ref;
 	if (ref != 0)
@@ -30,19 +30,19 @@ QmGam* qm_stc_unload(QmGam* restrict self)
 }
 
 //
-size_t qm_stc_get_ref(QmGam* restrict self)
+size_t qs_sc_get_ref(QsGam* restrict self)
 {
 	return self->ref;
 }
 
 //
-nuint qm_stc_get_desc(const QmGam* restrict self)
+nuint qs_sc_get_desc(const QsGam* restrict self)
 {
 	return self->desc;
 }
 
 //
-QSAPI nuint qm_stc_set_desc(QmGam* restrict self, nuint ptr)
+QSAPI nuint qs_sc_set_desc(QsGam* restrict self, nuint ptr)
 {
 	const nuint prev = self->desc;
 	self->desc = ptr;

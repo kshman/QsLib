@@ -2129,25 +2129,25 @@ QSAPI bool qn_sem_post(QnSem* self);
 // gam 
 
 /// @brief GAM 할거리를 의미. 영어로 OBJECT
-typedef struct QmGam		QmGam;
+typedef struct QsGam		QsGam;
 
 /// @brief GAM 가상 테이블 이름을 얻는다
 #define qv_name(type)		struct _vt_##type
 /// @brief GAM 가상 테이블로 GAM 포인터를 캐스팅한다
-#define qv_cast(g,type)		((struct _vt_##type*)((QmGam*)(g))->vt)
+#define qv_cast(g,type)		((struct _vt_##type*)((QsGam*)(g))->vt)
 
 /// @brief GAM 포인터를 다른 타입으로 캐스팅한다
-#define qm_cast(g,type)		((type*)(g))
+#define qs_cast(g,type)		((type*)(g))
 
-qv_name(QmGam)
+qv_name(QsGam)
 {
 	const char* name;
-	void (*dispose)(QmGam*);
+	void (*dispose)(QsGam*);
 };
 
-struct QmGam
+struct QsGam
 {
-	qv_name(QmGam)*	vt;
+	qv_name(QsGam)*	vt;
 	volatile nint	ref;
 	nuint			desc;
 };
@@ -2157,46 +2157,46 @@ struct QmGam
 /// @param vt 가상 테이블
 /// @return 현재 오브젝트 그대로
 ///
-QSAPI QmGam* qm_stc_init(QmGam* restrict g, void* restrict vt);
+QSAPI QsGam* qs_sc_init(QsGam* restrict g, void* restrict vt);
 /// @brief 참조를 추가한다.
 /// @param g 현재 오브젝트
 /// @return 현재 오브젝트 그대로
 ///
-QSAPI QmGam* qm_stc_load(QmGam* restrict g);
+QSAPI QsGam* qs_sc_load(QsGam* restrict g);
 /// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
 /// @param g 현재 오브젝트
 /// @return 현재 오브젝트 그대로
 ///
-QSAPI QmGam* qm_stc_unload(QmGam* restrict g);
+QSAPI QsGam* qs_sc_unload(QsGam* restrict g);
 /// @brief 참조를 얻는다
 /// @param g 현재 오브젝트
 /// @return 현재 참조값
 ///
-QSAPI size_t qm_stc_get_ref(QmGam* restrict g);
+QSAPI size_t qs_sc_get_ref(QsGam* restrict g);
 /// @brief 표현자(디스크립터)를 얻는다
 /// @param g 현재 오브젝트
 /// @return 현재 표현자
 ///
-QSAPI nuint qm_stc_get_desc(const QmGam* restrict g);
+QSAPI nuint qs_sc_get_desc(const QsGam* restrict g);
 /// @brief 표현자(디스크립터)를 쓴다
 /// @param g 현재 오브젝트
 /// @param ptr 표현자(디스크립터)
 /// @return 설정하기 전에 갖고 있던 이전 표현자
 ///
-QSAPI nuint qm_stc_set_desc(QmGam* restrict g, nuint ptr);
+QSAPI nuint qs_sc_set_desc(QsGam* restrict g, nuint ptr);
 
 /// @brief GAM 가상 테이블을 초기화하고 GAM 포인터 반환
-#define qm_init(g,type,pvt)	((type*)qm_stc_init((QmGam*)(g), pvt))
+#define qs_init(g,type,pvt)	((type*)qs_sc_init((QsGam*)(g), pvt))
 /// @brief 참조를 추가한다
-#define qm_load(g)			((g) ? qm_stc_load((QmGam*)(g)) : NULL)
+#define qs_load(g)			((g) ? qs_sc_load((QsGam*)(g)) : NULL)
 /// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
-#define qm_unload(g)		((g) ? qm_stc_unload((QmGam*)(g)) : NULL)
+#define qs_unload(g)		((g) ? qs_sc_unload((QsGam*)(g)) : NULL)
 /// @brief 참조를 얻는다
-#define qm_get_ref(g)		qm_stc_get_ref((QmGam*)(g))
+#define qs_get_ref(g)		qs_sc_get_ref((QsGam*)(g))
 /// @brief 표현자(디스크립터)를 얻는다
-#define qm_get_desc(g,type)	(type)qm_stc_get_desc((QmGam*)(g))
+#define qs_get_desc(g,type)	(type)qs_sc_get_desc((QsGam*)(g))
 /// @brief 표현자(디스크립터)를 쓴다
-#define qm_set_desc(g,ptr)	qm_stc_set_desc((QmGam*)(g),(nuint)(ptr))
+#define qs_set_desc(g,ptr)	qs_sc_set_desc((QsGam*)(g),(nuint)(ptr))
 
 
 //////////////////////////////////////////////////////////////////////////

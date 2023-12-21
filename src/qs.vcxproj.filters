@@ -132,6 +132,9 @@
     <ClInclude Include="qg\glad\glad_proxy.h">
       <Filter>헤더 파일\qg\glad</Filter>
     </ClInclude>
+    <ClInclude Include="qs_conf.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.c">
@@ -149,13 +152,13 @@
     <ClCompile Include="qn\qn_file.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="qn\qn_gam.c">
+    <ClCompile Include="qn\qs_gam.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
     <ClCompile Include="qn\qn_hash.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="qn\qn_math.c">
+    <ClCompile Include="qn\qm_math.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
     <ClCompile Include="qn\qn_mem.c">

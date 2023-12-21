@@ -33,9 +33,9 @@ struct StubBase
 	double				run;								/** @brief 실행 시간 */
 	double				active;								/** @brief 활성화된 시간 */
 
-	QnRect				window_bound;
-	QnRect				bound;								// 시스템 스터브 관리
-	QnSize				size;								// 시스템 스터브 관리
+	QmRect				window_bound;
+	QmRect				bound;								// 시스템 스터브 관리
+	QmSize				size;								// 시스템 스터브 관리
 
 	QgUimKey			key;
 	QgUimMouse			mouse;
@@ -100,7 +100,7 @@ extern QgRdh* qg_rdh_instance;
  * @brief 렌더러 최종 제거
  * @param g 렌더러
 */
-extern void rdh_internal_dispose(QmGam* g);
+extern void rdh_internal_dispose(QsGam* g);
 /**
  * @brief 렌더러 내부 리셋
  * @param self 렌더러
