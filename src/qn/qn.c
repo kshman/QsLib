@@ -159,7 +159,7 @@ void qn_set_prop(const char* restrict name, const char* restrict value)
 }
 
 //
-const char* qn_get_prop(const char* restrict name)
+const char* qn_get_prop(const char* name)
 {
 	qn_val_if_fail(name != NULL, NULL);
 	char** ret;

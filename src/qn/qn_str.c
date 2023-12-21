@@ -19,7 +19,7 @@ int qn_vsnprintf(char* restrict out, size_t len, const char* restrict fmt, va_li
 }
 
 //
-int qn_vasprintf(char** out, const char* restrict fmt, va_list va)
+int qn_vasprintf(char** out, const char* fmt, va_list va)
 {
 	qn_val_if_fail(out != NULL, -2);
 	qn_val_if_fail(fmt != NULL, -1);
@@ -40,7 +40,7 @@ int qn_vasprintf(char** out, const char* restrict fmt, va_list va)
 }
 
 //
-char* qn_vapsprintf(const char* restrict fmt, va_list va)
+char* qn_vapsprintf(const char* fmt, va_list va)
 {
 	qn_val_if_fail(fmt != NULL, NULL);
 
@@ -69,7 +69,7 @@ int qn_snprintf(char* restrict out, size_t len, const char* restrict fmt, ...)
 }
 
 //
-int qn_asprintf(char** out, const char* restrict fmt, ...)
+int qn_asprintf(char** out, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -80,7 +80,7 @@ int qn_asprintf(char** out, const char* restrict fmt, ...)
 }
 
 //
-char* qn_apsprintf(const char* restrict fmt, ...)
+char* qn_apsprintf(const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -91,7 +91,7 @@ char* qn_apsprintf(const char* restrict fmt, ...)
 }
 
 //
-size_t qn_strfll(char* restrict dest, size_t pos, size_t end, int ch)
+size_t qn_strfll(char* dest, size_t pos, size_t end, int ch)
 {
 	if (pos >= end)
 		return pos;
@@ -191,7 +191,7 @@ char* qn_strmid(char* restrict dest, size_t destsize, const char* restrict src, 
 }
 
 //
-char* qn_strltm(char* restrict dest)
+char* qn_strltm(char* dest)
 {
 	char* s;
 	for (s = dest; *s && isspace(*s); s++) {}
@@ -201,7 +201,7 @@ char* qn_strltm(char* restrict dest)
 }
 
 //
-char* qn_strrtm(char* restrict dest)
+char* qn_strrtm(char* dest)
 {
 	size_t len = strlen(dest);
 	while (len--)
@@ -214,7 +214,7 @@ char* qn_strrtm(char* restrict dest)
 }
 
 //
-char* qn_strtrm(char* restrict dest)
+char* qn_strtrm(char* dest)
 {
 	return qn_strrtm(qn_strltm(dest));
 }
@@ -627,7 +627,7 @@ int qn_vsnwprintf(wchar* restrict out, size_t len, const wchar* restrict fmt, va
 }
 
 //
-int qn_vaswprintf(wchar** out, const wchar* restrict fmt, va_list va)
+int qn_vaswprintf(wchar** out, const wchar* fmt, va_list va)
 {
 	qn_val_if_fail(out != NULL, -2);
 	qn_val_if_fail(fmt != NULL, -1);
@@ -645,7 +645,7 @@ int qn_vaswprintf(wchar** out, const wchar* restrict fmt, va_list va)
 }
 
 //
-wchar* qn_vapswprintf(const wchar* restrict fmt, va_list va)
+wchar* qn_vapswprintf(const wchar* fmt, va_list va)
 {
 	qn_val_if_fail(fmt != NULL, NULL);
 
@@ -684,7 +684,7 @@ int qn_aswprintf(wchar** out, const wchar* restrict fmt, ...)
 }
 
 //
-wchar* qn_apswprintf(const wchar* restrict fmt, ...)
+wchar* qn_apswprintf(const wchar* fmt, ...)
 {
 	va_list va;
 
@@ -696,7 +696,7 @@ wchar* qn_apswprintf(const wchar* restrict fmt, ...)
 }
 
 //
-size_t qn_wcsfll(wchar* restrict dest, size_t pos, size_t end, int ch)
+size_t qn_wcsfll(wchar* dest, size_t pos, size_t end, int ch)
 {
 	if (pos >= end)
 		return pos;
@@ -773,7 +773,7 @@ wchar* qn_wcsmid(wchar* restrict dest, size_t destsize, const wchar* restrict sr
 }
 
 //
-wchar* qn_wcsltm(wchar* restrict dest)
+wchar* qn_wcsltm(wchar* dest)
 {
 	wchar* s;
 	for (s = dest; *s && iswspace(*s); s++) {}
@@ -783,7 +783,7 @@ wchar* qn_wcsltm(wchar* restrict dest)
 }
 
 //
-wchar* qn_wcsrtm(wchar* restrict dest)
+wchar* qn_wcsrtm(wchar* dest)
 {
 	size_t len = wcslen(dest);
 	while (len--)
@@ -796,7 +796,7 @@ wchar* qn_wcsrtm(wchar* restrict dest)
 }
 
 //
-wchar* qn_wcstrm(wchar* restrict dest)
+wchar* qn_wcstrm(wchar* dest)
 {
 	return qn_wcsrtm(qn_wcsltm(dest));
 }
@@ -1244,7 +1244,7 @@ size_t qn_u8lcpy(char* restrict dest, const char* restrict src, size_t len)
 }
 
 //
-int qn_u32ucb(uchar4 c, char* restrict out)
+int qn_u32ucb(uchar4 c, char* out)
 {
 	int first, len;
 
@@ -1300,7 +1300,7 @@ static uchar4 _utf16_surrogate(uchar2 h, uchar2 l)
 }
 
 //
-int qn_u16ucb(uchar2 high, uchar2 low, char* restrict out)
+int qn_u16ucb(uchar2 high, uchar2 low, char* out)
 {
 	uchar4 ucs4 = _utf16_surrogate(high, low);
 	return qn_u32ucb(ucs4, out);
@@ -1878,7 +1878,7 @@ size_t qn_u32to16(uchar2* restrict dest, size_t destsize, const uchar4* restrict
 }
 
 #define DEF_UTF_DUP(name, in_type, out_type)\
-	out_type* name##_dup(const in_type* restrict src, size_t srclen) {\
+	out_type* name##_dup(const in_type* src, size_t srclen) {\
 		size_t len=name(NULL,0,src,srclen)+1; qn_val_if_ok(len<2,NULL);\
 		out_type* buf=qn_alloc(len, out_type); name(buf,len,src,srclen);\
 		return buf; }

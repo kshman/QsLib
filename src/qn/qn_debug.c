@@ -243,7 +243,7 @@ char* qn_syserr(int errcode, int* len)
 }
 
 //
-int qn_debug_output_syserr(bool breakpoint, const char* restrict head, int errcode)
+int qn_debug_output_syserr(bool breakpoint, const char* head, int errcode)
 {
 	char* ps = qn_syserr(errcode, NULL);
 	const int len = qn_debug_out_trace(head, ps);
@@ -257,7 +257,7 @@ int qn_debug_output_syserr(bool breakpoint, const char* restrict head, int errco
 }
 
 //
-int qn_outputs(const char* restrict mesg)
+int qn_outputs(const char* mesg)
 {
 	const int len = qn_debug_out_str(mesg);
 	qn_debug_out_ch('\n');
@@ -265,7 +265,7 @@ int qn_outputs(const char* restrict mesg)
 }
 
 //
-int qn_outputf(const char* restrict fmt, ...)
+int qn_outputf(const char* fmt, ...)
 {
 	va_list va, vq;
 	va_start(va, fmt);

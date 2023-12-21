@@ -45,7 +45,7 @@ void* qn_memdec(void* restrict dest, const void* restrict src, size_t size)
 }
 
 //
-void* qn_memzcpr(const void* restrict src, size_t srcsize, /*NULLABLE*/size_t* destsize)
+void* qn_memzcpr(const void* src, size_t srcsize, /*NULLABLE*/size_t* destsize)
 {
 	qn_val_if_fail(src != NULL, NULL);
 	qn_val_if_fail(srcsize > 0, NULL);
@@ -67,7 +67,7 @@ void* qn_memzcpr(const void* restrict src, size_t srcsize, /*NULLABLE*/size_t* d
 }
 
 //
-void* qn_memzucp(const void* restrict src, size_t srcsize, size_t bufsize, /*NULLABLE*/size_t* destsize)
+void* qn_memzucp(const void* src, size_t srcsize, size_t bufsize, /*NULLABLE*/size_t* destsize)
 {
 	qn_val_if_fail(src != NULL, NULL);
 	qn_val_if_fail(srcsize > 0, NULL);
@@ -342,7 +342,7 @@ static void qn_mpf_out_of_memory(const char* desc, size_t line, size_t size, siz
 }
 
 //
-void* qn_mpfalloc(size_t size, bool zero, const char* restrict desc, size_t line)
+void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 {
 	qn_val_if_fail(size, NULL);
 
@@ -379,7 +379,7 @@ void* qn_mpfalloc(size_t size, bool zero, const char* restrict desc, size_t line
 	}
 
 //
-void* qn_mpfreloc(void* ptr, size_t size, const char* restrict desc, size_t line)
+void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 {
 	if (!ptr)
 		return qn_mpfalloc(size, false, desc, line);
