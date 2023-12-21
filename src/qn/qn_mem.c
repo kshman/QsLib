@@ -15,7 +15,7 @@
 #endif
 
 //
-void* qn_memenc(void* dest, const void* src, size_t size)
+void* qn_memenc(void* restrict dest, const void* restrict src, size_t size)
 {
 	const byte* ps = (const byte*)src;
 	byte* pd = (byte*)dest;
@@ -30,7 +30,7 @@ void* qn_memenc(void* dest, const void* src, size_t size)
 }
 
 //
-void* qn_memdec(void* dest, const void* src, size_t size)
+void* qn_memdec(void* restrict dest, const void* restrict src, size_t size)
 {
 	const byte* ps = (const byte*)src;
 	byte* pd = (byte*)dest;
@@ -120,7 +120,7 @@ char qn_memhrb(size_t size, double* out)
 }
 
 //
-char* qn_memdmp(const void* ptr, size_t size, char* outbuf, size_t buflen)
+char* qn_memdmp(const void* restrict ptr, size_t size, char* restrict outbuf, size_t buflen)
 {
 	qn_val_if_fail(ptr != NULL, NULL);
 	qn_val_if_fail(outbuf != NULL, NULL);

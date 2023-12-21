@@ -53,7 +53,7 @@ void qn_debug_dispose(void)
 }
 
 //
-static int qn_debug_out_str(const char* s)
+static int qn_debug_out_str(const char* restrict s)
 {
 #if _QN_WINDOWS_
 	DWORD len = (DWORD)strlen(s);
@@ -105,7 +105,7 @@ static int qn_debug_out_ch(int ch)
 }
 
 //
-static int qn_debug_out_trace(const char* head, const char* text)
+static int qn_debug_out_trace(const char* restrict head, const char* restrict text)
 {
 	if (head == NULL)
 		head = "unknown";
@@ -118,7 +118,7 @@ static int qn_debug_out_trace(const char* head, const char* text)
 }
 
 ///
-int qn_debug_assert(const char* expr, const char* mesg, const char* filename, int line)
+int qn_debug_assert(const char* restrict expr, const char* restrict mesg, const char* restrict filename, int line)
 {
 	qn_val_if_fail(expr, -1);
 	qn_debug_out_str(expr);
@@ -141,10 +141,7 @@ int qn_debug_assert(const char* expr, const char* mesg, const char* filename, in
 }
 
 //
-#if _MSC_VER
-__declspec(noreturn)
-#endif
-void qn_debug_halt(const char* head, const char* mesg)
+noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg)
 {
 	if (head == NULL)
 		head = "unknown";
@@ -162,7 +159,7 @@ void qn_debug_halt(const char* head, const char* mesg)
 }
 
 //
-int qn_debug_outputs(bool breakpoint, const char* head, const char* mesg)
+int qn_debug_outputs(bool breakpoint, const char* restrict head, const char* restrict mesg)
 {
 	const int len = qn_debug_out_trace(head, mesg);
 	qn_debug_out_ch('\n');
@@ -174,7 +171,7 @@ int qn_debug_outputs(bool breakpoint, const char* head, const char* mesg)
 }
 
 //
-int qn_debug_outputf(bool breakpoint, const char* head, const char* fmt, ...)
+int qn_debug_outputf(bool breakpoint, const char* restrict head, const char* restrict fmt, ...)
 {
 	va_list va, vq;
 	va_start(va, fmt);

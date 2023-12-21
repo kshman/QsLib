@@ -226,6 +226,22 @@ ClientBin/
 *.publishsettings
 orleans.codegen.cs
 
-#doxygen
+# doxygen
 Doxyfile
 builds/doxygen/
+
+# cmake
+**/cmake-build-debug
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/install_manifest.txt
+**/CMakeFiles/
+**/CTestTestfile.cmake
+**/Makefile
+**/*.cbp
+**/CMakeScripts
+**/compile_commands.json
+**/CPackConfig.cmake
+**/CPackSourceConfig.cmake
+**/DartConfiguration.tcl
+**/cmake/Makefile

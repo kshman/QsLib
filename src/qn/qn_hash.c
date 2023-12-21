@@ -69,7 +69,7 @@ size_t qn_hashfn(int prime8, func_t func, const void* data)
  * @param[in] size 크기
  * @return 정수 값
  */
-static uint64_t qn_crc64(const byte* data, size_t size)
+static uint64_t qn_crc64(const byte* restrict data, size_t size)
 {
 	// https://github.com/srned/baselib/blob/master/crc64.c
 	/* Redis uses the CRC64 variant with "Jones" coefficients and init value of 0.
@@ -190,7 +190,7 @@ static uint64_t qn_crc64(const byte* data, size_t size)
  * @param[in] size 크기
  * @return 정수 값
  */
-static uint32_t qn_crc32(const byte* data, size_t size)
+static uint32_t qn_crc32(const byte* restrict data, size_t size)
 {
 	static const uint32_t crc32_table[] =
 	{

@@ -147,7 +147,7 @@ size_t qn_number(void)
 }
 
 //
-void qn_set_prop(const char* name, const char* value)
+void qn_set_prop(const char* restrict name, const char* restrict value)
 {
 	qn_ret_if_fail(name != NULL);
 	QN_LOCK(_qn_rt.lock);

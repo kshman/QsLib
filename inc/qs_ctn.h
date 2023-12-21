@@ -1,15 +1,10 @@
-﻿/*
- * QsLib [CONTAINER Layer]
- * Made by kim 2004-2024
- *
- * 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
- * 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
- */
- /**
-  * @file qs_math.h
-  *
-  * [CONTAINER Layer]는 C 매크로 및 인라인으로 컨테이너 구현을 목표로 합니다.
-  */
+﻿//
+// QsLib [CONTAINER Layer]
+// Made by kim 2004-2024
+//
+// 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
+// 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
+//
 #pragma once
 
 #ifdef _MSC_VER
@@ -25,19 +20,18 @@ QN_EXTC_BEGIN
 //////////////////////////////////////////////////////////////////////////
 // array
 
-/**
- * @brief 동적 배열 정의
- * @param name 배열 이름
- * @param type 배열 요소 타입
- */
+/// @brief 동적 배열 정의
+/// @param name 배열 이름
+/// @param type 배열 요소 타입
+///
 #define QN_DECL_ARR(name,type)\
 	typedef struct name name;\
 	typedef type name##Type;\
 	struct name { size_t count; size_t capa; type* data; };
-QN_DECL_ARR(QnPtrArr, void*)								/** @brief 포인터 배열 */
-QN_DECL_ARR(QnByteArr, byte)								/** @brief 바이트 배열 */
-QN_DECL_ARR(QnIntArr, int)									/** @brief 정수 배열 */
-QN_DECL_ARR(QnAnyArr, any_t)								/** @brief any_t 배열 */
+QN_DECL_ARR(QnPtrArr, void*)								/// @brief 포인터 배열
+QN_DECL_ARR(QnByteArr, byte)								/// @brief 바이트 배열
+QN_DECL_ARR(QnIntArr, int)									/// @brief 정수 배열
+QN_DECL_ARR(QnAnyArr, any_t)								/// @brief any_t 배열
 
 #define qn_arr_nth(p,n)					(((p)->data)[(size_t)(n)])
 #define qn_arr_inv(p,n)					(((p)->data)[((p)->count - 1 - (size_t)(n))])
@@ -133,7 +127,6 @@ QN_DECL_ARR(QnAnyArr, any_t)								/** @brief any_t 배열 */
 #define qn_arr_sort_context(name,p,func,userdata)\
 	(qn_qsortc((p)->data, (p)->count, qn_arr_sizeof(name), func, userdata))
 
-	/* value type */
 #define qn_arr_add(name,p,item)\
 	QN_STMT_BEGIN{\
 		if ((p)->count>=(p)->capa)\
@@ -298,19 +291,18 @@ QN_DECL_ARR(QnAnyArr, any_t)								/** @brief any_t 배열 */
 //////////////////////////////////////////////////////////////////////////
 // container
 
-/**
- * @brief 정정 배열 정의(컨테이너)
- * @param name 배열 이름
- * @param type 배열 요소 타입
- */
+/// @brief 정정 배열 정의(컨테이너)
+/// @param name 배열 이름
+/// @param type 배열 요소 타입
+///
 #define QN_DECL_CTNR(name,type)\
 	typedef struct name name;\
 	typedef type name##Type;\
 	struct name { size_t count; type* data; };
-QN_DECL_CTNR(QnPtrCtnr, void*)								/** @brief 포인터 배열 */
-QN_DECL_CTNR(QnByteCtn, byte)								/** @brief 바이트 배열 */
-QN_DECL_CTNR(QnIntCtn, int)									/** @brief 정수 배열 */
-QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
+QN_DECL_CTNR(QnPtrCtnr, void*)								/// @brief 포인터 배열
+QN_DECL_CTNR(QnByteCtn, byte)								/// @brief 바이트 배열
+QN_DECL_CTNR(QnIntCtn, int)									/// @brief 정수 배열
+QN_DECL_CTNR(QnAnyCtn, any_t)								/// @brief any_t 배열
 
 #ifdef _DEBUG
 #define qn_ctnr_nth_safe(p,n)\
@@ -451,14 +443,13 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 #define qn_pctnr_loopeach(p, func)		qn_ctnr_loopeach(qnPtrCtnr, (qnPtrCtnr*)(p), func)
 
 
-//////////////////////////////////////////////////////////////////////////
-// list
+	//////////////////////////////////////////////////////////////////////////
+	// list
 
-/**
- * @brief 이중 연결 리스트 정의
- * @param name 리스트 이름
- * @param type 리스트 요소 타입
- */
+	/// @brief 이중 연결 리스트 정의
+	/// @param name 리스트 이름
+	/// @param type 리스트 요소 타입
+	///
 #define QN_DECL_LIST(name,type)\
 	typedef struct name name;\
 	typedef type name##Type;\
@@ -751,11 +742,10 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/** @brief any_t 배열 */
 //////////////////////////////////////////////////////////////////////////
 // node list
 
-/**
- * @brief 노드 리스트 정의
- * @param name 노드 리스트 이름
- * @param type 노드 리스트 요소 타입
- */
+/// @brief 노드 리스트 정의
+/// @param name 노드 리스트 이름
+/// @param type 노드 리스트 요소 타입
+///
 #define QN_DECL_NODELIST(name,type)\
 	typedef struct name name;\
 	typedef type name##Type;\
@@ -967,11 +957,10 @@ QN_INLINE bool qn_plist_find(const QnPtrList* p, bool (*pred)(void*, void*), voi
 //////////////////////////////////////////////////////////////////////////
 // solo list
 
-/**
- * @brief 단일 리스트 정의
- * @param name 단일 리스트 이름
- * @param type 단일 리스트 요소 타입
- */
+/// @brief 단일 리스트 정의
+/// @param name 단일 리스트 이름
+/// @param type 단일 리스트 요소 타입
+///
 #define QN_DECL_SLIST(name,type)\
 	typedef struct name name;\
 	typedef type name##Type;\
@@ -1411,11 +1400,10 @@ QN_INLINE QnPtrSlist* qn_pslist_contains(QnPtrSlist* p, const void* item)
 //////////////////////////////////////////////////////////////////////////
 // fixed slice
 
-/**
- * @brief 슬라이스(최대 개수를 지정할 수 있는 반-동적 배열) 정의
- * @param name 슬라이스 이름
- * @param type 슬라이스 요소 타입
- */
+/// @brief 슬라이스(최대 개수를 지정할 수 있는 반-동적 배열) 정의
+/// @param name 슬라이스 이름
+/// @param type 슬라이스 요소 타입
+///
 #define QN_DECL_SLICE(name, type)\
 	typedef struct name name;\
 	typedef type name##Type;\
@@ -1662,15 +1650,14 @@ QN_INLINE QnPtrSlist* qn_pslist_contains(QnPtrSlist* p, const void* item)
 	}QN_STMT_END
 
 
- //////////////////////////////////////////////////////////////////////////
- // hash
+//////////////////////////////////////////////////////////////////////////
+// hash
 
- /**
-  * @brief 해시 리스트 정의
-  * @param name 해시 리스트 이름
-  * @param keytype 키 타입
-  * @param valuetype 값 타입
-  */
+/// @brief 해시 리스트 정의
+/// @param name 해시 리스트 이름
+/// @param keytype 키 타입
+/// @param valuetype 값 타입
+///
 #define QN_DECL_HASH(name,keytype,valuetype)\
 	typedef struct name name;\
 	typedef keytype name##Key;\
@@ -1679,48 +1666,48 @@ QN_INLINE QnPtrSlist* qn_pslist_contains(QnPtrSlist* p, const void* item)
 	struct name { size_t revision; size_t bucket; size_t count; struct name##Node **nodes, *frst, *last; };
 QN_DECL_HASH(QnInlineHash, size_t, size_t)
 
-/** @brief 키 해시 */
+/// @brief 키 해시
 #define QN_HASH_HASH(name,fn1)			QN_INLINE size_t name##_hash(const name##Key* key) { return fn1(*key); }
-/** @brief 키 비교 */
+/// @brief 키 비교
 #define QN_HASH_EQ(name,fn2)			QN_INLINE bool name##_eq(const name##Key* l, const name##Key* r) { return fn2(*l, *r); }
-/** @brief 키 지우기 */
+/// @brief 키 지우기
 #define QN_HASH_KEY(name,fn1)			QN_INLINE void name##_key(name##Key* key) { fn1(*key); }
 #define QN_HASH_KEY_FREE(name)			QN_INLINE void name##_key(name##Key* key) { qn_free(*key); }
 #define QN_HASH_KEY_NONE(name)			QN_INLINE void name##_key(name##Key* key) { }
-/** @brief 값 지우기 */
+/// @brief 값 지우기
 #define QN_HASH_VALUE(name,fn1)			QN_INLINE void name##_value(name##Value* value) { fn1(*value); }
 #define QN_HASH_VALUE_FREE(name)		QN_INLINE void name##_value(name##Value* value) { qn_free(*value); }
 #define QN_HASH_VALUE_NONE(name)		QN_INLINE void name##_value(name##Value* value) { }
-/** @brief 정수 키의 해시/비교 */
+/// @brief 정수 키의 해시/비교
 #define QN_HASH_INT_KEY(name)			QN_INLINE size_t name##_hash(const int* key) { return (size_t)(*key); }\
 										QN_INLINE bool name##_eq(const int* k1, const int* k2) { return (*k1)==(*k2); }
-/** @brief 부호없는 정수 키의 해시/비교 */
+/// @brief 부호없는 정수 키의 해시/비교
 #define QN_HASH_UINT_KEY(name)			QN_INLINE size_t name##_hash(const uint* key) { return (size_t)(*key); }\
 										QN_INLINE bool name##_eq(const uint* k1, const uint* k2) { return *k1==*k2; }
-/** @brief size_t 키의 해시/비교 */
+/// @brief size_t 키의 해시/비교
 #define QN_HASH_SIZE_T_KEY(name)		QN_INLINE size_t name##_hash(const size_t* key) { return *key; }\
 										QN_INLINE bool name##_eq(const size_t* k1, const size_t* k2) { return (*k1)==(*k2); }
-/** @brief char* 키의 해시/비교 */
+/// @brief char* 키의 해시/비교
 #define QN_HASH_CHAR_PTR_KEY(name)		QN_INLINE size_t name##_hash(char* const* key) { return qn_strhash(*key); }\
 										QN_INLINE bool name##_eq(char* const* k1, char* const* k2) { return qn_streqv(*k1, *k2); }
-/** @brief wchar* 키의 해시/비교 */
+/// @brief wchar* 키의 해시/비교
 #define QN_HASH_WCHAR_PTR_KEY(name)		QN_INLINE size_t name##_hash(const wchar** key) { return qn_wcshash(*key); }\
 										QN_INLINE bool name##_eq(const wchar** k1, const wchar** k2) { return qn_wcseqv(*k1, *k2); }
 
-/** @brief 아이템 갯수 */
+/// @brief 아이템 갯수
 #define qn_hash_count(p)				((p)->count)
-/** @brief 해시 버킷수 */
+/// @brief 해시 버킷수
 #define qn_hash_bucket(p)				((p)->bucket)
-/** @brief 해시 변경치 */
+/// @brief 해시 변경치
 #define qn_hash_revision(p)				((p)->revision)
-/** @brief 아이템이 있다 */
+/// @brief 아이템이 있다
 #define qn_hash_is_have(p)				((p)->count>0)
-/** @brief 첫 노드 */
+/// @brief 첫 노드
 #define qn_hash_node_first(p)			((p)->last)
-/** @brief 마지막 노드 */
+/// @brief 마지막 노드
 #define qn_hash_node_last(p)			((p)->frst)
 
-/** @brief 해시 초기화 */
+/// @brief 해시 초기화
 #define qn_hash_init(name,p)\
 	QN_STMT_BEGIN{\
 		(p)->revision=0;\
@@ -1730,7 +1717,7 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 		(p)->frst=(p)->last=NULL;\
 	}QN_STMT_END
 
-/** @brief 해시 제거 */
+/// @brief 해시 제거
 #define qn_hash_disp(name,p)\
 	QN_STMT_BEGIN{\
 		for (struct name##Node* __next, *__node=(p)->frst; __node; __node=__next)\
@@ -1743,11 +1730,11 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 		qn_free((p)->nodes);\
 	}QN_STMT_END
 
-/** @brief 해시 비우기 */
+/// @brief 해시 비우기
 #define qn_hash_clear(name,p)\
 	qn_inl_hash_erase_all(name,p); qn_inl_hash_test_size(name,p)
 
-/** @brief 노드 제거 */
+/// @brief 노드 제거
 #define qn_hash_remove_node(name,p,node)\
 	QN_STMT_BEGIN{\
 		struct name##Node** __ppn=&(node);\
@@ -1755,54 +1742,44 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 		qn_inl_hash_test_size(name,p);\
 	}QN_STMT_END
 
-/**
- * @brief 해시 for each
- * @param func3 for each 함수 포인터. 인수는(data,keyptr,valueptr)
- * @param data for each 함수 포인터 첫 인수
- * @return
- */
+/// @brief 해시 for each
+/// @param func3 for each 함수 포인터. 인수는(data,keyptr,valueptr)
+/// @param data for each 함수 포인터 첫 인수
+///
 #define qn_hash_foreach(name,p,func3,data)\
 	QN_STMT_BEGIN{\
 		for (struct name##Node* __node=(p)->last; __node; __node=__node->prev) func3(data, &__node->key, &__node->value);\
 	}QN_STMT_END
 
- /**
-  * @brief 해시 loop each
-  * @param func2 loop each 함수 포인터. 인수는(keyptr,valueptr)
-  * @return
-  */
+/// @brief 해시 loop each
+/// @param func2 loop each 함수 포인터. 인수는(keyptr,valueptr)
+///
 #define qn_hash_loopeach(name,p,func2)\
 	QN_STMT_BEGIN{\
 		for (struct name##Node* __node=(p)->last; __node; __node=__node->prev) func2(&__node->key, &__node->value);\
 	}QN_STMT_END
 
-/**
- * @brief 값만 for each
- * @param func2 for each 함수 포인터. 인수는(data,valueptr)
- * @param data for each 함수 포인터 첫 인수
- * @return
- */
+/// @brief 값만 for each
+/// @param func2 for each 함수 포인터. 인수는(data,valueptr)
+/// @param data for each 함수 포인터 첫 인수
+///
 #define qn_hash_foreach_value(name,p,func2,data)\
 	QN_STMT_BEGIN{\
 		for (struct name##Node* __node=(p)->last; __node; __node=__node->prev) func2(data, &__node->value);\
 	}QN_STMT_END
 
- /**
-  * @brief 값만 loop each
-  * @param func1 loop each 함수 포인터. 인수는(valueptr)
-  * @return
- */
+/// @brief 값만 loop each
+/// @param func1 loop each 함수 포인터. 인수는(valueptr)
+///
 #define qn_hash_loopeach_value(name,p,func1)\
 	QN_STMT_BEGIN{\
 		for (struct name##Node* __node=(p)->last; __node; __node=__node->prev) func1(&__node->value);\
 	}QN_STMT_END
 
-/**
- * @brief 해시 얻기
- * @param keyptr 키 포인터
- * @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 ㅓㅅ
- * @return
- */
+/// @brief 해시 얻기
+/// @param keyptr 키 포인터
+/// @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 ㅓㅅ
+///
 #define qn_hash_get_ptr(name,p,keyptr,retval)\
 	QN_STMT_BEGIN{\
 		struct name##Node** __gn;\
@@ -1811,45 +1788,42 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 		*(retval)=(__node) ? &__node->value : NULL;\
 	}QN_STMT_END
 
-/** @brief 해시 추가 (중복 항목 안 덮어씀) */
+/// @brief 해시 추가 (중복 항목 안 덮어씀)
 #define qn_hash_add_ptr(name,p,keyptr,valueptr)\
 	qn_inl_hash_set(name,p,keyptr,valueptr,false)
 
-/** @brief 해시 설정 (중복 항목 덮어씀) */
+/// @brief 해시 설정 (중복 항목 덮어씀)
 #define qn_hash_set_ptr(name,p,keyptr,valueptr)\
 	qn_inl_hash_set(name,p,keyptr,valueptr,true)
 
-/**
- * @brief 해시 얻기
- * @param key 키
- * @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 것
- * @return
- */
+/// @brief 해시 얻기
+/// @param key 키
+/// @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 것
+///
 #define qn_hash_get(name,p,key,retval)\
 	QN_STMT_BEGIN{\
 		const name##Key __k = (const name##Key)key; const name##Key* __kp = &__k;\
 		qn_hash_get_ptr(name,p,__kp,retval);\
 	}QN_STMT_END
 
-/** @brief 해시 추가 (중복 항목 안 덮어씀) */
+/// @brief 해시 추가 (중복 항목 안 덮어씀)
 #define qn_hash_add(name,p,key,value)\
 	QN_STMT_BEGIN{\
 		name##Key __key = key; name##Value __value = value;\
 		qn_hash_add_ptr(name,p,&__key,&__value);\
 	}QN_STMT_END
 
-/** @brief 해시 설정 (중복 항목 덮어씀) */
+/// @brief 해시 설정 (중복 항목 덮어씀)
 #define qn_hash_set(name,p,key,value)\
 	QN_STMT_BEGIN{\
 		name##Key __key = key; name##Value __value = value;\
 		qn_hash_set_ptr(name,p,&__key,&__value);\
 	}QN_STMT_END
 
-/**
- * @brief 해시 삭제
- * @param key 키
- * @param ret_bool_ptr 삭제 결과를 담을 bool 타입 포인터. 필요없으면 NULL
- */
+/// @brief 해시 삭제
+/// @param key 키
+/// @param ret_bool_ptr 삭제 결과를 담을 bool 타입 포인터. 필요없으면 NULL
+///
 #define qn_hash_remove(name,p,key,ret_bool_ptr)\
 	QN_STMT_BEGIN{\
 		const name##Key* __kp = (const name##Key*)&key;\
@@ -1857,13 +1831,11 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 		qn_inl_hash_test_size(name,p);\
 	}QN_STMT_END
 
- /**
-  * @brief 해시 검색
-  * @param func3 bool (data, keyptr, valueptr) 타입의 검색 함수
-  * @param data 검색 함수 첫 항목
-  * @param ret_key_ptr 반환 키 포인터
-  * @return
-  */
+/// @brief 해시 검색
+/// @param func3 bool (data, keyptr, valueptr) 타입의 검색 함수
+/// @param data 검색 함수 첫 항목
+/// @param ret_key_ptr 반환 키 포인터
+///
 #define qn_hash_find(name,p,func3,data,ret_key_ptr)\
 	QN_STMT_BEGIN{\
 		for (struct name##Node* __node=(p)->last; __node; __node=__node->prev)\
@@ -1878,11 +1850,10 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 		QN_CONCAT(pos_hash_find_exit_,__LINE__):;\
 	}QN_STMT_END
 
-/**
- * @brief 해시 룩업
- * @param keyptr 키 포인터
- * @param ret_node 반환값 노드 포인터
- */
+/// @brief 해시 룩업
+/// @param keyptr 키 포인터
+/// @param ret_node 반환값 노드 포인터
+///
 #define qn_inl_hash_lookup(name,p,keyptr,ret_node)\
 	size_t __lh=name##_hash(keyptr);\
 	struct name##Node *__lnn,**__ln=&(p)->nodes[__lh%(p)->bucket];\
@@ -1893,12 +1864,11 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 	}\
 	ret_node=__ln
 
-/**
- * @brief 해시 룩업
- * @param keyptr 키 포인터
- * @param ret_node 반환값 노드 포인터
- * @param ret_hash 반환값 해시
- */
+/// @brief 해시 룩업
+/// @param keyptr 키 포인터
+/// @param ret_node 반환값 노드 포인터
+/// @param ret_hash 반환값 해시
+///
 #define qn_inl_hash_lookup_hash(name,p,keyptr,ret_node,ret_hash)\
 	qn_assert((p)->nodes!=NULL, "hash is not initialized");\
 	size_t __lh=name##_hash(keyptr);\
@@ -1911,13 +1881,11 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 	ret_node=__ln;\
 	ret_hash=__lh
 
- /**
- * @brief 해시 설정
- * @param keyptr 키 포인터
- * @param valueptr 값 포인터
- * @param replace 참=원래 키/값을 덮어씀, 거짓=주어진 키/값 삭제
- * @return
- */
+/// @brief 해시 설정
+/// @param keyptr 키 포인터
+/// @param valueptr 값 포인터
+/// @param replace 참=원래 키/값을 덮어씀, 거짓=주어진 키/값 삭제
+///
 #define qn_inl_hash_set(name,p,keyptr,valueptr,replace)\
 	QN_STMT_BEGIN{\
 		size_t __ah; struct name##Node** __an;\
@@ -1967,11 +1935,10 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 		}\
 	}QN_STMT_END
 
- /**
- * @brief 해시 삭제
- * @param keyptr 키 포인터
- * @param ret_bool_ptr 결과를 담을 bool 타입 포인터
- */
+/// @brief 해시 삭제
+/// @param keyptr 키 포인터
+/// @param ret_bool_ptr 결과를 담을 bool 타입 포인터
+///
 #define qn_inl_hash_erase(name,p,keyptr,ret_bool_ptr)\
 	QN_STMT_BEGIN{\
 		struct name##Node** __rn;\
@@ -1995,10 +1962,9 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 		}\
 	}QN_STMT_END
 
- /**
- * @brief 해시 노드 삭제
- * @param pppnode 노드의 포인터의 포인터의 포인터
- */
+/// @brief 해시 노드 삭제
+/// @param pppnode 노드의 포인터의 포인터의 포인터
+///
 #define qn_inl_hash_erase_node(name,p,pppnode)\
 	QN_STMT_BEGIN{\
 		struct name##Node** __en=*(pppnode);\
@@ -2030,7 +1996,7 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 		(p)->revision++;\
 	}QN_STMT_END
 
-/** @brief 모두 삭제 */
+/// @brief 모두 삭제
 #define qn_inl_hash_erase_all(name,p)\
 	QN_STMT_BEGIN{\
 		for (struct name##Node *__enx, *__enn=(p)->frst; __enn; __enn=__enx)\
@@ -2045,7 +2011,7 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 		memset((p)->nodes, 0, (p)->bucket*sizeof(struct name##Node*));\
 	}QN_STMT_END
 
-/** @brief 해시 크기 검사 */
+/// @brief 해시 크기 검사
 #define qn_inl_hash_test_size(name,p)\
 	QN_STMT_BEGIN{\
 		size_t __cnt=(p)->count;\
@@ -2055,7 +2021,7 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 			qn_inl_hash_resize((QnInlineHash*)(p));\
 	}QN_STMT_END
 
-/** @brief 해시 리사이즈 */
+/// @brief 해시 리사이즈
 QN_INLINE void qn_inl_hash_resize(QnInlineHash* p)
 {
 	size_t newbucket = qn_primenear((uint32_t)p->count);
@@ -2082,12 +2048,11 @@ QN_INLINE void qn_inl_hash_resize(QnInlineHash* p)
 //////////////////////////////////////////////////////////////////////////
 // mukum
 
-/**
- * @brief 묶음 정의
- * @param name 묶음 이름
- * @param keytype 키 타입
- * @param valuetype 값 타입
- */
+/// @brief 묶음 정의
+/// @param name 묶음 이름
+/// @param keytype 키 타입
+/// @param valuetype 값 타입
+///
 #define QN_DECL_MUKUM(name,keytype,valuetype)\
 	typedef struct name name;\
 	typedef keytype name##Key;\
@@ -2110,16 +2075,16 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 #define QN_MUKUM_CHAR_PTR_KEY			QN_HASH_CHAR_PTR_KEY
 #define QN_MUKUM_WCHAR_PTR_KEY			QN_HASH_WCHAR_PTR_KEY
 
-/** @brief 아이템 갯수 */
+/// @brief 아이템 갯수
 #define qn_mukum_count(p)				((p)->count)
-/** @brief 묶음 버킷수 */
+/// @brief 묶음 버킷수
 #define qn_mukum_bucket(p)				((p)->bucket)
-/** @brief 묶음 변경치 */
+/// @brief 묶음 변경치
 #define qn_mukum_revision(p)			((p)->revision)
-/** @brief 항목이 있다 */
+/// @brief 항목이 있다
 #define qn_mukum_is_have(p)				((p)->count>0)
 
-/** @brief 묶음 초기화 */
+/// @brief 묶음 초기화
 #define qn_mukum_init(name,p)\
 	QN_STMT_BEGIN{\
 		(p)->revision=0;\
@@ -2128,7 +2093,7 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 		(p)->nodes=qn_alloc_zero(QN_MIN_HASH, struct name##Node*);\
 	}QN_STMT_END
 
-/** @brief 묶음 제거 */
+/// @brief 묶음 제거
 #define qn_mukum_disp(name,p)\
 	QN_STMT_BEGIN{\
 		for (size_t __i=0; __i<(p)->bucket; __i++)\
@@ -2142,66 +2107,61 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 		qn_free((p)->nodes);\
 	}QN_STMT_END
 
-/** @brief 묶음 비우기 */
+/// @brief 묶음 비우기
 #define qn_mukum_clear(name,p)\
 	qn_inl_mukum_erase_all(name,p); qn_inl_mukum_test_size(name,p)
 
-/**
- * @brief 묶음 for each
- * @param func3 for each 함수 포인터. 인수는(data,keyptr,valueptr)
- * @param data for each 함수 포인터 첫 인수
- * @return
- */
+/// @brief 묶음 for each
+/// @param func3 for each 함수 포인터. 인수는(data,keyptr,valueptr)
+/// @param data for each 함수 포인터 첫 인수
+/// @return
+///
 #define qn_mukum_foreach(name,p,func3,userdata)\
 	QN_STMT_BEGIN{\
 		for (size_t __i=0; __i<(p)->bucket; __i++)\
 			for (struct name##Node* __node=(p)->nodes[__i]; __node; __node=__node->sib)\
 				func3(userdata, &__node->key, &__node->value);\
 	}QN_STMT_END
-	
- /**
-  * @brief 묶음 loop each
-  * @param func2 loop each 함수 포인터. 인수는(keyptr,valueptr)
-  * @return
-  */
+
+/// @brief 묶음 loop each
+/// @param func2 loop each 함수 포인터. 인수는(keyptr,valueptr)
+/// @return
+///
 #define qn_mukum_loopeach(name,p,func2)\
 	QN_STMT_BEGIN{\
 		for (size_t __i=0; __i<(p)->bucket; __i++)\
 			for (struct name##Node* __node=(p)->nodes[__i]; __node; __node=__node->sib)\
 				func2(&__node->key, &__node->value);\
 	}QN_STMT_END
-	
-/**
- * @brief 값만 for each
- * @param func2 for each 함수 포인터. 인수는(data,valueptr)
- * @param data for each 함수 포인터 첫 인수
- * @return
- */
+
+/// @brief 값만 for each
+/// @param func2 for each 함수 포인터. 인수는(data,valueptr)
+/// @param data for each 함수 포인터 첫 인수
+/// @return
+///
 #define qn_mukum_foreach_value(name,p,func2,userdata)\
 	QN_STMT_BEGIN{\
 		for (size_t __i=0; __i<(p)->bucket; __i++)\
 			for (struct name##Node* __node=(p)->nodes[__i]; __node; __node=__node->sib)\
 				func2(userdata, &__node->value);\
 	}QN_STMT_END
-	
- /**
-  * @brief 값만 loop each
-  * @param func1 loop each 함수 포인터. 인수는(valueptr)
-  * @return
- */
+
+/// @brief 값만 loop each
+/// @param func1 loop each 함수 포인터. 인수는(valueptr)
+/// @return
+///
 #define qn_mukum_loopeach_value(name,p,func1)\
 	QN_STMT_BEGIN{\
 		for (size_t __i=0; __i<(p)->bucket; __i++)\
 			for (struct name##Node* __node=(p)->nodes[__i]; __node; __node=__node->sib)\
 				func1(&__node->value);\
 	}QN_STMT_END
-	
-/**
- * @brief 묶음 얻기
- * @param keyptr 키 포인터
- * @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 것
- * @return
- */
+
+/// @brief 묶음 얻기
+/// @param keyptr 키 포인터
+/// @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 것
+/// @return
+///
 #define qn_mukum_get_ptr(name,p,keyptr,retval)\
 	QN_STMT_BEGIN{\
 		struct name##Node **__gn, *__node;\
@@ -2210,69 +2170,64 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 		*(retval)=(__node) ? &__node->value : NULL;\
 	}QN_STMT_END
 
- /** @brief 묶음 추가 (중복 항목 안 덮어씀) */
+/// @brief 묶음 추가 (중복 항목 안 덮어씀)
 #define qn_mukum_add_ptr(name,p,keyptr,valueptr)\
 	qn_inl_mukum_set(name,p,keyptr,valueptr,false);
 
-/** @brief 묶음 설정 (중복 항목 덮어씀) */
+/// @brief 묶음 설정 (중복 항목 덮어씀)
 #define qn_mukum_set_ptr(name,p,keyptr,valueptr)\
 	qn_inl_mukum_set(name,p,keyptr,valueptr,true);\
 
-/**
- * @brief 묶음 삭제
- * @param keyptr 키 포인터
- * @param ret_bool_ptr 삭제 결과를 담을 bool 타입 포인터. 필요없으면 NULL
- */
+/// @brief 묶음 삭제
+/// @param keyptr 키 포인터
+/// @param ret_bool_ptr 삭제 결과를 담을 bool 타입 포인터. 필요없으면 NULL
+///
 #define qn_mukum_remove_ptr(name,p,keyptr,ret_bool_ptr)\
 	QN_STMT_BEGIN{\
 		qn_inl_mukum_erase(name,p,keyptr,ret_bool_ptr);\
 		qn_inl_mukum_test_size(name,p);\
 	}QN_STMT_END
 
-/**
- * @brief 묶음 얻기
- * @param key 키
- * @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 것
- * @return
- */
+/// @brief 묶음 얻기
+/// @param key 키
+/// @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 것
+/// @return
+///
 #define qn_mukum_get(name,p,key,retval)\
 	QN_STMT_BEGIN{\
 		const name##Key __k = (const name##Key)key; const name##Key* __kp = &__k;\
 		qn_mukum_get_ptr(name,p,__kp,retval);\
 	}QN_STMT_END
 
-/** @brief 묶음 추가 (중복 항목 안 덮어씀) */
+/// @brief 묶음 추가 (중복 항목 안 덮어씀)
 #define qn_mukum_add(name,p,key,value)\
 	QN_STMT_BEGIN{\
 		name##Key __key = key; name##Value __value = value;\
 		qn_mukum_add_ptr(name,p,&__key,&__value);\
 	}QN_STMT_END
 
-/** @brief 묶음 설정 (중복 항목 덮어씀) */
+/// @brief 묶음 설정 (중복 항목 덮어씀)
 #define qn_mukum_set(name,p,key,value)\
 	QN_STMT_BEGIN{\
 		name##Key __key = key; name##Value __value = value;\
 		qn_mukum_set_ptr(name,p,&__key,&__value);\
 	}QN_STMT_END
 
-/**
- * @brief 묶음 삭제
- * @param key 키
- * @param ret_bool_ptr 삭제 결과를 담을 bool 타입 포인터. 필요없으면 NULL
- */
+/// @brief 묶음 삭제
+/// @param key 키
+/// @param ret_bool_ptr 삭제 결과를 담을 bool 타입 포인터. 필요없으면 NULL
+///
 #define qn_mukum_remove(name,p,key,ret_bool_ptr)\
 	QN_STMT_BEGIN{\
 		const name##Key* __kp = (const name##Key*)&key;\
 		qn_mukum_remove_ptr(name,p,__kp,ret_bool_ptr);\
 	}QN_STMT_END
 
- /**
-  * @brief 묶음 검색
-  * @param func3 bool (data, keyptr, valueptr) 타입의 검색 함수
-  * @param data 검색 함수 첫 항목
-  * @param ret_key_ptr 반환 키 포인터
-  * @return
-  */
+/// @brief 묶음 검색
+/// @param func3 bool (data, keyptr, valueptr) 타입의 검색 함수
+/// @param data 검색 함수 첫 항목
+/// @param ret_key_ptr 반환 키 포인터
+///
 #define qn_mukum_find(name,p,func3,data,ret_key_ptr)\
 	QN_STMT_BEGIN{\
 		for (size_t __i=0; __i<(p)->bucket; __i++)\
@@ -2290,11 +2245,10 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 		QN_CONCAT(pos_mukum_find_exit,__LINE__):;\
 	}QN_STMT_END
 
-/**
- * @brief 묶음 룩업
- * @param keyptr 키 포인터
- * @param ret_node 반환값 노드 포인터
- */
+/// @brief 묶음 룩업
+/// @param keyptr 키 포인터
+/// @param ret_node 반환값 노드 포인터
+///
 #define qn_inl_mukum_lookup(name,p,keyptr,ret_node)\
 	size_t __lh=name##_hash(keyptr);\
 	struct name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
@@ -2306,12 +2260,11 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 	}\
 	ret_node=__ln
 
-/**
- * @brief 묶음 룩업
- * @param keyptr 키 포인터
- * @param ret_node 반환값 노드 포인터
- * @param ret_hash 반환값 묶음
- */
+/// @brief 묶음 룩업
+/// @param keyptr 키 포인터
+/// @param ret_node 반환값 노드 포인터
+/// @param ret_hash 반환값 묶음
+///
 #define qn_inl_mukum_lookup_hash(name,p,keyptr,ret_node,ret_hash)\
 	qn_assert((p)->nodes!=NULL, "mukum is not initialized");\
 	size_t __lh=name##_hash(keyptr);\
@@ -2325,13 +2278,11 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 	ret_node=__ln;\
 	ret_hash=__lh
 
-/**
- * @brief 묶음 설정
- * @param keyptr 키 포인터
- * @param valueptr 값 포인터
- * @param replace 참=원래 키/값을 덮어씀, 거짓=주어진 키/값 삭제
- * @return
- */
+/// @brief 묶음 설정
+/// @param keyptr 키 포인터
+/// @param valueptr 값 포인터
+/// @param replace 참=원래 키/값을 덮어씀, 거짓=주어진 키/값 삭제
+///
 #define qn_inl_mukum_set(name,p,keyptr,valueptr,replace)\
 	QN_STMT_BEGIN{\
 		size_t __ah; struct name##Node** __an;\
@@ -2367,11 +2318,10 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 		}\
 	}QN_STMT_END
 
-/**
- * @brief 묶음 삭제
- * @param keyptr 키 포인터
- * @param ret_bool_ptr 결과를 담을 bool 타입 포인터
- */
+/// @brief 묶음 삭제
+/// @param keyptr 키 포인터
+/// @param ret_bool_ptr 결과를 담을 bool 타입 포인터
+///
 #define qn_inl_mukum_erase(name,p,keyptr,ret_bool_ptr)\
 	QN_STMT_BEGIN{\
 		struct name##Node** __rn;\
@@ -2395,10 +2345,9 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 		}\
 	}QN_STMT_END
 
-/**
- * @brief 묶음 노드 삭제
- * @param pppnode 노드의 포인터의 포인터의 포인터
- */
+/// @brief 묶음 노드 삭제
+/// @param pppnode 노드의 포인터의 포인터의 포인터
+///
 #define qn_inl_mukum_erase_node(name,p,pppnode)\
 	QN_STMT_BEGIN{\
 		struct name##Node** __en=*(pppnode);\
@@ -2415,7 +2364,7 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 		(p)->revision++;\
 	}QN_STMT_END
 
- /** @brief 모두 삭제 */
+/// @brief 모두 삭제
 #define qn_inl_mukum_erase_all(name,p)\
 	QN_STMT_BEGIN{\
 		for (size_t __i=0; __i<(p)->bucket; __i++)\
@@ -2431,7 +2380,7 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 		memset((p)->nodes, 0, (p)->bucket*sizeof(struct name##Node*));\
 	}QN_STMT_END
 
-/** @brief 묶음 크기 검사 */
+/// @brief 묶음 크기 검사
 #define qn_inl_mukum_test_size(name,p)\
 	QN_STMT_BEGIN{\
 		size_t __cnt=(p)->count;\
@@ -2441,7 +2390,7 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 			qn_inl_mukum_resize((QnInlineMukum*)(p));\
 	}QN_STMT_END
 
-/** @brief 묶음 리사이즈 */
+/// @brief 묶음 리사이즈
 QN_INLINE void qn_inl_mukum_resize(QnInlineMukum* p)
 {
 	size_t newbucket = qn_primenear((uint32_t)p->count);
@@ -2468,11 +2417,10 @@ QN_INLINE void qn_inl_mukum_resize(QnInlineMukum* p)
 //////////////////////////////////////////////////////////////////////////
 // blue string
 
-/**
- * @brief 고정 문자열 정의
- * @param name 고정 문자열 이름
- * @param size 고정 문자열 최대 길이
- */
+/// @brief 고정 문자열 정의
+/// @param name 고정 문자열 이름
+/// @param size 고정 문자열 최대 길이
+///
 #define QN_DECL_BSTR(name,size)\
 	typedef struct _qnBstr##name qnBstr##name;\
 	struct _qnBstr##name { size_t len; char data[size]; };
@@ -2676,11 +2624,10 @@ QN_INLINE bool qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, si
 //////////////////////////////////////////////////////////////////////////
 // blue wcs
 
-/**
- * @brief 고정 문자열 정의
- * @param name 고정 문자열 이름
- * @param size 고정 문자열 최대 길이
- */
+/// @brief 고정 문자열 정의
+/// @param name 고정 문자열 이름
+/// @param size 고정 문자열 최대 길이
+///
 #define QN_DECL_BWCS(name,size)\
 	typedef struct _qnBwcs##name qnBwcs##name;\
 	struct _qnBwcs##name { size_t len; wchar data[size]; };

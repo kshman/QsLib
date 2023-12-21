@@ -6,14 +6,9 @@
 #include <semaphore.h>
 #endif
 
-#ifdef _MSC_VER
-#pragma warning(disable:4702)
-#endif
-
 #ifdef _QN_WINDOWS_
-QN_STATIC_ASSERT(sizeof(long) == sizeof(QnSpinLock), "Spinlock size not equal to OS interlock");
+static_assert(sizeof(long) == sizeof(QnSpinLock), "Spinlock size not equal to OS interlock");
 #endif
-
 
 //////////////////////////////////////////////////////////////////////////
 // 스핀락
@@ -23,7 +18,7 @@ bool qn_spin_try(QnSpinLock* lock)
 {
 #if defined _MSC_VER && (defined _M_IX86 || defined _M_X64)
 	return _InterlockedExchange((long volatile*)lock, 1) == 0;
-#elif defined _MSC_VER && (defined _M_ARM || defined _M_ARM64)
+#elif defined _MSC_VER && (defined _M_ARM || defined _M_ARM64 || defined _M_ARM64EC)
 	return _InterlockedExchange_acq(lock, 1) == 0;
 #elif defined __GNUC__
 	return __sync_lock_test_and_set(lock, 1) != 0;
@@ -38,29 +33,53 @@ bool qn_spin_try(QnSpinLock* lock)
 }
 
 //
-size_t qn_spin_enter(QnSpinLock* lock)
+uint qn_spin_enter(QnSpinLock* lock)
 {
-#define MAX_INTRINSICS		64
-	size_t intrinsics;
-	for (intrinsics = 0; !qn_spin_try(lock); intrinsics++)
+	const uint backoff = 64;
+	uint intrinsics = 0;
+#if defined _MSC_VER && (defined _M_IX86 || defined _M_X64)
+	// Intel(R) 64 and IA-32 Architectures Optimization Reference Manual, May 2020 Example 2-4
+	// Contended Locks with Increasing Back-off Example - Improved Version, page 2-22 (0BSD license)
+	uint current = 1;
+	while (_InterlockedExchange((long volatile*)lock, 1) != 0)
 	{
-		if (intrinsics < MAX_INTRINSICS)
+		while (__iso_volatile_load32((int*)lock) != 0) {
+			for (int count = current; count != 0; --count)
+			{
+				intrinsics++;
+				qn_pause();
+			}
+		}
+		current = current < backoff ? current << 1 : backoff;
+	}
+#elif defined _MSC_VER && (defined _M_ARM || defined _M_ARM64 || defined _M_ARM64EC)
+	while (_InterlockedExchange_acq((long volatile*)lock, 1) != 0)
+	{
+		while (__iso_volatile_load32((int*)lock) != 0)
+		{
+			intrinsics++;
+			qn_pause();
+		}
+	}
+#else
+	for (; !qn_spin_try(lock); intrinsics++)
+	{
+		if (intrinsics < backoff)
 			qn_pause();
 		else
 			qn_sleep(0);
 	}
+#endif
 	return intrinsics;
-#undef MAX_INTRINSICS
 }
 
 //
 void qn_spin_leave(QnSpinLock* lock)
 {
 #if defined _MSC_VER && (defined _M_IX86 || defined _M_X64)
-	qn_barrier();
-	*lock = 0;
+	_InterlockedExchange((long volatile*)lock, 0);
 #elif defined _MSC_VER && (defined _M_ARM || defined _M_ARM64)
-	_InterlockedExchange_rel(lock, 0);
+	_InterlockedExchange_rel((long volatile*)lock, 0);
 #elif defined __GNUC__
 	__sync_lock_release(lock);
 #else
@@ -441,7 +460,7 @@ static void* qn_internal_thread_entry(void* data)
 }
 
 //
-bool qn_thread_start(QnThread* thread, const char* name)
+bool qn_thread_start(QnThread* thread, const char* restrict name)
 {
 	QnRealThread* self = (QnRealThread*)thread;
 #ifdef _QN_WINDOWS_
@@ -449,10 +468,7 @@ bool qn_thread_start(QnThread* thread, const char* name)
 
 	self->handle = CreateThread(NULL, self->base.stack_size, &qn_internal_thread_entry, self, 0, &self->id);
 	if (self->handle == NULL || self->handle == INVALID_HANDLE_VALUE)
-	{
 		qn_debug_halt("THREAD", "cannot start thread");
-		return FALSE;
-	}
 
 	if (name != NULL && *name != '\0')
 	{
@@ -566,7 +582,6 @@ QnTls* qn_tls(paramfunc_t callback)
 	{
 		QN_UNLOCK(_qn_thd.lock);
 		qn_debug_halt("THREAD", "too many TLS used");
-		return NULL;
 	}
 
 	self = (void*)((nuint)_qn_thd.tls_index + 0x10);
@@ -577,7 +592,7 @@ QnTls* qn_tls(paramfunc_t callback)
 }
 
 //
-void qn_tlsset(QnTls* tls, void* data)
+void qn_tlsset(QnTls* tls, void* restrict data)
 {
 	uint nth = (uint)(nuint)tls - 0x10;
 	qn_ret_if_fail(nth < QN_COUNTOF(_qn_thd.tls_callback));
@@ -796,10 +811,7 @@ QnSem* qn_sem_new(int initial)
 #ifdef _QN_WINDOWS_
 	HANDLE handle = CreateSemaphoreEx(NULL, initial, 32 * 1024, NULL, 0, SEMAPHORE_ALL_ACCESS);
 	if (handle == NULL || handle == INVALID_HANDLE_VALUE)
-	{
 		qn_debug_halt("SEM", "semaphore creation failed");
-		return NULL;
-	}
 
 	QnSem* self = qn_alloc_1(QnSem);
 	self->handle = handle;
@@ -836,7 +848,7 @@ bool qn_sem_wait_for(QnSem* self, uint milliseconds)
 	DWORD dw = WaitForSingleObjectEx(self->handle, milliseconds, FALSE);
 	if (dw == WAIT_OBJECT_0)
 	{
-		QN_STATIC_ASSERT(sizeof(long) == sizeof(self->count), "Semaphore size not equal to OS interlock");
+		static_assert(sizeof(long) == sizeof(self->count), "Semaphore size not equal to OS interlock");
 		_InterlockedDecrement((long volatile*)&self->count);
 		return true;
 	}

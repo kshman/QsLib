@@ -237,7 +237,7 @@ static const char* pp_str_base_num[2] =
 #endif
 
 // 32비트 숫자를 문자열로
-static int pp_str_to_int(uint value, char* buf, int size, int base, bool caps)
+static int pp_str_to_int(uint value, char* restrict buf, int size, int base, bool caps)
 {
 	const char* bts = pp_str_base_num[caps ? 1 : 0];
 	int pos = 0;
@@ -254,7 +254,7 @@ static int pp_str_to_int(uint value, char* buf, int size, int base, bool caps)
 }
 
 // 64비트 숫자를 문자열로
-static int pp_str_to_long(ullong value, char* buf, int size, int base, bool caps)
+static int pp_str_to_long(ullong value, char* restrict buf, int size, int base, bool caps)
 {
 	const char* bts = pp_str_base_num[caps ? 1 : 0];
 	int pos = 0;
@@ -294,7 +294,7 @@ static int pp_str_quote(int value, int flags
 }
 
 // 글자 넣기
-static void pp_str_outch(char* buffer, size_t* currlen, size_t maxlen, char ch)
+static void pp_str_outch(char* restrict buffer, size_t* restrict currlen, size_t maxlen, char ch)
 {
 	if (*currlen < maxlen)
 		buffer[(*currlen)] = ch;
@@ -302,7 +302,7 @@ static void pp_str_outch(char* buffer, size_t* currlen, size_t maxlen, char ch)
 }
 
 // 문자열 널기
-static void pp_str_outs(char* buffer, size_t* currlen, size_t maxlen, const char* value, int len, int flags, int vmin, int vmax)
+static void pp_str_outs(char* restrict buffer, size_t* restrict currlen, size_t maxlen, const char* restrict value, int len, int flags, int vmin, int vmax)
 {
 	int padlen = vmin - len;
 
@@ -332,7 +332,7 @@ static void pp_str_outs(char* buffer, size_t* currlen, size_t maxlen, const char
 }
 
 // 글자 변환
-static void pp_str_fmt_char(char* buffer, size_t* currlen, size_t maxlen, int ch, int flags)
+static void pp_str_fmt_char(char* restrict buffer, size_t* restrict currlen, size_t maxlen, int ch, int flags)
 {
 	if ((flags & DP_F_UNICODE) == 0)
 		pp_str_outch(buffer, currlen, maxlen, (char)ch);
@@ -347,7 +347,7 @@ static void pp_str_fmt_char(char* buffer, size_t* currlen, size_t maxlen, int ch
 }
 
 // 문자열 변환
-static void pp_str_fmt_str(char* buffer, size_t* currlen, size_t maxlen, const void* value, int flags, int vmin, int vmax)
+static void pp_str_fmt_str(char* restrict buffer, size_t* restrict currlen, size_t maxlen, const /*char*/void* restrict value, int flags, int vmin, int vmax)
 {
 	if (!value)
 	{
@@ -397,7 +397,7 @@ static void pp_str_fmt_str(char* buffer, size_t* currlen, size_t maxlen, const v
 }
 
 // 32비트 정수
-static void pp_str_fmt_int(char* buffer, size_t* currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
+static void pp_str_fmt_int(char* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
 {
 #define MAX_CONVERT_PLACES 40
 	uint uvalue;
@@ -534,7 +534,7 @@ static void pp_str_fmt_int(char* buffer, size_t* currlen, size_t maxlen, const s
 }
 
 // 64비트 정수
-static void pp_str_fmt_long(char* buffer, size_t* currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
+static void pp_str_fmt_long(char* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
 {
 #define MAX_CONVERT_PLACES 80
 	ullong uvalue;
@@ -675,7 +675,7 @@ static void pp_str_fmt_long(char* buffer, size_t* currlen, size_t maxlen, const 
 
 // 64비트 실수(double)
 // 여기서는, 오직 16자리 정수만 지원. 원래는 9, 19, 38 자리수에 따라 각각 32, 64, 128비트용이 있어야함
-static void pp_str_fmt_fp(char* buffer, size_t* currlen, size_t maxlen, sn_any* value, int vmin, int vmax, int flags)
+static void pp_str_fmt_fp(char* restrict buffer, size_t* restrict currlen, size_t maxlen, sn_any* value, int vmin, int vmax, int flags)
 {
 	double fvalue;
 	double uvalue;
@@ -953,7 +953,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 }
 
 //
-size_t dopr(char* buffer, size_t maxlen, const char* format, va_list args)
+size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, va_list args)
 {
 	int vmin = 0;
 	int vmax = -1;
@@ -1341,7 +1341,7 @@ static const wchar* pp_wcs_base_num[2] =
 #endif
 
 // 32비트 숫자를 문자열로
-static int pp_wcs_to_int(uint value, wchar* buf, int size, int base, bool caps)
+static int pp_wcs_to_int(uint value, wchar* restrict buf, int size, int base, bool caps)
 {
 	const wchar* bts = pp_wcs_base_num[caps ? 1 : 0];
 	int pos = 0;
@@ -1358,7 +1358,7 @@ static int pp_wcs_to_int(uint value, wchar* buf, int size, int base, bool caps)
 }
 
 // 64비트 숫자를 문자열로
-static int pp_wcs_to_long(ullong value, wchar* buf, int size, int base, bool caps)
+static int pp_wcs_to_long(ullong value, wchar* restrict buf, int size, int base, bool caps)
 {
 	const wchar* bts = pp_wcs_base_num[caps ? 1 : 0];
 	int pos = 0;
@@ -1398,7 +1398,7 @@ static int pp_wcs_quote(int value, int flags
 }
 
 // 글자 넣기
-static void _wcs_outch(wchar* buffer, size_t* currlen, size_t maxlen, wchar ch)
+static void _wcs_outch(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, wchar ch)
 {
 	if (*currlen < maxlen)
 		buffer[(*currlen)] = ch;
@@ -1406,7 +1406,7 @@ static void _wcs_outch(wchar* buffer, size_t* currlen, size_t maxlen, wchar ch)
 }
 
 // 문자열 널기
-static void _wcs_outs(wchar* buffer, size_t* currlen, size_t maxlen, const wchar* value, int len, int flags, int vmin, int vmax)
+static void _wcs_outs(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, const wchar* restrict value, int len, int flags, int vmin, int vmax)
 {
 	int padlen = vmin - len;
 
@@ -1436,7 +1436,7 @@ static void _wcs_outs(wchar* buffer, size_t* currlen, size_t maxlen, const wchar
 }
 
 // 글자 변환
-static void pp_wcs_fmt_char(wchar* buffer, size_t* currlen, size_t maxlen, int ch, int flags)
+static void pp_wcs_fmt_char(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, int ch, int flags)
 {
 	if ((flags & DP_F_UNICODE) == 0)
 		_wcs_outch(buffer, currlen, maxlen, (wchar)ch);
@@ -1451,7 +1451,7 @@ static void pp_wcs_fmt_char(wchar* buffer, size_t* currlen, size_t maxlen, int c
 }
 
 // 문자열 변환
-static void pp_wcs_fmt_str(wchar* buffer, size_t* currlen, size_t maxlen, const wchar* value, int flags, int vmin, int vmax)
+static void pp_wcs_fmt_str(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, const wchar* restrict value, int flags, int vmin, int vmax)
 {
 	if (!value)
 	{
@@ -1501,7 +1501,7 @@ static void pp_wcs_fmt_str(wchar* buffer, size_t* currlen, size_t maxlen, const 
 }
 
 // 32비트 정수
-static void pp_wcs_fmt_int(wchar* buffer, size_t* currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
+static void pp_wcs_fmt_int(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
 {
 #define MAX_CONVERT_PLACES 40
 	uint uvalue;
@@ -1638,7 +1638,7 @@ static void pp_wcs_fmt_int(wchar* buffer, size_t* currlen, size_t maxlen, const 
 	}
 
 // 64비트 정수
-static void pp_wcs_fmt_long(wchar* buffer, size_t* currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
+static void pp_wcs_fmt_long(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
 {
 #define MAX_CONVERT_PLACES 80
 	ullong uvalue;
@@ -1779,7 +1779,7 @@ static void pp_wcs_fmt_long(wchar* buffer, size_t* currlen, size_t maxlen, const
 
 // 64비트 실수(double)
 // 여기서는, 오직 16자리 정수만 지원. 원래는 9, 19, 38 자리수에 따라 각각 32, 64, 128비트용이 있어야함
-static void pp_wcs_fmt_fp(wchar* buffer, size_t* currlen, size_t maxlen, sn_any* value, int vmin, int vmax, int flags)
+static void pp_wcs_fmt_fp(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, sn_any* value, int vmin, int vmax, int flags)
 {
 	double fvalue;
 	double uvalue;
@@ -2057,7 +2057,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 	}
 
 //
-size_t doprw(wchar* buffer, size_t maxlen, const wchar* format, va_list args)
+size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format, va_list args)
 {
 	int vmin = 0;
 	int vmax = -1;

@@ -11,7 +11,7 @@
 #endif
 
 //
-void qn_vec3_closed_line(QnVec3* pv, const QnLine3* line, const QnVec3* loc)
+void qn_vec3_closed_line(QnVec3* restrict pv, const QnLine3* restrict line, const QnVec3* restrict loc)
 {
 	QnVec3 c, z;
 	qn_vec3_sub(&c, loc, &line->begin);
@@ -32,7 +32,7 @@ void qn_vec3_closed_line(QnVec3* pv, const QnLine3* line, const QnVec3* loc)
 }
 
 //
-void qn_vec3_lerp_len(QnVec3* pv, const QnVec3* left, const QnVec3* right, float scale, float len)
+void qn_vec3_lerp_len(QnVec3* restrict pv, const QnVec3* restrict left, const QnVec3* restrict right, float scale, float len)
 {
 	QnVec3 v0, v1;
 	qn_vec3_norm(&v0, left);
@@ -44,7 +44,7 @@ void qn_vec3_lerp_len(QnVec3* pv, const QnVec3* left, const QnVec3* right, float
 }
 
 //
-void qn_vec3_form_norm(QnVec3* pv, const QnVec3* v0, const QnVec3* v1, const QnVec3* v2)
+void qn_vec3_form_norm(QnVec3* restrict pv, const QnVec3* restrict v0, const QnVec3* restrict v1, const QnVec3* restrict v2)
 {
 	QnVec3 t0, t1;
 	qn_vec3_sub(&t0, v1, v0);
@@ -54,7 +54,7 @@ void qn_vec3_form_norm(QnVec3* pv, const QnVec3* v0, const QnVec3* v1, const QnV
 }
 
 //
-bool qn_vec3_reflect(QnVec3* pv, const QnVec3* in, const QnVec3* dir)
+bool qn_vec3_reflect(QnVec3* restrict pv, const QnVec3* restrict in, const QnVec3* restrict dir)
 {
 	const float len = qn_vec3_len(in);
 	QnVec3 t;
@@ -78,7 +78,7 @@ bool qn_vec3_reflect(QnVec3* pv, const QnVec3* in, const QnVec3* dir)
 }
 
 //
-bool qn_vec3_intersect_line(QnVec3* pv, const QnPlane* plane, const QnVec3* loc, const QnVec3* dir)
+bool qn_vec3_intersect_line(QnVec3* restrict pv, const QnPlane* restrict plane, const QnVec3* restrict loc, const QnVec3* restrict dir)
 {
 	// v2->pl<-v1
 	const float dot = qn_vec3_dot((const QnVec3*)plane, dir);
@@ -98,7 +98,7 @@ bool qn_vec3_intersect_line(QnVec3* pv, const QnPlane* plane, const QnVec3* loc,
 }
 
 //
-bool qn_vec3_intersect_point(QnVec3* pv, const QnPlane* plane, const QnVec3* v1, const QnVec3* v2)
+bool qn_vec3_intersect_point(QnVec3* restrict pv, const QnPlane* restrict plane, const QnVec3* restrict v1, const QnVec3* restrict v2)
 {
 	QnVec3 dir;
 	qn_vec3_sub(&dir, v2, v1);
@@ -106,7 +106,7 @@ bool qn_vec3_intersect_point(QnVec3* pv, const QnPlane* plane, const QnVec3* v1,
 }
 
 //
-bool qn_vec3_intersect_between_point(QnVec3* pv, const QnPlane* plane, const QnVec3* v1, const QnVec3* v2)
+bool qn_vec3_intersect_between_point(QnVec3* restrict pv, const QnPlane* restrict plane, const QnVec3* restrict v1, const QnVec3* restrict v2)
 {
 	QnVec3 dir;
 	qn_vec3_sub(&dir, v2, v1);
@@ -120,14 +120,14 @@ bool qn_vec3_intersect_between_point(QnVec3* pv, const QnPlane* plane, const QnV
 }
 
 //
-bool qn_vec3_intersect_planes(QnVec3* pv, const QnPlane* plane, const QnPlane* other1, const QnPlane* other2)
+bool qn_vec3_intersect_planes(QnVec3* restrict pv, const QnPlane* restrict plane, const QnPlane* restrict other1, const QnPlane* restrict other2)
 {
 	QnVec3 dir, loc;
 	return (qn_plane_intersect(plane, &loc, &dir, other1)) ? qn_vec3_intersect_line(pv, other2, &loc, &dir) : false;
 }
 
 //
-void qn_quat_slerp(QnQuat* pq, const QnQuat* left, const QnQuat* right, float change)
+void qn_quat_slerp(QnQuat* restrict pq, const QnQuat* restrict left, const QnQuat* restrict right, float change)
 {
 	float dot = qn_quat_dot(left, right);
 
@@ -175,7 +175,7 @@ void qn_quat_slerp(QnQuat* pq, const QnQuat* left, const QnQuat* right, float ch
 }
 
 //
-void qn_quat_mat4(QnQuat* pq, const QnMat4* rot)
+void qn_quat_mat4(QnQuat* restrict pq, const QnMat4* restrict rot)
 {
 	const float diag = rot->_11 + rot->_22 + rot->_33 + 1.0f;
 	QnQuat q;
@@ -234,7 +234,7 @@ void qn_quat_mat4(QnQuat* pq, const QnMat4* rot)
 }
 
 //
-void qn_quat_vec(QnQuat* pq, const QnVec3* rot)
+void qn_quat_vec(QnQuat* restrict pq, const QnVec3* restrict rot)
 {
 	float rs, rc;
 	float angle = rot->x * 0.5f;
@@ -260,7 +260,7 @@ void qn_quat_vec(QnQuat* pq, const QnVec3* rot)
 }
 
 //
-void qn_quat_ln(QnQuat* pq, const QnQuat* q)
+void qn_quat_ln(QnQuat* restrict pq, const QnQuat* restrict q)
 {
 	const float n = qn_quat_len_sq(q);
 	if (n > 1.0001f)
@@ -291,7 +291,7 @@ void qn_quat_ln(QnQuat* pq, const QnQuat* q)
 }
 
 //
-void qn_mat4_tran(QnMat4* pm, const QnMat4* m)
+void qn_mat4_tran(QnMat4* restrict pm, const QnMat4* restrict m)
 {
 #ifdef USE_EMM_INTRIN
 #if 1
@@ -348,7 +348,7 @@ void qn_mat4_tran(QnMat4* pm, const QnMat4* m)
 }
 
 //
-void qn_mat4_mul(QnMat4* pm, const QnMat4* left, const QnMat4* right)
+void qn_mat4_mul(QnMat4* restrict pm, const QnMat4* restrict left, const QnMat4* restrict right)
 {
 #ifdef USE_EMM_INTRIN
 	register __m128 r1, r2;
@@ -408,10 +408,10 @@ void qn_mat4_mul(QnMat4* pm, const QnMat4* left, const QnMat4* right)
 }
 
 //
-void qn_mat4_inv(QnMat4* pm, const QnMat4* m, float* /*NULLABLE*/determinant)
+void qn_mat4_inv_det(QnMat4* restrict pm, const QnMat4* restrict m, float* /*NULLABLE*/determinant)
 {
 #ifdef USE_EMM_INTRIN
-	static const QN_ALIGNAS(16) uint s_PNNP[] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };
+	static const alignas(16) uint s_PNNP[] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };
 
 	__m128 A, B, C, D;
 	__m128 iA, iB, iC, iD;
@@ -534,7 +534,13 @@ void qn_mat4_inv(QnMat4* pm, const QnMat4* m, float* /*NULLABLE*/determinant)
 }
 
 //
-void qn_mat4_tmul(QnMat4* pm, const QnMat4* left, const QnMat4* right)
+void qn_mat4_inv(QnMat4* restrict pm, const QnMat4* restrict m)
+{
+	qn_mat4_inv_det(pm, m, NULL);
+}
+
+//
+void qn_mat4_tmul(QnMat4* restrict pm, const QnMat4* restrict left, const QnMat4* restrict right)
 {
 	QnMat4 m;
 	qn_mat4_mul(&m, left, right);
@@ -581,7 +587,7 @@ float qn_mat4_det(const QnMat4* m)
 }
 
 //
-void qn_mat4_shadow(QnMat4* pm, const QnVec4* light, const QnPlane* plane)
+void qn_mat4_shadow(QnMat4* restrict pm, const QnVec4* restrict light, const QnPlane* restrict plane)
 {
 	const float d = plane->a * light->x + plane->b * light->y + plane->c * light->z + plane->d;
 
@@ -632,7 +638,7 @@ void qn_mat4_shadow(QnMat4* pm, const QnVec4* light, const QnPlane* plane)
 }
 
 //
-void qn_mat4_affine(QnMat4* pm, const QnVec3* scl, const QnVec3* rotcenter, const QnQuat* rot, const QnVec3* loc)
+void qn_mat4_affine(QnMat4* restrict pm, const QnVec3* restrict scl, const QnVec3* restrict rotcenter, const QnQuat* restrict rot, const QnVec3* restrict loc)
 {
 	QnMat4 m1, m2, m3, m4, m5, p1, p2, p3;
 
@@ -669,7 +675,7 @@ void qn_mat4_affine(QnMat4* pm, const QnVec3* scl, const QnVec3* rotcenter, cons
 }
 
 //
-void qn_mat4_trfm(QnMat4* m, const QnVec3* loc, const QnQuat* rot, const QnVec3* scl)
+void qn_mat4_trfm(QnMat4* restrict m, const QnVec3* restrict loc, const QnQuat* restrict rot, const QnVec3* restrict scl)
 {
 	float* f = m->f16;
 
@@ -706,7 +712,7 @@ void qn_mat4_trfm(QnMat4* m, const QnVec3* loc, const QnQuat* rot, const QnVec3*
 }
 
 //
-void qn_mat4_trfm_vec(QnMat4* m, const QnVec3* loc, const QnVec3* rot, const QnVec3* scl)
+void qn_mat4_trfm_vec(QnMat4* restrict m, const QnVec3* restrict loc, const QnVec3* restrict rot, const QnVec3* restrict scl)
 {
 	float* f = m->f16;
 
@@ -743,7 +749,7 @@ void qn_mat4_trfm_vec(QnMat4* m, const QnVec3* loc, const QnVec3* rot, const QnV
 }
 
 //
-void qn_plane_trfm(QnPlane* pp, const QnPlane* plane, const QnMat4* trfm)
+void qn_plane_trfm(QnPlane* restrict pp, const QnPlane* restrict plane, const QnMat4* restrict trfm)
 {
 	QnVec3 v, n, s;
 
@@ -765,7 +771,7 @@ void qn_plane_trfm(QnPlane* pp, const QnPlane* plane, const QnMat4* trfm)
 }
 
 //
-void qn_plane_points(QnPlane* pp, const QnVec3* v1, const QnVec3* v2, const QnVec3* v3)
+void qn_plane_points(QnPlane* restrict pp, const QnVec3* restrict v1, const QnVec3* restrict v2, const QnVec3* restrict v3)
 {
 	QnVec3 t0, t1, t2;
 	qn_vec3_sub(&t0, v2, v1);
@@ -776,7 +782,7 @@ void qn_plane_points(QnPlane* pp, const QnVec3* v1, const QnVec3* v2, const QnVe
 }
 
 //
-bool qn_plane_intersect(const QnPlane* p, QnVec3* loc, QnVec3* dir, const QnPlane* o)
+bool qn_plane_intersect(const QnPlane* restrict p, QnVec3* restrict loc, QnVec3* restrict dir, const QnPlane* restrict o)
 {
 	const float f0 = qn_vec3_len((const QnVec3*)p);
 	const float f1 = qn_vec3_len((const QnVec3*)o);
@@ -794,7 +800,7 @@ bool qn_plane_intersect(const QnPlane* p, QnVec3* loc, QnVec3* dir, const QnPlan
 }
 
 //
-bool qn_line3_intersect_sphere(const QnLine3* p, const QnVec3* org, float rad, float* dist)
+bool qn_line3_intersect_sphere(const QnLine3* restrict p, const QnVec3* restrict org, float rad, float* dist)
 {
 	QnVec3 t;
 	qn_vec3_sub(&t, org, &p->begin);

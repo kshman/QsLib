@@ -6,26 +6,26 @@
 
 #define QSORT_STACK_SIZE (8 * sizeof(void*) - 2)
 
-static void qsort_swap(uint8_t* a, uint8_t* b, size_t stride)
+static void qsort_swap(byte* a, byte* b, size_t stride)
 {
 	if (a != b)
 	{
 		while (stride--)
 		{
-			const uint8_t n = *a;
+			const byte n = *a;
 			*a++ = *b;
 			*b++ = n;
 		}
 	}
 }
 
-static void qsort_short_context(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(void*, const void*, const void*), void* context)
+static void qsort_short_context(byte* lo, byte* hi, size_t stride, int(*func)(void*, const void*, const void*), void* context)
 {
 	while (hi > lo)
 	{
-		uint8_t* max = lo;
+		byte* max = lo;
 
-		for (uint8_t* p = lo + stride; p <= hi; p += stride)
+		for (byte* p = lo + stride; p <= hi; p += stride)
 		{
 			if ((*func)(context, p, max) > 0)
 				max = p;
@@ -46,11 +46,11 @@ void qn_qsortc(void* ptr, size_t count, size_t stride, int(*compfunc)(void*, con
 
 	// 스택&리미트 초기화
 	int_fast32_t stkptr = 0;
-	uint8_t* lo = (uint8_t*)ptr;
-	uint8_t* hi = (uint8_t*)ptr + stride * (count - 1);
+	byte* lo = (byte*)ptr;
+	byte* hi = (byte*)ptr + stride * (count - 1);
 
-	uint8_t* lostk[QSORT_STACK_SIZE] = { 0, };
-	uint8_t* histk[QSORT_STACK_SIZE] = { 0, };
+	byte* lostk[QSORT_STACK_SIZE] = { 0, };
+	byte* histk[QSORT_STACK_SIZE] = { 0, };
 
 	size_t size;
 pos_recursive:
@@ -61,7 +61,7 @@ pos_recursive:
 		qsort_short_context(lo, hi, stride, compfunc, context);
 	else
 	{
-		uint8_t* mid = lo + (size / 2) * stride;
+		byte* mid = lo + (size / 2) * stride;
 
 		// 처음, 중간, 끝 부터 정렬 시작
 		if (compfunc(context, lo, mid) > 0)
@@ -74,8 +74,8 @@ pos_recursive:
 			qsort_swap(mid, hi, stride);
 
 		// 부분 정렬
-		uint8_t* lopos = lo;
-		uint8_t* hipos = hi;
+		byte* lopos = lo;
+		byte* hipos = hi;
 
 		for (;;)
 		{
@@ -169,13 +169,13 @@ pos_recursive:
 	}
 }
 
-static void qsort_short(uint8_t* lo, uint8_t* hi, size_t stride, int(*func)(const void*, const void*))
+static void qsort_short(byte* lo, byte* hi, size_t stride, int(*func)(const void*, const void*))
 {
 	while (hi > lo)
 	{
-		uint8_t* max = lo;
+		byte* max = lo;
 
-		for (uint8_t* p = lo + stride; p <= hi; p += stride)
+		for (byte* p = lo + stride; p <= hi; p += stride)
 		{
 			if ((*func)(p, max) > 0)
 				max = p;
@@ -196,11 +196,11 @@ void qn_qsort(void* ptr, size_t count, size_t stride, int(*compfunc)(const void*
 
 	// 스택&리미트 초기화
 	int_fast32_t stkptr = 0;
-	uint8_t* lo = (uint8_t*)ptr;
-	uint8_t* hi = (uint8_t*)ptr + stride * (count - 1);
+	byte* lo = (byte*)ptr;
+	byte* hi = (byte*)ptr + stride * (count - 1);
 
-	uint8_t* lostk[QSORT_STACK_SIZE] = { 0, };
-	uint8_t* histk[QSORT_STACK_SIZE] = { 0, };
+	byte* lostk[QSORT_STACK_SIZE] = { 0, };
+	byte* histk[QSORT_STACK_SIZE] = { 0, };
 
 	size_t size;
 pos_recursive:
@@ -211,7 +211,7 @@ pos_recursive:
 		qsort_short(lo, hi, stride, compfunc);
 	else
 	{
-		uint8_t* mid = lo + (size / 2) * stride;
+		byte* mid = lo + (size / 2) * stride;
 
 		// 처음, 중간, 끝 부터 정렬 시작
 		if (compfunc(lo, mid) > 0)
@@ -224,8 +224,8 @@ pos_recursive:
 			qsort_swap(mid, hi, stride);
 
 		// 부분 정렬
-		uint8_t* lopos = lo;
-		uint8_t* hipos = hi;
+		byte* lopos = lo;
+		byte* hipos = hi;
 
 		for (;;)
 		{
