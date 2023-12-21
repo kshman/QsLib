@@ -62,7 +62,7 @@ uint qn_spin_enter(QnSpinLock* lock)
 		}
 	}
 #else
-	for (intrinsics = 0; !qn_spin_try(lock); intrinsics++)
+	for (; !qn_spin_try(lock); intrinsics++)
 	{
 		if (intrinsics < backoff)
 			qn_pause();
