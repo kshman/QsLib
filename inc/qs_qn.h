@@ -103,7 +103,6 @@
 #define QN_FORCE_LINE		inline __attribute__ ((always_inline))
 #endif
 #define QN_FNAME			__FUNCTION__/*__PRETTY_FUNCTION__*/
-
 #define QN_FALL_THROUGH		__attribute__((fallthrough))
 #define QN_STRUCT_ALIGN(x)	__attribute__((aligned(x)))
 #endif
@@ -289,26 +288,6 @@ typedef struct funcparam_t
 #else
 #define qn_assert(expr,m)
 #define qn_verify(expr)
-#endif
-#define QN_ASSERT_SIZE(t,s)	static_assert(sizeof(t) == s, #t " type size must be " #s "")
-
-// type check
-QN_ASSERT_SIZE(BOOL, 4);
-QN_ASSERT_SIZE(byte, 1);
-QN_ASSERT_SIZE(ushort, 2);
-QN_ASSERT_SIZE(uint, 4);
-QN_ASSERT_SIZE(ullong, 8);
-QN_ASSERT_SIZE(halfint, 2);
-QN_ASSERT_SIZE(vshort, 2);
-QN_ASSERT_SIZE(vint, 4);
-QN_ASSERT_SIZE(vllong, 8);
-QN_ASSERT_SIZE(any_t, 8);
-#ifdef _QN_64_
-QN_ASSERT_SIZE(nuint, 8);
-QN_ASSERT_SIZE(funcparam_t, 16);
-#else
-QN_ASSERT_SIZE(nuint, 4);
-QN_ASSERT_SIZE(funcparam_t, 8);
 #endif
 
 
@@ -2218,6 +2197,29 @@ QSAPI nuint qm_stc_set_desc(QmGam* restrict g, nuint ptr);
 #define qm_get_desc(g,type)	(type)qm_stc_get_desc((QmGam*)(g))
 /// @brief 표현자(디스크립터)를 쓴다
 #define qm_set_desc(g,ptr)	qm_stc_set_desc((QmGam*)(g),(nuint)(ptr))
+
+
+//////////////////////////////////////////////////////////////////////////
+// type check
+#define QN_ASSERT_SIZE(t,s)	static_assert(sizeof(t) == s, #t " type size must be " #s "")
+QN_ASSERT_SIZE(BOOL, 4);
+QN_ASSERT_SIZE(byte, 1);
+QN_ASSERT_SIZE(ushort, 2);
+QN_ASSERT_SIZE(uint, 4);
+QN_ASSERT_SIZE(ullong, 8);
+QN_ASSERT_SIZE(halfint, 2);
+QN_ASSERT_SIZE(vshort, 2);
+QN_ASSERT_SIZE(vint, 4);
+QN_ASSERT_SIZE(vllong, 8);
+QN_ASSERT_SIZE(any_t, 8);
+#ifdef _QN_64_
+QN_ASSERT_SIZE(nuint, 8);
+QN_ASSERT_SIZE(funcparam_t, 16);
+#else
+QN_ASSERT_SIZE(nuint, 4);
+QN_ASSERT_SIZE(funcparam_t, 8);
+#endif
+#undef QN_ASSERT_SIZE
 
 QN_EXTC_END
 
