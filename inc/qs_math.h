@@ -3334,9 +3334,11 @@ QN_INLINE void qn_vec4h_set(QnVecH4* p, float x, float y, float z, float w)
 /// @brief (제네릭) 거리
 #define qn_dist(x,y)			_Generic((x), QnVec2*: qn_vec2_dist, QnVec3*: qn_vec3_dist)(x)
 /// @brief (제네릭) 곱셈
-#define qn_mul(x,y,z)			_Generic((x), QnQuat*: qn_quat_mul, QnMat4: qn_mat4_mul)(x,y,z)
+#define qn_mul(x,y,z)			_Generic((x), QnQuat*: qn_quat_mul, QnMat4*: qn_mat4_mul)(x,y,z)
 /// @brief (제네릭) 역함수
-#define qn_inv(x,y)				_Generic((x), QnQuat*: qn_quat_inv, QnMat4: qn_mat4_inv)(x,y)
+#define qn_inv(x,y)				_Generic((x), QnQuat*: qn_quat_inv, QnMat4*: qn_mat4_inv)(x,y)
+/// @brief (제네릭) 셋
+
 
 #ifdef _MSC_VER
 #pragma warning(pop)

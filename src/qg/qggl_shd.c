@@ -7,9 +7,9 @@
 //////////////////////////////////////////////////////////////////////////
 // 레이아웃
 
-static void gl_vlo_dispose(QmGam* g);
+static void gl_vlo_dispose(QxGam* g);
 
-qv_name(QmGam) vt_gl_vlo =
+qv_name(QxGam) vt_gl_vlo =
 {
 	.name = "GLVlo",
 	.dispose = gl_vlo_dispose,
@@ -103,13 +103,13 @@ GlVlo* gl_vlo_allocator(QgRdh* rdh, int count, const QgLayoutInput* layouts)
 	for (size_t i = 0; i < QGLOS_MAX_VALUE; i++)
 		self->base.stride[i] = (ushort)offset[i];
 
-	return qm_init(self, GlVlo, &vt_gl_vlo);
+	return qx_init(self, GlVlo, &vt_gl_vlo);
 }
 
 //
-static void gl_vlo_dispose(QmGam* g)
+static void gl_vlo_dispose(QxGam* g)
 {
-	GlVlo* self = qm_cast(g, GlVlo);
+	GlVlo* self = qx_cast(g, GlVlo);
 	for (size_t i = 0; i < QGLOS_MAX_VALUE; i++)
 		if (self->es_elm[i])
 			qn_free(self->es_elm[i]);
@@ -122,7 +122,7 @@ static void gl_vlo_dispose(QmGam* g)
 
 static void gl_shd_match_auto_uniform(GlUniform* u);
 
-static void gl_shd_dispose(QmGam* g);
+static void gl_shd_dispose(QxGam* g);
 static bool gl_shd_bind(QgShd* g, QgShdType type, const void* data, int size, int flags);
 static bool gl_shd_bind_shd(QgShd* g, QgShdType type, QgShd* shaderptr);
 
@@ -144,18 +144,18 @@ GlShd* gl_shd_allocator(QgRdh* rdh, const char* name)
 	GlShd* self = qn_alloc_zero_1(GlShd);
 	qn_val_if_fail(self, NULL);
 #ifdef _MSC_VER
-	qm_set_desc(self, gl_func.glCreateProgram());
+	qx_set_desc(self, gl_func.glCreateProgram());
 #else
-	qm_set_desc(self, GL_FUNC(glCreateProgram)());	// 이렇게 하면 LINT에 걸려버렷
+	qx_set_desc(self, GL_FUNC(glCreateProgram)());	// 이렇게 하면 LINT에 걸려버렷
 #endif
-	return qm_init(self, GlShd, &vt_gl_shd);
+	return qx_init(self, GlShd, &vt_gl_shd);
 }
 
 //
-static void gl_shd_dispose(QmGam* g)
+static void gl_shd_dispose(QxGam* g)
 {
-	GlShd* self = qm_cast(g, GlShd);
-	const GLuint handle = qm_get_desc(self, GLuint);
+	GlShd* self = qx_cast(g, GlShd);
+	const GLuint handle = qx_get_desc(self, GLuint);
 
 	gl_shd_handle_unload(self->rvertex, handle);
 	gl_shd_handle_unload(self->rfragment, handle);
@@ -205,8 +205,8 @@ static bool gl_shd_bind(QgShd* g, QgShdType type, const void* data, int size, in
 	// 해야함: 플래그
 	// 해야함: 보관
 	qn_val_if_fail(data != NULL && size >= 0, false);
-	GlShd* self = qm_cast(g, GlShd);
-	const GLuint handle = qm_get_desc(self, GLuint);
+	GlShd* self = qx_cast(g, GlShd);
+	const GLuint handle = qx_get_desc(self, GLuint);
 
 	if (type == QGSHADER_VS)
 	{
@@ -236,9 +236,9 @@ static bool gl_shd_bind(QgShd* g, QgShdType type, const void* data, int size, in
 static bool gl_shd_bind_shd(QgShd* g, QgShdType type, QgShd* shaderptr)
 {
 	qn_val_if_fail(shaderptr, false);
-	GlShd* self = qm_cast(g, GlShd);
-	const GlShd* shader = qm_cast(shaderptr, GlShd);
-	const GLuint handle = qm_get_desc(self, GLuint);
+	GlShd* self = qx_cast(g, GlShd);
+	const GlShd* shader = qx_cast(shaderptr, GlShd);
+	const GLuint handle = qx_get_desc(self, GLuint);
 	bool ok = false;
 
 	if (QN_TMASK(type, QGSHADER_VS))
@@ -324,14 +324,14 @@ QgLoUsage gl_shd_attrib_to_usage(const char* name)
 //
 bool gl_shd_link(QgShd* g)
 {
-	GlShd* self = qm_cast(g, GlShd);
+	GlShd* self = qx_cast(g, GlShd);
 	qn_val_if_ok(self->linked, true);
 	qn_val_if_fail(self->rvertex && self->rfragment, false);
 
 	GLchar sz[1024];
 
 	// 링크
-	const GLuint gl_program = qm_get_desc(self, GLuint);
+	const GLuint gl_program = qx_get_desc(self, GLuint);
 	GL_FUNC(glLinkProgram)(gl_program);
 
 	if (gl_get_program_iv(gl_program, GL_LINK_STATUS) == GL_FALSE)
@@ -438,7 +438,7 @@ void gl_shd_process_uniforms(GlShd* self)
 		if (u->base.role == QGSHR_AUTO)
 			u->auto_func(qg_rdh_instance, (GLint)u->base.offset, &u->base);
 		else if (u->base.role == QGSHR_MANUAL && self->base.intr_func)
-			(self->base.intr_func)(self->base.intr_data, &u->base, qm_cast(self, QgShd));
+			(self->base.intr_func)(self->base.intr_data, &u->base, qx_cast(self, QgShd));
 	}
 }
 
@@ -688,7 +688,7 @@ static void gl_shd_match_auto_uniform(GlUniform* u)
 //////////////////////////////////////////////////////////////////////////
 // 버퍼
 
-static void gl_buf_dispose(QmGam* g);
+static void gl_buf_dispose(QxGam* g);
 static void* gl_buf_map(QgBuf* g);
 static bool gl_buf_unmap(QgBuf* g);
 static bool gl_buf_data(QgBuf* g, const void* data);
@@ -744,24 +744,24 @@ GlBuf* gl_buf_allocator(QgRdh* rdh, QgBufType type, int count, int stride, const
 		return NULL;
 	}
 
-	qm_set_desc(self, gl_id);
+	qx_set_desc(self, gl_id);
 	self->base.type = type;
 	self->base.stride = (ushort)stride;
 	self->base.size = (int)size;
 	self->gl_type = gl_type;
 	self->gl_usage = gl_usage;
 
-	return qm_init(self, GlBuf, &vt_gl_buf);
+	return qx_init(self, GlBuf, &vt_gl_buf);
 }
 
-static void gl_buf_dispose(QmGam* g)
+static void gl_buf_dispose(QxGam* g)
 {
-	GlBuf* self = qm_cast(g, GlBuf);
+	GlBuf* self = qx_cast(g, GlBuf);
 
 	if (self->lock_buf)
 		qn_free(self->lock_buf);
 
-	const GLuint gl_handle = qm_get_desc(self, GLuint);
+	const GLuint gl_handle = qx_get_desc(self, GLuint);
 	GL_FUNC(glDeleteBuffers)(1, &gl_handle);
 
 	qn_free(self);
@@ -769,7 +769,7 @@ static void gl_buf_dispose(QmGam* g)
 
 static void* gl_buf_map(QgBuf* g)
 {
-	GlBuf* self = qm_cast(g, GlBuf);
+	GlBuf* self = qx_cast(g, GlBuf);
 
 	if (self->lock_buf != NULL)
 		return NULL;
@@ -781,10 +781,10 @@ static void* gl_buf_map(QgBuf* g)
 
 static bool gl_buf_unmap(QgBuf* g)
 {
-	GlBuf* self = qm_cast(g, GlBuf);
+	GlBuf* self = qx_cast(g, GlBuf);
 	qn_val_if_fail(self->lock_buf == NULL, false);
 
-	gl_bind_buffer(GLBASE_RDH_INSTANCE, self->gl_type, qm_get_desc(self, GLuint));
+	gl_bind_buffer(GLBASE_RDH_INSTANCE, self->gl_type, qx_get_desc(self, GLuint));
 	GL_FUNC(glBufferData)(self->gl_type, self->base.size, self->lock_buf, self->gl_usage);
 
 	qn_free_ptr(&self->lock_buf);
@@ -795,11 +795,11 @@ static bool gl_buf_unmap(QgBuf* g)
 static bool gl_buf_data(QgBuf* g, const void* data)
 {
 	qn_val_if_fail(data, false);
-	GlBuf* self = qm_cast(g, GlBuf);
+	GlBuf* self = qx_cast(g, GlBuf);
 	qn_val_if_fail(self->lock_buf == NULL, false);
 	qn_val_if_fail(self->gl_usage == GL_DYNAMIC_DRAW, false);
 
-	gl_bind_buffer(GLBASE_RDH_INSTANCE, self->gl_type, qm_get_desc(self, GLuint));
+	gl_bind_buffer(GLBASE_RDH_INSTANCE, self->gl_type, qx_get_desc(self, GLuint));
 	GL_FUNC(glBufferData)(self->gl_type, self->base.size, data, self->gl_usage);
 
 	return true;

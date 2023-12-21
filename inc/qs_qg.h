@@ -756,7 +756,7 @@ QSAPI const char* qg_window_event_str(QgWindowEventType wev);
 /// @brief 렌더러 디바이스
 struct QgRdh
 {
-	QmGam				base;
+	QxGam				base;
 
 	QgDeviceInfo		caps;
 
@@ -767,7 +767,7 @@ struct QgRdh
 
 qv_name(QgRdh)
 {
-	qv_name(QmGam)	base;
+	qv_name(QxGam)	base;
 	void (*reset)(QgRdh*);
 	void (*clear)(QgRdh*, int, const QnColor*, int, float);
 
@@ -992,7 +992,7 @@ QSAPI bool qg_rdh_ptr_draw_indexed(QgRdh* g, QgTopology tpg,
 /// @brief 버퍼
 struct QgBuffer
 {
-	QmGam				base;
+	QxGam				base;
 
 	QgBufType			type;
 	uint				size;
@@ -1003,7 +1003,7 @@ struct QgBuffer
 
 qv_name(QgBuffer)
 {
-	qv_name(QmGam)		base;
+	qv_name(QxGam)		base;
 	void*(*map)(QgBuffer*);
 	bool (*unmap)(QgBuffer*);
 	bool (*data)(QgBuffer*, const void*);

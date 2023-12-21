@@ -100,7 +100,7 @@ extern QgRdh* qg_rdh_instance;
  * @brief 렌더러 최종 제거
  * @param g 렌더러
 */
-extern void rdh_internal_dispose(QmGam* g);
+extern void rdh_internal_dispose(QxGam* g);
 /**
  * @brief 렌더러 내부 리셋
  * @param self 렌더러

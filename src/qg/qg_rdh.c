@@ -55,9 +55,9 @@ QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, 
 	QgRenderParam* param = &self->param;
 	qn_color_set(&param->bgc, 0.1f, 0.1f, 0.1f, 1.0f);
 	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)
-		qn_vec4_rst(&param->v[i]);
+		qn_rst(&param->v[i]);
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)
-		qn_mat4_rst(&param->m[i]);
+		qn_rst(&param->m[i]);
 
 	//
 	qv_cast(self, QgRdh)->reset(self);
@@ -65,9 +65,9 @@ QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, 
 }
 
 //
-void rdh_internal_dispose(QmGam* g)
+void rdh_internal_dispose(QxGam* g)
 {
-	QgRdh* self = qm_cast(g, QgRdh);
+	QgRdh* self = qx_cast(g, QgRdh);
 
 	if (qg_rdh_instance == self)
 		qg_rdh_instance = NULL;
@@ -253,8 +253,8 @@ void qg_rdh_set_view(QgRdh* self, const QnMat4* view)
 {
 	qn_ret_if_fail(view);
 	self->tm.view = *view;
-	qn_mat4_inv(&self->tm.inv, view, NULL);
-	qn_mat4_mul(&self->tm.view_project, view, &self->tm.project);
+	qn_inv(&self->tm.inv, view);
+	qn_mul(&self->tm.view_project, view, &self->tm.project);
 	self->invokes.invokes++;
 	self->invokes.transforms++;
 }

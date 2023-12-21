@@ -53,9 +53,9 @@ void gl_finalize(GlRdh* self)
 	qn_ret_if_ok(self->disposed);
 
 	// 펜딩
-	qm_unload(self->pd.ib);
+	qx_unload(self->pd.ib);
 	for (int i = 0; i < QGLOS_MAX_VALUE; i++)
-		qm_unload(self->pd.vb[i]);
+		qx_unload(self->pd.vb[i]);
 
 	// 세션
 
@@ -71,7 +71,7 @@ void gl_reset(QgRdh* rdh)
 {
 	rdh_internal_reset(rdh);
 
-	GlRdh* self = qm_cast(rdh, GlRdh);
+	GlRdh* self = qx_cast(rdh, GlRdh);
 	QgDeviceInfo* caps = &rdh_caps(self);
 
 	//----- 펜딩
@@ -129,7 +129,7 @@ void gl_end(QgRdh* rdh)
 // 플러시
 void gl_flush(QgRdh* rdh)
 {
-	const GlRdh* self = qm_cast(rdh, GlRdh);
+	const GlRdh* self = qx_cast(rdh, GlRdh);
 	GL_FUNC(glFlush)();
 	SDL_GL_SwapWindow(self->window);
 }
@@ -166,15 +166,15 @@ void gl_clear(QgRdh* rdh, int flag, const QnColor* color, int stencil, float dep
 // 세이더 설정
 void gl_set_shader(QgRdh* rdh, QgShd* shader, QgVlo* layout)
 {
-	GlRdh* self = qm_cast(rdh, GlRdh);
-	GlShd* shd = qm_cast(shader, GlShd);
-	GlVlo* vlo = qm_cast(layout, GlVlo);
+	GlRdh* self = qx_cast(rdh, GlRdh);
+	GlShd* shd = qx_cast(shader, GlShd);
+	GlVlo* vlo = qx_cast(layout, GlVlo);
 
 	if (shd == NULL)
 	{
 		if (self->pd.shd != NULL)
 		{
-			qm_unload(self->pd.shd);
+			qx_unload(self->pd.shd);
 			self->pd.shd = NULL;
 		}
 	}
@@ -182,9 +182,9 @@ void gl_set_shader(QgRdh* rdh, QgShd* shader, QgVlo* layout)
 	{
 		if (self->pd.shd != shd)
 		{
-			qm_unload(self->pd.shd);
+			qx_unload(self->pd.shd);
 			self->pd.shd = shd;
-			qm_load(shd);
+			qx_load(shd);
 		}
 	}
 
@@ -192,7 +192,7 @@ void gl_set_shader(QgRdh* rdh, QgShd* shader, QgVlo* layout)
 	{
 		if (self->pd.vlo != NULL)
 		{
-			qm_unload(self->pd.vlo);
+			qx_unload(self->pd.vlo);
 			self->pd.vlo = NULL;
 		}
 	}
@@ -200,9 +200,9 @@ void gl_set_shader(QgRdh* rdh, QgShd* shader, QgVlo* layout)
 	{
 		if (self->pd.vlo != vlo)
 		{
-			qm_unload(self->pd.vlo);
+			qx_unload(self->pd.vlo);
 			self->pd.vlo = vlo;
-			qm_load(vlo);
+			qx_load(vlo);
 		}
 	}
 }
@@ -210,14 +210,14 @@ void gl_set_shader(QgRdh* rdh, QgShd* shader, QgVlo* layout)
 // 인덱스 설정
 bool gl_set_index(QgRdh* rdh, QgBuf* buffer)
 {
-	GlRdh* self = qm_cast(rdh, GlRdh);
-	GlBuf* buf = qm_cast(buffer, GlBuf);
+	GlRdh* self = qx_cast(rdh, GlRdh);
+	GlBuf* buf = qx_cast(buffer, GlBuf);
 
 	if (buf == NULL)
 	{
 		if (self->pd.ib != NULL)
 		{
-			qm_unload(self->pd.ib);
+			qx_unload(self->pd.ib);
 			self->pd.ib = NULL;
 		}
 	}
@@ -227,9 +227,9 @@ bool gl_set_index(QgRdh* rdh, QgBuf* buffer)
 
 		if (self->pd.ib != buf)
 		{
-			qm_unload(self->pd.ib);
+			qx_unload(self->pd.ib);
 			self->pd.ib = buf;
-			qm_load(buf);
+			qx_load(buf);
 		}
 	}
 
@@ -239,14 +239,14 @@ bool gl_set_index(QgRdh* rdh, QgBuf* buffer)
 // 정점 설정
 bool gl_set_vertex(QgRdh* rdh, QgLoStage stage, QgBuf* buffer)
 {
-	GlRdh* self = qm_cast(rdh, GlRdh);
-	GlBuf* buf = qm_cast(buffer, GlBuf);
+	GlRdh* self = qx_cast(rdh, GlRdh);
+	GlBuf* buf = qx_cast(buffer, GlBuf);
 
 	if (buf == NULL)
 	{
 		if (self->pd.vb[stage] != NULL)
 		{
-			qm_unload(self->pd.vb[stage]);
+			qx_unload(self->pd.vb[stage]);
 			self->pd.vb[stage] = NULL;
 		}
 	}
@@ -256,9 +256,9 @@ bool gl_set_vertex(QgRdh* rdh, QgLoStage stage, QgBuf* buffer)
 
 		if (self->pd.vb[stage] != buf)
 		{
-			qm_unload(self->pd.vb[stage]);
+			qx_unload(self->pd.vb[stage]);
 			self->pd.vb[stage] = buf;
-			qm_load(buf);
+			qx_load(buf);
 		}
 	}
 
@@ -268,8 +268,8 @@ bool gl_set_vertex(QgRdh* rdh, QgLoStage stage, QgBuf* buffer)
 // 뎁스 스텐셀 설정
 bool gl_set_depth_stencil(QgRdh* rdh, QgDsm* depth_stencil)
 {
-	GlRdh* self = qm_cast(rdh, GlRdh);
-	GlDsm* dsm = qm_cast(depth_stencil, GlDsm);
+	GlRdh* self = qx_cast(rdh, GlRdh);
+	GlDsm* dsm = qx_cast(depth_stencil, GlDsm);
 
 	if (dsm != NULL)
 	{
@@ -293,8 +293,8 @@ bool gl_set_depth_stencil(QgRdh* rdh, QgDsm* depth_stencil)
 // 래스터라이저 설정
 bool gl_set_rasterizer(QgRdh* rdh, QgRsz* rasterizer)
 {
-	GlRdh* self = qm_cast(rdh, GlRdh);
-	GlRsz* rsz = qm_cast(rasterizer, GlRsz);
+	GlRdh* self = qx_cast(rdh, GlRdh);
+	GlRsz* rsz = qx_cast(rasterizer, GlRsz);
 
 	if (rsz != NULL)
 	{
@@ -320,7 +320,7 @@ QgVlo* gl_create_layout(QgRdh* rdh, int count, const QgLayoutInput* layouts)
 	//GlRdh* self = qm_cast(rdh, GlRdh);
 	GlVlo* vlo = gl_vlo_allocator(rdh, count, layouts);
 	// 해야함: 관리
-	return qm_cast(vlo, QgVlo);
+	return qx_cast(vlo, QgVlo);
 }
 
 // 세이더 만들기
@@ -329,7 +329,7 @@ QgShd* gl_create_shader(QgRdh* rdh, const char* name)
 	//GlRdh* self = qm_cast(rdh, GlRdh);
 	GlShd* shd = gl_shd_allocator(rdh, name);
 	// 해야함: 관리
-	return qm_cast(shd, QgShd);
+	return qx_cast(shd, QgShd);
 }
 
 // 버퍼 만들기
@@ -338,7 +338,7 @@ QgBuf* gl_create_buffer(QgRdh* rdh, QgBufType type, int count, int stride, const
 	//GlRdh* self = qm_cast(rdh, GlRdh);
 	GlBuf* buf = gl_buf_allocator(rdh, type, count, stride, data);
 	// 해야함: 관리
-	return qm_cast(buf, QgBuf);
+	return qx_cast(buf, QgBuf);
 }
 
 // 뎁스 스텐실 만들기
@@ -347,7 +347,7 @@ QgDsm* gl_create_depth_stencil(QgRdh* rdh, const QgDepthStencilProp* prop)
 	//GlRdh* self = qm_cast(rdh, GlRdh);
 	GlDsm* dsm = gl_dsm_allocator(rdh, prop);
 	// 해야함: 관리
-	return qm_cast(dsm, QgDsm);
+	return qx_cast(dsm, QgDsm);
 }
 
 // 래스터라이저 만들기
@@ -356,7 +356,7 @@ QgRsz* gl_create_rasterizer(QgRdh* rdh, const QgRasterizerProp* prop)
 	//GlRdh* self = qm_cast(rdh, GlRdh);
 	GlRsz* rsz = gl_rsz_allocator(rdh, prop);
 	// 해야함: 관리
-	return qm_cast(rsz, QgRsz);
+	return qx_cast(rsz, QgRsz);
 }
 
 // 토폴로지 변환
@@ -378,7 +378,7 @@ static GLenum gl_conv_topology(QgTopology tpg)
 // 그리기
 bool gl_draw(QgRdh* rdh, QgTopology tpg, int vcount)
 {
-	GlRdh* self = qm_cast(rdh, GlRdh);
+	GlRdh* self = qx_cast(rdh, GlRdh);
 	const GlPending* pd = &self->pd;
 	qn_val_if_fail(pd->vlo && pd->shd, false);
 
@@ -394,7 +394,7 @@ bool gl_draw(QgRdh* rdh, QgTopology tpg, int vcount)
 // 그리기 인덱스
 bool gl_draw_indexed(QgRdh* rdh, QgTopology tpg, int icount)
 {
-	GlRdh* self = qm_cast(rdh, GlRdh);
+	GlRdh* self = qx_cast(rdh, GlRdh);
 	const GlPending* pd = &self->pd;
 	qn_val_if_fail(pd->vlo && pd->shd && pd->ib, false);
 
@@ -402,7 +402,7 @@ bool gl_draw_indexed(QgRdh* rdh, QgTopology tpg, int icount)
 		pd->ib->base.stride == sizeof(ushort) ? GL_UNSIGNED_SHORT :
 		pd->ib->base.stride == sizeof(uint) ? GL_UNSIGNED_INT : 0;
 	qn_val_if_fail(gl_index != 0, false);
-	gl_bind_buffer(self, GL_ELEMENT_ARRAY_BUFFER, qm_get_desc(pd->ib, GLuint));
+	gl_bind_buffer(self, GL_ELEMENT_ARRAY_BUFFER, qx_get_desc(pd->ib, GLuint));
 
 	gl_commit_shader(self);
 	gl_commit_layout(self);
@@ -416,7 +416,7 @@ bool gl_draw_indexed(QgRdh* rdh, QgTopology tpg, int icount)
 // 포인터 데이터로 그리기
 bool gl_ptr_draw(QgRdh* rdh, QgTopology tpg, int vcount, int vstride, const void* vdata)
 {
-	GlRdh* self = qm_cast(rdh, GlRdh);
+	GlRdh* self = qx_cast(rdh, GlRdh);
 	const GlPending* pd = &self->pd;
 	qn_val_if_fail(pd->vlo && pd->shd, false);
 
@@ -437,7 +437,7 @@ bool gl_ptr_draw_indexed(QgRdh* rdh, QgTopology tpg, int vcount, int vstride, co
 	else if (istride == sizeof(uint)) gl_index = GL_UNSIGNED_INT;
 	else return false;
 
-	GlRdh* self = qm_cast(rdh, GlRdh);
+	GlRdh* self = qx_cast(rdh, GlRdh);
 	const GlPending* pd = &self->pd;
 	qn_val_if_fail(pd->vlo && pd->shd, false);
 
@@ -504,7 +504,7 @@ void gl_commit_layout(GlRdh* self)
 			const GlLayoutElement* stelm = vlo->es_elm[s];
 
 			const GLsizei gl_stride = (GLsizei)vlo->base.stride[s];
-			const GLuint gl_buf = qm_get_desc(buf, GLuint);
+			const GLuint gl_buf = qx_get_desc(buf, GLuint);
 			gl_bind_buffer(self, GL_ARRAY_BUFFER, gl_buf);
 
 			// 해당 스테이지의 레이아웃
@@ -708,8 +708,8 @@ void gl_commit_shader(GlRdh* self)
 		return;
 	}
 
-	gl_shd_link(qm_cast(shd, QgShd));
-	const GLuint gl_program = qm_get_desc(shd, GLuint);
+	gl_shd_link(qx_cast(shd, QgShd));
+	const GLuint gl_program = qx_get_desc(shd, GLuint);
 	if (self->ss.program != gl_program)
 	{
 		self->ss.program = gl_program;
