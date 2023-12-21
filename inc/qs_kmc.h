@@ -1,21 +1,17 @@
-﻿/*
- * QsLib [KMC Helper]
- * Made by kim 2004-2024
- *
- * 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
- * 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
- */
- /**
-  * @file qs_kmc.h
-  *
-  * [KMC Helper]는 키보드/마우스/컨트롤러 정의를 목표로 합니다.
-  */
+﻿//
+// QsLib [KMC Helper]
+// Made by kim 2004-2024
+//
+// 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
+// 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
+//
 #pragma once
 
-  //////////////////////////////////////////////////////////////////////////
-  // key board
+//////////////////////////////////////////////////////////////////////////
+// key board
 
-  // 수정 대상: VK키를 다른 종류로 바꾸는게 좋겟음. 예컨데 스캔코드
+/// @brief 키보드 입력 키 정의
+/// @todo VK키를 다른 종류로 바꾸는게 좋겟음. 예컨데 스캔코드
 typedef enum QikKey
 {
 	QIK_NONE = 0,
@@ -138,6 +134,7 @@ typedef enum QikKey
 	QIK_MAX_VALUE = 0xFF,
 } QikKey;
 
+/// @brief 상태키 마스크
 typedef enum QikMask
 {
 	QIKM_NONE = 0,
@@ -153,6 +150,8 @@ typedef enum QikMask
 
 //////////////////////////////////////////////////////////////////////////
 // mouse button
+
+/// @brief 마우스 버튼
 typedef enum QimButton
 {
 	QIM_NONE = 0,
@@ -163,6 +162,7 @@ typedef enum QimButton
 	QIM_X2 = 5,
 } QimButton;
 
+/// @brief 마스 버튼 마스크
 typedef enum QimMask
 {
 	QIMM_LEFT = QN_BIT(QIM_LEFT),
@@ -176,6 +176,7 @@ typedef enum QimMask
 	QIMM_DOUBLE = 0x1000,
 } QimMask;
 
+/// @brief 마우스 눌림 상태 추적
 typedef enum QimTrack
 {
 	QIMT_MOVE = 0,
@@ -183,6 +184,7 @@ typedef enum QimTrack
 	QIMT_UP = 2,
 } QimTrack;
 
+/// @brief 터치 상태 추적
 typedef enum QimTouch
 {
 	QITT_BEGIN = 1,
@@ -194,6 +196,7 @@ typedef enum QimTouch
 //////////////////////////////////////////////////////////////////////////
 // controller key
 
+/// @brief 컨트롤러 버튼
 typedef enum QicButton
 {
 	QIC_NONE = 0,
@@ -213,6 +216,7 @@ typedef enum QicButton
 	QIC_Y = 14,
 } QicButton;
 
+/// @brief 컨트롤러 마스크
 typedef enum QicMask
 {
 	QICM_UP = QN_BIT(QIC_UP),
@@ -235,21 +239,18 @@ typedef enum QicMask
 //////////////////////////////////////////////////////////////////////////
 // function
 
-/**
- * @brief QikKey를 문자열로
- * @param key QikKey
- * @return QikKey의 이름
-*/
+/// @brief QikKey를 문자열로
+/// @param key QikKey
+/// @return QikKey의 이름
+///
 QSAPI const char* qg_qik_str(QikKey key);
-/**
- * @brief QimButton를 문자열로
- * @param button QimButton
- * @return QimButton의 이름
-*/
+/// @brief QimButton를 문자열로
+/// @param button QimButton
+/// @return QimButton의 이름
+///
 QSAPI const char* qg_qim_str(QimButton button);
-/**
- * @brief QicButton를 문자열로
- * @param button QicButton
- * @return QicButton의 이름
-*/
+/// @brief QicButton를 문자열로
+/// @param button QicButton
+/// @return QicButton의 이름
+///
 QSAPI const char* qg_qic_str(QicButton button);
