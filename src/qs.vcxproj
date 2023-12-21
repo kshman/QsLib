@@ -90,7 +90,7 @@
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>USE_ES2;USE_D12;_LIB;_STATIC;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_ES3;USE_D12;_LIB;_STATIC;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -112,7 +112,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>USE_ES2;USE_D12;_LIB;_STATIC;WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_ES3;USE_D12;_LIB;_STATIC;WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -138,7 +138,7 @@
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>USE_ES2;USE_D12;_LIB;_STATIC;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_ES3;USE_D12;_LIB;_STATIC;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -161,7 +161,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>USE_ES2;USE_D12;_LIB;_STATIC;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_ES3;USE_D12;_LIB;_STATIC;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -209,6 +209,7 @@
     <ClInclude Include="qn\zlib\zlib.h" />
     <ClInclude Include="qn\zlib\zlib_proxy.h" />
     <ClInclude Include="qn\zlib\zutil.h" />
+    <ClInclude Include="qs_conf.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.c">
@@ -265,9 +266,9 @@
     <ClCompile Include="qn\qn_time.c" />
     <ClCompile Include="qn\qn_debug.c" />
     <ClCompile Include="qn\qn_file.c" />
-    <ClCompile Include="qn\qn_gam.c" />
+    <ClCompile Include="qn\qs_gam.c" />
     <ClCompile Include="qn\qn_hash.c" />
-    <ClCompile Include="qn\qn_math.c" />
+    <ClCompile Include="qn\qm_math.c" />
     <ClCompile Include="qn\qn_mem.c" />
     <ClCompile Include="qn\qn_mlu.c" />
     <ClCompile Include="qn\qn_sort.c" />

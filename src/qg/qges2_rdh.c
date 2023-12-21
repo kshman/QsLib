@@ -10,7 +10,7 @@
 //////////////////////////////////////////////////////////////////////////
 // ES2 렌더 디바이스
 
-static void es2_dispose(QxGam* g);
+static void es2_dispose(QsGam* g);
 static void es2_reset(QgRdh* rdh);
 
 qv_name(QgRdh) vt_es2_rdh =
@@ -111,7 +111,7 @@ QgRdh* es2_allocator(void* oshandle, const int flags)
 		return NULL;
 	}
 
-	gl_initialize(qx_cast(self, GlRdhBase), window, renderer, flags);
+	gl_initialize(qs_cast(self, GlRdhBase), window, renderer, flags);
 
 	// capa
 	QgDeviceInfo* caps = &rdh_caps(self);
@@ -127,16 +127,16 @@ QgRdh* es2_allocator(void* oshandle, const int flags)
 	ss->layout.count = caps->max_vertex_attrs;
 	ss->layout.props = qn_alloc_zero(caps->max_vertex_attrs, GlLayoutProp);
 
-	es2_reset(qx_cast(self, QgRdh));
-	return qx_init(self, QgRdh, &vt_es2_rdh);
+	es2_reset(qs_cast(self, QgRdh));
+	return qs_init(self, QgRdh, &vt_es2_rdh);
 }
 
 // 끝장내
-static void es2_dispose(QxGam* g)
+static void es2_dispose(QsGam* g)
 {
-	const Es2Rdh* self = qx_cast(g, Es2Rdh);
+	const Es2Rdh* self = qs_cast(g, Es2Rdh);
 
-	gl_finalize(qx_cast(self, GlRdhBase));
+	gl_finalize(qs_cast(self, GlRdhBase));
 
 	// SDL 렌더러
 	if (self->base.renderer)

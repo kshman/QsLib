@@ -53,11 +53,11 @@ QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, 
 	tm->depth.Far = 100000.0f;
 
 	QgRenderParam* param = &self->param;
-	qn_color_set(&param->bgc, 0.1f, 0.1f, 0.1f, 1.0f);
+	qm_set4(&param->bgc, 0.1f, 0.1f, 0.1f, 1.0f);
 	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)
-		qn_rst(&param->v[i]);
+		qm_rst(&param->v[i]);
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)
-		qn_rst(&param->m[i]);
+		qm_rst(&param->m[i]);
 
 	//
 	qv_cast(self, QgRdh)->reset(self);
@@ -65,9 +65,9 @@ QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, 
 }
 
 //
-void rdh_internal_dispose(QxGam* g)
+void rdh_internal_dispose(QsGam* g)
 {
-	QgRdh* self = qx_cast(g, QgRdh);
+	QgRdh* self = qs_cast(g, QgRdh);
 
 	if (qg_rdh_instance == self)
 		qg_rdh_instance = NULL;
@@ -81,18 +81,18 @@ void rdh_internal_reset(QgRdh* self)
 {
 	// tm
 	QgRenderTm* tm = &self->tm;
-	qn_vec2_set_size(&tm->size, &qg_stub_instance->size);
+	qm_set1(&tm->size, &qg_stub_instance->size);
 	const float aspect = tm->size.x / tm->size.y;
-	qn_mat4_rst(&tm->world);
-	qn_mat4_rst(&tm->view);
-	qn_mat4_perspective_lh(&tm->project, QN_PI_H, aspect, &tm->depth);
-	qn_mat4_mul(&tm->view_project, &tm->view, &tm->project);
-	qn_mat4_rst(&tm->inv);
-	qn_mat4_rst(&tm->ortho);
-	qn_mat4_rst(&tm->frm);
+	qm_rst(&tm->world);
+	qm_rst(&tm->view);
+	qm_mat4_perspective_lh(&tm->project, QM_PI_H, aspect, &tm->depth);
+	qm_mul(&tm->view_project, &tm->view, &tm->project);
+	qm_rst(&tm->inv);
+	qm_rst(&tm->ortho);
+	qm_rst(&tm->frm);
 	for (size_t i = 0; i < QN_COUNTOF(tm->tex); i++)
-		qn_mat4_rst(&tm->tex[i]);
-	qn_rect_set(&tm->scissor, 0, 0, qg_stub_instance->size.width, qg_stub_instance->size.height);
+		qm_rst(&tm->tex[i]);
+	qm_set4(&tm->scissor, 0, 0, qg_stub_instance->size.width, qg_stub_instance->size.height);
 
 	// param
 	QgRenderParam* param = &self->param;
@@ -126,7 +126,7 @@ bool qg_rdh_loop(QgRdh* self)
 //
 static bool qg_rdh_eq_size(QgRdh* self)
 {
-	const QnSize* size = &qg_stub_instance->size;
+	const QmSize* size = &qg_stub_instance->size;
 	const int width = (int)self->tm.size.x;
 	const int height = (int)self->tm.size.y;
 	return size->width == width && size->height == height;
@@ -190,22 +190,22 @@ void qg_rdh_reset(QgRdh* self)
 }
 
 //
-void qg_rdh_clear(QgRdh* self, QgClear clear, const QnColor* color, int stencil, float depth)
+void qg_rdh_clear(QgRdh* self, QgClear clear, const QmColor* color, int stencil, float depth)
 {
 	self->invokes.invokes++;
 	qv_cast(self, QgRdh)->clear(self, clear, color, stencil, depth);
 }
 
 //
-void qg_rdh_set_param_vec3(QgRdh* self, int at, const QnVec3* v)
+void qg_rdh_set_param_vec3(QgRdh* self, int at, const QmVec3* v)
 {
 	qn_ret_if_fail(v && (size_t)at < QN_COUNTOF(self->param.v));
-	qn_vec4_set(&self->param.v[at], v->x, v->y, v->z, 0.0f);
+	qm_set4(&self->param.v[at], v->x, v->y, v->z, 0.0f);
 	self->invokes.invokes++;
 }
 
 //
-void qg_rdh_set_param_vec4(QgRdh* self, int at, const QnVec4* v)
+void qg_rdh_set_param_vec4(QgRdh* self, int at, const QmVec4* v)
 {
 	qn_ret_if_fail(v && (size_t)at < QN_COUNTOF(self->param.v));
 	self->param.v[at] = *v;
@@ -213,7 +213,7 @@ void qg_rdh_set_param_vec4(QgRdh* self, int at, const QnVec4* v)
 }
 
 //
-void qg_rdh_set_param_mat4(QgRdh* self, int at, const QnMat4* m)
+void qg_rdh_set_param_mat4(QgRdh* self, int at, const QmMat4* m)
 {
 	qn_ret_if_fail(m && (size_t)at < QN_COUNTOF(self->param.m));
 	self->param.m[at] = *m;
@@ -221,7 +221,7 @@ void qg_rdh_set_param_mat4(QgRdh* self, int at, const QnMat4* m)
 }
 
 //
-void qg_rdh_set_param_weight(QgRdh* self, int count, QnMat4* weight)
+void qg_rdh_set_param_weight(QgRdh* self, int count, QmMat4* weight)
 {
 	qn_ret_if_fail(weight && count > 0);
 	self->param.bone_count = count;
@@ -230,17 +230,17 @@ void qg_rdh_set_param_weight(QgRdh* self, int count, QnMat4* weight)
 }
 
 //
-void qg_rdh_set_background(QgRdh* self, const QnColor* color)
+void qg_rdh_set_background(QgRdh* self, const QmColor* color)
 {
 	if (color)
 		self->param.bgc = *color;
 	else
-		qn_color_set(&self->param.bgc, 0.0f, 0.0f, 0.0f, 1.0f);
+		qm_set4(&self->param.bgc, 0.0f, 0.0f, 0.0f, 1.0f);
 	self->invokes.invokes++;
 }
 
 //
-void qg_rdh_set_world(QgRdh* self, const QnMat4* world)
+void qg_rdh_set_world(QgRdh* self, const QmMat4* world)
 {
 	qn_ret_if_fail(world);
 	self->tm.world = *world;
@@ -249,34 +249,34 @@ void qg_rdh_set_world(QgRdh* self, const QnMat4* world)
 }
 
 //
-void qg_rdh_set_view(QgRdh* self, const QnMat4* view)
+void qg_rdh_set_view(QgRdh* self, const QmMat4* view)
 {
 	qn_ret_if_fail(view);
 	self->tm.view = *view;
-	qn_inv(&self->tm.inv, view);
-	qn_mul(&self->tm.view_project, view, &self->tm.project);
+	qm_inv(&self->tm.inv, view);
+	qm_mul(&self->tm.view_project, view, &self->tm.project);
 	self->invokes.invokes++;
 	self->invokes.transforms++;
 }
 
 //
-void qg_rdh_set_project(QgRdh* self, const QnMat4* proj)
+void qg_rdh_set_project(QgRdh* self, const QmMat4* proj)
 {
 	qn_ret_if_fail(proj);
 	self->tm.project = *proj;
-	qn_mat4_mul(&self->tm.view_project, &self->tm.view, proj);
+	qm_mul(&self->tm.view_project, &self->tm.view, proj);
 	self->invokes.invokes++;
 	self->invokes.transforms++;
 }
 
 //
-void qg_rdh_set_view_project(QgRdh* self, const QnMat4* proj, const QnMat4* view)
+void qg_rdh_set_view_project(QgRdh* self, const QmMat4* proj, const QmMat4* view)
 {
 	qn_ret_if_fail(proj && view);
 	self->tm.project = *proj;
 	self->tm.view = *view;
-	qn_mat4_inv(&self->tm.inv, view, NULL);
-	qn_mat4_mul(&self->tm.view_project, proj, view);
+	qm_inv(&self->tm.inv, view);
+	qm_mul(&self->tm.view_project, proj, view);
 	self->invokes.invokes++;
 	self->invokes.transforms++;
 }

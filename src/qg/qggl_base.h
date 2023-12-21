@@ -76,7 +76,7 @@ extern void gl_initialize(GlRdh* self, SDL_Window* window, SDL_Renderer* rendere
 extern void gl_finalize(GlRdh* self);
 extern void gl_reset(QgRdh* rdh);
 
-extern void gl_clear(QgRdh* rdh, int flag, const QnColor* color, int stencil, float depth);
+extern void gl_clear(QgRdh* rdh, int flag, const QmColor* color, int stencil, float depth);
 extern bool gl_begin(QgRdh* rdh, bool clear);
 extern void gl_end(QgRdh* rdh);
 extern void gl_flush(QgRdh* rdh);

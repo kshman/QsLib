@@ -426,8 +426,8 @@ typedef union QgEvent
 	struct QgEventLayout
 	{
 		QgEventType			ev;
-		QnSize				size;							/// @brief 윈도우 크기
-		QnRect				bound;							/// @brief 변경된 윈도우 바운드
+		QmSize				size;							/// @brief 윈도우 크기
+		QmRect				bound;							/// @brief 변경된 윈도우 바운드
 	}					layout;								/// @brief 레이아웃 이벤트
 	struct QgEventKeyboard
 	{
@@ -439,23 +439,23 @@ typedef union QgEvent
 	struct QgEventMouseMove
 	{
 		QgEventType			ev;
-		QnPoint				pt;								/// @brief 마우스 좌표
-		QnPoint				delta;							/// @brief 마우스 이동 거리
+		QmPoint				pt;								/// @brief 마우스 좌표
+		QmPoint				delta;							/// @brief 마우스 이동 거리
 		QimMask				mask;							/// @brief 마우스 버튼의 상태
 	}					mmove;								/// @brief 마우스 이동 이벤트
 	struct QgEventMouseButton
 	{
 		QgEventType			ev;
-		QnPoint				pt;								/// @brief 마우스 좌표
+		QmPoint				pt;								/// @brief 마우스 좌표
 		QimButton			button;							/// @brief 이벤트에 해당하는 버튼
 		QimMask				mask;							/// @brief 마으스 버튼의 상태
 	}					mbutton;							/// @brief 마우스 버튼 눌림 떼임 이벤트
 	struct QgEventMouseWheel
 	{
 		QgEventType			ev;
-		QnPoint				pt;								/// @brief 마우스 좌표
-		QnPoint				wheel;							/// @brief 휠 움직임 (Y가 기본휠, X는 틸트)
-		QnVec2				precise;						/// @brief 정밀한 움직임 (Y가 기본휠, X는 틸트)
+		QmPoint				pt;								/// @brief 마우스 좌표
+		QmPoint				wheel;							/// @brief 휠 움직임 (Y가 기본휠, X는 틸트)
+		QmVec2				precise;						/// @brief 정밀한 움직임 (Y가 기본휠, X는 틸트)
 		int					direction;						/// @brief 참이면 뱡향이 반대
 	}					mwheel;								/// @brief 마우스 휠 이벤트
 	struct QgEventText
@@ -500,15 +500,15 @@ typedef struct QgUimKey
 typedef struct QgUimMouse
 {
 	QimMask				mask;								/// @brief 마우스 버튼 상태
-	QnPoint				pt;									/// @brief 마우스 좌표
-	QnPoint				last;								/// @brief 마우스의 이전 좌표
+	QmPoint				pt;									/// @brief 마우스 좌표
+	QmPoint				last;								/// @brief 마우스의 이전 좌표
 
 	struct QgUimMouseClick
 	{
 		uint				tick;							/// @brief 첫번째 눌렸을 때
 		uint				ltick;							/// @brief 마지막으로 두번 눌렸을 때
 		QimButton			btn;							/// @brief 두번 검새 때 눌린 마우스 버튼
-		QnPoint				loc;							/// @brief 두번 검사 때 마우스 위치
+		QmPoint				loc;							/// @brief 두번 검사 때 마우스 위치
 	}					clk;								/// @brief 마우스 눌림 정보
 	struct QgUimMouseLimit
 	{
@@ -517,9 +517,9 @@ typedef struct QgUimMouse
 	}					lim;								/// @brief 마우스 더블 클릭 구현 정보
 	struct QgUimMouseWheel
 	{
-		QnVec2				accm;							/// @brief 가속도
-		QnVec2				precise;						/// @brief 정밀 값
-		QnPoint				integral;						/// @brief 값
+		QmVec2				accm;							/// @brief 가속도
+		QmVec2				precise;						/// @brief 정밀 값
+		QmPoint				integral;						/// @brief 값
 		BOOL				direction;						/// @brief 거짓=기본휠, 참=틸트휠
 	}					wheel;
 } QgUimMouse;
@@ -528,9 +528,9 @@ typedef struct QgUimMouse
 typedef struct QgUimCtrl
 {
 	QicButton			btn : 16;							/// @brief 컨트롤러 버튼 상태
-	QnPoint				trg;
-	QnVec2				lthb;
-	QnVec2				rthb;
+	QmPoint				trg;
+	QmVec2				lthb;
+	QmVec2				rthb;
 } QgUimCtrl;
 
 /// @brief 컨트롤러 정보
@@ -595,26 +595,26 @@ typedef struct QgRenderInvoke
 /// @brief 렌더러 트랜스 포매이션
 typedef struct QgRenderTm
 {
-	QnVec2				size;
-	QnDepth				depth;
-	QnMat4				world;
-	QnMat4				view;
-	QnMat4				project;
-	QnMat4				view_project;
-	QnMat4				inv;								/// @brief inverse view
-	QnMat4				ortho;								/// @brief ortho transform
-	QnMat4				frm;								/// @brief tex formation
-	QnMat4				tex[4];
-	QnRect				scissor;
+	QmVec2				size;
+	QmDepth				depth;
+	QmMat4				world;
+	QmMat4				view;
+	QmMat4				project;
+	QmMat4				view_project;
+	QmMat4				inv;								/// @brief inverse view
+	QmMat4				ortho;								/// @brief ortho transform
+	QmMat4				frm;								/// @brief tex formation
+	QmMat4				tex[4];
+	QmRect				scissor;
 } QgRenderTm;
 
 /// @brief 렌더러 인수
 typedef struct QgRenderParam
 {
-	QnColor				bgc;
-	QnVec4				v[4];
-	QnMat4				m[4];
-	QnMat4*				bone_ptr;
+	QmColor				bgc;
+	QmVec4				v[4];
+	QmMat4				m[4];
+	QmMat4*				bone_ptr;
 	int					bone_count;
 } QgRenderParam;
 
@@ -756,7 +756,7 @@ QSAPI const char* qg_window_event_str(QgWindowEventType wev);
 /// @brief 렌더러 디바이스
 struct QgRdh
 {
-	QxGam				base;
+	QsGam				base;
 
 	QgDeviceInfo		caps;
 
@@ -767,9 +767,9 @@ struct QgRdh
 
 qv_name(QgRdh)
 {
-	qv_name(QxGam)	base;
+	qv_name(QsGam)	base;
 	void (*reset)(QgRdh*);
-	void (*clear)(QgRdh*, int, const QnColor*, int, float);
+	void (*clear)(QgRdh*, int, const QmColor*, int, float);
 
 	bool (*begin)(QgRdh*, bool);
 	void (*end)(QgRdh*);
@@ -851,7 +851,7 @@ QSAPI void qg_rdh_reset(QgRdh* g);
 /// @param stencil 스텐실 값
 /// @param depth 뎁스 값
 ///
-QSAPI void qg_rdh_clear(QgRdh* g, QgClear clear, const QnColor* color, int stencil, float depth);
+QSAPI void qg_rdh_clear(QgRdh* g, QgClear clear, const QmColor* color, int stencil, float depth);
 
 /// @brief 세이더 vec3 타입 파라미터 설정
 /// @param g 렌더러
@@ -860,51 +860,51 @@ QSAPI void qg_rdh_clear(QgRdh* g, QgClear clear, const QnColor* color, int stenc
 /// @note 내부에서 vec4 타입으로 처리한다
 /// @see qg_rdh_set_param_vec4
 ///
-QSAPI void qg_rdh_set_param_vec3(QgRdh* g, int at, const QnVec3* v);
+QSAPI void qg_rdh_set_param_vec3(QgRdh* g, int at, const QmVec3* v);
 /// @brief 세이더 vec4 타입 파라미터 설정
 /// @param g 렌더러
 /// @param at 0부터 3까지 총 4가지
 /// @param v vec4 타입 값
 ///
-QSAPI void qg_rdh_set_param_vec4(QgRdh* g, int at, const QnVec4* v);
+QSAPI void qg_rdh_set_param_vec4(QgRdh* g, int at, const QmVec4* v);
 /// @brief 세이더 mat4 타입 파라미터 설정
 /// @param g 렌더러
 /// @param at 0부터 3까지 총 4가지
 /// @param m mat4 타입 값
 ///
-QSAPI void qg_rdh_set_param_mat4(QgRdh* g, int at, const QnMat4* m);
+QSAPI void qg_rdh_set_param_mat4(QgRdh* g, int at, const QmMat4* m);
 /// @brief 세이더 영향치(주로 뼈대 팔레트) 파라미터 설정
 /// @param g 렌더러
 /// @param count 행렬 갯수
 /// @param weight 영향치 행렬
 ///
-QSAPI void qg_rdh_set_param_weight(QgRdh* g, int count, QnMat4* weight);
+QSAPI void qg_rdh_set_param_weight(QgRdh* g, int count, QmMat4* weight);
 /// @brief 배경색을 설정한다
 /// @param g 렌더러
 /// @param background_color 배경색
 ///
-QSAPI void qg_rdh_set_background(QgRdh* g, const QnColor* background_color);
+QSAPI void qg_rdh_set_background(QgRdh* g, const QmColor* background_color);
 /// @brief 월드 행렬을 설정한다
 /// @param g 렌더러
 /// @param world 월드 행렬
 ///
-QSAPI void qg_rdh_set_world(QgRdh* g, const QnMat4* world);
+QSAPI void qg_rdh_set_world(QgRdh* g, const QmMat4* world);
 /// @brief 뷰 행렬을 설정한다
 /// @param g 렌더러
 /// @param view 뷰 행렬
 ///
-QSAPI void qg_rdh_set_view(QgRdh* g, const QnMat4* view);
+QSAPI void qg_rdh_set_view(QgRdh* g, const QmMat4* view);
 /// @brief 투영 행렬을 설정한다
 /// @param g 렌더러
 /// @param proj 투영 행렬
 ///
-QSAPI void qg_rdh_set_project(QgRdh* g, const QnMat4* proj);
+QSAPI void qg_rdh_set_project(QgRdh* g, const QmMat4* proj);
 /// @brief 뷰와 투영 행렬을 설정한다
 /// @param g 렌더러
 /// @param proj 투영 행렬
 /// @param view 뷰 행렬
 ///
-QSAPI void qg_rdh_set_view_project(QgRdh* g, const QnMat4* proj, const QnMat4* view);
+QSAPI void qg_rdh_set_view_project(QgRdh* g, const QmMat4* proj, const QmMat4* view);
 
 /// @brief 버퍼를 만든다
 /// @param g 렌더러
@@ -992,7 +992,7 @@ QSAPI bool qg_rdh_ptr_draw_indexed(QgRdh* g, QgTopology tpg,
 /// @brief 버퍼
 struct QgBuffer
 {
-	QxGam				base;
+	QsGam				base;
 
 	QgBufType			type;
 	uint				size;
@@ -1003,7 +1003,7 @@ struct QgBuffer
 
 qv_name(QgBuffer)
 {
-	qv_name(QxGam)		base;
+	qv_name(QsGam)		base;
 	void*(*map)(QgBuffer*);
 	bool (*unmap)(QgBuffer*);
 	bool (*data)(QgBuffer*, const void*);

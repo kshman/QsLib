@@ -224,7 +224,7 @@ void qn_msleep(ullong microseconds)
 #if defined __EMSCRIPTEN__
 	if (emscripten_has_asyncify())
 	{
-		emscripten_sleep(ms * 1000 / QN_USEC_PER_SEC);
+		emscripten_sleep(microseconds * 1000 / QN_USEC_PER_SEC);
 		return;
 	}
 #endif

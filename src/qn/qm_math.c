@@ -11,14 +11,14 @@
 #endif
 
 //
-void qn_vec3_closed_line(QnVec3* restrict pv, const QnLine3* restrict line, const QnVec3* restrict loc)
+void qm_vec3_closed_line(QmVec3* restrict pv, const QmLine3* restrict line, const QmVec3* restrict loc)
 {
-	QnVec3 c, z;
-	qn_vec3_sub(&c, loc, &line->begin);
-	qn_vec3_sub(&z, &line->end, &line->begin);
-	const float d = qn_vec3_len(&z);
-	qn_vec3_mag(&z, &z, 1.0f / d);
-	const float t = qn_vec3_dot(&z, &c);
+	QmVec3 c, z;
+	qm_vec3_sub(&c, loc, &line->begin);
+	qm_vec3_sub(&z, &line->end, &line->begin);
+	const float d = qm_vec3_len(&z);
+	qm_vec3_mag(&z, &z, 1.0f / d);
+	const float t = qm_vec3_dot(&z, &c);
 
 	if (t < 0.0f)
 		*pv = line->begin;
@@ -26,70 +26,70 @@ void qn_vec3_closed_line(QnVec3* restrict pv, const QnLine3* restrict line, cons
 		*pv = line->end;
 	else
 	{
-		qn_vec3_mag(&z, &z, t);
-		qn_vec3_add(pv, &line->begin, &z);
+		qm_vec3_mag(&z, &z, t);
+		qm_vec3_add(pv, &line->begin, &z);
 	}
 }
 
 //
-void qn_vec3_lerp_len(QnVec3* restrict pv, const QnVec3* restrict left, const QnVec3* restrict right, float scale, float len)
+void qm_vec3_lerp_len(QmVec3* restrict pv, const QmVec3* restrict left, const QmVec3* restrict right, float scale, float len)
 {
-	QnVec3 v0, v1;
-	qn_vec3_norm(&v0, left);
-	qn_vec3_norm(&v1, right);
+	QmVec3 v0, v1;
+	qm_vec3_norm(&v0, left);
+	qm_vec3_norm(&v1, right);
 	pv->x = v0.x + (v1.x - v0.x) * scale;
 	pv->y = v0.y + (v1.y - v0.y) * scale;
 	pv->z = v0.z + (v1.z - v0.z) * scale;
-	qn_vec3_mag(pv, pv, len);
+	qm_vec3_mag(pv, pv, len);
 }
 
 //
-void qn_vec3_form_norm(QnVec3* restrict pv, const QnVec3* restrict v0, const QnVec3* restrict v1, const QnVec3* restrict v2)
+void qm_vec3_form_norm(QmVec3* restrict pv, const QmVec3* restrict v0, const QmVec3* restrict v1, const QmVec3* restrict v2)
 {
-	QnVec3 t0, t1;
-	qn_vec3_sub(&t0, v1, v0);
-	qn_vec3_sub(&t1, v2, v1);
-	qn_vec3_cross(pv, &t0, &t1);
-	qn_vec3_mag(pv, pv, qn_vec3_len(pv));
+	QmVec3 t0, t1;
+	qm_vec3_sub(&t0, v1, v0);
+	qm_vec3_sub(&t1, v2, v1);
+	qm_vec3_cross(pv, &t0, &t1);
+	qm_vec3_mag(pv, pv, qm_vec3_len(pv));
 }
 
 //
-bool qn_vec3_reflect(QnVec3* restrict pv, const QnVec3* restrict in, const QnVec3* restrict dir)
+bool qm_vec3_reflect(QmVec3* restrict pv, const QmVec3* restrict in, const QmVec3* restrict dir)
 {
-	const float len = qn_vec3_len(in);
-	QnVec3 t;
+	const float len = qm_vec3_len(in);
+	QmVec3 t;
 	float dot;
-	if (qn_eqf(len, 0.0f))
-		qn_vec3_rst(&t);
+	if (qm_eqf(len, 0.0f))
+		qm_vec3_rst(&t);
 	else
 	{
 		dot = 1.0f / len;
-		qn_vec3_mag(&t, in, dot);
+		qm_vec3_mag(&t, in, dot);
 	}
-	dot = qn_vec3_dot(&t, dir);
-	if (dot + QN_EPSILON > 0.0f)
+	dot = qm_vec3_dot(&t, dir);
+	if (dot + QM_EPSILON > 0.0f)
 		return false;
 	else
 	{
-		qn_vec3_set(pv, -2.0f * dot * dir->x + t.x, -2.0f * dot * dir->y + t.y, -2.0f * dot * dir->z + t.z);
-		qn_vec3_mag(pv, pv, len);
+		qm_vec3_set(pv, -2.0f * dot * dir->x + t.x, -2.0f * dot * dir->y + t.y, -2.0f * dot * dir->z + t.z);
+		qm_vec3_mag(pv, pv, len);
 		return true;
 	}
 }
 
 //
-bool qn_vec3_intersect_line(QnVec3* restrict pv, const QnPlane* restrict plane, const QnVec3* restrict loc, const QnVec3* restrict dir)
+bool qm_vec3_intersect_line(QmVec3* restrict pv, const QmPlane* restrict plane, const QmVec3* restrict loc, const QmVec3* restrict dir)
 {
 	// v2->pl<-v1
-	const float dot = qn_vec3_dot((const QnVec3*)plane, dir);
-	if (qn_eqf(dot, 0.0f))
+	const float dot = qm_vec3_dot((const QmVec3*)plane, dir);
+	if (qm_eqf(dot, 0.0f))
 	{
-		qn_vec3_rst(pv);
+		qm_vec3_rst(pv);
 		return false;
 	}
 	else
 	{
-		const float tmp = (plane->d + qn_vec3_dot((const QnVec3*)plane, loc)) / dot;
+		const float tmp = (plane->d + qm_vec3_dot((const QmVec3*)plane, loc)) / dot;
 		pv->x = loc->x - tmp * dir->x;
 		pv->y = loc->y - tmp * dir->y;
 		pv->z = loc->z - tmp * dir->z;
@@ -98,43 +98,43 @@ bool qn_vec3_intersect_line(QnVec3* restrict pv, const QnPlane* restrict plane, 
 }
 
 //
-bool qn_vec3_intersect_point(QnVec3* restrict pv, const QnPlane* restrict plane, const QnVec3* restrict v1, const QnVec3* restrict v2)
+bool qm_vec3_intersect_point(QmVec3* restrict pv, const QmPlane* restrict plane, const QmVec3* restrict v1, const QmVec3* restrict v2)
 {
-	QnVec3 dir;
-	qn_vec3_sub(&dir, v2, v1);
-	return qn_vec3_intersect_line(pv, plane, v1, &dir);
+	QmVec3 dir;
+	qm_vec3_sub(&dir, v2, v1);
+	return qm_vec3_intersect_line(pv, plane, v1, &dir);
 }
 
 //
-bool qn_vec3_intersect_between_point(QnVec3* restrict pv, const QnPlane* restrict plane, const QnVec3* restrict v1, const QnVec3* restrict v2)
+bool qm_vec3_intersect_between_point(QmVec3* restrict pv, const QmPlane* restrict plane, const QmVec3* restrict v1, const QmVec3* restrict v2)
 {
-	QnVec3 dir;
-	qn_vec3_sub(&dir, v2, v1);
-	if (!qn_vec3_intersect_line(pv, plane, v1, &dir))
+	QmVec3 dir;
+	qm_vec3_sub(&dir, v2, v1);
+	if (!qm_vec3_intersect_line(pv, plane, v1, &dir))
 		return false;
 	else
 	{
-		const float f = qn_vec3_len_sq(&dir);
-		return qn_vec3_dist_sq(pv, v1) <= f && qn_vec3_dist_sq(pv, v2) <= f;
+		const float f = qm_vec3_len_sq(&dir);
+		return qm_vec3_dist_sq(pv, v1) <= f && qm_vec3_dist_sq(pv, v2) <= f;
 	}
 }
 
 //
-bool qn_vec3_intersect_planes(QnVec3* restrict pv, const QnPlane* restrict plane, const QnPlane* restrict other1, const QnPlane* restrict other2)
+bool qm_vec3_intersect_planes(QmVec3* restrict pv, const QmPlane* restrict plane, const QmPlane* restrict other1, const QmPlane* restrict other2)
 {
-	QnVec3 dir, loc;
-	return (qn_plane_intersect(plane, &loc, &dir, other1)) ? qn_vec3_intersect_line(pv, other2, &loc, &dir) : false;
+	QmVec3 dir, loc;
+	return (qm_plane_intersect(plane, &loc, &dir, other1)) ? qm_vec3_intersect_line(pv, other2, &loc, &dir) : false;
 }
 
 //
-void qn_quat_slerp(QnQuat* restrict pq, const QnQuat* restrict left, const QnQuat* restrict right, float change)
+void qm_quat_slerp(QmQuat* restrict pq, const QmQuat* restrict left, const QmQuat* restrict right, float change)
 {
-	float dot = qn_quat_dot(left, right);
+	float dot = qm_quat_dot(left, right);
 
-	QnQuat q1, q2;
+	QmQuat q1, q2;
 	if (dot < 0.0f)
 	{
-		qn_quat_ivt(&q1, left);
+		qm_quat_ivt(&q1, left);
 		q2 = *right;
 		dot = -dot;
 	}
@@ -155,7 +155,7 @@ void qn_quat_slerp(QnQuat* restrict pq, const QnQuat* restrict left, const QnQua
 		else
 		{
 			float fs, fc;
-			qn_sincosf(dot, &fs, &fc);	// fs 는 sinf(fc) 일 수도 있다
+			qm_sincosf(dot, &fs, &fc);	// fs 는 sinf(fc) 일 수도 있다
 
 			f1 = sinf(fc * (1.0f - change)) / fs;
 			f2 = sinf(fc * change) / fs;
@@ -163,9 +163,9 @@ void qn_quat_slerp(QnQuat* restrict pq, const QnQuat* restrict left, const QnQua
 	}
 	else
 	{
-		qn_quat_set(&q2, -q1.y, q1.x, -q1.w, q1.z);
-		f1 = sinf((float)QN_PI * (0.5f - change));
-		f2 = sinf((float)QN_PI * change);
+		qm_quat_set(&q2, -q1.y, q1.x, -q1.w, q1.z);
+		f1 = sinf((float)QM_PI * (0.5f - change));
+		f2 = sinf((float)QM_PI * change);
 	}
 
 	pq->x = f1 * q1.x + f2 * q2.x;
@@ -175,10 +175,10 @@ void qn_quat_slerp(QnQuat* restrict pq, const QnQuat* restrict left, const QnQua
 }
 
 //
-void qn_quat_mat4(QnQuat* restrict pq, const QnMat4* restrict rot)
+void qm_quat_mat4(QmQuat* restrict pq, const QmMat4* restrict rot)
 {
 	const float diag = rot->_11 + rot->_22 + rot->_33 + 1.0f;
-	QnQuat q;
+	QmQuat q;
 
 	if (diag > 0.0f)
 	{
@@ -234,19 +234,19 @@ void qn_quat_mat4(QnQuat* restrict pq, const QnMat4* restrict rot)
 }
 
 //
-void qn_quat_vec(QnQuat* restrict pq, const QnVec3* restrict rot)
+void qm_quat_vec(QmQuat* restrict pq, const QmVec3* restrict rot)
 {
 	float rs, rc;
 	float angle = rot->x * 0.5f;
-	qn_sincosf(angle, &rs, &rc);
+	qm_sincosf(angle, &rs, &rc);
 
 	float ps, pc;
 	angle = rot->y * 0.5f;
-	qn_sincosf(angle, &ps, &pc);
+	qm_sincosf(angle, &ps, &pc);
 
 	float ys, yc;
 	angle = rot->z * 0.5f;
-	qn_sincosf(angle, &ys, &yc);
+	qm_sincosf(angle, &ys, &yc);
 
 	const float pcyc = pc * yc;
 	const float psyc = ps * yc;
@@ -260,9 +260,9 @@ void qn_quat_vec(QnQuat* restrict pq, const QnVec3* restrict rot)
 }
 
 //
-void qn_quat_ln(QnQuat* restrict pq, const QnQuat* restrict q)
+void qm_quat_ln(QmQuat* restrict pq, const QmQuat* restrict q)
 {
-	const float n = qn_quat_len_sq(q);
+	const float n = qm_quat_len_sq(q);
 	if (n > 1.0001f)
 	{
 		pq->x = q->x;
@@ -291,7 +291,7 @@ void qn_quat_ln(QnQuat* restrict pq, const QnQuat* restrict q)
 }
 
 //
-void qn_mat4_tran(QnMat4* restrict pm, const QnMat4* restrict m)
+void qm_mat4_tran(QmMat4* restrict pm, const QmMat4* restrict m)
 {
 #ifdef USE_EMM_INTRIN
 #if 1
@@ -321,7 +321,7 @@ void qn_mat4_tran(QnMat4* restrict pm, const QnMat4* restrict m)
 	_mm_store_ps(&pm->_14, _mm_shuffle_ps(sm2, sm3, 0xDD));
 #endif
 #else
-	QnMat4 t =
+	QmMat4 t =
 	{
 		._11 = m->_11,
 		._12 = m->_21,
@@ -348,7 +348,7 @@ void qn_mat4_tran(QnMat4* restrict pm, const QnMat4* restrict m)
 }
 
 //
-void qn_mat4_mul(QnMat4* restrict pm, const QnMat4* restrict left, const QnMat4* restrict right)
+void qm_mat4_mul(QmMat4* restrict pm, const QmMat4* restrict left, const QmMat4* restrict right)
 {
 #ifdef USE_EMM_INTRIN
 	register __m128 r1, r2;
@@ -381,7 +381,7 @@ void qn_mat4_mul(QnMat4* restrict pm, const QnMat4* restrict left, const QnMat4*
 	_mm_storeu_ps(&pm->_31, r1);
 	_mm_storeu_ps(&pm->_41, r2);
 #else
-	QnMat4 m =
+	QmMat4 m =
 	{
 		._11 = left->_11 * right->_11 + left->_12 * right->_21 + left->_13 * right->_31 + left->_14 * right->_41,
 		._12 = left->_11 * right->_12 + left->_12 * right->_22 + left->_13 * right->_32 + left->_14 * right->_42,
@@ -408,7 +408,7 @@ void qn_mat4_mul(QnMat4* restrict pm, const QnMat4* restrict left, const QnMat4*
 }
 
 //
-void qn_mat4_inv_det(QnMat4* restrict pm, const QnMat4* restrict m, float* /*NULLABLE*/determinant)
+void qm_mat4_inv_det(QmMat4* restrict pm, const QmMat4* restrict m, float* /*NULLABLE*/determinant)
 {
 #ifdef USE_EMM_INTRIN
 	static const alignas(16) uint s_PNNP[] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };
@@ -494,7 +494,7 @@ void qn_mat4_inv_det(QnMat4* restrict pm, const QnMat4* restrict m, float* /*NUL
 		(m->_11 * m->_22 - m->_21 * m->_12) * (m->_33 * m->_44 - m->_43 * m->_34) - (m->_11 * m->_32 - m->_31 * m->_12) * (m->_23 * m->_44 - m->_43 * m->_24) +
 		(m->_11 * m->_42 - m->_41 * m->_12) * (m->_23 * m->_34 - m->_33 * m->_24) + (m->_21 * m->_32 - m->_31 * m->_22) * (m->_13 * m->_44 - m->_43 * m->_14) -
 		(m->_21 * m->_42 - m->_41 * m->_22) * (m->_13 * m->_34 - m->_33 * m->_14) + (m->_31 * m->_42 - m->_41 * m->_32) * (m->_13 * m->_24 - m->_23 * m->_14);
-	if (qn_eqf(f, 0.0f))
+	if (qm_eqf(f, 0.0f))
 	{
 		if (determinant)
 			*determinant = 0.0f;
@@ -504,7 +504,7 @@ void qn_mat4_inv_det(QnMat4* restrict pm, const QnMat4* restrict m, float* /*NUL
 	}
 
 	f = 1.0f / f;
-	QnMat4 t =
+	QmMat4 t =
 	{
 		._11 = f * (m->_22 * (m->_33 * m->_44 - m->_43 * m->_34) + m->_32 * (m->_43 * m->_24 - m->_23 * m->_44) + m->_42 * (m->_23 * m->_34 - m->_33 * m->_24)),
 		._12 = f * (m->_32 * (m->_13 * m->_44 - m->_43 * m->_14) + m->_42 * (m->_33 * m->_14 - m->_13 * m->_34) + m->_12 * (m->_43 * m->_34 - m->_33 * m->_44)),
@@ -534,21 +534,21 @@ void qn_mat4_inv_det(QnMat4* restrict pm, const QnMat4* restrict m, float* /*NUL
 }
 
 //
-void qn_mat4_inv(QnMat4* restrict pm, const QnMat4* restrict m)
+void qm_mat4_inv(QmMat4* restrict pm, const QmMat4* restrict m)
 {
-	qn_mat4_inv_det(pm, m, NULL);
+	qm_mat4_inv_det(pm, m, NULL);
 }
 
 //
-void qn_mat4_tmul(QnMat4* restrict pm, const QnMat4* restrict left, const QnMat4* restrict right)
+void qm_mat4_tmul(QmMat4* restrict pm, const QmMat4* restrict left, const QmMat4* restrict right)
 {
-	QnMat4 m;
-	qn_mat4_mul(&m, left, right);
-	qn_mat4_tran(pm, &m);
+	QmMat4 m;
+	qm_mat4_mul(&m, left, right);
+	qm_mat4_tran(pm, &m);
 }
 
 //
-float qn_mat4_det(const QnMat4* m)
+float qm_mat4_det(const QmMat4* m)
 {
 #ifdef USE_EMM_INTRIN
 	__m128 va, vb, vc;
@@ -582,16 +582,16 @@ float qn_mat4_det(const QnMat4* m)
 		(m->_11 * m->_22 - m->_21 * m->_12) * (m->_33 * m->_44 - m->_43 * m->_34) - (m->_11 * m->_32 - m->_31 * m->_12) * (m->_23 * m->_44 - m->_43 * m->_24) +
 		(m->_11 * m->_42 - m->_41 * m->_12) * (m->_23 * m->_34 - m->_33 * m->_24) + (m->_21 * m->_32 - m->_31 * m->_22) * (m->_13 * m->_44 - m->_43 * m->_14) -
 		(m->_21 * m->_42 - m->_41 * m->_22) * (m->_13 * m->_34 - m->_33 * m->_14) + (m->_31 * m->_42 - m->_41 * m->_32) * (m->_13 * m->_24 - m->_23 * m->_14);
-	return qn_eqf(f, 0.0f) ? 0.0f : 1.0f / f;
+	return qm_eqf(f, 0.0f) ? 0.0f : 1.0f / f;
 #endif
 }
 
 //
-void qn_mat4_shadow(QnMat4* restrict pm, const QnVec4* restrict light, const QnPlane* restrict plane)
+void qm_mat4_shadow(QmMat4* restrict pm, const QmVec4* restrict light, const QmPlane* restrict plane)
 {
 	const float d = plane->a * light->x + plane->b * light->y + plane->c * light->z + plane->d;
 
-	if (qn_eqf(light->w, 0.0f))
+	if (qm_eqf(light->w, 0.0f))
 	{
 		pm->_11 = -plane->a * light->x + d;
 		pm->_12 = -plane->a * light->y;
@@ -638,48 +638,48 @@ void qn_mat4_shadow(QnMat4* restrict pm, const QnVec4* restrict light, const QnP
 }
 
 //
-void qn_mat4_affine(QnMat4* restrict pm, const QnVec3* restrict scl, const QnVec3* restrict rotcenter, const QnQuat* restrict rot, const QnVec3* restrict loc)
+void qm_mat4_affine(QmMat4* restrict pm, const QmVec3* restrict scl, const QmVec3* restrict rotcenter, const QmQuat* restrict rot, const QmVec3* restrict loc)
 {
-	QnMat4 m1, m2, m3, m4, m5, p1, p2, p3;
+	QmMat4 m1, m2, m3, m4, m5, p1, p2, p3;
 
 	if (scl)
-		qn_mat4_scl(&m1, scl->x, scl->y, scl->z, true);
+		qm_mat4_scl(&m1, scl->x, scl->y, scl->z, true);
 	else
-		qn_mat4_rst(&m1);
+		qm_mat4_rst(&m1);
 
 	if (rotcenter)
 	{
-		qn_mat4_loc(&m2, -rotcenter->x, -rotcenter->y, -rotcenter->z, true);
-		qn_mat4_loc(&m4, rotcenter->x, rotcenter->y, rotcenter->z, true);
+		qm_mat4_loc(&m2, -rotcenter->x, -rotcenter->y, -rotcenter->z, true);
+		qm_mat4_loc(&m4, rotcenter->x, rotcenter->y, rotcenter->z, true);
 	}
 	else
 	{
-		qn_mat4_rst(&m2);
-		qn_mat4_rst(&m4);
+		qm_mat4_rst(&m2);
+		qm_mat4_rst(&m4);
 	}
 
 	if (rot)
-		qn_mat4_quat(&m3, rot, NULL);
+		qm_mat4_quat(&m3, rot, NULL);
 	else
-		qn_mat4_rst(&m3);
+		qm_mat4_rst(&m3);
 
 	if (loc)
-		qn_mat4_loc(&m5, loc->x, loc->y, loc->z, true);
+		qm_mat4_loc(&m5, loc->x, loc->y, loc->z, true);
 	else
-		qn_mat4_rst(&m5);
+		qm_mat4_rst(&m5);
 
-	qn_mat4_mul(&p1, &m1, &m2);
-	qn_mat4_mul(&p2, &p1, &m3);
-	qn_mat4_mul(&p3, &p2, &m4);
-	qn_mat4_mul(pm, &p3, &m5);
+	qm_mat4_mul(&p1, &m1, &m2);
+	qm_mat4_mul(&p2, &p1, &m3);
+	qm_mat4_mul(&p3, &p2, &m4);
+	qm_mat4_mul(pm, &p3, &m5);
 }
 
 //
-void qn_mat4_trfm(QnMat4* restrict m, const QnVec3* restrict loc, const QnQuat* restrict rot, const QnVec3* restrict scl)
+void qm_mat4_trfm(QmMat4* restrict m, const QmVec3* restrict loc, const QmQuat* restrict rot, const QmVec3* restrict scl)
 {
 	float* f = m->f16;
 
-	qn_mat4_quat(m, rot, NULL);
+	qm_mat4_quat(m, rot, NULL);
 
 	f[0] += loc->x * f[3];
 	f[1] += loc->y * f[3];
@@ -712,11 +712,11 @@ void qn_mat4_trfm(QnMat4* restrict m, const QnVec3* restrict loc, const QnQuat* 
 }
 
 //
-void qn_mat4_trfm_vec(QnMat4* restrict m, const QnVec3* restrict loc, const QnVec3* restrict rot, const QnVec3* restrict scl)
+void qm_mat4_trfm_vec(QmMat4* restrict m, const QmVec3* restrict loc, const QmVec3* restrict rot, const QmVec3* restrict scl)
 {
 	float* f = m->f16;
 
-	qn_mat4_vec(m, rot, NULL);
+	qm_mat4_vec(m, rot, NULL);
 
 	f[0] += loc->x * f[3];
 	f[1] += loc->y * f[3];
@@ -749,67 +749,67 @@ void qn_mat4_trfm_vec(QnMat4* restrict m, const QnVec3* restrict loc, const QnVe
 }
 
 //
-void qn_plane_trfm(QnPlane* restrict pp, const QnPlane* restrict plane, const QnMat4* restrict trfm)
+void qm_plane_trfm(QmPlane* restrict pp, const QmPlane* restrict plane, const QmMat4* restrict trfm)
 {
-	QnVec3 v, n, s;
+	QmVec3 v, n, s;
 
-	qn_vec3_mag(&v, (const QnVec3*)plane, -plane->d);
-	qn_vec3_trfm(&v, &v, trfm);
-	qn_vec3_norm(&n, (const QnVec3*)plane);
-	qn_vec3_set(&s, trfm->_11, trfm->_22, trfm->_33);
+	qm_vec3_mag(&v, (const QmVec3*)plane, -plane->d);
+	qm_vec3_trfm(&v, &v, trfm);
+	qm_vec3_norm(&n, (const QmVec3*)plane);
+	qm_vec3_set(&s, trfm->_11, trfm->_22, trfm->_33);
 
-	if (!qn_eqf(s.x, 0.0f) && !qn_eqf(s.y, 0.0f) && !qn_eqf(s.z, 0.0f) && (qn_eqf(s.x, 1.0f) || qn_eqf(s.y, 1.0f) || qn_eqf(s.z, 1.0f)))
+	if (!qm_eqf(s.x, 0.0f) && !qm_eqf(s.y, 0.0f) && !qm_eqf(s.z, 0.0f) && (qm_eqf(s.x, 1.0f) || qm_eqf(s.y, 1.0f) || qm_eqf(s.z, 1.0f)))
 	{
 		n.x = n.x / (s.x * s.x);
 		n.y = n.y / (s.y * s.y);
 		n.z = n.z / (s.z * s.z);
 	}
 
-	qn_vec3_trfm_norm(&n, &n, trfm);
-	qn_vec3_norm((QnVec3*)pp, &n);
-	pp->d = -qn_vec3_dot(&v, (const QnVec3*)pp);
+	qm_vec3_trfm_norm(&n, &n, trfm);
+	qm_vec3_norm((QmVec3*)pp, &n);
+	pp->d = -qm_vec3_dot(&v, (const QmVec3*)pp);
 }
 
 //
-void qn_plane_points(QnPlane* restrict pp, const QnVec3* restrict v1, const QnVec3* restrict v2, const QnVec3* restrict v3)
+void qm_plane_points(QmPlane* restrict pp, const QmVec3* restrict v1, const QmVec3* restrict v2, const QmVec3* restrict v3)
 {
-	QnVec3 t0, t1, t2;
-	qn_vec3_sub(&t0, v2, v1);
-	qn_vec3_sub(&t1, v3, v2);
-	qn_vec3_cross(&t2, &t0, &t1);
-	qn_vec3_norm(&t2, &t2);
-	qn_plane_set(pp, t2.x, t2.y, t2.z, -qn_vec3_dot(v1, &t2));
+	QmVec3 t0, t1, t2;
+	qm_vec3_sub(&t0, v2, v1);
+	qm_vec3_sub(&t1, v3, v2);
+	qm_vec3_cross(&t2, &t0, &t1);
+	qm_vec3_norm(&t2, &t2);
+	qm_plane_set(pp, t2.x, t2.y, t2.z, -qm_vec3_dot(v1, &t2));
 }
 
 //
-bool qn_plane_intersect(const QnPlane* restrict p, QnVec3* restrict loc, QnVec3* restrict dir, const QnPlane* restrict o)
+bool qm_plane_intersect(const QmPlane* restrict p, QmVec3* restrict loc, QmVec3* restrict dir, const QmPlane* restrict o)
 {
-	const float f0 = qn_vec3_len((const QnVec3*)p);
-	const float f1 = qn_vec3_len((const QnVec3*)o);
-	const float f2 = qn_vec3_dot((const QnVec3*)p, (const QnVec3*)o);
+	const float f0 = qm_vec3_len((const QmVec3*)p);
+	const float f1 = qm_vec3_len((const QmVec3*)o);
+	const float f2 = qm_vec3_dot((const QmVec3*)p, (const QmVec3*)o);
 	const float det = f0 * f1 - f2 * f2;
-	if (qn_absf(det) < QN_EPSILON)
+	if (qm_absf(det) < QM_EPSILON)
 		return false;
 
 	const float inv = 1.0f / det;
 	const float fa = (f1 * -p->d + f2 * o->d) * inv;
 	const float fb = (f0 * -o->d + f2 * p->d) * inv;
-	qn_vec3_cross(dir, (const QnVec3*)p, (const QnVec3*)o);
-	qn_vec3_set(loc, p->a * fa + o->a * fb, p->b * fa + o->b * fb, p->c * fa + o->c * fb);
+	qm_vec3_cross(dir, (const QmVec3*)p, (const QmVec3*)o);
+	qm_vec3_set(loc, p->a * fa + o->a * fb, p->b * fa + o->b * fb, p->c * fa + o->c * fb);
 	return true;
 }
 
 //
-bool qn_line3_intersect_sphere(const QnLine3* restrict p, const QnVec3* restrict org, float rad, float* dist)
+bool qm_line3_intersect_sphere(const QmLine3* restrict p, const QmVec3* restrict org, float rad, float* dist)
 {
-	QnVec3 t;
-	qn_vec3_sub(&t, org, &p->begin);
-	const float c = qn_vec3_len(&t);
+	QmVec3 t;
+	qm_vec3_sub(&t, org, &p->begin);
+	const float c = qm_vec3_len(&t);
 
-	QnVec3 v;
-	qn_line3_vec(p, &v);
-	qn_vec3_norm(&v, &v);
-	const float z = qn_vec3_dot(&t, &v);
+	QmVec3 v;
+	qm_line3_vec(p, &v);
+	qm_vec3_norm(&v, &v);
+	const float z = qm_vec3_dot(&t, &v);
 	const float d = rad * rad - (c * c - z * z);
 
 	if (d < 0.0f)

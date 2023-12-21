@@ -21,7 +21,7 @@
 //#define DEBUG_WINPROC_MESG
 #endif
 
-static_assert(sizeof(RECT) == sizeof(QnRect), "RECT size not equal to QnRect");
+static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 
 extern const char* windows_message_str(UINT mesg);
 
@@ -295,7 +295,7 @@ StubBase* stub_system_open(const char* title, int width, int height, int flags)
 		}
 	}
 
-	QnSize scrsize = { GetSystemMetrics(SM_CXSCREEN),GetSystemMetrics(SM_CYSCREEN) };
+	QmSize scrsize = { GetSystemMetrics(SM_CXSCREEN),GetSystemMetrics(SM_CYSCREEN) };
 	RECT rect;
 	if (width > 256 && height > 256)
 		SetRect(&rect, 0, 0, width, height);
@@ -313,10 +313,10 @@ StubBase* stub_system_open(const char* title, int width, int height, int flags)
 	}
 	AdjustWindowRect(&rect, style, FALSE);
 
-	QnPoint pos = { 0, 0 };
-	QnSize size = { rect.right - rect.left, rect.bottom - rect.top };
+	QmPoint pos = { 0, 0 };
+	QmSize size = { rect.right - rect.left, rect.bottom - rect.top };
 	if (QN_TMASK(flags, QGFLAG_FULLSCREEN) == false)
-		qn_point_set(&pos, (scrsize.width - size.width) / 2, (scrsize.height - size.height) / 2);
+		qm_point_set(&pos, (scrsize.width - size.width) / 2, (scrsize.height - size.height) / 2);
 
 	SetRect(&stub->window_rect, pos.x, pos.y, pos.x + size.width, pos.y + size.height);
 	memcpy(&stub->base.window_bound, &stub->window_rect, sizeof(RECT));
@@ -590,8 +590,8 @@ void stub_system_calc_layout(void)
 	memcpy(&stub->base.window_bound, &rect, sizeof(RECT));
 
 	GetClientRect(stub->hwnd, &rect);
-	qn_rect_set(&stub->base.bound, rect.left, rect.top, rect.right, rect.bottom);
-	qn_size_set_rect(&stub->base.size, &stub->base.bound);
+	qm_rect_set(&stub->base.bound, rect.left, rect.top, rect.right, rect.bottom);
+	qm_size_set_rect(&stub->base.size, &stub->base.bound);
 }
 
 //
@@ -637,7 +637,7 @@ static void win_set_mouse_point(WindowsStub* stub, LPARAM lp, bool save)
 	POINT pt = { .x = GET_X_LPARAM(lp), .y = GET_Y_LPARAM(lp) };
 	if (save)
 		mouse->last = mouse->pt;
-	qn_point_set(&mouse->pt, pt.x, pt.y);
+	qm_point_set(&mouse->pt, pt.x, pt.y);
 }
 
 // 마우스 버튼 처리
