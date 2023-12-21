@@ -114,7 +114,7 @@ QnMlu* qn_mlu_new_file_l(const wchar* filename)
 }
 
 //
-QnMlu* qn_mlu_new_buffer(const void* data, int size)
+QnMlu* qn_mlu_new_buffer(const void* restrict data, int size)
 {
 	qn_val_if_fail(data, NULL);
 	qn_val_if_fail(size > 0, NULL);
@@ -194,7 +194,7 @@ void qn_mlu_print(QnMlu* self)
 }
 
 //
-bool qn_mlu_load_buffer(QnMlu* self, const void* data, int size)
+bool qn_mlu_load_buffer(QnMlu* self, const void* restrict data, int size)
 {
 	qn_val_if_fail(data, false);
 	qn_val_if_fail(size > 0, false);

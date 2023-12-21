@@ -113,19 +113,19 @@ struct QnVec3
 };
 
 /** @brief vector4 */
-struct QN_ALIGNAS(16) QnVec4
+struct QN_STRUCT_ALIGN(16) QnVec4
 {
 	float x, y, z, w;
 };
 
 /** @brief quaternion */
-struct QN_ALIGNAS(16) QnQuat
+struct QN_STRUCT_ALIGN(16) QnQuat
 {
 	float x, y, z, w;
 };
 
 /** @brief matrix4 */
-struct QN_ALIGNAS(16) QnMat4
+struct QN_STRUCT_ALIGN(16) QnMat4
 {
 	union
 	{
@@ -176,13 +176,13 @@ struct QnCoord
 };
 
 /** @brief color */
-struct QN_ALIGNAS(16) QnColor
+struct QN_STRUCT_ALIGN(16) QnColor
 {
 	float r, g, b, a;
 };
 
 /** @brief byte color */
-struct QN_ALIGNAS(4) QnKolor
+struct QN_STRUCT_ALIGN(4) QnKolor
 {
 	byte b, g, r, a;
 };

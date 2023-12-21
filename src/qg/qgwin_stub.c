@@ -21,7 +21,7 @@
 //#define DEBUG_WINPROC_MESG
 #endif
 
-QN_STATIC_ASSERT(sizeof(RECT) == sizeof(QnRect), "RECT size not equal to QnRect");
+static_assert(sizeof(RECT) == sizeof(QnRect), "RECT size not equal to QnRect");
 
 extern const char* windows_message_str(UINT mesg);
 
@@ -70,26 +70,26 @@ static void windows_internal_controller_init(void)
 static struct WindowsDll
 {
 	// user32
-	BOOL(WINAPI *SetProcessDPIAware)(void);
-	BOOL(WINAPI *SetProcessDpiAwarenessContext)(DPI_AWARENESS_CONTEXT);
-	DPI_AWARENESS_CONTEXT(WINAPI *SetThreadDpiAwarenessContext)(DPI_AWARENESS_CONTEXT);
-	DPI_AWARENESS_CONTEXT(WINAPI *GetThreadDpiAwarenessContext)(void);
-	DPI_AWARENESS(WINAPI *GetAwarenessFromDpiAwarenessContext)(DPI_AWARENESS_CONTEXT);
-	BOOL(WINAPI *EnableNonClientDpiScaling)(HWND);
-	BOOL(WINAPI *AdjustWindowRectExForDpi)(LPRECT, DWORD, BOOL, DWORD, UINT);
-	UINT(WINAPI *GetDpiForWindow)(HWND);
-	BOOL(WINAPI *AreDpiAwarenessContextsEqual)(DPI_AWARENESS_CONTEXT, DPI_AWARENESS_CONTEXT);
-	BOOL(WINAPI *IsValidDpiAwarenessContext)(DPI_AWARENESS_CONTEXT);
+	BOOL(WINAPI *funcSetProcessDPIAware)(void);
+	BOOL(WINAPI *funcSetProcessDpiAwarenessContext)(DPI_AWARENESS_CONTEXT);
+	DPI_AWARENESS_CONTEXT(WINAPI *funcSetThreadDpiAwarenessContext)(DPI_AWARENESS_CONTEXT);
+	DPI_AWARENESS_CONTEXT(WINAPI *funcGetThreadDpiAwarenessContext)(void);
+	DPI_AWARENESS(WINAPI *funcGetAwarenessFromDpiAwarenessContext)(DPI_AWARENESS_CONTEXT);
+	BOOL(WINAPI *funcEnableNonClientDpiScaling)(HWND);
+	BOOL(WINAPI *funcAdjustWindowRectExForDpi)(LPRECT, DWORD, BOOL, DWORD, UINT);
+	UINT(WINAPI *funcGetDpiForWindow)(HWND);
+	BOOL(WINAPI *funcAreDpiAwarenessContextsEqual)(DPI_AWARENESS_CONTEXT, DPI_AWARENESS_CONTEXT);
+	BOOL(WINAPI *funcIsValidDpiAwarenessContext)(DPI_AWARENESS_CONTEXT);
 	// SHCORE
-	HRESULT(WINAPI *GetDpiForMonitor)(HMONITOR, MONITOR_DPI_TYPE, UINT*, UINT*);
-	HRESULT(WINAPI *SetProcessDpiAwareness)(PROCESS_DPI_AWARENESS);
+	HRESULT(WINAPI *funcGetDpiForMonitor)(HMONITOR, MONITOR_DPI_TYPE, UINT*, UINT*);
+	HRESULT(WINAPI *funcSetProcessDpiAwareness)(PROCESS_DPI_AWARENESS);
 	// IMM
-	BOOL(WINAPI *ImmAssociateContextEx)(HWND, HIMC, DWORD);
+	BOOL(WINAPI *funcImmAssociateContextEx)(HWND, HIMC, DWORD);
 } s_dlls;
 
 static void windows_internal_user_dll_init(void)
 {
-#define DEF_DLL_FN(name)	s_dlls.##name = qn_mod_func(mod, #name)
+#define DEF_DLL_FN(name)	s_dlls.func##name = qn_mod_func(mod, #name)
 	QnModule* mod;
 
 	// user32
@@ -392,8 +392,8 @@ void stub_system_finalize(void)
 		stub->base.stats |= QGSSTT_EXIT;
 		stub_system_hold_mouse(false);
 
-		if (stub->himc != NULL && s_dlls.ImmAssociateContextEx != NULL)
-			s_dlls.ImmAssociateContextEx(stub->hwnd, stub->himc, IACE_DEFAULT);
+		if (stub->himc != NULL && s_dlls.funcImmAssociateContextEx != NULL)
+			s_dlls.funcImmAssociateContextEx(stub->hwnd, stub->himc, IACE_DEFAULT);
 		if (QN_TMASK(stub->base.flags, QGSPECIFIC_VIRTUAL) == false)
 			SendMessage(stub->hwnd, WM_CLOSE, 0, 0);
 	}

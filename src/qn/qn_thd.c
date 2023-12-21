@@ -11,7 +11,7 @@
 #endif
 
 #ifdef _QN_WINDOWS_
-QN_STATIC_ASSERT(sizeof(long) == sizeof(QnSpinLock), "Spinlock size not equal to OS interlock");
+static_assert(sizeof(long) == sizeof(QnSpinLock), "Spinlock size not equal to OS interlock");
 #endif
 
 
@@ -441,7 +441,7 @@ static void* qn_internal_thread_entry(void* data)
 }
 
 //
-bool qn_thread_start(QnThread* thread, const char* name)
+bool qn_thread_start(QnThread* thread, const char* restrict name)
 {
 	QnRealThread* self = (QnRealThread*)thread;
 #ifdef _QN_WINDOWS_
@@ -577,7 +577,7 @@ QnTls* qn_tls(paramfunc_t callback)
 }
 
 //
-void qn_tlsset(QnTls* tls, void* data)
+void qn_tlsset(QnTls* tls, void* restrict data)
 {
 	uint nth = (uint)(nuint)tls - 0x10;
 	qn_ret_if_fail(nth < QN_COUNTOF(_qn_thd.tls_callback));
@@ -836,7 +836,7 @@ bool qn_sem_wait_for(QnSem* self, uint milliseconds)
 	DWORD dw = WaitForSingleObjectEx(self->handle, milliseconds, FALSE);
 	if (dw == WAIT_OBJECT_0)
 	{
-		QN_STATIC_ASSERT(sizeof(long) == sizeof(self->count), "Semaphore size not equal to OS interlock");
+		static_assert(sizeof(long) == sizeof(self->count), "Semaphore size not equal to OS interlock");
 		_InterlockedDecrement((long volatile*)&self->count);
 		return true;
 	}

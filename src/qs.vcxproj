@@ -98,6 +98,7 @@
       <CompileAs>CompileAsC</CompileAs>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -123,6 +124,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <OmitFramePointers />
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -145,6 +147,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -169,6 +172,7 @@
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -253,7 +257,12 @@
     <ClCompile Include="qg\qgwin_mesg.c" />
     <ClCompile Include="qg\qgwin_stub.c" />
     <ClCompile Include="qg\qg_kmc.c" />
-    <ClCompile Include="qg\qg_rdh.c" />
+    <ClCompile Include="qg\qg_rdh.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="qg\qg_stub.c" />
     <ClCompile Include="qn\PatrickPowell_snprintf.c" />
     <ClCompile Include="qn\qn.c" />

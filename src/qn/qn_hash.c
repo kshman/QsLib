@@ -5,7 +5,7 @@
 // 해시
 
 //
-size_t qn_hashptr(const void* p)
+size_t qn_hashptr(const void* restrict p)
 {
 #ifdef _QN_64_
 	lldiv_t t = lldiv((long long)(size_t)p, 127773);
@@ -51,7 +51,7 @@ size_t qn_hashnow(void)
 	return (h1 + dif++) ^ h2;
 }
 
-size_t qn_hashfn(int prime8, func_t func, const void* data)
+size_t qn_hashfn(int prime8, func_t func, const void* restrict data)
 {
 	// PP FF FF FF FD DD DD DD
 	size_t h = prime8 & 0xFFULL << 56ULL;
@@ -69,7 +69,7 @@ size_t qn_hashfn(int prime8, func_t func, const void* data)
  * @param[in] size 크기
  * @return 정수 값
  */
-static uint64_t qn_crc64(const byte* data, size_t size)
+static uint64_t qn_crc64(const byte* restrict data, size_t size)
 {
 	// https://github.com/srned/baselib/blob/master/crc64.c
 	/* Redis uses the CRC64 variant with "Jones" coefficients and init value of 0.
@@ -190,7 +190,7 @@ static uint64_t qn_crc64(const byte* data, size_t size)
  * @param[in] size 크기
  * @return 정수 값
  */
-static uint32_t qn_crc32(const byte* data, size_t size)
+static uint32_t qn_crc32(const byte* restrict data, size_t size)
 {
 	static const uint32_t crc32_table[] =
 	{
@@ -235,7 +235,7 @@ static uint32_t qn_crc32(const byte* data, size_t size)
 #endif
 
 //
-size_t qn_hashcrc(const byte* data, size_t size)
+size_t qn_hashcrc(const byte* restrict data, size_t size)
 {
 #ifdef _QN_64_
 	return qn_crc64(data, size);

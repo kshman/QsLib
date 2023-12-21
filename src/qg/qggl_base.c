@@ -491,7 +491,7 @@ void gl_commit_layout(GlRdh* self)
 	const GlCtnAttrib* shd_attrs = &shd->attrs;
 
 	uint ok = 0;
-	//QN_STATIC_ASSERT(QGMAX_ES2_VERTEX_ATTRIBUTE <= sizeof(ok) * 8, "Not enough for access QGMAX_ES2_VERTEX_ATTRIBUTE");
+	//static_assert(QGMAX_ES2_VERTEX_ATTRIBUTE <= sizeof(ok) * 8, "Not enough for access QGMAX_ES2_VERTEX_ATTRIBUTE");
 
 	for (int s = 0, index = 0; s < QGLOS_MAX_VALUE; s++)
 	{

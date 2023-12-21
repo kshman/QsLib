@@ -411,7 +411,7 @@ void qn_mat4_mul(QnMat4* pm, const QnMat4* left, const QnMat4* right)
 void qn_mat4_inv(QnMat4* pm, const QnMat4* m, float* /*NULLABLE*/determinant)
 {
 #ifdef USE_EMM_INTRIN
-	static const QN_ALIGNAS(16) uint s_PNNP[] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };
+	static const alignas(16) uint s_PNNP[] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };
 
 	__m128 A, B, C, D;
 	__m128 iA, iB, iC, iD;
