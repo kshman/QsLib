@@ -66,7 +66,7 @@ static int qn_debug_out_str(const char* restrict s)
 	if (_qn_dbg.debugger)
 		OutputDebugStringA(s);
 #else
-	int len = strlen(s);
+	size_t len = strlen(s);
 	if (_qn_dbg.fp != NULL)
 		fputs(s, _qn_dbg.fp);
 #if _QN_ANDROID_
@@ -176,7 +176,7 @@ int qn_debug_outputf(bool breakpoint, const char* restrict head, const char* res
 	va_list va, vq;
 	va_start(va, fmt);
 	va_copy(vq, va);
-	const size_t size = qn_vsnprintf(NULL, 0, fmt, vq);
+	const int size = qn_vsnprintf(NULL, 0, fmt, vq);
 	va_end(vq);
 	char buf[1024];
 	qn_vsnprintf(buf, QN_COUNTOF(buf), fmt, va);
@@ -189,7 +189,7 @@ int qn_debug_outputf(bool breakpoint, const char* restrict head, const char* res
 		debug_break();
 #endif
 
-	return (int)size;
+	return size;
 }
 
 //
@@ -270,12 +270,12 @@ int qn_outputf(const char* fmt, ...)
 	va_list va, vq;
 	va_start(va, fmt);
 	va_copy(vq, va);
-	const size_t size = qn_vsnprintf(NULL, 0, fmt, vq);
+	const int size = qn_vsnprintf(NULL, 0, fmt, vq);
 	va_end(vq);
 	char buf[1024];
 	qn_vsnprintf(buf, QN_COUNTOF(buf), fmt, va);
 	va_end(va);
 	qn_debug_out_str(buf);
 	qn_debug_out_ch('\n');
-	return (int)size;
+	return size;
 }

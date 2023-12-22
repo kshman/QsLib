@@ -54,7 +54,7 @@ void qn_qsortc(void* ptr, size_t count, size_t stride, int(*compfunc)(void*, con
 
 	size_t size;
 pos_recursive:
-	size = (hi - lo) / stride + 1;
+	size = (size_t)(hi - lo) / stride + 1;
 
 	// 중간값처리를 사용해서 O(n^2) 알고리즘으로 전환
 	if (size <= 8)  // 최적화된 값을 사용해야 할 것이다 -> Cut off value
@@ -204,7 +204,7 @@ void qn_qsort(void* ptr, size_t count, size_t stride, int(*compfunc)(const void*
 
 	size_t size;
 pos_recursive:
-	size = (hi - lo) / stride + 1;
+	size = (size_t)(hi - lo) / stride + 1;
 
 	// 중간값처리를 사용해서 O(n^2) 알고리즘으로 전환
 	if (size <= 8)  // 최적화된 값을 사용해야 할 것이다 -> Cut off value

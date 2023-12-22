@@ -346,7 +346,7 @@ bool qn_mlu_load_buffer(QnMlu* self, const void* restrict data, int size)
 					{
 						int n = (int)btag->len - 1;
 						btag->data[n] = '\0';
-						btag->len = n;
+						btag->len = (size_t)n;
 						hassingle = true;
 					}
 
@@ -381,7 +381,7 @@ bool qn_mlu_load_buffer(QnMlu* self, const void* restrict data, int size)
 				else
 				{
 					// 이름과 인수가 있음
-					qn_bstr_sub_bstr(barg, btag, at + 1, -1);
+					qn_bstr_sub_bstr(barg, btag, (size_t)(at + 1), -1);
 					qn_bstr_sub_bstr(bname, btag, 0, at);
 					qn_bstr_upper(bname);
 				}
@@ -881,7 +881,7 @@ static bool qn_realtag_parse_args(QnRealTag* self, qnBstr4k* bs)
 		qn_bstr_sub_bstr(&k, bs, 0, eq);
 		qn_bstr_trim(&k);
 
-		qn_bstr_sub_bstr(bs, bs, eq + 1, -1);
+		qn_bstr_sub_bstr(bs, bs, (size_t)(eq + 1), -1);
 		qn_bstr_trim_left(bs);
 
 		// 값
@@ -902,7 +902,7 @@ static bool qn_realtag_parse_args(QnRealTag* self, qnBstr4k* bs)
 			}
 
 			qn_bstr_sub_bstr(&v, bs, 1, at - 1);
-			qn_bstr_sub_bstr(bs, bs, at + 1, -1);
+			qn_bstr_sub_bstr(bs, bs, (size_t)(at + 1), -1);
 		}
 		else if (qn_bstr_nth(bs, 0) == '\'')
 		{
@@ -916,7 +916,7 @@ static bool qn_realtag_parse_args(QnRealTag* self, qnBstr4k* bs)
 			}
 
 			qn_bstr_sub_bstr(&v, bs, 1, at - 1);
-			qn_bstr_sub_bstr(bs, bs, at + 1, -1);
+			qn_bstr_sub_bstr(bs, bs, (size_t)(at + 1), -1);
 		}
 		else
 		{
@@ -940,7 +940,7 @@ static bool qn_realtag_parse_args(QnRealTag* self, qnBstr4k* bs)
 			else
 			{
 				qn_bstr_sub_bstr(&v, bs, 0, at);
-				qn_bstr_sub_bstr(bs, bs, at + 1, -1);
+				qn_bstr_sub_bstr(bs, bs, (size_t)(at + 1), -1);
 			}
 		}
 
@@ -977,7 +977,7 @@ static bool qn_realtag_write_file(const QnRealTag* self, QnFile* file, int ident
 	char szident[260];
 	qnBstr2k bs;
 
-	qn_strfll(szident, 0, ident, '\t');
+	qn_strfll(szident, 0, (size_t)ident, '\t');
 	szident[ident] = '\0';
 
 	// 아래 많다. 또는 내용 길다

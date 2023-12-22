@@ -90,7 +90,7 @@ size_t qn_memagn(size_t size)
 	const size_t align = size % 16;
 	if (align == 0)
 		return 0;
-	const size_t advice = (size + 16 - 1) & ~(16 - 1);
+	const size_t advice = (size + 16 - 1) & (size_t)~(16 - 1);
 	return advice;
 }
 
@@ -173,7 +173,7 @@ typedef struct MemBlock
 
 #define _memhdr(ptr)			(((MemBlock*)(ptr))-1)
 #define _memptr(block)			(void*)(((MemBlock*)(block))+1)
-#define _memsize(size)			(((sizeof(MemBlock)+(size)+MEMORY_GAP)+MEMORY_BLOCK_SIZE-1)&~(MEMORY_BLOCK_SIZE-1))
+#define _memsize(size)			(((sizeof(MemBlock)+(size)+MEMORY_GAP)+MEMORY_BLOCK_SIZE-1)&(size_t)~(MEMORY_BLOCK_SIZE-1))
 
 // 메모리 프르프
 static struct MemImpl

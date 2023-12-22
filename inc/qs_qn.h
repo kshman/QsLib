@@ -199,7 +199,7 @@ typedef wchar_t				wchar;
 typedef uint32_t			uchar4;							/// @brief 4바이트(32비트) 유니코드
 typedef wchar_t				uchar2;							/// @brief 2바이트(16비트) 유니코드
 #else
-typedef wchar_t				uchar4;
+typedef wint_t				uchar4;
 typedef uint16_t			uchar2;
 #endif
 
@@ -380,17 +380,17 @@ QSAPI char* qn_syserr(int errcode, int* len);
 
 //////////////////////////////////////////////////////////////////////////
 // memory
-#define qn_alloc(c,t)		(t*)qn_mpfalloc((c)*sizeof(t), false, QN_FNAME, __LINE__)				/// @brief 메모리 할당
+#define qn_alloc(c,t)		(t*)qn_mpfalloc((size_t)(c)*sizeof(t), false, QN_FNAME, __LINE__)		/// @brief 메모리 할당
 #define qn_alloc_1(t)		(t*)qn_mpfalloc(sizeof(t), false, QN_FNAME, __LINE__)					/// @brief 메모리를 1개만 할당
-#define qn_alloc_zero(c,t)	(t*)qn_mpfalloc((c)*sizeof(t), true, QN_FNAME, __LINE__)				/// @brief 메모리를 할당하고 메모리를 0으로
+#define qn_alloc_zero(c,t)	(t*)qn_mpfalloc((size_t)(c)*sizeof(t), true, QN_FNAME, __LINE__)		/// @brief 메모리를 할당하고 메모리를 0으로
 #define qn_alloc_zero_1(t)	(t*)qn_mpfalloc(sizeof(t), true, QN_FNAME, __LINE__)					/// @brief 메모리를 1개만 할당하고 0으로
-#define qn_realloc(ptr,c,t)	(t*)qn_mpfreloc((void*)(ptr), (c)*sizeof(t), QN_FNAME, __LINE__)		/// @brief 메모리를 다시 할당
+#define qn_realloc(p,c,t)	(t*)qn_mpfreloc((void*)(p), (size_t)(c)*sizeof(t), QN_FNAME, __LINE__)	/// @brief 메모리를 다시 할당
 
-#define qn_free(ptr)		qn_mpffree((void*)(ptr))												/// @brief 메모리 해제
-#define qn_free_ptr(pptr)	QN_STMT_BEGIN{ qn_mpffree((void*)*(pptr)); *(pptr)=NULL; }QN_STMT_END	/// @brief 메모리를 해제하고 포인터를 NULL로 만든다
+#define qn_free(p)			qn_mpffree((void*)(p))													/// @brief 메모리 해제
+#define qn_free_ptr(pp)		QN_STMT_BEGIN{ qn_mpffree((void*)*(pp)); *(pp)=NULL; }QN_STMT_END		/// @brief 메모리를 해제하고 포인터를 NULL로 만든다
 
-#define qn_zero(ptr,c,t)	memset((ptr), 0, sizeof(t)*(c))											/// @brief 메모리를 0으로 채운다
-#define qn_zero_1(ptr)		memset((ptr), 0, sizeof(*(ptr)))										/// @brief 메모리를 0으로 채운다 (주로 구조체)
+#define qn_zero(p,c,t)		memset((p), 0, sizeof(t)*(c))											/// @brief 메모리를 0으로 채운다
+#define qn_zero_1(p)		memset((p), 0, sizeof(*(p)))											/// @brief 메모리를 0으로 채운다 (주로 구조체)
 
 /// @brief 메모리를 복호화한다
 /// @param[out] dest 출력 대상
@@ -699,7 +699,7 @@ QSAPI bool qn_strieqv(const char* p1, const char* p2);
 /// @param base 진수
 /// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
 ///
-QSAPI int qn_itoa(char* p, int size, int n, int base);
+QSAPI int qn_itoa(char* p, int size, int n, uint base);
 /// @brief 64비트 정수를 문자열로 변환
 /// @param p 문자열 버퍼
 /// @param size 문자열 버퍼 크기
@@ -707,19 +707,19 @@ QSAPI int qn_itoa(char* p, int size, int n, int base);
 /// @param base 진수
 /// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
 ///
-QSAPI int qn_lltoa(char* p, int size, llong n, int base);
+QSAPI int qn_lltoa(char* p, int size, llong n, uint base);
 /// @brief 문자열을 32비트 정수로
 /// @param p 문자열
 /// @param base 진수
 /// @return 바꾼 정수값
 ///
-QSAPI uint qn_strtoi(const char* p, int base);
+QSAPI uint qn_strtoi(const char* p, uint base);
 /// @brief 문자열을 64비트 정수로
 /// @param p 문자열
 /// @param base 진수
 /// @return 바꾼 정수값
 ///
-QSAPI ullong qn_strtoll(const char* p, int base);
+QSAPI ullong qn_strtoll(const char* p, uint base);
 
 #ifdef _MSC_VER
 #define qn_strcpy			strcpy_s						/// @brief strcpy
@@ -893,6 +893,35 @@ QSAPI bool qn_wcseqv(const wchar* p1, const wchar* p2);
 /// @return 서로 같으면 참을 반환
 ///
 QSAPI bool qn_wcsieqv(const wchar* p1, const wchar* p2);
+/// @brief 32비트 정수를 문자열로 변환
+/// @param p 문자열 버퍼
+/// @param size 문자열 버퍼 크기
+/// @param n 32비트 정수
+/// @param base 진수
+/// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
+///
+QSAPI int qn_itow(wchar* p, int size, int n, uint base);
+/// @brief 64비트 정수를 문자열로 변환
+/// @param p 문자열 버퍼
+/// @param size 문자열 버퍼 크기
+/// @param n 64비트 정수
+/// @param base 진수
+/// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
+///
+QSAPI int qn_lltow(wchar* p, int size, llong n, uint base);
+/// @brief 문자열을 32비트 정수로
+/// @param p 문자열
+/// @param base 진수
+/// @return 바꾼 정수값
+///
+QSAPI uint qn_wcstoi(const wchar* p, uint base);
+/// @brief 문자열을 64비트 정수로
+/// @param p 문자열
+/// @param base 진수
+/// @return 바꾼 정수값
+///
+QSAPI ullong qn_wcstoll(const wchar* p, uint base);
+
 #ifdef _MSC_VER
 #define qn_wcscpy			wcscpy_s						/// @brief wcscpy
 #define qn_wcsncpy			wcsncpy_s						/// @brief wcsncpy
@@ -1247,7 +1276,7 @@ struct QnFileAccess
 	uint			attr;									/// @brief 파일 속성
 #else
 	int				mode;
-	int				access;
+	uint			access;
 #endif
 };
 
@@ -1934,7 +1963,7 @@ struct QnThread
 	BOOL				managed;
 
 	int					busy;
-	int					stack_size;
+	uint				stack_size;
 
 	QnThreadCallback	cb_func;
 	void*				cb_data;
@@ -2172,7 +2201,7 @@ QSAPI QsGam* qs_sc_unload(QsGam* restrict g);
 /// @param g 현재 오브젝트
 /// @return 현재 참조값
 ///
-QSAPI size_t qs_sc_get_ref(QsGam* restrict g);
+QSAPI nint qs_sc_get_ref(QsGam* restrict g);
 /// @brief 표현자(디스크립터)를 얻는다
 /// @param g 현재 오브젝트
 /// @return 현재 표현자

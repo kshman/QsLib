@@ -48,14 +48,14 @@ void qn_now(QnDateTime* dt)
 	gettimeofday(&tv, NULL);
 	qn_localtime(&tm, tv.tv_sec);
 
-	dt->year = tm.tm_year + 1900;
-	dt->month = tm.tm_mon + 1;
-	dt->day = tm.tm_mday;
-	dt->dow = tm.tm_wday;
-	dt->hour = tm.tm_hour;
-	dt->minute = tm.tm_min;
-	dt->second = tm.tm_sec;
-	dt->millisecond = tv.tv_usec / 1000;
+	dt->year = (uint)tm.tm_year + 1900;
+	dt->month = (uint)tm.tm_mon + 1;
+	dt->day = (uint)tm.tm_mday;
+	dt->dow = (uint)tm.tm_wday;
+	dt->hour = (uint)tm.tm_hour;
+	dt->minute = (uint)tm.tm_min;
+	dt->second = (uint)tm.tm_sec;
+	dt->millisecond = (uint)tv.tv_usec / 1000;
 #endif
 }
 
@@ -82,14 +82,14 @@ void qn_utc(QnDateTime* dt)
 	gettimeofday(&tv, NULL);
 	qn_gmtime(&tm, tv.tv_sec);
 
-	dt->year = tm.tm_year + 1900;
-	dt->month = tm.tm_mon + 1;
-	dt->day = tm.tm_mday;
-	dt->dow = tm.tm_wday;
-	dt->hour = tm.tm_hour;
-	dt->minute = tm.tm_min;
-	dt->second = tm.tm_sec;
-	dt->millisecond = tv.tv_usec / 1000;
+	dt->year = (uint)tm.tm_year + 1900;
+	dt->month = (uint)tm.tm_mon + 1;
+	dt->day = (uint)tm.tm_mday;
+	dt->dow = (uint)tm.tm_wday;
+	dt->hour = (uint)tm.tm_hour;
+	dt->minute = (uint)tm.tm_min;
+	dt->second = (uint)tm.tm_sec;
+	dt->millisecond = (uint)tv.tv_usec / 1000;
 #endif
 }
 

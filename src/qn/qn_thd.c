@@ -114,10 +114,9 @@ static struct ThreadImpl
 #ifdef _QN_WINDOWS_
 	DWORD				tls;
 #else
-	int					max_stack;
-
-	pthread_key_t		tls;
+	size_t				max_stack;
 	pthread_t			null_pthread;
+	pthread_key_t		tls;
 #endif
 	uint				tls_index;
 	paramfunc_t			tls_callback[64];
@@ -146,7 +145,7 @@ void qn_thread_init(void)
 		qn_debug_halt("THREAD", "cannot allocate thread tls");
 #else
 #ifdef _SC_THREAD_STACK_MIN
-	_qn_thd.max_stack = QN_MAX(sysconf(_SC_THREAD_STACK_MIN), 0);
+	_qn_thd.max_stack = (size_t)QN_MAX(sysconf(_SC_THREAD_STACK_MIN), 0);
 #endif
 	pthread_key_create(&_qn_thd.tls, qn_internal_tls_dispose);
 #endif
@@ -278,7 +277,7 @@ static void qn_internal_thread_exit(QnRealThread* self, bool Exit)
 		QN_UNLOCK(_qn_thd.lock);
 	}
 
-	int tls_count = _qn_thd.tls_index;
+	uint tls_count = _qn_thd.tls_index;
 	qn_internal_thread_dispose(self, tls_count, false);
 #ifdef _QN_WINDOWS_
 	TlsSetValue(_qn_thd.tls, NULL);
@@ -485,8 +484,8 @@ bool qn_thread_start(QnThread* thread, const char* restrict name)
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 
-	int stack_size;
-	if (self->base.stack_size <= 0)
+	size_t stack_size;
+	if (self->base.stack_size == 0)
 		stack_size = 0;
 	else
 	{
@@ -731,7 +730,7 @@ void qn_cond_broadcast(QnCond* self)
 
 #ifndef _QN_WINDOWS_
 //
-static void qn_timed_timeval(struct timespec* ts, int milliseconds)
+static void qn_timed_timeval(struct timespec* ts, uint milliseconds)
 {
 	if (clock_gettime(CLOCK_REALTIME, ts) != 0)
 	{
@@ -818,7 +817,7 @@ QnSem* qn_sem_new(int initial)
 	self->count = (nint)initial;
 #else
 	sem_t sem;
-	if (sem_init(&sem, 0, initial) < 0)
+	if (sem_init(&sem, 0, (uint)initial) < 0)
 	{
 		qn_debug_halt("SEM", "semaphore creation failed");
 		return NULL;

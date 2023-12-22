@@ -2606,17 +2606,17 @@ QN_INLINE int qn_bstr_find_char(const void* p, size_t at, char ch)
 
 #define qn_bstr_sub_bstr(p, s, pos, len)\
 	qn_inl_bstr_sub_bstr(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, (const qnBstr*)(s), pos, len)
-QN_INLINE bool qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, size_t pos, nint len)
+QN_INLINE bool qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, size_t pos, int len)
 {
 	qn_val_if_fail(s->len >= pos, false);
 
 	if (len > 0)
-		qn_val_if_fail(s->len >= (pos + len), false);
+		qn_val_if_fail(s->len >= (pos + (size_t)len), false);
 	else
-		len = (nint)(s->len - pos);
+		len = (int)s->len - (int)pos;
 
-	qn_strmid(p->data, psize, s->data, pos, len);
-	p->len = len;
+	qn_strmid(p->data, psize, s->data, pos, (size_t)len);
+	p->len = (size_t)len;
 	return true;
 }
 
@@ -2813,17 +2813,17 @@ QN_INLINE int qn_bwcs_find_char(const void* p, size_t at, wchar_t ch)
 
 #define qn_bwcs_sub_bwcs(p, s, pos, len)\
 	qn_inl_bstr_sub_bstr(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, ((qnBwcs*)(s)), pos, len)
-QN_INLINE bool qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, size_t pos, nint len)
+QN_INLINE bool qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, size_t pos, int len)
 {
 	qn_val_if_fail(s->len >= pos, false);
 
 	if (len > 0)
-		qn_val_if_fail(s->len >= (pos + len), false);
+		qn_val_if_fail(s->len >= (pos + (size_t)len), false);
 	else
-		len = (nint)(s->len - pos);
+		len = (int)s->len - (int)pos;
 
-	qn_wcsmid(p->data, psize, s->data, pos, len);
-	p->len = len;
+	qn_wcsmid(p->data, psize, s->data, pos, (size_t)len);
+	p->len = (size_t)len;
 	return true;
 }
 
