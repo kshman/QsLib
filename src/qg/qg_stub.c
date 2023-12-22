@@ -378,7 +378,7 @@ bool stub_internal_mouse_clicks(QimButton button, QimTrack track)
 		{
 			const int dx = m->clk.loc.x - m->pt.x;
 			const int dy = m->clk.loc.y - m->pt.y;
-			const int d = dx * dx + dy * dy;
+			const uint d = dx * dx + dy * dy;
 			if (d > m->lim.move)
 			{
 				// 마우스가 move 만큼 움직이면 두번 누르기 취소
