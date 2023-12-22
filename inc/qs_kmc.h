@@ -147,6 +147,8 @@ typedef enum QikMask
 	QIKM_WIN = QN_BIT(15),
 } QikMask;
 
+static_assert(sizeof(QikMask) == sizeof(int), "QikMask size not equal to int");
+
 
 //////////////////////////////////////////////////////////////////////////
 // mouse button
@@ -192,6 +194,8 @@ typedef enum QimTouch
 	QITT_END = 3,
 } QimTouch;
 
+static_assert(sizeof(QimMask) == sizeof(int), "QimMask size not equal to int");
+
 
 //////////////////////////////////////////////////////////////////////////
 // controller key
@@ -234,6 +238,8 @@ typedef enum QicMask
 	QICM_X = QN_BIT(QIC_X),
 	QICM_Y = QN_BIT(QIC_Y),
 } QicMask;
+
+static_assert(sizeof(QicMask) == sizeof(int), "QicMask size not equal to int");
 
 
 //////////////////////////////////////////////////////////////////////////

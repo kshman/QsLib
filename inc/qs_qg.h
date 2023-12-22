@@ -320,6 +320,9 @@ typedef enum QgWindowEventType
 /// @brief 최대 이벤트 갯수
 #define QGMAX_EVENTS		1000
 
+static_assert(sizeof(QgFlag) == sizeof(int), "QgFlag size not equal to int");
+static_assert(sizeof(QgStubStat) == sizeof(int), "QgStubStat size not equal to int");
+
 
 //////////////////////////////////////////////////////////////////////////
 // properties
@@ -512,7 +515,7 @@ typedef struct QgUimMouse
 	}					clk;								/// @brief 마우스 눌림 정보
 	struct QgUimMouseLimit
 	{
-		int					move;							/// @brief 제한 이동 거리(포인트)의 제곱
+		uint					move;						/// @brief 제한 이동 거리(포인트)의 제곱
 		uint				tick;							/// @brief 제한 클릭 시간(밀리초)
 	}					lim;								/// @brief 마우스 더블 클릭 구현 정보
 	struct QgUimMouseWheel
@@ -677,7 +680,7 @@ QSAPI const QgUimMouse* qg_get_mouse_info(void);
 /// @return 인수의 범위를 벗어나면 거짓을 반환
 /// @see qg_get_mouse_info
 ///
-QSAPI bool qg_set_double_click(int density, int interval);
+QSAPI bool qg_set_double_click(uint density, uint interval);
 /// @brief 키가 눌렸나 테스트 한다
 /// @param key 테스트할 키
 /// @return 눌렸으면 참

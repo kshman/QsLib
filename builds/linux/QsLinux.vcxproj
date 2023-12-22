@@ -66,6 +66,10 @@
     <ClInclude Include="..\..\inc\qs_qg.h" />
     <ClInclude Include="..\..\inc\qs_qn.h" />
     <ClInclude Include="..\..\src\pch.h" />
+    <ClInclude Include="..\..\src\qg\glad\glad.h" />
+    <ClInclude Include="..\..\src\qg\glad\glad_proxy.h" />
+    <ClInclude Include="..\..\src\qg\glad\khrplatform.h" />
+    <ClInclude Include="..\..\src\qg\qg_stub.h" />
     <ClInclude Include="..\..\src\qn\zlib\crc32.h" />
     <ClInclude Include="..\..\src\qn\zlib\deflate.h" />
     <ClInclude Include="..\..\src\qn\zlib\gzguts.h" />
@@ -82,6 +86,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\pch.c" />
+    <ClCompile Include="..\..\src\qg\glad\glad.c" />
+    <ClCompile Include="..\..\src\qg\qgwin_mesg.c" />
+    <ClCompile Include="..\..\src\qg\qgwin_stub.c" />
+    <ClCompile Include="..\..\src\qg\qgx11_opengl.c" />
+    <ClCompile Include="..\..\src\qg\qgx11_stub.c" />
+    <ClCompile Include="..\..\src\qg\qg_kmc.c" />
+    <ClCompile Include="..\..\src\qg\qg_stub.c" />
     <ClCompile Include="..\..\src\qn\PatrickPowell_snprintf.c" />
     <ClCompile Include="..\..\src\qn\qm_math.c" />
     <ClCompile Include="..\..\src\qn\qn.c" />
@@ -116,25 +127,41 @@
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\inc;..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-fvisibility=hidden %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>USE_X11;USE_ES3</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\inc;..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-fvisibility=hidden %(AdditionalOptions)</AdditionalOptions>
+      <LinkTimeOptimization>true</LinkTimeOptimization>
+      <RelaxIEEE>true</RelaxIEEE>
+      <SymbolsHiddenByDefault>true</SymbolsHiddenByDefault>
+      <PreprocessorDefinitions>USE_X11;USE_ES3;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <AdditionalOptions>-flto %(AdditionalOptions)</AdditionalOptions>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\inc;..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-mavx2 -fvisibility=hidden %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>USE_X11;USE_ES3</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\inc;..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-mavx2 -fvisibility=hidden %(AdditionalOptions)</AdditionalOptions>
+      <LinkTimeOptimization>true</LinkTimeOptimization>
+      <RelaxIEEE>true</RelaxIEEE>
+      <SymbolsHiddenByDefault>true</SymbolsHiddenByDefault>
+      <PreprocessorDefinitions>USE_X11;USE_ES3;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <AdditionalOptions>-flto %(AdditionalOptions)</AdditionalOptions>
+    </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

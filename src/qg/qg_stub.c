@@ -489,7 +489,7 @@ const QgUimMouse* qg_get_mouse_info(void)
 }
 
 //
-bool qg_set_double_click(int density, int interval)
+bool qg_set_double_click(uint density, uint interval)
 {
 	qn_val_if_fail((size_t)density < 50, false);
 	qn_val_if_fail((size_t)interval <= 5000, false);
@@ -581,7 +581,7 @@ int qg_add_event(const QgEvent* ev)
 	if (ev->ev == QGEV_WINDOW)
 	{
 		// 중복 이벤트는 해시로 저장
-		int key = (QGEV_WINDOW << 16) | (ushort)(ev->wevent.mesg & 0xFFFF);
+		size_t key = (QGEV_WINDOW << 16) | (ushort)(ev->wevent.mesg & 0xFFFF);
 		shed_event_prior_queue(key, ev);
 	}
 	else if (ev->ev == QGEV_ACTIVE)
@@ -733,7 +733,7 @@ bool stub_internal_on_keyboard(QikKey key, bool down)
 	{
 		e.key.ev = QGEV_KEYDOWN;
 		if (qg_test_key(key))
-			e.key.repeat = TRUE;
+			e.key.repeat = true;
 
 		switch (key)
 		{
@@ -753,7 +753,7 @@ bool stub_internal_on_keyboard(QikKey key, bool down)
 	else
 	{
 		e.key.ev = QGEV_KEYUP;
-		e.key.repeat = FALSE;
+		e.key.repeat = false;
 		qg_set_key(key, false);
 		uk->mask &= ~mask;
 	}
@@ -855,7 +855,7 @@ bool stub_internal_on_mouse_wheel(float x, float y, bool direction)
 	int ix =
 		(um->wheel.accm.x > 0.0f) ? (int)floorf(um->wheel.accm.x) :
 		(um->wheel.accm.x < 0.0f) ? (int)ceilf(um->wheel.accm.x) : 0;
-	um->wheel.accm.x -= ix;
+	um->wheel.accm.x -= (float)ix;
 
 	if (y > 0.0f)
 	{
@@ -871,7 +871,7 @@ bool stub_internal_on_mouse_wheel(float x, float y, bool direction)
 	int iy =
 		(um->wheel.accm.y > 0.0f) ? (int)floorf(um->wheel.accm.y) :
 		(um->wheel.accm.y < 0.0f) ? (int)ceilf(um->wheel.accm.y) : 0;
-	um->wheel.accm.y -= iy;
+	um->wheel.accm.y -= (float)iy;
 
 	qm_point_set(&um->wheel.integral, ix, iy);
 	qm_vec2_set(&um->wheel.precise, x, y);

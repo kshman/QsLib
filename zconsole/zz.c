@@ -1,30 +1,73 @@
-﻿// printf 와 outputf
+﻿// 해시
 #include <qs.h>
+
+QN_DECL_HASH(StrHash, char*, char*);
+QN_HASH_HASH(StrHash, qn_strhash);
+QN_HASH_EQ(StrHash, qn_streqv);
+QN_HASH_KEY_FREE(StrHash);
+QN_HASH_VALUE_FREE(StrHash);
+
+QN_DECL_HASH(StaticHash, char*, char*);
+QN_HASH_CHAR_PTR_KEY(StaticHash);
+QN_HASH_KEY_NONE(StaticHash);
+QN_HASH_VALUE_NONE(StaticHash);
+
+QN_DECL_HASH(IntHash, int, double);
+QN_HASH_INT_KEY(IntHash);
+QN_HASH_KEY_NONE(IntHash);
+QN_HASH_VALUE_NONE(IntHash);
+
+void str_for_each(void* dummy, char** key, char** value)
+{
+	qn_outputf("%s -> %s", *key, *value);
+}
+
+void int_for_loop(int* key, double* value)
+{
+	qn_outputf("%d -> %f", *key, *value);
+}
 
 int main(void)
 {
 	int v[2];
 	qn_runtime(v);
 
-	printf("PRINT 256\n");
-	qn_outputf("PRINT 256\n");
+	char** ps;
 
-	printf("%d\n", 256);
-	qn_outputf("%d\n", 256);
+	// 스트링 해시
+	StrHash shash;
+	qn_hash_init(StrHash, &shash);
+	qn_hash_set(StrHash, &shash, qn_strdup("test"), qn_strdup("value"));
+	qn_hash_set(StrHash, &shash, qn_strdup("bruce"), qn_strdup("kim"));
+	qn_hash_foreach(StrHash, &shash, str_for_each, NULL);
+	qn_hash_set(StrHash, &shash, qn_strdup("test"), qn_strdup("changed"));
+	qn_hash_get(StrHash, &shash, "test", &ps);
+	qn_outputf("test -> %s\n", ps == NULL ? "(null)" : *ps);
+	qn_hash_disp(StrHash, &shash);
 
-	printf("버전: %d.%d\n", v[0], v[1]);
-	qn_outputf("버전: %d.%d\n", v[0], v[1]);
+	// 스태틱 해시
+	StaticHash thash;
+	qn_hash_init(StaticHash, &thash);
+	qn_hash_set(StaticHash, &thash, "test", "value");
+	qn_hash_set(StaticHash, &thash, "bruce", "kim");
+	qn_hash_foreach(StaticHash, &thash, str_for_each, NULL);
+	qn_hash_set(StaticHash, &thash, "test", "changed");
+	qn_hash_get(StaticHash, &thash, "test", &ps);
+	qn_outputf("test -> %s\n", ps == NULL ? "(null)" : *ps);
+	qn_hash_disp(StaticHash, &thash);
 
-	QnDateTime dt;
-	qn_now(&dt);
-	printf("시간: %02d:%02d:%02d.%03d\n", dt.hour, dt.minute, dt.second, dt.millisecond);
-	qn_outputf("시간: %02d:%02d:%02d.%03d\n", dt.hour, dt.minute, dt.second, dt.millisecond);
-
-	char* str;
-	int len = qn_asprintf(&str, "이것은 숫자:%d, 실수:%f, 문자열:%s", 12, 12.345, "문자열");
-	printf("길이: %d, 내용:%s\n", len, str);
-	qn_outputf("길이: %d, 내용:%s\n", len, str);
-	qn_free(str);
+	// 정수 해시
+	IntHash ihash;
+	qn_hash_init(IntHash, &ihash);
+	qn_hash_set(IntHash, &ihash, 10, 123.0);
+	qn_hash_set(IntHash, &ihash, 20, 987.0);
+	qn_hash_loopeach(IntHash, &ihash, int_for_loop);
+	qn_hash_set(IntHash, &ihash, 20, 999.0);
+	double* pi;
+	qn_hash_get(IntHash, &ihash, 20, &pi);
+	qn_outputf("20 -> %f\n", pi == NULL ? 0.0 : *pi);
+	//qn_hash_disp(IntHash, &ihash);
 
 	return 0;
 }
+
