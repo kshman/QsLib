@@ -220,7 +220,7 @@ QN_INLINE ullong pp_intpart(const double value)
 // 아스키 버전
 
 // 문자를 숫자로
-#define char_to_int(p)	((p) - '0')
+#define char_to_int(p)	(int)((p) - '0')
 
 // 진수별 처리
 static const char* pp_str_base_num[2] =
@@ -237,7 +237,7 @@ static const char* pp_str_base_num[2] =
 #endif
 
 // 32비트 숫자를 문자열로
-static int pp_str_to_int(uint value, char* restrict buf, int size, int base, bool caps)
+static int pp_str_to_int(uint value, char* restrict buf, int size, uint base, bool caps)
 {
 	const char* bts = pp_str_base_num[caps ? 1 : 0];
 	int pos = 0;
@@ -254,7 +254,7 @@ static int pp_str_to_int(uint value, char* restrict buf, int size, int base, boo
 }
 
 // 64비트 숫자를 문자열로
-static int pp_str_to_long(ullong value, char* restrict buf, int size, int base, bool caps)
+static int pp_str_to_long(ullong value, char* restrict buf, int size, uint base, bool caps)
 {
 	const char* bts = pp_str_base_num[caps ? 1 : 0];
 	int pos = 0;
@@ -397,7 +397,7 @@ static void pp_str_fmt_str(char* restrict buffer, size_t* restrict currlen, size
 }
 
 // 32비트 정수
-static void pp_str_fmt_int(char* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
+static void pp_str_fmt_int(char* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, uint base, int vmin, int vmax, int flags)
 {
 #define MAX_CONVERT_PLACES 40
 	uint uvalue;
@@ -424,12 +424,12 @@ static void pp_str_fmt_int(char* restrict buffer, size_t* restrict currlen, size
 	{
 		if (value->i < 0)
 		{
-			uvalue = -value->i;
+			uvalue = (uint)-value->i;
 			signvalue = '-';
 		}
 		else
 		{
-			uvalue = value->i;
+			uvalue = (uint)value->i;
 
 			if (flags & DP_F_PLUS)  // 부호추가 (+/i)
 				signvalue = '+';
@@ -534,7 +534,7 @@ static void pp_str_fmt_int(char* restrict buffer, size_t* restrict currlen, size
 }
 
 // 64비트 정수
-static void pp_str_fmt_long(char* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
+static void pp_str_fmt_long(char* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, uint base, int vmin, int vmax, int flags)
 {
 #define MAX_CONVERT_PLACES 80
 	ullong uvalue;
@@ -561,12 +561,12 @@ static void pp_str_fmt_long(char* restrict buffer, size_t* restrict currlen, siz
 	{
 		if (value->ll < 0)
 		{
-			uvalue = -value->ll;
+			uvalue = (ullong)-value->ll;
 			signvalue = '-';
 		}
 		else
 		{
-			uvalue = value->ll;
+			uvalue = (ullong)value->ll;
 
 			if (flags & DP_F_PLUS)  // 부호추가 (+/i)
 				signvalue = '+';
@@ -806,7 +806,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 		else
 			esignvalue = '+';
 
-		eplace = pp_str_to_int(exponent, econvert, 2, 10, false);
+		eplace = pp_str_to_int((uint)exponent, econvert, 2, 10, false);
 
 		if (eplace == 1)
 		{
@@ -960,7 +960,7 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 	int state = DP_S_DEFAULT;
 	int flags = 0;
 	int cflags = 0;
-	int base = 0;
+	uint base = 0;
 	size_t currlen = 0;
 	sn_any value = { .ff = 0 };
 
@@ -1324,7 +1324,7 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 // 유니코드 버전
 
 // 문자를 숫자로
-#define wcharo_int(p)	((p) - L'0')
+#define wchar_to_int(p)	(int)((p) - L'0')
 
 // 진수별 처리
 static const wchar* pp_wcs_base_num[2] =
@@ -1341,7 +1341,7 @@ static const wchar* pp_wcs_base_num[2] =
 #endif
 
 // 32비트 숫자를 문자열로
-static int pp_wcs_to_int(uint value, wchar* restrict buf, int size, int base, bool caps)
+static int pp_wcs_to_int(uint value, wchar* restrict buf, int size, uint base, bool caps)
 {
 	const wchar* bts = pp_wcs_base_num[caps ? 1 : 0];
 	int pos = 0;
@@ -1358,7 +1358,7 @@ static int pp_wcs_to_int(uint value, wchar* restrict buf, int size, int base, bo
 }
 
 // 64비트 숫자를 문자열로
-static int pp_wcs_to_long(ullong value, wchar* restrict buf, int size, int base, bool caps)
+static int pp_wcs_to_long(ullong value, wchar* restrict buf, int size, uint base, bool caps)
 {
 	const wchar* bts = pp_wcs_base_num[caps ? 1 : 0];
 	int pos = 0;
@@ -1501,7 +1501,7 @@ static void pp_wcs_fmt_str(wchar* restrict buffer, size_t* restrict currlen, siz
 }
 
 // 32비트 정수
-static void pp_wcs_fmt_int(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
+static void pp_wcs_fmt_int(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, uint base, int vmin, int vmax, int flags)
 {
 #define MAX_CONVERT_PLACES 40
 	uint uvalue;
@@ -1528,12 +1528,12 @@ static void pp_wcs_fmt_int(wchar* restrict buffer, size_t* restrict currlen, siz
 	{
 		if (value->i < 0)
 		{
-			uvalue = -value->i;
+			uvalue = (uint)-value->i;
 			signvalue = L'-';
 		}
 		else
 		{
-			uvalue = value->i;
+			uvalue = (uint)value->i;
 
 			if (flags & DP_F_PLUS)  // 부호추가 (+/i)
 				signvalue = L'+';
@@ -1638,7 +1638,7 @@ static void pp_wcs_fmt_int(wchar* restrict buffer, size_t* restrict currlen, siz
 	}
 
 // 64비트 정수
-static void pp_wcs_fmt_long(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, int base, int vmin, int vmax, int flags)
+static void pp_wcs_fmt_long(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, uint base, int vmin, int vmax, int flags)
 {
 #define MAX_CONVERT_PLACES 80
 	ullong uvalue;
@@ -1665,12 +1665,12 @@ static void pp_wcs_fmt_long(wchar* restrict buffer, size_t* restrict currlen, si
 	{
 		if (value->ll < 0)
 		{
-			uvalue = -value->ll;
+			uvalue = (ullong)-value->ll;
 			signvalue = L'-';
 		}
 		else
 		{
-			uvalue = value->ll;
+			uvalue = (ullong)value->ll;
 
 			if (flags & DP_F_PLUS)  // 부호추가 (+/i)
 				signvalue = L'+';
@@ -1910,7 +1910,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 		else
 			esignvalue = L'+';
 
-		eplace = pp_wcs_to_int(exponent, econvert, 2, 10, false);
+		eplace = pp_wcs_to_int((uint)exponent, econvert, 2, 10, false);
 
 		if (eplace == 1)
 		{
@@ -2064,7 +2064,7 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 	int state = DP_S_DEFAULT;
 	int flags = 0;
 	int cflags = 0;
-	int base = 0;
+	uint base = 0;
 	size_t currlen = 0;
 	sn_any value = { .ff = 0 };
 
@@ -2121,9 +2121,9 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 				break;
 
 			case DP_S_MIN:
-				if (iswdigit(ch))
+				if (iswdigit((wint_t)ch))
 				{
-					vmin = 10 * vmin + wcharo_int(ch);
+					vmin = 10 * vmin + wchar_to_int((wint_t)ch);
 					ch = *format++;
 				}
 				else if (ch == L'*')
@@ -2152,11 +2152,11 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 				break;
 
 			case DP_S_MAX:
-				if (iswdigit(ch))
+				if (iswdigit((wint_t)ch))
 				{
 					if (vmax < 0)
 						vmax = 0;
-					vmax = 10 * vmax + wcharo_int(ch);
+					vmax = 10 * vmax + wchar_to_int(ch);
 					ch = *format++;
 				}
 				else if (ch == L'*')
@@ -2274,7 +2274,7 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 								pp_wcs_fmt_int(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_LONG:
-								value.ui = va_arg(args, unsigned long);
+								value.sz = va_arg(args, unsigned long);
 								pp_wcs_fmt_size(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
 								break;
 							case DP_C_LLONG:

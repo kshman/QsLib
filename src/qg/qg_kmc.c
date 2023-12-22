@@ -85,7 +85,7 @@ const char* qg_qic_str(QicButton button)
 	return s_button_names[(size_t)button < QN_COUNTOF(s_button_names) ? button : 0];
 #else
 	return NULL;
-#endif;
+#endif
 }
 
 #ifdef USE_SDL2

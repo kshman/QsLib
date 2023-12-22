@@ -210,9 +210,9 @@ static void qn_file_access_parse(const char* mode, QnFileAccess* self, int* flag
 
 							if ((p - (mode + 1)) < 63)
 							{
-								char sz[64], * stop;
-								strncpy(sz, (mode + 1), p - (mode + 1));
-								self->access = strtol(sz, &stop, 8);
+								char sz[64];
+								strncpy(sz, (mode + 1), (size_t)(p - (mode + 1)));
+								self->access = qn_strtoi(sz, 8);
 							}
 
 							mode = p;
@@ -407,18 +407,18 @@ static void qn_file_access_parse_l(const wchar* mode, QnFileAccess* self, int* f
 
 							mode++;
 						}
-						else if (iswdigit(cm))
+						else if (iswdigit((wint_t)cm))
 						{
 							const wchar* p = mode + 2;
 
-							while (iswdigit(*p))
+							while (iswdigit((wint_t)*p))
 								p++;
 
 							if ((p - (mode + 1)) < 63)
 							{
-								wchar sz[64], * stop;
-								wcsncpy(sz, (mode + 1), p - (mode + 1));
-								self->access = wcstol(sz, &stop, 8);
+								wchar sz[64];
+								wcsncpy(sz, (mode + 1), (size_t)(p - (mode + 1)));
+								self->access = qn_wcstoi(sz, 8);
 							}
 
 							mode = p;
@@ -580,7 +580,7 @@ int qn_file_read(QnFile* self, void* restrict buffer, int offset, int size)
 	DWORD ret;
 	return ReadFile(self->fd, ptr + offset, size, &ret, NULL) ? (int)ret : 0;
 #else
-	return read(self->fd, ptr + offset, size);
+	return (int)read(self->fd, ptr + offset, (size_t)size);
 #endif
 }
 
@@ -595,7 +595,7 @@ int qn_file_write(QnFile* self, const void* restrict buffer, int offset, int siz
 	DWORD ret;
 	return WriteFile(self->fd, ptr + offset, size, &ret, NULL) ? (int)ret : 0;
 #else
-	return write(self->fd, ptr + offset, size);
+	return (int)write(self->fd, ptr + offset, (size_t)size);
 #endif
 }
 
@@ -636,12 +636,14 @@ llong qn_file_tell(QnFile* self)
 llong qn_file_seek(QnFile* self, llong offset, QnSeek org)
 {
 #ifdef _QN_WINDOWS_
+	static_assert(FILE_BEGIN == QNSEEK_BEGIN && FILE_CURRENT == QNSEEK_CUR && FILE_END == QNSEEK_END, "QnSeek not equal to OS seek");
 	const LARGE_INTEGER* po = (LARGE_INTEGER*)&offset;
 	LARGE_INTEGER ll;
 	const BOOL b = SetFilePointerEx(self->fd, *po, &ll, org);
 	return b ? ll.QuadPart : -1;
 #else
-	return lseek(self->fd, offset, org);
+	static_assert(SEEK_SET == QNSEEK_BEGIN && SEEK_CUR == QNSEEK_CUR && SEEK_END == QNSEEK_END, "QnSeek not equal to OS seek");
+	return lseek(self->fd, offset, (int)org);
 #endif
 }
 
@@ -669,7 +671,7 @@ int qn_file_printf(QnFile* self, const char* restrict fmt, ...)
 	va_end(vq);
 
 	char* buf = qn_alloc(len + 1, char);
-	qn_vsnprintf(buf, len + 1, fmt, va);
+	qn_vsnprintf(buf, (size_t)len + 1, fmt, va);
 	va_end(va);
 	len = qn_file_write(self, buf, 0, len);
 	qn_free(buf);
@@ -682,7 +684,7 @@ int qn_file_vprintf(QnFile* self, const char* restrict fmt, va_list va)
 {
 	int len = qn_vsnprintf(NULL, 0, fmt, va);
 	char* buf = qn_alloc(len + 1, char);
-	qn_vsnprintf(buf, len + 1, fmt, va);
+	qn_vsnprintf(buf, (size_t)len + 1, fmt, va);
 	len = qn_file_write(self, buf, 0, len);
 	qn_free(buf);
 
@@ -1137,11 +1139,11 @@ void qn_dir_seek(QnDir* self, int pos)
 static char* qn_internal_read_sym_link(const char* path)
 {
 	char* buf = NULL;
-	ssize_t len = 64;
+	size_t len = 64;
 	ssize_t rc = -1;
 	while (true)
 	{
-		buf = qn_realloc(buf, (size_t)len, char);
+		buf = qn_realloc(buf, len, char);
 		rc = readlink(path, buf, len);
 		if (rc == -1)
 			break;
@@ -1262,7 +1264,7 @@ struct QnModule
 
 static struct ModuleImpl
 {
-	BOOL				inited;
+	bool4				inited;
 	QnSpinLock			lock;
 	QnModule*			self;
 	QnModule*			modules;

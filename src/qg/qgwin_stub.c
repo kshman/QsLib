@@ -163,6 +163,7 @@ struct WindowsStub
 
 	HWND				hwnd;
 	HINSTANCE			instance;
+
 	wchar*				class_name;
 	wchar*				window_title;
 

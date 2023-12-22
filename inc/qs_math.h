@@ -3260,7 +3260,7 @@ QN_INLINE float qm_hf2f(const halfint v)
 	else
 		e = (uint)-112;
 
-	uint r = ((v & 0x8000) << 16) | ((e + 112) << 23) | (m << 13);
+	uint r = (uint)((v & 0x8000) << 16) | (uint)((e + 112) << 23) | (uint)(m << 13);
 	return *(float*)&r;
 }
 
@@ -3298,61 +3298,234 @@ QN_INLINE void qm_vec4h_set(QmVecH4* p, float x, float y, float z, float w)
 }
 
 /// @brief (제네릭) 리셋
-#define qm_rst(x)				_Generic((x), QmVec2*: qm_vec2_rst, QmVec3*: qm_vec3_rst, QmVec4*: qm_vec4_rst, QmQuat*: qm_quat_rst, QmMat4*: qm_mat4_rst)(x)
+#define qm_rst(x)		_Generic((x),\
+							QmVec2*: qm_vec2_rst,\
+							QmVec3*: qm_vec3_rst,\
+							QmVec4*: qm_vec4_rst,\
+							QmQuat*: qm_quat_rst,\
+							QmMat4*: qm_mat4_rst)(x)
 /// @brief (제네릭) 대각
-#define qm_diag(x,v)			_Generic((x), QmVec2*: qm_vec2_diag, QmVec3*: qm_vec3_diag, QmVec4*: qm_vec4_diag, QmQuat*: qm_quat_diag, QmMat4*: qm_mat4_diag)(x,v)
+#define qm_diag(x,v)	_Generic((x),\
+							QmVec2*: qm_vec2_diag,\
+							QmVec3*: qm_vec3_diag,\
+							QmVec4*: qm_vec4_diag,\
+							QmQuat*: qm_quat_diag,\
+							QmMat4*: qm_mat4_diag)(x,v)
 /// @brief (제네릭) 내적
-#define qm_dot(l,r)				_Generic((l), QmVec2*: qm_vec2_dot, QmVec3*: qm_vec3_dot, QmVec4*: qm_vec4_dot, QmQuat*: qm_quat_dot)(l,r)
+#define qm_dot(l,r)		_Generic((l),\
+							QmVec2*: qm_vec2_dot,\
+							QmVec3*: qm_vec3_dot,\
+							QmVec4*: qm_vec4_dot,\
+							QmQuat*: qm_quat_dot,\
+							const QmVec2*: qm_vec2_dot,\
+							const QmVec3*: qm_vec3_dot,\
+							const QmVec4*: qm_vec4_dot,\
+							const QmQuat*: qm_quat_dot)(l,r)
 /// @brief (제네릭) 길의 제곱
-#define qm_len_sq(x)			_Generic((x), QmVec2*: qm_vec2_len_sq, QmVec3*: qm_vec3_len_sq, QmVec4*: qm_vec4_len_sq, QmQuat*: qm_quat_len_sq, QmLine3*: qm_line3_len_sq)(x)
+#define qm_len_sq(x)	_Generic((x),\
+							QmVec2*: qm_vec2_len_sq,\
+							QmVec3*: qm_vec3_len_sq,\
+							QmVec4*: qm_vec4_len_sq,\
+							QmQuat*: qm_quat_len_sq,\
+							QmLine3*: qm_line3_len_sq,\
+							const QmVec2*: qm_vec2_len_sq,\
+							const QmVec3*: qm_vec3_len_sq,\
+							const QmVec4*: qm_vec4_len_sq,\
+							const QmQuat*: qm_quat_len_sq,\
+							const QmLine3*: qm_line3_len_sq)(x)
 /// @brief (제네릭) 길이
-#define qm_len(x)				_Generic((x), QmVec2*: qm_vec2_len, QmVec3*: qm_vec3_len, QmVec4*: qm_vec4_len, QmQuat*: qm_quat_len, QmLine3*: qm_line3_len)(x)
+#define qm_len(x)		_Generic((x),\
+							QmVec2*: qm_vec2_len,\
+							QmVec3*: qm_vec3_len,\
+							QmVec4*: qm_vec4_len,\
+							QmQuat*: qm_quat_len,\
+							QmLine3*: qm_line3_len,\
+							const QmVec2*: qm_vec2_len,\
+							const QmVec3*: qm_vec3_len,\
+							const QmVec4*: qm_vec4_len,\
+							const QmQuat*: qm_quat_len,\
+							const QmLine3*: qm_line3_len)(x)
 /// @brief (제네릭) 정규화
-#define qm_norm(o,i)			_Generic((o), QmVec2*: qm_vec2_norm, QmVec3*: qm_vec3_norm, QmVec4*: qm_vec4_norm, QmQuat*: qm_quat_norm, QmPlane*: qm_plane_norm)(o,i)
+#define qm_norm(o,i)	_Generic((o),\
+							QmVec2*: qm_vec2_norm,\
+							QmVec3*: qm_vec3_norm,\
+							QmVec4*: qm_vec4_norm,\
+							QmQuat*: qm_quat_norm,\
+							QmPlane*: qm_plane_norm)(o,i)
 /// @brief (제네릭) 덧셈
-#define qm_add(o,l,r)			_Generic((o), QmVec2*: qm_vec2_add, QmVec3*: qm_vec3_add, QmVec4*: qm_vec4_add, QmQuat*: qm_quat_add, QmMat4*: qm_mat4_add, QmColor*: qm_color_add, QmKolor*: qm_kolor_add)(o,l,r)
+#define qm_add(o,l,r)	_Generic((o),\
+							QmVec2*: qm_vec2_add,\
+							QmVec3*: qm_vec3_add,\
+							QmVec4*: qm_vec4_add,\
+							QmQuat*: qm_quat_add,\
+							QmMat4*: qm_mat4_add,\
+							QmColor*: qm_color_add,\
+							QmKolor*: qm_kolor_add)(o,l,r)
 /// @brief (제네릭) 뺄셈
-#define qm_sub(o,l,r)			_Generic((o), QmVec2*: qm_vec2_sub, QmVec3*: qm_vec3_sub, QmVec4*: qm_vec4_sub, QmQuat*: qm_quat_sub, QmMat4*: qm_mat4_sub, QmColor*: qm_color_sub, QmKolor*: qm_kolor_sub)(o,l,r)
+#define qm_sub(o,l,r)	_Generic((o),\
+							QmVec2*: qm_vec2_sub,\
+							QmVec3*: qm_vec3_sub,\
+							QmVec4*: qm_vec4_sub,\
+							QmQuat*: qm_quat_sub,\
+							QmMat4*: qm_mat4_sub,\
+							QmColor*: qm_color_sub,\
+							QmKolor*: qm_kolor_sub)(o,l,r)
 /// @brief (제네릭) 확대
-#define qm_mag(o,i,s)			_Generic((o), QmVec2*: qm_vec2_mag, QmVec3*: qm_vec3_mag, QmVec4*: qm_vec4_mag, QmQuat*: qm_quat_mag, QmMat4*: qm_mat4_mag, QmColor*: qm_color_mag, QmKolor*: qm_kolor_mag)(o,i,s)
+#define qm_mag(o,i,s)	_Generic((o),\
+							QmVec2*: qm_vec2_mag,\
+							QmVec3*: qm_vec3_mag,\
+							QmVec4*: qm_vec4_mag,\
+							QmQuat*: qm_quat_mag,\
+							QmMat4*: qm_mat4_mag,\
+							QmColor*: qm_color_mag,\
+							QmKolor*: qm_kolor_mag)(o,i,s)
 /// @brief (제네릭) 요소 더하고 확대
-#define qm_accm(x,s)			_Generic((x), QmVec2*: qm_vec2_accm, QmVec3*: qm_vec3_accm, QmVec4*: qm_vec4_accm)(x,s)
+#define qm_accm(x,s)	_Generic((x),\
+							QmVec2*: qm_vec2_accm,\
+							QmVec3*: qm_vec3_accm,\
+							QmVec4*: qm_vec4_accm,\
+							const QmVec2*: qm_vec2_accm,\
+							const QmVec3*: qm_vec3_accm,\
+							const QmVec4*: qm_vec4_accm)(x,s)
 /// @brief (제네릭) 부호 반전
-#define qm_ivt(o,i)				_Generic((o), QmVec2*: qm_vec2_ivt, QmVec3*: qm_vec3_ivt, QmVec4*: qm_vec4_ivt, QmQuat*: qm_quat_ivt)(o,i)
+#define qm_ivt(o,i)		_Generic((o),\
+							QmVec2*: qm_vec2_ivt,\
+							QmVec3*: qm_vec3_ivt,\
+							QmVec4*: qm_vec4_ivt,\
+							QmQuat*: qm_quat_ivt)(o,i)
 /// @brief (제네릭) 네거티브
-#define qm_neg(o,i)				_Generic((o), QmVec2*: qm_vec2_neg, QmVec3*: qm_vec3_neg, QmVec4*: qm_vec4_neg, QmQuat*: qm_quat_neg, QmColor*: qm_color_neg, QmKolor*: qm_kolor_neg)(o,i)
+#define qm_neg(o,i)		_Generic((o),\
+				   			QmVec2*: qm_vec2_neg,\
+				   			QmVec3*: qm_vec3_neg,\
+				   			QmVec4*: qm_vec4_neg,\
+				   			QmQuat*: qm_quat_neg,\
+				   			QmColor*: qm_color_neg,\
+				   			QmKolor*: qm_kolor_neg)(o,i)
 /// @brief (제네릭) 같나 비교
-#define qm_eq(l,r)				_Generic((l), float: qm_eqf, QmVec2*: qm_vec2_eq, QmVec3*: qm_vec3_eq, QmVec4*: qm_vec4_eq, QmQuat*: qm_quat_eq, QmMat4*: qm_mat4_eq, QmPoint*: qm_point_eq, QmSize*: qm_size_eq, QmRect*: qm_rect_eq, QmColor*: qm_color_eq, QmKolor*: qm_kolor_eq)(l,r)
+#define qm_eq(l,r)		_Generic((l),\
+							float: qm_eqf,\
+							QmVec2*: qm_vec2_eq,\
+							QmVec3*: qm_vec3_eq,\
+							QmVec4*: qm_vec4_eq,\
+							QmQuat*: qm_quat_eq,\
+							QmMat4*: qm_mat4_eq,\
+							QmPoint*: qm_point_eq,\
+							QmSize*: qm_size_eq,\
+							QmRect*: qm_rect_eq,\
+							QmColor*: qm_color_eq,\
+							QmKolor*: qm_kolor_eq,\
+							const float: qm_eqf,\
+							const QmVec2*: qm_vec2_eq,\
+							const QmVec3*: qm_vec3_eq,\
+							const QmVec4*: qm_vec4_eq,\
+							const QmQuat*: qm_quat_eq,\
+							const QmMat4*: qm_mat4_eq,\
+							const QmPoint*: qm_point_eq,\
+							const QmSize*: qm_size_eq,\
+							const QmRect*: qm_rect_eq,\
+							const QmColor*: qm_color_eq,\
+							const QmKolor*: qm_kolor_eq)(l,r)
 /// @brief (제네릭) 단위 요소인가 확인
-#define qm_isi(x)				_Generic((x), QmVec2*: qm_vec2_isi, QmVec3*: qm_vec3_isi, QmVec4*: qm_vec4_isi, QmQuat*: qm_quat_isi, QmMat4*: qm_mat4_isi)(x)
+#define qm_isi(x)		_Generic((x),\
+							QmVec2*: qm_vec2_isi,\
+							QmVec3*: qm_vec3_isi,\
+							QmVec4*: qm_vec4_isi,\
+							QmQuat*: qm_quat_isi,\
+							QmMat4*: qm_mat4_isi,\
+							const QmVec2*: qm_vec2_isi,\
+							const QmVec3*: qm_vec3_isi,\
+							const QmVec4*: qm_vec4_isi,\
+							const QmQuat*: qm_quat_isi,\
+							const QmMat4*: qm_mat4_isi)(x)
 /// @brief (제네릭) 원본에서 대상으로 보간
-#define qm_interpolate(o,l,r,s)	_Generic((o), QmVec2*: qm_vec2_interpolate, QmVec3*: qm_vec3_interpolate, QmVec4*: qm_vec4_interpolate, QmQuat*: qm_quat_interpolate, QmMat4*: qm_mat4_interpolate, QmColor*: qm_color_interpolate, QmKolor*: qm_kolor_interpolate)(o,l,r,s)
+#define qm_interpolate(o,l,r,s)	_Generic((o),\
+							QmVec2*: qm_vec2_interpolate,\
+							QmVec3*: qm_vec3_interpolate,\
+							QmVec4*: qm_vec4_interpolate,\
+							QmQuat*: qm_quat_interpolate,\
+							QmMat4*: qm_mat4_interpolate,\
+							QmColor*: qm_color_interpolate,\
+							QmKolor*: qm_kolor_interpolate)(o,l,r,s)
 /// @brief (제네릭) 선형 보간
-#define qm_lerp(o,l,r,s)		_Generic((o), float: qm_lerpf, QmVec2*: qm_vec2_lerp, QmVec3*: qm_vec3_lerp, QmVec4*: qm_vec4_lerp, QmQuat*: qm_quat_lerp, QmColor*: qm_color_lerp, QmKolor*: qm_kolor_lerp)(o,l,r,s)
+#define qm_lerp(o,l,r,s)	_Generic((o),\
+							float: qm_lerpf,\
+							QmVec2*: qm_vec2_lerp,\
+							QmVec3*: qm_vec3_lerp,\
+							QmVec4*: qm_vec4_lerp,\
+							QmQuat*: qm_quat_lerp,\
+							QmColor*: qm_color_lerp,\
+							QmKolor*: qm_kolor_lerp)(o,l,r,s)
 /// @brief (제네릭) 최소값
-#define qm_min(o,l,r)			_Generic((o), float: qm_minf, QmVec2*: qm_vec2_min, QmVec3*: qm_vec3_min, QmVec4*: qm_vec4_min, QmColor*: qm_color_min, QmKolor*: qm_kolor_min)(o,l,r)
+#define qm_min(o,l,r)	_Generic((o),\
+							float: qm_minf,\
+							QmVec2*: qm_vec2_min,\
+							QmVec3*: qm_vec3_min,\
+							QmVec4*: qm_vec4_min,\
+							QmColor*: qm_color_min,\
+							QmKolor*: qm_kolor_min)(o,l,r)
 /// @brief (제네릭) 최대값
-#define qm_max(o,l,r)			_Generic((o), float: qm_maxf, QmVec2*: qm_vec2_max, QmVec3*: qm_vec3_max, QmVec4*: qm_vec4_max, QmColor*: qm_color_min, QmKolor*: qm_kolor_max)(o,l,r)
+#define qm_max(o,l,r)	_Generic((o),\
+							float: qm_maxf,\
+							QmVec2*: qm_vec2_max,\
+							QmVec3*: qm_vec3_max,\
+							QmVec4*: qm_vec4_max,\
+							QmColor*: qm_color_min,\
+							QmKolor*: qm_kolor_max)(o,l,r)
 /// @brief (제네릭) 거리의 제곱
-#define qm_dist_sq(x,y)			_Generic((x), QmVec2*: qm_vec2_dist_sq, QmVec3*: qm_vec3_dist_sq)(x)
+#define qm_dist_sq(x,y)	_Generic((x),\
+							QmVec2*: qm_vec2_dist_sq,\
+							QmVec3*: qm_vec3_dist_sq,\
+							const QmVec2*: qm_vec2_dist_sq,\
+							const QmVec3*: qm_vec3_dist_sq)(x,y)
 /// @brief (제네릭) 거리
-#define qm_dist(x,y)			_Generic((x), QmVec2*: qm_vec2_dist, QmVec3*: qm_vec3_dist)(x)
+#define qm_dist(x,y)	_Generic((x),\
+							QmVec2*: qm_vec2_dist,\
+							QmVec3*: qm_vec3_dist,\
+							const QmVec2*: qm_vec2_dist,\
+							const QmVec3*: qm_vec3_dist)(x,y)
 /// @brief (제네릭) 곱셈
-#define qm_mul(o,l,r)			_Generic((o), QmQuat*: qm_quat_mul, QmMat4*: qm_mat4_mul)(o,l,r)
+#define qm_mul(o,l,r)	_Generic((o),\
+							QmQuat*: qm_quat_mul,\
+							QmMat4*: qm_mat4_mul)(o,l,r)
 /// @brief (제네릭) 역함수
-#define qm_inv(o,i)				_Generic((o), QmQuat*: qm_quat_inv, QmMat4*: qm_mat4_inv)(o,i)
+#define qm_inv(o,i)		_Generic((o),\
+							QmQuat*: qm_quat_inv,\
+							QmMat4*: qm_mat4_inv)(o,i)
 /// @brief 절대값
-#define qm_abs(x)				_Generic((x), float: qm_absf, int: qm_absi)(x)
+#define qm_abs(x)		_Generic((x),\
+							float: qm_absf,\
+							int: qm_absi)(x)
 /// @brief 범위로 자르기
-#define qm_clamp(v,n,x)			_Generic((v), float: qm_clampf, int: qm_clampi)(v,n,x)
+#define qm_clamp(v,n,x)	_Generic((v),\
+							float: qm_clampf,\
+							int: qm_clampi)(v,n,x)
 /// @brief (제네릭) 설정 1항
-#define qm_set1(o,v)			_Generic((o), QmVec2*: qm_vec2_set_size, QmSize*: qm_size_set_rect, QmColor*: qm_color_set_uint, QmKolor*: qm_kolor_set_uint)(o,v)
+#define qm_set1(o,v)	_Generic((o),\
+							QmVec2*: qm_vec2_set_size,\
+							QmSize*: qm_size_set_rect,\
+							QmColor*: qm_color_set_uint,\
+							QmKolor*: qm_kolor_set_uint)(o,v)
 /// @brief (제네릭) 설정 2항
-#define qm_set2(o,x,y)			_Generic((o), QmVec2*: qm_vec2_set, QmPoint*: qm_point_set, QmSize*: qm_size_set, QmRect*: qm_rect_set_pos_size, QmLine3*: qm_line3_set_vec, QmVecH2*: qm_vec2h_set)(o,x,y)
+#define qm_set2(o,x,y)	_Generic((o),\
+							QmVec2*: qm_vec2_set,\
+							QmPoint*: qm_point_set,\
+							QmSize*: qm_size_set,\
+							QmRect*: qm_rect_set_pos_size,\
+							QmLine3*: qm_line3_set_vec,\
+							QmVecH2*: qm_vec2h_set)(o,x,y)
 /// @brief (제네릭) 설정 3항
-#define qm_set3(o,x,y,z)		_Generic((o), QmVec3*: qm_vec3_set, QmVecH3*: qm_vec3h_set)(o,x,y,z)
+#define qm_set3(o,x,y,z)	_Generic((o),\
+							QmVec3*: qm_vec3_set,\
+							QmVecH3*: qm_vec3h_set)(o,x,y,z)
 /// @brief (제네릭) 설정 4항
-#define qm_set4(o,x,y,z,w)		_Generic((o), QmVec4*: qm_vec4_set, QmQuat*: qm_quat_set, QmRect*: qm_rect_set, QmColor*: qm_color_set, QmKolor*: qm_kolor_set, QmPlane*: qm_plane_set, QmVecH4*: qm_vec4h_set)(o,x,y,z,w)
+#define qm_set4(o,x,y,z,w)	_Generic((o),\
+							QmVec4*: qm_vec4_set,\
+							QmQuat*: qm_quat_set,\
+							QmRect*: qm_rect_set,\
+							QmColor*: qm_color_set,\
+							QmKolor*: qm_kolor_set,\
+							QmPlane*: qm_plane_set,\
+							QmVecH4*: qm_vec4h_set)(o,x,y,z,w)
 
 #ifdef _MSC_VER
 #pragma warning(pop)

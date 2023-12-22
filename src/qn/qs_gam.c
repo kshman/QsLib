@@ -30,7 +30,7 @@ QsGam* qs_sc_unload(QsGam* restrict self)
 }
 
 //
-size_t qs_sc_get_ref(QsGam* restrict self)
+nint qs_sc_get_ref(QsGam* restrict self)
 {
 	return self->ref;
 }

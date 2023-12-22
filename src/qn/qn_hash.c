@@ -54,7 +54,7 @@ size_t qn_hashnow(void)
 size_t qn_hashfn(int prime8, func_t func, const void* data)
 {
 	// PP FF FF FF FD DD DD DD
-	size_t h = prime8 & 0xFFULL << 56ULL;
+	size_t h = (size_t)prime8 & 0xFFULL << 56ULL;
 	const any_t v = { .func = func };
 	h |= (qn_hashptr(v.p) & 0xFFFFFFF) << 28;
 	h |= qn_hashptr(data) & 0xFFFFFFF;

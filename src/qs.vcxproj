@@ -193,6 +193,7 @@
     <ClInclude Include="qg\glad\glad.h" />
     <ClInclude Include="qg\glad\glad_proxy.h" />
     <ClInclude Include="qg\glad\khrplatform.h" />
+    <ClInclude Include="qg\qgx11_func.h" />
     <ClInclude Include="qg\qg_es2.h" />
     <ClInclude Include="qg\qggl_supp.h" />
     <ClInclude Include="qg\qggl_base.h" />
@@ -257,8 +258,12 @@
     </ClCompile>
     <ClCompile Include="qg\qgwin_mesg.c" />
     <ClCompile Include="qg\qgwin_stub.c" />
+    <ClCompile Include="qg\qgx11_stub.c" />
     <ClCompile Include="qg\qg_kmc.c" />
-    <ClCompile Include="qg\qg_rdh.c" />
+    <ClCompile Include="qg\qg_rdh.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="qg\qg_stub.c" />
     <ClCompile Include="qn\PatrickPowell_snprintf.c" />
     <ClCompile Include="qn\qn.c" />

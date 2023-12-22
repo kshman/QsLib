@@ -14,10 +14,10 @@
 void qm_vec3_closed_line(QmVec3* restrict pv, const QmLine3* restrict line, const QmVec3* restrict loc)
 {
 	QmVec3 c, z;
-	qm_vec3_sub(&c, loc, &line->begin);
-	qm_vec3_sub(&z, &line->end, &line->begin);
+	qm_sub(&c, loc, &line->begin);
+	qm_sub(&z, &line->end, &line->begin);
 	const float d = qm_vec3_len(&z);
-	qm_vec3_mag(&z, &z, 1.0f / d);
+	qm_mag(&z, &z, 1.0f / d);
 	const float t = qm_vec3_dot(&z, &c);
 
 	if (t < 0.0f)
@@ -26,8 +26,8 @@ void qm_vec3_closed_line(QmVec3* restrict pv, const QmLine3* restrict line, cons
 		*pv = line->end;
 	else
 	{
-		qm_vec3_mag(&z, &z, t);
-		qm_vec3_add(pv, &line->begin, &z);
+		qm_mag(&z, &z, t);
+		qm_add(pv, &line->begin, &z);
 	}
 }
 
@@ -35,22 +35,22 @@ void qm_vec3_closed_line(QmVec3* restrict pv, const QmLine3* restrict line, cons
 void qm_vec3_lerp_len(QmVec3* restrict pv, const QmVec3* restrict left, const QmVec3* restrict right, float scale, float len)
 {
 	QmVec3 v0, v1;
-	qm_vec3_norm(&v0, left);
-	qm_vec3_norm(&v1, right);
+	qm_norm(&v0, left);
+	qm_norm(&v1, right);
 	pv->x = v0.x + (v1.x - v0.x) * scale;
 	pv->y = v0.y + (v1.y - v0.y) * scale;
 	pv->z = v0.z + (v1.z - v0.z) * scale;
-	qm_vec3_mag(pv, pv, len);
+	qm_mag(pv, pv, len);
 }
 
 //
 void qm_vec3_form_norm(QmVec3* restrict pv, const QmVec3* restrict v0, const QmVec3* restrict v1, const QmVec3* restrict v2)
 {
 	QmVec3 t0, t1;
-	qm_vec3_sub(&t0, v1, v0);
-	qm_vec3_sub(&t1, v2, v1);
+	qm_sub(&t0, v1, v0);
+	qm_sub(&t1, v2, v1);
 	qm_vec3_cross(pv, &t0, &t1);
-	qm_vec3_mag(pv, pv, qm_vec3_len(pv));
+	qm_mag(pv, pv, qm_vec3_len(pv));
 }
 
 //
@@ -59,20 +59,20 @@ bool qm_vec3_reflect(QmVec3* restrict pv, const QmVec3* restrict in, const QmVec
 	const float len = qm_vec3_len(in);
 	QmVec3 t;
 	float dot;
-	if (qm_eqf(len, 0.0f))
-		qm_vec3_rst(&t);
+	if (qm_eq(len, 0.0f))
+		qm_rst(&t);
 	else
 	{
 		dot = 1.0f / len;
-		qm_vec3_mag(&t, in, dot);
+		qm_mag(&t, in, dot);
 	}
-	dot = qm_vec3_dot(&t, dir);
+	dot = qm_dot(&t, dir);
 	if (dot + QM_EPSILON > 0.0f)
 		return false;
 	else
 	{
-		qm_vec3_set(pv, -2.0f * dot * dir->x + t.x, -2.0f * dot * dir->y + t.y, -2.0f * dot * dir->z + t.z);
-		qm_vec3_mag(pv, pv, len);
+		qm_set3(pv, -2.0f * dot * dir->x + t.x, -2.0f * dot * dir->y + t.y, -2.0f * dot * dir->z + t.z);
+		qm_mag(pv, pv, len);
 		return true;
 	}
 }
@@ -81,15 +81,16 @@ bool qm_vec3_reflect(QmVec3* restrict pv, const QmVec3* restrict in, const QmVec
 bool qm_vec3_intersect_line(QmVec3* restrict pv, const QmPlane* restrict plane, const QmVec3* restrict loc, const QmVec3* restrict dir)
 {
 	// v2->pl<-v1
-	const float dot = qm_vec3_dot((const QmVec3*)plane, dir);
-	if (qm_eqf(dot, 0.0f))
+	const QmVec3* plvec= (const QmVec3*)plane;
+	const float dot = qm_dot(plvec, dir);
+	if (qm_eq(dot, 0.0f))
 	{
-		qm_vec3_rst(pv);
+		qm_rst(pv);
 		return false;
 	}
 	else
 	{
-		const float tmp = (plane->d + qm_vec3_dot((const QmVec3*)plane, loc)) / dot;
+		const float tmp = (plane->d + qm_dot(plvec, loc)) / dot;
 		pv->x = loc->x - tmp * dir->x;
 		pv->y = loc->y - tmp * dir->y;
 		pv->z = loc->z - tmp * dir->z;
@@ -101,7 +102,7 @@ bool qm_vec3_intersect_line(QmVec3* restrict pv, const QmPlane* restrict plane, 
 bool qm_vec3_intersect_point(QmVec3* restrict pv, const QmPlane* restrict plane, const QmVec3* restrict v1, const QmVec3* restrict v2)
 {
 	QmVec3 dir;
-	qm_vec3_sub(&dir, v2, v1);
+	qm_sub(&dir, v2, v1);
 	return qm_vec3_intersect_line(pv, plane, v1, &dir);
 }
 
@@ -109,13 +110,13 @@ bool qm_vec3_intersect_point(QmVec3* restrict pv, const QmPlane* restrict plane,
 bool qm_vec3_intersect_between_point(QmVec3* restrict pv, const QmPlane* restrict plane, const QmVec3* restrict v1, const QmVec3* restrict v2)
 {
 	QmVec3 dir;
-	qm_vec3_sub(&dir, v2, v1);
+	qm_sub(&dir, v2, v1);
 	if (!qm_vec3_intersect_line(pv, plane, v1, &dir))
 		return false;
 	else
 	{
-		const float f = qm_vec3_len_sq(&dir);
-		return qm_vec3_dist_sq(pv, v1) <= f && qm_vec3_dist_sq(pv, v2) <= f;
+		const float f = qm_len_sq(&dir);
+		return qm_dist_sq(pv, v1) <= f && qm_dist_sq(pv, v2) <= f;
 	}
 }
 
@@ -129,12 +130,12 @@ bool qm_vec3_intersect_planes(QmVec3* restrict pv, const QmPlane* restrict plane
 //
 void qm_quat_slerp(QmQuat* restrict pq, const QmQuat* restrict left, const QmQuat* restrict right, float change)
 {
-	float dot = qm_quat_dot(left, right);
+	float dot = qm_dot(left, right);
 
 	QmQuat q1, q2;
 	if (dot < 0.0f)
 	{
-		qm_quat_ivt(&q1, left);
+		qm_ivt(&q1, left);
 		q2 = *right;
 		dot = -dot;
 	}
@@ -163,7 +164,7 @@ void qm_quat_slerp(QmQuat* restrict pq, const QmQuat* restrict left, const QmQua
 	}
 	else
 	{
-		qm_quat_set(&q2, -q1.y, q1.x, -q1.w, q1.z);
+		qm_set4(&q2, -q1.y, q1.x, -q1.w, q1.z);
 		f1 = sinf((float)QM_PI * (0.5f - change));
 		f2 = sinf((float)QM_PI * change);
 	}
@@ -262,7 +263,7 @@ void qm_quat_vec(QmQuat* restrict pq, const QmVec3* restrict rot)
 //
 void qm_quat_ln(QmQuat* restrict pq, const QmQuat* restrict q)
 {
-	const float n = qm_quat_len_sq(q);
+	const float n = qm_len_sq(q);
 	if (n > 1.0001f)
 	{
 		pq->x = q->x;
@@ -543,7 +544,7 @@ void qm_mat4_inv(QmMat4* restrict pm, const QmMat4* restrict m)
 void qm_mat4_tmul(QmMat4* restrict pm, const QmMat4* restrict left, const QmMat4* restrict right)
 {
 	QmMat4 m;
-	qm_mat4_mul(&m, left, right);
+	qm_mul(&m, left, right);
 	qm_mat4_tran(pm, &m);
 }
 
@@ -591,7 +592,7 @@ void qm_mat4_shadow(QmMat4* restrict pm, const QmVec4* restrict light, const QmP
 {
 	const float d = plane->a * light->x + plane->b * light->y + plane->c * light->z + plane->d;
 
-	if (qm_eqf(light->w, 0.0f))
+	if (qm_eq(light->w, 0.0f))
 	{
 		pm->_11 = -plane->a * light->x + d;
 		pm->_12 = -plane->a * light->y;
@@ -645,7 +646,7 @@ void qm_mat4_affine(QmMat4* restrict pm, const QmVec3* restrict scl, const QmVec
 	if (scl)
 		qm_mat4_scl(&m1, scl->x, scl->y, scl->z, true);
 	else
-		qm_mat4_rst(&m1);
+		qm_rst(&m1);
 
 	if (rotcenter)
 	{
@@ -654,24 +655,24 @@ void qm_mat4_affine(QmMat4* restrict pm, const QmVec3* restrict scl, const QmVec
 	}
 	else
 	{
-		qm_mat4_rst(&m2);
-		qm_mat4_rst(&m4);
+		qm_rst(&m2);
+		qm_rst(&m4);
 	}
 
 	if (rot)
 		qm_mat4_quat(&m3, rot, NULL);
 	else
-		qm_mat4_rst(&m3);
+		qm_rst(&m3);
 
 	if (loc)
 		qm_mat4_loc(&m5, loc->x, loc->y, loc->z, true);
 	else
-		qm_mat4_rst(&m5);
+		qm_rst(&m5);
 
-	qm_mat4_mul(&p1, &m1, &m2);
-	qm_mat4_mul(&p2, &p1, &m3);
-	qm_mat4_mul(&p3, &p2, &m4);
-	qm_mat4_mul(pm, &p3, &m5);
+	qm_mul(&p1, &m1, &m2);
+	qm_mul(&p2, &p1, &m3);
+	qm_mul(&p3, &p2, &m4);
+	qm_mul(pm, &p3, &m5);
 }
 
 //
@@ -753,12 +754,13 @@ void qm_plane_trfm(QmPlane* restrict pp, const QmPlane* restrict plane, const Qm
 {
 	QmVec3 v, n, s;
 
-	qm_vec3_mag(&v, (const QmVec3*)plane, -plane->d);
+	qm_mag(&v, (const QmVec3*)plane, -plane->d);
 	qm_vec3_trfm(&v, &v, trfm);
-	qm_vec3_norm(&n, (const QmVec3*)plane);
-	qm_vec3_set(&s, trfm->_11, trfm->_22, trfm->_33);
+	qm_norm(&n, (const QmVec3*)plane);
+	qm_set3(&s, trfm->_11, trfm->_22, trfm->_33);
 
-	if (!qm_eqf(s.x, 0.0f) && !qm_eqf(s.y, 0.0f) && !qm_eqf(s.z, 0.0f) && (qm_eqf(s.x, 1.0f) || qm_eqf(s.y, 1.0f) || qm_eqf(s.z, 1.0f)))
+	if (!qm_eq(s.x, 0.0f) && !qm_eq(s.y, 0.0f) && !qm_eq(s.z, 0.0f) &&
+		(qm_eq(s.x, 1.0f) || qm_eq(s.y, 1.0f) || qm_eq(s.z, 1.0f)))
 	{
 		n.x = n.x / (s.x * s.x);
 		n.y = n.y / (s.y * s.y);
@@ -766,36 +768,36 @@ void qm_plane_trfm(QmPlane* restrict pp, const QmPlane* restrict plane, const Qm
 	}
 
 	qm_vec3_trfm_norm(&n, &n, trfm);
-	qm_vec3_norm((QmVec3*)pp, &n);
-	pp->d = -qm_vec3_dot(&v, (const QmVec3*)pp);
+	qm_norm((QmVec3*)pp, &n);
+	pp->d = -qm_dot(&v, (const QmVec3*)pp);
 }
 
 //
 void qm_plane_points(QmPlane* restrict pp, const QmVec3* restrict v1, const QmVec3* restrict v2, const QmVec3* restrict v3)
 {
 	QmVec3 t0, t1, t2;
-	qm_vec3_sub(&t0, v2, v1);
-	qm_vec3_sub(&t1, v3, v2);
+	qm_sub(&t0, v2, v1);
+	qm_sub(&t1, v3, v2);
 	qm_vec3_cross(&t2, &t0, &t1);
-	qm_vec3_norm(&t2, &t2);
-	qm_plane_set(pp, t2.x, t2.y, t2.z, -qm_vec3_dot(v1, &t2));
+	qm_norm(&t2, &t2);
+	qm_set4(pp, t2.x, t2.y, t2.z, -qm_vec3_dot(v1, &t2));
 }
 
 //
 bool qm_plane_intersect(const QmPlane* restrict p, QmVec3* restrict loc, QmVec3* restrict dir, const QmPlane* restrict o)
 {
-	const float f0 = qm_vec3_len((const QmVec3*)p);
-	const float f1 = qm_vec3_len((const QmVec3*)o);
-	const float f2 = qm_vec3_dot((const QmVec3*)p, (const QmVec3*)o);
+	const float f0 = qm_len((const QmVec3*)p);
+	const float f1 = qm_len((const QmVec3*)o);
+	const float f2 = qm_dot((const QmVec3*)p, (const QmVec3*)o);
 	const float det = f0 * f1 - f2 * f2;
-	if (qm_absf(det) < QM_EPSILON)
+	if (qm_abs(det) < QM_EPSILON)
 		return false;
 
 	const float inv = 1.0f / det;
 	const float fa = (f1 * -p->d + f2 * o->d) * inv;
 	const float fb = (f0 * -o->d + f2 * p->d) * inv;
 	qm_vec3_cross(dir, (const QmVec3*)p, (const QmVec3*)o);
-	qm_vec3_set(loc, p->a * fa + o->a * fb, p->b * fa + o->b * fb, p->c * fa + o->c * fb);
+	qm_set3(loc, p->a * fa + o->a * fb, p->b * fa + o->b * fb, p->c * fa + o->c * fb);
 	return true;
 }
 
@@ -803,13 +805,13 @@ bool qm_plane_intersect(const QmPlane* restrict p, QmVec3* restrict loc, QmVec3*
 bool qm_line3_intersect_sphere(const QmLine3* restrict p, const QmVec3* restrict org, float rad, float* dist)
 {
 	QmVec3 t;
-	qm_vec3_sub(&t, org, &p->begin);
-	const float c = qm_vec3_len(&t);
+	qm_sub(&t, org, &p->begin);
+	const float c = qm_len(&t);
 
 	QmVec3 v;
 	qm_line3_vec(p, &v);
-	qm_vec3_norm(&v, &v);
-	const float z = qm_vec3_dot(&t, &v);
+	qm_norm(&v, &v);
+	const float z = qm_dot(&t, &v);
 	const float d = rad * rad - (c * c - z * z);
 
 	if (d < 0.0f)
