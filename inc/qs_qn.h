@@ -176,8 +176,8 @@ QN_EXTC_BEGIN
 //////////////////////////////////////////////////////////////////////////
 // types
 
-#ifndef BOOL
-#define BOOL				int
+#ifndef bool4
+#define bool4				int
 #endif
 
 typedef void (*func_t)(void);								/// @brief 함수 핸들러
@@ -1527,7 +1527,7 @@ struct QnMlTag
 	int				name_len;
 	int				context_len;
 	int				line;
-	BOOL			sibling;
+	bool4			sibling;
 };
 
 // ml unit
@@ -1959,8 +1959,8 @@ QSAPI void qn_spin_leave(QnSpinLock* lock);
 /// @brief 스레드
 struct QnThread
 {
-	BOOL				canwait;
-	BOOL				managed;
+	bool4				canwait;
+	bool4				managed;
 
 	int					busy;
 	uint				stack_size;
@@ -2231,7 +2231,7 @@ QSAPI nuint qs_sc_set_desc(QsGam* restrict g, nuint ptr);
 //////////////////////////////////////////////////////////////////////////
 // type check
 #define QN_ASSERT_SIZE(t,s)	static_assert(sizeof(t) == s, #t " type size must be " #s "")
-QN_ASSERT_SIZE(BOOL, 4);
+QN_ASSERT_SIZE(bool4, 4);
 QN_ASSERT_SIZE(byte, 1);
 QN_ASSERT_SIZE(ushort, 2);
 QN_ASSERT_SIZE(uint, 4);

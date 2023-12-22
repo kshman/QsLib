@@ -1264,7 +1264,7 @@ struct QnModule
 
 static struct ModuleImpl
 {
-	BOOL				inited;
+	bool4				inited;
 	QnSpinLock			lock;
 	QnModule*			self;
 	QnModule*			modules;

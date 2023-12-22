@@ -69,6 +69,7 @@
     <ClInclude Include="..\..\src\qg\glad\glad.h" />
     <ClInclude Include="..\..\src\qg\glad\glad_proxy.h" />
     <ClInclude Include="..\..\src\qg\glad\khrplatform.h" />
+    <ClInclude Include="..\..\src\qg\qgx11_func.h" />
     <ClInclude Include="..\..\src\qg\qg_stub.h" />
     <ClInclude Include="..\..\src\qn\zlib\crc32.h" />
     <ClInclude Include="..\..\src\qn\zlib\deflate.h" />
@@ -89,7 +90,6 @@
     <ClCompile Include="..\..\src\qg\glad\glad.c" />
     <ClCompile Include="..\..\src\qg\qgwin_mesg.c" />
     <ClCompile Include="..\..\src\qg\qgwin_stub.c" />
-    <ClCompile Include="..\..\src\qg\qgx11_opengl.c" />
     <ClCompile Include="..\..\src\qg\qgx11_stub.c" />
     <ClCompile Include="..\..\src\qg\qg_kmc.c" />
     <ClCompile Include="..\..\src\qg\qg_stub.c" />

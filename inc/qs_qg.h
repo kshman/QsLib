@@ -249,7 +249,7 @@ typedef enum QgFlag
 	QGFLAG_RESIZABLE = QN_BIT(2),							/// @brief 크기 변경할 수 있음
 	QGFLAG_NOTITLE = QN_BIT(3),								/// @brief 타이틀 바가 없음
 	QGFLAG_FOCUS = QN_BIT(4),								/// @brief 입력 포커스 받을 수 있음
-	QGFLAG_TEXT = QN_BIT(5),									/// @brief 텍스트 입력을 받을 수 있음
+	QGFLAG_TEXT = QN_BIT(5),								/// @brief 텍스트 입력을 받을 수 있음
 	// 렌더러 플래그 (24~30)
 	QGFLAG_VSYNC = QN_BIT(27),								/// @brief VSYNC 켜기
 	QGFLAG_DITHER = QN_BIT(29),								/// @brief 16비트 모드 사용
@@ -364,8 +364,8 @@ typedef struct QgPropLayout
 /// @brief 블렌드
 typedef struct QgPropBlend
 {
-	BOOL				use_coverage;						/// @brief sample coverage / alpha to coverage
-	BOOL				separate;							/// @brief 거짓이면 rb[0]만 사용
+	bool4				use_coverage;						/// @brief sample coverage / alpha to coverage
+	bool4				separate;							/// @brief 거짓이면 rb[0]만 사용
 	QgBlend				rb[QGRVS_MAX_VALUE];				/// @brief 스테이지 별 블렌드 정보
 } QgPropBlend;
 
@@ -423,7 +423,7 @@ typedef union QgEvent
 	struct QgEventActive
 	{
 		QgEventType			ev;
-		BOOL				active;							/// @brief 활성 상태면 참
+		bool4				active;							/// @brief 활성 상태면 참
 		double				delta;							/// @brief 마지막 활성 상태로 부터의 지난 시간(초)
 	}					active;								/// @brief 액티브 이벤트
 	struct QgEventLayout
@@ -437,7 +437,7 @@ typedef union QgEvent
 		QgEventType			ev;
 		QikKey				key;							/// @brief 이벤트에 해당하는 키
 		QikMask				mask;							/// @brief 특수키 상태
-		BOOL				repeat;							/// @brief 계속 눌려 있었다면 참
+		bool4				repeat;							/// @brief 계속 눌려 있었다면 참
 	}					key;								/// @brief 키 눌림 떼임 이벤트
 	struct QgEventMouseMove
 	{
@@ -523,7 +523,7 @@ typedef struct QgUimMouse
 		QmVec2				accm;							/// @brief 가속도
 		QmVec2				precise;						/// @brief 정밀 값
 		QmPoint				integral;						/// @brief 값
-		BOOL				direction;						/// @brief 거짓=기본휠, 참=틸트휠
+		bool4				direction;						/// @brief 거짓=기본휠, 참=틸트휠
 	}					wheel;
 } QgUimMouse;
 
@@ -592,7 +592,7 @@ typedef struct QgRenderInvoke
 	uint				draws;
 	uint				primitives;
 
-	BOOL				flush;
+	bool4				flush;
 } QgRenderInvoke;
 
 /// @brief 렌더러 트랜스 포매이션

@@ -117,6 +117,9 @@
     <ClInclude Include="..\..\src\qg\glad\khrplatform.h">
       <Filter>헤더 파일\qg\glad</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\qg\qgx11_func.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\pch.c">
@@ -222,9 +225,6 @@
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qg\qgx11_stub.c">
-      <Filter>소스 파일\qg\stub</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qg\qgx11_opengl.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qg\glad\glad.c">
