@@ -5,9 +5,9 @@
 // 공용
 
 // 문자를 진수 숫자로 (32진수까지, 아스키/유니코드 공통
-static const byte base_internal_conv(uint n)
+static byte nbase_conv(uint n)
 {
-	static const byte s_table[] =
+	static const byte nbase_table[] =
 	{
 		255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,	// 0~15
 		255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 16~31
@@ -18,7 +18,7 @@ static const byte base_internal_conv(uint n)
 		255, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, // 96~111
 		25, 26, 27, 28, 29, 30, 31, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 112~127
 	};
-	return n < (uint)QN_COUNTOF(s_table) ? s_table[n] : 255;;
+	return n < (uint)QN_COUNTOF(nbase_table) ? nbase_table[n] : 255;;
 }
 
 
@@ -575,11 +575,11 @@ uint qn_strtoi(const char* p, uint base)
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	uint v = 0;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
-	uint ch = base_internal_conv((uint)*p++);
+	uint ch = nbase_conv((uint)*p++);
 	while (ch < base)
 	{
 		v = v * base + ch;
-		ch = base_internal_conv((uint)*p++);
+		ch = nbase_conv((uint)*p++);
 	}
 	return v;
 }
@@ -591,11 +591,11 @@ ullong qn_strtoll(const char* p, uint base)
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	ullong v = 0;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
-	uint ch = base_internal_conv((uint)*p++);
+	uint ch = nbase_conv((uint)*p++);
 	while (ch < base)
 	{
 		v = v * base + ch;
-		ch = base_internal_conv((uint)*p++);
+		ch = nbase_conv((uint)*p++);
 	}
 	return v;
 }
@@ -1136,11 +1136,11 @@ uint qn_wcstoi(const wchar* p, uint base)
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	uint v = 0;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
-	uint ch = base_internal_conv((uint)*p++);
+	uint ch = nbase_conv((uint)*p++);
 	while (ch < base)
 	{
 		v = v * base + ch;
-		ch = base_internal_conv((uint)*p++);
+		ch = nbase_conv((uint)*p++);
 	}
 	return v;
 }
@@ -1152,11 +1152,11 @@ ullong qn_wcstoll(const wchar* p, uint base)
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	ullong v = 0;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
-	uint ch = base_internal_conv((uint)*p++);
+	uint ch = nbase_conv((uint)*p++);
 	while (ch < base)
 	{
 		v = v * base + ch;
-		ch = base_internal_conv((uint)*p++);
+		ch = nbase_conv((uint)*p++);
 	}
 	return v;
 }
@@ -1236,7 +1236,7 @@ uchar4 qn_u8cbn(const char* p)
 //
 const char* qn_u8nch(const char* s)
 {
-	static const char s_skips[256] =
+	static const char utf8_skips[256] =
 	{
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -1247,7 +1247,7 @@ const char* qn_u8nch(const char* s)
 		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 		3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 1, 1
 	};
-	return s + s_skips[*(const byte*)s];
+	return s + utf8_skips[*(const byte*)s];
 }
 
 //

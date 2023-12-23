@@ -217,6 +217,7 @@ const char* windows_message_string(UINT mesg)
 	qn_snprintf(s_buf, QN_COUNTOF(s_buf) - 1, "(MESG: %04X", mesg);
 	return s_buf;
 #else
+	(void)mesg;
 	return "UNKNOWN";
 #endif
 }

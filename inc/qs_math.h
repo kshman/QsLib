@@ -3404,7 +3404,6 @@ QN_INLINE void qm_vec4h_set(QmVecH4* p, float x, float y, float z, float w)
 							QmRect*: qm_rect_eq,\
 							QmColor*: qm_color_eq,\
 							QmKolor*: qm_kolor_eq,\
-							const float: qm_eqf,\
 							const QmVec2*: qm_vec2_eq,\
 							const QmVec3*: qm_vec3_eq,\
 							const QmVec4*: qm_vec4_eq,\

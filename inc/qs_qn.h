@@ -84,7 +84,7 @@
 
 // compiler specific
 #ifdef _MSC_VER
-#define QN_INLINE			_Pragma("warning(suppress:4514)") __inline
+#define QN_INLINE			_Pragma("warning(suppress:4514 4710)") __inline
 #define QN_FORCE_LINE		__forceinline
 #define QN_FNAME			__FUNCTION__
 #define QN_FALL_THROUGH

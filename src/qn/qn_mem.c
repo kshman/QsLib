@@ -186,7 +186,7 @@ static struct MemImpl
 	size_t			count;
 	size_t			block_size;
 
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 	HANDLE			heap;
 #endif
 
@@ -354,18 +354,17 @@ static void* qn_mpf_alloc(size_t size, bool zero, const char* desc, size_t line)
 	node = (MemBlock*)(zero ? calloc(block, 1) : malloc(block));
 #endif
 	if (node == NULL)
-	{
 		qn_mpf_out_of_memory(desc, line, size, block);
-		return NULL;
+	else
+	{
+		node->sign = MEMORY_SIGN_HEAD;
+		node->desc = desc;
+		node->line = (uint)line;
+		node->index = mem_impl.index;
+		node->size = size;
+		node->block = block;
+		qn_mpf_node_link(node);
 	}
-
-	node->sign = MEMORY_SIGN_HEAD;
-	node->desc = desc;
-	node->line = (uint)line;
-	node->index = mem_impl.index;
-	node->size = size;
-	node->block = block;
-	qn_mpf_node_link(node);
 
 	return _memptr(node);
 }
@@ -399,6 +398,8 @@ static void* qn_mpf_realloc(void* ptr, size_t size, const char* desc, size_t lin
 	}
 
 	// 재할당 하거나 새 메모리
+	qn_mpf_node_unlink(node);
+
 #if _QN_WINDOWS_
 	__try
 	{
@@ -412,15 +413,15 @@ static void* qn_mpf_realloc(void* ptr, size_t size, const char* desc, size_t lin
 	node = (MemBlock*)realloc(node, block);
 #endif
 	if (node == NULL)
-	{
 		qn_mpf_out_of_memory(desc, line, size, block);
-		return NULL;
+	else
+	{
+		node->desc = desc;
+		node->line = (uint)line;
+		node->size = size;
+		node->block = block;
+		qn_mpf_node_link(node);
 	}
-
-	node->desc = desc;
-	node->line = (uint)line;
-	node->size = size;
-	node->block = block;
 
 	return _memptr(node);
 }

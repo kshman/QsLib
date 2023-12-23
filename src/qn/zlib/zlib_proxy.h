@@ -1,7 +1,9 @@
 ﻿#pragma once
 
 #include "qs_qn.h"
+#ifdef _MSC_VER
 #include <io.h>
+#endif
 #ifdef _QN_UNIX_
 #include <unistd.h>
 #endif

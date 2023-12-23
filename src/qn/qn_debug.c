@@ -21,22 +21,16 @@ static struct DebugImpl
 
 	bool			debugger;
 	bool			redirect;
-}
-_qn_dbg =
-{
-	NULL,
-	3,
-	"QS",
-};
+} debug_impl = { NULL, 3, "QS", };
 
 //
 void qn_debug_init(void)
 {
 #if _QN_WINDOWS_
-	_qn_dbg.handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	_qn_dbg.debugger = IsDebuggerPresent();
+	debug_impl.handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	debug_impl.debugger = IsDebuggerPresent();
 #else
-	_qn_dbg.fp = stdout;
+	debug_impl.fp = stdout;
 #endif
 }
 
@@ -44,11 +38,11 @@ void qn_debug_init(void)
 void qn_debug_dispose(void)
 {
 #if _QN_WINDOWS_
-	if (_qn_dbg.redirect && _qn_dbg.handle != NULL)
-		CloseHandle(_qn_dbg.handle);
+	if (debug_impl.redirect && debug_impl.handle != NULL)
+		CloseHandle(debug_impl.handle);
 #else
-	if (_qn_dbg.redirect && _qn_dbg.fp != NULL)
-		fclose(_qn_dbg.fp);
+	if (debug_impl.redirect && debug_impl.fp != NULL)
+		fclose(debug_impl.fp);
 #endif
 }
 
@@ -57,21 +51,21 @@ static int qn_debug_out_str(const char* restrict s)
 {
 #if _QN_WINDOWS_
 	DWORD len = (DWORD)strlen(s);
-	if (_qn_dbg.handle != NULL)
+	if (debug_impl.handle != NULL)
 	{
 		DWORD wtn;
-		if (_qn_dbg.redirect || WriteConsoleA(_qn_dbg.handle, s, len, &wtn, NULL) == 0)
-			WriteFile(_qn_dbg.handle, s, len, &wtn, NULL);
+		if (debug_impl.redirect || WriteConsoleA(debug_impl.handle, s, len, &wtn, NULL) == 0)
+			WriteFile(debug_impl.handle, s, len, &wtn, NULL);
 	}
-	if (_qn_dbg.debugger)
+	if (debug_impl.debugger)
 		OutputDebugStringA(s);
 #else
 	size_t len = strlen(s);
-	if (_qn_dbg.fp != NULL)
-		fputs(s, _qn_dbg.fp);
+	if (debug_impl.fp != NULL)
+		fputs(s, debug_impl.fp);
 #if _QN_ANDROID_
-	if (_qn_dbg.debugger)
-		__android_log_print(ANDROID_LOG_VERBOSE, _qn_dbg.tag, s);
+	if (debug_impl.debugger)
+		__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, s);
 #endif
 #endif
 	return (int)len;
@@ -81,23 +75,23 @@ static int qn_debug_out_str(const char* restrict s)
 static int qn_debug_out_ch(int ch)
 {
 #if _QN_WINDOWS_
-	if (_qn_dbg.handle != NULL)
+	if (debug_impl.handle != NULL)
 	{
 		DWORD wtn;
-		if (_qn_dbg.redirect || WriteConsoleA(_qn_dbg.handle, &ch, 1, &wtn, NULL) == 0)
-			WriteFile(_qn_dbg.handle, &ch, 1, &wtn, NULL);
+		if (debug_impl.redirect || WriteConsoleA(debug_impl.handle, &ch, 1, &wtn, NULL) == 0)
+			WriteFile(debug_impl.handle, &ch, 1, &wtn, NULL);
 	}
-	if (_qn_dbg.debugger)
+	if (debug_impl.debugger)
 	{
 		const char sz[2] = { (char)ch, '\0' };
 		OutputDebugStringA(sz);
 	}
 #else
-	if (_qn_dbg.fp != NULL)
-		fputc(ch, _qn_dbg.fp);
+	if (debug_impl.fp != NULL)
+		fputc(ch, debug_impl.fp);
 #if _QN_ANDROID_
-	if (_qn_dbg.debugger)
-		__android_log_print(ANDROID_LOG_VERBOSE, _qn_dbg.tag, "%c", ch);
+	if (debug_impl.debugger)
+		__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, "%c", ch);
 #endif
 #endif
 
@@ -134,7 +128,8 @@ int qn_debug_assert(const char* restrict expr, const char* restrict mesg, const 
 	qn_debug_out_ch('\n');
 
 #ifndef __EMSCRIPTEN__
-	if (_qn_dbg.debugger) debug_break();
+	if (debug_impl.debugger)
+		debug_break();
 #endif
 
 	return 0;
@@ -153,7 +148,8 @@ noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg
 	qn_debug_out_ch('\n');
 
 #ifndef __EMSCRIPTEN__
-	if (_qn_dbg.debugger) debug_break();
+	if (debug_impl.debugger)
+		debug_break();
 #endif
 	abort();
 }
@@ -164,8 +160,10 @@ int qn_debug_outputs(bool breakpoint, const char* restrict head, const char* res
 	const int len = qn_debug_out_trace(head, mesg);
 	qn_debug_out_ch('\n');
 
-	if (breakpoint && _qn_dbg.debugger)
+#ifndef __EMSCRIPTEN__
+	if (breakpoint && debug_impl.debugger)
 		debug_break();
+#endif
 
 	return len;
 }
@@ -185,7 +183,7 @@ int qn_debug_outputf(bool breakpoint, const char* restrict head, const char* res
 	qn_debug_out_ch('\n');
 
 #ifndef __EMSCRIPTEN__
-	if (breakpoint && _qn_dbg.debugger)
+	if (breakpoint && debug_impl.debugger)
 		debug_break();
 #endif
 
@@ -250,7 +248,7 @@ int qn_debug_output_syserr(bool breakpoint, const char* head, int errcode)
 	qn_debug_out_ch('\n');
 	qn_free(ps);
 
-	if (breakpoint && _qn_dbg.debugger)
+	if (breakpoint && debug_impl.debugger)
 		debug_break();
 
 	return len;

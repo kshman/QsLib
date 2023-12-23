@@ -34,48 +34,48 @@ static struct RuntimeImpl
 	struct Closure* preclosures;
 
 	QnPropMukum		props;
-} _qn_rt = { false, };
+} runtime_impl = { false, };
 
 //
 static void qn_dispose(void)
 {
-	qn_ret_if_fail(_qn_rt.inited);
+	qn_ret_if_fail(runtime_impl.inited);
 
-	QN_LOCK(_qn_rt.lock);
-	for (struct Closure *prev, *node = _qn_rt.closures; node; node = prev)
+	QN_LOCK(runtime_impl.lock);
+	for (struct Closure *prev, *node = runtime_impl.closures; node; node = prev)
 	{
 		prev = node->prev;
 		node->fp.func(node->fp.data);
 		qn_free(node);
 	}
 
-	for (struct Closure *prev, *node = _qn_rt.preclosures; node; node = prev)
+	for (struct Closure *prev, *node = runtime_impl.preclosures; node; node = prev)
 	{
 		prev = node->prev;
 		node->fp.func(node->fp.data);
 		qn_free(node);
 	}
-	QN_UNLOCK(_qn_rt.lock);
+	QN_UNLOCK(runtime_impl.lock);
 
-	qn_mukum_disp(QnPropMukum, &_qn_rt.props);
+	qn_mukum_disp(QnPropMukum, &runtime_impl.props);
 
 	qn_thread_dispose();
 	qn_mpf_dispose();
 	qn_debug_dispose();
-	_qn_rt.inited = false;
+	runtime_impl.inited = false;
 }
 
 //
 static void qn_init(void)
 {
-	_qn_rt.inited = true;
+	runtime_impl.inited = true;
 
 	qn_cycle_init();
 	qn_debug_init();
 	qn_mpf_init();
 	qn_thread_init();
 
-	qn_mukum_init(QnPropMukum, &_qn_rt.props);
+	qn_mukum_init(QnPropMukum, &runtime_impl.props);
 
 #if defined _LIB || defined _STATIC
 	(void)atexit(qn_dispose);
@@ -86,7 +86,7 @@ static void qn_init(void)
 void qn_runtime(int v[2])
 {
 #if defined _LIB || defined _STATIC
-	if (!_qn_rt.inited)
+	if (!runtime_impl.inited)
 		qn_init();
 #endif
 
@@ -116,10 +116,10 @@ void qn_atexit(paramfunc_t func, void* data)
 	node->fp.func = func;
 	node->fp.data = data;
 
-	QN_LOCK(_qn_rt.lock);
-	node->prev = _qn_rt.closures;
-	_qn_rt.closures = node;
-	qn_spin_leave(&_qn_rt.lock);
+	QN_LOCK(runtime_impl.lock);
+	node->prev = runtime_impl.closures;
+	runtime_impl.closures = node;
+	qn_spin_leave(&runtime_impl.lock);
 }
 
 //
@@ -133,10 +133,10 @@ void qn_internal_atexit(paramfunc_t func, void* data)
 	node->fp.func = func;
 	node->fp.data = data;
 
-	QN_LOCK(_qn_rt.lock);
-	node->prev = _qn_rt.preclosures;
-	_qn_rt.preclosures = node;
-	QN_UNLOCK(_qn_rt.lock);
+	QN_LOCK(runtime_impl.lock);
+	node->prev = runtime_impl.preclosures;
+	runtime_impl.preclosures = node;
+	QN_UNLOCK(runtime_impl.lock);
 }
 
 //
@@ -150,12 +150,12 @@ size_t qn_number(void)
 void qn_set_prop(const char* restrict name, const char* restrict value)
 {
 	qn_ret_if_fail(name != NULL);
-	QN_LOCK(_qn_rt.lock);
+	QN_LOCK(runtime_impl.lock);
 	if (value == NULL || *value == '\0')
-		qn_mukum_remove(QnPropMukum, &_qn_rt.props, name, NULL);
+		qn_mukum_remove(QnPropMukum, &runtime_impl.props, name, NULL);
 	else
-		qn_mukum_set(QnPropMukum, &_qn_rt.props, qn_strdup(name), qn_strdup(value));
-	QN_UNLOCK(_qn_rt.lock);
+		qn_mukum_set(QnPropMukum, &runtime_impl.props, qn_strdup(name), qn_strdup(value));
+	QN_UNLOCK(runtime_impl.lock);
 }
 
 //
@@ -163,9 +163,9 @@ const char* qn_get_prop(const char* name)
 {
 	qn_val_if_fail(name != NULL, NULL);
 	char** ret;
-	QN_LOCK(_qn_rt.lock);
-	qn_mukum_get(QnPropMukum, &_qn_rt.props, name, &ret);
-	QN_UNLOCK(_qn_rt.lock);
+	QN_LOCK(runtime_impl.lock);
+	qn_mukum_get(QnPropMukum, &runtime_impl.props, name, &ret);
+	QN_UNLOCK(runtime_impl.lock);
 	return ret == NULL ? NULL : *ret;
 }
 

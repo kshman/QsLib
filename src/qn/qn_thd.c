@@ -125,11 +125,7 @@ static struct ThreadImpl
 	QnRealThread*		threads;
 
 	QnSpinLock			lock;
-}
-_qn_thd =
-{
-	0,
-};
+} thread_impl = { 0, };
 
 static void qn_internal_thread_dispose(QnRealThread* self, uint tls_count, bool force);
 #ifndef _QN_WINDOWS_
@@ -140,39 +136,39 @@ static void qn_internal_tls_dispose(void* p);
 void qn_thread_init(void)
 {
 #ifdef _QN_WINDOWS_
-	_qn_thd.tls = TlsAlloc();
-	if (_qn_thd.tls == TLS_OUT_OF_INDEXES)
+	thread_impl.tls = TlsAlloc();
+	if (thread_impl.tls == TLS_OUT_OF_INDEXES)
 		qn_debug_halt("THREAD", "cannot allocate thread tls");
 #else
 #ifdef _SC_THREAD_STACK_MIN
-	_qn_thd.max_stack = (size_t)QN_MAX(sysconf(_SC_THREAD_STACK_MIN), 0);
+	thread_impl.max_stack = (size_t)QN_MAX(sysconf(_SC_THREAD_STACK_MIN), 0);
 #endif
-	pthread_key_create(&_qn_thd.tls, qn_internal_tls_dispose);
+	pthread_key_create(&thread_impl.tls, qn_internal_tls_dispose);
 #endif
-	_qn_thd.self = (QnRealThread*)qn_thread_self();
+	thread_impl.self = (QnRealThread*)qn_thread_self();
 }
 
 //
 void qn_thread_dispose(void)
 {
 #ifdef _QN_WINDOWS_
-	if (_qn_thd.tls != TLS_OUT_OF_INDEXES)
+	if (thread_impl.tls != TLS_OUT_OF_INDEXES)
 	{
-		TlsFree(_qn_thd.tls);
-		_qn_thd.tls = TLS_OUT_OF_INDEXES;
+		TlsFree(thread_impl.tls);
+		thread_impl.tls = TLS_OUT_OF_INDEXES;
 	}
 #else
-	if (_qn_thd.tls != 0)
+	if (thread_impl.tls != 0)
 	{
-		pthread_key_delete(_qn_thd.tls);
-		_qn_thd.tls = 0;
+		pthread_key_delete(thread_impl.tls);
+		thread_impl.tls = 0;
 	}
 #endif
 
-	for (QnRealThread *next = NULL, *node = _qn_thd.threads; node; node = next)
+	for (QnRealThread *next = NULL, *node = thread_impl.threads; node; node = next)
 	{
 		next = node->next;
-		qn_internal_thread_dispose(node, _qn_thd.tls_index, true);
+		qn_internal_thread_dispose(node, thread_impl.tls_index, true);
 	}
 }
 
@@ -219,13 +215,13 @@ static bool qn_internal_thread_set_busy(QnRealThread* self, int busy)
 //
 static bool qn_internal_thread_is_null(pthread_t* p)
 {
-	return memcpy(p, &_qn_thd.null_pthread, sizeof(pthread_t)) == 0;
+	return memcpy(p, &thread_impl.null_pthread, sizeof(pthread_t)) == 0;
 }
 
 //
 static void qn_internal_thread_make_null(pthread_t* p)
 {
-	memcpy(p, &_qn_thd.null_pthread, sizeof(pthread_t));
+	memcpy(p, &thread_impl.null_pthread, sizeof(pthread_t));
 }
 #endif
 
@@ -234,8 +230,8 @@ static void qn_internal_thread_dispose(QnRealThread* self, uint tls_count, bool 
 {
 	for (uint i = 0; i < tls_count; i++)
 	{
-		if (_qn_thd.tls_callback[i] != NULL && self->tls[i] != NULL)
-			_qn_thd.tls_callback[i](self->tls[i]);
+		if (thread_impl.tls_callback[i] != NULL && self->tls[i] != NULL)
+			thread_impl.tls_callback[i](self->tls[i]);
 	}
 
 	if (self->base.canwait)
@@ -263,26 +259,26 @@ static void qn_internal_thread_exit(QnRealThread* self, bool Exit)
 	if (self->base.managed)
 	{
 		self->base.managed = false;
-		QN_LOCK(_qn_thd.lock);
-		for (QnRealThread *prev = NULL, *node = _qn_thd.threads; node; prev = node, node = node->next)
+		QN_LOCK(thread_impl.lock);
+		for (QnRealThread *prev = NULL, *node = thread_impl.threads; node; prev = node, node = node->next)
 		{
 			if (node != self)
 				continue;
 			if (prev)
 				prev->next = node->next;
 			else
-				_qn_thd.threads = node->next;
+				thread_impl.threads = node->next;
 			break;
 		}
-		QN_UNLOCK(_qn_thd.lock);
+		QN_UNLOCK(thread_impl.lock);
 	}
 
-	uint tls_count = _qn_thd.tls_index;
+	uint tls_count = thread_impl.tls_index;
 	qn_internal_thread_dispose(self, tls_count, false);
 #ifdef _QN_WINDOWS_
-	TlsSetValue(_qn_thd.tls, NULL);
+	TlsSetValue(thread_impl.tls, NULL);
 #else
-	pthread_setspecific(_qn_thd.tls, NULL);
+	pthread_setspecific(thread_impl.tls, NULL);
 #endif
 
 	if (Exit)
@@ -298,9 +294,9 @@ static QnRealThread* qn_internal_thread_try(void)
 {
 	QnRealThread* self = (QnRealThread*)
 #ifdef _QN_WINDOWS_
-		TlsGetValue(_qn_thd.tls);
+		TlsGetValue(thread_impl.tls);
 #else
-		pthread_getspecific(_qn_thd.tls);
+		pthread_getspecific(thread_impl.tls);
 #endif
 	return self;
 }
@@ -310,9 +306,9 @@ QnThread* qn_thread_self(void)
 {
 	QnRealThread* self = (QnRealThread*)
 #ifdef _QN_WINDOWS_
-		TlsGetValue(_qn_thd.tls);
+		TlsGetValue(thread_impl.tls);
 #else
-		pthread_getspecific(_qn_thd.tls);
+		pthread_getspecific(thread_impl.tls);
 #endif
 	if (self != NULL)
 		return (QnThread*)self;
@@ -335,15 +331,15 @@ QnThread* qn_thread_self(void)
 	qn_zero(self->tls, QN_COUNTOF(self->tls), void*);
 
 	self->base.managed = true;
-	QN_LOCK(_qn_thd.lock);
-	self->next = _qn_thd.threads;
-	_qn_thd.threads = self;
-	QN_UNLOCK(_qn_thd.lock);
+	QN_LOCK(thread_impl.lock);
+	self->next = thread_impl.threads;
+	thread_impl.threads = self;
+	QN_UNLOCK(thread_impl.lock);
 
 #ifdef _QN_WINDOWS_
-	TlsSetValue(_qn_thd.tls, self);
+	TlsSetValue(thread_impl.tls, self);
 #else
-	pthread_setspecific(_qn_thd.tls, self);
+	pthread_setspecific(thread_impl.tls, self);
 #endif
 	return (QnThread*)self;
 }
@@ -368,10 +364,10 @@ QnThread* qn_thread_new(QnThreadCallback func, void* data, uint stack_size, int 
 	qn_zero(self->tls, QN_COUNTOF(self->tls), void*);
 
 	self->base.managed = true;
-	QN_LOCK(_qn_thd.lock);
-	self->next = _qn_thd.threads;
-	_qn_thd.threads = self;
-	QN_UNLOCK(_qn_thd.lock);
+	QN_LOCK(thread_impl.lock);
+	self->next = thread_impl.threads;
+	thread_impl.threads = self;
+	QN_UNLOCK(thread_impl.lock);
 
 	return (QnThread*)self;
 }
@@ -387,18 +383,18 @@ void qn_thread_delete(QnThread* thread)
 	if (self->base.managed)
 	{
 		self->base.managed = false;
-		QN_LOCK(_qn_thd.lock);
-		for (QnRealThread *prev = NULL, *node = _qn_thd.threads; node; prev = node, node = node->next)
+		QN_LOCK(thread_impl.lock);
+		for (QnRealThread *prev = NULL, *node = thread_impl.threads; node; prev = node, node = node->next)
 		{
 			if (node != (QnRealThread*)self)
 				continue;
 			if (prev)
 				prev->next = node->next;
 			else
-				_qn_thd.threads = node->next;
+				thread_impl.threads = node->next;
 			break;
 		}
-		QN_UNLOCK(_qn_thd.lock);
+		QN_UNLOCK(thread_impl.lock);
 	}
 
 	qn_free(self);
@@ -424,10 +420,10 @@ bool qn_thread_once(const char* name, QnThreadCallback func, void* data, uint st
 	qn_zero(self->tls, QN_COUNTOF(self->tls), void*);
 
 	self->base.managed = true;
-	QN_LOCK(_qn_thd.lock);
-	self->next = _qn_thd.threads;
-	_qn_thd.threads = self;
-	QN_UNLOCK(_qn_thd.lock);
+	QN_LOCK(thread_impl.lock);
+	self->next = thread_impl.threads;
+	thread_impl.threads = self;
+	QN_UNLOCK(thread_impl.lock);
 
 	return qn_thread_start((QnThread*)self, name);
 }
@@ -442,19 +438,19 @@ static void* qn_internal_thread_entry(void* data)
 {
 	QnRealThread* self = (QnRealThread*)data;
 #ifdef _QN_WINDOWS_
-	TlsSetValue(_qn_thd.tls, self);
+	TlsSetValue(thread_impl.tls, self);
 #else
-	static const int s_signals[] = { SIGHUP, SIGINT, SIGQUIT, SIGPIPE, SIGALRM, SIGTERM, SIGCHLD, SIGWINCH, SIGVTALRM, SIGPROF };
+	static const int pthread_signals[] = { SIGHUP, SIGINT, SIGQUIT, SIGPIPE, SIGALRM, SIGTERM, SIGCHLD, SIGWINCH, SIGVTALRM, SIGPROF };
 	sigset_t mask;
 	sigemptyset(&mask);
-	for (size_t i = 0; i < QN_COUNTOF(s_signals); i++)
-		sigaddset(&mask, s_signals[i]);
+	for (size_t i = 0; i < QN_COUNTOF(pthread_signals); i++)
+		sigaddset(&mask, pthread_signals[i]);
 	pthread_sigmask(SIG_BLOCK, &mask, 0);
 
-	pthread_setspecific(_qn_thd.tls, self);
+	pthread_setspecific(thread_impl.tls, self);
 #endif
 	self->base.cb_ret = self->base.cb_func(self->base.cb_data);
-	qn_internal_thread_exit(self, true);
+	qn_internal_thread_exit(self, false);
 	return 0;
 }
 
@@ -489,7 +485,7 @@ bool qn_thread_start(QnThread* thread, const char* restrict name)
 		stack_size = 0;
 	else
 	{
-		stack_size = QN_MAX(_qn_thd.max_stack, self->base.stack_size);
+		stack_size = QN_MAX(thread_impl.max_stack, self->base.stack_size);
 		pthread_attr_setstacksize(&attr, stack_size);
 	}
 
@@ -576,16 +572,16 @@ QnTls* qn_tls(paramfunc_t callback)
 {
 	QnTls* self;
 
-	QN_LOCK(_qn_thd.lock);
-	if (_qn_thd.tls_index >= 64)
+	QN_LOCK(thread_impl.lock);
+	if (thread_impl.tls_index >= 64)
 	{
-		QN_UNLOCK(_qn_thd.lock);
+		QN_UNLOCK(thread_impl.lock);
 		qn_debug_halt("THREAD", "too many TLS used");
 	}
 
-	self = (void*)((nuint)_qn_thd.tls_index + 0x10);
-	_qn_thd.tls_callback[_qn_thd.tls_index++] = callback;
-	QN_UNLOCK(_qn_thd.lock);
+	self = (void*)((nuint)thread_impl.tls_index + 0x10);
+	thread_impl.tls_callback[thread_impl.tls_index++] = callback;
+	QN_UNLOCK(thread_impl.lock);
 
 	return self;
 }
@@ -594,7 +590,7 @@ QnTls* qn_tls(paramfunc_t callback)
 void qn_tlsset(QnTls* tls, void* restrict data)
 {
 	uint nth = (uint)(nuint)tls - 0x10;
-	qn_ret_if_fail(nth < QN_COUNTOF(_qn_thd.tls_callback));
+	qn_ret_if_fail(nth < QN_COUNTOF(thread_impl.tls_callback));
 
 	QnRealThread* thd = (QnRealThread*)qn_thread_self();
 	thd->tls[nth] = data;
@@ -604,7 +600,7 @@ void qn_tlsset(QnTls* tls, void* restrict data)
 void* qn_tlsget(QnTls* tls)
 {
 	uint nth = (uint)(nuint)tls - 0x10;
-	qn_val_if_fail(nth < QN_COUNTOF(_qn_thd.tls_callback), NULL);
+	qn_val_if_fail(nth < QN_COUNTOF(thread_impl.tls_callback), NULL);
 
 	QnRealThread* thd = qn_internal_thread_try();
 	return thd == NULL ? NULL : thd->tls[nth];

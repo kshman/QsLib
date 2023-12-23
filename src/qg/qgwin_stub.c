@@ -31,6 +31,8 @@ static void* windows_load_func(QnModule* module, const char* dllname, const char
 #ifdef DEBUG_WINDLL_TRACE
 	qn_debug_outputf(false, "WINDOWS STUB", "\t%s: '%s' in '%s'",
 		ret == NULL ? "load failed" : "loaded", fnname, dllname);
+#else
+	(void)dllname;
 #endif
 	return ret;
 }
@@ -566,6 +568,8 @@ static bool windows_mesg_keyboard(WindowsStub* stub, WPARAM wp, bool down)
 		SendMessage(stub->hwnd, WM_CLOSE, 0, 0);
 		return true;
 	}
+#else
+	(void)stub;
 #endif
 
 	return stub_internal_on_keyboard((QikKey)key, down) == 0 ? false : key != VK_MENU;
