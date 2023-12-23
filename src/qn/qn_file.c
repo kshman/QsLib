@@ -1264,7 +1264,7 @@ struct QnModule
 
 static struct ModuleImpl
 {
-	bool4				inited;
+	bool32				inited;
 	QnSpinLock			lock;
 	QnModule*			self;
 	QnModule*			modules;
@@ -1278,6 +1278,7 @@ static void qn_internal_mod_delete(QnModule* self, bool dispose);
 //
 static void qn_module_dispose(void* dummy)
 {
+	(void)dummy;
 	qn_ret_if_fail(_qn_mod.inited);
 
 	QnModule *next, *node = _qn_mod.modules;

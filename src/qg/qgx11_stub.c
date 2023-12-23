@@ -203,7 +203,7 @@ static bool x11_set_title(Display* display, Window window, char* title);
 static void x11_set_net_wm(X11Stub* stub, QgFlag flags);
 
 //
-StubBase* stub_system_open(const char* title, int width, int height, int flags)
+StubBase* stub_system_open(const char* title, int width, int height, QgFlag flags)
 {
 	static X11Stub s_stub;
 	X11Stub* stub = &s_stub;

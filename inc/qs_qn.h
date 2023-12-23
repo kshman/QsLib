@@ -5,13 +5,8 @@
 // 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
 // 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
 //
+
 #pragma once
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4201)	// L4, nonstandard extension used : nameless struct/union
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////
 // includes
@@ -27,7 +22,7 @@
 #include <time.h>
 #include <signal.h>
 #include <wchar.h>
-#if defined _MSC_VER
+#ifdef _MSC_VER
 #include <intrin.h>
 #include <crtdbg.h>
 #endif
@@ -89,11 +84,13 @@
 
 // compiler specific
 #ifdef _MSC_VER
-#define QN_INLINE			__inline						/// @brief 인라인
-#define QN_FORCE_LINE		__forceinline					/// @brief 강제 인라인
-#define QN_FNAME			__FUNCTION__					/// @brief 함수이름
-#define QN_FALL_THROUGH										/// @brief C 폴 스루
-#define QN_STRUCT_ALIGN(x)	__declspec(align(x))			/// @brief 메모리 정렬
+#define QN_INLINE			_Pragma("warning(suppress:4514)") __inline
+#define QN_FORCE_LINE		__forceinline
+#define QN_FNAME			__FUNCTION__
+#define QN_FALL_THROUGH
+#define QN_STRUCT_ALIGN(x)	__declspec(align(x))
+#define QN_STMT_BEGIN		_Pragma("warning(suppress:4127)") do
+#define QN_STMT_END			while(0)
 #elif defined __GNUC__
 #ifndef __cplusplus
 #define QN_INLINE			static inline
@@ -105,6 +102,8 @@
 #define QN_FNAME			__FUNCTION__/*__PRETTY_FUNCTION__*/
 #define QN_FALL_THROUGH		__attribute__((fallthrough))
 #define QN_STRUCT_ALIGN(x)	__attribute__((aligned(x)))
+#define QN_STMT_BEGIN		do
+#define QN_STMT_END			while(0)
 #endif
 
 #ifdef __cplusplus
@@ -123,18 +122,21 @@ QN_EXTC_BEGIN
 // macro
 
 // compound & statement
-#define QN_STMT_BEGIN		do								/// @brief 문장 시작
-#define QN_STMT_END			while(0)						/// @brief 문장 끝
+#ifdef _MSC_VER
+#else
+#endif
 
 // function support
-#define _QN_GET_MAC_2(_1,_2,N,...)		N
-#define _QN_GET_MAC_3(_1,_2,_3,N,...)	N
+#define _QN_PRAGMA(x)		_Pragma(#x)
 #define _QN_STRING(x)		#x
 #define _QN_UNICODE(x)		L##x
 #define _QN_CONCAT_2(x,y)	x##y
 #define _QN_CONCAT_3(x,y,z)	x##y##z
+#define _QN_GET_MAC_2(_1,_2,N,...)		N
+#define _QN_GET_MAC_3(_1,_2,_3,N,...)	N
 
 // function
+#define QN_TODO(todo)		_QN_PRAGMA(message("TODO: " #todo))
 #define QN_STRING(x)		_QN_STRING(x)					/// @brief 문자열로 정의
 #define QN_UNICODE(x)		_QN_UNICODE(x)					/// @brief 유니코드로 정의
 #define QN_CONCAT_2(x,y)	_QN_CONCAT_2(x, y)				/// @brief 두개 문구 합침
@@ -176,10 +178,6 @@ QN_EXTC_BEGIN
 //////////////////////////////////////////////////////////////////////////
 // types
 
-#ifndef bool4
-#define bool4				int
-#endif
-
 typedef void (*func_t)(void);								/// @brief 함수 핸들러
 typedef void (*paramfunc_t)(void*);							/// @brief 파라미터 있는 함수 핸들러
 
@@ -203,7 +201,9 @@ typedef wint_t				uchar4;
 typedef uint16_t			uchar2;
 #endif
 
-typedef uint16_t			halfint;						/// @brief 16bit half int
+typedef uint16_t			halfint;						/// @brief 16비트 부호 없는 정수(half int)
+typedef int16_t				bool16;							/// @brief 16비트 참거짓
+typedef int32_t				bool32;							/// @brief 32비트 참거짓
 
 /// @brief 하위 변형 있는 16비트 정수
 typedef union vint16_t
@@ -380,17 +380,25 @@ QSAPI char* qn_syserr(int errcode, int* len);
 
 //////////////////////////////////////////////////////////////////////////
 // memory
-#define qn_alloc(c,t)		(t*)qn_mpfalloc((size_t)(c)*sizeof(t), false, QN_FNAME, __LINE__)		/// @brief 메모리 할당
-#define qn_alloc_1(t)		(t*)qn_mpfalloc(sizeof(t), false, QN_FNAME, __LINE__)					/// @brief 메모리를 1개만 할당
-#define qn_alloc_zero(c,t)	(t*)qn_mpfalloc((size_t)(c)*sizeof(t), true, QN_FNAME, __LINE__)		/// @brief 메모리를 할당하고 메모리를 0으로
-#define qn_alloc_zero_1(t)	(t*)qn_mpfalloc(sizeof(t), true, QN_FNAME, __LINE__)					/// @brief 메모리를 1개만 할당하고 0으로
-#define qn_realloc(p,c,t)	(t*)qn_mpfreloc((void*)(p), (size_t)(c)*sizeof(t), QN_FNAME, __LINE__)	/// @brief 메모리를 다시 할당
+#define qn_alloc(c,t)		(t*)qn_memalc(NULL,(size_t)(c)*sizeof(t),false,QN_FNAME,__LINE__)		/// @brief 메모리 할당
+#define qn_alloc_1(t)		(t*)qn_memalc(NULL,sizeof(t),false,QN_FNAME,__LINE__)					/// @brief 메모리를 1개만 할당
+#define qn_alloc_zero(c,t)	(t*)qn_memalc(NULL,(size_t)(c)*sizeof(t),true,QN_FNAME,__LINE__)		/// @brief 메모리를 할당하고 메모리를 0으로
+#define qn_alloc_zero_1(t)	(t*)qn_memalc(NULL,sizeof(t),true,QN_FNAME,__LINE__)					/// @brief 메모리를 1개만 할당하고 0으로
+#define qn_realloc(p,c,t)	(t*)qn_memalc((void*)(p),(size_t)(c)*sizeof(t),false,QN_FNAME,__LINE__)	/// @brief 메모리를 다시 할당
 
-#define qn_free(p)			qn_mpffree((void*)(p))													/// @brief 메모리 해제
-#define qn_free_ptr(pp)		QN_STMT_BEGIN{ qn_mpffree((void*)*(pp)); *(pp)=NULL; }QN_STMT_END		/// @brief 메모리를 해제하고 포인터를 NULL로 만든다
+#define qn_free(p)			qn_memfre((void*)(p))													/// @brief 메모리 해제
+#define qn_free_ptr(pp)		QN_STMT_BEGIN{ qn_memfre((void*)*(pp)); *(pp)=NULL; }QN_STMT_END		/// @brief 메모리를 해제하고 포인터를 NULL로 만든다
 
 #define qn_zero(p,c,t)		memset((p), 0, sizeof(t)*(c))											/// @brief 메모리를 0으로 채운다
 #define qn_zero_1(p)		memset((p), 0, sizeof(*(p)))											/// @brief 메모리를 0으로 채운다 (주로 구조체)
+
+/// @brief 메모리 할당 구조체
+typedef struct QnAllocTable QnAllocTable;
+struct QnAllocTable
+{
+	void*(*_alloc)(void* ptr, size_t size, bool zero, const char* desc, size_t line);
+	void(*_free)(void* ptr);
+};
 
 /// @brief 메모리를 복호화한다
 /// @param[out] dest 출력 대상
@@ -443,6 +451,24 @@ QSAPI char qn_memhrb(size_t size, double* out);
 /// @return outbuf 그대로
 ///
 QSAPI char* qn_memdmp(const void* restrict ptr, size_t size, char* restrict outbuf, size_t buflen);
+/// @brief 메모리 테이블을 등록한다
+/// @param[in] table 테이블
+/// @return 테이블 값 중에 빈게 있으면 거짓
+/// 
+QSAPI bool qn_memtbl(const QnAllocTable* table);
+/// @brief 메모리를 할당/재할당/해제한다
+/// @param[in] ptr 재할당할 메모리 (이 값이 NULL이면 새로 할당)
+/// @param[in] size 재할당할 메모리 크기 (이 값이 0이면 ptr을 해제)
+/// @param[in] zero 할당할 때 메모리를 0으로 초기화 한다 (재할당일 경우 안함)
+/// @param[in] desc 설명문
+/// @param[in] line 줄 번호
+/// @return 할당한 새로운 메모리 (메모리 주소가 안바뀔 수도 있음)
+///
+QSAPI void* qn_memalc(void* ptr, size_t size, bool zero, const char* desc, size_t line);
+/// @brief 메모리를 해제한다
+/// @param[in] ptr 해제할 메모리 (이 값이 NULL이면 아무것도 하지 않는다)
+///
+QSAPI void qn_memfre(void* ptr);
 
 /// @brief 내부에서 관리하는 메모리의 크기를 얻는다
 /// @return 관리하는 메모리의 크기
@@ -452,23 +478,15 @@ QSAPI size_t qn_mpfsize(void);
 /// @return 관리하는 메모리의 총 할당 갯수
 ///
 QSAPI size_t qn_mpfcnt(void);
-/// @brief 메모리를 할당한다
-/// @param[in] size 메모리 크기
-/// @param[in] zero 참일 경우 메모리를 0으로 초기화
-/// @param[in] desc 설명문
-/// @param[in] line 줄 번호
-/// @return 할당한 메모리
-///
-QSAPI void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line);
-/// @brief 메모리를 재할당한다
-/// @param[in] ptr 재할당할 메모리 (이 값이 NULL이면 qn_mpfalloc 을 호출)
-/// @param[in] size 재할당할 메모리 크기
+/// @brief 메모리를 할당/재할당/해제한다
+/// @param[in] ptr 재할당할 메모리 (이 값이 NULL이면 새로 할당)
+/// @param[in] size 재할당할 메모리 크기 (이 값이 0이면 ptr을 해제)
+/// @param[in] zero 할당할 때 메모리를 0으로 초기화 한다 (재할당일 경우 안함)
 /// @param[in] desc 설명문
 /// @param[in] line 줄 번호
 /// @return 할당한 새로운 메모리 (메모리 주소가 안바뀔 수도 있음)
-/// @see qn_mpfalloc
 ///
-QSAPI void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line);
+QSAPI void* qn_mpfalloc(void* ptr, size_t size, bool zero, const char* desc, size_t line);
 /// @brief 메모리를 해제한다
 /// @param[in] ptr 해제할 메모리 (이 값이 NULL이면 아무것도 하지 않는다)
 ///
@@ -1527,7 +1545,7 @@ struct QnMlTag
 	int				name_len;
 	int				context_len;
 	int				line;
-	bool4			sibling;
+	bool32			sibling;
 };
 
 // ml unit
@@ -1959,8 +1977,8 @@ QSAPI void qn_spin_leave(QnSpinLock* lock);
 /// @brief 스레드
 struct QnThread
 {
-	bool4				canwait;
-	bool4				managed;
+	bool32				canwait;
+	bool32				managed;
 
 	int					busy;
 	uint				stack_size;
@@ -2231,7 +2249,7 @@ QSAPI nuint qs_sc_set_desc(QsGam* restrict g, nuint ptr);
 //////////////////////////////////////////////////////////////////////////
 // type check
 #define QN_ASSERT_SIZE(t,s)	static_assert(sizeof(t) == s, #t " type size must be " #s "")
-QN_ASSERT_SIZE(bool4, 4);
+QN_ASSERT_SIZE(bool32, 4);
 QN_ASSERT_SIZE(byte, 1);
 QN_ASSERT_SIZE(ushort, 2);
 QN_ASSERT_SIZE(uint, 4);
@@ -2251,8 +2269,3 @@ QN_ASSERT_SIZE(funcparam_t, 8);
 #undef QN_ASSERT_SIZE
 
 QN_EXTC_END
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-

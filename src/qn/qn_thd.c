@@ -759,7 +759,6 @@ bool qn_cond_wait_for(QnCond* self, QnMutex* lock, uint milliseconds)
 	{
 		if (GetLastError() == ERROR_TIMEOUT)
 			return false;
-		qn_debug_outputs(true, "COND", "wait failed");
 	}
 	return true;
 #else

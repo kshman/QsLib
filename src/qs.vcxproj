@@ -193,6 +193,8 @@
     <ClInclude Include="qg\glad\glad.h" />
     <ClInclude Include="qg\glad\glad_proxy.h" />
     <ClInclude Include="qg\glad\khrplatform.h" />
+    <ClInclude Include="qg\qgwin_func.h" />
+    <ClInclude Include="qg\qgwin_stub.h" />
     <ClInclude Include="qg\qgx11_func.h" />
     <ClInclude Include="qg\qg_es2.h" />
     <ClInclude Include="qg\qggl_supp.h" />

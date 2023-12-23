@@ -40,7 +40,7 @@ struct QnRealTag
 };
 
 static void qn_realtag_delete_ptr(QnRealTag** ptr);
-static bool qn_realtag_parse_args(QnRealTag* self, qnBstr4k* bs);
+static bool qn_realtag_parse_args(QnRealTag* self, QnBstr4k* bs);
 static bool qn_realtag_write_file(const QnRealTag* self, QnFile* file, int ident);
 
 
@@ -191,6 +191,7 @@ void qn_mlu_print_err(const QnMlu* self)
 void qn_mlu_print(QnMlu* self)
 {
 	// NOT IMPL
+	(void)self;
 }
 
 //
@@ -235,9 +236,9 @@ bool qn_mlu_load_buffer(QnMlu* self, const void* restrict data, int size)
 	QnRealTag* curtag = NULL;
 
 	char* cd = qn_alloc(size, char);
-	qnBstr1k* btag = qn_alloc_1(qnBstr1k);     // 태그는 1k
-	qnBstr1k* bname = qn_alloc_1(qnBstr1k);    // 이름은 1k
-	qnBstr4k* barg = qn_alloc_1(qnBstr4k);     // 인수는 4k
+	QnBstr1k* btag = qn_alloc_1(QnBstr1k);     // 태그는 1k
+	QnBstr1k* bname = qn_alloc_1(QnBstr1k);    // 이름은 1k
+	QnBstr4k* barg = qn_alloc_1(QnBstr4k);     // 인수는 4k
 
 	int line = 1;
 	int cdsize = 0;
@@ -480,7 +481,7 @@ bool qn_mlu_load_buffer(QnMlu* self, const void* restrict data, int size)
 				curtag->index = idn++;
 
 				// 인수
-				if (!qn_realtag_parse_args(curtag, (qnBstr4k*)barg))
+				if (!qn_realtag_parse_args(curtag, (QnBstr4k*)barg))
 				{
 					qn_mlu_add_errf(self, "line#%d, invalid argument.", line);
 					goto pos_exit;
@@ -855,7 +856,7 @@ void qn_mltag_set_context(QnMlTag* ptr, const char* restrict cntx, int size)
 }
 
 // 인수 분석
-static bool qn_realtag_parse_args(QnRealTag* self, qnBstr4k* bs)
+static bool qn_realtag_parse_args(QnRealTag* self, QnBstr4k* bs)
 {
 	qn_val_if_fail(bs->len > 0, true);
 
@@ -877,7 +878,7 @@ static bool qn_realtag_parse_args(QnRealTag* self, qnBstr4k* bs)
 			break;
 		}
 
-		qnBstr1k k, v;
+		QnBstr1k k, v;
 		qn_bstr_sub_bstr(&k, bs, 0, eq);
 		qn_bstr_trim(&k);
 
@@ -975,7 +976,7 @@ static bool qn_realtag_write_file(const QnRealTag* self, QnFile* file, int ident
 {
 	char ch;
 	char szident[260];
-	qnBstr2k bs;
+	QnBstr2k bs;
 
 	qn_strfll(szident, 0, (size_t)ident, '\t');
 	szident[ident] = '\0';

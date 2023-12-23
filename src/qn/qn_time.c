@@ -254,7 +254,7 @@ typedef struct QnRealTimer
 {
 	QnTimer				base;
 
-	bool4				stop;
+	bool32				stop;
 	int					past;
 	double              cut;
 

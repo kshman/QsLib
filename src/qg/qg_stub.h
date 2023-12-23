@@ -25,6 +25,7 @@ struct StubBase
 
 	QgFlag				flags;
 	QgStubStat			stats;								// 시스템 스터브 관리
+	uint				window_stats;
 	uint				delay;
 
 	float				fps;								/** @brief 프레임 당 시간 */
@@ -33,9 +34,8 @@ struct StubBase
 	double				run;								/** @brief 실행 시간 */
 	double				active;								/** @brief 활성화된 시간 */
 
-	QmRect				window_bound;
-	QmRect				bound;								// 시스템 스터브 관리
-	QmSize				size;								// 시스템 스터브 관리
+	QmRect				window_bound;						/// @brief 실제 윈도우의 위치와 크기 정보
+	QmSize				client_size;						// 시스템 스터브 관리, 그리기 영역 크기 (창 크기가 아님)
 
 	QgUimKey			key;
 	QgUimMouse			mouse;
@@ -45,7 +45,7 @@ struct StubBase
 extern StubBase* qg_stub_instance;
 
 // 시스템 스터브를 연다
-extern StubBase* stub_system_open(const char* title, int width, int height, int flags);
+extern StubBase* stub_system_open(const char* title, int display, int width, int height, QgFlag flags);
 // 시스템 윈도우를 만든다
 extern bool stub_system_create_window(void);
 // 시스템 스터브를 정리한다

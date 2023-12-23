@@ -178,6 +178,8 @@ typedef struct MemBlock
 // 메모리 프르프
 static struct MemImpl
 {
+	QnAllocTable	table;
+
 	MemBlock*		frst;
 	MemBlock*		last;
 	size_t			index;
@@ -191,11 +193,11 @@ static struct MemImpl
 #ifndef _QN_NO_THREAD_
 	QnSpinLock		lock;
 #endif
-} _qn_mp = { NULL, };  // NOLINT
+} mem_impl = { {qn_mpfalloc, qn_mpffree}, };
 
 #ifndef _QN_NO_THREAD_
-#define MP_LOCK				qn_spin_enter(&_qn_mp.lock)
-#define MP_UNLOCK			qn_spin_leave(&_qn_mp.lock)
+#define MP_LOCK				qn_spin_enter(&mem_impl.lock)
+#define MP_UNLOCK			qn_spin_leave(&mem_impl.lock)
 #else
 #define MP_LOCK
 #define MP_UNLOCK
@@ -203,26 +205,24 @@ static struct MemImpl
 
 void qn_mpf_init(void)
 {
-#ifdef USE_MP_LOCK
-	mtx_init(&_qn_mp.lock, mtx_plaine | mtx_recursive);
-#endif
-
 #if _QN_WINDOWS_
-	_qn_mp.heap = HeapCreate(HEAP_GENERATE_EXCEPTIONS/*|HEAP_NO_SERIALIZE*/, MEMORY_BLOCK_SIZE, 0);
+	mem_impl.heap = HeapCreate(HEAP_GENERATE_EXCEPTIONS/*|HEAP_NO_SERIALIZE*/, MEMORY_BLOCK_SIZE, 0);
 	ULONG hfv = 2;
-	HeapSetInformation(_qn_mp.heap, HeapCompatibilityInformation, &hfv, sizeof(ULONG));
+	HeapSetInformation(mem_impl.heap, HeapCompatibilityInformation, &hfv, sizeof(ULONG));
 #endif
 }
 
 static void qn_mpf_clear(void)
 {
-	if (_qn_mp.count == 0 && _qn_mp.frst == NULL && _qn_mp.last == NULL)
+	if (mem_impl.count == 0 && mem_impl.frst == NULL && mem_impl.last == NULL)
 		return;
 
-	qn_debug_outputf(false, "MEMORY PROFILER", "found %d allocations", _qn_mp.count);
+#ifndef __EMSCRIPTEN__
+	qn_debug_outputf(false, "MEMORY PROFILER", "found %d allocations", mem_impl.count);
+#endif
 
 	size_t sum = 0;
-	for (MemBlock* next = NULL, *node = _qn_mp.frst; node; node = next)
+	for (MemBlock* next = NULL, *node = mem_impl.frst; node; node = next)
 	{
 #ifndef __EMSCRIPTEN__
 		if (node->line)
@@ -237,7 +237,7 @@ static void qn_mpf_clear(void)
 		sum += node->block;
 
 #if _QN_WINDOWS_
-		HeapFree(_qn_mp.heap, 0, node);
+		HeapFree(mem_impl.heap, 0, node);
 #else
 		free(node);
 #endif
@@ -256,63 +256,59 @@ void qn_mpf_dispose(void)
 	qn_mpf_clear();
 
 #if _QN_WINDOWS_
-	if (_qn_mp.heap)
+	if (mem_impl.heap)
 	{
 		SIZE_T s;
-		if (HeapQueryInformation(_qn_mp.heap, HeapEnableTerminationOnCorruption, NULL, 0, &s))
+		if (HeapQueryInformation(mem_impl.heap, HeapEnableTerminationOnCorruption, NULL, 0, &s))
 			qn_debug_outputf(true, "MEMORY PROFILER", "heap allocation left: %d", (int)s);
-		HeapDestroy(_qn_mp.heap);
+		HeapDestroy(mem_impl.heap);
 	}
-#endif
-
-#ifdef USE_MP_LOCK
-	mtx_destroy(&_qn_mp.lock);
 #endif
 }
 
-static void qn_mp_node_link(MemBlock* node)
+static void qn_mpf_node_link(MemBlock* node)
 {
 	MP_LOCK;
-	if (_qn_mp.frst)
-		_qn_mp.frst->prev = node;
+	if (mem_impl.frst)
+		mem_impl.frst->prev = node;
 	else
-		_qn_mp.last = node;
-	node->next = _qn_mp.frst;
+		mem_impl.last = node;
+	node->next = mem_impl.frst;
 	node->prev = NULL;
 
-	_qn_mp.frst = node;
-	_qn_mp.count++;
-	_qn_mp.index++;
-	_qn_mp.block_size += node->block;
+	mem_impl.frst = node;
+	mem_impl.count++;
+	mem_impl.index++;
+	mem_impl.block_size += node->block;
 	MP_UNLOCK;
 }
 
-static void qn_mp_node_unlink(const MemBlock* node)
+static void qn_mpf_node_unlink(const MemBlock* node)
 {
 	MP_LOCK;
 	if (node->next)
 		node->next->prev = node->prev;
 	else
-		_qn_mp.last = node->prev;
+		mem_impl.last = node->prev;
 	if (node->prev)
 		node->prev->next = node->next;
 	else
-		_qn_mp.frst = node->next;
-	_qn_mp.count--;
-	_qn_mp.block_size -= node->block;
+		mem_impl.frst = node->next;
+	mem_impl.count--;
+	mem_impl.block_size -= node->block;
 	MP_UNLOCK;
 }
 
 //
 size_t qn_mpfsize(void)
 {
-	return _qn_mp.block_size;
+	return mem_impl.block_size;
 }
 
 //
 size_t qn_mpfcnt(void)
 {
-	return _qn_mp.count;
+	return mem_impl.count;
 }
 
 #ifdef _QN_WINDOWS_
@@ -340,17 +336,15 @@ static void qn_mpf_out_of_memory(const char* desc, size_t line, size_t size, siz
 }
 
 //
-void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
+static void* qn_mpf_alloc(size_t size, bool zero, const char* desc, size_t line)
 {
-	qn_val_if_fail(size, NULL);
-
 	size_t block = _memsize(size);
 	MemBlock* node;
 
 #ifdef _QN_WINDOWS_
 	__try
 	{
-		node = (MemBlock*)HeapAlloc(_qn_mp.heap, zero ? HEAP_ZERO_MEMORY : 0, block);
+		node = (MemBlock*)HeapAlloc(mem_impl.heap, zero ? HEAP_ZERO_MEMORY : 0, block);
 	}
 	__except (qn_windows_mpf_exception(_exception_code(), desc, line, size, block))
 	{
@@ -368,25 +362,17 @@ void* qn_mpfalloc(size_t size, bool zero, const char* desc, size_t line)
 	node->sign = MEMORY_SIGN_HEAD;
 	node->desc = desc;
 	node->line = (uint)line;
-	node->index = _qn_mp.index;
+	node->index = mem_impl.index;
 	node->size = size;
 	node->block = block;
-	qn_mp_node_link(node);
+	qn_mpf_node_link(node);
 
 	return _memptr(node);
 }
 
 //
-void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
+static void* qn_mpf_realloc(void* ptr, size_t size, const char* desc, size_t line)
 {
-	if (!ptr)
-		return qn_mpfalloc(size, false, desc, line);
-	if (size == 0)
-	{
-		qn_mpffree(ptr);
-		return NULL;
-	}
-
 	MemBlock* node = _memhdr(ptr);
 	if (node == NULL)
 	{
@@ -394,7 +380,7 @@ void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 		return NULL;
 	}
 #if _QN_WINDOWS_
-	if (HeapValidate(_qn_mp.heap, 0, node) == 0 || node->sign != MEMORY_SIGN_HEAD)
+	if (HeapValidate(mem_impl.heap, 0, node) == 0 || node->sign != MEMORY_SIGN_HEAD)
 	{
 		qn_debug_outputf(false, "MEMORY PROFILER", "try to realloc invalid memory : 0x%p", ptr);
 		char sz[260];
@@ -416,7 +402,7 @@ void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 #if _QN_WINDOWS_
 	__try
 	{
-		node = (MemBlock*)HeapReAlloc(_qn_mp.heap, 0, node, block);
+		node = (MemBlock*)HeapReAlloc(mem_impl.heap, 0, node, block);
 	}
 	__except (qn_windows_mpf_exception(_exception_code(), desc, line, size, block))
 	{
@@ -440,6 +426,17 @@ void* qn_mpfreloc(void* ptr, size_t size, const char* desc, size_t line)
 }
 
 //
+void* qn_mpfalloc(void* ptr, size_t size, bool zero, const char* desc, size_t line)
+{
+	if (ptr == NULL && size != 0)
+		return qn_mpf_alloc(size, zero, desc, line);
+	if (size != 0)
+		return qn_mpf_realloc(ptr, size, desc, line);
+	qn_mpffree(ptr);
+	return NULL;
+}
+
+//
 void qn_mpffree(void* ptr)
 {
 	qn_ret_if_fail(ptr);
@@ -451,7 +448,7 @@ void qn_mpffree(void* ptr)
 		return;
 	}
 #if _QN_WINDOWS_
-	if (HeapValidate(_qn_mp.heap, 0, node) == 0 || node->sign != MEMORY_SIGN_HEAD)
+	if (HeapValidate(mem_impl.heap, 0, node) == 0 || node->sign != MEMORY_SIGN_HEAD)
 	{
 		qn_debug_outputf(false, "MEMORY PROFILER", "try to free invalid memory : 0x%p", ptr);
 		char sz[260];
@@ -462,10 +459,10 @@ void qn_mpffree(void* ptr)
 #endif
 
 	node->sign = MEMORY_SIGN_FREE;
-	qn_mp_node_unlink(node);
+	qn_mpf_node_unlink(node);
 
 #if _QN_WINDOWS_
-	HeapFree(_qn_mp.heap, 0, node);
+	HeapFree(mem_impl.heap, 0, node);
 #else
 	free(node);
 #endif
@@ -475,15 +472,15 @@ void qn_mpffree(void* ptr)
 void qn_debug_mpfprint(void)
 {
 #ifndef __EMSCRIPTEN__
-	if (_qn_mp.count == 0 && _qn_mp.frst == NULL && _qn_mp.last == NULL)
+	if (mem_impl.count == 0 && mem_impl.frst == NULL && mem_impl.last == NULL)
 		return;
 
-	qn_debug_outputf(false, "MEMORY PROFILER", "found %d allocations", _qn_mp.count);
+	qn_debug_outputf(false, "MEMORY PROFILER", "found %d allocations", mem_impl.count);
 	qn_debug_outputf(false, "MEMORY PROFILER", " %-8s | %-8s | %-8s | %-s", "no", "size", "block", "desc");
 
 	MP_LOCK;
 	size_t sum = 0, cnt = 1;
-	for (MemBlock* next = NULL, *node = _qn_mp.frst; node; node = next, cnt++)
+	for (MemBlock* next = NULL, *node = mem_impl.frst; node; node = next, cnt++)
 	{
 		if (node->line)
 		{
@@ -506,4 +503,27 @@ void qn_debug_mpfprint(void)
 	const char usage = qn_memhrb(sum, &size);
 	qn_debug_outputf(false, "MEMORY PROFILER", "block size: %.3g%cbytes", size, usage);
 #endif
+}
+
+//
+bool qn_memtbl(const QnAllocTable* table)
+{
+	if (table == NULL ||
+		table->_alloc == NULL ||
+		table->_free == NULL)
+		return false;
+	mem_impl.table = *table;
+	return true;
+}
+
+//
+void* qn_memalc(void* ptr, size_t size, bool zero, const char* desc, size_t line)
+{
+	return mem_impl.table._alloc(ptr, size, zero, desc, line);
+}
+
+//
+void qn_memfre(void* ptr)
+{
+	mem_impl.table._free(ptr);
 }
