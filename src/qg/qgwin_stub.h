@@ -12,9 +12,11 @@
 
 static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 
-//
-#define DEFAULT_DEAD_ZONE	(int)(0.24f*((float)INT16_MAX))			/// @brief 컨트롤러 데드존
-#define DEFAULT_POLL_MESGS	3										/// @brief Poll 당 메시지 처리 개수
+#ifndef XINPUT_DEAD_ZONE
+/// @brief 컨트롤러 데드존
+#define XINPUT_DEAD_ZONE	(int)(0.24f*((float)INT16_MAX))
+#endif
+
 
 // DLL
 #define DEF_WIN_FUNC(ret,name,args)		typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;

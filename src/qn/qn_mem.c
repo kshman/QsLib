@@ -203,7 +203,7 @@ static struct MemImpl
 #define MP_UNLOCK
 #endif
 
-void qn_mpf_init(void)
+void qn_mpf_up(void)
 {
 #if _QN_WINDOWS_
 	mem_impl.heap = HeapCreate(HEAP_GENERATE_EXCEPTIONS/*|HEAP_NO_SERIALIZE*/, MEMORY_BLOCK_SIZE, 0);
@@ -251,7 +251,7 @@ static void qn_mpf_clear(void)
 		qn_debug_outputf(true, "MEMORY PROFILER", "total block size: %.2f %cbytes", size, usage);
 }
 
-void qn_mpf_dispose(void)
+void qn_mpf_down(void)
 {
 	qn_mpf_clear();
 
@@ -470,6 +470,22 @@ void qn_mpffree(void* ptr)
 }
 
 //
+void* qn_mpfdup(const void* p, size_t size_or_zero_if_string, const char* desc, size_t line)
+{
+	qn_val_if_fail(p != NULL, NULL);
+	if (size_or_zero_if_string > 0)
+	{
+		char* m = qn_mpf_alloc(size_or_zero_if_string, false, desc, line);
+		memcpy(m, p, size_or_zero_if_string);
+		return m;
+	}
+	size_t len = strlen((const char*)p) + 1;
+	char* d = qn_mpf_alloc(len, false, desc, line);
+	qn_strcpy(d, len, (const char*)p);
+	return d;
+}
+
+//
 void qn_debug_mpfprint(void)
 {
 #ifndef __EMSCRIPTEN__
@@ -505,6 +521,10 @@ void qn_debug_mpfprint(void)
 	qn_debug_outputf(false, "MEMORY PROFILER", "block size: %.3g%cbytes", size, usage);
 #endif
 }
+
+
+//////////////////////////////////////////////////////////////////////////
+// 테이블 기반 메모리
 
 //
 bool qn_memtbl(const QnAllocTable* table)

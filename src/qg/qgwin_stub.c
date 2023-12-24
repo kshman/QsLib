@@ -48,7 +48,7 @@ static bool windows_dll_init(void)
 	for (int i = 4; i >= 1; i--)
 	{
 		xinput_dll[8] = (char)('0' + i);
-		if ((module = qn_mod_open(xinput_dll, 0)) != NULL)
+		if ((module = qn_mod_load(xinput_dll, 0)) != NULL)
 		{
 			dllname = xinput_dll;
 			break;
@@ -61,7 +61,7 @@ static bool windows_dll_init(void)
 		return false;
 	}
 #define DEF_WIN_DLL_BEGIN(name)\
-	module = qn_mod_open(dllname = QN_STRING(name), 0); if (module == NULL)\
+	module = qn_mod_load(dllname = QN_STRING(name), 0); if (module == NULL)\
 	{ qn_debug_outputf(true, "WINDOWS STUB", "no %s DLL found!", QN_STRING(name)); return false; } else {
 #define DEF_WIN_DLL_END }
 #define DEF_WIN_FUNC(ret,name,args)\
@@ -238,8 +238,8 @@ StubBase* stub_system_open(const char* title, int display, int width, int height
 	// 값설정
 	stub->window_title = qn_u8to16_dup(title ? title : "QS", 0);
 
-	stub->deadzone_min = -DEFAULT_DEAD_ZONE;
-	stub->deadzone_max = +DEFAULT_DEAD_ZONE;
+	stub->deadzone_min = -XINPUT_DEAD_ZONE;
+	stub->deadzone_max = +XINPUT_DEAD_ZONE;
 
 	return (StubBase*)stub;
 }
@@ -332,15 +332,15 @@ bool stub_system_poll(void)
 
 		if ((int)(msg.time - tick) <= 0)
 		{
-			if (++count > DEFAULT_POLL_MESGS)
+			if (++count > MAX_POLL_MESGS)
 				break;
 		}
 	}
 
 	if (qg_test_key(QIK_LSHIFT) && (GetKeyState(VK_LSHIFT) & 0x8000) == 0)
-		stub_internal_on_keyboard(QIK_LSHIFT, false);
+		stub_event_on_keyboard(QIK_LSHIFT, false);
 	if (qg_test_key(QIK_RSHIFT) && (GetKeyState(VK_RSHIFT) & 0x8000) == 0)
-		stub_internal_on_keyboard(QIK_RSHIFT, false);
+		stub_event_on_keyboard(QIK_RSHIFT, false);
 
 	return QN_TMASK(stub->base.stats, QGSSTT_EXIT) == false;
 }
@@ -534,9 +534,9 @@ static void windows_check_mouse_button(WindowsStub* stub, bool pressed, QimMask 
 	}
 
 	if (pressed && QN_TBIT(mask, button) == false)
-		stub_internal_on_mouse_button(button, true);
+		stub_event_on_mouse_button(button, true);
 	else if (pressed == false && QN_TBIT(mask, button))
-		stub_internal_on_mouse_button(button, false);
+		stub_event_on_mouse_button(button, false);
 }
 
 // 마우스 눌림 해제 (한번에 처리)
@@ -572,7 +572,7 @@ static bool windows_mesg_keyboard(WindowsStub* stub, WPARAM wp, bool down)
 	(void)stub;
 #endif
 
-	return stub_internal_on_keyboard((QikKey)key, down) == 0 ? false : key != VK_MENU;
+	return stub_event_on_keyboard((QikKey)key, down) == 0 ? false : key != VK_MENU;
 }
 
 // 액티브 메시지
@@ -603,20 +603,20 @@ static void windows_mesg_active(WindowsStub* stub, bool focus)
 
 		windows_check_mouse_release(stub);
 
-		stub_internal_toggle_key(QIKM_CAPS, (GetKeyState(VK_CAPITAL) & 0x1) != 0);
-		stub_internal_toggle_key(QIKM_SCRL, (GetKeyState(VK_SCROLL) & 0x1) != 0);
-		stub_internal_toggle_key(QIKM_NUM, (GetKeyState(VK_NUMLOCK) & 0x1) != 0);
+		stub_toggle_keys(QIKM_CAPS, (GetKeyState(VK_CAPITAL) & 0x1) != 0);
+		stub_toggle_keys(QIKM_SCRL, (GetKeyState(VK_SCROLL) & 0x1) != 0);
+		stub_toggle_keys(QIKM_NUM, (GetKeyState(VK_NUMLOCK) & 0x1) != 0);
 
-		stub_internal_on_window_event(QGWEV_FOCUS, 0, 0);
-		stub_internal_on_active(true, delta);
+		stub_event_on_window_event(QGWEV_FOCUS, 0, 0);
+		stub_event_on_active(true, delta);
 	}
 	else
 	{
 		QN_SMASK(&stub->base.stats, QGSSTT_ACTIVE, false);
 
-		stub_internal_on_reset_keys();
-		stub_internal_on_window_event(QGWEV_LOSTFOCUS, 0, 0);
-		stub_internal_on_active(false, delta);
+		stub_event_on_reset_keys();
+		stub_event_on_window_event(QGWEV_LOSTFOCUS, 0, 0);
+		stub_event_on_active(false, delta);
 	}
 }
 
@@ -657,8 +657,8 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 		if (mesg == WM_MOUSEMOVE)
 		{
 			windows_set_mouse_point(stub, lp, true);
-			stub_internal_mouse_clicks(QIM_NONE, QIMT_MOVE);
-			stub_internal_on_mouse_move();
+			stub_track_mouse_click(QIM_NONE, QIMT_MOVE);
+			stub_event_on_mouse_move();
 		}
 		else if ((mesg >= WM_LBUTTONDOWN && mesg <= WM_MBUTTONDBLCLK) || (mesg >= WM_XBUTTONDOWN && mesg <= WM_XBUTTONDBLCLK))
 		{
@@ -682,9 +682,9 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			int wheel = GET_WHEEL_DELTA_WPARAM(wp);
 			float delta = (float)wheel / WHEEL_DELTA;
 			if (mesg == WM_MOUSEWHEEL)
-				stub_internal_on_mouse_wheel(0.0f, delta, false);
+				stub_event_on_mouse_wheel(0.0f, delta, false);
 			else
-				stub_internal_on_mouse_wheel(delta, 0.0f, false);
+				stub_event_on_mouse_wheel(delta, 0.0f, false);
 		}
 		else break;
 		goto pos_mesg_proc_exit;
@@ -718,13 +718,13 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			switch (wp)
 			{
 				case SIZE_MAXIMIZED:
-					stub_internal_on_window_event(QGWEV_MAXIMIZED, 0, 0);
+					stub_event_on_window_event(QGWEV_MAXIMIZED, 0, 0);
 					break;
 				case SIZE_MINIMIZED:
-					stub_internal_on_window_event(QGWEV_MINIMIZED, 0, 0);
+					stub_event_on_window_event(QGWEV_MINIMIZED, 0, 0);
 					break;
 				case SIZE_RESTORED:
-					stub_internal_on_window_event(QGWEV_RESTORED, 0, 0);
+					stub_event_on_window_event(QGWEV_RESTORED, 0, 0);
 					break;
 				default:
 					break;
@@ -750,13 +750,13 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			if (GetUpdateRect(hwnd, &rt, FALSE))
 			{
 				ValidateRect(hwnd, NULL);
-				stub_internal_on_window_event(QGWEV_PAINTED, 0, 0);
+				stub_event_on_window_event(QGWEV_PAINTED, 0, 0);
 			}
 			return 0;
 		} break;
 
 		case WM_CLOSE:
-			stub_internal_on_window_event(QGWEV_CLOSE, 0, 0);
+			stub_event_on_window_event(QGWEV_CLOSE, 0, 0);
 			QN_SMASK(&stub->base.stats, QGSSTT_EXIT, true);
 			DestroyWindow(hwnd);
 			result = 0;
@@ -775,7 +775,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			return 1;
 
 		case WM_SHOWWINDOW:
-			stub_internal_on_window_event(wp ? QGWEV_SHOW : QGWEV_HIDE, 0, 0);
+			stub_event_on_window_event(wp ? QGWEV_SHOW : QGWEV_HIDE, 0, 0);
 			break;
 
 		case WM_SETTINGCHANGE:
@@ -822,8 +822,8 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 			//ClientToScreen(hwnd, (LPPOINT)&rect);		// GetClientRect일땐 이거쓰는데 지금 GetWindowRect씀
 			//ClientToScreen(hwnd, (LPPOINT)&rect + 1);
-			stub_internal_on_window_event(QGWEV_MOVED, rect.left, rect.top);
-			stub_internal_on_window_event(QGWEV_SIZED, rect.right - rect.left, rect.bottom - rect.top);
+			stub_event_on_window_event(QGWEV_MOVED, rect.left, rect.top);
+			stub_event_on_window_event(QGWEV_SIZED, rect.right - rect.left, rect.bottom - rect.top);
 
 			InvalidateRect(hwnd, NULL, FALSE);
 		}break;
@@ -863,7 +863,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				// https://learn.microsoft.com/ko-kr/windows/win32/inputdev/wm-char
 				char u8[7];
 				if (qn_u16ucb((uchar2)stub->high_surrogate, (uchar2)wp, u8))
-					stub_internal_on_text(u8);
+					stub_event_on_text(u8);
 				stub->high_surrogate = 0;
 			}
 			else
@@ -871,7 +871,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				// 윈도우10 UTF32
 				char u8[7];
 				if (qn_u32ucb((uchar4)wp, u8))
-					stub_internal_on_text(u8);
+					stub_event_on_text(u8);
 			}
 			result = 0;
 			break;
@@ -885,7 +885,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				// https://learn.microsoft.com/ko-kr/windows/win32/inputdev/wm-unichar
 				char u8[7];
 				if (qn_u32ucb((uchar4)wp, u8))
-					stub_internal_on_text(u8);
+					stub_event_on_text(u8);
 				result = 0;
 			}
 			break;
@@ -908,11 +908,11 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			break;
 
 		case WM_ENTERSIZEMOVE:
-			stub_internal_on_event_layout(true);
+			stub_event_on_layout(true);
 			break;
 
 		case WM_EXITSIZEMOVE:
-			stub_internal_on_event_layout(false);
+			stub_event_on_layout(false);
 			break;
 
 		case WM_DROPFILES:
@@ -928,11 +928,11 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 					if (DragQueryFile(handle, i, buf, len))
 					{
 						char *filename = qn_u16to8_dup(buf, 0);
-						stub_internal_on_drop(filename, 0, false);
+						stub_event_on_drop(filename, 0, false);
 					}
 					qn_free(buf);
 				}
-				stub_internal_on_drop(NULL, 0, true);
+				stub_event_on_drop(NULL, 0, true);
 				DragAcceptFiles(hwnd, true);
 				result = 0;
 			}

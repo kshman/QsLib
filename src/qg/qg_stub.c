@@ -294,7 +294,7 @@ bool qg_open_stub(const char* title, int display, int width, int height, int fla
 	if (qg_stub_atexit == false)
 	{
 		qg_stub_atexit = true;
-		qn_internal_atexit(_stub_atexit, NULL);
+		qn_p_atexit(_stub_atexit, NULL);
 	}
 
 	//
@@ -374,7 +374,7 @@ void qg_set_title(const char* title)
 }
 
 //
-bool stub_internal_mouse_clicks(QimButton button, QimTrack track)
+bool stub_track_mouse_click(QimButton button, QimTrack track)
 {
 	QgUimMouse* m = &qg_stub_instance->mouse;
 
@@ -613,7 +613,7 @@ int qg_add_event_type(QgEventType type)
 }
 
 //
-bool stub_internal_on_event_layout(bool enter)
+bool stub_event_on_layout(bool enter)
 {
 	StubBase* stub = qg_stub_instance;
 
@@ -643,7 +643,7 @@ bool stub_internal_on_event_layout(bool enter)
 }
 
 //
-bool stub_internal_on_window_event(QgWindowEventType type, int param1, int param2)
+bool stub_event_on_window_event(QgWindowEventType type, int param1, int param2)
 {
 	StubBase* stub = qg_stub_instance;
 
@@ -700,7 +700,7 @@ bool stub_internal_on_window_event(QgWindowEventType type, int param1, int param
 }
 
 //
-bool stub_internal_on_text(const char* text)
+bool stub_event_on_text(const char* text)
 {
 	StubBase* stub = qg_stub_instance;
 	qn_val_if_fail(QN_TMASK(stub->flags, QGFLAG_TEXT), 0);
@@ -721,7 +721,7 @@ bool stub_internal_on_text(const char* text)
 }
 
 //
-bool stub_internal_on_keyboard(QikKey key, bool down)
+bool stub_event_on_keyboard(QikKey key, bool down)
 {
 	QgUimKey* uk = &qg_stub_instance->key;
 	QgEvent e;
@@ -786,7 +786,7 @@ bool stub_internal_on_keyboard(QikKey key, bool down)
 }
 
 //
-bool stub_internal_on_reset_keys(void)
+bool stub_event_on_reset_keys(void)
 {
 	QgEvent e = { .key.ev = QGEV_KEYUP, .key.mask = 0, .key.repeat = false };
 	QgUimKey* uk = &qg_stub_instance->key;
@@ -809,7 +809,7 @@ bool stub_internal_on_reset_keys(void)
 }
 
 //
-bool stub_internal_on_mouse_move(void)
+bool stub_event_on_mouse_move(void)
 {
 	// 마우스 정보는 시스템 스터브에서 해와야함
 	const QgUimMouse* um = &qg_stub_instance->mouse;
@@ -826,7 +826,7 @@ bool stub_internal_on_mouse_move(void)
 }
 
 //
-bool stub_internal_on_mouse_button(QimButton button, bool down)
+bool stub_event_on_mouse_button(QimButton button, bool down)
 {
 	QgUimMouse* um = &qg_stub_instance->mouse;
 	QN_SBIT(&um->mask, button, down);
@@ -840,7 +840,7 @@ bool stub_internal_on_mouse_button(QimButton button, bool down)
 	};
 	bool ret = qg_add_event(&e) > 0;
 
-	if (stub_internal_mouse_clicks(button, down ? QIMT_DOWN : QIMT_UP))
+	if (stub_track_mouse_click(button, down ? QIMT_DOWN : QIMT_UP))
 	{
 		const QgEvent de =
 		{
@@ -856,7 +856,7 @@ bool stub_internal_on_mouse_button(QimButton button, bool down)
 }
 
 //
-bool stub_internal_on_mouse_wheel(float x, float y, bool direction)
+bool stub_event_on_mouse_wheel(float x, float y, bool direction)
 {
 	QgUimMouse* um = &qg_stub_instance->mouse;
 
@@ -910,7 +910,7 @@ bool stub_internal_on_mouse_wheel(float x, float y, bool direction)
 }
 
 //
-bool stub_internal_on_active(bool active, double delta)
+bool stub_event_on_active(bool active, double delta)
 {
 	const QgEvent e =
 	{
@@ -922,7 +922,7 @@ bool stub_internal_on_active(bool active, double delta)
 }
 
 //
-bool stub_internal_on_drop(char* data, int len, bool finish)
+bool stub_event_on_drop(char* data, int len, bool finish)
 {
 	static bool s_enter = false;
 
@@ -957,7 +957,7 @@ bool stub_internal_on_drop(char* data, int len, bool finish)
 }
 
 //
-void stub_internal_toggle_key(QikMask keymask, bool on)
+void stub_toggle_keys(QikMask keymask, bool on)
 {
 	QgUimKey* uk = &qg_stub_instance->key;
 	QN_SMASK(&uk->mask, keymask, on);

@@ -24,7 +24,7 @@ static struct DebugImpl
 } debug_impl = { NULL, 3, "QS", };
 
 //
-void qn_debug_init(void)
+void qn_debug_up(void)
 {
 #if _QN_WINDOWS_
 	debug_impl.handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -35,7 +35,7 @@ void qn_debug_init(void)
 }
 
 //
-void qn_debug_dispose(void)
+void qn_debug_down(void)
 {
 #if _QN_WINDOWS_
 	if (debug_impl.redirect && debug_impl.handle != NULL)
@@ -191,62 +191,11 @@ int qn_debug_outputf(bool breakpoint, const char* restrict head, const char* res
 }
 
 //
-static char* qn_syserr_mesg(int errcode, int* size)
+int qn_debug_output_error(bool breakpoint, const char* head)
 {
-	const char s_unknown[] = "unknown error";
-#ifdef _QN_WINDOWS_
-	DWORD dw = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
-		NULL, (DWORD)errcode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), NULL, 0, NULL) + 1;
-	if (dw == 1)
-	{
-		if (size != NULL) *size = QN_COUNTOF(s_unknown) - 1;	// 널터미네이트 빼야함
-		return qn_strdup(s_unknown);
-	}
-	wchar* pw = qn_alloc(dw, wchar);
-	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
-		NULL, (DWORD)errcode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), pw, dw, NULL);
-	pw[dw - 2] = L'\0';
-
-	size_t len = qn_wcstombs(NULL, 0, pw, 0) + 1;
-	char* buf = qn_alloc(len, char);
-	qn_wcstombs(buf, len, pw, 0);
-	qn_free(pw);
-
-	if (size != NULL) *size = (int)len - 1;
-	return buf;
-#else
-	char* psz = strerror(errcode);
-	if (psz == NULL)
-	{
-		if (size != NULL) *size = QN_COUNTOF(s_unknown) - 1;	// 널터미네이트 빼야함
-		return qn_strdup(s_unknown);
-	}
-	if (size != NULL) *size = (int)strlen(psz);
-	return qn_strdup(psz);
-#endif
-}
-
-//
-char* qn_syserr(int errcode, int* len)
-{
-	if (errcode == 0)
-#ifdef _QN_WINDOWS_
-		errcode = GetLastError();
-#else
-		errno;
-#endif
-	if (errcode == 0)
-		return NULL;
-	return qn_syserr_mesg(errcode, len);
-}
-
-//
-int qn_debug_output_syserr(bool breakpoint, const char* head, int errcode)
-{
-	char* ps = qn_syserr(errcode, NULL);
-	const int len = qn_debug_out_trace(head, ps);
+	const char* err = qn_get_error();
+	const int len = qn_debug_out_trace(head, err);
 	qn_debug_out_ch('\n');
-	qn_free(ps);
 
 	if (breakpoint && debug_impl.debugger)
 		debug_break();

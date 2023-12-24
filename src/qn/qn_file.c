@@ -1133,7 +1133,7 @@ void qn_dir_seek(QnDir* self, int pos)
 
 //
 #if !defined _QN_WINDOWS_ && !defined __EMSCRIPTEN__
-static char* qn_internal_read_sym_link(const char* path)
+static char* _qn_read_sym_link(const char* path)
 {
 	char* buf = NULL;
 	size_t len = 64;
@@ -1202,15 +1202,15 @@ char* qn_dir_base_path(void)
 	if (path == NULL && (access("/proc", F_OK) == 0))
 	{
 #if defined _QN_FREEBSD_
-		path = qn_internal_read_sym_link("/proc/curproc/file");
+		path = _qn_read_sym_link("/proc/curproc/file");
 #elif defined _QN_LINUX_
-		path = qn_internal_read_sym_link("/proc/self/exe");
+		path = _qn_read_sym_link("/proc/self/exe");
 		if (path == NULL)
 		{
 			char tmp[64];
 			const int rc = qn_snprintf(tmp, QN_COUNTOF(tmp), "/proc/%llu/exe", (ullong)getpid());
 			if (rc > 0 && rc < (int)QN_COUNTOF(tmp))
-				path = qn_internal_read_sym_link(tmp);
+				path = _qn_read_sym_link(tmp);
 		}
 #else
 #error unknown platform
@@ -1238,18 +1238,23 @@ char* qn_dir_base_path(void)
 //////////////////////////////////////////////////////////////////////////
 // 모듈
 
+// 모듈 플래그
 enum QnModFlag
 {
-	QNMDF_INFO = QN_BIT(1),
+	//QNMDF_INFO = QN_BIT(1),
 	QNMDF_NO_CLOSURE = QN_BIT(2),
 	QNMDF_RESIDENT = QN_BIT(3),
+	QNMDF_SELF = QN_BIT(4),
 };
 
+// 단위 모듈 내용
 struct QnModule
 {
 	char*				filename;
+	size_t				hash;
+
+	enum QnModFlag		flags;
 	int					ref;
-	int					flags;
 #ifdef _QN_WINDOWS_
 	HMODULE				handle;
 #else
@@ -1259,31 +1264,37 @@ struct QnModule
 	QnModule*			next;
 };
 
+// 모듈 관리 구현
 static struct ModuleImpl
 {
-	bool32				inited;
 	QnSpinLock			lock;
 	QnModule*			self;
 	QnModule*			modules;
-	QnTls*				error;
 } module_impl = { false, };
 
 //
-static void qn_internal_mod_delete(QnModule* self, bool dispose);
+void qn_module_up(void)
+{
+	// 딱히 할건 없다
+}
 
 //
-static void qn_module_dispose(void* dummy)
+void qn_module_down(void)
 {
-	(void)dummy;
-	qn_ret_if_fail(module_impl.inited);
-
 	QnModule *next, *node = module_impl.modules;
 	while (node)
 	{
-		if (QN_TMASK(node->flags, QNMDF_NO_CLOSURE | QNMDF_INFO))
+		if (QN_TMASK(node->flags, QNMDF_NO_CLOSURE))
 			qn_debug_outputf(false, "MODULE", "module not deleted [%s] (ref: %d)", node->filename, node->ref);
 		next = node->next;
-		qn_internal_mod_delete(node, true);
+		if (node->handle != NULL)
+#ifdef _QN_WINDOWS_
+			FreeLibrary(node->handle);
+#else
+			dlclose(node->handle);
+#endif
+		qn_free(node->filename);
+		qn_free(node);
 		node = next;
 	}
 
@@ -1295,70 +1306,13 @@ static void qn_module_dispose(void* dummy)
 }
 
 //
-static void qn_module_init(void)
-{
-	qn_ret_if_ok(module_impl.inited);
-	module_impl.inited = true;
-	module_impl.error = qn_tls(qn_mpffree);
-	qn_internal_atexit(qn_module_dispose, NULL);
-}
-
-//
-static void qn_internal_mod_reset_error(void)
-{
-	qn_module_init();
-	char* prev = (char*)qn_tlsget(module_impl.error);
-	qn_free(prev);
-	qn_tlsset(module_impl.error, NULL);
-}
-
-//
-static void qn_internal_mod_set_error(void)
-{
-	qn_module_init();
-	char* prev = (char*)qn_tlsget(module_impl.error);
-	qn_free(prev);
-#ifdef _QN_WINDOWS_
-	qn_tlsset(module_impl.error, qn_syserr(0, NULL));
-#else
-	const char* err = dlerror();
-	qn_tlsset(module_impl.error, err == NULL ? qn_syserr(0, NULL) : qn_strdup(err));
-#endif
-}
-
-//
-#ifdef _QN_WINDOWS_
-static QnModule* qn_internal_find_by_handle(HMODULE handle)
-#else
-static QnModule* qn_internal_find_by_handle(void* handle)
-#endif
-{
-	QnModule* find = NULL;
-	QN_LOCK(module_impl.lock);
-	if (module_impl.self && module_impl.self->handle == handle)
-		find = module_impl.self;
-	else
-	{
-		for (QnModule* node = module_impl.modules; node; node = node->next)
-		{
-			if (node->handle != handle)
-				continue;
-			find = node;
-			break;
-		}
-	}
-	QN_UNLOCK(module_impl.lock);
-	return find;
-}
-
-//
-static QnModule* qn_internal_find_by_filename(const char* filename)
+static QnModule* _qn_module_find(const char* filename, size_t hash)
 {
 	QnModule* find = NULL;
 	QN_LOCK(module_impl.lock);
 	for (QnModule* node = module_impl.modules; node; node = node->next)
 	{
-		if (qn_streqv(node->filename, filename) == false)
+		if (hash != node->hash || qn_streqv(node->filename, filename) == false)
 			continue;
 		find = node;
 		break;
@@ -1367,10 +1321,22 @@ static QnModule* qn_internal_find_by_filename(const char* filename)
 	return find;
 }
 
+// dlerror 처리용
+static void _qn_module_set_error(void)
+{
+#ifndef _QN_WINDOWS_
+	const char* err = dlerror();
+	if (err != NULL)
+		qn_set_error(err);
+	else
+#endif
+		qn_set_syserror(0);
+}
+
 //
 QnModule* qn_mod_self(void)
 {
-	qn_internal_mod_reset_error();
+	qn_set_error(NULL);
 
 	if (module_impl.self != NULL)
 	{
@@ -1379,20 +1345,20 @@ QnModule* qn_mod_self(void)
 	}
 
 #ifdef _QN_WINDOWS_
-	HMODULE handle = (HMODULE)0x9;
+	HMODULE handle =
+#ifdef __WINRT__
+		NULL;
 #else
-	void* handle = dlopen(NULL, RTLD_GLOBAL | RTLD_LAZY);
-	if (handle == NULL)
-	{
-		qn_internal_mod_set_error();
-		return NULL;
-	}
+		GetModuleHandle(NULL);
+#endif
+#else
+	void* handle = dlopen(NULL, RTLD_GLOBAL | RTLD_LAZY);	// 이 호출에 오류가 발생하면 프로그램은 끝이다
 #endif
 
 	QnModule* self = qn_alloc_zero_1(QnModule);
 	self->handle = handle;
 	self->ref = 1;
-	self->flags = QNMDF_RESIDENT;
+	self->flags = QNMDF_RESIDENT | QNMDF_SELF;
 
 	QN_LOCK(module_impl.lock);
 	module_impl.self = self;
@@ -1402,13 +1368,14 @@ QnModule* qn_mod_self(void)
 }
 
 //
-QnModule* qn_mod_open(const char* filename, int flags)
+QnModule* qn_mod_load(const char* filename, int flags)
 {
 	qn_val_if_fail(filename != NULL, NULL);
 
-	qn_internal_mod_reset_error();
+	qn_set_error(NULL);
 
-	QnModule* self = qn_internal_find_by_filename(filename);
+	size_t hash = qn_strhash(filename);
+	QnModule* self = _qn_module_find(filename, hash);
 	if (self != NULL)
 	{
 		self->ref++;
@@ -1417,10 +1384,7 @@ QnModule* qn_mod_open(const char* filename, int flags)
 	}
 
 #ifdef _QN_WINDOWS_
-	wchar* pw;
-	size_t size = qn_u8to16(NULL, 0, filename, 0) + 1;
-	pw = qn_alloc(size, wchar);
-	qn_u8to16(pw, size, filename, 0);
+	wchar* pw = qn_u8to16_dup(filename, 0);
 #ifdef __WINRT__
 	HMODULE handle = LoadPackagedLibrary(pw, 0);
 #else
@@ -1432,20 +1396,13 @@ QnModule* qn_mod_open(const char* filename, int flags)
 #endif
 	if (handle == NULL)
 	{
-		qn_debug_output_syserr(true, "MODULE", 0);
+		_qn_module_set_error();
+		qn_debug_output_error(true, "MODULE");
 		return NULL;
 	}
 
-	self = qn_internal_find_by_handle(handle);
-	if (self != NULL)
-	{
-		qn_internal_mod_delete(self, false);
-		self->ref++;
-		self->flags |= QNMDF_NO_CLOSURE | QNMDF_RESIDENT | QNMDF_INFO;
-		return self;
-	}
-
 	self = qn_alloc_1(QnModule);
+	self->hash = hash;
 	self->filename = qn_strdup(filename);
 	self->ref = 1;
 	self->flags = flags;
@@ -1459,7 +1416,7 @@ QnModule* qn_mod_open(const char* filename, int flags)
 }
 
 //
-static void qn_internal_mod_delete(QnModule* self, bool dispose)
+static void _qn_mod_free(QnModule * self, bool dispose)
 {
 	if (self->handle != NULL)
 	{
@@ -1468,7 +1425,7 @@ static void qn_internal_mod_delete(QnModule* self, bool dispose)
 #else
 		if (dlclose(self->handle) != 0)
 #endif
-			qn_internal_mod_set_error();
+			_qn_module_set_error();
 	}
 	if (dispose)
 	{
@@ -1480,6 +1437,7 @@ static void qn_internal_mod_delete(QnModule* self, bool dispose)
 //
 bool qn_mod_unload(QnModule* self)
 {
+	qn_val_if_ok(QN_TMASK(self->flags, QNMDF_SELF), false);
 	qn_val_if_fail(self->ref > 0, false);
 
 	self->ref--;
@@ -1503,7 +1461,7 @@ bool qn_mod_unload(QnModule* self)
 	self->next = NULL;
 	QN_UNLOCK(module_impl.lock);
 
-	qn_internal_mod_delete(self, true);
+	_qn_mod_free(self, true);
 	return true;
 }
 
@@ -1511,36 +1469,18 @@ bool qn_mod_unload(QnModule* self)
 void* qn_mod_func(QnModule* self, const char* restrict name)
 {
 	qn_val_if_fail(name != NULL && *name != '\0', NULL);
-
-	qn_internal_mod_reset_error();
-
-	void* ptr;
 #ifdef _QN_WINDOWS_
-	if (self->handle != (HMODULE)0x9)
-		ptr = (void*)GetProcAddress(self->handle, name);
-	else
-	{
 #ifdef __WINRT__
-		ptr = (void*)GetProcAddress(NULL, name);
+	void* ptr = (void*)GetProcAddress(NULL, name);
 #else
-		ptr = (void*)GetProcAddress(GetModuleHandle(NULL), name);
+	void* ptr = (void*)GetProcAddress(self->handle, name);
 #endif
-	}
 #else
-	(void)dlerror();
-	ptr = dlsym(self->handle, name);
+	void* ptr = dlsym(self->handle, name);
 #endif
-
 	if (ptr == NULL)
-		qn_internal_mod_set_error();
+		_qn_module_set_error();
 	return ptr;
-}
-
-//
-const char* qn_mod_error(void)
-{
-	qn_module_init();
-	return (const char*)qn_tlsget(module_impl.error);
 }
 
 //

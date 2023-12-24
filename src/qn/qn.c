@@ -3,13 +3,15 @@
 #include "qs_ctn.h"
 
 //
-extern void qn_cycle_init(void);
-extern void qn_mpf_init(void);
-extern void qn_mpf_dispose(void);
-extern void qn_debug_init(void);
-extern void qn_debug_dispose(void);
-extern void qn_thread_init(void);
-extern void qn_thread_dispose(void);
+extern void qn_cycle_up(void);
+extern void qn_mpf_up(void);
+extern void qn_mpf_down(void);
+extern void qn_debug_up(void);
+extern void qn_debug_down(void);
+extern void qn_module_up(void);
+extern void qn_module_down(void);
+extern void qn_thread_up(void);
+extern void qn_thread_down(void);
 
 // 프로퍼티
 QN_DECL_MUKUM(QnPropMukum, char*, char*);
@@ -33,11 +35,13 @@ static struct RuntimeImpl
 	struct Closure* closures;
 	struct Closure* preclosures;
 
+	QnTls*			error;
+
 	QnPropMukum		props;
 } runtime_impl = { false, };
 
 //
-static void qn_dispose(void)
+static void qn_runtime_down(void)
 {
 	qn_ret_if_fail(runtime_impl.inited);
 
@@ -59,26 +63,31 @@ static void qn_dispose(void)
 
 	qn_mukum_disp(QnPropMukum, &runtime_impl.props);
 
-	qn_thread_dispose();
-	qn_mpf_dispose();
-	qn_debug_dispose();
+	qn_thread_down();
+	qn_module_down();
+	qn_mpf_down();
+	qn_debug_down();
+
 	runtime_impl.inited = false;
 }
 
 //
-static void qn_init(void)
+static void qn_runtime_up(void)
 {
 	runtime_impl.inited = true;
 
-	qn_cycle_init();
-	qn_debug_init();
-	qn_mpf_init();
-	qn_thread_init();
+	qn_cycle_up();
+	qn_debug_up();
+	qn_mpf_up();
+	qn_module_up();
+	qn_thread_up();
+
+	runtime_impl.error = qn_tls(qn_memfre);
 
 	qn_mukum_init(QnPropMukum, &runtime_impl.props);
 
 #if defined _LIB || defined _STATIC
-	(void)atexit(qn_dispose);
+	(void)atexit(qn_runtime_down);
 #endif
 }
 
@@ -87,7 +96,7 @@ void qn_runtime(int v[2])
 {
 #if defined _LIB || defined _STATIC
 	if (!runtime_impl.inited)
-		qn_init();
+		qn_runtime_up();
 #endif
 
 	enum Version
@@ -123,7 +132,7 @@ void qn_atexit(paramfunc_t func, void* data)
 }
 
 //
-void qn_internal_atexit(paramfunc_t func, void* data)
+void qn_p_atexit(paramfunc_t func, void* data)
 {
 	qn_ret_if_fail(func);
 
@@ -140,7 +149,7 @@ void qn_internal_atexit(paramfunc_t func, void* data)
 }
 
 //
-size_t qn_number(void)
+size_t qn_p_index(void)
 {
 	static size_t s = 0;
 	return ++s;
@@ -170,6 +179,63 @@ const char* qn_get_prop(const char* name)
 }
 
 //
+const char* qn_get_error(void)
+{
+	char* mesg = (char*)qn_tlsget(runtime_impl.error);
+	return mesg;
+}
+
+//
+void qn_set_error(const char* mesg)
+{
+	char* prev = (char*)qn_tlsget(runtime_impl.error);
+	qn_free(prev);
+	qn_tlsset(runtime_impl.error, qn_strdup(mesg));
+}
+
+//
+bool qn_set_syserror(int errcode)
+{
+	char* prev = (char*)qn_tlsget(runtime_impl.error);
+	qn_free(prev);
+
+	if (errcode == 0)
+#ifdef _QN_WINDOWS_
+		errcode = GetLastError();
+#else
+		errcode = errno;
+#endif
+	if (errcode == 0)
+	{
+		qn_tlsset(runtime_impl.error, NULL);
+		return false;	// 에러가 없다
+	}
+
+	char* buf;
+#ifdef _QN_WINDOWS_
+	DWORD dw = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
+		NULL, (DWORD)errcode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), NULL, 0, NULL) + 1;
+	if (dw == 1)
+		buf = qn_apsprintf("unknown error: %d", errcode);
+	else
+	{
+		wchar* pw = qn_alloc(dw, wchar);
+		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
+			NULL, (DWORD)errcode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), pw, dw, NULL);
+		dw -= 2;
+		pw[dw] = L'\0';
+		buf = qn_wcstombs_dup(pw, dw); // u16to8이 좋을지도 모르겠지만 윈도우 기본 출력은 멀티바이트 스트링
+		qn_free(pw);
+	}
+#else
+	const char* psz = strerror(errcode);
+	buf = psz == NULL ? qn_apsprintf("unknown error: %d", errcode) : qn_strdup(psz);
+#endif
+	qn_tlsset(runtime_impl.error, buf);
+	return true;
+}
+
+//
 #if !defined _LIB || !defined _STATIC
 #ifdef _QN_WINDOWS
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
@@ -177,7 +243,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	switch (ul_reason_for_call)
 	{
 		case DLL_PROCESS_ATTACH:
-			qn_init();
+			qn_runtime_up();
 			break;
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:
@@ -191,12 +257,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 #elif __GNUC__
 void __attribute__((constructor)) _attach(void)
 {
-	qn_init();
+	qn_runtime_up();
 }
 
 void __attribute__((destructor)) _detach(void)
 {
-	qn_dispose();
+	qn_runtime_down();
 }
 #endif
 #endif

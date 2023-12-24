@@ -60,7 +60,7 @@ static void x11_internal_func_init(void)
 {
 #define DEF_X11_SO(name)	static QnModule* QN_CONCAT(s_mod_,name);
 #include "qgx11_func.h"
-#define DEF_X11_SO(name)	QN_CONCAT(s_mod_,name) = qn_mod_open(QN_STRING(name) ".so", 0);
+#define DEF_X11_SO(name)	QN_CONCAT(s_mod_,name) = qn_mod_load(QN_STRING(name) ".so", 0);
 #include "qgx11_func.h"
 	QnModule* module;
 #ifdef DEBUG_X11_MODULE
