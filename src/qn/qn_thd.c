@@ -176,6 +176,20 @@ void qn_thread_down(void)
 	}
 }
 
+#ifndef _QN_WINDOWS_
+//
+static bool _qn_pthread_is_null(pthread_t* p)
+{
+	return memcpy(p, &thread_impl.null_pthread, sizeof(pthread_t)) == 0;
+}
+
+//
+static void _qn_pthread_make_null(pthread_t* p)
+{
+	memcpy(p, &thread_impl.null_pthread, sizeof(pthread_t));
+}
+#endif
+
 //
 static void _qn_thd_free(QnRealThread* self, uint tls_count, bool force)
 {
@@ -265,6 +279,7 @@ typedef struct tagTHREADNAME_INFO
 static void _qn_thd_set_name(QnRealThread* self)
 {
 	qn_ret_if_fail(self->base.name != NULL);
+
 #ifdef _QN_WINDOWS_
 #ifndef __WINRT__
 	static QnModule* kernel32 = NULL;
@@ -302,23 +317,9 @@ static void _qn_thd_set_name(QnRealThread* self)
 	}
 #pragma warning(pop)
 #else
-	pthread_setname_np(self->handle, name);
+	pthread_setname_np(self->handle, self->base.name);
 #endif
 }
-
-#ifndef _QN_WINDOWS_
-//
-static bool _qn_pthread_is_null(pthread_t* p)
-{
-	return memcpy(p, &thread_impl.null_pthread, sizeof(pthread_t)) == 0;
-}
-
-//
-static void _qn_pthread_make_null(pthread_t* p)
-{
-	memcpy(p, &thread_impl.null_pthread, sizeof(pthread_t));
-}
-#endif
 
 //
 static void _qn_thd_exit(QnRealThread* self, bool call_exit)
@@ -613,13 +614,6 @@ bool qn_thread_set_busy(QnThread* thread, int busy)
 
 //////////////////////////////////////////////////////////////////////////
 // TLS
-
-#ifndef _QN_WINDOWS_
-//
-static void _qn_tls_dispose(void* p)
-{
-}
-#endif
 
 //
 QnTls* qn_tls(paramfunc_t callback)

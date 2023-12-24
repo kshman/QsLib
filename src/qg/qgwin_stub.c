@@ -32,7 +32,7 @@ static void* windows_load_func(QnModule* module, const char* dllname, const char
 	qn_debug_outputf(false, "WINDOWS STUB", "\t%s: '%s' in '%s'",
 		ret == NULL ? "load failed" : "loaded", fnname, dllname);
 #else
-	(void)dllname;
+	QN_DUMMY(dllname);
 #endif
 	return ret;
 }
@@ -48,7 +48,7 @@ static bool windows_dll_init(void)
 	for (int i = 4; i >= 1; i--)
 	{
 		xinput_dll[8] = (char)('0' + i);
-		if ((module = qn_mod_load(xinput_dll, 0)) != NULL)
+		if ((module = qn_mod_load(xinput_dll, 1)) != NULL)
 		{
 			dllname = xinput_dll;
 			break;
@@ -61,7 +61,7 @@ static bool windows_dll_init(void)
 		return false;
 	}
 #define DEF_WIN_DLL_BEGIN(name)\
-	module = qn_mod_load(dllname = QN_STRING(name), 0); if (module == NULL)\
+	module = qn_mod_load(dllname = QN_STRING(name), 1); if (module == NULL)\
 	{ qn_debug_outputf(true, "WINDOWS STUB", "no %s DLL found!", QN_STRING(name)); return false; } else {
 #define DEF_WIN_DLL_END }
 #define DEF_WIN_FUNC(ret,name,args)\

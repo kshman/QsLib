@@ -1241,10 +1241,10 @@ char* qn_dir_base_path(void)
 // 모듈 플래그
 enum QnModFlag
 {
-	//QNMDF_INFO = QN_BIT(1),
-	QNMDF_NO_CLOSURE = QN_BIT(2),
-	QNMDF_RESIDENT = QN_BIT(3),
-	QNMDF_SELF = QN_BIT(4),
+	QNMDF_SYSTEM = QN_BIT(0),			// 시스템 모듈 (load 인수로 true)를 입력했을 때 반응하도록 함
+	QNMDF_RESIDENT = QN_BIT(1),			// 로드된 모듈로 만들어졌을 때
+	QNMDF_MULTIPLE = QN_BIT(2),			// 한번 이상 모듈이 만들어졌을 때
+	QNMDF_SELF = QN_BIT(7),				// 실행파일
 };
 
 // 단위 모듈 내용
@@ -1284,10 +1284,10 @@ void qn_module_down(void)
 	QnModule *next, *node = module_impl.modules;
 	while (node)
 	{
-		if (QN_TMASK(node->flags, QNMDF_NO_CLOSURE))
-			qn_debug_outputf(false, "MODULE", "module not deleted [%s] (ref: %d)", node->filename, node->ref);
+		if (QN_TMASK(node->flags, QNMDF_SYSTEM | QNMDF_RESIDENT | QNMDF_MULTIPLE) == false)
+			qn_debug_outputf(false, "MODULE", "'%s' not unloaded (ref: %d)", node->filename, node->ref);
 		next = node->next;
-		if (node->handle != NULL)
+		if (QN_TMASK(node->flags, QNMDF_RESIDENT) == false && node->handle != NULL)
 #ifdef _QN_WINDOWS_
 			FreeLibrary(node->handle);
 #else
@@ -1379,7 +1379,7 @@ QnModule* qn_mod_load(const char* filename, int flags)
 	if (self != NULL)
 	{
 		self->ref++;
-		self->flags = QNMDF_NO_CLOSURE | QNMDF_RESIDENT;
+		QN_SMASK(&self->flags, QNMDF_MULTIPLE, true);
 		return self;
 	}
 
@@ -1388,7 +1388,11 @@ QnModule* qn_mod_load(const char* filename, int flags)
 #ifdef __WINRT__
 	HMODULE handle = LoadPackagedLibrary(pw, 0);
 #else
-	HMODULE handle = LoadLibrary(pw);
+	HMODULE handle = GetModuleHandle(pw);
+	if (handle != NULL)
+		flags |= QNMDF_RESIDENT;
+	else
+		handle = LoadLibrary(pw);
 #endif
 	qn_free(pw);
 #else
