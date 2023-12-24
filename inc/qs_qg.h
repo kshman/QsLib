@@ -24,6 +24,7 @@ typedef struct QgRender		QgRender;						/// @brief 렌더 파이프라인
 // property
 #define QG_PROP_WINDOWS_ICON			"QG_PROP_WINDOWS_ICON"
 #define QG_PROP_WINDOWS_SMALLICON		"QG_PROP_WINDOWS_SMALLICON"
+#define QG_PROP_OPENGL					"QG_PROP_OPENGL"
 
 
 //////////////////////////////////////////////////////////////////////////

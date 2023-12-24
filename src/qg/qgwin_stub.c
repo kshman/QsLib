@@ -40,8 +40,8 @@ static void* windows_load_func(QnModule* module, const char* dllname, const char
 // DLL 초기화
 static bool windows_dll_init(void)
 {
-	static bool dll_inited = false;
-	qn_val_if_ok(dll_inited, true);
+	static bool loaded = false;
+	qn_val_if_ok(loaded, true);
 	QnModule* module;
 	const char* dllname = NULL;
 	static char xinput_dll[64] = "xinput1_ ";
@@ -69,7 +69,7 @@ static bool windows_dll_init(void)
 #define DEF_WIN_XIFUNC(ret,name,args)\
 	QN_CONCAT(Win32, name) = (QN_CONCAT(PFNWin32, name))windows_load_func(module, dllname, QN_STRING(name));
 #include "qgwin_func.h"
-	return dll_inited = true;
+	return loaded = true;
 }
 
 // 키 후킹
@@ -486,7 +486,7 @@ static void windows_awareness_dpi(WindowsStub* stub)
 #define SIGNATURE_MASK		0xFFFFFF00
 #define IsPenEvent(dw)		(((dw) & SIGNATURE_MASK) == MI_WP_SIGNATURE)
 
-// 마우스 이벤트 소스 
+// 마우스 이벤트 소스
 typedef enum WindowsMouseSource
 {
 	WINDOWS_MOUSE_SOURCE_MOUSE,
@@ -555,7 +555,6 @@ static void windows_check_mouse_release(WindowsStub* stub)
 		windows_check_mouse_button(stub, FALSE, mask, QIM_X2);
 	stub->mouse_wparam = 0;
 }
-#endif
 
 // 키보드 메시지
 static bool windows_mesg_keyboard(WindowsStub* stub, WPARAM wp, bool down)
@@ -859,7 +858,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				stub->high_surrogate = (WCHAR)wp;
 			else if (IS_SURROGATE_PAIR(stub->high_surrogate, wp))
 			{
-				// 여기서 stub->high_surrogate 와 wp 를 조합해서 키보드 데이터를 처리 
+				// 여기서 stub->high_surrogate 와 wp 를 조합해서 키보드 데이터를 처리
 				// https://learn.microsoft.com/ko-kr/windows/win32/inputdev/wm-char
 				char u8[7];
 				if (qn_u16ucb((uchar2)stub->high_surrogate, (uchar2)wp, u8))
@@ -961,3 +960,5 @@ pos_mesg_proc_exit:
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
 }
+
+#endif

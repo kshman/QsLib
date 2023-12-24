@@ -57,8 +57,6 @@ static void shed_event_init(void)
 	s_seq.prior_head = NULL;
 	s_seq.prior_tail = NULL;
 	qn_parr_init(&s_seq.reserved_mems, 0);
-	if (0 < 0)
-		s_seq.loop_count = 0;
 }
 
 // 모두 제거
@@ -384,7 +382,7 @@ bool stub_track_mouse_click(QimButton button, QimTrack track)
 		{
 			const int dx = m->clk.loc.x - m->pt.x;
 			const int dy = m->clk.loc.y - m->pt.y;
-			const uint d = dx * dx + dy * dy;
+			const uint d = (uint)(dx * dx) + (uint)(dy * dy);
 			if (d > m->lim.move)
 			{
 				// 마우스가 move 만큼 움직이면 두번 누르기 취소
@@ -961,4 +959,13 @@ void stub_toggle_keys(QikMask keymask, bool on)
 {
 	QgUimKey* uk = &qg_stub_instance->key;
 	QN_SMASK(&uk->mask, keymask, on);
+}
+
+//
+float stub_calc_diagonal_dpi(uint width, uint height, float horizontal, float vertical)
+{
+	float dsq = horizontal * horizontal + vertical * vertical;
+	if (dsq <= 0.0f)
+		return 0.0f;
+	return sqrtf((float)width * (float)width + (float)height * (float)height) / sqrtf(dsq);
 }

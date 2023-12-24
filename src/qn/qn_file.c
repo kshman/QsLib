@@ -1409,7 +1409,7 @@ QnModule* qn_mod_load(const char* filename, int flags)
 	self->hash = hash;
 	self->filename = qn_strdup(filename);
 	self->ref = 1;
-	self->flags = flags;
+	self->flags = (enum QnModFlag)flags;
 	self->handle = handle;
 
 	QN_LOCK(module_impl.lock);

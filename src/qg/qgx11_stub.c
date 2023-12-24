@@ -7,278 +7,153 @@
 
 #include "pch.h"
 #include "qs_qn.h"
-#if defined USE_X11 && !defined USE_SDL2
+#if defined USE_X11
 #include "qs_qg.h"
 #include "qs_kmc.h"
-#include "qg_stub.h"
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xatom.h>
-#include <X11/Xresource.h>
-#include <X11/XKBlib.h>
-#include <X11/Xlibint.h>
-#include <X11/Xproto.h>
-#include <X11/extensions/Xext.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <X11/extensions/XShm.h>
-#include <X11/extensions/Xdbe.h>
-#include <X11/extensions/Xfixes.h>
-#include <X11/extensions/Xrandr.h>
-#include <X11/extensions/scrnsaver.h>
-#include <X11/extensions/shape.h>
-#include <X11/Xcursor/Xcursor.h>
+#include "qgx11_stub.h"
+#include <locale.h>
 
-#define DEBUG_X11_MODULE
+#ifdef _DEBUG
+#define DEBUG_X11SO_TRACE
+#endif
 
+//
+static char* x11_get_class_name(void);
+static void x11_init_atoms(void);
+static void x11_check_wm(void);
+static bool x11_check_modes(void);
+static char* x11_get_title(Window window);
+static bool x11_set_title(Window window, char* title);
+static void x11_set_net_wm(QgFlag flags);
 
-//////////////////////////////////////////////////////////////////////////
-// X11 스터브
+// x11 스터브 변수
+static X11Stub x11stub;
 
-// 링킹하기 귀찮을 땐 다이나믹
-#define DEF_X11_FUNC(ret,name,decls,args)\
-	typedef ret(*QN_CONCAT(PFNX11,name)) decls;\
-	static QN_CONCAT(PFNX11,name) QN_CONCAT(x11,name);
-#define DEF_X11_VAFUNC(ret,name,arg0)\
-	typedef ret(*QN_CONCAT(PFNX11,name)) (arg0, ...);\
-	static QN_CONCAT(PFNX11,name) QN_CONCAT(x11,name);
+// SO 선언
+#define DEF_X11_FUNC(ret,name,args)		QN_CONCAT(PFNX11, name) QN_CONCAT(X11, name);
+#define DEF_X11_VAFUNC(ret,name,arg0)	QN_CONCAT(PFNX11, name) QN_CONCAT(X11, name);
 #include "qgx11_func.h"
 
-static void* x11_internal_load_func(QnModule* module, const char* soname, const char* fnname)
+// SO 함수
+static void* x11_load_func(QnModule* module, const char* soname, const char* fnname)
 {
 	void* ret = qn_mod_func(module, fnname);
-#ifdef DEBUG_X11_MODULE
-	if (ret != NULL)
-		qn_debug_outputf(false, "X11 MODULE", "\tfound '%s' in '%s'", fnname, soname);
-	else
-		qn_debug_outputf(false, "X11 MODULE", "\tno function found: '%s'", fnname);
+#ifdef DEBUG_X11SO_TRACE
+	qn_debug_outputf(false, "X11 STUB", "\t%s: '%s' in '%s'",
+		ret == NULL ? "load failed" : "loaded", fnname, soname);
+#else
+	QN_DUMMY(dllname);
 #endif
 	return ret;
 }
 
-static void x11_internal_func_init(void)
+// SO 초기화
+static bool x11_so_init(void)
 {
-#define DEF_X11_SO(name)	static QnModule* QN_CONCAT(s_mod_,name);
-#include "qgx11_func.h"
-#define DEF_X11_SO(name)	QN_CONCAT(s_mod_,name) = qn_mod_load(QN_STRING(name) ".so", 0);
-#include "qgx11_func.h"
+	static bool loaded = false;
+	qn_val_if_ok(loaded, true);
 	QnModule* module;
-#ifdef DEBUG_X11_MODULE
 	const char* soname;
-#define DEF_X11_SO(name)	soname = QN_STRING(name) ".so"; module = QN_CONCAT(s_mod_,name); \
-							if (module == NULL) qn_debug_outputf(true, "X11 MODULE", "module loading failed: '%s'", soname); \
-							else { qn_debug_outputf(false, "X11 MODULE", "module loaded: '%s'", soname);
-#define DEF_X11_FUNC(ret,name,decls,args)	QN_CONCAT(x11,name) = x11_internal_load_func(module, soname, QN_STRING(name));
-#define DEF_X11_VAFUNC(ret,name,arg0)		QN_CONCAT(x11,name) = x11_internal_load_func(module, soname, QN_STRING(name));
-#else
-#define DEF_X11_SO(name)	module = QN_CONCAT(s_mod_,name); if (module != NULL) {
-#define DEF_X11_FUNC(ret,name,decls,args)	QN_CONCAT(x11,name) = x11_internal_load_func(module, NULL, QN_STRING(name));
-#define DEF_X11_VAFUNC(ret,name,arg0)		QN_CONCAT(x11,name) = x11_internal_load_func(module, NULL, QN_STRING(name));
-#endif
-#define DEF_X11_SO_END		}
+#define DEF_X11_SO_BEGIN(name)\
+	module = qn_mod_load(soname = QN_STRING(name) ".so", 1); if (module == NULL)\
+	{ qn_debug_outputf(true, "X11 STUB", "no %s found!", soname); return false; } else {
+#define DEF_X11_SO_END	}
+#define DEF_X11_FUNC(ret,name,args)\
+	QN_CONCAT(X11, name) = (QN_CONCAT(PFNX11, name))x11_load_func(module, soname, QN_STRING(name));
+#define DEF_X11_VAFUNC(ret,name,args)\
+	QN_CONCAT(X11, name) = (QN_CONCAT(PFNX11, name))x11_load_func(module, soname, QN_STRING(name));
 #include "qgx11_func.h"
+	return loaded = true;
 }
-
-// 프로퍼티 얻기
-typedef struct X11Property X11Property;
-struct X11Property
-{
-	Display*			display;
-	Window				window;
-	Atom				atom;
-	long				offset;
-	long				length;
-	Atom				request;
-
-	Atom				type;
-	unsigned long		read;
-	unsigned long		left;
-	byte*				data;
-	int					format;
-	bool				ok;
-};
-
-bool x11_get_prop(X11Property* prop)
-{
-	prop->ok = x11XGetWindowProperty(
-		prop->display, prop->window, prop->atom, prop->offset, prop->length, False, prop->request,
-		&prop->type, &prop->format, &prop->read, &prop->left, &prop->data) == Success;
-	return prop->ok;
-}
-
-void x11_clean_prop(X11Property* prop)
-{
-	if (prop->ok && prop->data != NULL)
-		x11XFree(prop->data);
-}
-
-/** @brief X11 스터브 */
-typedef struct X11Stub X11Stub;
-struct X11Stub
-{
-	StubBase			base;
-
-	Display*			display;
-	int					screen;
-	Window				window;
-
-	pid_t				pid;
-	XID					group;
-
-	int					depth;
-	Visual*				visual;
-	Colormap			colormap;
-
-	GC					gc;
-	XIM					xim;
-	XIC					xic;
-
-	struct X11Atoms
-	{
-		Atom				WM_PROTOCOLS;
-		Atom				WM_DELETE_WINDOW;
-		Atom				WM_TAKE_FOCUS;
-		Atom				WM_NAME;
-		Atom				_NET_WM_STATE;
-		Atom				_NET_WM_STATE_HIDDEN;
-		Atom				_NET_WM_STATE_FOCUSED;
-		Atom				_NET_WM_STATE_MAXIMIZED_VERT;
-		Atom				_NET_WM_STATE_MAXIMIZED_HORZ;
-		Atom				_NET_WM_STATE_FULLSCREEN;
-		Atom				_NET_WM_STATE_ABOVE;
-		Atom				_NET_WM_STATE_SKIP_TASKBAR;
-		Atom				_NET_WM_STATE_SKIP_PAGER;
-		Atom				_NET_WM_ALLOWED_ACTIONS;
-		Atom				_NET_WM_ACTION_FULLSCREEN;
-		Atom				_NET_WM_NAME;
-		Atom				_NET_WM_ICON_NAME;
-		Atom				_NET_WM_ICON;
-		Atom				_NET_WM_PING;
-		Atom				_NET_WM_WINDOW_OPACITY;
-		Atom				_NET_WM_USER_TIME;
-		Atom				_NET_ACTIVE_WINDOW;
-		Atom				_NET_FRAME_EXTENTS;
-		Atom				_NET_SUPPORTING_WM_CHECK;
-		Atom				UTF8_STRING;
-		Atom				PRIMARY;
-		Atom				XdndEnter;
-		Atom				XdndPosition;
-		Atom				XdndStatus;
-		Atom				XdndTypeList;
-		Atom				XdndActionCopy;
-		Atom				XdndDrop;
-		Atom				XdndFinished;
-		Atom				XdndSelection;
-		Atom				XKLAVIER_STATE;
-	}					atoms;
-
-	char*				class_name;
-	char*				window_title;
-
-	QmRect				local_bound;
-
-	//HCURSOR				mouse_cursor;
-	//llong				mouse_warp_time;
-	//WPARAM				mouse_wparam;
-	//LPARAM				mouse_lparam;
-	//QimMask				mouse_pending;
-
-	bool				has_wm;
-	bool				enable_drop;
-
-	//bool				clear_background;
-};
-
-// 에러 핸들러 플래그 (윈도우가 만들어지기 전에 호출될 수도 있기에 별도로 
-static int (*s_x11_errorhandler)(Display*, XErrorEvent*);
-static bool s_x11_handle_error = false;
-
-// 정적 함수 미리 정의
-static int x11_error_handler(Display* d, XErrorEvent* e);
-static void x11_init_atoms(X11Stub* stub);
-static char* x11_make_class_name(void);
-static void x11_check_window_manager(X11Stub* stub);
-static char* x11_get_title(Display* display, Window window);
-static bool x11_set_title(Display* display, Window window, char* title);
-static void x11_set_net_wm(X11Stub* stub, QgFlag flags);
 
 //
-StubBase* stub_system_open(const char* title, int width, int height, QgFlag flags)
+StubBase* stub_system_open(const char* title, int display, int width, int height, QgFlag flags)
 {
-	static X11Stub s_stub;
-	X11Stub* stub = &s_stub;
+	if (strcmp(setlocale(LC_CTYPE, NULL), "C") == 0)
+		setlocale(LC_CTYPE, "");
 
-	x11_internal_func_init();
+	if (x11_so_init() == false)
+		return NULL;
 
-	x11XInitThreads();
+	X11XInitThreads();
 
 	// 디스플레이
-	stub->display = x11XOpenDisplay(NULL);	// 디스플레이 이름을 넣어야 한다
-	if (stub->display == NULL)
+	x11stub.display = X11XOpenDisplay(NULL);	// 디스플레이 이름을 넣어야 한다
+	if (x11stub.display == NULL)
 	{
-		qn_debug_outputs(true, "X11 STUB", "cannot open display");
+		const char* name = getenv("DISPLAY");
+		qn_debug_outputf(true, "X11 STUB", "cannot open display: %s", name ? name : "(unknown)");
 		return NULL;
 	}
 
-	s_x11_handle_error = false;
-	s_x11_errorhandler = x11XSetErrorHandler(x11_error_handler);
+	//
+	x11stub.screen = DefaultScreen(x11stub.display);
+	x11stub.root = DefaultRootWindow(x11stub.display);
 
-	stub->screen = DefaultScreen(stub->display);
-	stub->pid = getpid();
-	stub->group = (XID)(((size_t)stub->pid) ^ ((size_t)stub));
+	x11stub.class_name = x11_get_class_name();
+	x11stub.pid = getpid();
+	x11stub.group = (XID)(((size_t)x11stub.pid) ^ ((size_t)&x11stub));
 
-	// 비주얼
-	const int depth = DefaultDepth(stub->display, stub->screen);
-	XVisualInfo vinfo;
-	if (x11XMatchVisualInfo(stub->display, stub->screen, depth, DirectColor, &vinfo) == 0 &&
-		x11XMatchVisualInfo(stub->display, stub->screen, depth, TrueColor, &vinfo) == 0 &&
-		x11XMatchVisualInfo(stub->display, stub->screen, depth, PseudoColor, &vinfo) == 0 &&
-		x11XMatchVisualInfo(stub->display, stub->screen, depth, StaticColor, &vinfo) == 0)
+	qn_pctnr_init(&x11stub.base.mon, 0);
+
+	// X11
+	x11_init_atoms();
+	x11_check_wm();
+	if (x11_check_modes() == false)
 	{
-		qn_debug_outputs(true, "X11 STUB", "cannot retrieve visual for primary display");
 		stub_system_finalize();
 		return NULL;
 	}
-	stub->visual = vinfo.visual;
-	stub->depth = vinfo.depth;
+
+	// Xinput2
+	// Xfixes
+	// Keyboard
+	// Mouse
 
 	//
-	const Screen* screen = ScreenOfDisplay(stub->display, stub->screen);
-	const QmSize scrsize = { WidthOfScreen(screen), HeightOfScreen(screen) };
+	x11stub.base.display = display > qn_pctnr_count(&x11stub.base.mon) ? 0 : display;
+
+	X11Monitor* mon = qn_pctnr_nth(&x11stub.base.mon, x11stub.base.display);
 	if (width < 256 || height < 256)
 	{
-		if (scrsize.height > 800)
+		if (mon->base.width > 800)
 			width = 1280, height = 720;
 		else
-			width = 720, height = 450;
+			width = 720, height = 480;
 	}
 	const QmPoint pos =
 	{
-		.x = (scrsize.width - width) / 2,
-		.y = (scrsize.height - height) / 2,
+		/*mon->base.x +*/ (mon->base.width - width) / 2,
+		/*mon->base.y +*/ (mon->base.height - height) / 2,
 	};
-	qm_set4(&stub->local_bound, pos.x, pos.y, pos.x + width, pos.y + height);
-	stub->base.window_bound = stub->local_bound;
-
-	// 설정
-	x11_init_atoms(stub);
-	x11_check_window_manager(stub);
-	// 키보드
-	// 마우스
+	qm_set4(&x11stub.local_bound, pos.x, pos.y, pos.x + width, pos.y + height);
+	x11stub.base.window_bound = x11stub.local_bound;
 
 	//
-	stub->class_name = x11_make_class_name();
-	stub->window_title = qn_strdup(title != NULL ? title : "QS");
+	x11stub.window_title = qn_strdup(title != NULL ? title : "QS");
 
-	return (StubBase*)stub;
+	return (StubBase*)&x11stub;
 }
 
 //
 bool stub_system_create_window(void)
 {
 	X11Stub* stub = (X11Stub*)qg_stub_instance;
-	Visual* visual = stub->visual;
-	Window root = RootWindow(stub->display, stub->screen);
+	X11Monitor* mon = qn_pctnr_nth(&x11stub.base.mon, x11stub.base.display);
+	int screen = mon->base.no;
+	Window root = RootWindow(x11stub.display, screen);
+	Visual* visual;
+	uint depth;
+
+#if defined USE_GL || defined USE_ES3
+	const char* glprop = qn_get_prop(QG_PROP_OPENGL);
+	if (glprop == NULL)
+		glprop = "ES3";
+#endif
+	{
+		visual = mon->visual;
+		depth = mon->base.depth;
+	}
 
 	//
 	XSetWindowAttributes attr =
@@ -288,11 +163,11 @@ bool stub_system_create_window(void)
 		.background_pixmap = None,
 		.border_pixel = 0,
 	};
-	if (stub->visual->class != DirectColor)
-		attr.colormap = x11XCreateColormap(stub->display, root, visual, AllocNone);
+	if (visual->class != DirectColor)
+		attr.colormap = X11XCreateColormap(x11stub.display, root, visual, AllocNone);
 	else
 	{
-		attr.colormap = x11XCreateColormap(stub->display, root, visual, AllocAll);
+		attr.colormap = X11XCreateColormap(x11stub.display, root, visual, AllocAll);
 		if (attr.colormap == None)
 		{
 			qn_debug_outputs(true, "X11 STUB", "cannot create writable colormap");
@@ -326,119 +201,119 @@ bool stub_system_create_window(void)
 			colors[i].flags = DoRed | DoGreen | DoBlue;
 		}
 
-		x11XStoreColors(stub->display, attr.colormap, colors, entry_count);
+		X11XStoreColors(x11stub.display, attr.colormap, colors, entry_count);
 		qn_free(colors);
 	}
 
-	QmRect* bound = &stub->local_bound;
+	QmRect* bound = &x11stub.local_bound;
 	int width = qm_rect_width(bound), height = qm_rect_height(bound);
-	stub->window = x11XCreateWindow(stub->display, root, bound->left, bound->top, width, height,
-		0, stub->depth, InputOutput, visual,
+	x11stub.window = X11XCreateWindow(x11stub.display, root, bound->left, bound->top, width, height,
+		0, depth, InputOutput, visual,
 		(CWOverrideRedirect | CWBackPixel | CWBorderPixel | CWBackingStore | CWColormap), &attr);
-	if (stub->window == None)
+	if (x11stub.window == None)
 	{
 		qn_debug_outputs(true, "X11 STUB", "cannot create window");
 		return false;
 	}
 
 	//
-	Atom motif_wm_hints = x11XInternAtom(stub->display, "_MOTIF_WM_HINTS", True);
+	Atom motif_wm_hints = X11XInternAtom(x11stub.display, "_MOTIF_WM_HINTS", True);
 	if (motif_wm_hints == None)
-		x11XSetTransientForHint(stub->display, stub->window, root);
+		X11XSetTransientForHint(x11stub.display, x11stub.window, root);
 	else
 	{
 		unsigned long data[5] =
 		{
 			1L << 1,
 			0,
-			QN_TMASK(stub->base.flags, QGFLAG_BORDERLESS) ? 0 : 1,
+			QN_TMASK(x11stub.base.flags, QGFLAG_BORDERLESS) ? 0 : 1,
 			0,
 			0
 		};
-		x11XChangeProperty(stub->display, stub->window, motif_wm_hints, motif_wm_hints,
+		X11XChangeProperty(x11stub.display, x11stub.window, motif_wm_hints, motif_wm_hints,
 			32, PropModeReplace, (const byte*)data, QN_COUNTOF(data));
 	}
 
 	//
-	XSizeHints* szh = x11XAllocSizeHints();
+	XSizeHints* szh = X11XAllocSizeHints();
 	szh->flags = USPosition;
 	szh->x = bound->left;
 	szh->y = bound->right;
-	if (QN_TMASK(stub->base.flags, QGFLAG_RESIZABLE) == false)
+	if (QN_TMASK(x11stub.base.flags, QGFLAG_RESIZABLE) == false)
 	{
 		szh->flags |= PMinSize | PMaxSize;
 		szh->min_width = szh->max_width = width;
 		szh->min_height = szh->max_height = height;
 	}
 
-	XWMHints* wmh = x11XAllocWMHints();
+	XWMHints* wmh = X11XAllocWMHints();
 	wmh->flags = InputHint | WindowGroupHint;
 	wmh->input = True;
-	wmh->window_group = stub->group;
+	wmh->window_group = x11stub.group;
 
-	XClassHint* csh = x11XAllocClassHint();
-	csh->res_name = stub->class_name;
-	csh->res_class = stub->class_name;
+	XClassHint* csh = X11XAllocClassHint();
+	csh->res_name = x11stub.class_name;
+	csh->res_class = x11stub.class_name;
 
-	x11XSetWMProperties(stub->display, stub->window, NULL, NULL, NULL, 0, szh, wmh, csh);
-	x11XFree(csh);
-	x11XFree(wmh);
-	x11XFree(szh);
+	X11XSetWMProperties(x11stub.display, x11stub.window, NULL, NULL, NULL, 0, szh, wmh, csh);
+	X11XFree(csh);
+	X11XFree(wmh);
+	X11XFree(szh);
 
-	if (stub->pid > 0)
+	if (x11stub.pid > 0)
 	{
-		long pid = (long)stub->pid;
-		Atom nwpid = x11XInternAtom(stub->display, "_NET_WM_PID", false);
-		x11XChangeProperty(stub->display, stub->window, nwpid, XA_CARDINAL, 32, PropModeReplace, (byte*)&pid, 1);
+		long pid = (long)x11stub.pid;
+		Atom nwpid = X11XInternAtom(x11stub.display, "_NET_WM_PID", false);
+		X11XChangeProperty(x11stub.display, x11stub.window, nwpid, XA_CARDINAL, 32, PropModeReplace, (byte*)&pid, 1);
 	}
 
 	//
-	x11_set_net_wm(stub, stub->base.flags);
+	x11_set_net_wm(x11stub.base.flags);
 
-	Atom wm_wintype = x11XInternAtom(stub->display, "_NET_WM_WINDOW_TYPE", False);
-	Atom wm_normal = x11XInternAtom(stub->display, "_NET_WM_WINDOW_TYPE_NORMAL", False);
-	x11XChangeProperty(stub->display, stub->window, wm_wintype, XA_ATOM, 32, PropModeReplace, (byte*)&wm_normal, 1);
+	Atom wm_wintype = X11XInternAtom(x11stub.display, "_NET_WM_WINDOW_TYPE", False);
+	Atom wm_normal = X11XInternAtom(x11stub.display, "_NET_WM_WINDOW_TYPE_NORMAL", False);
+	X11XChangeProperty(x11stub.display, x11stub.window, wm_wintype, XA_ATOM, 32, PropModeReplace, (byte*)&wm_normal, 1);
 
-	Atom wm_bypass = x11XInternAtom(stub->display, "_NET_WM_BYPASS_COMPOSITOR", False);
+	Atom wm_bypass = X11XInternAtom(x11stub.display, "_NET_WM_BYPASS_COMPOSITOR", False);
 	long compositor = 1;
-	x11XChangeProperty(stub->display, stub->window, wm_bypass, XA_CARDINAL, 32, PropModeReplace, (byte*)&compositor, 1);
+	X11XChangeProperty(x11stub.display, x11stub.window, wm_bypass, XA_CARDINAL, 32, PropModeReplace, (byte*)&compositor, 1);
 
 	Atom protocols[] =
 	{
-		stub->atoms.WM_DELETE_WINDOW,
-		stub->atoms.WM_TAKE_FOCUS,
-		stub->atoms._NET_WM_PING,
+		x11stub.atoms.WM_DELETE_WINDOW,
+		x11stub.atoms.WM_TAKE_FOCUS,
+		x11stub.atoms._NET_WM_PING,
 	};
-	x11XSetWMProtocols(stub->display, stub->window, protocols, QN_COUNTOF(protocols));
+	X11XSetWMProtocols(x11stub.display, x11stub.window, protocols, QN_COUNTOF(protocols));
 
 	//
-	if (stub->xim != NULL)
-		stub->xic = x11XCreateIC(stub->xim, XNClientWindow, stub->window, XNFocusWindow, stub->window,
+	if (x11stub.xim != NULL)
+		x11stub.xic = X11XCreateIC(x11stub.xim, XNClientWindow, x11stub.window, XNFocusWindow, x11stub.window,
 			XNInputStyle, XIMPreeditNothing | XIMStatusNothing, NULL);
 
 	XWindowAttributes wattr;
-	x11XGetWindowAttributes(stub->display, stub->window, &wattr);
-	qm_set4(&stub->base.window_bound, wattr.x, wattr.y, wattr.x + wattr.width, wattr.y + wattr.height);
-	qm_set4(&stub->base.bound, 0, 0, wattr.width, wattr.height);
-	qm_set2(&stub->base.size, wattr.width, wattr.height);
-	stub->visual = wattr.visual;
-	stub->colormap = wattr.colormap;
+	X11XGetWindowAttributes(x11stub.display, x11stub.window, &wattr);
+	qm_set4(&x11stub.base.window_bound, wattr.x, wattr.y, wattr.x + wattr.width, wattr.y + wattr.height);
+	qm_set2(&x11stub.base.client_size, wattr.width, wattr.height);
+	x11stub.visual = wattr.visual;
+	x11stub.colormap = wattr.colormap;
 
 	Window fcwnd;
 	int revert = 0;
-	x11XGetInputFocus(stub->display, &fcwnd, &revert);
-	if (fcwnd == stub->window)
-		QN_SMASK(&stub->base.stats, QGSSTT_FOCUS, true);
+	X11XGetInputFocus(x11stub.display, &fcwnd, &revert);
+	if (fcwnd == x11stub.window)
+		QN_SMASK(&x11stub.base.stats, QGSSTT_FOCUS, true);
 
 	long fevent = 0;
-	if (stub->xic != NULL)
-		x11XGetICValues(stub->xic, XNFilterEvents, &fevent, NULL);
-	x11XSelectInput(stub->display, stub->window,
+	if (x11stub.xic != NULL)
+		X11XGetICValues(x11stub.xic, XNFilterEvents, &fevent, NULL);
+	X11XSelectInput(x11stub.display, x11stub.window,
 		FocusChangeMask | EnterWindowMask | LeaveWindowMask | ExposureMask | ButtonPressMask | ButtonReleaseMask |
 		PointerMotionMask | KeyPressMask | KeyReleaseMask | PropertyChangeMask | StructureNotifyMask | KeymapStateMask |
 		fevent);
-	x11XSelectInput(stub->display, root, PropertyChangeMask);
-	x11XFlush(stub->display);
+	X11XSelectInput(x11stub.display, root, PropertyChangeMask);
+
+	X11XFlush(x11stub.display);
 
 	return true;
 }
@@ -448,62 +323,63 @@ void stub_system_finalize(void)
 {
 	X11Stub* stub = (X11Stub*)qg_stub_instance;
 
-	if (stub->xic != NULL)
-		x11XDestroyIC(stub->xic);
+	if (x11stub.xic != NULL)
+		X11XDestroyIC(x11stub.xic);
 
-	if (stub->display != NULL && stub->window != 0)
+	if (x11stub.display != NULL && x11stub.window != 0)
 	{
-		x11XDestroyWindow(stub->display, stub->window);
-		x11XFlush(stub->display);
+		X11XDestroyWindow(x11stub.display, x11stub.window);
+		X11XFlush(x11stub.display);
 	}
 
-	if (s_x11_errorhandler != NULL)
-		x11XSetErrorHandler(s_x11_errorhandler);
+	if (x11stub.display != NULL)
+		X11XCloseDisplay(x11stub.display);
 
-	if (stub->display != NULL)
-		x11XCloseDisplay(stub->display);
+	qn_pctnr_loopeach(&x11stub.base.mon, qn_memfre);
+	qn_pctnr_disp(&x11stub.base.mon);
 
-	qn_free(stub->window_title);
-	qn_free(stub->class_name);
+	qn_free(x11stub.window_title);
+	qn_free(x11stub.class_name);
 }
 
 //
 bool stub_system_poll(void)
 {
+	QN_TODO("폴: 해야함");
 	return false;
 }
 
 //
 void stub_system_disable_acs(bool enable)
 {
+	QN_TODO("보고 기능: 이거 할 수 있나?");
 }
 
 //
 void stub_system_diable_scrsave(bool enable)
 {
+	QN_TODO("스크린 세이버: 이거 할 수 있나?");
 }
 
 //
 void stub_system_enable_drop(bool enable)
 {
 	X11Stub* stub = (X11Stub*)qg_stub_instance;
-	Atom xdnd = x11XInternAtom(stub->display, "XdndAware", False);
+	Atom xdnd = X11XInternAtom(x11stub.display, "XdndAware", False);
 	if (enable)
 	{
-		if (stub->enable_drop)
+		if (QN_TMASK(x11stub.base.flags, QGFEATURE_ENABLE_DROP))
 			return;
-		stub->enable_drop = true;
-		QN_SMASK(&stub->base.flags, QGFEATURE_ENABLE_DROP, true);
+		QN_SMASK(&x11stub.base.flags, QGFEATURE_ENABLE_DROP, true);
 		Atom version = 5;
-		x11XChangeProperty(stub->display, stub->window, xdnd, XA_ATOM, 32, PropModeReplace, (byte*)&version, 1);
+		X11XChangeProperty(x11stub.display, x11stub.window, xdnd, XA_ATOM, 32, PropModeReplace, (byte*)&version, 1);
 	}
 	else
 	{
-		if (stub->enable_drop == false)
+		if (QN_TMASK(x11stub.base.flags, QGFEATURE_ENABLE_DROP) == false)
 			return;
-		stub->enable_drop = false;
-		QN_SMASK(&stub->base.flags, QGFEATURE_ENABLE_DROP, false);
-		x11XDeleteProperty(stub->display, stub->window, xdnd);
+		QN_SMASK(&x11stub.base.flags, QGFEATURE_ENABLE_DROP, false);
+		X11XDeleteProperty(x11stub.display, x11stub.window, xdnd);
 	}
 }
 
@@ -511,49 +387,100 @@ void stub_system_enable_drop(bool enable)
 void stub_system_set_title(const char* u8text)
 {
 	X11Stub* stub = (X11Stub*)qg_stub_instance;
-	qn_ret_if_fail(stub->display != NULL && stub->window != 0);
+	qn_ret_if_fail(x11stub.display != NULL && x11stub.window != 0);
 
-	qn_free(stub->window_title);
-	stub->window_title = qn_strdup(u8text != NULL ? u8text : "QS");
+	qn_free(x11stub.window_title);
+	x11stub.window_title = qn_strdup(u8text != NULL ? u8text : "QS");
 
-	x11_set_title(stub->display, stub->window, stub->window_title);
+	x11_set_title(x11stub.window, x11stub.window_title);
 }
 
 //
 void stub_system_hold_mouse(bool hold)
 {
-	// X11_SetWindowMouseGrab
+	QN_SMASK(&x11stub.base.stats, QGSSTT_HOLD, false);
+
+	if (hold)
+	{
+		if (QN_TMASK(x11stub.base.window_stats, QGWEV_SHOW) == false)
+			return;
+
+		if (x11stub.broken_grab == false)
+		{
+			const uint mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask | FocusChangeMask;
+			int res = 0;
+			for (int i = 0; i < 100; i++)
+			{
+				res = X11XGrabPointer(x11stub.display, x11stub.window, False, mask,
+					GrabModeAsync, GrabModeAsync, x11stub.window, None, CurrentTime);
+				if (res == GrabSuccess)
+				{
+					QN_SMASK(&x11stub.base.stats, QGSSTT_HOLD, true);
+					break;
+				}
+				qn_sleep(50);
+			}
+			if (res != GrabSuccess)
+				x11stub.broken_grab = true;
+		}
+		X11XRaiseWindow(x11stub.display, x11stub.window);
+	}
+	else
+	{
+		// 푸는건 쉽네
+		X11XUngrabPointer(x11stub.display, CurrentTime);
+	}
+	X11XSync(x11stub.display, False);
 }
 
 //
 void stub_system_calc_layout(void)
 {
+	// 폭과 높이는 문제 없는데, 좌표가 안바뀌는거 같은데
+	XWindowAttributes wattr;
+	X11XGetWindowAttributes(x11stub.display, x11stub.window, &wattr);
+	qm_set4(&x11stub.base.window_bound, wattr.x, wattr.y, wattr.x + wattr.width, wattr.y + wattr.height);
+	qm_set2(&x11stub.base.client_size, wattr.width, wattr.height);
+	x11stub.local_bound = x11stub.base.window_bound;
+	x11stub.visual = wattr.visual;
+	x11stub.colormap = wattr.colormap;
 }
 
-// 에러 핸들리
-static int x11_error_handler(Display* d, XErrorEvent* e)
+// 클래스 이름 만들기
+static char* x11_get_class_name(void)
 {
-	X11Stub* stub = (X11Stub*)qg_stub_instance;
+#if defined _QN_FREEBSD_ || defined _QN_LINUX_
+	char procfile[FILENAME_MAX];
+	char linkfile[FILENAME_MAX];
+	ssize_t linklen;
 
-	if (s_x11_handle_error == false)
+#if defined _QN_FREEBSD_
+	qn_snprintf(procfile, QN_COUNTOF(procfile), "/proc/%d/exe", getpid());
+#else
+	qn_snprintf(procfile, QN_COUNTOF(procfile), "/proc/%d/file", getpid());
+#endif
+	linklen = readlink(procfile, linkfile, QN_COUNTOF(linkfile) - 1);
+	if (linklen > 0)
 	{
-		s_x11_handle_error = true;
-		if (stub != NULL)
-		{
-			// 디스플레이 모드 변경
-		}
+		linkfile[linklen] = '\0';
+		char* p = strrchr(linkfile, '/');
+		if (p != NULL)
+			return qn_strdup(p + 1);
+		else
+			return qn_strdup(linkfile);
 	}
+#endif
 
-	if (s_x11_errorhandler != NULL)
-		return s_x11_errorhandler(d, e);
-	return 0;
+	QnDateTime dt;
+	qn_now(&dt);
+	return qn_apsprintf("qs_stub_class_%llu", dt.stamp);
 }
 
 // 아톰 만들기, 너무 길어서 따로 뺌
-static void x11_init_atoms(X11Stub* stub)
+static void x11_init_atoms(void)
 {
-	Display* display = stub->display;
-#define DEF_X11_ATOM(x) stub->atoms.x = x11XInternAtom(display, #x, False)
+	Display* display = x11stub.display;
+#define DEF_X11_ATOM(x) x11stub.atoms.x = X11XInternAtom(display, #x, False)
 	DEF_X11_ATOM(WM_PROTOCOLS);
 	DEF_X11_ATOM(WM_DELETE_WINDOW);
 	DEF_X11_ATOM(WM_TAKE_FOCUS);
@@ -592,71 +519,46 @@ static void x11_init_atoms(X11Stub* stub)
 #undef DEF_X11_ATOM
 }
 
-// 클래스 이름 만들기
-static char* x11_make_class_name(void)
+// 에러 핸들러 설정
+static void x11_set_error_handler(int (*handler)(Display*, XErrorEvent*))
 {
-#if defined _QN_FREEBSD_ || defined _QN_LINUX_
-	char procfile[FILENAME_MAX];
-	char linkfile[FILENAME_MAX];
-	ssize_t linklen;
+	qn_assert(x11stub.eh.handler == NULL, "previous handler not released");
+	X11XSync(x11stub.display, False);
+	x11stub.eh.code = Success;
+	x11stub.eh.handler = X11XSetErrorHandler(handler);
+}
 
-#if defined _QN_FREEBSD_
-	qn_snprintf(procfile, QN_COUNTOF(procfile), "/proc/%d/exe", getpid());
-#else
-	qn_snprintf(procfile, QN_COUNTOF(procfile), "/proc/%d/file", getpid());
-#endif
-	linklen = readlink(procfile, linkfile, QN_COUNTOF(linkfile) - 1);
-	if (linklen > 0)
-	{
-		linkfile[linklen] = '\0';
-		char* p = strrchr(linkfile, '/');
-		if (p != NULL)
-			return qn_strdup(p + 1);
-		else
-			return qn_strdup(linkfile);
-	}
-#endif
-
-	QnDateTime dt;
-	qn_now(&dt);
-	return qn_apsprintf("qs_stub_class_%llu", dt.stamp);
+// 에러 핸들러 해제
+static void x11_reset_error_handler(void)
+{
+	X11XSync(x11stub.display, False);
+	X11XSetErrorHandler(x11stub.eh.handler);
+	x11stub.eh.handler = NULL;
 }
 
 // 윈도우 메니저 체크용
-static int (*s_x11_check_wm_error_handler)(Display*, XErrorEvent*);
 static int x11_check_wm_error_handler(Display* d, XErrorEvent* e)
 {
-	if (e->error_code == BadWindow)
+	if ((x11stub.eh.code = e->error_code) == BadWindow)
 		return 0;
-	return s_x11_check_wm_error_handler(d, e);
+	return x11stub.eh.handler(d, e);
 }
 
 // 윈도우 매니저 체크
-static void x11_check_window_manager(X11Stub* stub)
+static void x11_check_wm(void)
 {
-	static const char* s_atom_name = "_NET_SUPPORTING_WM_CHECK";
-
-	x11XSync(stub->display, False);
-	s_x11_check_wm_error_handler = x11XSetErrorHandler(x11_check_wm_error_handler);
+	x11_set_error_handler(x11_check_wm_error_handler);
 
 	Window window = 0;
-
-	X11Property prop = {
-		.display = stub->display,
-		.window = DefaultRootWindow(stub->display),
-		.atom = stub->atoms._NET_SUPPORTING_WM_CHECK,
-		.offset = 0L,
-		.length = 1,
-		.request = XA_WINDOW,
-	};
-	if (x11_get_prop(&prop))
+	X11Property prop;
+	if (x11_get_prop_simple(x11stub.root, x11stub.atoms._NET_SUPPORTING_WM_CHECK, XA_WINDOW, &prop))
 	{
 		if (prop.read != 0)
 			window = ((Window*)prop.data)[0];
 		x11_clean_prop(&prop);
 	}
 
-	if (window)
+	if (window != 0)
 	{
 		prop.window = window;
 		if (x11_get_prop(&prop) == false || prop.read == 0 || window != ((Window*)prop.data)[0])
@@ -664,103 +566,263 @@ static void x11_check_window_manager(X11Stub* stub)
 		x11_clean_prop(&prop);
 	}
 
-	x11XSync(stub->display, False);
-	x11XSetErrorHandler(s_x11_check_wm_error_handler);
+	x11_reset_error_handler();
 
-	if (window == 0)
+	x11stub.has_wm = window != 0;
+
+#ifdef _DEBUG
+	if (window != 0)
 	{
-		qn_debug_outputf(false, "X11 STUB", "cannot retrieve %s property", s_atom_name);
-		return;
+		char* wm_name = x11_get_title(window);
+		qn_debug_outputf(false, "X11 STUB", "window manager: %s", wm_name);
+		qn_free(wm_name);
 	}
-
-	stub->has_wm = true;
-	char* wm_name = x11_get_title(stub->display, window);
-	qn_debug_outputf(false, "X11 STUB", "window manager: %s", wm_name);
-	qn_free(wm_name);
+#endif
 }
 
 // 타이틀 얻기
-static char* x11_get_title(Display* display, Window window)
+static char* x11_get_title(Window window)
 {
-	X11Property prop = {
-		.display = display,
-		.window = window,
-		.atom = x11XInternAtom(display, "_NET_WM_NAME", False),
-		.offset = 0L,
-		.length = 8192L,
-		.request = x11XInternAtom(display, "UTF8_STRING", False),
-	};
-	if (x11_get_prop(&prop))
+	X11Property prop;
+	if (x11_get_prop_simple(window, x11stub.atoms._NET_WM_NAME, x11stub.atoms.UTF8_STRING, &prop))
 	{
 		char* title = qn_strdup((char*)prop.data);
 		x11_clean_prop(&prop);
 		return title;
 	}
-
-	prop.atom = XA_WM_NAME;
-	prop.request = XA_STRING;
-	if (x11_get_prop(&prop))
+	if (x11_get_prop_simple(window, XA_WM_NAME, XA_STRING, &prop))
 	{
 		char* title = qn_strdup((char*)prop.data);
-		qn_debug_outputf(false, "X11 STUB", "cannot retrieve UTF8 title (XASTRING: %s)", title);
 		x11_clean_prop(&prop);
 		return title;
 	}
-
-	qn_debug_outputs(false, "X11 STUB", "cannot retrieve any titles from Xorg");
+	qn_debug_outputs(false, "X11 STUB", "failed to read title");
 	return qn_strdup("(unknown)");
 }
 
 // 타이틀 설정
-static bool x11_set_title(Display* display, Window window, char* title)
+static bool x11_set_title(Window window, char* title)
 {
 	XTextProperty prop;
-	int res = x11XmbTextListToTextProperty(display, &title, 1, XTextStyle, &prop);
-	if (x11XSupportsLocale() == False)
-	{
-		qn_debug_outputs(false, "X11 STUB", "current locale not supported by Xorg");
-		return false;
-	}
-	if (res != Success)
-	{
-		qn_debug_outputs(false, "X11 STUB", "error on set title");
-		return false;
-	}
-	x11XSetTextProperty(display, window, &prop, XA_WM_NAME);
-	x11XFree(prop.value);
+	int res;
 
-	res = x11Xutf8TextListToTextProperty(display, &title, 1, XUTF8StringStyle, &prop);
-	if (res != Success)
+	if (X11Xutf8TextListToTextProperty != NULL)
 	{
-		qn_debug_outputs(false, "X11 STUB", "error on set utf8 title");
+		res = X11Xutf8TextListToTextProperty(x11stub.display, &title, 1, XUTF8StringStyle, &prop);
+		if (res == Success)
+		{
+			X11XSetTextProperty(x11stub.display, window, &prop, x11stub.atoms._NET_WM_NAME);
+			X11XFree(prop.value);
+			X11XFlush(x11stub.display);
+			return true;
+		}
+	}
+
+	X11XmbTextListToTextProperty(x11stub.display, &title, 1, XTextStyle, &prop);
+	if (X11XSupportsLocale() == False)
+	{
+		qn_debug_outputs(false, "X11 STUB", "current locale not supported");
 		return false;
 	}
-	Atom atom = x11XInternAtom(display, "_NET_WM_NAME", False);
-	x11XSetTextProperty(display, window, &prop, atom);
-	x11XFree(prop.value);
+	if (res < 0)	// -1이면 메모리없음, -2이면 로캘 지원 안함, -3이면 컨버트 실패
+		return false;
+	if (res > 0)	// res번째 글자가 못쓴다
+		return false;
 
-	x11XFlush(display);
+	X11XSetTextProperty(x11stub.display, window, &prop, XA_WM_NAME);
+	X11XFree(prop.value);
+	X11XFlush(x11stub.display);
 	return true;
 }
 
 // 윈도우 매니저 상태 설정
-static void x11_set_net_wm(X11Stub* stub, QgFlag flags)
+static void x11_set_net_wm(QgFlag flags)
 {
 	Atom atoms[16];
 	int atom_count = 0;
 
 	if (QN_TMASK(flags, QGFLAG_FOCUS))
-		atoms[atom_count++] = stub->atoms._NET_WM_STATE_FOCUSED;
+		atoms[atom_count++] = x11stub.atoms._NET_WM_STATE_FOCUSED;
 	if (QN_TMASK(flags, QGFLAG_FULLSCREEN))
-		atoms[atom_count++] = stub->atoms._NET_WM_STATE_FULLSCREEN;
+		atoms[atom_count++] = x11stub.atoms._NET_WM_STATE_FULLSCREEN;
 
 	if (atom_count == 0)
 	{
-		x11XDeleteProperty(stub->display, stub->window, stub->atoms._NET_WM_STATE);
+		X11XDeleteProperty(x11stub.display, x11stub.window, x11stub.atoms._NET_WM_STATE);
 		return;
 	}
-	x11XChangeProperty(stub->display, stub->window, stub->atoms._NET_WM_STATE,
+	X11XChangeProperty(x11stub.display, x11stub.window, x11stub.atoms._NET_WM_STATE,
 		XA_ATOM, 32, PropModeReplace, (byte*)atoms, atom_count);
 }
+
+// 비주얼 정보
+static bool x11_get_visual_info(int screen, XVisualInfo* info)
+{
+	const int depth = DefaultDepth(x11stub.display, screen);
+	if (X11XMatchVisualInfo(x11stub.display, x11stub.screen, depth, DirectColor, info) == 0 &&
+		X11XMatchVisualInfo(x11stub.display, x11stub.screen, depth, TrueColor, info) == 0 &&
+		X11XMatchVisualInfo(x11stub.display, x11stub.screen, depth, PseudoColor, info) == 0 &&
+		X11XMatchVisualInfo(x11stub.display, x11stub.screen, depth, StaticColor, info) == 0)
+		return false;
+	return true;
+}
+
+// XRandR 디스플레이 추가
+static bool x11_add_xrandr_display(int screen, RROutput output, XRRScreenResources* res, bool push_event)
+{
+	Atom EDID = X11XInternAtom(x11stub.display, "EDID", False);
+	XVisualInfo vinfo;
+
+	if (x11_get_visual_info(screen, &vinfo) == false ||
+		vinfo.class != DirectColor || vinfo.class != TrueColor)
+		return false;
+
+	XRROutputInfo* outinfo = X11XRRGetOutputInfo(x11stub.display, res, output);
+	if (outinfo == NULL || outinfo->crtc == 0 || outinfo->connection == RR_Disconnected)
+	{
+		X11XRRFreeOutputInfo(outinfo);
+		return false;
+	}
+
+	char name[128];
+	qn_strncpy(name, QN_COUNTOF(name), outinfo->name, QN_COUNTOF(name));
+	unsigned long mmwidth = outinfo->mm_width, mmheight = outinfo->mm_height;
+	RRCrtc ocrtc = outinfo->crtc;
+	X11XRRFreeOutputInfo(outinfo);
+
+	XRRCrtcInfo* crtc = X11XRRGetCrtcInfo(x11stub.display, res, ocrtc);
+	if (crtc == NULL)
+		return false;
+
+	RRMode rrmode = crtc->mode;
+	X11Monitor* mon = qn_alloc_1(X11Monitor);
+	mon->base.width = crtc->width;
+	mon->base.height = crtc->height;
+	int dx = crtc->x, dy = crtc->y;
+	X11XRRFreeCrtcInfo(crtc);
+
+	qn_strncpy(mon->base.name, QN_COUNTOF(mon->base.name), name, QN_COUNTOF(mon->base.name));
+	mon->base.no = screen;
+	mon->base.x = dx;
+	mon->base.y = dy;
+	mon->base.depth = vinfo.depth;
+	mon->base.dpi = stub_calc_diagonal_dpi(mon->base.width, mon->base.height, (float)mmwidth / 25.4f, (float)mmheight / 25.4f);
+	mon->base.hdpi = mmwidth ? ((float)mon->base.width * 25.4f / mmwidth) : 0.0f;
+	mon->base.vdpi = mmheight ? ((float)mon->base.height * 25.4 / mmheight) : 0.0f;
+	mon->visual = vinfo.visual;
+	mon->xrand_mode = rrmode;
+	mon->xrand_output = output;
+	qn_pctnr_add(&x11stub.base.mon, mon);
+
+	if (qg_stub_instance != NULL && push_event)
+	{ /* 여기서 이벤트 */
+	}
+
+	return true;
+}
+
+// XRandR로 검사
+static bool x11_check_xrandr_modes(void)
+{
+	int xrandr_error;
+	if (X11XRRQueryExtension(x11stub.display, &x11stub.xrandr_event, &xrandr_error) == False)
+		return false;
+
+	RROutput primary = X11XRRGetOutputPrimary(x11stub.display, x11stub.root);
+	const int screen_count = ScreenCount(x11stub.display);
+	const int default_screen = DefaultScreen(x11stub.display);
+	for (int i = 1; i >= 0; i--)
+	{
+		for (int s = 0; s < screen_count; s++)
+		{
+			if (i && (s != default_screen))
+				continue;
+
+			XRRScreenResources* res = X11XRRGetScreenResourcesCurrent(x11stub.display, x11stub.root);
+			if (res == NULL || res->noutput == 0)
+			{
+				if (res != NULL)
+					X11XRRFreeScreenResources(res);
+				res = X11XRRGetScreenResources(x11stub.display, x11stub.root);
+				if (res == NULL)
+					continue;
+			}
+
+			for (int o = 0; o < res->noutput; o++)
+			{
+				if ((i && res->outputs[o] != primary) ||
+					(!i && s == default_screen && res->outputs[i] == primary))
+					continue;
+				if (x11_add_xrandr_display(s, res->outputs[o], res, false))
+					break;
+			}
+
+			X11XRRFreeScreenResources(res);
+			X11XRRSelectInput(x11stub.display, RootWindow(x11stub.display, s), RROutputChangeNotifyMask);
+		}
+	}
+
+	return qn_pctnr_count(&x11stub.base.mon) > 0;
+}
+
+// Xlib로 검사
+static bool x11_check_xlib_modes(void)
+{
+	const int screen_count = ScreenCount(x11stub.display);
+	const int default_screen = DefaultScreen(x11stub.display);
+	const Screen* screen = ScreenOfDisplay(x11stub.display, x11stub.screen);
+
+	XVisualInfo vinfo;
+	if (x11_get_visual_info(default_screen, &vinfo) == false)
+		return false;
+
+	X11Monitor* mon = qn_alloc_1(X11Monitor);
+	mon->base.width = WidthOfScreen(screen);
+	mon->base.height = HeightOfScreen(screen);
+	int mmwidth = WidthMMOfScreen(screen);
+	int mmheight = HeightMMOfScreen(screen);
+
+	qn_strcpy(mon->base.name, QN_COUNTOF(mon->base.name), "Generic X11 Display");
+	mon->base.no = default_screen;
+	mon->base.x = 0;
+	mon->base.y = 0;
+	mon->base.depth = vinfo.depth;
+	mon->base.dpi = stub_calc_diagonal_dpi(mon->base.width, mon->base.height, (float)mmwidth / 25.4f, (float)mmheight / 25.4f);
+	mon->base.hdpi = mmwidth ? ((float)mon->base.width * 25.4f / mmwidth) : 0.0f;
+	mon->base.vdpi = mmheight ? ((float)mon->base.height * 25.4 / mmheight) : 0.0f;
+	mon->visual = vinfo.visual;
+	mon->xrand_mode = (XID)-1;
+	mon->xrand_output = (XID)-1;
+
+	char* xft = X11XGetDefault(x11stub.display, "Xft", "dpi");
+	if (xft != NULL)
+	{
+		uint dpi = qn_strtoi(xft, 10);
+		if (dpi > 0)
+		{
+			mon->base.hdpi = (float)dpi;
+			mon->base.vdpi = (float)dpi;
+		}
+	}
+
+	qn_pctnr_add(&x11stub.base.mon, mon);
+
+	if (qg_stub_instance != NULL)
+	{ /* 여기서 이벤트 */
+	}
+
+	return true;
+}
+
+// 모드 검사
+static bool x11_check_modes(void)
+{
+	int major, minor;
+	if (X11XRRQueryVersion != NULL && XRRQueryVersion(x11stub.display, &major, &minor) &&
+		(major >= 2 || (major == 1 && minor >= 3)) && x11_check_xrandr_modes())
+		return true;
+	return x11_check_xlib_modes();
+}
+
 
 #endif

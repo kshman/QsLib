@@ -104,6 +104,9 @@
 #define QN_STRUCT_ALIGN(x)	__attribute__((aligned(x)))
 #define QN_STMT_BEGIN		do
 #define QN_STMT_END			while(0)
+#define QN_DIAG_PUSH		_QN_PRAGMA(GCC diagnostic push)
+#define QN_DIAG_POP			_QN_PRAGMA(GCC diagnostic pop)
+#define QN_DIAG_SIGN		_QN_PRAGMA(GCC diagnostic ignored "-Wsign-conversion")
 #endif
 
 #ifdef __cplusplus
@@ -136,7 +139,7 @@ QN_EXTC_BEGIN
 #define _QN_GET_MAC_3(_1,_2,_3,N,...)	N
 
 // function
-#define QN_TODO(todo)		_QN_PRAGMA(message("TODO: " #todo))
+#define QN_TODO(todo)		_QN_PRAGMA(message("TODO: " #todo " (" QN_FNAME ")"))
 #define QN_DUMMY(dummy)		(void)dummy;
 #define QN_STRING(x)		_QN_STRING(x)					/// @brief 문자열로 정의
 #define QN_UNICODE(x)		_QN_UNICODE(x)					/// @brief 유니코드로 정의
@@ -156,8 +159,13 @@ QN_EXTC_BEGIN
 #define QN_BIT(b)			(1<<(b))						/// @brief 비트 만들기
 #define QN_TBIT(v,bit)		(((v)&(1<<(bit)))!=0)			/// @brief 비트가 있나 비교
 #define QN_TMASK(v,m)		(((v)&(m))!=0)					/// @brief 마스크가 있나 비교
+#ifdef _MSC_VER
 #define QN_SBIT(pv,b,set)	((set)?((*(pv))|=(1<<(b))):((*(pv))&=~(1<<(b))))						/// @brief 비트 설정
 #define QN_SMASK(pv,m,set)	((set)?((*(pv))|=(m)):((*(pv))&=~(m)))									/// @brief 마스크 설정
+#else
+#define QN_SBIT(pv,b,set)	QN_DIAG_PUSH QN_DIAG_SIGN ((set)?((*(pv))|=(1<<(b))):((*(pv))&=~(1<<(b)))) QN_DIAG_POP
+#define QN_SMASK(pv,m,set)	QN_DIAG_PUSH QN_DIAG_SIGN ((set)?((*(pv))|=(m)):((*(pv))&=~(m))) QN_DIAG_POP
+#endif
 
 // constant
 #define QN_USEC_PER_SEC		1000000							/// @brief 초당 마이크로초 

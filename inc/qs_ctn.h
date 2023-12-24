@@ -420,19 +420,19 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/// @brief any_t 배열
 
 #define qn_pctnr_nth_safe(p,n)			qn_ctnr_nth_safe(p,n)
 #define qn_pctnr_nth(p,n)				qn_ctnr_nth(p,n)
-#define qn_pctnr_count(p,n)				qn_ctnr_count(p,n)
+#define qn_pctnr_count(p)				qn_ctnr_count(p)
 #define qn_pctnr_data(p)				qn_ctnr_data(p)
 
-#define qn_pctnr_init(p, count)			qn_ctnr_init(qnPtrCtnr, (qnPtrCtnr*)(p), count)
-#define qn_pctnr_initZero(p, count)		qn_ctnr_init_zero(qnPtrCtnr, (qnPtrCtnr*)(p), count)
-#define qn_pctnr_disp(p)				qn_ctnr_disp(qnPtrCtnr, (qnPtrCtnr*)(p))
-#define qn_pctnr_set_count(p, count)	qn_ctnr_set_count(qnPtrCtnr, (qnPtrCtnr*)(p), count)
-#define qn_pctnr_add_count(p, count)	qn_ctnr_add_count(qnPtrCtnr, (qnPtrCtnr*)(p), count)
-#define qn_pctnr_add(p, item)			qn_ctnr_add(qnPtrCtnr, (qnPtrCtnr*)(p), (void*)(item))
-#define qn_pctnr_zero(p)				qn_ctnr_zero(qnPtrCtnr, (qnPtrCtnr*)(p))
+#define qn_pctnr_init(p, count)			qn_ctnr_init(QnPtrCtnr, (QnPtrCtnr*)(p), count)
+#define qn_pctnr_init_zero(p, count)	qn_ctnr_init_zero(QnPtrCtnr, (QnPtrCtnr*)(p), count)
+#define qn_pctnr_disp(p)				qn_ctnr_disp(QnPtrCtnr, (QnPtrCtnr*)(p))
+#define qn_pctnr_set_count(p, count)	qn_ctnr_set_count(QnPtrCtnr, (QnPtrCtnr*)(p), count)
+#define qn_pctnr_add_count(p, count)	qn_ctnr_add_count(QnPtrCtnr, (QnPtrCtnr*)(p), count)
+#define qn_pctnr_add(p, item)			qn_ctnr_add(QnPtrCtnr, (QnPtrCtnr*)(p), (void*)(item))
+#define qn_pctnr_zero(p)				qn_ctnr_zero(QnPtrCtnr, (QnPtrCtnr*)(p))
 #define qn_pctnr_foreach(p, func, userdata)\
-										qn_ctnr_foreach(qnPtrCtnr, (qnPtrCtnr*)(p), func, userdata)
-#define qn_pctnr_loopeach(p, func)		qn_ctnr_loopeach(qnPtrCtnr, (qnPtrCtnr*)(p), func)
+										qn_ctnr_foreach(QnPtrCtnr, (QnPtrCtnr*)(p), func, userdata)
+#define qn_pctnr_loopeach(p, func)		qn_ctnr_loopeach(QnPtrCtnr, (QnPtrCtnr*)(p), func)
 
 
 	//////////////////////////////////////////////////////////////////////////
