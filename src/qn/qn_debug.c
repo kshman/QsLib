@@ -7,26 +7,34 @@
 #define debug_break()			raise(SIGTRAP)
 #endif
 
+#ifndef MAX_DEBUG_LENGTH
+#define MAX_DEBUG_LENGTH	1024
+#endif
+static_assert(MAX_DEBUG_LENGTH < 4096, "MAX_DEBUG_LENGTH must be less than 4096");
+
 //
 static struct DebugImpl
 {
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 	HANDLE			handle;
 #else
 	FILE*			fp;
 #endif
 
-	int				level;
 	char			tag[32];
+	char			out_buf[MAX_DEBUG_LENGTH];
+	int				out_pos;
 
 	bool			debugger;
 	bool			redirect;
-} debug_impl = { NULL, 3, "QS", };
+	bool			__dummy1;
+	bool			__dummy2;
+} debug_impl = { NULL, "QS", };
 
 //
 void qn_debug_up(void)
 {
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 	debug_impl.handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	debug_impl.debugger = IsDebuggerPresent();
 #else
@@ -37,7 +45,7 @@ void qn_debug_up(void)
 //
 void qn_debug_down(void)
 {
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 	if (debug_impl.redirect && debug_impl.handle != NULL)
 		CloseHandle(debug_impl.handle);
 #else
@@ -49,53 +57,50 @@ void qn_debug_down(void)
 //
 static int qn_debug_out_str(const char* restrict s)
 {
-#if _QN_WINDOWS_
-	DWORD len = (DWORD)strlen(s);
-	if (debug_impl.handle != NULL)
-	{
-		DWORD wtn;
-		if (debug_impl.redirect || WriteConsoleA(debug_impl.handle, s, len, &wtn, NULL) == 0)
-			WriteFile(debug_impl.handle, s, len, &wtn, NULL);
-	}
-	if (debug_impl.debugger)
-		OutputDebugStringA(s);
-#else
-	size_t len = strlen(s);
-	if (debug_impl.fp != NULL)
-		fputs(s, debug_impl.fp);
-#if _QN_ANDROID_
-	if (debug_impl.debugger)
-		__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, s);
-#endif
-#endif
-	return (int)len;
+	int len = (int)strlen(s);
+	if (len + debug_impl.out_pos > MAX_DEBUG_LENGTH - 1)
+		len = MAX_DEBUG_LENGTH - debug_impl.out_pos - 1;
+	if (len <= 0)
+		return 0;
+	memcpy(debug_impl.out_buf + debug_impl.out_pos, s, len);
+	debug_impl.out_pos += len;
+	return len;
 }
 
 //
 static int qn_debug_out_ch(int ch)
 {
-#if _QN_WINDOWS_
+	if (1 + debug_impl.out_pos > MAX_DEBUG_LENGTH - 1)
+		return 0;
+	debug_impl.out_buf[debug_impl.out_pos++] = (char)ch;
+	return 1;
+}
+
+//
+static void qn_debug_out_flush(void)
+{
+	qn_ret_if_fail(debug_impl.out_pos > 0);
+	debug_impl.out_buf[debug_impl.out_pos] = '\0';
+#ifdef _QN_WINDOWS_
 	if (debug_impl.handle != NULL)
 	{
 		DWORD wtn;
-		if (debug_impl.redirect || WriteConsoleA(debug_impl.handle, &ch, 1, &wtn, NULL) == 0)
-			WriteFile(debug_impl.handle, &ch, 1, &wtn, NULL);
+		if (debug_impl.redirect || WriteConsoleA(debug_impl.handle, debug_impl.out_buf, debug_impl.out_pos, &wtn, NULL) == 0)
+			WriteFile(debug_impl.handle, debug_impl.out_buf, debug_impl.out_pos, &wtn, NULL);
 	}
 	if (debug_impl.debugger)
-	{
-		const char sz[2] = { (char)ch, '\0' };
-		OutputDebugStringA(sz);
-	}
+		OutputDebugStringA(debug_impl.out_buf);
 #else
 	if (debug_impl.fp != NULL)
-		fputc(ch, debug_impl.fp);
-#if _QN_ANDROID_
-	if (debug_impl.debugger)
-		__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, "%c", ch);
+		fputs(debug_impl.out_buf, debug_impl.fp);
+#ifdef __EMSCRIPTEN__
+	emscripten_console_log(debug_impl.out_buf);
+#endif
+#ifdef _QN_ANDROID_
+	__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, debug_impl.out_buf);
 #endif
 #endif
-
-	return 1;
+	debug_impl.out_pos = 0;
 }
 
 //
@@ -108,6 +113,7 @@ static int qn_debug_out_trace(const char* restrict head, const char* restrict te
 	len += qn_debug_out_str(head);
 	len += qn_debug_out_str("] ");
 	len += qn_debug_out_str(text);
+	qn_debug_out_flush();
 	return len;
 }
 
@@ -126,14 +132,14 @@ int qn_debug_assert(const char* restrict expr, const char* restrict mesg, const 
 	qn_itoa(sz, QN_COUNTOF(sz), line, 10);
 	qn_debug_out_str(sz);
 	qn_debug_out_ch('\n');
+	qn_debug_out_flush();
 
 #ifndef __EMSCRIPTEN__
 	if (debug_impl.debugger)
 		debug_break();
 #endif
-
 	return 0;
-}
+	}
 
 //
 noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg)
@@ -146,6 +152,7 @@ noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg
 	if (mesg != NULL)
 		qn_debug_out_str(mesg);
 	qn_debug_out_ch('\n');
+	qn_debug_out_flush();
 
 #ifndef __EMSCRIPTEN__
 	if (debug_impl.debugger)
@@ -159,12 +166,12 @@ int qn_debug_outputs(bool breakpoint, const char* restrict head, const char* res
 {
 	const int len = qn_debug_out_trace(head, mesg);
 	qn_debug_out_ch('\n');
+	qn_debug_out_flush();
 
 #ifndef __EMSCRIPTEN__
 	if (breakpoint && debug_impl.debugger)
 		debug_break();
 #endif
-
 	return len;
 }
 
@@ -181,12 +188,12 @@ int qn_debug_outputf(bool breakpoint, const char* restrict head, const char* res
 	va_end(va);
 	qn_debug_out_trace(head, buf);
 	qn_debug_out_ch('\n');
+	qn_debug_out_flush();
 
 #ifndef __EMSCRIPTEN__
 	if (breakpoint && debug_impl.debugger)
 		debug_break();
 #endif
-
 	return size;
 }
 
@@ -199,7 +206,6 @@ int qn_debug_output_error(bool breakpoint, const char* head)
 
 	if (breakpoint && debug_impl.debugger)
 		debug_break();
-
 	return len;
 }
 
@@ -208,6 +214,7 @@ int qn_outputs(const char* mesg)
 {
 	const int len = qn_debug_out_str(mesg);
 	qn_debug_out_ch('\n');
+	qn_debug_out_flush();
 	return len;
 }
 
@@ -224,5 +231,6 @@ int qn_outputf(const char* fmt, ...)
 	va_end(va);
 	qn_debug_out_str(buf);
 	qn_debug_out_ch('\n');
+	qn_debug_out_flush();
 	return size;
 }

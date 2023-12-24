@@ -11,3 +11,12 @@
 #		endif
 #	endif
 #endif
+
+#ifdef __EMSCRIPTEN__
+#ifndef NO_LOCK
+#define NO_LOCK
+#endif
+#ifndef NO_THREAD
+#define NO_THREAD
+#endif
+#endif

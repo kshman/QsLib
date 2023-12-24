@@ -123,9 +123,6 @@
     <ClInclude Include="qg\qg_stub.h">
       <Filter>헤더 파일\qg\stub</Filter>
     </ClInclude>
-    <ClInclude Include="qg\qgx11_func.h">
-      <Filter>헤더 파일\qg\stub</Filter>
-    </ClInclude>
     <ClInclude Include="qg\qgwin_stub.h">
       <Filter>헤더 파일\qg\stub</Filter>
     </ClInclude>
@@ -271,9 +268,6 @@
     </ClCompile>
     <ClCompile Include="qg\glad\glad.c">
       <Filter>소스 파일\qg\glad</Filter>
-    </ClCompile>
-    <ClCompile Include="qg\qgx11_stub.c">
-      <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

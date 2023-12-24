@@ -124,11 +124,6 @@ QN_EXTC_BEGIN
 //////////////////////////////////////////////////////////////////////////
 // macro
 
-// compound & statement
-#ifdef _MSC_VER
-#else
-#endif
-
 // function support
 #define _QN_PRAGMA(x)		_Pragma(#x)
 #define _QN_STRING(x)		#x
@@ -168,6 +163,9 @@ QN_EXTC_BEGIN
 #endif
 
 // constant
+#define QN_VERSION_MAJOR	3
+#define QN_VERSION_MINER	5
+
 #define QN_USEC_PER_SEC		1000000							/// @brief 초당 마이크로초 
 #define QN_NSEC_PER_SEC		1000000000						/// @brief 초당 나노초 
 
@@ -305,7 +303,11 @@ typedef struct funcparam_t
 
 /// @brief 런타임 초기화
 /// @param[out] v 버전 값. NULL 가능
-QSAPI void qn_runtime(int /*NULLABLE*/v[2]);
+QSAPI void qn_runtime(void);
+
+/// @brief 버전 문자열을 얻는다
+/// @return 버전 문자열 "QG VERSION major.minor" 형식
+QSAPI const char* qn_version(void);
 
 /// @brief 프로그램 종료할 때 실행할 함수 등록
 /// @param[in] func 실핼할 함수
@@ -1972,10 +1974,15 @@ QSAPI uint qn_spin_enter(QnSpinLock* lock);
 /// @param lock 스핀락
 QSAPI void qn_spin_leave(QnSpinLock* lock);
 
+#ifndef NO_LOCK
 /// @brief 스핀락 들어간다
 #define QN_LOCK(sp)			qn_spin_enter(&sp)
 /// @brief 스핀락 나온다
 #define QN_UNLOCK(sp)		qn_spin_leave(&sp);
+#else
+#define QN_LOCK(sp)
+#define QN_UNLOCK(sp)
+#endif
 
 
 /// @brief 스레드
