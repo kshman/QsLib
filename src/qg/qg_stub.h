@@ -3,20 +3,35 @@
 #include <qs_ctn.h>
 
 #ifdef USE_SDL2
-//////////////////////////////////////////////////////////////////////////
-// SDL
-
 // SDLK를 QIK로
 extern QikKey sdlk_to_qik(uint32_t sdlk);
 //
 extern QikMask kmod_to_qikm(int modifier);
 #endif
 
+#ifndef MAX_POLL_MESGS
+/// @brief Poll 당 메시지 처리 개수
+#define MAX_POLL_MESGS	3
+#endif
 
-//////////////////////////////////////////////////////////////////////////
-// 스터브
+// 모니터 타입
+typedef struct StubMonitor StubMonitor;
+struct StubMonitor
+{
+	char				name[64];
+	int					no;
+	uint				x;
+	uint				y;
+	uint				width;
+	uint				height;
+	uint				depth;
+	float				dpi;
+	float				hdpi;
+	float				vdpi;
+};
+QN_DECL_CTNR(StubMonitorCtnr, StubMonitor*);
 
-// 기본 스터브 형식
+// 스터브 기본 타입
 typedef struct StubBase StubBase;
 struct StubBase
 {
@@ -25,18 +40,20 @@ struct StubBase
 
 	QgFlag				flags;
 	QgStubStat			stats;								// 시스템 스터브 관리
-	uint				delay;
+	uint				window_stats;
+	uint				display;
 
+	uint				delay;
 	float				fps;								/** @brief 프레임 당 시간 */
 	float				reference;							/** @brief 프레임 시간 */
 	float				advance;							/** @brief 프레임 시간, 포즈 상태일 때는 0 */
 	double				run;								/** @brief 실행 시간 */
 	double				active;								/** @brief 활성화된 시간 */
 
-	QmRect				window_bound;
-	QmRect				bound;								// 시스템 스터브 관리
-	QmSize				size;								// 시스템 스터브 관리
+	QmRect				window_bound;						/// @brief 실제 윈도우의 위치와 크기 정보
+	QmSize				client_size;						// 시스템 스터브 관리, 그리기 영역 크기 (창 크기가 아님)
 
+	StubMonitorCtnr		mon;
 	QgUimKey			key;
 	QgUimMouse			mouse;
 };
@@ -45,7 +62,7 @@ struct StubBase
 extern StubBase* qg_stub_instance;
 
 // 시스템 스터브를 연다
-extern StubBase* stub_system_open(const char* title, int width, int height, int flags);
+extern StubBase* stub_system_open(const char* title, int display, int width, int height, QgFlag flags);
 // 시스템 윈도우를 만든다
 extern bool stub_system_create_window(void);
 // 시스템 스터브를 정리한다
@@ -66,33 +83,35 @@ extern void stub_system_hold_mouse(bool hold);
 extern void stub_system_calc_layout(void);
 
 // 내부적으로 마우스 눌림을 연산한다
-extern bool stub_internal_mouse_clicks(QimButton button, QimTrack track);
+extern bool stub_track_mouse_click(QimButton button, QimTrack track);
 // 레이아웃 이벤트 추가
-extern bool stub_internal_on_event_layout(bool enter);
+extern bool stub_event_on_layout(bool enter);
 // 윈도우 이벤트 추가
-extern bool stub_internal_on_window_event(QgWindowEventType type, int param1, int param2);
+extern bool stub_event_on_window_event(QgWindowEventType type, int param1, int param2);
 // 텍스트 이벤트 추가
-extern bool stub_internal_on_text(const char* text);
+extern bool stub_event_on_text(const char* text);
 // 키보드 이벤트 추가
-extern bool stub_internal_on_keyboard(QikKey key, bool down);
+extern bool stub_event_on_keyboard(QikKey key, bool down);
 // 키보드 리셋 이벤츠 추가
-extern bool stub_internal_on_reset_keys(void);
+extern bool stub_event_on_reset_keys(void);
 // 마우스 이동 이벤트 추가
-extern bool stub_internal_on_mouse_move(void);
+extern bool stub_event_on_mouse_move(void);
 // 마우스 버튼 이벤트 추가
-extern bool stub_internal_on_mouse_button(QimButton button, bool down);
+extern bool stub_event_on_mouse_button(QimButton button, bool down);
 // 마우스 휠 이벤트 추가
-extern bool stub_internal_on_mouse_wheel(float x, float y, bool direction);
+extern bool stub_event_on_mouse_wheel(float x, float y, bool direction);
 // 액티브 이벤트 추가
-extern bool stub_internal_on_active(bool active, double delta);
+extern bool stub_event_on_active(bool active, double delta);
 // 드랍 이벤트 추가
-extern bool stub_internal_on_drop(char* data, int len, bool finish);
+extern bool stub_event_on_drop(char* data, int len, bool finish);
 
 // 내부적으로 토글을 설정한다 (완전 언세이프)
-extern void stub_internal_toggle_key(QikMask keymask, bool on);
+extern void stub_toggle_keys(QikMask keymask, bool on);
+
+// (도움함수) 대각선 DPI를 구한다
+extern float stub_calc_diagonal_dpi(uint width, uint height, float horizontal, float vertical);
 
 
-//////////////////////////////////////////////////////////////////////////
 // 렌더 디바이스
 extern QgRdh* qg_rdh_instance;
 

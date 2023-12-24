@@ -7,14 +7,6 @@
 //
 #pragma once
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4127)		// L4, conditional expression is constant
-#pragma warning(disable:4200)		// L4, nonstandard extension used : zero-sized array in struct/union
-#pragma warning(disable:4514)		// L4, 'function' : unreferenced inline function has been removed
-#pragma warning(disable:4710)		// L4, 'function' : function not inlined
-#endif
-
 QN_EXTC_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
@@ -428,19 +420,19 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/// @brief any_t 배열
 
 #define qn_pctnr_nth_safe(p,n)			qn_ctnr_nth_safe(p,n)
 #define qn_pctnr_nth(p,n)				qn_ctnr_nth(p,n)
-#define qn_pctnr_count(p,n)				qn_ctnr_count(p,n)
+#define qn_pctnr_count(p)				qn_ctnr_count(p)
 #define qn_pctnr_data(p)				qn_ctnr_data(p)
 
-#define qn_pctnr_init(p, count)			qn_ctnr_init(qnPtrCtnr, (qnPtrCtnr*)(p), count)
-#define qn_pctnr_initZero(p, count)		qn_ctnr_init_zero(qnPtrCtnr, (qnPtrCtnr*)(p), count)
-#define qn_pctnr_disp(p)				qn_ctnr_disp(qnPtrCtnr, (qnPtrCtnr*)(p))
-#define qn_pctnr_set_count(p, count)	qn_ctnr_set_count(qnPtrCtnr, (qnPtrCtnr*)(p), count)
-#define qn_pctnr_add_count(p, count)	qn_ctnr_add_count(qnPtrCtnr, (qnPtrCtnr*)(p), count)
-#define qn_pctnr_add(p, item)			qn_ctnr_add(qnPtrCtnr, (qnPtrCtnr*)(p), (void*)(item))
-#define qn_pctnr_zero(p)				qn_ctnr_zero(qnPtrCtnr, (qnPtrCtnr*)(p))
+#define qn_pctnr_init(p, count)			qn_ctnr_init(QnPtrCtnr, (QnPtrCtnr*)(p), count)
+#define qn_pctnr_init_zero(p, count)	qn_ctnr_init_zero(QnPtrCtnr, (QnPtrCtnr*)(p), count)
+#define qn_pctnr_disp(p)				qn_ctnr_disp(QnPtrCtnr, (QnPtrCtnr*)(p))
+#define qn_pctnr_set_count(p, count)	qn_ctnr_set_count(QnPtrCtnr, (QnPtrCtnr*)(p), count)
+#define qn_pctnr_add_count(p, count)	qn_ctnr_add_count(QnPtrCtnr, (QnPtrCtnr*)(p), count)
+#define qn_pctnr_add(p, item)			qn_ctnr_add(QnPtrCtnr, (QnPtrCtnr*)(p), (void*)(item))
+#define qn_pctnr_zero(p)				qn_ctnr_zero(QnPtrCtnr, (QnPtrCtnr*)(p))
 #define qn_pctnr_foreach(p, func, userdata)\
-										qn_ctnr_foreach(qnPtrCtnr, (qnPtrCtnr*)(p), func, userdata)
-#define qn_pctnr_loopeach(p, func)		qn_ctnr_loopeach(qnPtrCtnr, (qnPtrCtnr*)(p), func)
+										qn_ctnr_foreach(QnPtrCtnr, (QnPtrCtnr*)(p), func, userdata)
+#define qn_pctnr_loopeach(p, func)		qn_ctnr_loopeach(QnPtrCtnr, (QnPtrCtnr*)(p), func)
 
 
 	//////////////////////////////////////////////////////////////////////////
@@ -2421,9 +2413,16 @@ QN_INLINE void qn_inl_mukum_resize(QnInlineMukum* p)
 /// @param name 고정 문자열 이름
 /// @param size 고정 문자열 최대 길이
 ///
+#ifdef _MSC_VER
 #define QN_DECL_BSTR(name,size)\
-	typedef struct _qnBstr##name qnBstr##name;\
-	struct _qnBstr##name { size_t len; char data[size]; };
+	typedef struct QnBstr##name QnBstr##name;\
+	_Pragma("warning(suppress:4200)")\
+	struct QnBstr##name { size_t len; char data[size]; };
+#else
+#define QN_DECL_BSTR(name,size)\
+	typedef struct QnBstr##name QnBstr##name;\
+	struct QnBstr##name { size_t len; char data[size]; };
+#endif
 QN_DECL_BSTR(, )
 QN_DECL_BSTR(64, 64)
 QN_DECL_BSTR(128, 128)
@@ -2539,8 +2538,8 @@ QN_DECL_BSTR(4k, 4096)
 	}QN_STMT_END
 
 #define qn_bstr_format(p, fmt, ...)\
-	qn_inl_bstr_format(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
-	QN_INLINE void qn_inl_bstr_format(qnBstr* p, size_t size, const char* fmt, ...)
+	qn_inl_bstr_format(((QnBstr*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
+	QN_INLINE void qn_inl_bstr_format(QnBstr* p, size_t size, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -2554,8 +2553,8 @@ QN_DECL_BSTR(4k, 4096)
 	}QN_STMT_END
 
 #define qn_bstr_append_format(p, fmt, ...)\
-	qn_inl_bstr_append_format(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
-QN_INLINE void qn_inl_bstr_append_format(qnBstr* p, size_t size, const char* fmt, ...)
+	qn_inl_bstr_append_format(((QnBstr*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
+QN_INLINE void qn_inl_bstr_append_format(QnBstr* p, size_t size, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -2564,10 +2563,10 @@ QN_INLINE void qn_inl_bstr_append_format(qnBstr* p, size_t size, const char* fmt
 }
 
 #define qn_bstr_upper(p)\
-	qn_strupr(((qnBstr*)(p))->data, ((qnBstr*)(p))->len)
+	qn_strupr(((QnBstr*)(p))->data, ((QnBstr*)(p))->len)
 
 #define qn_bstr_lower(p)\
-	qn_strlwr(((qnBstr*)(p))->data, ((qnBstr*)(p))->len)
+	qn_strlwr(((QnBstr*)(p))->data, ((QnBstr*)(p))->len)
 
 #define qn_bstr_trim(p)\
 	QN_STMT_BEGIN{\
@@ -2594,19 +2593,19 @@ QN_INLINE void qn_inl_bstr_append_format(qnBstr* p, size_t size, const char* fmt
 
 QN_INLINE int qn_bstr_has_char(const void* p, const char* chars)
 {
-	const char* s = qn_strbrk(((const qnBstr*)(p))->data, chars);
-	return (s) ? (int)(s - ((const qnBstr*)(p))->data) : -1;
+	const char* s = qn_strbrk(((const QnBstr*)(p))->data, chars);
+	return (s) ? (int)(s - ((const QnBstr*)(p))->data) : -1;
 }
 
 QN_INLINE int qn_bstr_find_char(const void* p, size_t at, char ch)
 {
-	const char* s = strchr(((const qnBstr*)(p))->data + at, ch);
-	return (s) ? (int)(s - ((const qnBstr*)(p))->data) : -1;
+	const char* s = strchr(((const QnBstr*)(p))->data + at, ch);
+	return (s) ? (int)(s - ((const QnBstr*)(p))->data) : -1;
 }
 
 #define qn_bstr_sub_bstr(p, s, pos, len)\
-	qn_inl_bstr_sub_bstr(((qnBstr*)(p)), QN_COUNTOF((p)->data)-1, (const qnBstr*)(s), pos, len)
-QN_INLINE bool qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, size_t pos, int len)
+	qn_inl_bstr_sub_bstr(((QnBstr*)(p)), QN_COUNTOF((p)->data)-1, (const QnBstr*)(s), pos, len)
+QN_INLINE bool qn_inl_bstr_sub_bstr(QnBstr* p, size_t psize, const QnBstr* s, size_t pos, int len)
 {
 	qn_val_if_fail(s->len >= pos, false);
 
@@ -2628,9 +2627,16 @@ QN_INLINE bool qn_inl_bstr_sub_bstr(qnBstr* p, size_t psize, const qnBstr* s, si
 /// @param name 고정 문자열 이름
 /// @param size 고정 문자열 최대 길이
 ///
+#ifdef _MSC_VER
 #define QN_DECL_BWCS(name,size)\
-	typedef struct _qnBwcs##name qnBwcs##name;\
-	struct _qnBwcs##name { size_t len; wchar data[size]; };
+	typedef struct QnBwcs##name QnBwcs##name;\
+	_Pragma("warning(suppress:4200)")\
+	struct QnBwcs##name { size_t len; wchar data[size]; };
+#else
+#define QN_DECL_BWCS(name,size)\
+	typedef struct QnBwcs##name QnBwcs##name;\
+	struct QnBwcs##name { size_t len; wchar data[size]; };
+#endif
 QN_DECL_BWCS(, )
 QN_DECL_BWCS(64, 64)
 QN_DECL_BWCS(128, 128)
@@ -2746,8 +2752,8 @@ QN_DECL_BWCS(4k, 4096)
 	}QN_STMT_END
 
 #define qn_bwcs_format(p, fmt, ...)\
-	qn_inl_bwcs_format(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
-	QN_INLINE void qn_inl_bwcs_format(qnBwcs* p, size_t size, const wchar_t* fmt, ...)
+	qn_inl_bwcs_format(((QnBwcs*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
+	QN_INLINE void qn_inl_bwcs_format(QnBwcs* p, size_t size, const wchar_t* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -2761,8 +2767,8 @@ QN_DECL_BWCS(4k, 4096)
 	}QN_STMT_END
 
 #define qn_bwcs_append_format(p, fmt, ...)\
-	qn_inl_bwcs_append_format(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
-QN_INLINE void qn_inl_bwcs_append_format(qnBwcs* p, size_t size, const wchar_t* fmt, ...)
+	qn_inl_bwcs_append_format(((QnBwcs*)(p)), QN_COUNTOF((p)->data)-1, fmt, __VA_ARGS__)
+QN_INLINE void qn_inl_bwcs_append_format(QnBwcs* p, size_t size, const wchar_t* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -2771,10 +2777,10 @@ QN_INLINE void qn_inl_bwcs_append_format(qnBwcs* p, size_t size, const wchar_t* 
 }
 
 #define qn_bwcs_upper(p)\
-	_wcsupr(((qnBwcs*)(p))->data);
+	_wcsupr(((QnBwcs*)(p))->data);
 
 #define qn_bwcs_lower(p)\
-	_wcslwr(((qnBwcs*)(p))->data);
+	_wcslwr(((QnBwcs*)(p))->data);
 
 #define qn_bwcs_trim(p)\
 	QN_STMT_BEGIN{\
@@ -2801,19 +2807,19 @@ QN_INLINE void qn_inl_bwcs_append_format(qnBwcs* p, size_t size, const wchar_t* 
 
 QN_INLINE int qn_bwcs_has_char(const void* p, const wchar_t* chars)
 {
-	const wchar_t* s = qn_wcsbrk(((const qnBwcs*)(p))->data, chars);
-	return (s) ? (int)(s - ((const qnBwcs*)(p))->data) : -1;
+	const wchar_t* s = qn_wcsbrk(((const QnBwcs*)(p))->data, chars);
+	return (s) ? (int)(s - ((const QnBwcs*)(p))->data) : -1;
 }
 
 QN_INLINE int qn_bwcs_find_char(const void* p, size_t at, wchar_t ch)
 {
-	const wchar_t* s = wcschr(((const qnBwcs*)(p))->data + at, ch);
-	return (s) ? (int)(s - ((const qnBwcs*)(p))->data) : -1;
+	const wchar_t* s = wcschr(((const QnBwcs*)(p))->data + at, ch);
+	return (s) ? (int)(s - ((const QnBwcs*)(p))->data) : -1;
 }
 
 #define qn_bwcs_sub_bwcs(p, s, pos, len)\
-	qn_inl_bstr_sub_bstr(((qnBwcs*)(p)), QN_COUNTOF((p)->data)-1, ((qnBwcs*)(s)), pos, len)
-QN_INLINE bool qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, size_t pos, int len)
+	qn_inl_bstr_sub_bstr(((QnBwcs*)(p)), QN_COUNTOF((p)->data)-1, ((QnBwcs*)(s)), pos, len)
+QN_INLINE bool qn_inl_bwcs_sub_bwcs(QnBwcs* p, size_t psize, const QnBwcs* s, size_t pos, int len)
 {
 	qn_val_if_fail(s->len >= pos, false);
 
@@ -2828,7 +2834,3 @@ QN_INLINE bool qn_inl_bwcs_sub_bwcs(qnBwcs* p, size_t psize, const qnBwcs* s, si
 }
 
 QN_EXTC_END
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif

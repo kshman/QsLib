@@ -126,18 +126,17 @@ static struct CycleImpl
 {
 	ullong				tick_count;		// 초 당 틱
 	ullong				start_count;	// 시작 카운트
-}
-qn_cycle_impl = { 0, };
+} cycle_impl = { 0, };
 
 //
-void qn_cycle_init(void)
+void qn_cycle_up(void)
 {
 #ifdef _QN_WINDOWS_
-	QueryPerformanceFrequency((LARGE_INTEGER*)&qn_cycle_impl.tick_count);
+	QueryPerformanceFrequency((LARGE_INTEGER*)&cycle_impl.tick_count);
 #else
-	qn_cycle_impl.tick_count = 1000;
+	cycle_impl.tick_count = 1000;
 #endif
-	qn_cycle_impl.start_count = qn_cycle();
+	cycle_impl.start_count = qn_cycle();
 }
 
 //
@@ -166,7 +165,7 @@ ullong qn_cycle(void)
 ullong qn_tick(void)
 {
 	ullong cycle = qn_cycle();
-	return ((cycle - qn_cycle_impl.start_count) * 1000) / qn_cycle_impl.tick_count;
+	return ((cycle - cycle_impl.start_count) * 1000) / cycle_impl.tick_count;
 }
 
 //
@@ -219,7 +218,7 @@ void qn_msleep(ullong microseconds)
 		if (SwitchToThread())
 			qn_pause();
 		QueryPerformanceCounter(&t2);
-	} while (((double)(t2.QuadPart - t1.QuadPart) / qn_cycle_impl.tick_count * 1000000) < dms);
+	} while (((double)(t2.QuadPart - t1.QuadPart) / cycle_impl.tick_count * 1000000) < dms);
 #else
 #if defined __EMSCRIPTEN__
 	if (emscripten_has_asyncify())
@@ -254,7 +253,7 @@ typedef struct QnRealTimer
 {
 	QnTimer				base;
 
-	bool4				stop;
+	bool32				stop;
 	int					past;
 	double              cut;
 
@@ -279,8 +278,8 @@ QnTimer* qn_timer_new(void)
 	qnRealTimer* self = qn_alloc_1(qnRealTimer);
 	qn_val_if_fail(self, NULL);
 
-	self->frame.q = qn_cycle_impl.tick_count;
-	self->tick = 1.0 / (double)qn_cycle_impl.tick_count;
+	self->frame.q = cycle_impl.tick_count;
+	self->tick = 1.0 / (double)cycle_impl.tick_count;
 
 	self->curtime.q = qn_cycle();
 	self->basetime.q = self->curtime.q;

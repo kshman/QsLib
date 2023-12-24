@@ -239,29 +239,8 @@
     <ClCompile Include="qg\qgwin_stub.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
-    <ClCompile Include="qg\qggl_base.c">
-      <Filter>소스 파일\qg\gl</Filter>
-    </ClCompile>
-    <ClCompile Include="qg\qggl_func.c">
-      <Filter>소스 파일\qg\gl</Filter>
-    </ClCompile>
-    <ClCompile Include="qg\qggl_rdo.c">
-      <Filter>소스 파일\qg\gl</Filter>
-    </ClCompile>
-    <ClCompile Include="qg\qggl_shd.c">
-      <Filter>소스 파일\qg\gl</Filter>
-    </ClCompile>
-    <ClCompile Include="qg\qg_rdh.c">
-      <Filter>소스 파일\qg\rdh</Filter>
-    </ClCompile>
     <ClCompile Include="qg\qg_stub.c">
       <Filter>소스 파일\qg\stub</Filter>
-    </ClCompile>
-    <ClCompile Include="qg\qges2_rdh.c">
-      <Filter>소스 파일\qg\gles</Filter>
-    </ClCompile>
-    <ClCompile Include="qg\qges2_shd.c">
-      <Filter>소스 파일\qg\gles</Filter>
     </ClCompile>
     <ClCompile Include="qn\qn_thd.c">
       <Filter>소스 파일\qn</Filter>

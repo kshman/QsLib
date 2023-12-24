@@ -16,7 +16,7 @@ static struct WindowsMessageMap
 }
 s_map[] =
 {
-#define DEF_MESG(wm) { WM_##wm, #wm }
+#define DEF_MESG(wm) { QN_CONCAT(WM_,wm), QN_STRING(wm) }
 	DEF_MESG(CREATE),
 	DEF_MESG(DESTROY),
 	DEF_MESG(MOVE),
@@ -203,20 +203,22 @@ s_map[] =
 	{ 0, NULL, }    // 끝 널 터미네이트
 #undef DEF_MESG
 };
+#endif
 
-const char* windows_message_str(UINT mesg)
+const char* windows_message_string(UINT mesg)
 {
+#ifdef _DEBUG
 	for (const struct WindowsMessageMap* p = s_map; p->str != NULL; p++)
 	{
 		if (p->mesg == mesg)
 			return p->str;
 	}
-	return "UNKNOWN";
-}
+	static char s_buf[32];
+	qn_snprintf(s_buf, QN_COUNTOF(s_buf) - 1, "(MESG: %04X", mesg);
+	return s_buf;
 #else
-const char* windows_message_str(UINT mesg)
-{
+	(void)mesg;
 	return "UNKNOWN";
-}
 #endif
+}
 #endif

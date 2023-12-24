@@ -24,6 +24,7 @@ typedef struct QgRender		QgRender;						/// @brief 렌더 파이프라인
 // property
 #define QG_PROP_WINDOWS_ICON			"QG_PROP_WINDOWS_ICON"
 #define QG_PROP_WINDOWS_SMALLICON		"QG_PROP_WINDOWS_SMALLICON"
+#define QG_PROP_OPENGL					"QG_PROP_OPENGL"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -213,10 +214,10 @@ typedef enum QgShdConstAuto
 	QGSCA_TEX6,												/// @brief 텍스쳐 6번
 	QGSCA_TEX7,												/// @brief 텍스쳐 7번
 	QGSCA_TEX8,												/// @brief 텍스쳐 8번
-	QGSCA_PROP_VEC1,										/// @brief 4개 실수 1번
-	QGSCA_PROP_VEC2,										/// @brief 4개 실수 2번
-	QGSCA_PROP_VEC3,										/// @brief 4개 실수 3번
-	QGSCA_PROP_VEC4,										/// @brief 4개 실수 4번
+	QGSCA_PROP_VEC1,										/// @brief 벡터 1번
+	QGSCA_PROP_VEC2,										/// @brief 벡터 2번
+	QGSCA_PROP_VEC3,										/// @brief 벡터 3번
+	QGSCA_PROP_VEC4,										/// @brief 벡터 4번
 	QGSCA_PROP_MAT1,										/// @brief 행렬 1번
 	QGSCA_PROP_MAT2,										/// @brief 행렬 2번
 	QGSCA_PROP_MAT3,										/// @brief 행렬 3번
@@ -250,16 +251,17 @@ typedef enum QgFlag
 	QGFLAG_NOTITLE = QN_BIT(3),								/// @brief 타이틀 바가 없음
 	QGFLAG_FOCUS = QN_BIT(4),								/// @brief 입력 포커스 받을 수 있음
 	QGFLAG_TEXT = QN_BIT(5),								/// @brief 텍스트 입력을 받을 수 있음
-	// 렌더러 플래그 (24~30)
-	QGFLAG_VSYNC = QN_BIT(27),								/// @brief VSYNC 켜기
-	QGFLAG_DITHER = QN_BIT(29),								/// @brief 16비트 모드 사용
-	QGFLAG_MSAA = QN_BIT(30),								/// @brief 멀티 샘플링 사용
-	// 스터브 사양 (8~15)
-	QGFEATURE_DISABLE_ACS = QN_BIT(8),						/// @brief 접근성 끄기
-	QGFEATURE_DISABLE_SCRSAVE = QN_BIT(9),					/// @brief 화면 보호기 끄기
-	QGFEATURE_ENABLE_DROP = QN_BIT(10),						/// @brief 드래그 드랍 사용
-	QGFEATURE_ENABLE_SYSWM = QN_BIT(11),					/// @brief 시스템 메시지 받기
-	QGFEATURE_ENABLE_IDLE = QN_BIT(12),						/// @brief 비활성 대기 상태 사용
+	// 미사용 (8~15)
+	// 렌더러 플래그 (16~23)
+	QGFLAG_VSYNC = QN_BIT(16),								/// @brief VSYNC 켜기
+	QGFLAG_DITHER = QN_BIT(17),								/// @brief 16비트 모드 사용
+	QGFLAG_MSAA = QN_BIT(18),								/// @brief 멀티 샘플링 사용
+	// 스터브 사양 (24~31)
+	QGFEATURE_DISABLE_ACS = QN_BIT(24),						/// @brief 접근성 끄기
+	QGFEATURE_DISABLE_SCRSAVE = QN_BIT(25),					/// @brief 화면 보호기 끄기
+	QGFEATURE_ENABLE_DROP = QN_BIT(26),						/// @brief 드래그 드랍 사용
+	QGFEATURE_ENABLE_SYSWM = QN_BIT(27),					/// @brief 시스템 메시지 받기
+	QGFEATURE_ENABLE_IDLE = QN_BIT(28),						/// @brief 비활성 대기 상태 사용
 	// 사용자가 설정할 수 없는 플래그
 	QGSPECIFIC_VIRTUAL = QN_BIT(31),						/// @brief 가상 스터브 사용
 } QgFlag;
@@ -274,7 +276,7 @@ typedef enum QgStubStat
 	QGSSTT_PAUSE = QN_BIT(4),								/// @brief 포즈 중
 	QGSSTT_DROP = QN_BIT(5),								/// @brief 드래그 드랍 중
 	QGSSTT_CURSOR = QN_BIT(6),								/// @brief 커서의 표시
-	QGSSTT_MOUSEHOLD = QN_BIT(7),							/// @brief 마우스 홀드
+	QGSSTT_HOLD = QN_BIT(7),								/// @brief 마우스 홀드
 } QgStubStat;
 
 /// @brief 이벤트 타입
@@ -305,23 +307,20 @@ typedef enum QgWindowEventType
 	QGWEV_NONE,
 	QGWEV_SHOW,												/// @brief 윈도우가 보인다
 	QGWEV_HIDE,												/// @brief 윈도우가 안보인다
-	QGWEV_PAINTED,
-	QGWEV_RESTORED,
-	QGWEV_MAXIMIZED,
-	QGWEV_MINIMIZED,
-	QGWEV_MOVED,
-	QGWEV_SIZED,
-	QGWEV_GOTFOCUS,
-	QGWEV_LOSTFOCUS,
-	QGWEV_CLOSE,
+	QGWEV_PAINTED,											/// @brief 윈도우가 그려진다
+	QGWEV_RESTORED,											/// @brief 윈도우 크기 복귀
+	QGWEV_MAXIMIZED,										/// @brief 윈도우가 최대화
+	QGWEV_MINIMIZED,										/// @brief 윈도우가 최소화
+	QGWEV_MOVED,											/// @brief 윈도우가 이동했다
+	QGWEV_SIZED,											/// @brief 윈도우 크기가 변했다
+	QGWEV_FOCUS,											/// @brief 윈도우가 포커스를 얻었다
+	QGWEV_LOSTFOCUS,										/// @brief 윈도우가 포커스를 잃었다
+	QGWEV_CLOSE,											/// @brief 윈도우가 닫혔네
 	QGWEV_MAX_VALUE,
 } QgWindowEventType;
 
 /// @brief 최대 이벤트 갯수
 #define QGMAX_EVENTS		1000
-
-static_assert(sizeof(QgFlag) == sizeof(int), "QgFlag size not equal to int");
-static_assert(sizeof(QgStubStat) == sizeof(int), "QgStubStat size not equal to int");
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -364,8 +363,8 @@ typedef struct QgPropLayout
 /// @brief 블렌드
 typedef struct QgPropBlend
 {
-	bool4				use_coverage;						/// @brief sample coverage / alpha to coverage
-	bool4				separate;							/// @brief 거짓이면 rb[0]만 사용
+	bool16				use_coverage;						/// @brief sample coverage / alpha to coverage
+	bool16				separate;							/// @brief 거짓이면 rb[0]만 사용
 	QgBlend				rb[QGRVS_MAX_VALUE];				/// @brief 스테이지 별 블렌드 정보
 } QgPropBlend;
 
@@ -423,21 +422,21 @@ typedef union QgEvent
 	struct QgEventActive
 	{
 		QgEventType			ev;
-		bool4				active;							/// @brief 활성 상태면 참
+		bool32				active;							/// @brief 활성 상태면 참
 		double				delta;							/// @brief 마지막 활성 상태로 부터의 지난 시간(초)
 	}					active;								/// @brief 액티브 이벤트
 	struct QgEventLayout
 	{
 		QgEventType			ev;
-		QmSize				size;							/// @brief 윈도우 크기
-		QmRect				bound;							/// @brief 변경된 윈도우 바운드
+		QmRect				bound;							/// @brief 실제 윈도우의 사각 영역
+		QmSize				size;							/// @brief 그리기 영역 크기
 	}					layout;								/// @brief 레이아웃 이벤트
 	struct QgEventKeyboard
 	{
 		QgEventType			ev;
 		QikKey				key;							/// @brief 이벤트에 해당하는 키
 		QikMask				mask;							/// @brief 특수키 상태
-		bool4				repeat;							/// @brief 계속 눌려 있었다면 참
+		bool32				repeat;							/// @brief 계속 눌려 있었다면 참
 	}					key;								/// @brief 키 눌림 떼임 이벤트
 	struct QgEventMouseMove
 	{
@@ -481,14 +480,14 @@ typedef union QgEvent
 		int					param2;							/// @brief 파라미터2
 	}					wevent;
 #if _QN_WINDOWS_
-	struct QgEventSysWm
+	struct QgEventSysWindows
 	{
 		QgEventType			ev;
 		uint				mesg;							/// @brief 메시지
 		nuint				wparam;							/// @brief WPARAM
 		nint				lparam;							/// @brief LPARAM
 		void*				hwnd;							/// @brief 윈도우 핸들
-	}					syswm;
+	}					windows;
 #endif
 } QgEvent;
 
@@ -523,7 +522,7 @@ typedef struct QgUimMouse
 		QmVec2				accm;							/// @brief 가속도
 		QmVec2				precise;						/// @brief 정밀 값
 		QmPoint				integral;						/// @brief 값
-		bool4				direction;						/// @brief 거짓=기본휠, 참=틸트휠
+		bool32				direction;						/// @brief 거짓=기본휠, 참=틸트휠
 	}					wheel;
 } QgUimMouse;
 
@@ -592,7 +591,7 @@ typedef struct QgRenderInvoke
 	uint				draws;
 	uint				primitives;
 
-	bool4				flush;
+	bool				flush;
 } QgRenderInvoke;
 
 /// @brief 렌더러 트랜스 포매이션
@@ -627,13 +626,14 @@ typedef struct QgRenderParam
 
 /// @brief 스터브를 연다
 /// @param title 윈도우 타이틀
+/// @param display 디스플레이 순번 (기본 디스플레이를 쓰려면 0)
 /// @param width 윈도우 너비
 /// @param height 윈도우 높이
 /// @param flags 생성 플래그 (QgFlag)
 /// @return 스터브가 만들어지면 참
 /// @see QgFlag qg_close_Stub
 ///
-QSAPI bool qg_open_stub(const char* title, int width, int height, int flags);
+QSAPI bool qg_open_stub(const char* title, int display, int width, int height, int flags);
 /// @brief 스터브를 닫는다
 /// @see qg_open_Stub
 ///
@@ -680,7 +680,7 @@ QSAPI const QgUimMouse* qg_get_mouse_info(void);
 /// @return 인수의 범위를 벗어나면 거짓을 반환
 /// @see qg_get_mouse_info
 ///
-QSAPI bool qg_set_double_click(uint density, uint interval);
+QSAPI bool qg_set_prop_double_click(uint density, uint interval);
 /// @brief 키가 눌렸나 테스트 한다
 /// @param key 테스트할 키
 /// @return 눌렸으면 참

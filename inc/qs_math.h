@@ -7,16 +7,6 @@
 //
 #pragma once
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4201)		// L4, nonstandard extension used : nameless struct/union
-#pragma warning(disable:4514)		// L4, 'function' : unreferenced inline function has been removed
-#endif
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
-#endif
-
 #include <math.h>
 #if defined _MSC_VER
 #include <intrin.h>
@@ -2467,7 +2457,7 @@ QN_INLINE void qm_rect_move(QmRect* p, int left, int top)
 /// @param width 너비
 /// @param height 높이
 ///
-QN_INLINE void qm_rect_size(QmRect* p, int width, int height)
+QN_INLINE void qm_rect_resize(QmRect* p, int width, int height)
 {
 	p->right = p->left + width;
 	p->bottom = p->top + height;
@@ -3414,7 +3404,6 @@ QN_INLINE void qm_vec4h_set(QmVecH4* p, float x, float y, float z, float w)
 							QmRect*: qm_rect_eq,\
 							QmColor*: qm_color_eq,\
 							QmKolor*: qm_kolor_eq,\
-							const float: qm_eqf,\
 							const QmVec2*: qm_vec2_eq,\
 							const QmVec3*: qm_vec3_eq,\
 							const QmVec4*: qm_vec4_eq,\
@@ -3526,10 +3515,3 @@ QN_INLINE void qm_vec4h_set(QmVecH4* p, float x, float y, float z, float w)
 							QmKolor*: qm_kolor_set,\
 							QmPlane*: qm_plane_set,\
 							QmVecH4*: qm_vec4h_set)(o,x,y,z,w)
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif

@@ -87,11 +87,12 @@ static void shed_event_dispose(void)
 }
 
 // 하나 만들거나 캐시에서 꺼내서 큐에 넣기
-static void shed_event_queue(const QgEvent* e)
+static bool shed_event_queue(const QgEvent* e)
 {
-	qn_ret_if_fail(s_seq.enable);
+	qn_val_if_fail(s_seq.enable, false);
 	qn_mutex_enter(s_seq.lock);
 
+	bool ret = false;
 	if (s_seq.queue_count < QGMAX_EVENTS)
 	{
 		EventNode* node = s_seq.cache;
@@ -114,9 +115,11 @@ static void shed_event_queue(const QgEvent* e)
 			s_seq.max_count = s_seq.queue_count;
 
 		node->event = *e;
+		ret = true;
 	}
 
 	qn_mutex_leave(s_seq.lock);
+	return ret;
 }
 
 // 우선 큐 용으로 갱신하거나, 만들거나, 캐시에서 꺼내서 넣기
@@ -253,7 +256,7 @@ static void shed_event_clear_reserved_mem(void)
 static void _stub_atexit(void* dummy);
 
 //
-bool qg_open_stub(const char* title, int width, int height, int flags)
+bool qg_open_stub(const char* title, int display, int width, int height, int flags)
 {
 	qn_runtime(NULL);
 
@@ -263,7 +266,7 @@ bool qg_open_stub(const char* title, int width, int height, int flags)
 		return false;
 	}
 
-	struct StubBase* stub = stub_system_open(title, width, height, flags);
+	struct StubBase* stub = stub_system_open(title, display, width, height, flags);
 	if (stub == NULL)
 	{
 		// 오류 메시지는 stub_system_open 내부에서 표시
@@ -289,7 +292,7 @@ bool qg_open_stub(const char* title, int width, int height, int flags)
 	if (qg_stub_atexit == false)
 	{
 		qg_stub_atexit = true;
-		qn_internal_atexit(_stub_atexit, NULL);
+		qn_p_atexit(_stub_atexit, NULL);
 	}
 
 	//
@@ -309,6 +312,7 @@ bool qg_open_stub(const char* title, int width, int height, int flags)
 //
 static void _stub_atexit(void* dummy)
 {
+	(void)dummy;
 	qg_close_stub();
 }
 
@@ -368,7 +372,7 @@ void qg_set_title(const char* title)
 }
 
 //
-bool stub_internal_mouse_clicks(QimButton button, QimTrack track)
+bool stub_track_mouse_click(QimButton button, QimTrack track)
 {
 	QgUimMouse* m = &qg_stub_instance->mouse;
 
@@ -378,7 +382,7 @@ bool stub_internal_mouse_clicks(QimButton button, QimTrack track)
 		{
 			const int dx = m->clk.loc.x - m->pt.x;
 			const int dy = m->clk.loc.y - m->pt.y;
-			const uint d = dx * dx + dy * dy;
+			const uint d = (uint)(dx * dx) + (uint)(dy * dy);
 			if (d > m->lim.move)
 			{
 				// 마우스가 move 만큼 움직이면 두번 누르기 취소
@@ -468,7 +472,7 @@ bool qg_poll(QgEvent* ev)
 	}
 	if (s_seq.poll_count != s_seq.loop_count)
 	{
-		qn_debug_outputf(true, "STUB", "Loop and poll pair not match! [poll(%d) != loop(%d)]",
+		qn_debug_outputf(true, "STUB", "call qg_loop before qg_poll! [poll(%d) != loop(%d)]",
 			s_seq.poll_count, s_seq.loop_count);
 		s_seq.poll_count = s_seq.loop_count;
 	}
@@ -489,7 +493,7 @@ const QgUimMouse* qg_get_mouse_info(void)
 }
 
 //
-bool qg_set_double_click(uint density, uint interval)
+bool qg_set_prop_double_click(uint density, uint interval)
 {
 	qn_val_if_fail((size_t)density < 50, false);
 	qn_val_if_fail((size_t)interval <= 5000, false);
@@ -592,7 +596,8 @@ int qg_add_event(const QgEvent* ev)
 	else
 	{
 		// 기본 이벤트는 리스트로 저장
-		shed_event_queue(ev);
+		if (shed_event_queue(ev) == false)
+			return -2;
 	}
 
 	return (int)s_seq.queue_count;
@@ -606,7 +611,7 @@ int qg_add_event_type(QgEventType type)
 }
 
 //
-bool stub_internal_on_event_layout(bool enter)
+bool stub_event_on_layout(bool enter)
 {
 	StubBase* stub = qg_stub_instance;
 
@@ -618,16 +623,16 @@ bool stub_internal_on_event_layout(bool enter)
 	}
 	QN_SMASK(&stub->stats, QGSSTT_LAYOUT, false);
 
-	QmSize prev = stub->size;
+	QmSize prev = stub->client_size;
 	stub_system_calc_layout();
-	if (prev.width != stub->size.width || prev.height != stub->size.height)
+	if (qm_eq(&prev, &stub->client_size) == false)
 	{
 		// 크기가 변하면 레이아웃
 		const QgEvent e =
 		{
 			.layout.ev = QGEV_LAYOUT,
-			.layout.size = stub->size,
-			.layout.bound = stub->bound,
+			.layout.bound = stub->window_bound,
+			.layout.size = stub->client_size,
 		};
 		return qg_add_event(&e) > 0;
 	}
@@ -636,23 +641,32 @@ bool stub_internal_on_event_layout(bool enter)
 }
 
 //
-bool stub_internal_on_window_event(QgWindowEventType type, int param1, int param2)
+bool stub_event_on_window_event(QgWindowEventType type, int param1, int param2)
 {
 	StubBase* stub = qg_stub_instance;
 
 	switch (type)
 	{
-		//case QGWEV_SHOW:
-		//case QGWEV_HIDE:
-		//case QGWEV_PAINTED:
+		case QGWEV_SHOW:
+			QN_SBIT(&stub->window_stats, QGWEV_SHOW, true);
+			break;
+		case QGWEV_HIDE:
+			QN_SBIT(&stub->window_stats, QGWEV_SHOW, false);
+			break;
+		case QGWEV_PAINTED:
+			break;
 		case QGWEV_RESTORED:	// 갑자기 커졌거나, 크기 복귀 하면 사이즈 메시지가 없어서 레이아웃 처리함
+			QN_SBIT(&stub->window_stats, QGWEV_SHOW, true);
 			if (QN_TMASK(stub->stats, QGSSTT_LAYOUT) == false)
 				stub_system_calc_layout();
 			break;
-		case QGWEV_MAXIMIZED:	// // 갑자기 커졌거나, 크기 복귀 하면 사이즈 메시지가 없어서 레이아웃 처리함
+		case QGWEV_MAXIMIZED:	// 갑자기 커졌거나, 크기 복귀 하면 사이즈 메시지가 없어서 레이아웃 처리함
+			QN_SBIT(&stub->window_stats, QGWEV_SHOW, true);
 			stub_system_calc_layout();
 			break;
-			//case QGWEV_MINIMIZED:
+		case QGWEV_MINIMIZED:
+			QN_SBIT(&stub->window_stats, QGWEV_SHOW, false);
+			break;
 		case QGWEV_MOVED:
 			if (stub->window_bound.left == param1 && stub->window_bound.top == param2)
 				return 0;
@@ -661,11 +675,16 @@ bool stub_internal_on_window_event(QgWindowEventType type, int param1, int param
 		case QGWEV_SIZED:
 			if (qm_rect_width(&stub->window_bound) == param1 && qm_rect_height(&stub->window_bound) == param2)
 				return 0;
-			qm_rect_size(&stub->window_bound, param1, param2);
+			qm_rect_resize(&stub->window_bound, param1, param2);
 			break;
-			//case QGWEV_GOTFOCUS:
-			//case QGWEV_LOSTFOCUS:
-			//case QGWEV_CLOSE:
+		case QGWEV_FOCUS:
+			QN_SBIT(&stub->window_stats, QGWEV_FOCUS, true);
+			break;
+		case QGWEV_LOSTFOCUS:
+			QN_SBIT(&stub->window_stats, QGWEV_FOCUS, false);
+			break;
+		case QGWEV_CLOSE:
+			break;
 	}
 
 	const QgEvent e =
@@ -679,7 +698,7 @@ bool stub_internal_on_window_event(QgWindowEventType type, int param1, int param
 }
 
 //
-bool stub_internal_on_text(const char* text)
+bool stub_event_on_text(const char* text)
 {
 	StubBase* stub = qg_stub_instance;
 	qn_val_if_fail(QN_TMASK(stub->flags, QGFLAG_TEXT), 0);
@@ -700,7 +719,7 @@ bool stub_internal_on_text(const char* text)
 }
 
 //
-bool stub_internal_on_keyboard(QikKey key, bool down)
+bool stub_event_on_keyboard(QikKey key, bool down)
 {
 	QgUimKey* uk = &qg_stub_instance->key;
 	QgEvent e;
@@ -748,6 +767,7 @@ bool stub_internal_on_keyboard(QikKey key, bool down)
 				break;
 			default:
 				uk->mask |= mask;
+				break;
 		}
 	}
 	else
@@ -764,18 +784,18 @@ bool stub_internal_on_keyboard(QikKey key, bool down)
 }
 
 //
-bool stub_internal_on_reset_keys(void)
+bool stub_event_on_reset_keys(void)
 {
 	QgEvent e = { .key.ev = QGEV_KEYUP, .key.mask = 0, .key.repeat = false };
 	QgUimKey* uk = &qg_stub_instance->key;
 
 	bool ret = false;
-	for (size_t i = 0; i < QIK_MAX_VALUE / 8 + 1; i++)
+	for (int i = 0; i < QIK_MAX_VALUE / 8 + 1; i++)
 	{
 		byte key = uk->key[i];
 		if (key == 0)
 			continue;
-		for (size_t n = 0; n < 8; n++)
+		for (int n = 0; n < 8; n++)
 		{
 			if (QN_TBIT(key, n) == false)
 				continue;
@@ -787,7 +807,7 @@ bool stub_internal_on_reset_keys(void)
 }
 
 //
-bool stub_internal_on_mouse_move(void)
+bool stub_event_on_mouse_move(void)
 {
 	// 마우스 정보는 시스템 스터브에서 해와야함
 	const QgUimMouse* um = &qg_stub_instance->mouse;
@@ -804,7 +824,7 @@ bool stub_internal_on_mouse_move(void)
 }
 
 //
-bool stub_internal_on_mouse_button(QimButton button, bool down)
+bool stub_event_on_mouse_button(QimButton button, bool down)
 {
 	QgUimMouse* um = &qg_stub_instance->mouse;
 	QN_SBIT(&um->mask, button, down);
@@ -818,7 +838,7 @@ bool stub_internal_on_mouse_button(QimButton button, bool down)
 	};
 	bool ret = qg_add_event(&e) > 0;
 
-	if (stub_internal_mouse_clicks(button, down ? QIMT_DOWN : QIMT_UP))
+	if (stub_track_mouse_click(button, down ? QIMT_DOWN : QIMT_UP))
 	{
 		const QgEvent de =
 		{
@@ -834,7 +854,7 @@ bool stub_internal_on_mouse_button(QimButton button, bool down)
 }
 
 //
-bool stub_internal_on_mouse_wheel(float x, float y, bool direction)
+bool stub_event_on_mouse_wheel(float x, float y, bool direction)
 {
 	QgUimMouse* um = &qg_stub_instance->mouse;
 
@@ -888,7 +908,7 @@ bool stub_internal_on_mouse_wheel(float x, float y, bool direction)
 }
 
 //
-bool stub_internal_on_active(bool active, double delta)
+bool stub_event_on_active(bool active, double delta)
 {
 	const QgEvent e =
 	{
@@ -900,7 +920,7 @@ bool stub_internal_on_active(bool active, double delta)
 }
 
 //
-bool stub_internal_on_drop(char* data, int len, bool finish)
+bool stub_event_on_drop(char* data, int len, bool finish)
 {
 	static bool s_enter = false;
 
@@ -935,8 +955,17 @@ bool stub_internal_on_drop(char* data, int len, bool finish)
 }
 
 //
-void stub_internal_toggle_key(QikMask keymask, bool on)
+void stub_toggle_keys(QikMask keymask, bool on)
 {
 	QgUimKey* uk = &qg_stub_instance->key;
 	QN_SMASK(&uk->mask, keymask, on);
+}
+
+//
+float stub_calc_diagonal_dpi(uint width, uint height, float horizontal, float vertical)
+{
+	float dsq = horizontal * horizontal + vertical * vertical;
+	if (dsq <= 0.0f)
+		return 0.0f;
+	return sqrtf((float)width * (float)width + (float)height * (float)height) / sqrtf(dsq);
 }
