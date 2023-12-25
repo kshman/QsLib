@@ -39,6 +39,20 @@
     </Expand>
   </Type>
   
+  <!-- 노드 리스트 -->
+  <Type Name="EventNodeList">
+    <DisplayString>[갯수: {count}]</DisplayString>
+    <Expand>
+      <Item Name="[갯수]">count</Item>
+      <LinkedListItems>
+        <Size>count</Size>
+        <HeadPointer>frst</HeadPointer>
+        <NextPointer>next</NextPointer>
+        <ValueNode>this</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+  
   <!-- 해시 노드 -->
   <Type Name="QnInlineHashNode">
     <DisplayString>[key={key}, value={value}]</DisplayString>
@@ -108,14 +122,14 @@
   </Type>
 
   <!-- 오브젝트 -->
-  <Type Name="QmGam">
+  <Type Name="QsGam">
     <DisplayString>[{vt-&gt;name,s} (ref: {ref})]</DisplayString>
   </Type>
 
   <!-- vec2 -->
-  <Type Name="QnVec2">
-    <AlternativeType Name="QnVecH2"/>
-    <AlternativeType Name="QnPoint"/>
+  <Type Name="QmVec2">
+    <AlternativeType Name="QmVecH2"/>
+    <AlternativeType Name="QmPoint"/>
     <DisplayString>[({x}, {y})]</DisplayString>
     <Expand>
       <Item Name="x">x</Item>
@@ -124,8 +138,8 @@
   </Type>
 
   <!-- vec3 -->
-  <Type Name="QnVec3">
-    <AlternativeType Name="QnVecH3"/>
+  <Type Name="QmVec3">
+    <AlternativeType Name="QmVecH3"/>
     <DisplayString>[({x}, {y}, {z})]</DisplayString>
     <Expand>
       <Item Name="x">x</Item>
@@ -135,9 +149,9 @@
   </Type>
 
   <!-- vec4 -->
-  <Type Name="QnVec4">
-    <AlternativeType Name="QnVecH4"/>
-    <AlternativeType Name="QnQuat"/>
+  <Type Name="QmVec4">
+    <AlternativeType Name="QmVecH4"/>
+    <AlternativeType Name="QmQuat"/>
     <DisplayString>[({x}, {y}, {z}, {w})]</DisplayString>
     <Expand>
       <Item Name="x">x</Item>
@@ -148,7 +162,7 @@
   </Type>
 
   <!-- mat4 -->
-  <Type Name="QnMat4">
+  <Type Name="QmMat4">
     <DisplayString>[({_11}, {_12}, {_13}, {_14}) ({_21}, {_22}, {_23}, {_24}) ({_31}, {_32}, {_33}, {_34}) ({_41}, {_42}, {_43}, {_44})]</DisplayString>
     <Expand>
       <Item Name="11">_11</Item>
@@ -171,7 +185,7 @@
   </Type>
 
   <!-- rect -->
-  <Type Name="QnRect">
+  <Type Name="QmRect">
     <DisplayString>[({left}, {top})-({right}, {bottom})]</DisplayString>
     <Expand>
       <Item Name="left">left</Item>
@@ -184,7 +198,7 @@
   </Type>
 
   <!-- size -->
-  <Type Name="QnSize">
+  <Type Name="QmSize">
     <DisplayString>[({width}, {height})]</DisplayString>
     <Expand>
       <Item Name="width">width</Item>
@@ -193,7 +207,7 @@
   </Type>
 
   <!-- depth -->
-  <Type Name="QnDepth">
+  <Type Name="QmDepth">
     <DisplayString>[({Near}, {Far})]</DisplayString>
     <Expand>
       <Item Name="Near">Near</Item>
@@ -202,7 +216,7 @@
   </Type>
 
   <!-- coordinate -->
-  <Type Name="QnCoord">
+  <Type Name="QmCoord">
     <DisplayString>[({u}, {v})]</DisplayString>
     <Expand>
       <Item Name="u">u</Item>
@@ -211,8 +225,8 @@
   </Type>
 
   <!-- color -->
-  <Type Name="QnColor">
-    <AlternativeType Name="QnKolor"/>
+  <Type Name="QmColor">
+    <AlternativeType Name="QmKolor"/>
     <DisplayString>[({r}, {g}, {b}, {a})]</DisplayString>
     <Expand>
       <Item Name="r">r</Item>
@@ -223,7 +237,7 @@
   </Type>
 
   <!-- unified color -->
-  <Type Name="QnKolorU">
+  <Type Name="QmKolorU">
     <DisplayString>[{v,X}]</DisplayString>
     <Expand>
       <Item Name="r">k.r</Item>
@@ -235,7 +249,7 @@
   </Type>
 
   <!-- plane -->
-  <Type Name="plane">
+  <Type Name="QmPlane">
     <DisplayString>[({a}, {b}, {c}, {d})]</DisplayString>
     <Expand>
       <Item Name="a">a</Item>
@@ -246,18 +260,33 @@
   </Type>
 
   <!-- line -->
-  <Type Name="QnLine3">
+  <Type Name="QmLine3">
     <DisplayString>[({begin.x},{begin.y},{begin.z})-({end.x},{end.y},{end.z})]</DisplayString>
   </Type>
 
   <!-- trfm -->
-  <Type Name="QnTrfm">
+  <Type Name="QmTrfm">
     <DisplayString>[({loc.x},{loc.y},{loc.z}) ({rot.x},{rot.y},{rot.z},{rot.w}) ({scl.x},{scl.y},{scl.z})]</DisplayString>
     <Expand>
       <Item Name="location">loc</Item>
       <Item Name="rotation">rot</Item>
       <Item Name="scailing">scl</Item>
     </Expand>
+  </Type>
+
+  <!-- 이벤트 노드 -->
+  <Type Name="EventNode">
+    <DisplayString>[{event.ev} (키: {key})]</DisplayString>
+  </Type>
+
+  <!-- QgEvent -->
+  <Type Name="QgEvent">
+    <DisplayString>[{ev}]</DisplayString>
+  </Type>
+  
+  <!-- ShedEvent -->
+  <Type Name="ShedEvent">
+    <DisplayString>[q={queue.count} / p={prior.count} / c={cache.count} / m={reserved_mems.count} ({loop.count})</DisplayString>
   </Type>
 
 </AutoVisualizer>

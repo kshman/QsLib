@@ -18,9 +18,6 @@
 // 윈도우 스터브 여기 있다!
 WindowsStub winStub;
 
-//
-static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
-
 // DLL 선언
 #define DEF_WIN_FUNC(ret,name,args)		QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
 #define DEF_WIN_XIFUNC(ret,name,args)	QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
@@ -74,26 +71,6 @@ static bool windows_dll_init(void)
 	return loaded = true;
 }
 
-// 윈도우 버전 테스트
-static bool windows_test_version(WORD major, WORD minor, WORD build, WORD sp)
-{
-	OSVERSIONINFOEXW ovi = { sizeof(OSVERSIONINFOEXW), major, minor, build, 0, {0}, sp, };
-	DWORD mask = VER_MAJORVERSION | VER_MINORVERSION;
-	ULONGLONG cond = VerSetConditionMask(0, VER_MAJORVERSION, VER_GREATER_EQUAL);
-	cond = VerSetConditionMask(cond, VER_MINORVERSION, VER_GREATER_EQUAL);
-	if (build != 0)
-	{
-		mask |= VER_BUILDNUMBER;
-		cond = VerSetConditionMask(cond, VER_BUILDNUMBER, VER_GREATER_EQUAL);
-	}
-	if (sp != 0)
-	{
-		mask |= VER_SERVICEPACKMAJOR;
-		cond = VerSetConditionMask(cond, VER_SERVICEPACKMAJOR, VER_GREATER_EQUAL);
-	}
-	return Win32RtlVerifyVersionInfo(&ovi, mask, cond) == 0;
-}
-
 // 키 후킹 콜백
 static LRESULT CALLBACK windows_key_hook_proc(int code, WPARAM wp, LPARAM lp)
 {
@@ -121,33 +98,46 @@ static void windows_key_hook(HINSTANCE instance)
 	winStub.key_hook = Win32SetWindowsHookExW(WH_KEYBOARD_LL, windows_key_hook_proc, instance, 0);
 }
 
+// DPI 설정
+static void windows_set_dpi_aware(void)
+{
+	if (Win32SetProcessDpiAwarenessContext != NULL &&
+		(Win32SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) ||
+			Win32SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)))
+		return;
+	if (Win32SetProcessDpiAwareness != NULL &&
+		Win32SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE) != E_INVALIDARG)
+		return;
+	Win32SetProcessDPIAware();
+}
+
 //
-StubBase* stub_system_open(const char* title, int display, int width, int height, QgFlag flags)
+static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
+
+//
+bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags)
 {
 	qn_zero_1(&winStub);
 	QN_DUMMY(display);	// 모니터 번호는 나중에
 
+	//
 	if (windows_dll_init() == false)
 	{
 		qn_debug_outputs(true, "WINDOWS STUB", "DLL load failed");
-		return NULL;
+		return false;
 	}
 
-	// DPI
-	if (windows_test_version(HIBYTE(_WIN32_WINNT_WIN10), LOBYTE(_WIN32_WINNT_WIN10), 15063, 0))
-		Win32SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-	else if (windows_test_version(HIBYTE(_WIN32_WINNT_WINBLUE), LOBYTE(_WIN32_WINNT_WINBLUE), 0, 0))
-		Win32SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
-	else
-		Win32SetProcessDPIAware();
-
-	//
 	winStub.instance = GetModuleHandle(NULL);
 	if (winStub.instance == NULL)
 	{
 		qn_debug_outputs(true, "WINDOWS STUB", "cannot retrieve module handle");
-		return NULL;
+		return false;
 	}
+
+	//
+	windows_set_dpi_aware();
+	stub_initialize((StubBase*)&winStub, display, flags);
+	stub_system_check_display();
 
 	// 윈도우 클래스
 	if (winStub.class_registered == false)
@@ -191,9 +181,8 @@ StubBase* stub_system_open(const char* title, int display, int width, int height
 				DestroyIcon(wc.hIcon);
 			if (wc.hIconSm)
 				DestroyIcon(wc.hIconSm);
-			qn_free(winStub.class_name);
 			qn_debug_outputs(true, "WINDOWS STUB", "window class registration failed");
-			return NULL;
+			return false;
 		}
 
 		winStub.class_registered = true;
@@ -242,10 +231,14 @@ StubBase* stub_system_open(const char* title, int display, int width, int height
 	if (QN_TMASK(flags, QGFLAG_FULLSCREEN) == false)
 		qm_set2(&pos, (scrsize.width - size.width) / 2, (scrsize.height - size.height) / 2);
 
-	winStub.window_style = style;
+	// 값설정
 	qm_rect_set_pos_size(&winStub.base.window_bound, &pos, &size);
+	winStub.mouse_cursor = LoadCursor(NULL, IDC_ARROW);
+	winStub.window_title = qn_u8to16_dup(title ? title : "QS", 0);
+	winStub.deadzone_min = -CTRL_DEAD_ZONE;
+	winStub.deadzone_max = +CTRL_DEAD_ZONE;
 
-	// 토글키 상태 저장
+	// 토글키 상태 저장 (윈도우가 만들어지고 나면 메시지로 키가 들어 올텐데 혼란하기 땜에 먼저 해둠)
 	QgUimKey* uk = &winStub.base.key;
 	if (GetKeyState(VK_CAPITAL) & 0x1)
 		QN_SMASK(&uk->mask, QIKM_CAPS, true);
@@ -254,25 +247,9 @@ StubBase* stub_system_open(const char* title, int display, int width, int height
 	if (GetKeyState(VK_NUMLOCK) & 0x1)
 		QN_SMASK(&uk->mask, QIKM_NUM, true);
 
-	// 커서
-	winStub.mouse_cursor = LoadCursor(NULL, IDC_ARROW);
-
-	// 값설정
-	winStub.window_title = qn_u8to16_dup(title ? title : "QS", 0);
-
-	winStub.deadzone_min = -CTRL_DEAD_ZONE;
-	winStub.deadzone_max = +CTRL_DEAD_ZONE;
-
-	return (StubBase*)&winStub;
-}
-
-//
-bool stub_system_create_window(void)
-{
-	QmRect* rect = &winStub.base.window_bound;
-
-	winStub.hwnd = CreateWindowEx(0, winStub.class_name, winStub.window_title, winStub.window_style,
-		rect->left, rect->top, qm_rect_width(rect), qm_rect_height(rect),
+	//윈도우 만들기
+	winStub.hwnd = CreateWindowEx(0, winStub.class_name, winStub.window_title,
+		style, pos.x, pos.y, size.width, size.height,
 		NULL, NULL, winStub.instance, NULL);
 	if (winStub.hwnd == NULL)
 	{
@@ -288,8 +265,8 @@ bool stub_system_create_window(void)
 		SetWindowLong(winStub.hwnd, GWL_STYLE, WS_POPUP | WS_SYSMENU | WS_VISIBLE);
 	else
 	{
-		winStub.window_style = GetWindowLong(winStub.hwnd, GWL_STYLE);
-		SetWindowLong(winStub.hwnd, GWL_STYLE, winStub.window_style);
+		style = GetWindowLong(winStub.hwnd, GWL_STYLE);
+		SetWindowLong(winStub.hwnd, GWL_STYLE, style);
 	}
 
 	stub_system_calc_layout();
@@ -515,16 +492,8 @@ static WindowsMonitor* windows_create_monitor(DISPLAY_DEVICE* adev, DISPLAY_DEVI
 	EnumDisplaySettings(adev->DeviceName, ENUM_CURRENT_SETTINGS, &dm);
 
 	HDC hdc = CreateDC(L"DISPLAY", adev->DeviceName, NULL, NULL);
-	if (windows_test_version(HIBYTE(_WIN32_WINNT_WINBLUE), LOBYTE(_WIN32_WINNT_WINBLUE), 0, 0))
-	{
-		mon->base.mmwidth = GetDeviceCaps(hdc, HORZSIZE);
-		mon->base.mmheight = GetDeviceCaps(hdc, VERTSIZE);
-	}
-	else
-	{
-		mon->base.mmwidth = (int)(dm.dmPelsWidth * 25.4f / GetDeviceCaps(hdc, LOGPIXELSX));
-		mon->base.mmheight = (int)(dm.dmPelsHeight * 25.4f / GetDeviceCaps(hdc, LOGPIXELSY));
-	}
+	mon->base.mmwidth = GetDeviceCaps(hdc, HORZSIZE);	// (int)(dm.dmPelsWidth * 25.4f / GetDeviceCaps(hdc, LOGPIXELSX))
+	mon->base.mmheight = GetDeviceCaps(hdc, VERTSIZE);	// (int)(dm.dmPelsHeight * 25.4f / GetDeviceCaps(hdc, LOGPIXELSY))
 	DeleteDC(hdc);
 
 	mon->base.x = dm.dmPosition.x;
@@ -543,7 +512,7 @@ void stub_system_check_display(void)
 {
 	size_t prev_count = qn_pctnr_count(&winStub.base.monitors);
 	WindowsMonitor** prev_mons =
-		prev_count == 0 ? NULL : qn_memdup(qn_pctnr_data(&winStub.base.monitors), prev_count* sizeof(WindowsMonitor*));
+		prev_count == 0 ? NULL : qn_memdup(qn_pctnr_data(&winStub.base.monitors), prev_count * sizeof(WindowsMonitor*));
 
 	size_t i;
 	for (DWORD adapter = 0; ; adapter++)
@@ -691,7 +660,7 @@ static bool windows_mesg_keyboard(WPARAM wp, bool down)
 	{
 		SendMessage(winStub.hwnd, WM_CLOSE, 0, 0);
 		return true;
-	}
+}
 #endif
 
 	return stub_event_on_keyboard((QikKey)key, down) == 0 ? false : key != VK_MENU;

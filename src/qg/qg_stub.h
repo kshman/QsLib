@@ -48,9 +48,7 @@ struct StubBase
 extern StubBase* qg_stub_instance;
 
 // 시스템 스터브를 연다
-extern StubBase* stub_system_open(const char* title, int display, int width, int height, QgFlag flags);
-// 시스템 윈도우를 만든다
-extern bool stub_system_create_window(void);
+extern bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags);
 // 시스템 스터브를 정리한다
 extern void stub_system_finalize(void);
 // 시스템 스터브 폴링 (프로그램이 종료되면 거짓)
@@ -95,11 +93,10 @@ extern bool stub_event_on_active(bool active, double delta);
 // 드랍 이벤트 추가
 extern bool stub_event_on_drop(char* data, int len, bool finish);
 
+// 스터보 기본 사양을 초기화 stub_system_open() 함수가 호출해야 한다
+extern void stub_initialize(StubBase* stub, int display, int flags);
 // 내부적으로 토글을 설정한다 (완전 언세이프)
 extern void stub_toggle_keys(QikMask keymask, bool on);
-
-// (도움함수) 대각선 DPI를 구한다
-extern float stub_calc_diagonal_dpi(uint width, uint height, float horizontal, float vertical);
 
 
 // 렌더 디바이스

@@ -485,6 +485,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/// @brief any_t 배열
 	typedef type name##Type;\
 	struct name##Node { struct name##Node *next, *prev; type data; };\
 	struct name { struct name##Node *frst, *last; size_t count; };
+QN_DECL_LIST(QnPtrList, void*)
 
 #define qn_list_count(p)					((p)->count)
 #define qn_list_node_first(p)				((p)->last)
@@ -768,6 +769,42 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/// @brief any_t 배열
 			func_pdata(&__node->data);\
 	}QN_STMT_END
 
+#define qn_plist_count(p)				qn_list_count(p)
+#define qn_plist_first(p)				qn_list_data_first(p)
+#define qn_plist_last(p)				qn_list_data_last(p)
+#define qn_plist_peek_first(p)			qn_list_node_first(p)
+#define qn_plist_peek_last(p)			qn_list_node_last(p)
+#define qn_plist_is_have(p)				qn_list_is_have(p)
+#define qn_plist_is_empty(p)			qn_list_is_empty(p)
+
+#define qn_plist_init(p)				qn_list_init(QnPtrList, p)
+#define qn_plist_disp(p)				qn_list_disp(QnPtrList, p)
+#define qn_plist_disp_cb(p,func_user_data,userdata)\
+										qn_list_disp_cb(QnPtrList, p, func_user_data, userdata)
+#define qn_plist_append(p,item)			qn_list_append(QnPtrList, p, item)
+#define qn_plist_prepend(p,item)		qn_list_prepend(QnPtrList, p, item)
+#define qn_plist_clear(p)				qn_list_clear(QnPtrList, p)
+#define qn_plist_remove(p,item)			qn_list_remove(QnPtrList, p, item)
+#define qn_plist_remove_first(p)		qn_list_remove_first(QnPtrList, p)
+#define qn_plist_remove_last(p)			qn_list_remove_last(QnPtrList, p)
+#define qn_plist_foreach(p,func_user_data,userdata)\
+										qn_list_foreach(QnPtrList, p, func_user_data, userdata)
+#define qn_plist_loopeach(p,func_data)	qn_list_loopeach(QnPtrList, p, func_data)
+
+QN_INLINE bool qn_plist_contains(const QnPtrList* p, const void* item)
+{
+	const struct QnPtrListNode* node = NULL;
+	qn_list_contains(QnPtrList, p, item, &node);
+	return node != NULL;
+}
+
+QN_INLINE bool qn_plist_find(const QnPtrList* p, bool (*pred)(void*, void*), void* userdata)
+{
+	const struct QnPtrListNode* node = NULL;
+	qn_list_find(QnPtrList, p, pred, userdata, &node);
+	return node != NULL;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // node list
@@ -780,7 +817,6 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/// @brief any_t 배열
 	typedef struct name name;\
 	typedef type name##Type;\
 	struct name { type* frst; type* last; size_t count; };
-QN_DECL_LIST(QnPtrList, void*)
 
 #define qn_nodelist_count(p)			((p)->count)
 #define qn_nodelist_first(p)			((p)->last)
@@ -788,7 +824,7 @@ QN_DECL_LIST(QnPtrList, void*)
 #define qn_nodelist_is_have(p)			((p)->count!=0)
 #define qn_nodelist_is_empty(p)			((p)->count==0)
 
-#define qn_nodelist_init(name,p)\
+#define qn_nodelist_init(p)\
 	QN_STMT_BEGIN{\
 		(p)->frst=NULL;\
 		(p)->last=NULL;\
@@ -853,7 +889,30 @@ QN_DECL_LIST(QnPtrList, void*)
 		(p)->count=0;\
 	}QN_STMT_END
 
-#define qn_nodelist_remove(name,p,item,func_1)\
+#define qn_nodelist_remove(name,p,item)\
+	QN_STMT_BEGIN{\
+		if (item)\
+		{\
+			name##Type* __node=(name##Type*)(item);\
+			if (__node->next)\
+				__node->next->prev=__node->prev;\
+			else\
+			{\
+				qn_assert((p)->last == __node);\
+				(p)->last=__node->prev;\
+			}\
+			if (__node->prev)\
+				__node->prev->next=__node->next;\
+			else\
+			{\
+				qn_assert((p)->frst == __node);\
+				(p)->frst=__node->next;\
+			}\
+			(p)->count--;\
+		}\
+	}QN_STMT_END
+
+#define qn_nodelist_remove_cb(name,p,item,func_1)\
 	QN_STMT_BEGIN{\
 		if (item)\
 		{\
@@ -877,11 +936,17 @@ QN_DECL_LIST(QnPtrList, void*)
 		}\
 	}QN_STMT_END
 
-#define qn_nodelist_remove_first(name,p,func_1)\
-	qn_nodelist_remove(name, (p)->last,func_1)
+#define qn_nodelist_remove_first(name,p)\
+	qn_nodelist_remove(name, p, (p)->last)
 
-#define qn_nodelist_remove_last(name,p,func_1)\
-	qn_nodelist_remove(name, (p)->frst,func_1)
+#define qn_nodelist_remove_first_cb(name,p,func_1)\
+	qn_nodelist_remove_cb(name, p, (p)->last,func_1)
+
+#define qn_nodelist_remove_last(name,p)\
+	qn_nodelist_remove(name, p, (p)->frst)
+
+#define qn_nodelist_remove_last_cb(name,p,func_1)\
+	qn_nodelist_remove_cb(name, p, (p)->frst,func_1)
 
 #define qn_nodelist_unlink(name,p,item)\
 	QN_STMT_BEGIN{\
@@ -920,14 +985,14 @@ QN_DECL_LIST(QnPtrList, void*)
 		}\
 	}QN_STMT_END
 
-#define qn_nodelist_find(name,p,predicate_user_node,userdata,retbool)\
+#define qn_nodelist_find(name,p,predicate_user_node,userdata,retpnode)\
 	QN_STMT_BEGIN{\
 		name##Type* __node;\
-		for (*(retbool)=false, __node=(p)->last; __node; __node=__node->prev)\
+		for (*(retpnode)=NULL, __node=(p)->last; __node; __node=__node->prev)\
 		{\
 			if (predicate_user_node(userdata,__node))\
 			{\
-				*(retbool)=true;\
+				*(retpnode)=__node;\
 				break;\
 			}\
 		}\
@@ -946,42 +1011,6 @@ QN_DECL_LIST(QnPtrList, void*)
 		for (__node=(p)->last; __node; __node=__node->prev)\
 			func_node(__node);\
 	}QN_STMT_END
-
-#define qn_plist_count(p)				qn_list_count(p)
-#define qn_plist_first(p)				qn_list_data_first(p)
-#define qn_plist_last(p)				qn_list_data_last(p)
-#define qn_plist_peek_first(p)			qn_list_node_first(p)
-#define qn_plist_peek_last(p)			qn_list_node_last(p)
-#define qn_plist_is_have(p)				qn_list_is_have(p)
-#define qn_plist_is_empty(p)			qn_list_is_empty(p)
-
-#define qn_plist_init(p)				qn_list_init(QnPtrList, p)
-#define qn_plist_disp(p)				qn_list_disp(QnPtrList, p)
-#define qn_plist_disp_cb(p,func_user_data,userdata)\
-										qn_list_disp_cb(QnPtrList, p, func_user_data, userdata)
-#define qn_plist_append(p,item)			qn_list_append(QnPtrList, p, item)
-#define qn_plist_prepend(p,item)		qn_list_prepend(QnPtrList, p, item)
-#define qn_plist_clear(p)				qn_list_clear(QnPtrList, p)
-#define qn_plist_remove(p,item)			qn_list_remove(QnPtrList, p, item)
-#define qn_plist_remove_first(p)		qn_list_remove_first(QnPtrList, p)
-#define qn_plist_remove_last(p)			qn_list_remove_last(QnPtrList, p)
-#define qn_plist_foreach(p,func_user_data,userdata)\
-										qn_list_foreach(QnPtrList, p, func_user_data, userdata)
-#define qn_plist_loopeach(p,func_data)	qn_list_loopeach(QnPtrList, p, func_data)
-
-QN_INLINE bool qn_plist_contains(const QnPtrList* p, const void* item)
-{
-	const struct QnPtrListNode* node = NULL;
-	qn_list_contains(QnPtrList, p, item, &node);
-	return node != NULL;
-}
-
-QN_INLINE bool qn_plist_find(const QnPtrList* p, bool (*pred)(void*, void*), void* userdata)
-{
-	const struct QnPtrListNode* node = NULL;
-	qn_list_find(QnPtrList, p, pred, userdata, &node);
-	return node != NULL;
-}
 
 
 //////////////////////////////////////////////////////////////////////////

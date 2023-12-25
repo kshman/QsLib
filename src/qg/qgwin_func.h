@@ -23,9 +23,10 @@ DEF_WIN_XIFUNC(DWORD, XInputGetCapabilities, (_In_ DWORD dwUserIndex, _In_ DWORD
 DEF_WIN_XIFUNC(DWORD, XInputGetBatteryInformation, (_In_ DWORD dwUserIndex, _In_ BYTE devType, _Out_ XINPUT_BATTERY_INFORMATION* pBatteryInformation))
 
 // NTDLL
+/*
 DEF_WIN_DLL_BEGIN(NTDLL)
-DEF_WIN_FUNC(LONG, RtlVerifyVersionInfo, (PRTL_OSVERSIONINFOEXW, ULONG, ULONGLONG))
 DEF_WIN_DLL_END
+*/
 
 // USER32
 DEF_WIN_DLL_BEGIN(USER32)

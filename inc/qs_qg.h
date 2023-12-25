@@ -320,8 +320,10 @@ typedef enum QgWindowEventType
 	QGWEV_MAX_VALUE,
 } QgWindowEventType;
 
+#ifndef QGMAX_EVENTS
 /// @brief 최대 이벤트 갯수
 #define QGMAX_EVENTS		1000
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////

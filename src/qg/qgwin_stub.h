@@ -41,8 +41,6 @@ struct WindowsStub
 
 	wchar*				class_name;
 	wchar*				window_title;
-	DWORD				window_style;
-	DWORD				window_padding;		// 패딩
 
 	STICKYKEYS			acs_sticky;
 	TOGGLEKEYS			acs_toggle;
