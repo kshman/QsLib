@@ -476,7 +476,7 @@ bool qg_poll(QgEvent* ev)
 	}
 	if (s_seq.poll_count != s_seq.loop_count)
 	{
-		qn_debug_outputf(true, "STUB", "call qg_loop before qg_poll! [poll(%d) != loop(%d)]",
+		qn_debug_outputf(true, "STUB", "call qg_loop() before qg_poll()! [poll(%d) != loop(%d)]",
 			s_seq.poll_count, s_seq.loop_count);
 		s_seq.poll_count = s_seq.loop_count;
 	}

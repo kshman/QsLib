@@ -541,17 +541,11 @@ static WindowsMonitor* windows_create_monitor(DISPLAY_DEVICE* adev, DISPLAY_DEVI
 // 모니터 검사
 void stub_system_check_display(void)
 {
-	int prev_count = qn_pctnr_count(&winStub.base.monitors);
-	WindowsMonitor** prev_mons;
-	if (prev_count == 0)
-		prev_mons = NULL;
-	else
-	{
-		prev_mons = qn_alloc(prev_count, WindowsMonitor*);
-		memcpy(prev_mons, qn_pctnr_data(&winStub.base.monitors), prev_count * sizeof(WindowsMonitor*));
-	}
+	size_t prev_count = qn_pctnr_count(&winStub.base.monitors);
+	WindowsMonitor** prev_mons =
+		prev_count == 0 ? NULL : qn_memdup(qn_pctnr_data(&winStub.base.monitors), prev_count* sizeof(WindowsMonitor*));
 
-	int i;
+	size_t i;
 	for (DWORD adapter = 0; ; adapter++)
 	{
 		DISPLAY_DEVICE adev = { sizeof(DISPLAY_DEVICE), };
@@ -601,12 +595,15 @@ void stub_system_check_display(void)
 		}
 	}
 
-	for (i = 0; i < prev_count; i++)
+	if (prev_mons != NULL)
 	{
-		if (prev_mons[i] != NULL)
-			stub_event_on_monitor((QgUdevMonitor*)prev_mons[i], false, false);
+		for (i = 0; i < prev_count; i++)
+		{
+			if (prev_mons[i] != NULL)
+				stub_event_on_monitor((QgUdevMonitor*)prev_mons[i], false, false);
+		}
+		qn_free(prev_mons);
 	}
-	qn_free(prev_mons);
 }
 
 // 마우스 이벤트 소스 (https://learn.microsoft.com/ko-kr/windows/win32/tablet/system-events-and-mouse-messages)
@@ -695,8 +692,6 @@ static bool windows_mesg_keyboard(WPARAM wp, bool down)
 		SendMessage(winStub.hwnd, WM_CLOSE, 0, 0);
 		return true;
 	}
-#else
-	(void)stub;
 #endif
 
 	return stub_event_on_keyboard((QikKey)key, down) == 0 ? false : key != VK_MENU;

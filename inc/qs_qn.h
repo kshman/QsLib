@@ -89,7 +89,7 @@
 #define QN_FNAME			__FUNCTION__
 #define QN_FALL_THROUGH
 #define QN_STRUCT_ALIGN(x)	__declspec(align(x))
-#define QN_STMT_BEGIN		_Pragma("warning(suppress:4127)") do
+#define QN_STMT_BEGIN		_Pragma("warning(suppress:4127 4296)") do
 #define QN_STMT_END			while(0)
 #elif defined __GNUC__
 #ifndef __cplusplus

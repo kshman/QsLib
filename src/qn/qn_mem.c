@@ -319,6 +319,7 @@ static void qn_mpf_access_violation(const char* desc, size_t line, size_t size, 
 }
 
 #ifdef _QN_WINDOWS_
+#pragma warning(disable: 4702)
 //
 static DWORD qn_windows_mpf_exception(DWORD ex, const char* desc, size_t line, size_t size, size_t block)
 {
@@ -330,6 +331,7 @@ static DWORD qn_windows_mpf_exception(DWORD ex, const char* desc, size_t line, s
 		return EXCEPTION_CONTINUE_SEARCH;
 	return EXCEPTION_EXECUTE_HANDLER;
 }
+#pragma warning(default: 4702)
 #endif
 
 //
