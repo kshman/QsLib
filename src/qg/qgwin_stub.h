@@ -12,12 +12,6 @@
 
 static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 
-#ifndef XINPUT_DEAD_ZONE
-/// @brief 컨트롤러 데드존
-#define XINPUT_DEAD_ZONE	(int)(0.24f*((float)INT16_MAX))
-#endif
-
-
 // DLL
 #define DEF_WIN_FUNC(ret,name,args)		typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;
 #define DEF_WIN_XIFUNC(ret,name,args)	typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;
@@ -26,22 +20,34 @@ static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 #define DEF_WIN_XIFUNC(ret,name,args)	extern QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
 #include "qgwin_func.h"
 
-/// @brief 윈도우 스터브
+// 윈도우 모니터
+typedef struct WindowsMonitor WindowsMonitor;
+struct WindowsMonitor
+{
+	QgUdevMonitor		base;
+
+	wchar				adapter[32];
+	wchar				display[32];
+};
+
+// 윈도우 스터브
 typedef struct WindowsStub WindowsStub;
 struct WindowsStub
 {
 	StubBase			base;
 
-	HWND				hwnd;
 	HINSTANCE			instance;
+	HWND				hwnd;
 
 	wchar*				class_name;
 	wchar*				window_title;
 	DWORD				window_style;
+	DWORD				window_padding;		// 패딩
 
 	STICKYKEYS			acs_sticky;
 	TOGGLEKEYS			acs_toggle;
 	FILTERKEYS			acs_filter;
+	HHOOK				key_hook;
 
 	HIMC				himc;
 	int					imcs;
@@ -57,7 +63,7 @@ struct WindowsStub
 
 	bool				class_registered;
 	bool				clear_background;
+	bool				bool_padding1;
+	bool				bool_padding2;
 };
-
-/// @brief 윈도우 메시지 => 문자열
-extern const char* windows_message_string(UINT mesg);
+extern WindowsStub winStub;

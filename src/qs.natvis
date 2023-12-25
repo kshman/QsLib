@@ -12,6 +12,7 @@
     <AlternativeType Name="QnAnyCtn"/>
     <AlternativeType Name="ErrorArray"/>
     <AlternativeType Name="SubArray"/>
+    <AlternativeType Name="StubMonitorCtnr"/>
     <DisplayString>[갯수: {count}]</DisplayString>
     <Expand>
       <Item Name="[갯수]">count</Item>

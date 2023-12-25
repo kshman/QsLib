@@ -15,8 +15,10 @@
 //#define DEBUG_WINPROC_MESG
 #endif
 
+// 윈도우 스터브 여기 있다!
+WindowsStub winStub;
+
 //
-static void windows_awareness_dpi(WindowsStub* stub);
 static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
 
 // DLL 선언
@@ -44,7 +46,7 @@ static bool windows_dll_init(void)
 	qn_val_if_ok(loaded, true);
 	QnModule* module;
 	const char* dllname = NULL;
-	static char xinput_dll[64] = "xinput1_ ";
+	static char xinput_dll[64] = "XINPUT1_ ";
 	for (int i = 4; i >= 1; i--)
 	{
 		xinput_dll[8] = (char)('0' + i);
@@ -72,8 +74,25 @@ static bool windows_dll_init(void)
 	return loaded = true;
 }
 
-// 키 후킹
-static HHOOK windows_key_hook_handle;
+// 윈도우 버전 테스트
+static bool windows_test_version(WORD major, WORD minor, WORD build, WORD sp)
+{
+	OSVERSIONINFOEXW ovi = { sizeof(OSVERSIONINFOEXW), major, minor, build, 0, {0}, sp, };
+	DWORD mask = VER_MAJORVERSION | VER_MINORVERSION;
+	ULONGLONG cond = VerSetConditionMask(0, VER_MAJORVERSION, VER_GREATER_EQUAL);
+	cond = VerSetConditionMask(cond, VER_MINORVERSION, VER_GREATER_EQUAL);
+	if (build != 0)
+	{
+		mask |= VER_BUILDNUMBER;
+		cond = VerSetConditionMask(cond, VER_BUILDNUMBER, VER_GREATER_EQUAL);
+	}
+	if (sp != 0)
+	{
+		mask |= VER_SERVICEPACKMAJOR;
+		cond = VerSetConditionMask(cond, VER_SERVICEPACKMAJOR, VER_GREATER_EQUAL);
+	}
+	return Win32RtlVerifyVersionInfo(&ovi, mask, cond) == 0;
+}
 
 // 키 후킹 콜백
 static LRESULT CALLBACK windows_key_hook_proc(int code, WPARAM wp, LPARAM lp)
@@ -83,54 +102,57 @@ static LRESULT CALLBACK windows_key_hook_proc(int code, WPARAM wp, LPARAM lp)
 		(wp == WM_KEYDOWN || wp == WM_SYSKEYDOWN || wp == WM_KEYUP || wp == WM_SYSKEYUP) &&
 		(kh->vkCode == VK_LWIN || kh->vkCode == VK_RWIN || kh->vkCode == VK_MENU))
 		return 1;
-	return Win32CallNextHookEx(windows_key_hook_handle, code, wp, lp);
+	return Win32CallNextHookEx(winStub.key_hook, code, wp, lp);
 }
 
 // 키 후킹 끔
 static void windows_key_unhook(void)
 {
-	if (windows_key_hook_handle == NULL)
+	if (winStub.key_hook == NULL)
 		return;
-	Win32UnhookWindowsHookEx(windows_key_hook_handle);
-	windows_key_hook_handle = NULL;
+	Win32UnhookWindowsHookEx(winStub.key_hook);
+	winStub.key_hook = NULL;
 }
 
 // 키 후킹 시작
 static void windows_key_hook(HINSTANCE instance)
 {
 	windows_key_unhook();
-	windows_key_hook_handle = Win32SetWindowsHookExW(WH_KEYBOARD_LL, windows_key_hook_proc, instance, 0);
+	winStub.key_hook = Win32SetWindowsHookExW(WH_KEYBOARD_LL, windows_key_hook_proc, instance, 0);
 }
 
 //
 StubBase* stub_system_open(const char* title, int display, int width, int height, QgFlag flags)
 {
-	(void)display; // 모니터 번호는 나중에
-
-	static WindowsStub s_stub;
-	WindowsStub* stub = &s_stub;
-
-	stub->instance = GetModuleHandle(NULL);
-	if (stub->instance == NULL)
-	{
-		qn_debug_outputs(true, "WINDOWS STUB", "cannot retrieve module handle");
-		return NULL;
-	}
+	qn_zero_1(&winStub);
+	QN_DUMMY(display);	// 모니터 번호는 나중에
 
 	if (windows_dll_init() == false)
 	{
 		qn_debug_outputs(true, "WINDOWS STUB", "DLL load failed");
 		return NULL;
 	}
-	if (Win32XInputEnable != NULL)
-		Win32XInputEnable(TRUE);
+
+	// DPI
+	if (windows_test_version(HIBYTE(_WIN32_WINNT_WIN10), LOBYTE(_WIN32_WINNT_WIN10), 15063, 0))
+		Win32SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+	else if (windows_test_version(HIBYTE(_WIN32_WINNT_WINBLUE), LOBYTE(_WIN32_WINNT_WINBLUE), 0, 0))
+		Win32SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+	else
+		Win32SetProcessDPIAware();
+
+	//
+	winStub.instance = GetModuleHandle(NULL);
+	if (winStub.instance == NULL)
+	{
+		qn_debug_outputs(true, "WINDOWS STUB", "cannot retrieve module handle");
+		return NULL;
+	}
 
 	// 윈도우 클래스
-	if (stub->class_registered == false)
+	if (winStub.class_registered == false)
 	{
-		QnDateTime dt;
-		qn_now(&dt);
-		stub->class_name = qn_apswprintf(L"qs_stub_class_%llu", dt.stamp);
+		winStub.class_name = qn_apswprintf(L"qs_stub_class_%llu", qn_now());
 
 		WNDCLASSEX wc =
 		{
@@ -139,22 +161,22 @@ StubBase* stub_system_open(const char* title, int display, int width, int height
 			.lpfnWndProc = windows_mesg_proc,
 			.cbClsExtra = 0,
 			.cbWndExtra = 0,
-			.hInstance = stub->instance,
+			.hInstance = winStub.instance,
 			.hIcon = NULL,
 			.hCursor = NULL,
 			.hbrBackground = NULL,
 			.lpszMenuName = NULL,
-			.lpszClassName = stub->class_name,
+			.lpszClassName = winStub.class_name,
 			.hIconSm = NULL,
 		};
 
 		const char* prop = qn_get_prop(QG_PROP_WINDOWS_ICON);
 		if (prop && *prop)
 		{
-			wc.hIcon = LoadIcon(stub->instance, MAKEINTRESOURCE(qn_strtoi(prop, 10)));
+			wc.hIcon = LoadIcon(winStub.instance, MAKEINTRESOURCE(qn_strtoi(prop, 10)));
 			prop = qn_get_prop(QG_PROP_WINDOWS_SMALLICON);
 			if (prop && *prop)
-				wc.hIconSm = LoadIcon(stub->instance, MAKEINTRESOURCE(qn_strtoi(prop, 10)));
+				wc.hIconSm = LoadIcon(winStub.instance, MAKEINTRESOURCE(qn_strtoi(prop, 10)));
 		}
 		else
 		{
@@ -169,12 +191,12 @@ StubBase* stub_system_open(const char* title, int display, int width, int height
 				DestroyIcon(wc.hIcon);
 			if (wc.hIconSm)
 				DestroyIcon(wc.hIconSm);
-			qn_free(stub->class_name);
+			qn_free(winStub.class_name);
 			qn_debug_outputs(true, "WINDOWS STUB", "window class registration failed");
 			return NULL;
 		}
 
-		stub->class_registered = true;
+		winStub.class_registered = true;
 	}
 
 	// 크기 및 윈도우 위치
@@ -220,11 +242,11 @@ StubBase* stub_system_open(const char* title, int display, int width, int height
 	if (QN_TMASK(flags, QGFLAG_FULLSCREEN) == false)
 		qm_set2(&pos, (scrsize.width - size.width) / 2, (scrsize.height - size.height) / 2);
 
-	stub->window_style = style;
-	qm_rect_set_pos_size(&stub->base.window_bound, &pos, &size);
+	winStub.window_style = style;
+	qm_rect_set_pos_size(&winStub.base.window_bound, &pos, &size);
 
 	// 토글키 상태 저장
-	QgUimKey* uk = &stub->base.key;
+	QgUimKey* uk = &winStub.base.key;
 	if (GetKeyState(VK_CAPITAL) & 0x1)
 		QN_SMASK(&uk->mask, QIKM_CAPS, true);
 	if (GetKeyState(VK_SCROLL) & 0x1)
@@ -233,46 +255,44 @@ StubBase* stub_system_open(const char* title, int display, int width, int height
 		QN_SMASK(&uk->mask, QIKM_NUM, true);
 
 	// 커서
-	stub->mouse_cursor = LoadCursor(NULL, IDC_ARROW);
+	winStub.mouse_cursor = LoadCursor(NULL, IDC_ARROW);
 
 	// 값설정
-	stub->window_title = qn_u8to16_dup(title ? title : "QS", 0);
+	winStub.window_title = qn_u8to16_dup(title ? title : "QS", 0);
 
-	stub->deadzone_min = -XINPUT_DEAD_ZONE;
-	stub->deadzone_max = +XINPUT_DEAD_ZONE;
+	winStub.deadzone_min = -CTRL_DEAD_ZONE;
+	winStub.deadzone_max = +CTRL_DEAD_ZONE;
 
-	return (StubBase*)stub;
+	return (StubBase*)&winStub;
 }
 
 //
 bool stub_system_create_window(void)
 {
-	WindowsStub* stub = (WindowsStub*)qg_stub_instance;
-	QmRect* rect = &stub->base.window_bound;
+	QmRect* rect = &winStub.base.window_bound;
 
-	stub->hwnd = CreateWindowEx(0, stub->class_name, stub->window_title, stub->window_style,
+	winStub.hwnd = CreateWindowEx(0, winStub.class_name, winStub.window_title, winStub.window_style,
 		rect->left, rect->top, qm_rect_width(rect), qm_rect_height(rect),
-		NULL, NULL, stub->instance, NULL);
-	if (stub->hwnd == NULL)
+		NULL, NULL, winStub.instance, NULL);
+	if (winStub.hwnd == NULL)
 	{
 		qn_debug_outputs(true, "WINDOWS STUB", "cannot create window");
 		return false;
 	}
 
-	ShowWindow(stub->hwnd, SW_SHOWNORMAL);
-	UpdateWindow(stub->hwnd);
+	ShowWindow(winStub.hwnd, SW_SHOWNORMAL);
+	UpdateWindow(winStub.hwnd);
 
 	// 최종 스타일 변경
-	if (QN_TMASK(stub->base.flags, QGFLAG_FULLSCREEN | QGFLAG_NOTITLE))
-		SetWindowLong(stub->hwnd, GWL_STYLE, WS_POPUP | WS_SYSMENU | WS_VISIBLE);
+	if (QN_TMASK(winStub.base.flags, QGFLAG_FULLSCREEN | QGFLAG_NOTITLE))
+		SetWindowLong(winStub.hwnd, GWL_STYLE, WS_POPUP | WS_SYSMENU | WS_VISIBLE);
 	else
 	{
-		stub->window_style = GetWindowLong(stub->hwnd, GWL_STYLE);
-		SetWindowLong(stub->hwnd, GWL_STYLE, stub->window_style);
+		winStub.window_style = GetWindowLong(winStub.hwnd, GWL_STYLE);
+		SetWindowLong(winStub.hwnd, GWL_STYLE, winStub.window_style);
 	}
 
 	stub_system_calc_layout();
-	windows_awareness_dpi(stub);
 
 	return true;
 }
@@ -280,43 +300,37 @@ bool stub_system_create_window(void)
 //
 void stub_system_finalize(void)
 {
-	WindowsStub* stub = (WindowsStub*)qg_stub_instance;
-
-	if (Win32XInputEnable != NULL)
-		Win32XInputEnable(FALSE);
-
-	if (stub->hwnd != NULL)
+	if (winStub.hwnd != NULL)
 	{
-		stub->base.stats |= QGSSTT_EXIT;
+		winStub.base.stats |= QGSSTT_EXIT;
 		stub_system_hold_mouse(false);
 
-		if (stub->himc != NULL && Win32ImmAssociateContextEx != NULL)
-			Win32ImmAssociateContextEx(stub->hwnd, stub->himc, IACE_DEFAULT);
-		if (QN_TMASK(stub->base.flags, QGSPECIFIC_VIRTUAL) == false)
-			SendMessage(stub->hwnd, WM_CLOSE, 0, 0);
+		if (winStub.himc != NULL && Win32ImmAssociateContextEx != NULL)
+			Win32ImmAssociateContextEx(winStub.hwnd, winStub.himc, IACE_DEFAULT);
+		if (QN_TMASK(winStub.base.flags, QGSPECIFIC_VIRTUAL) == false)
+			SendMessage(winStub.hwnd, WM_CLOSE, 0, 0);
 	}
 
-	if (stub->mouse_cursor != NULL)
-		DestroyCursor(stub->mouse_cursor);
+	if (winStub.mouse_cursor != NULL)
+		DestroyCursor(winStub.mouse_cursor);
 
 	stub_system_disable_acs(false);
 
-	if (stub->class_registered)
+	if (winStub.class_registered)
 	{
-		stub->class_registered = false;
+		winStub.class_registered = false;
 		WNDCLASSEX wc;
-		if (GetClassInfoEx(stub->instance, stub->class_name, &wc))
-			UnregisterClass(stub->class_name, stub->instance);
+		if (GetClassInfoEx(winStub.instance, winStub.class_name, &wc))
+			UnregisterClass(winStub.class_name, winStub.instance);
 	}
 
-	qn_free(stub->window_title);
-	qn_free(stub->class_name);
+	qn_free(winStub.window_title);
+	qn_free(winStub.class_name);
 }
 
 //
 bool stub_system_poll(void)
 {
-	WindowsStub* stub = (WindowsStub*)qg_stub_instance;
 	_Pragma("warning(suppress:28159)")
 		DWORD tick = GetTickCount() + 1;
 	int count = 0;
@@ -342,30 +356,28 @@ bool stub_system_poll(void)
 	if (qg_test_key(QIK_RSHIFT) && (GetKeyState(VK_RSHIFT) & 0x8000) == 0)
 		stub_event_on_keyboard(QIK_RSHIFT, false);
 
-	return QN_TMASK(stub->base.stats, QGSSTT_EXIT) == false;
+	return QN_TMASK(winStub.base.stats, QGSSTT_EXIT) == false;
 }
 
 //
 void stub_system_disable_acs(bool enable)
 {
-	WindowsStub* stub = (WindowsStub*)qg_stub_instance;
-
 	if (enable)
 	{
-		if (QN_TMASK(stub->base.flags, QGFEATURE_DISABLE_ACS))
+		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_ACS))
 			return;
-		QN_SMASK(&stub->base.flags, QGFEATURE_DISABLE_ACS, true);
+		QN_SMASK(&winStub.base.flags, QGFEATURE_DISABLE_ACS, true);
 
-		stub->acs_sticky.cbSize = sizeof(STICKYKEYS);
-		stub->acs_toggle.cbSize = sizeof(TOGGLEKEYS);
-		stub->acs_filter.cbSize = sizeof(FILTERKEYS);
-		SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &stub->acs_sticky, 0);
-		SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &stub->acs_toggle, 0);
-		SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &stub->acs_filter, 0);
+		winStub.acs_sticky.cbSize = sizeof(STICKYKEYS);
+		winStub.acs_toggle.cbSize = sizeof(TOGGLEKEYS);
+		winStub.acs_filter.cbSize = sizeof(FILTERKEYS);
+		SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &winStub.acs_sticky, 0);
+		SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &winStub.acs_toggle, 0);
+		SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &winStub.acs_filter, 0);
 
-		STICKYKEYS sticky = stub->acs_sticky;
-		TOGGLEKEYS toggle = stub->acs_toggle;
-		FILTERKEYS filter = stub->acs_filter;
+		STICKYKEYS sticky = winStub.acs_sticky;
+		TOGGLEKEYS toggle = winStub.acs_toggle;
+		FILTERKEYS filter = winStub.acs_filter;
 		sticky.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
 		toggle.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
 		filter.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
@@ -373,17 +385,17 @@ void stub_system_disable_acs(bool enable)
 		SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &toggle, 0);
 		SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &filter, 0);
 
-		windows_key_hook(stub->instance);
+		windows_key_hook(winStub.instance);
 	}
 	else
 	{
-		if (QN_TMASK(stub->base.flags, QGFEATURE_DISABLE_ACS) == false)
+		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_ACS) == false)
 			return;
-		QN_SMASK(&stub->base.flags, QGFEATURE_DISABLE_ACS, false);
+		QN_SMASK(&winStub.base.flags, QGFEATURE_DISABLE_ACS, false);
 
-		SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &stub->acs_sticky, 0);
-		SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &stub->acs_toggle, 0);
-		SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &stub->acs_filter, 0);
+		SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &winStub.acs_sticky, 0);
+		SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &winStub.acs_toggle, 0);
+		SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &winStub.acs_filter, 0);
 
 		windows_key_unhook();
 	}
@@ -392,20 +404,18 @@ void stub_system_disable_acs(bool enable)
 //
 void stub_system_diable_scrsave(bool enable)
 {
-	WindowsStub* stub = (WindowsStub*)qg_stub_instance;
-
 	if (enable)
 	{
-		if (QN_TMASK(stub->base.flags, QGFEATURE_DISABLE_SCRSAVE))
+		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_SCRSAVE))
 			return;
-		QN_SMASK(&stub->base.flags, QGFEATURE_DISABLE_SCRSAVE, true);
+		QN_SMASK(&winStub.base.flags, QGFEATURE_DISABLE_SCRSAVE, true);
 		SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
 	}
 	else
 	{
-		if (QN_TMASK(stub->base.flags, QGFEATURE_DISABLE_SCRSAVE) == false)
+		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_SCRSAVE) == false)
 			return;
-		QN_SMASK(&stub->base.flags, QGFEATURE_DISABLE_SCRSAVE, false);
+		QN_SMASK(&winStub.base.flags, QGFEATURE_DISABLE_SCRSAVE, false);
 		SetThreadExecutionState(ES_CONTINUOUS);
 	}
 }
@@ -413,20 +423,19 @@ void stub_system_diable_scrsave(bool enable)
 //
 void stub_system_enable_drop(bool enable)
 {
-	WindowsStub* stub = (WindowsStub*)qg_stub_instance;
 	if (enable)
 	{
-		if (QN_TMASK(stub->base.flags, QGFEATURE_ENABLE_DROP))
+		if (QN_TMASK(winStub.base.flags, QGFEATURE_ENABLE_DROP))
 			return;
-		QN_SMASK(&stub->base.flags, QGFEATURE_ENABLE_DROP, true);
-		DragAcceptFiles(stub->hwnd, TRUE);
+		QN_SMASK(&winStub.base.flags, QGFEATURE_ENABLE_DROP, true);
+		DragAcceptFiles(winStub.hwnd, TRUE);
 	}
 	else
 	{
-		if (QN_TMASK(stub->base.flags, QGFEATURE_ENABLE_DROP) == false)
+		if (QN_TMASK(winStub.base.flags, QGFEATURE_ENABLE_DROP) == false)
 			return;
-		QN_SMASK(&stub->base.flags, QGFEATURE_ENABLE_DROP, false);
-		DragAcceptFiles(stub->hwnd, FALSE);
+		QN_SMASK(&winStub.base.flags, QGFEATURE_ENABLE_DROP, false);
+		DragAcceptFiles(winStub.hwnd, FALSE);
 	}
 }
 
@@ -434,29 +443,26 @@ void stub_system_enable_drop(bool enable)
 void stub_system_set_title(const char* u8text)
 {
 	qn_ret_if_fail(u8text && *u8text);
-	WindowsStub* stub = (WindowsStub*)qg_stub_instance;
-	qn_free(stub->window_title);
-	stub->window_title = qn_u8to16_dup(u8text, 0);
-	SetWindowText(stub->hwnd, stub->window_title);
+	qn_free(winStub.window_title);
+	winStub.window_title = qn_u8to16_dup(u8text, 0);
+	SetWindowText(winStub.hwnd, winStub.window_title);
 }
 
 //
 void stub_system_hold_mouse(bool hold)
 {
-	WindowsStub* stub = (WindowsStub*)qg_stub_instance;
-
 	if (hold)
 	{
-		if (QN_TMASK(stub->base.stats, QGSSTT_HOLD))
+		if (QN_TMASK(winStub.base.stats, QGSSTT_HOLD))
 			return;
-		QN_SMASK(&stub->base.stats, QGSSTT_HOLD, true);
-		SetCapture(stub->hwnd);
+		QN_SMASK(&winStub.base.stats, QGSSTT_HOLD, true);
+		SetCapture(winStub.hwnd);
 	}
 	else
 	{
-		if (QN_TMASK(stub->base.stats, QGSSTT_HOLD) == false)
+		if (QN_TMASK(winStub.base.stats, QGSSTT_HOLD) == false)
 			return;
-		QN_SMASK(&stub->base.stats, QGSSTT_HOLD, false);
+		QN_SMASK(&winStub.base.stats, QGSSTT_HOLD, false);
 		ReleaseCapture();
 	}
 }
@@ -464,21 +470,143 @@ void stub_system_hold_mouse(bool hold)
 //
 void stub_system_calc_layout(void)
 {
-	WindowsStub* stub = (WindowsStub*)qg_stub_instance;
 	RECT rect;
 
-	GetWindowRect(stub->hwnd, &rect);
-	memcpy(&stub->base.window_bound, &rect, sizeof(RECT));
+	GetWindowRect(winStub.hwnd, &rect);
+	memcpy(&winStub.base.window_bound, &rect, sizeof(RECT));
 
-	GetClientRect(stub->hwnd, &rect);
-	qm_set2(&stub->base.client_size, rect.right - rect.left, rect.bottom - rect.top);
+	GetClientRect(winStub.hwnd, &rect);
+	qm_set2(&winStub.base.client_size, rect.right - rect.left, rect.bottom - rect.top);
 }
 
-//
-static void windows_awareness_dpi(WindowsStub* stub)
+// 모니터 핸들 얻기 콜백
+static BOOL CALLBACK windows_monitor_callback(HMONITOR monitor, HDC dc, RECT* rect, LPARAM lp)
 {
-	// 해야한다!
-	(void)stub;
+	QN_DUMMY(dc);
+	QN_DUMMY(rect);
+	MONITORINFOEX mi = { sizeof(MONITORINFOEX), };
+	if (GetMonitorInfo(monitor, (LPMONITORINFO)&mi))
+	{
+		WindowsMonitor* wm = (WindowsMonitor*)lp;
+		if (qn_wcseqv(mi.szDevice, wm->adapter))
+			wm->base.oshandle = monitor;
+	}
+	return TRUE;
+}
+
+// 모니터 만들기
+static WindowsMonitor* windows_create_monitor(DISPLAY_DEVICE* adev, DISPLAY_DEVICE* ddev)
+{
+	WindowsMonitor* mon = qn_alloc_zero_1(WindowsMonitor);
+	qn_wcscpy(mon->adapter, QN_COUNTOF(mon->adapter), adev->DeviceName);
+	wchar* name;
+	if (ddev == NULL)
+		name = adev->DeviceString;
+	else
+	{
+		name = ddev->DeviceString;
+		qn_wcscpy(mon->display, QN_COUNTOF(mon->display), ddev->DeviceName);
+	}
+	qn_u16to8(mon->base.name, QN_COUNTOF(mon->base.name), name, 0);
+
+	DEVMODE dm;
+	ZeroMemory(&dm, sizeof(DEVMODE));
+	dm.dmSize = sizeof(DEVMODE);
+	EnumDisplaySettings(adev->DeviceName, ENUM_CURRENT_SETTINGS, &dm);
+
+	HDC hdc = CreateDC(L"DISPLAY", adev->DeviceName, NULL, NULL);
+	if (windows_test_version(HIBYTE(_WIN32_WINNT_WINBLUE), LOBYTE(_WIN32_WINNT_WINBLUE), 0, 0))
+	{
+		mon->base.mmwidth = GetDeviceCaps(hdc, HORZSIZE);
+		mon->base.mmheight = GetDeviceCaps(hdc, VERTSIZE);
+	}
+	else
+	{
+		mon->base.mmwidth = (int)(dm.dmPelsWidth * 25.4f / GetDeviceCaps(hdc, LOGPIXELSX));
+		mon->base.mmheight = (int)(dm.dmPelsHeight * 25.4f / GetDeviceCaps(hdc, LOGPIXELSY));
+	}
+	DeleteDC(hdc);
+
+	mon->base.x = dm.dmPosition.x;
+	mon->base.y = dm.dmPosition.y;
+	mon->base.width = dm.dmPelsWidth;
+	mon->base.height = dm.dmPelsHeight;
+
+	RECT rect;
+	SetRect(&rect, dm.dmPosition.x, dm.dmPosition.y, dm.dmPosition.x + dm.dmPelsWidth, dm.dmPosition.y + dm.dmPelsHeight);
+	EnumDisplayMonitors(NULL, &rect, windows_monitor_callback, (LPARAM)mon);
+	return mon;
+}
+
+// 모니터 검사
+void stub_system_check_display(void)
+{
+	int prev_count = qn_pctnr_count(&winStub.base.monitors);
+	WindowsMonitor** prev_mons;
+	if (prev_count == 0)
+		prev_mons = NULL;
+	else
+	{
+		prev_mons = qn_alloc(prev_count, WindowsMonitor*);
+		memcpy(prev_mons, qn_pctnr_data(&winStub.base.monitors), prev_count * sizeof(WindowsMonitor*));
+	}
+
+	int i;
+	for (DWORD adapter = 0; ; adapter++)
+	{
+		DISPLAY_DEVICE adev = { sizeof(DISPLAY_DEVICE), };
+		if (EnumDisplayDevices(NULL, adapter, &adev, 0) == FALSE)
+			break;
+		if (QN_TMASK(adev.StateFlags, DISPLAY_DEVICE_ACTIVE) == false)
+			continue;
+
+		DWORD display;
+		for (display = 0; ; display++)
+		{
+			DISPLAY_DEVICE ddev = { sizeof(DISPLAY_DEVICE), };
+			if (EnumDisplayDevices(adev.DeviceName, display, &ddev, 0) == FALSE)
+				break;
+			if (QN_TMASK(ddev.StateFlags, DISPLAY_DEVICE_ACTIVE) == false)
+				break;
+
+			for (i = 0; i < prev_count; i++)
+			{
+				if (prev_mons[i] == NULL || qn_wcseqv(prev_mons[i]->display, ddev.DeviceName) == false)
+					continue;
+				prev_mons[i] = NULL;
+				EnumDisplayMonitors(NULL, NULL, windows_monitor_callback, (LPARAM)&qn_pctnr_nth(&winStub.base.monitors, i));
+				break;
+			}
+			if (i < prev_count)
+				continue;
+
+			WindowsMonitor* mon = windows_create_monitor(&adev, &ddev);
+			stub_event_on_monitor((QgUdevMonitor*)mon, true, QN_TMASK(adev.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE));
+		}
+
+		if (display == 0)
+		{
+			for (i = 0; i < prev_count; i++)
+			{
+				if (prev_mons[i] == NULL || qn_wcseqv(prev_mons[i]->adapter, adev.DeviceName) == false)
+					continue;
+				prev_mons[i] = NULL;
+				break;
+			}
+			if (i < prev_count)
+				continue;
+
+			WindowsMonitor* mon = windows_create_monitor(&adev, NULL);
+			stub_event_on_monitor((QgUdevMonitor*)mon, true, QN_TMASK(adev.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE));
+		}
+	}
+
+	for (i = 0; i < prev_count; i++)
+	{
+		if (prev_mons[i] != NULL)
+			stub_event_on_monitor((QgUdevMonitor*)prev_mons[i], false, false);
+	}
+	qn_free(prev_mons);
 }
 
 // 마우스 이벤트 소스 (https://learn.microsoft.com/ko-kr/windows/win32/tablet/system-events-and-mouse-messages)
@@ -508,12 +636,12 @@ static WindowsMouseSource windows_get_mouse_source(void)
 }
 
 // 마으스 위치 저장
-static void windows_set_mouse_point(WindowsStub* stub, LPARAM lp, bool save)
+static void windows_set_mouse_point(LPARAM lp, bool save)
 {
-	if (stub->mouse_lparam == lp)
+	if (winStub.mouse_lparam == lp)
 		return;
 
-	QgUimMouse* mouse = &stub->base.mouse;
+	QgUimMouse* mouse = &winStub.base.mouse;
 	POINT pt = { .x = GET_X_LPARAM(lp), .y = GET_Y_LPARAM(lp) };
 	if (save)
 		mouse->last = mouse->pt;
@@ -521,13 +649,13 @@ static void windows_set_mouse_point(WindowsStub* stub, LPARAM lp, bool save)
 }
 
 // 지정한 마우스 버튼 처리
-static void windows_check_mouse_button(WindowsStub* stub, bool pressed, QimMask mask, QimButton button)
+static void windows_check_mouse_button(bool pressed, QimMask mask, QimButton button)
 {
-	if (QN_TBIT(stub->mouse_pending, button))
+	if (QN_TBIT(winStub.mouse_pending, button))
 	{
 		if (pressed == false)
 		{
-			stub->mouse_pending &= ~QN_BIT(button);
+			winStub.mouse_pending &= ~QN_BIT(button);
 			// 클리핑 업데이트
 		}
 		// 포커스 클릭 무시
@@ -540,31 +668,31 @@ static void windows_check_mouse_button(WindowsStub* stub, bool pressed, QimMask 
 }
 
 // 마우스 눌림 해제 (한번에 처리)
-static void windows_check_mouse_release(WindowsStub* stub)
+static void windows_check_mouse_release(void)
 {
-	QimMask mask = stub->base.mouse.mask;
+	QimMask mask = winStub.base.mouse.mask;
 	if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) == 0)
-		windows_check_mouse_button(stub, FALSE, mask, QIM_LEFT);
+		windows_check_mouse_button(FALSE, mask, QIM_LEFT);
 	if ((GetAsyncKeyState(VK_RBUTTON) & 0x8000) == 0)
-		windows_check_mouse_button(stub, FALSE, mask, QIM_RIGHT);
+		windows_check_mouse_button(FALSE, mask, QIM_RIGHT);
 	if ((GetAsyncKeyState(VK_MBUTTON) & 0x8000) == 0)
-		windows_check_mouse_button(stub, FALSE, mask, QIM_MIDDLE);
+		windows_check_mouse_button(FALSE, mask, QIM_MIDDLE);
 	if ((GetAsyncKeyState(VK_XBUTTON1) & 0x8000) == 0)
-		windows_check_mouse_button(stub, FALSE, mask, QIM_X1);
+		windows_check_mouse_button(FALSE, mask, QIM_X1);
 	if ((GetAsyncKeyState(VK_XBUTTON2) & 0x8000) == 0)
-		windows_check_mouse_button(stub, FALSE, mask, QIM_X2);
-	stub->mouse_wparam = 0;
+		windows_check_mouse_button(FALSE, mask, QIM_X2);
+	winStub.mouse_wparam = 0;
 }
 
 // 키보드 메시지
-static bool windows_mesg_keyboard(WindowsStub* stub, WPARAM wp, bool down)
+static bool windows_mesg_keyboard(WPARAM wp, bool down)
 {
 	byte key = (byte)(wp & 0xFF);
 
 #ifdef _DEBUG
 	if (down && key == VK_F12)
 	{
-		SendMessage(stub->hwnd, WM_CLOSE, 0, 0);
+		SendMessage(winStub.hwnd, WM_CLOSE, 0, 0);
 		return true;
 	}
 #else
@@ -575,32 +703,32 @@ static bool windows_mesg_keyboard(WindowsStub* stub, WPARAM wp, bool down)
 }
 
 // 액티브 메시지
-static void windows_mesg_active(WindowsStub* stub, bool focus)
+static void windows_mesg_active(bool focus)
 {
-	double now = stub->base.timer->abstime;
-	double delta = now - stub->base.active;
-	stub->base.active = now;
+	double now = winStub.base.timer->abstime;
+	double delta = now - winStub.base.active;
+	winStub.base.active = now;
 
-	bool has_focus = GetForegroundWindow() == stub->hwnd;
+	bool has_focus = GetForegroundWindow() == winStub.hwnd;
 	if (has_focus != focus)
 		return;
 
 	if (has_focus)
 	{
-		QN_SMASK(&stub->base.stats, QGSSTT_ACTIVE, true);
+		QN_SMASK(&winStub.base.stats, QGSSTT_ACTIVE, true);
 
 		if (GetAsyncKeyState(VK_LBUTTON))
-			stub->mouse_pending |= QIMM_LEFT;
+			winStub.mouse_pending |= QIMM_LEFT;
 		if (GetAsyncKeyState(VK_RBUTTON))
-			stub->mouse_pending |= QIMM_RIGHT;
+			winStub.mouse_pending |= QIMM_RIGHT;
 		if (GetAsyncKeyState(VK_MBUTTON))
-			stub->mouse_pending |= QIMM_MIDDLE;
+			winStub.mouse_pending |= QIMM_MIDDLE;
 		if (GetAsyncKeyState(VK_XBUTTON1))
-			stub->mouse_pending |= QIMM_X1;
+			winStub.mouse_pending |= QIMM_X1;
 		if (GetAsyncKeyState(VK_XBUTTON2))
-			stub->mouse_pending |= QIMM_X2;
+			winStub.mouse_pending |= QIMM_X2;
 
-		windows_check_mouse_release(stub);
+		windows_check_mouse_release();
 
 		stub_toggle_keys(QIKM_CAPS, (GetKeyState(VK_CAPITAL) & 0x1) != 0);
 		stub_toggle_keys(QIKM_SCRL, (GetKeyState(VK_SCROLL) & 0x1) != 0);
@@ -611,7 +739,7 @@ static void windows_mesg_active(WindowsStub* stub, bool focus)
 	}
 	else
 	{
-		QN_SMASK(&stub->base.stats, QGSSTT_ACTIVE, false);
+		QN_SMASK(&winStub.base.stats, QGSSTT_ACTIVE, false);
 
 		stub_event_on_reset_keys();
 		stub_event_on_window_event(QGWEV_LOSTFOCUS, 0, 0);
@@ -622,18 +750,9 @@ static void windows_mesg_active(WindowsStub* stub, bool focus)
 // 윈도우 메시지 프로시저
 static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 {
-	WindowsStub* stub = (WindowsStub*)qg_stub_instance;
 	LRESULT result = -1;
 
-	if (stub == NULL)
-	{
-#ifdef DEBUG_WINPROC_MESG
-		qn_debug_outputf(false, "WINDOW STUB", "처리안된 메시지: %s(%X)", windows_message_string(mesg), mesg);
-#endif
-		return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-	}
-
-	if (QN_TMASK(stub->base.flags, QGFEATURE_ENABLE_SYSWM))
+	if (QN_TMASK(winStub.base.flags, QGFEATURE_ENABLE_SYSWM))
 	{
 		QgEvent e =
 		{
@@ -655,7 +774,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 	{
 		if (mesg == WM_MOUSEMOVE)
 		{
-			windows_set_mouse_point(stub, lp, true);
+			windows_set_mouse_point(lp, true);
 			stub_track_mouse_click(QIM_NONE, QIMT_MOVE);
 			stub_event_on_mouse_move();
 		}
@@ -663,16 +782,16 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 		{
 			if (windows_get_mouse_source() != WINDOWS_MOUSE_SOURCE_TOUCH)
 			{
-				windows_set_mouse_point(stub, lp, false);
-				if (stub->mouse_wparam != wp)
+				windows_set_mouse_point(lp, false);
+				if (winStub.mouse_wparam != wp)
 				{
-					stub->mouse_wparam = wp;
-					QimMask mask = stub->base.mouse.mask;
-					windows_check_mouse_button(stub, QN_TMASK(wp, MK_LBUTTON), mask, QIM_LEFT);
-					windows_check_mouse_button(stub, QN_TMASK(wp, MK_RBUTTON), mask, QIM_RIGHT);
-					windows_check_mouse_button(stub, QN_TMASK(wp, MK_MBUTTON), mask, QIM_MIDDLE);
-					windows_check_mouse_button(stub, QN_TMASK(wp, MK_XBUTTON1), mask, QIM_X1);
-					windows_check_mouse_button(stub, QN_TMASK(wp, MK_XBUTTON2), mask, QIM_X2);
+					winStub.mouse_wparam = wp;
+					QimMask mask = winStub.base.mouse.mask;
+					windows_check_mouse_button(QN_TMASK(wp, MK_LBUTTON), mask, QIM_LEFT);
+					windows_check_mouse_button(QN_TMASK(wp, MK_RBUTTON), mask, QIM_RIGHT);
+					windows_check_mouse_button(QN_TMASK(wp, MK_MBUTTON), mask, QIM_MIDDLE);
+					windows_check_mouse_button(QN_TMASK(wp, MK_XBUTTON1), mask, QIM_X1);
+					windows_check_mouse_button(QN_TMASK(wp, MK_XBUTTON2), mask, QIM_X2);
 				}
 			}
 		}
@@ -694,12 +813,12 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 	{
 		if (mesg == WM_KEYDOWN || mesg == WM_SYSKEYDOWN)
 		{
-			if (!windows_mesg_keyboard(stub, wp, true))
+			if (!windows_mesg_keyboard(wp, true))
 				result = 0;
 		}
 		else if (mesg == WM_KEYUP || mesg == WM_SYSKEYUP)
 		{
-			if (!windows_mesg_keyboard(stub, wp, false))
+			if (!windows_mesg_keyboard(wp, false))
 				result = 0;
 		}
 		else break;
@@ -731,16 +850,16 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			break;
 
 		case WM_ACTIVATE:
-			windows_mesg_active(stub, !!(LOWORD(wp)));
+			windows_mesg_active(!!(LOWORD(wp)));
 			break;
 
 		case WM_SETFOCUS:
-			windows_mesg_active(stub, true);
+			windows_mesg_active(true);
 			break;
 
 		case WM_KILLFOCUS:
 		case WM_ENTERIDLE:
-			windows_mesg_active(stub, false);
+			windows_mesg_active(false);
 			break;
 
 		case WM_PAINT:
@@ -756,15 +875,15 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		case WM_CLOSE:
 			stub_event_on_window_event(QGWEV_CLOSE, 0, 0);
-			QN_SMASK(&stub->base.stats, QGSSTT_EXIT, true);
+			QN_SMASK(&winStub.base.stats, QGSSTT_EXIT, true);
 			DestroyWindow(hwnd);
 			result = 0;
 			break;
 
 		case WM_ERASEBKGND:
-			if (stub->clear_background == false)
+			if (winStub.clear_background == false)
 			{
-				stub->clear_background = true;
+				winStub.clear_background = true;
 				RECT rect;
 				GetClientRect(hwnd, &rect);
 				HBRUSH brush = CreateSolidBrush(0);
@@ -787,12 +906,12 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 		case WM_SETCURSOR:
 		{
 			WORD hittest = LOWORD(lp);
-			if (hittest == HTCLIENT && QN_TMASK(stub->base.stats, QGSSTT_CURSOR))
+			if (hittest == HTCLIENT && QN_TMASK(winStub.base.stats, QGSSTT_CURSOR))
 			{
-				SetCursor(stub->mouse_cursor);
+				SetCursor(winStub.mouse_cursor);
 				result = 1;
 			}
-			else if (stub->mouse_cursor == NULL)
+			else if (winStub.mouse_cursor == NULL)
 			{
 				SetCursor(NULL);
 				result = 1;
@@ -806,7 +925,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			break;
 
 		case WM_WINDOWPOSCHANGING:
-			if (QN_TMASK(stub->base.stats, QGSSTT_LAYOUT))
+			if (QN_TMASK(winStub.base.stats, QGSSTT_LAYOUT))
 				result = 0;
 			break;
 
@@ -835,11 +954,11 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			break;
 
 		case WM_NCACTIVATE:
-			windows_mesg_active(stub, !!wp);
+			windows_mesg_active(!!wp);
 			break;
 
 		case WM_NCHITTEST:
-			if (QN_TMASK(stub->base.flags, QGFLAG_FULLSCREEN))
+			if (QN_TMASK(winStub.base.flags, QGFLAG_FULLSCREEN))
 				return HTCLIENT;
 			break;
 
@@ -855,15 +974,15 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		case WM_CHAR:
 			if (IS_HIGH_SURROGATE(wp))
-				stub->high_surrogate = (WCHAR)wp;
-			else if (IS_SURROGATE_PAIR(stub->high_surrogate, wp))
+				winStub.high_surrogate = (WCHAR)wp;
+			else if (IS_SURROGATE_PAIR(winStub.high_surrogate, wp))
 			{
-				// 여기서 stub->high_surrogate 와 wp 를 조합해서 키보드 데이터를 처리
+				// 여기서 winStub.high_surrogate 와 wp 를 조합해서 키보드 데이터를 처리
 				// https://learn.microsoft.com/ko-kr/windows/win32/inputdev/wm-char
 				char u8[7];
-				if (qn_u16ucb((uchar2)stub->high_surrogate, (uchar2)wp, u8))
+				if (qn_u16ucb((uchar2)winStub.high_surrogate, (uchar2)wp, u8))
 					stub_event_on_text(u8);
-				stub->high_surrogate = 0;
+				winStub.high_surrogate = 0;
 			}
 			else
 			{
@@ -894,7 +1013,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			ushort cmd = (ushort)(wp & 0xFFFF0);
 			if (cmd == SC_KEYMENU)
 				result = 0;
-			if (QN_TMASK(stub->base.flags, QGFEATURE_DISABLE_SCRSAVE) && (cmd == SC_SCREENSAVE || cmd == SC_MONITORPOWER))
+			if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_SCRSAVE) && (cmd == SC_SCREENSAVE || cmd == SC_MONITORPOWER))
 				result = 0;
 		} break;
 
@@ -915,7 +1034,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			break;
 
 		case WM_DROPFILES:
-			if (QN_TMASK(stub->base.flags, QGFEATURE_ENABLE_DROP))
+			if (QN_TMASK(winStub.base.flags, QGFEATURE_ENABLE_DROP))
 			{
 				DragAcceptFiles(hwnd, false);
 				HDROP handle = (HDROP)wp;
@@ -941,7 +1060,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			break;
 
 		case WM_POINTERUPDATE:
-			stub->mouse_lparam = lp;
+			winStub.mouse_lparam = lp;
 			break;
 
 		case WM_MOUSELEAVE:

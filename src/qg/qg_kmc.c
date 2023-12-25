@@ -351,6 +351,7 @@ const char* qg_event_str(QgEventType ev)
 		DEF_EVENT(DROPBEGIN),
 		DEF_EVENT(DROPEND),
 		DEF_EVENT(DROPFILE),
+		DEF_EVENT(MONITOR),
 		DEF_EVENT(EXIT),
 		{ 0, NULL },
 #undef DEF_EVENT

@@ -263,9 +263,6 @@
     <ClCompile Include="qn\qn_thd.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="qg\qgwin_mesg.c">
-      <Filter>소스 파일\qg\stub</Filter>
-    </ClCompile>
     <ClCompile Include="qg\glad\glad.c">
       <Filter>소스 파일\qg\glad</Filter>
     </ClCompile>

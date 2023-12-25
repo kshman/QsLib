@@ -3,10 +3,10 @@
 
 int main()
 {
-	qn_runtime(NULL);
+	qn_runtime();
 
 	int flags = /*QGFEATURE_DISABLE_ACS |*/ QGFEATURE_DISABLE_SCRSAVE | QGFEATURE_ENABLE_IDLE | QGFEATURE_ENABLE_DROP;
-	if (!qg_open_stub(NULL, 0, 0, QGFLAG_RESIZABLE | flags))
+	if (!qg_open_stub(NULL, 0, 0, 0, QGFLAG_RESIZABLE | flags))
 		return -1;
 
 	while (qg_loop())

@@ -283,6 +283,7 @@ typedef enum QgStubStat
 typedef enum QgEventType
 {
 	QGEV_NONE,												/// @brief 이벤트 없음
+	QGEV_SYSWM,												/// @brief 시스템 메시지
 	QGEV_ACTIVE,											/// @brief 스터브 활성 상태 이벤트
 	QGEV_LAYOUT,											/// @brief 화면 크기 이벤트
 	QGEV_MOUSEMOVE,											/// @brief 마우스를 움직여요
@@ -294,10 +295,10 @@ typedef enum QgEventType
 	QGEV_KEYUP,												/// @brief 키보드에서 손을 뗐어요
 	QGEV_TEXTINPUT,											/// @brief 텍스트 입력
 	QGEV_WINDOW,											/// @brief 윈도우 이벤트
-	QGEV_SYSWM,												/// @brief 시스템 메시지
 	QGEV_DROPBEGIN,											/// @brief 드랍을 시작한다
 	QGEV_DROPEND,											/// @brief 드랍이 끝났다
 	QGEV_DROPFILE,											/// @brief 파일 드랍
+	QGEV_MONITOR,											/// @brief 모니터 이벤트
 	QGEV_EXIT,												/// @brief 끝내기
 	QGEV_MAX_VALUE,
 } QgEventType;
@@ -415,82 +416,6 @@ typedef struct QgVarShader
 /// @brief 세이더 변수 콜백 함수
 typedef void(*QgVarShaderFunc)(void*, const QgVarShader*);
 
-/// @brief 이벤트
-typedef union QgEvent
-{
-	QgEventType			ev;									/// @brief 이벤트 타입
-	struct QgEventActive
-	{
-		QgEventType			ev;
-		bool32				active;							/// @brief 활성 상태면 참
-		double				delta;							/// @brief 마지막 활성 상태로 부터의 지난 시간(초)
-	}					active;								/// @brief 액티브 이벤트
-	struct QgEventLayout
-	{
-		QgEventType			ev;
-		QmRect				bound;							/// @brief 실제 윈도우의 사각 영역
-		QmSize				size;							/// @brief 그리기 영역 크기
-	}					layout;								/// @brief 레이아웃 이벤트
-	struct QgEventKeyboard
-	{
-		QgEventType			ev;
-		QikKey				key;							/// @brief 이벤트에 해당하는 키
-		QikMask				mask;							/// @brief 특수키 상태
-		bool32				repeat;							/// @brief 계속 눌려 있었다면 참
-	}					key;								/// @brief 키 눌림 떼임 이벤트
-	struct QgEventMouseMove
-	{
-		QgEventType			ev;
-		QmPoint				pt;								/// @brief 마우스 좌표
-		QmPoint				delta;							/// @brief 마우스 이동 거리
-		QimMask				mask;							/// @brief 마우스 버튼의 상태
-	}					mmove;								/// @brief 마우스 이동 이벤트
-	struct QgEventMouseButton
-	{
-		QgEventType			ev;
-		QmPoint				pt;								/// @brief 마우스 좌표
-		QimButton			button;							/// @brief 이벤트에 해당하는 버튼
-		QimMask				mask;							/// @brief 마으스 버튼의 상태
-	}					mbutton;							/// @brief 마우스 버튼 눌림 떼임 이벤트
-	struct QgEventMouseWheel
-	{
-		QgEventType			ev;
-		QmPoint				pt;								/// @brief 마우스 좌표
-		QmPoint				wheel;							/// @brief 휠 움직임 (Y가 기본휠, X는 틸트)
-		QmVec2				precise;						/// @brief 정밀한 움직임 (Y가 기본휠, X는 틸트)
-		int					direction;						/// @brief 참이면 뱡향이 반대
-	}					mwheel;								/// @brief 마우스 휠 이벤트
-	struct QgEventText
-	{
-		QgEventType			ev;
-		int					len;							/// @brief 텍스트 길이
-		char				data[16];						/// @brief 텍스트 내용
-	}					text;
-	struct QgEventDrop
-	{
-		QgEventType			ev;
-		int					len;							/// @brief 데이타의 길이
-		char*				data;							/// @brief 테이타 포인터. 데이터의 유효기간은 다음 loop 까지
-	}					drop;
-	struct QgEventWindowEvent
-	{
-		QgEventType			ev;
-		QgWindowEventType	mesg;							/// @brief 윈도우 이벤트 메시지
-		int					param1;							/// @brief 파라미터1
-		int					param2;							/// @brief 파라미터2
-	}					wevent;
-#if _QN_WINDOWS_
-	struct QgEventSysWindows
-	{
-		QgEventType			ev;
-		uint				mesg;							/// @brief 메시지
-		nuint				wparam;							/// @brief WPARAM
-		nint				lparam;							/// @brief LPARAM
-		void*				hwnd;							/// @brief 윈도우 핸들
-	}					windows;
-#endif
-} QgEvent;
-
 /// @brief 키 상태
 typedef struct QgUimKey
 {
@@ -556,6 +481,103 @@ typedef struct QgUimCtrlVib
 	ushort				left;
 	ushort				right;
 } QgUimCtrlVib;
+
+/// @brief 모니터 정보
+typedef struct QgUdevMonitor
+{
+	char				name[64];
+	int					no;
+	uint				x;
+	uint				y;
+	uint				width;
+	uint				height;
+	uint				depth;
+	uint				mmwidth;
+	uint				mmheight;
+	void*				oshandle;
+} QgUdevMonitor;
+
+/// @brief 이벤트
+typedef union QgEvent
+{
+	QgEventType			ev;									/// @brief 이벤트 타입
+#if _QN_WINDOWS_
+	struct QgEventSysWindows
+	{
+		QgEventType			ev;
+		uint				mesg;							/// @brief 메시지
+		nuint				wparam;							/// @brief WPARAM
+		nint				lparam;							/// @brief LPARAM
+		void*				hwnd;							/// @brief 윈도우 핸들
+	}					windows;
+#endif
+	struct QgEventActive
+	{
+		QgEventType			ev;
+		bool32				active;							/// @brief 활성 상태면 참
+		double				delta;							/// @brief 마지막 활성 상태로 부터의 지난 시간(초)
+	}					active;								/// @brief 액티브 이벤트
+	struct QgEventLayout
+	{
+		QgEventType			ev;
+		QmRect				bound;							/// @brief 실제 윈도우의 사각 영역
+		QmSize				size;							/// @brief 그리기 영역 크기
+	}					layout;								/// @brief 레이아웃 이벤트
+	struct QgEventKeyboard
+	{
+		QgEventType			ev;
+		QikKey				key;							/// @brief 이벤트에 해당하는 키
+		QikMask				mask;							/// @brief 특수키 상태
+		bool32				repeat;							/// @brief 계속 눌려 있었다면 참
+	}					key;								/// @brief 키 눌림 떼임 이벤트
+	struct QgEventMouseMove
+	{
+		QgEventType			ev;
+		QmPoint				pt;								/// @brief 마우스 좌표
+		QmPoint				delta;							/// @brief 마우스 이동 거리
+		QimMask				mask;							/// @brief 마우스 버튼의 상태
+	}					mmove;								/// @brief 마우스 이동 이벤트
+	struct QgEventMouseButton
+	{
+		QgEventType			ev;
+		QmPoint				pt;								/// @brief 마우스 좌표
+		QimButton			button;							/// @brief 이벤트에 해당하는 버튼
+		QimMask				mask;							/// @brief 마으스 버튼의 상태
+	}					mbutton;							/// @brief 마우스 버튼 눌림 떼임 이벤트
+	struct QgEventMouseWheel
+	{
+		QgEventType			ev;
+		QmPoint				pt;								/// @brief 마우스 좌표
+		QmPoint				wheel;							/// @brief 휠 움직임 (Y가 기본휠, X는 틸트)
+		QmVec2				precise;						/// @brief 정밀한 움직임 (Y가 기본휠, X는 틸트)
+		int					direction;						/// @brief 참이면 뱡향이 반대
+	}					mwheel;								/// @brief 마우스 휠 이벤트
+	struct QgEventText
+	{
+		QgEventType			ev;
+		int					len;							/// @brief 텍스트 길이
+		char				data[16];						/// @brief 텍스트 내용
+	}					text;
+	struct QgEventDrop
+	{
+		QgEventType			ev;
+		int					len;							/// @brief 데이타의 길이
+		char*				data;							/// @brief 테이타 포인터. 데이터의 유효기간은 다음 loop 까지
+	}					drop;
+	struct QgEventWindowEvent
+	{
+		QgEventType			ev;
+		QgWindowEventType	mesg;							/// @brief 윈도우 이벤트 메시지
+		int					param1;							/// @brief 파라미터1
+		int					param2;							/// @brief 파라미터2
+	}					wevent;
+	struct QgEventMonitor
+	{
+		QgEventType			ev;
+		bool32				connectd;						/// @brief 참이면 연결, 거짓이면 연결 끊김
+		QgUdevMonitor*		monitor;						/// @brief 모니터 정보 포인터
+	}					monitor;
+} QgEvent;
 
 /// @brief 디바이스 정보
 typedef struct QgDeviceInfo

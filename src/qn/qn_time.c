@@ -26,99 +26,98 @@ void qn_gmtime(struct tm* ptm, const time_t tt)
 }
 
 //
-void qn_now(QnDateTime* dt)
+QnTimeStamp qn_now(void)
 {
-	qn_ret_if_fail(dt != NULL);
-
+	QnDateTime dt;
 #ifdef _QN_WINDOWS_
 	SYSTEMTIME st;
 	GetLocalTime(&st);
 
-	dt->year = st.wYear;
-	dt->month = st.wMonth;
-	dt->day = st.wDay;
-	dt->dow = st.wDayOfWeek;
-	dt->hour = st.wHour;
-	dt->minute = st.wMinute;
-	dt->second = st.wSecond;
-	dt->millisecond = st.wMilliseconds;
+	dt.year = st.wYear;
+	dt.month = st.wMonth;
+	dt.day = st.wDay;
+	dt.dow = st.wDayOfWeek;
+	dt.hour = st.wHour;
+	dt.minute = st.wMinute;
+	dt.second = st.wSecond;
+	dt.millisecond = st.wMilliseconds;
 #else
 	struct timeval tv;
 	struct tm tm;
 	gettimeofday(&tv, NULL);
 	qn_localtime(&tm, tv.tv_sec);
 
-	dt->year = (uint)tm.tm_year + 1900;
-	dt->month = (uint)tm.tm_mon + 1;
-	dt->day = (uint)tm.tm_mday;
-	dt->dow = (uint)tm.tm_wday;
-	dt->hour = (uint)tm.tm_hour;
-	dt->minute = (uint)tm.tm_min;
-	dt->second = (uint)tm.tm_sec;
-	dt->millisecond = (uint)tv.tv_usec / 1000;
+	dt.year = (uint)tm.tm_year + 1900;
+	dt.month = (uint)tm.tm_mon + 1;
+	dt.day = (uint)tm.tm_mday;
+	dt.dow = (uint)tm.tm_wday;
+	dt.hour = (uint)tm.tm_hour;
+	dt.minute = (uint)tm.tm_min;
+	dt.second = (uint)tm.tm_sec;
+	dt.millisecond = (uint)tv.tv_usec / 1000;
 #endif
+	return dt.stamp;
 }
 
 //
-void qn_utc(QnDateTime* dt)
+QnTimeStamp qn_utc(void)
 {
-	qn_ret_if_fail(dt != NULL);
-
+	QnDateTime dt;
 #ifdef _QN_WINDOWS_
 	SYSTEMTIME st;
 	GetSystemTime(&st);
 
-	dt->year = st.wYear;
-	dt->month = st.wMonth;
-	dt->day = st.wDay;
-	dt->dow = st.wDayOfWeek;
-	dt->hour = st.wHour;
-	dt->minute = st.wMinute;
-	dt->second = st.wSecond;
-	dt->millisecond = st.wMilliseconds;
+	dt.year = st.wYear;
+	dt.month = st.wMonth;
+	dt.day = st.wDay;
+	dt.dow = st.wDayOfWeek;
+	dt.hour = st.wHour;
+	dt.minute = st.wMinute;
+	dt.second = st.wSecond;
+	dt.millisecond = st.wMilliseconds;
 #else
 	struct timeval tv;
 	struct tm tm;
 	gettimeofday(&tv, NULL);
 	qn_gmtime(&tm, tv.tv_sec);
 
-	dt->year = (uint)tm.tm_year + 1900;
-	dt->month = (uint)tm.tm_mon + 1;
-	dt->day = (uint)tm.tm_mday;
-	dt->dow = (uint)tm.tm_wday;
-	dt->hour = (uint)tm.tm_hour;
-	dt->minute = (uint)tm.tm_min;
-	dt->second = (uint)tm.tm_sec;
-	dt->millisecond = (uint)tv.tv_usec / 1000;
+	dt.year = (uint)tm.tm_year + 1900;
+	dt.month = (uint)tm.tm_mon + 1;
+	dt.day = (uint)tm.tm_mday;
+	dt.dow = (uint)tm.tm_wday;
+	dt.hour = (uint)tm.tm_hour;
+	dt.minute = (uint)tm.tm_min;
+	dt.second = (uint)tm.tm_sec;
+	dt.millisecond = (uint)tv.tv_usec / 1000;
 #endif
+	return dt.stamp;
 }
 
 //
-void qn_stod(double sec, QnDateTime* dt)
+QnTimeStamp qn_stod(double sec)
 {
-	qn_ret_if_fail(dt != NULL);
-
-	const uint32_t ns = (uint32_t)sec;
-	dt->hour = ns / 3600;
-	dt->minute = (ns % 3600) / 60;
-	dt->second = (ns % 60);
-
-	double m = (double)(uint64_t)sec;
+	QnDateTime dt;
+	const uint ns = (uint)sec;
+	dt.hour = ns / 3600;
+	dt.minute = (ns % 3600) / 60;
+	dt.second = (ns % 60);
+	double m = (double)(ullong)sec;
 	m = sec - m;
 	m *= 1000.0;
-	dt->millisecond = (uint32_t)m;
+	dt.millisecond = (uint)m;
+	return dt.stamp;
 }
 
 //
-void qn_mstod(uint msec, QnDateTime* dt)
+QnTimeStamp qn_mstod(uint msec)
 {
-	qn_ret_if_fail(dt != NULL);
-
+	QnDateTime dt;
 	const uint ns = msec / 1000;
-	dt->hour = ns / 3600;
-	dt->minute = (ns % 3600) / 60;
-	dt->second = (ns % 60);
-	dt->millisecond = msec - (ns * 1000);
+	dt.hour = ns / 3600;
+	dt.minute = (ns % 3600) / 60;
+	dt.second = (ns % 60);
+	dt.millisecond = msec - (ns * 1000);
+	return dt.stamp;
 }
 
 //
@@ -147,15 +146,15 @@ ullong qn_cycle(void)
 	QueryPerformanceCounter(&ll);
 	return ll.QuadPart;
 #else
-	uint64_t n;
+	ullong n;
 	struct timespec ts;
 	if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
-		n = ((uint64_t)ts.tv_sec * 1000) + ((uint64_t)ts.tv_nsec / 1000000);
+		n = ((ullong)ts.tv_sec * 1000) + ((ullong)ts.tv_nsec / 1000000);
 	else
 	{
 		struct timeval tv;
 		gettimeofday(&tv, 0);
-		n = ((uint64_t)tv.tv_sec * 1000) + ((uint64_t)tv.tv_usec / 1000);
+		n = ((ullong)tv.tv_sec * 1000) + ((ullong)tv.tv_usec / 1000);
 	}
 	return n;
 #endif
@@ -269,7 +268,7 @@ typedef struct QnRealTimer
 	double				fps_abs;
 	int					fps_frame;
 
-	uint32_t			count;
+	uint			count;
 } qnRealTimer;
 
 //

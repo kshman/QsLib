@@ -22,7 +22,7 @@ QsGam* qs_sc_unload(QsGam* restrict self)
 	const volatile int ref = (int)--self->ref;
 	if (ref != 0)
 	{
-		qn_assert(ref > 0, "잘못된 참조값!");
+		qn_assert(ref > 0 && "잘못된 참조값!");
 		return self;
 	}
 	self->vt->dispose(self);

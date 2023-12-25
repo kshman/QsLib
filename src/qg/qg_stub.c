@@ -192,7 +192,7 @@ static bool shed_event_transition(QgEvent* e)
 			s_seq.head->prev = NULL;
 		if (node == s_seq.tail)
 			s_seq.tail = NULL;
-		qn_assert(s_seq.queue_count != 0, "어... 카운트가 이상한데?");
+		qn_assert(s_seq.queue_count != 0 && "어... 카운트가 이상한데?");
 		s_seq.queue_count--;
 
 		node->next = s_seq.cache;
@@ -253,12 +253,12 @@ static void shed_event_clear_reserved_mem(void)
 // 스터브
 
 // atexit 에 등록할 스터브 정리 함수
-static void _stub_atexit(void* dummy);
+static void stub_atexit_callback(void* dummy);
 
 //
 bool qg_open_stub(const char* title, int display, int width, int height, int flags)
 {
-	qn_runtime(NULL);
+	qn_runtime();
 
 	if (qg_stub_instance)
 	{
@@ -266,33 +266,36 @@ bool qg_open_stub(const char* title, int display, int width, int height, int fla
 		return false;
 	}
 
-	struct StubBase* stub = stub_system_open(title, display, width, height, flags);
-	if (stub == NULL)
+	shed_event_init();
+
+	qg_stub_instance = stub_system_open(title, display, width, height, flags);
+	if (qg_stub_instance == NULL)
 	{
 		// 오류 메시지는 stub_system_open 내부에서 표시
+		shed_event_dispose();
 		return false;
 	}
 
 	//
-	stub->flags = flags & 0x0FFFFFFF;						// 확장(28~31) 부분만 빼고 저장
-	stub->stats = QGSSTT_ACTIVE | QGSSTT_CURSOR;			// 기본으로 활성 상태랑 커서는 켠다
-	stub->delay = 10;
+	qg_stub_instance->flags = flags & 0x0FFFFFFF;						// 확장(28~31) 부분만 빼고 저장
+	qg_stub_instance->stats = QGSSTT_ACTIVE | QGSSTT_CURSOR;			// 기본으로 활성 상태랑 커서는 켠다
+	qg_stub_instance->delay = 10;
 
-	stub->timer = qn_timer_new();
-	stub->run = stub->timer->runtime;
-	stub->active = stub->timer->abstime;
+	qg_stub_instance->timer = qn_timer_new();
+	qg_stub_instance->run = qg_stub_instance->timer->runtime;
+	qg_stub_instance->active = qg_stub_instance->timer->abstime;
 
-	stub->mouse.lim.move = 5 * 5;							// 제한 이동 거리(포인트)의 제곱
-	stub->mouse.lim.tick = 500;								// 제한 클릭 시간(밀리초)
+	qg_stub_instance->mouse.lim.move = 5 * 5;							// 제한 이동 거리(포인트)의 제곱
+	qg_stub_instance->mouse.lim.tick = 500;								// 제한 클릭 시간(밀리초)
 
-	shed_event_init();
+	qn_pctnr_init(&qg_stub_instance->monitors, 0);
+	stub_system_check_display();
 
 	//
-	qg_stub_instance = stub;
 	if (qg_stub_atexit == false)
 	{
 		qg_stub_atexit = true;
-		qn_p_atexit(_stub_atexit, NULL);
+		qn_p_atexit(stub_atexit_callback, NULL);
 	}
 
 	//
@@ -310,9 +313,9 @@ bool qg_open_stub(const char* title, int display, int width, int height, int fla
 }
 
 //
-static void _stub_atexit(void* dummy)
+static void stub_atexit_callback(void* dummy)
 {
-	(void)dummy;
+	QN_DUMMY(dummy);
 	qg_close_stub();
 }
 
@@ -320,11 +323,12 @@ static void _stub_atexit(void* dummy)
 void qg_close_stub(void)
 {
 	qn_ret_if_fail(qg_stub_instance);
-	StubBase* stub = qg_stub_instance;
 
 	stub_system_finalize();
 
-	qn_timer_delete(stub->timer);
+	qn_timer_delete(qg_stub_instance->timer);
+	qn_pctnr_loopeach(&qg_stub_instance->monitors, qn_memfre);
+	qn_pctnr_disp(&qg_stub_instance->monitors);
 
 	shed_event_dispose();
 
@@ -608,6 +612,38 @@ int qg_add_event_type(QgEventType type)
 {
 	const QgEvent e = { .ev = type };
 	return qg_add_event(&e);
+}
+
+//
+bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary)
+{
+	QgEvent e = { .monitor.ev = QGEV_MONITOR, .monitor.connectd = connected, };
+	if (connected)
+	{
+		if (primary)
+			qn_pctnr_prepend(&qg_stub_instance->monitors, monitor);
+		else
+			qn_pctnr_add(&qg_stub_instance->monitors, monitor);
+	}
+	else
+	{
+		int nth;
+		qn_pctnr_contains(&qg_stub_instance->monitors, monitor, &nth);
+		if (nth >= 0)
+			qn_pctnr_remove_nth(&qg_stub_instance, nth);
+	}
+	for (size_t i = 0; i < qn_pctnr_count(&qg_stub_instance->monitors); i++)
+		qn_pctnr_nth(&qg_stub_instance->monitors, i)->no = (int)i;
+
+	QgUdevMonitor* another = qn_memdup(monitor, sizeof(QgUdevMonitor));
+	e.monitor.monitor = another;
+
+	shed_event_reserved_mem(another);
+	bool ret = qg_add_event(&e) > 0;
+
+	if (connected == false)
+		qn_free(monitor);
+	return ret;
 }
 
 //

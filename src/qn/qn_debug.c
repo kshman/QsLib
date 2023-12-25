@@ -1,16 +1,13 @@
 ﻿#include "pch.h"
 #include "qs_qn.h"
 
-#if _QN_WINDOWS_
-#define debug_break()			DebugBreak()
+#ifdef _QN_WINDOWS_
+#define _DEBUG_BREAK(x)			if (x) DebugBreak()
+#elif defined __EMSCRIPTEN__
+#define _DEBUG_BREAK(x)
 #else
-#define debug_break()			raise(SIGTRAP)
+#define _DEBUG_BREAK(x)			if (x) raise(SIGTRAP)
 #endif
-
-#ifndef MAX_DEBUG_LENGTH
-#define MAX_DEBUG_LENGTH	1024
-#endif
-static_assert(MAX_DEBUG_LENGTH < 4096, "MAX_DEBUG_LENGTH must be less than 4096");
 
 //
 static struct DebugImpl
@@ -55,31 +52,53 @@ void qn_debug_down(void)
 }
 
 //
-static int qn_debug_out_str(const char* restrict s)
+static void qn_dbg_buf_ch(int ch)
+{
+	if (1 + debug_impl.out_pos > MAX_DEBUG_LENGTH - 1)
+		return;
+	debug_impl.out_buf[debug_impl.out_pos++] = (char)ch;
+}
+
+//
+static void qn_dbg_buf_str(const char* restrict s)
 {
 	int len = (int)strlen(s);
 	if (len + debug_impl.out_pos > MAX_DEBUG_LENGTH - 1)
 		len = MAX_DEBUG_LENGTH - debug_impl.out_pos - 1;
 	if (len <= 0)
-		return 0;
+		return;
 	memcpy(debug_impl.out_buf + debug_impl.out_pos, s, len);
 	debug_impl.out_pos += len;
-	return len;
 }
 
 //
-static int qn_debug_out_ch(int ch)
+static void qn_dbg_buf_va(const char* restrict fmt, va_list va)
 {
-	if (1 + debug_impl.out_pos > MAX_DEBUG_LENGTH - 1)
-		return 0;
-	debug_impl.out_buf[debug_impl.out_pos++] = (char)ch;
-	return 1;
+	int len = qn_vsnprintf(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - debug_impl.out_pos, fmt, va);
+	debug_impl.out_pos += len;
 }
 
 //
-static void qn_debug_out_flush(void)
+static void qn_dbg_buf_int(int value)
 {
-	qn_ret_if_fail(debug_impl.out_pos > 0);
+	int len = qn_itoa(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - debug_impl.out_pos, value, 10);
+	debug_impl.out_pos += len;
+}
+
+//
+static void qn_dbg_buf_head(const char* restrict head)
+{
+	if (head == NULL)
+		head = "(unknown)";
+	qn_dbg_buf_ch('[');
+	qn_dbg_buf_str(head);
+	qn_dbg_buf_str("] ");
+}
+
+//
+static int qn_dbg_buf_flush(void)
+{
+	qn_val_if_fail(debug_impl.out_pos > 0, 0);
 	debug_impl.out_buf[debug_impl.out_pos] = '\0';
 #ifdef _QN_WINDOWS_
 	if (debug_impl.handle != NULL)
@@ -100,137 +119,90 @@ static void qn_debug_out_flush(void)
 	__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, debug_impl.out_buf);
 #endif
 #endif
+	int ret = debug_impl.out_pos;
 	debug_impl.out_pos = 0;
+	return ret;
 }
 
 //
-static int qn_debug_out_trace(const char* restrict head, const char* restrict text)
-{
-	if (head == NULL)
-		head = "unknown";
-	int len = 0;
-	len += qn_debug_out_ch('[');
-	len += qn_debug_out_str(head);
-	len += qn_debug_out_str("] ");
-	len += qn_debug_out_str(text);
-	qn_debug_out_flush();
-	return len;
-}
-
-///
-int qn_debug_assert(const char* restrict expr, const char* restrict mesg, const char* restrict filename, int line)
+int qn_debug_assert(const char* restrict expr, const char* restrict filename, int line)
 {
 	qn_val_if_fail(expr, -1);
-	qn_debug_out_str(expr);
-	qn_debug_out_str(": ");
-	if (mesg != NULL)
-		qn_debug_out_str(mesg);
-	qn_debug_out_str("(filename=\"");
-	qn_debug_out_str(filename);
-	qn_debug_out_str("\", line=");
-	char sz[32];
-	qn_itoa(sz, QN_COUNTOF(sz), line, 10);
-	qn_debug_out_str(sz);
-	qn_debug_out_ch('\n');
-	qn_debug_out_flush();
+	qn_dbg_buf_str("ASSERT FAILED : ");
+	qn_dbg_buf_str(expr);
+	qn_dbg_buf_str(" (filename=\"");
+	qn_dbg_buf_str(filename);
+	qn_dbg_buf_str("\", line=");
+	qn_dbg_buf_int(line);
+	qn_dbg_buf_ch('\n');
+	qn_dbg_buf_flush();
 
-#ifndef __EMSCRIPTEN__
-	if (debug_impl.debugger)
-		debug_break();
-#endif
+	_DEBUG_BREAK(debug_impl.debugger);
 	return 0;
-	}
+}
 
 //
 noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg)
 {
-	if (head == NULL)
-		head = "unknown";
-	qn_debug_out_str("HALT [");
-	qn_debug_out_str(head);
-	qn_debug_out_str("] ");
-	if (mesg != NULL)
-		qn_debug_out_str(mesg);
-	qn_debug_out_ch('\n');
-	qn_debug_out_flush();
+	qn_dbg_buf_str("HALT ");
+	qn_dbg_buf_head(head);
+	qn_dbg_buf_str(mesg);
+	qn_dbg_buf_ch('\n');
+	qn_dbg_buf_flush();
 
-#ifndef __EMSCRIPTEN__
-	if (debug_impl.debugger)
-		debug_break();
-#endif
+	_DEBUG_BREAK(debug_impl.debugger);
 	abort();
 }
 
 //
 int qn_debug_outputs(bool breakpoint, const char* restrict head, const char* restrict mesg)
 {
-	const int len = qn_debug_out_trace(head, mesg);
-	qn_debug_out_ch('\n');
-	qn_debug_out_flush();
+	qn_dbg_buf_head(head);
+	qn_dbg_buf_str(mesg);
+	qn_dbg_buf_ch('\n');
+	int len = qn_dbg_buf_flush();
 
-#ifndef __EMSCRIPTEN__
-	if (breakpoint && debug_impl.debugger)
-		debug_break();
-#endif
+	_DEBUG_BREAK(breakpoint && debug_impl.debugger);
 	return len;
 }
 
 //
 int qn_debug_outputf(bool breakpoint, const char* restrict head, const char* restrict fmt, ...)
 {
-	va_list va, vq;
+	qn_dbg_buf_head(head);
+	va_list va;
 	va_start(va, fmt);
-	va_copy(vq, va);
-	const int size = qn_vsnprintf(NULL, 0, fmt, vq);
-	va_end(vq);
-	char buf[1024];
-	qn_vsnprintf(buf, QN_COUNTOF(buf), fmt, va);
+	qn_dbg_buf_va(fmt, va);
 	va_end(va);
-	qn_debug_out_trace(head, buf);
-	qn_debug_out_ch('\n');
-	qn_debug_out_flush();
+	qn_dbg_buf_ch('\n');
+	int len = qn_dbg_buf_flush();
 
-#ifndef __EMSCRIPTEN__
-	if (breakpoint && debug_impl.debugger)
-		debug_break();
-#endif
-	return size;
+	_DEBUG_BREAK(breakpoint && debug_impl.debugger);
+	return len;
 }
 
 //
 int qn_debug_output_error(bool breakpoint, const char* head)
 {
 	const char* err = qn_get_error();
-	const int len = qn_debug_out_trace(head, err);
-	qn_debug_out_ch('\n');
-
-	if (breakpoint && debug_impl.debugger)
-		debug_break();
-	return len;
+	return qn_debug_outputs(breakpoint, head, err);
 }
 
 //
 int qn_outputs(const char* mesg)
 {
-	const int len = qn_debug_out_str(mesg);
-	qn_debug_out_ch('\n');
-	qn_debug_out_flush();
-	return len;
+	qn_dbg_buf_str(mesg);
+	qn_dbg_buf_ch('\n');
+	return qn_dbg_buf_flush();
 }
 
 //
 int qn_outputf(const char* fmt, ...)
 {
-	va_list va, vq;
+	va_list va;
 	va_start(va, fmt);
-	va_copy(vq, va);
-	const int size = qn_vsnprintf(NULL, 0, fmt, vq);
-	va_end(vq);
-	char buf[1024];
-	qn_vsnprintf(buf, QN_COUNTOF(buf), fmt, va);
+	qn_dbg_buf_va(fmt, va);
 	va_end(va);
-	qn_debug_out_str(buf);
-	qn_debug_out_ch('\n');
-	qn_debug_out_flush();
-	return size;
+	qn_dbg_buf_ch('\n');
+	return qn_dbg_buf_flush();
 }

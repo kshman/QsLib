@@ -30,14 +30,14 @@ struct Closure
 static struct RuntimeImpl
 {
 	bool32			inited;
-#ifndef NO_LOCK
+#ifndef USE_NO_LOCK
 	QnSpinLock		lock;
 #endif
 
 	struct Closure* closures;
 	struct Closure* preclosures;
 
-	QnTls*			error;
+	QnTls			error;
 
 	QnPropMukum		props;
 } runtime_impl = { false, };
@@ -53,6 +53,7 @@ static void qn_runtime_attach(void)
 static void qn_runtime_down(void)
 {
 	qn_ret_if_fail(runtime_impl.inited);
+	runtime_impl.inited = false;
 
 	QN_LOCK(runtime_impl.lock);
 	for (struct Closure *prev, *node = runtime_impl.closures; node; node = prev)
@@ -76,8 +77,6 @@ static void qn_runtime_down(void)
 	qn_module_down();
 	qn_mpf_down();
 	qn_debug_down();
-
-	runtime_impl.inited = false;
 }
 
 // 런타임 올림
@@ -103,14 +102,14 @@ static void qn_runtime_up(void)
 // 
 void qn_runtime(void)
 {
-	if (!runtime_impl.inited)
-		qn_runtime_up();
+	qn_ret_if_ok(runtime_impl.inited);
+	qn_runtime_up();
 }
 
 //
 const char* qn_version(void)
 {
-#define MAKE_VERSION_STRING(a,b)	"QG VERSION " QN_STRING(a) "." QN_STRING(b)
+#define MAKE_VERSION_STRING(a,b)	"QS VERSION " QN_STRING(a) "." QN_STRING(b)
 	static const char* version_string = MAKE_VERSION_STRING(QN_VERSION_MAJOR, QN_VERSION_MINER);
 	return version_string;
 #undef MAKE_VERSION_STRING
@@ -119,6 +118,7 @@ const char* qn_version(void)
 //
 void qn_atexit(paramfunc_t func, void* data)
 {
+	qn_ret_if_fail(runtime_impl.inited);
 	qn_ret_if_fail(func);
 
 	struct Closure* node = qn_alloc_1(struct Closure);
@@ -136,6 +136,7 @@ void qn_atexit(paramfunc_t func, void* data)
 //
 void qn_p_atexit(paramfunc_t func, void* data)
 {
+	qn_ret_if_fail(runtime_impl.inited);
 	qn_ret_if_fail(func);
 
 	struct Closure* node = qn_alloc_1(struct Closure);
@@ -160,6 +161,7 @@ size_t qn_p_index(void)
 //
 void qn_set_prop(const char* restrict name, const char* restrict value)
 {
+	qn_ret_if_fail(runtime_impl.inited);
 	qn_ret_if_fail(name != NULL);
 	QN_LOCK(runtime_impl.lock);
 	if (value == NULL || *value == '\0')
@@ -172,6 +174,7 @@ void qn_set_prop(const char* restrict name, const char* restrict value)
 //
 const char* qn_get_prop(const char* name)
 {
+	qn_val_if_fail(runtime_impl.inited, NULL);
 	qn_val_if_fail(name != NULL, NULL);
 	char** ret;
 	QN_LOCK(runtime_impl.lock);
@@ -235,7 +238,7 @@ bool qn_set_syserror(int errcode)
 #endif
 	qn_tlsset(runtime_impl.error, buf);
 	return true;
-	}
+}
 
 //
 #if !defined _LIB || !defined _STATIC

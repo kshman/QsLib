@@ -257,7 +257,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="qg\qgwin_mesg.c" />
     <ClCompile Include="qg\qgwin_stub.c" />
     <ClCompile Include="qg\qg_kmc.c" />
     <ClCompile Include="qg\qg_rdh.c">

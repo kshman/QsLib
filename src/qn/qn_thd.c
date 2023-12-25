@@ -20,8 +20,10 @@ bool qn_spin_try(QnSpinLock* lock)
 	return _InterlockedExchange((long volatile*)lock, 1) == 0;
 #elif defined _MSC_VER && (defined _M_ARM || defined _M_ARM64 || defined _M_ARM64EC)
 	return _InterlockedExchange_acq(lock, 1) == 0;
+#elif defined __EMSCRIPTEN__
+	return emscripten_atomic_exchange_u32(lock, 1) == 0;
 #elif defined __GNUC__
-	return __sync_lock_test_and_set(lock, 1) != 0;
+	return __sync_lock_test_and_set(lock, 1) == 0;
 #elif defined _QN_OSX_
 	return OSAtomicCompareAndSwap32Barrier(0, 1, lock);
 #else
@@ -80,6 +82,8 @@ void qn_spin_leave(QnSpinLock* lock)
 	_InterlockedExchange((long volatile*)lock, 0);
 #elif defined _MSC_VER && (defined _M_ARM || defined _M_ARM64)
 	_InterlockedExchange_rel((long volatile*)lock, 0);
+#elif defined __EMSCRIPTEN__
+	emscripten_atomic_store_u32(lock, 0);
 #elif defined __GNUC__
 	__sync_lock_release(lock);
 #else
@@ -115,6 +119,9 @@ struct QnRealThread
 //
 static struct ThreadImpl
 {
+	uint				tls_index;
+	paramfunc_t			tls_callback[MAX_TLS];
+
 #ifdef _QN_WINDOWS_
 	DWORD				self_tls;
 #else
@@ -122,13 +129,13 @@ static struct ThreadImpl
 	pthread_t			null_pthread;
 	pthread_key_t		self_tls;
 #endif
-	uint				tls_index;
-	paramfunc_t			tls_callback[MAX_TLS];
 
 	QnRealThread*		self;
 	QnRealThread*		threads;
 
+#ifndef USE_NO_LOCK
 	QnSpinLock			lock;
+#endif
 } thread_impl = { 0, };
 
 static void _qn_thd_free(QnRealThread* self, uint tls_count, bool force);
@@ -616,9 +623,9 @@ bool qn_thread_set_busy(QnThread* thread, int busy)
 // TLS
 
 //
-QnTls* qn_tls(paramfunc_t callback)
+QnTls qn_tls(paramfunc_t callback)
 {
-	QnTls* self;
+	QnTls self;
 
 	QN_LOCK(thread_impl.lock);
 	if (thread_impl.tls_index >= MAX_TLS)
@@ -627,7 +634,7 @@ QnTls* qn_tls(paramfunc_t callback)
 		qn_debug_halt("THREAD", "too many TLS used");
 	}
 
-	self = (void*)((nuint)thread_impl.tls_index + 0x10);
+	self = (int)thread_impl.tls_index;
 	thread_impl.tls_callback[thread_impl.tls_index++] = callback;
 	QN_UNLOCK(thread_impl.lock);
 
@@ -635,20 +642,20 @@ QnTls* qn_tls(paramfunc_t callback)
 }
 
 //
-void qn_tlsset(QnTls* tls, void* restrict data)
+void qn_tlsset(QnTls tls, void* restrict data)
 {
-	uint nth = (uint)(nuint)tls - 0x10;
-	qn_ret_if_fail(nth < QN_COUNTOF(thread_impl.tls_callback));
+	uint nth = (uint)tls;
+	qn_ret_if_fail(nth < (uint)QN_COUNTOF(thread_impl.tls_callback));
 
 	QnRealThread* thd = (QnRealThread*)qn_thread_self();
 	thd->tls[nth] = data;
 }
 
 //
-void* qn_tlsget(QnTls* tls)
+void* qn_tlsget(QnTls tls)
 {
-	uint nth = (uint)(nuint)tls - 0x10;
-	qn_val_if_fail(nth < QN_COUNTOF(thread_impl.tls_callback), NULL);
+	uint nth = (uint)tls;
+	qn_val_if_fail(nth < (uint)QN_COUNTOF(thread_impl.tls_callback), NULL);
 
 	QnRealThread* thd = _qn_thd_test_self();
 	return thd == NULL ? NULL : thd->tls[nth];

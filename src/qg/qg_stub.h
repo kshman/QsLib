@@ -15,21 +15,7 @@ extern QikMask kmod_to_qikm(int modifier);
 #endif
 
 // 모니터 타입
-typedef struct StubMonitor StubMonitor;
-struct StubMonitor
-{
-	char				name[64];
-	int					no;
-	uint				x;
-	uint				y;
-	uint				width;
-	uint				height;
-	uint				depth;
-	float				dpi;
-	float				hdpi;
-	float				vdpi;
-};
-QN_DECL_CTNR(StubMonitorCtnr, StubMonitor*);
+QN_DECL_CTNR(StubMonitorCtnr, QgUdevMonitor*);
 
 // 스터브 기본 타입
 typedef struct StubBase StubBase;
@@ -53,7 +39,7 @@ struct StubBase
 	QmRect				window_bound;						/// @brief 실제 윈도우의 위치와 크기 정보
 	QmSize				client_size;						// 시스템 스터브 관리, 그리기 영역 크기 (창 크기가 아님)
 
-	StubMonitorCtnr		mon;
+	StubMonitorCtnr		monitors;
 	QgUimKey			key;
 	QgUimMouse			mouse;
 };
@@ -81,9 +67,13 @@ extern void stub_system_set_title(const char* u8text);
 extern void stub_system_hold_mouse(bool hold);
 // 레이아웃을 계산한다
 extern void stub_system_calc_layout(void);
+// 디스플레이 검사
+extern void stub_system_check_display(void);
 
 // 내부적으로 마우스 눌림을 연산한다
 extern bool stub_track_mouse_click(QimButton button, QimTrack track);
+// 모니터 이벤트 추가
+extern bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary);
 // 레이아웃 이벤트 추가
 extern bool stub_event_on_layout(bool enter);
 // 윈도우 이벤트 추가

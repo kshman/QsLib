@@ -76,7 +76,7 @@ QN_DECL_ARR(QnAnyArr, any_t)								/// @brief any_t 배열
 
 #define qn_arr_remove_nth(name,p,n)\
 	QN_STMT_BEGIN{\
-		qn_assert((size_t)(n)<(p)->count, "remove index overflow!");\
+		qn_assert((size_t)(n)<(p)->count && "index overflow");\
 		{\
 			name##Type* __t=&qn_arr_nth(p,n);\
 			if ((size_t)(n)!=(p)->count-1)\
@@ -305,7 +305,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/// @brief any_t 배열
 #define qn_ctnr_nth(p,n)				(((p)->data)[(size_t)(n)])
 #define qn_ctnr_count(p)				((p)->count)
 #define qn_ctnr_data(p)					((p)->data)
-#define qn_ctnr_size(name)				(sizeof(name##Type))
+#define qn_ctnr_sizeof(name)			(sizeof(name##Type))
 #define qn_ctnr_set(p,n,i)				(((p)->data)[(size_t)(n)]=(i))
 #define qn_ctnr_is_empty(p)				((p)->count==0)
 #define qn_ctnr_is_have(p)				((p)->count!=0)
@@ -374,6 +374,40 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/// @brief any_t 배열
 		qn_ctnr_nth(p,(p)->count-1)=(v);\
 	}QN_STMT_END
 
+#define qn_ctnr_prepend(name,p,v)\
+	QN_STMT_BEGIN{\
+		qn_ctnr_add_count(name,p,1);\
+		memmove((p)->data+1, (p)->data, ((p)->count-1)*sizeof(name##Type));\
+		qn_ctnr_nth(p,0)=(v);\
+	}QN_STMT_END
+
+#define qn_ctnr_remove_nth(name,p,n)\
+	QN_STMT_BEGIN{\
+		qn_assert((size_t)(n)<(p)->count && "index overflow");\
+		{\
+			name##Type* __t=&qn_ctnr_nth(p,n);\
+			if ((size_t)(n)!=(p)->count-1)\
+				memmove(__t, __t+1, qn_ctnr_sizeof(name)*((p)->count-((size_t)(n)+1)));\
+			(p)->count--;\
+		}\
+	}QN_STMT_END
+
+#define qn_ctnr_remove(name,p,item)\
+	QN_STMT_BEGIN{\
+		size_t __i, __cnt=(p)->count;\
+		for (__i=0; __i<__cnt; __i++)\
+		{\
+			if (qn_ctnr_nth(p,__i)==(item))\
+			{\
+				name##Type* __t=&qn_ctnr_nth(p,__i);\
+				memmove(__t, __t+1, qn_ctnr_sizeof(name)*(__cnt-(__i+1)));\
+				__cnt--;\
+				break;\
+			}\
+		}\
+		(p)->count=__cnt;\
+	}QN_STMT_END
+
 #define qn_ctnr_zero(name, p)\
 	memset((p)->data, 0, (p)->count*sizeof(name##Type))
 
@@ -429,7 +463,11 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/// @brief any_t 배열
 #define qn_pctnr_set_count(p, count)	qn_ctnr_set_count(QnPtrCtnr, (QnPtrCtnr*)(p), count)
 #define qn_pctnr_add_count(p, count)	qn_ctnr_add_count(QnPtrCtnr, (QnPtrCtnr*)(p), count)
 #define qn_pctnr_add(p, item)			qn_ctnr_add(QnPtrCtnr, (QnPtrCtnr*)(p), (void*)(item))
+#define qn_pctnr_prepend(p, item)		qn_ctnr_prepend(QnPtrCtnr, (QnPtrCtnr*)(p), (void*)(item))
+#define qn_pctnr_remove_nth(p,n)		qn_ctnr_remove_nth(QnPtrCtnr, (QnPtrCtnr*)(p), n)
+#define qn_pctnr_remove(p,item)			qn_ctnr_remove(QnPtrCtnr, (QnPtrCtnr*)(p), (void*)(item))
 #define qn_pctnr_zero(p)				qn_ctnr_zero(QnPtrCtnr, (QnPtrCtnr*)(p))
+#define qn_pctnr_contains(p, item, ret)	qn_ctnr_contains(QnPtrCtnr, (QnPtrCtnr*)(p), (void*)(item), ret)
 #define qn_pctnr_foreach(p, func, userdata)\
 										qn_ctnr_foreach(QnPtrCtnr, (QnPtrCtnr*)(p), func, userdata)
 #define qn_pctnr_loopeach(p, func)		qn_ctnr_loopeach(QnPtrCtnr, (QnPtrCtnr*)(p), func)
@@ -489,14 +527,14 @@ QN_DECL_CTNR(QnAnyCtn, any_t)								/// @brief any_t 배열
 				__node->next->prev=__node->prev;\
 			else\
 			{\
-				qn_assert((p)->last == __node, NULL);\
+				qn_assert((p)->last == __node);\
 				(p)->last=__node->prev;\
 			}\
 			if (__node->prev)\
 				__node->prev->next=__node->next;\
 			else\
 			{\
-				qn_assert((p)->frst == __node, NULL);\
+				qn_assert((p)->frst == __node);\
 				(p)->frst=__node->next;\
 			}\
 			(p)->count--;\
@@ -824,14 +862,14 @@ QN_DECL_LIST(QnPtrList, void*)
 				__node->next->prev=__node->prev;\
 			else\
 			{\
-				qn_assert((p)->last == __node, NULL);\
+				qn_assert((p)->last == __node);\
 				(p)->last=__node->prev;\
 			}\
 			if (__node->prev)\
 				__node->prev->next=__node->next;\
 			else\
 			{\
-				qn_assert((p)->frst == __node, NULL);\
+				qn_assert((p)->frst == __node);\
 				(p)->frst=__node->next;\
 			}\
 			(p)->count--;\
@@ -854,14 +892,14 @@ QN_DECL_LIST(QnPtrList, void*)
 				__node->next->prev=__node->prev;\
 			else\
 			{\
-				qn_assert((p)->last == __node, NULL);\
+				qn_assert((p)->last == __node);\
 				(p)->last=__node->prev;\
 			}\
 			if (__node->prev)\
 				__node->prev->next=__node->next;\
 			else\
 			{\
-				qn_assert((p)->frst == __node, NULL);\
+				qn_assert((p)->frst == __node);\
 				(p)->frst=__node->next;\
 			}\
 			(p)->count--;\
@@ -1412,7 +1450,7 @@ QN_INLINE QnPtrSlist* qn_pslist_contains(QnPtrSlist* p, const void* item)
 
 #define qn_slice_test_init(name,p,_max)\
 	QN_STMT_BEGIN{\
-		qn_assert((p)->data==NULL && (p)->max==0 && (p)->count==0, "uninitialized slice memory.");\
+		qn_assert((p)->data==NULL && (p)->max==0 && (p)->count==0 && "uninitialized memory");\
 		(p)->data=qn_alloc(_max, name##Type);\
 		(p)->max=_max;\
 	}QN_STMT_END
@@ -1862,7 +1900,7 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 /// @param ret_hash 반환값 해시
 ///
 #define qn_inl_hash_lookup_hash(name,p,keyptr,ret_node,ret_hash)\
-	qn_assert((p)->nodes!=NULL, "hash is not initialized");\
+	qn_assert((p)->nodes!=NULL && "uninitialized memory");\
 	size_t __lh=name##_hash(keyptr);\
 	struct name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
 	while ((__lnn=*__ln)!=NULL)\
@@ -1968,14 +2006,14 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t)
 			__enn->next->prev=__enn->prev;\
 		else\
 		{\
-			qn_assert((p)->last == __enn, NULL);\
+			qn_assert((p)->last == __enn);\
 			(p)->last=__enn->prev;\
 		}\
 		if (__enn->prev)\
 			__enn->prev->next=__enn->next;\
 		else\
 		{\
-			qn_assert((p)->frst == __enn, NULL);\
+			qn_assert((p)->frst == __enn);\
 			(p)->frst=__enn->next;\
 		}\
 		/* step3 */\
@@ -2258,7 +2296,7 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t)
 /// @param ret_hash 반환값 묶음
 ///
 #define qn_inl_mukum_lookup_hash(name,p,keyptr,ret_node,ret_hash)\
-	qn_assert((p)->nodes!=NULL, "mukum is not initialized");\
+	qn_assert((p)->nodes!=NULL && "uninitialized memory");\
 	size_t __lh=name##_hash(keyptr);\
 	struct name##Node *__lnn, **__ln=&(p)->nodes[__lh%(p)->bucket];\
 	while ((__lnn=*__ln)!=NULL)\
@@ -2437,7 +2475,7 @@ QN_DECL_BSTR(4k, 4096)
 #define qn_bstr_inv(p,n)				((p)->data[((p)->len)-(n)-1])
 
 #define qn_bstr_test_init(p)\
-	qn_assert((p)->len==0 && (p)->data[0]=='\0', NULL)
+	qn_assert((p)->len==0 && (p)->data[0]=='\0')
 
 #define qn_bstr_init(p,str)\
 	QN_STMT_BEGIN{\
@@ -2651,7 +2689,7 @@ QN_DECL_BWCS(4k, 4096)
 #define qn_bwcs_inv(p,n)				((p)->data[((p)->len)-(n)-1])
 
 #define qn_bwcs_test_init(p)\
-	qn_assert((p)->len==0 && (p)->data[0]==L'\0', NULL)
+	qn_assert((p)->len==0 && (p)->data[0]==L'\0')
 
 #define qn_bwcs_init(p,str)\
 	QN_STMT_BEGIN{\
