@@ -61,8 +61,6 @@ extern void stub_system_disable_acs(bool enable);
 extern void stub_system_diable_scrsave(bool enable);
 // 시스템 타이틀 설정
 extern void stub_system_set_title(const char* u8text);
-// 마우스 홀드
-extern void stub_system_hold_mouse(bool hold);
 // 레이아웃을 계산한다
 extern void stub_system_calc_layout(void);
 
@@ -92,7 +90,7 @@ extern bool stub_event_on_active(bool active, double delta);
 extern bool stub_event_on_drop(char* data, int len, bool finish);
 
 // 스터보 기본 사양을 초기화 stub_system_open() 함수가 호출해야 한다
-extern void stub_initialize(StubBase* stub, int display, int flags);
+extern void stub_initialize(StubBase* stub, int flags);
 // 내부적으로 토글을 설정한다 (완전 언세이프)
 extern void stub_toggle_keys(QikMask keymask, bool on);
 

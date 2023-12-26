@@ -255,14 +255,13 @@ bool qg_open_stub(const char* title, int display, int width, int height, int fla
 }
 
 //
-void stub_initialize(StubBase* stub, int display, int flags)
+void stub_initialize(StubBase* stub, int flags)
 {
 	qg_stub_instance = stub;
 
 	//
 	stub->flags = flags & 0x00FFFFFF;						// 확장(24~31) 부분만 빼고 저장
 	stub->stats = 0;
-	stub->display = display;
 
 	stub->stats = QGSSTT_ACTIVE | QGSSTT_CURSOR;			// 기본으로 활성 상태랑 커서는 켠다
 	stub->delay = 10;

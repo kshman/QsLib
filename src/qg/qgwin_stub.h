@@ -30,6 +30,19 @@ typedef struct WindowsMonitor
 	wchar				display[32];
 } WindowsMonitor;
 
+// 마우스 이벤트 소스 (https://learn.microsoft.com/ko-kr/windows/win32/tablet/system-events-and-mouse-messages)
+#define MI_WP_SIGNATURE		0xFF515700
+#define SIGNATURE_MASK		0xFFFFFF00
+#define IsPenEvent(dw)		(((dw) & SIGNATURE_MASK) == MI_WP_SIGNATURE)
+
+// 마우스 이벤트 소스
+typedef enum WindowsMouseSource
+{
+	WINDOWS_MOUSE_SOURCE_MOUSE,
+	WINDOWS_MOUSE_SOURCE_TOUCH,
+	WINDOWS_MOUSE_SOURCE_PEN,
+} WindowsMouseSource;
+
 // 윈도우 스터브 > StubBase
 typedef struct WindowsStub
 {
@@ -64,5 +77,6 @@ typedef struct WindowsStub
 	bool				bool_padding1;
 	bool				bool_padding2;
 } WindowsStub;
+
 // 윈도우 스터브 선언
 extern WindowsStub winStub;
