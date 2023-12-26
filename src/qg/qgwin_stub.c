@@ -74,12 +74,35 @@ static bool windows_dll_init(void)
 // 키 후킹 콜백
 static LRESULT CALLBACK windows_key_hook_proc(int code, WPARAM wp, LPARAM lp)
 {
+	if (code < 0 || code != HC_ACTION || QN_TMASK(winStub.base.stats, QGSSTT_ACTIVE) == false)
+		return Win32CallNextHookEx(winStub.key_hook, code, wp, lp);
+
 	LPKBDLLHOOKSTRUCT kh = (LPKBDLLHOOKSTRUCT)lp;
-	if (code == HC_ACTION &&
-		(wp == WM_KEYDOWN || wp == WM_SYSKEYDOWN || wp == WM_KEYUP || wp == WM_SYSKEYUP) &&
-		(kh->vkCode == VK_LWIN || kh->vkCode == VK_RWIN || kh->vkCode == VK_MENU))
-		return 1;
-	return Win32CallNextHookEx(winStub.key_hook, code, wp, lp);
+	switch (kh->vkCode)
+	{
+		case VK_LWIN: case VK_RWIN:
+		case VK_RCONTROL: case VK_LCONTROL:
+#if FALSE	// ALT+TAB, ALT+ESC 막으려면 해제
+		case VK_LMENU: case VK_RMENU:
+		case VK_TAB: case VK_ESCAPE:
+#endif
+			break;
+		default:
+			return Win32CallNextHookEx(winStub.key_hook, code, wp, lp);
+	}
+
+	if (wp == WM_KEYDOWN || wp == WM_SYSKEYDOWN)
+		stub_event_on_keyboard((QikKey)kh->vkCode, true);
+	else
+	{
+		stub_event_on_keyboard((QikKey)kh->vkCode, false);
+		if (kh->vkCode < 0xFF && winStub.key_hook_state[kh->vkCode])
+		{
+			winStub.key_hook_state[kh->vkCode] = 0;
+			return Win32CallNextHookEx(winStub.key_hook, code, wp, lp);
+		}
+	}
+	return 1;
 }
 
 // 키 후킹 끔
@@ -95,6 +118,8 @@ static void windows_key_unhook(void)
 static void windows_key_hook(HINSTANCE instance)
 {
 	windows_key_unhook();
+	if (Win32GetKeyboardState(winStub.key_hook_state) == FALSE)
+		return;
 	winStub.key_hook = Win32SetWindowsHookExW(WH_KEYBOARD_LL, windows_key_hook_proc, instance, 0);
 }
 
@@ -109,6 +134,124 @@ static void windows_set_dpi_aware(void)
 		Win32SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE) != E_INVALIDARG)
 		return;
 	Win32SetProcessDPIAware();
+}
+
+// 모니터 핸들 얻기 콜백
+static BOOL CALLBACK windows_monitor_callback(HMONITOR monitor, HDC dc, RECT* rect, LPARAM lp)
+{
+	QN_DUMMY(dc);
+	QN_DUMMY(rect);
+	MONITORINFOEX mi = { sizeof(MONITORINFOEX), };
+	if (GetMonitorInfo(monitor, (LPMONITORINFO)&mi))
+	{
+		WindowsMonitor* wm = (WindowsMonitor*)lp;
+		if (qn_wcseqv(mi.szDevice, wm->adapter))
+			wm->handle = monitor;
+	}
+	return TRUE;
+}
+
+// 모니터 만들기
+static WindowsMonitor* windows_create_monitor(DISPLAY_DEVICE* adev, DISPLAY_DEVICE* ddev)
+{
+	WindowsMonitor* mon = qn_alloc_zero_1(WindowsMonitor);
+	qn_wcscpy(mon->adapter, QN_COUNTOF(mon->adapter), adev->DeviceName);
+	wchar* name;
+	if (ddev == NULL)
+		name = adev->DeviceString;
+	else
+	{
+		name = ddev->DeviceString;
+		qn_wcscpy(mon->display, QN_COUNTOF(mon->display), ddev->DeviceName);
+	}
+	qn_u16to8(mon->base.name, QN_COUNTOF(mon->base.name), name, 0);
+
+	DEVMODE dm;
+	ZeroMemory(&dm, sizeof(DEVMODE));
+	dm.dmSize = sizeof(DEVMODE);
+	EnumDisplaySettings(adev->DeviceName, ENUM_CURRENT_SETTINGS, &dm);
+
+	HDC hdc = CreateDC(L"DISPLAY", adev->DeviceName, NULL, NULL);
+	mon->base.mmwidth = (uint)GetDeviceCaps(hdc, HORZSIZE);	// (int)(dm.dmPelsWidth * 25.4f / GetDeviceCaps(hdc, LOGPIXELSX))
+	mon->base.mmheight = (uint)GetDeviceCaps(hdc, VERTSIZE);	// (int)(dm.dmPelsHeight * 25.4f / GetDeviceCaps(hdc, LOGPIXELSY))
+	DeleteDC(hdc);
+
+	mon->base.position.x = dm.dmPosition.x;
+	mon->base.position.y = dm.dmPosition.y;
+	mon->base.width = (uint)dm.dmPelsWidth;
+	mon->base.height = (uint)dm.dmPelsHeight;
+
+	RECT rect;
+	SetRect(&rect, dm.dmPosition.x, dm.dmPosition.y, dm.dmPosition.x + dm.dmPelsWidth, dm.dmPosition.y + dm.dmPelsHeight);
+	EnumDisplayMonitors(NULL, &rect, windows_monitor_callback, (LPARAM)mon);
+	return mon;
+}
+
+// 모니터 검사
+static void windows_check_display(void)
+{
+	StubMonitorCtnr	keep;
+	qn_pctnr_init_copy(&keep, &winStub.base.monitors);
+
+	size_t i;
+	for (DWORD adapter = 0; ; adapter++)
+	{
+		DISPLAY_DEVICE adev = { sizeof(DISPLAY_DEVICE), };
+		if (EnumDisplayDevices(NULL, adapter, &adev, 0) == FALSE)
+			break;
+		if (QN_TMASK(adev.StateFlags, DISPLAY_DEVICE_ACTIVE) == false)
+			continue;
+
+		DWORD display;
+		for (display = 0; ; display++)
+		{
+			DISPLAY_DEVICE ddev = { sizeof(DISPLAY_DEVICE), };
+			if (EnumDisplayDevices(adev.DeviceName, display, &ddev, 0) == FALSE)
+				break;
+			if (QN_TMASK(ddev.StateFlags, DISPLAY_DEVICE_ACTIVE) == false)
+				break;
+
+			qn_pctnr_each_index(&keep, i,
+				{
+					WindowsMonitor * mon = (WindowsMonitor*)qn_pctnr_nth(&keep, i);
+					if (mon == NULL || qn_wcseqv(mon->display, ddev.DeviceName) == false)
+						continue;
+					qn_pctnr_set(&keep, i, NULL);
+					EnumDisplayMonitors(NULL, NULL, windows_monitor_callback, (LPARAM)&qn_pctnr_nth(&winStub.base.monitors, i));
+					break;
+				});
+			if (i < qn_pctnr_count(&keep))
+				continue;
+
+			WindowsMonitor* mon = windows_create_monitor(&adev, &ddev);
+			stub_event_on_monitor((QgUdevMonitor*)mon, true, QN_TMASK(adev.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE));
+		}
+
+		if (display == 0)
+		{
+			qn_pctnr_each_index(&keep, i,
+				{
+					WindowsMonitor * mon = (WindowsMonitor*)qn_pctnr_nth(&keep, i);
+					if (mon == NULL || qn_wcseqv(mon->adapter, adev.DeviceName) == false)
+						continue;
+					qn_pctnr_set(&keep, i, NULL);
+					break;
+				});
+			if (i < qn_pctnr_count(&keep))
+				continue;
+
+			WindowsMonitor* mon = windows_create_monitor(&adev, NULL);
+			stub_event_on_monitor((QgUdevMonitor*)mon, true, QN_TMASK(adev.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE));
+		}
+	}
+
+	QgUdevMonitor* mon;
+	qn_pctnr_each_item(&keep, mon,
+		{
+			if (mon != NULL)
+				stub_event_on_monitor(mon, false, false);
+		});
+	qn_pctnr_disp(&keep);
 }
 
 //
@@ -135,9 +278,9 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	}
 
 	//
-	windows_set_dpi_aware();
 	stub_initialize((StubBase*)&winStub, display, flags);
-	stub_system_check_display();
+	windows_set_dpi_aware();
+	windows_check_display();
 
 	// 윈도우 클래스
 	if (winStub.class_registered == false)
@@ -456,125 +599,6 @@ void stub_system_calc_layout(void)
 	qm_set2(&winStub.base.client_size, rect.right - rect.left, rect.bottom - rect.top);
 }
 
-// 모니터 핸들 얻기 콜백
-static BOOL CALLBACK windows_monitor_callback(HMONITOR monitor, HDC dc, RECT* rect, LPARAM lp)
-{
-	QN_DUMMY(dc);
-	QN_DUMMY(rect);
-	MONITORINFOEX mi = { sizeof(MONITORINFOEX), };
-	if (GetMonitorInfo(monitor, (LPMONITORINFO)&mi))
-	{
-		WindowsMonitor* wm = (WindowsMonitor*)lp;
-		if (qn_wcseqv(mi.szDevice, wm->adapter))
-			wm->base.oshandle = monitor;
-	}
-	return TRUE;
-}
-
-// 모니터 만들기
-static WindowsMonitor* windows_create_monitor(DISPLAY_DEVICE* adev, DISPLAY_DEVICE* ddev)
-{
-	WindowsMonitor* mon = qn_alloc_zero_1(WindowsMonitor);
-	qn_wcscpy(mon->adapter, QN_COUNTOF(mon->adapter), adev->DeviceName);
-	wchar* name;
-	if (ddev == NULL)
-		name = adev->DeviceString;
-	else
-	{
-		name = ddev->DeviceString;
-		qn_wcscpy(mon->display, QN_COUNTOF(mon->display), ddev->DeviceName);
-	}
-	qn_u16to8(mon->base.name, QN_COUNTOF(mon->base.name), name, 0);
-
-	DEVMODE dm;
-	ZeroMemory(&dm, sizeof(DEVMODE));
-	dm.dmSize = sizeof(DEVMODE);
-	EnumDisplaySettings(adev->DeviceName, ENUM_CURRENT_SETTINGS, &dm);
-
-	HDC hdc = CreateDC(L"DISPLAY", adev->DeviceName, NULL, NULL);
-	mon->base.mmwidth = GetDeviceCaps(hdc, HORZSIZE);	// (int)(dm.dmPelsWidth * 25.4f / GetDeviceCaps(hdc, LOGPIXELSX))
-	mon->base.mmheight = GetDeviceCaps(hdc, VERTSIZE);	// (int)(dm.dmPelsHeight * 25.4f / GetDeviceCaps(hdc, LOGPIXELSY))
-	DeleteDC(hdc);
-
-	mon->base.x = dm.dmPosition.x;
-	mon->base.y = dm.dmPosition.y;
-	mon->base.width = dm.dmPelsWidth;
-	mon->base.height = dm.dmPelsHeight;
-
-	RECT rect;
-	SetRect(&rect, dm.dmPosition.x, dm.dmPosition.y, dm.dmPosition.x + dm.dmPelsWidth, dm.dmPosition.y + dm.dmPelsHeight);
-	EnumDisplayMonitors(NULL, &rect, windows_monitor_callback, (LPARAM)mon);
-	return mon;
-}
-
-// 모니터 검사
-void stub_system_check_display(void)
-{
-	size_t prev_count = qn_pctnr_count(&winStub.base.monitors);
-	WindowsMonitor** prev_mons =
-		prev_count == 0 ? NULL : qn_memdup(qn_pctnr_data(&winStub.base.monitors), prev_count * sizeof(WindowsMonitor*));
-
-	size_t i;
-	for (DWORD adapter = 0; ; adapter++)
-	{
-		DISPLAY_DEVICE adev = { sizeof(DISPLAY_DEVICE), };
-		if (EnumDisplayDevices(NULL, adapter, &adev, 0) == FALSE)
-			break;
-		if (QN_TMASK(adev.StateFlags, DISPLAY_DEVICE_ACTIVE) == false)
-			continue;
-
-		DWORD display;
-		for (display = 0; ; display++)
-		{
-			DISPLAY_DEVICE ddev = { sizeof(DISPLAY_DEVICE), };
-			if (EnumDisplayDevices(adev.DeviceName, display, &ddev, 0) == FALSE)
-				break;
-			if (QN_TMASK(ddev.StateFlags, DISPLAY_DEVICE_ACTIVE) == false)
-				break;
-
-			for (i = 0; i < prev_count; i++)
-			{
-				if (prev_mons[i] == NULL || qn_wcseqv(prev_mons[i]->display, ddev.DeviceName) == false)
-					continue;
-				prev_mons[i] = NULL;
-				EnumDisplayMonitors(NULL, NULL, windows_monitor_callback, (LPARAM)&qn_pctnr_nth(&winStub.base.monitors, i));
-				break;
-			}
-			if (i < prev_count)
-				continue;
-
-			WindowsMonitor* mon = windows_create_monitor(&adev, &ddev);
-			stub_event_on_monitor((QgUdevMonitor*)mon, true, QN_TMASK(adev.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE));
-		}
-
-		if (display == 0)
-		{
-			for (i = 0; i < prev_count; i++)
-			{
-				if (prev_mons[i] == NULL || qn_wcseqv(prev_mons[i]->adapter, adev.DeviceName) == false)
-					continue;
-				prev_mons[i] = NULL;
-				break;
-			}
-			if (i < prev_count)
-				continue;
-
-			WindowsMonitor* mon = windows_create_monitor(&adev, NULL);
-			stub_event_on_monitor((QgUdevMonitor*)mon, true, QN_TMASK(adev.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE));
-		}
-	}
-
-	if (prev_mons != NULL)
-	{
-		for (i = 0; i < prev_count; i++)
-		{
-			if (prev_mons[i] != NULL)
-				stub_event_on_monitor((QgUdevMonitor*)prev_mons[i], false, false);
-		}
-		qn_free(prev_mons);
-	}
-}
-
 // 마우스 이벤트 소스 (https://learn.microsoft.com/ko-kr/windows/win32/tablet/system-events-and-mouse-messages)
 #define MI_WP_SIGNATURE		0xFF515700
 #define SIGNATURE_MASK		0xFFFFFF00
@@ -660,7 +684,7 @@ static bool windows_mesg_keyboard(WPARAM wp, bool down)
 	{
 		SendMessage(winStub.hwnd, WM_CLOSE, 0, 0);
 		return true;
-}
+	}
 #endif
 
 	return stub_event_on_keyboard((QikKey)key, down) == 0 ? false : key != VK_MENU;

@@ -65,8 +65,6 @@ extern void stub_system_set_title(const char* u8text);
 extern void stub_system_hold_mouse(bool hold);
 // 레이아웃을 계산한다
 extern void stub_system_calc_layout(void);
-// 디스플레이 검사
-extern void stub_system_check_display(void);
 
 // 내부적으로 마우스 눌림을 연산한다
 extern bool stub_track_mouse_click(QimButton button, QimTrack track);

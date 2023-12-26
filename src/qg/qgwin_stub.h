@@ -20,19 +20,18 @@ static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 #define DEF_WIN_XIFUNC(ret,name,args)	extern QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
 #include "qgwin_func.h"
 
-// 윈도우 모니터
-typedef struct WindowsMonitor WindowsMonitor;
-struct WindowsMonitor
+// 윈도우 모니터 > QgUdevMonitor
+typedef struct WindowsMonitor
 {
 	QgUdevMonitor		base;
 
+	HMONITOR			handle;
 	wchar				adapter[32];
 	wchar				display[32];
-};
+} WindowsMonitor;
 
-// 윈도우 스터브
-typedef struct WindowsStub WindowsStub;
-struct WindowsStub
+// 윈도우 스터브 > StubBase
+typedef struct WindowsStub
 {
 	StubBase			base;
 
@@ -46,6 +45,7 @@ struct WindowsStub
 	TOGGLEKEYS			acs_toggle;
 	FILTERKEYS			acs_filter;
 	HHOOK				key_hook;
+	BYTE				key_hook_state[256];
 
 	HIMC				himc;
 	int					imcs;
@@ -63,5 +63,6 @@ struct WindowsStub
 	bool				clear_background;
 	bool				bool_padding1;
 	bool				bool_padding2;
-};
+} WindowsStub;
+// 윈도우 스터브 선언
 extern WindowsStub winStub;

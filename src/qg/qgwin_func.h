@@ -46,6 +46,7 @@ DEF_WIN_FUNC(int, GetSystemMetricsForDpi, (int, UINT))
 DEF_WIN_FUNC(BOOL, ChangeWindowMessageFilterEx, (HWND, UINT, DWORD, PCHANGEFILTERSTRUCT))
 DEF_WIN_FUNC(BOOL, UnhookWindowsHookEx, (HHOOK hhk))
 DEF_WIN_FUNC(HHOOK, SetWindowsHookExW, (int idHook, HOOKPROC lpfn, HINSTANCE hmod, DWORD dwThreadId))
+DEF_WIN_FUNC(BOOL, GetKeyboardState, (PBYTE))
 DEF_WIN_DLL_END
 
 // SHCORE

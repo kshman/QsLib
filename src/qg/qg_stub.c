@@ -72,7 +72,7 @@ static void shed_event_dispose(void)
 	qn_ret_if_fail(shed_event.mutex != NULL);
 
 	// 예약 메모리
-	qn_parr_loopeach(&shed_event.reserved_mems, qn_memfre);
+	qn_parr_each(&shed_event.reserved_mems, qn_memfre);
 	qn_parr_disp(&shed_event.reserved_mems);
 	// 우선 순위 큐
 	qn_nodelist_disp_cb(EventNodeList, &shed_event.prior, qn_memfre);
@@ -184,8 +184,8 @@ static void shed_event_flush(void)
 {
 	qn_mutex_enter(shed_event.mutex);
 
-	qn_nodelist_loopeach(EventNodeList, &shed_event.prior, shed_event_flush_callback);
-	qn_nodelist_loopeach(EventNodeList, &shed_event.queue, shed_event_flush_callback);
+	qn_nodelist_each(EventNodeList, &shed_event.prior, shed_event_flush_callback);
+	qn_nodelist_each(EventNodeList, &shed_event.queue, shed_event_flush_callback);
 
 	qn_mutex_leave(shed_event.mutex);
 }
@@ -204,7 +204,7 @@ static void shed_event_clear_reserved_mem(void)
 	qn_mutex_enter(shed_event.mutex);
 	if (qn_parr_is_have(&shed_event.reserved_mems))
 	{
-		qn_parr_loopeach(&shed_event.reserved_mems, qn_free);
+		qn_parr_each(&shed_event.reserved_mems, qn_free);
 		qn_parr_clear(&shed_event.reserved_mems);
 	}
 	qn_mutex_leave(shed_event.mutex);
@@ -275,7 +275,6 @@ void stub_initialize(StubBase* stub, int display, int flags)
 	stub->mouse.lim.tick = 500;								// 제한 클릭 시간(밀리초)
 
 	qn_pctnr_init(&stub->monitors, 0);
-	stub_system_check_display();
 }
 
 //
@@ -287,7 +286,7 @@ void qg_close_stub(void)
 
 	qn_timer_delete(qg_stub_instance->timer);
 
-	qn_pctnr_loopeach(&qg_stub_instance->monitors, qn_memfre);
+	qn_pctnr_each(&qg_stub_instance->monitors, qn_memfre);
 	qn_pctnr_disp(&qg_stub_instance->monitors);
 
 	shed_event_dispose();
@@ -582,7 +581,7 @@ bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary)
 	if (connected)
 	{
 		if (primary)
-			qn_pctnr_prepend(&stub->monitors, monitor);
+			qn_pctnr_insert(&stub->monitors, 0, monitor);
 		else
 			qn_pctnr_add(&stub->monitors, monitor);
 	}
@@ -593,8 +592,8 @@ bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary)
 		if (nth >= 0)
 			qn_pctnr_remove_nth(&stub->monitors, nth);
 	}
-	for (size_t i = 0; i < qn_pctnr_count(&stub->monitors); i++)
-		qn_pctnr_nth(&stub->monitors, i)->no = (int)i;
+	size_t i;
+	qn_pctnr_each_index(&stub->monitors, i, { qn_pctnr_nth(&stub->monitors, i)->no = (int)i; });
 
 	QgUdevMonitor* another = qn_memdup(monitor, sizeof(QgUdevMonitor));
 	e.monitor.monitor = another;

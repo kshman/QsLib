@@ -488,15 +488,12 @@ typedef struct QgUimCtrlVib
 typedef struct QgUdevMonitor
 {
 	char				name[64];
-	int					no;
-	uint				x;
-	uint				y;
+	uint				no;
+	QmPoint				position;
 	uint				width;
 	uint				height;
-	uint				depth;
 	uint				mmwidth;
 	uint				mmheight;
-	void*				oshandle;
 } QgUdevMonitor;
 
 /// @brief 이벤트

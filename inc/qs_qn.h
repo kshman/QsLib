@@ -1695,7 +1695,7 @@ QSAPI void qn_mlu_foreach(const QnMlu* self, void(*func)(void*, QnMlTag*), void*
 /// @param[in]	self		개체나 인터페이스의 자기 자신 값
 /// @param[in]	func	콜백 함수
 ///
-QSAPI void qn_mlu_loopeach(const QnMlu* self, void(*func)(QnMlTag* tag));
+QSAPI void qn_mlu_each(const QnMlu* self, void(*func)(QnMlTag* tag));
 
 /// @brief 태그를 추가한다
 /// @param[in]	self	Mlu 개체
@@ -1882,7 +1882,7 @@ QSAPI void qn_mltag_foreach_sub(QnMlTag* ptr, void(*func)(void* userdata, QnMlTa
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	func	콜백 함수
 ///
-QSAPI void qn_mltag_loopeach_sub(QnMlTag* ptr, void(*func)(QnMlTag* tag));
+QSAPI void qn_mltag_each_sub(QnMlTag* ptr, void(*func)(QnMlTag* tag));
 
 // tag - arg
 
@@ -1928,7 +1928,7 @@ QSAPI void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, char* 
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	func	콜백 함수
 ///
-QSAPI void qn_mltag_loopeach_arg(QnMlTag* ptr, void(*func)(char* const* name, char* const* data));
+QSAPI void qn_mltag_each_arg(QnMlTag* ptr, void(*func)(char* const* name, char* const* data));
 
 /// @brief 인수를 추가한다
 /// @param[in]	ptr	MlTag 개체

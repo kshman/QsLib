@@ -4,14 +4,14 @@
 
 typedef struct QnRealTag QnRealTag;
 
-QN_DECL_ARR(ErrorArray, char*)
-QN_DECL_ARR(SubArray, QnRealTag*)
-QN_DECL_SLIST(StackList, QnRealTag*)
+QN_DECL_ARR(ErrorArray, char*);
+QN_DECL_ARR(SubArray, QnRealTag*);
+QN_DECL_SLIST(StackList, QnRealTag*);
 
-QN_DECL_HASH(ArgHash, char*, char*)
-QN_HASH_CHAR_PTR_KEY(ArgHash)
-QN_HASH_KEY_FREE(ArgHash)
-QN_HASH_VALUE_FREE(ArgHash)
+QN_DECL_HASH(ArgHash, char*, char*);
+QN_HASH_CHAR_PTR_KEY(ArgHash);
+QN_HASH_KEY_FREE(ArgHash);
+QN_HASH_VALUE_FREE(ArgHash);
 
 // 스트링 제거
 static void error_array_delete_ptr(char** ptr)
@@ -133,8 +133,8 @@ void qn_mlu_delete(QnMlu* self)
 	qn_mlu_clean_tags(self);
 	qn_mlu_clean_errs(self);
 
-	qn_arr_disp(SubArray, &self->tags);
-	qn_arr_disp(ErrorArray, &self->errs);
+	qn_arr_disp(&self->tags);
+	qn_arr_disp(&self->errs);
 
 	qn_free(self);
 }
@@ -142,15 +142,15 @@ void qn_mlu_delete(QnMlu* self)
 //
 void qn_mlu_clean_tags(QnMlu* self)
 {
-	qn_arr_loopeach(SubArray, &self->tags, qn_realtag_delete_ptr);
-	qn_arr_clear(SubArray, &self->tags);
+	qn_arr_each_ptr(&self->tags, qn_realtag_delete_ptr);
+	qn_arr_clear(&self->tags);
 }
 
 //
 void qn_mlu_clean_errs(QnMlu* self)
 {
-	qn_arr_loopeach(ErrorArray, &self->errs, error_array_delete_ptr);
-	qn_arr_clear(ErrorArray, &self->errs);
+	qn_arr_each_ptr(&self->errs, error_array_delete_ptr);
+	qn_arr_clear(&self->errs);
 }
 
 //
@@ -650,7 +650,7 @@ const char* qn_mlu_get_context_nth(const QnMlu* self, int at, const char* restri
 int qn_mlu_contains(const QnMlu* self, QnMlTag* restrict tag)
 {
 	int ret;
-	qn_arr_contains(SubArray, &self->tags, (QnRealTag*)tag, &ret);
+	qn_arr_contains(&self->tags, (QnRealTag*)tag, &ret);
 	return ret;
 }
 
@@ -667,7 +667,7 @@ void qn_mlu_foreach(const QnMlu* self, void(*func)(void*, QnMlTag*), void* userd
 }
 
 //
-void qn_mlu_loopeach(const QnMlu* self, void(*func)(QnMlTag* tag))
+void qn_mlu_each(const QnMlu* self, void(*func)(QnMlTag* tag))
 {
 	qn_ret_if_fail(func);
 
@@ -797,8 +797,8 @@ static void qn_realtag_delete_ptr(QnRealTag** ptr)
 	qn_free(self->base.name);
 	qn_free(self->base.context);
 
-	qn_arr_loopeach(SubArray, &self->subs, qn_realtag_delete_ptr);
-	qn_arr_disp(SubArray, &self->subs);
+	qn_arr_each_ptr(&self->subs, qn_realtag_delete_ptr);
+	qn_arr_disp(&self->subs);
 
 	qn_hash_disp(ArgHash, &self->args);
 
@@ -1128,7 +1128,7 @@ int qn_mltag_contains_sub(QnMlTag* restrict ptr, QnMlTag* restrict tag)
 	const QnRealTag* self = (QnRealTag*)ptr;
 	int ret;
 
-	qn_arr_contains(SubArray, &self->subs, (QnRealTag*)tag, &ret);
+	qn_arr_contains(&self->subs, (QnRealTag*)tag, &ret);
 
 	return ret;
 }
@@ -1148,7 +1148,7 @@ void qn_mltag_foreach_sub(QnMlTag* ptr, void(*func)(void* userdata, QnMlTag* tag
 }
 
 //
-void qn_mltag_loopeach_sub(QnMlTag* ptr, void(*func)(QnMlTag* tag))
+void qn_mltag_each_sub(QnMlTag* ptr, void(*func)(QnMlTag* tag))
 {
 	qn_ret_if_fail(func);
 
@@ -1318,11 +1318,11 @@ void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, char* const*
 }
 
 //
-void qn_mltag_loopeach_arg(QnMlTag* ptr, void(*func)(char* const* name, char* const* data))
+void qn_mltag_each_arg(QnMlTag* ptr, void(*func)(char* const* name, char* const* data))
 {
 	const QnRealTag* self = (QnRealTag*)ptr;
 
-	qn_hash_loopeach(ArgHash, &self->args, func);
+	qn_hash_each(ArgHash, &self->args, func);
 }
 
 //
