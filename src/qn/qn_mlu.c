@@ -1,4 +1,9 @@
-﻿#include "pch.h"
+﻿//
+// qn_mlu.c - 마크업 언어 유니트 (Markup Language Unit)
+// 2023-12-27 by kim
+//
+
+#include "pch.h"
 #include "qs_qn.h"
 #include "qs_ctn.h"
 

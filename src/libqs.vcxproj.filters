@@ -25,9 +25,6 @@
     <Filter Include="소스 파일\qn\zlib">
       <UniqueIdentifier>{9186560c-4ecf-4b83-86bc-8779a46f03c4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="소스 파일\qn\PatrickPowell">
-      <UniqueIdentifier>{0b23bc80-36bf-4ec7-94ae-cde05dc26742}</UniqueIdentifier>
-    </Filter>
     <Filter Include="소스 파일\qg">
       <UniqueIdentifier>{4bcc6fad-7481-4b3c-8c10-df0245cee5ea}</UniqueIdentifier>
     </Filter>
@@ -43,9 +40,6 @@
     <Filter Include="소스 파일\qg\rdh">
       <UniqueIdentifier>{1b57b24d-4186-4d0c-bbfc-ebd9dc250bf0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="소스 파일\qg\gles">
-      <UniqueIdentifier>{df065b92-8d8c-4efd-a518-eef5ae12cb80}</UniqueIdentifier>
-    </Filter>
     <Filter Include="소스 파일\qg\glad">
       <UniqueIdentifier>{90557222-48b7-44f9-81cb-a6b4181d8b85}</UniqueIdentifier>
     </Filter>
@@ -54,6 +48,9 @@
     </Filter>
     <Filter Include="헤더 파일\qg\stub">
       <UniqueIdentifier>{ca19cfa2-72c5-4ba0-a9be-503b7f6ceffd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\qg\gl">
+      <UniqueIdentifier>{170f8d93-add5-4173-8a91-f63c33ede8e4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -99,15 +96,6 @@
     <ClInclude Include="qn\zlib\crc32.h">
       <Filter>헤더 파일\qn\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="qg\qg_es2.h">
-      <Filter>헤더 파일\qg</Filter>
-    </ClInclude>
-    <ClInclude Include="qg\qggl_base.h">
-      <Filter>헤더 파일\qg</Filter>
-    </ClInclude>
-    <ClInclude Include="qg\qggl_supp.h">
-      <Filter>헤더 파일\qg</Filter>
-    </ClInclude>
     <ClInclude Include="qg\glad\khrplatform.h">
       <Filter>헤더 파일\qg\glad</Filter>
     </ClInclude>
@@ -121,9 +109,6 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="qg\qg_stub.h">
-      <Filter>헤더 파일\qg\stub</Filter>
-    </ClInclude>
-    <ClInclude Include="qg\qgx11_func.h">
       <Filter>헤더 파일\qg\stub</Filter>
     </ClInclude>
     <ClInclude Include="qg\qgwin_stub.h">
@@ -146,6 +131,21 @@
     </ClInclude>
     <ClInclude Include="..\inc\qs_qg.h">
       <Filter>헤더 파일\qg</Filter>
+    </ClInclude>
+    <ClInclude Include="qg\qg_es2.h">
+      <Filter>헤더 파일\qg\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="qg\qggl_base.h">
+      <Filter>헤더 파일\qg\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="qg\qggl_supp.h">
+      <Filter>헤더 파일\qg\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="qg\qgwlx_func.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
+    <ClInclude Include="qg\qgwlx_stub.h">
+      <Filter>헤더 파일\qg\stub</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -230,9 +230,6 @@
     <ClCompile Include="qn\zlib\zutil.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="qn\PatrickPowell_snprintf.c">
-      <Filter>소스 파일\qn\PatrickPowell</Filter>
-    </ClCompile>
     <ClCompile Include="qg\qg_kmc.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
@@ -245,14 +242,17 @@
     <ClCompile Include="qn\qn_thd.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="qg\qgwin_mesg.c">
-      <Filter>소스 파일\qg\stub</Filter>
-    </ClCompile>
     <ClCompile Include="qg\glad\glad.c">
       <Filter>소스 파일\qg\glad</Filter>
     </ClCompile>
-    <ClCompile Include="qg\qgx11_stub.c">
+    <ClCompile Include="qn\PatrickPowell_snprintf.c">
+      <Filter>소스 파일\qn</Filter>
+    </ClCompile>
+    <ClCompile Include="qg\qgwlx_stub.c">
       <Filter>소스 파일\qg\stub</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zconsole\zz.c">
+      <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

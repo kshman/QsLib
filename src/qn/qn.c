@@ -1,4 +1,9 @@
-﻿#include "pch.h"
+﻿//
+// qn.c - QN 시작 지점
+// 2023-12-27 by kim
+//
+
+#include "pch.h"
 #include "qs_qn.h"
 #include "qs_ctn.h"
 

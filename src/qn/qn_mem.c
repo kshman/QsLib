@@ -1,4 +1,9 @@
-﻿#include "pch.h"
+﻿//
+// qn_mem.c - CRT에 없는 메모리 기능과 메모리 관리자
+// 2023-12-27 by kim
+//
+
+#include "pch.h"
 #include "qs_qn.h"
 #ifndef __EMSCRIPTEN__
 #include "zlib/zlib.h"

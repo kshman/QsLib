@@ -80,7 +80,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t);								/// @brief any_t 배열
 #define qn_ctnr_remove_nth(name,p,n)\
 	QN_STMT_BEGIN{\
 		qn_assert((size_t)(n)<(p)->count && "index overflow");\
-		name##Type* __t=(p)->data+(n);\
+		name##Type* __t=(name##Type*)(p)->data+(n);\
 		if ((size_t)(n)!=(p)->count-1)\
 			memmove(__t, __t+1, qn_ctn_sizeof_type(name)*((p)->count-((size_t)(n)+1)));\
 		(p)->count--;\

@@ -56,6 +56,7 @@
     <IntDir>$(ProjectDir)Build\obj\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath>
     </IncludePath>
+    <RemoteCCompileToolExe>clang</RemoteCCompileToolExe>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <CopyAdditionalIncludes>true</CopyAdditionalIncludes>
@@ -63,6 +64,7 @@
     <IntDir>$(ProjectDir)Build\obj\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath>
     </IncludePath>
+    <RemoteCCompileToolExe>clang</RemoteCCompileToolExe>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <CopyAdditionalIncludes>true</CopyAdditionalIncludes>
@@ -70,6 +72,7 @@
     <IntDir>$(ProjectDir)Build\obj\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath>
     </IncludePath>
+    <RemoteCCompileToolExe>clang</RemoteCCompileToolExe>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <CopyAdditionalIncludes>true</CopyAdditionalIncludes>
@@ -77,11 +80,12 @@
     <IntDir>$(ProjectDir)Build\obj\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath>
     </IncludePath>
+    <RemoteCCompileToolExe>clang</RemoteCCompileToolExe>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>
       <SymbolsHiddenByDefault>true</SymbolsHiddenByDefault>
-      <PreprocessorDefinitions>USE_X11;USE_GL;USE_ES3;_DEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_WAYLAND;USE_GL;USE_ES3;_DEBUG</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.;..\inc;$(StlIncludeDirectories);%(ClCompile.AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -90,7 +94,7 @@
       <LinkTimeOptimization>true</LinkTimeOptimization>
       <RelaxIEEE>true</RelaxIEEE>
       <SymbolsHiddenByDefault>true</SymbolsHiddenByDefault>
-      <PreprocessorDefinitions>USE_X11;USE_GL;USE_ES3;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_WAYLAND;USE_GL;USE_ES3;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.;..\inc;$(StlIncludeDirectories);%(ClCompile.AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -101,7 +105,7 @@
     <ClCompile>
       <AdditionalOptions>-mavx2 %(AdditionalOptions)</AdditionalOptions>
       <SymbolsHiddenByDefault>true</SymbolsHiddenByDefault>
-      <PreprocessorDefinitions>USE_X11;USE_GL;USE_ES3;_DEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_WAYLAND;USE_GL;USE_ES3;_DEBUG</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.;..\inc;$(StlIncludeDirectories);%(ClCompile.AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -111,7 +115,7 @@
       <LinkTimeOptimization>true</LinkTimeOptimization>
       <RelaxIEEE>true</RelaxIEEE>
       <SymbolsHiddenByDefault>true</SymbolsHiddenByDefault>
-      <PreprocessorDefinitions>USE_X11;USE_GL;USE_ES3;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_WAYLAND;USE_GL;USE_ES3;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.;..\inc;$(StlIncludeDirectories);%(ClCompile.AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -131,6 +135,8 @@
     <ClInclude Include="qg\glad\khrplatform.h" />
     <ClInclude Include="qg\qgwin_func.h" />
     <ClInclude Include="qg\qgwin_stub.h" />
+    <ClInclude Include="qg\qgwlx_func.h" />
+    <ClInclude Include="qg\qgwlx_stub.h" />
     <ClInclude Include="qg\qg_es2.h" />
     <ClInclude Include="qg\qggl_supp.h" />
     <ClInclude Include="qg\qggl_base.h" />
@@ -153,8 +159,8 @@
     <ClCompile Include="..\zconsole\zz.c" />
     <ClCompile Include="pch.c" />
     <ClCompile Include="qg\glad\glad.c" />
-    <ClCompile Include="qg\qgwin_mesg.c" />
     <ClCompile Include="qg\qgwin_stub.c" />
+    <ClCompile Include="qg\qgwlx_stub.c" />
     <ClCompile Include="qg\qg_kmc.c" />
     <ClCompile Include="qg\qg_stub.c" />
     <ClCompile Include="qn\PatrickPowell_snprintf.c" />

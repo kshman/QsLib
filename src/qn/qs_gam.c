@@ -1,4 +1,9 @@
-﻿#include "pch.h"
+﻿//
+// qs_gam.c - 감 잡는 QsGam
+// 2023-12-27 by kim
+//
+
+#include "pch.h"
 #include "qs_qn.h"
 
 // 만들었슴

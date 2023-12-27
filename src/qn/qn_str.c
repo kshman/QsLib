@@ -1,4 +1,9 @@
-﻿// ReSharper disable CppParameterMayBeConst
+﻿//
+// qn_str.c - CRT에 없는거나, 공통이 아닌것 재구현 (mbs,wcs,utf-8,utf 변환)
+// 2023-12-27 by kim
+//
+
+// ReSharper disable CppParameterMayBeConst
 
 #include "pch.h"
 #include "qs_qn.h"

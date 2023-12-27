@@ -1,4 +1,9 @@
-﻿#include "pch.h"
+﻿//
+// qn_thd.c - 스레드
+// 2023-12-27 by kim
+//
+
+#include "pch.h"
 #include "qs_qn.h"
 #ifdef _QN_UNIX_
 #include <pthread.h>

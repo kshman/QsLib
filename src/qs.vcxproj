@@ -195,6 +195,8 @@
     <ClInclude Include="qg\glad\khrplatform.h" />
     <ClInclude Include="qg\qgwin_func.h" />
     <ClInclude Include="qg\qgwin_stub.h" />
+    <ClInclude Include="qg\qgwlx_func.h" />
+    <ClInclude Include="qg\qgwlx_stub.h" />
     <ClInclude Include="qg\qg_es2.h" />
     <ClInclude Include="qg\qggl_supp.h" />
     <ClInclude Include="qg\qggl_base.h" />
@@ -258,6 +260,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="qg\qgwin_stub.c" />
+    <ClCompile Include="qg\qgwlx_stub.c" />
     <ClCompile Include="qg\qg_kmc.c" />
     <ClCompile Include="qg\qg_rdh.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
