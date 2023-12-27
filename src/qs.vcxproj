@@ -195,6 +195,7 @@
     <ClInclude Include="qg\glad\khrplatform.h" />
     <ClInclude Include="qg\qgwin_func.h" />
     <ClInclude Include="qg\qgwin_stub.h" />
+    <ClInclude Include="qg\qgwlx_alias.h" />
     <ClInclude Include="qg\qgwlx_func.h" />
     <ClInclude Include="qg\qgwlx_stub.h" />
     <ClInclude Include="qg\qg_es2.h" />

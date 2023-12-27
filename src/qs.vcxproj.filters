@@ -147,6 +147,9 @@
     <ClInclude Include="qg\qgwlx_stub.h">
       <Filter>헤더 파일\qg\stub</Filter>
     </ClInclude>
+    <ClInclude Include="qg\qgwlx_alias.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.c">

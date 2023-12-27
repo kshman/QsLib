@@ -12,14 +12,6 @@
 
 static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 
-// DLL
-#define DEF_WIN_FUNC(ret,name,args)		typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;
-#define DEF_WIN_XINPUT_FUNC(ret,name,args)	typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;
-#include "qgwin_func.h"
-#define DEF_WIN_FUNC(ret,name,args)		extern QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
-#define DEF_WIN_XINPUT_FUNC(ret,name,args)	extern QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
-#include "qgwin_func.h"
-
 // 윈도우 모니터 > QgUdevMonitor
 typedef struct WindowsMonitor
 {
@@ -80,3 +72,38 @@ typedef struct WindowsStub
 
 // 윈도우 스터브 선언
 extern WindowsStub winStub;
+
+// DLL
+#ifdef DEF_WIN_TYPEDEF
+#define DEF_WIN_FUNC(ret,name,args)\
+	extern QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
+#else
+#define DEF_WIN_FUNC(ret,name,args)\
+	typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;\
+	extern QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
+#endif
+#include "qgwin_func.h"
+
+// 별명
+#define SetProcessDPIAware					Win32SetProcessDPIAware
+#define SetProcessDpiAwarenessContext		Win32SetProcessDpiAwarenessContext
+#define SetThreadDpiAwarenessContext		Win32SetThreadDpiAwarenessContext
+#define GetThreadDpiAwarenessContext		Win32GetThreadDpiAwarenessContext
+#define GetAwarenessFromDpiAwarenessContext	Win32GetAwarenessFromDpiAwarenessContext
+#define EnableNonClientDpiScaling			Win32EnableNonClientDpiScaling
+#define AdjustWindowRectExForDpi			Win32AdjustWindowRectExForDpi
+#define GetDpiForWindow						Win32GetDpiForWindow
+#define AreDpiAwarenessContextsEqual		Win32AreDpiAwarenessContextsEqual
+#define IsValidDpiAwarenessContext			Win32IsValidDpiAwarenessContext
+#define EnableNonClientDpiScaling			Win32EnableNonClientDpiScaling
+#define CallNextHookEx						Win32CallNextHookEx
+#define GetSystemMetricsForDpi				Win32GetSystemMetricsForDpi
+#define ChangeWindowMessageFilterEx			Win32ChangeWindowMessageFilterEx
+#define UnhookWindowsHookEx					Win32UnhookWindowsHookEx
+#define SetWindowsHookExW					Win32SetWindowsHookExW
+#define GetKeyboardState					Win32GetKeyboardState
+
+#define GetDpiForMonitor					Win32GetDpiForMonitor
+#define SetProcessDpiAwareness				Win32SetProcessDpiAwareness
+
+#define ImmAssociateContextEx				Win32ImmAssociateContextEx

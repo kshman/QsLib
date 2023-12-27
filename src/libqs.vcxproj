@@ -52,32 +52,24 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <CopyAdditionalIncludes>true</CopyAdditionalIncludes>
-    <OutDir>$(ProjectDir)Build\bin\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(ProjectDir)Build\obj\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath>
     </IncludePath>
     <RemoteCCompileToolExe>clang</RemoteCCompileToolExe>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <CopyAdditionalIncludes>true</CopyAdditionalIncludes>
-    <OutDir>$(ProjectDir)Build\bin\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(ProjectDir)Build\obj\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath>
     </IncludePath>
     <RemoteCCompileToolExe>clang</RemoteCCompileToolExe>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <CopyAdditionalIncludes>true</CopyAdditionalIncludes>
-    <OutDir>$(ProjectDir)Build\bin\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(ProjectDir)Build\obj\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath>
     </IncludePath>
     <RemoteCCompileToolExe>clang</RemoteCCompileToolExe>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <CopyAdditionalIncludes>true</CopyAdditionalIncludes>
-    <OutDir>$(ProjectDir)Build\bin\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(ProjectDir)Build\obj\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath>
     </IncludePath>
     <RemoteCCompileToolExe>clang</RemoteCCompileToolExe>
