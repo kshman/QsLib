@@ -2,49 +2,49 @@
 #include "qs_qn.h"
 
 // 만들었슴
-QsGam* qs_sc_init(QsGam* restrict self, void* restrict vt)
+QsGam* qs_sc_init(QsGam* restrict g, void* restrict vt)
 {
-	self->vt = vt;
-	self->ref = 1;
-	return self;
+	g->vt = vt;
+	g->ref = 1;
+	return g;
 }
 
 // 로드
-QsGam* qs_sc_load(QsGam* restrict self)
+QsGam* qs_sc_load(QsGam* restrict g)
 {
-	self->ref++;
-	return self;
+	g->ref++;
+	return g;
 }
 
 // 언로드
-QsGam* qs_sc_unload(QsGam* restrict self)
+QsGam* qs_sc_unload(QsGam* restrict g)
 {
-	const volatile int ref = (int)--self->ref;
+	const volatile int ref = (int)--g->ref;
 	if (ref != 0)
 	{
-		qn_assert(ref > 0, "잘못된 참조값!");
-		return self;
+		qn_assert(ref > 0 && "잘못된 참조값!");
+		return g;
 	}
-	self->vt->dispose(self);
+	g->vt->dispose(g);
 	return NULL;
 }
 
 //
-nint qs_sc_get_ref(QsGam* restrict self)
+nint qs_sc_get_ref(QsGam* restrict g)
 {
-	return self->ref;
+	return g->ref;
 }
 
 //
-nuint qs_sc_get_desc(const QsGam* restrict self)
+nuint qs_sc_get_desc(const QsGam* restrict g)
 {
-	return self->desc;
+	return g->desc;
 }
 
 //
-QSAPI nuint qs_sc_set_desc(QsGam* restrict self, nuint ptr)
+QSAPI nuint qs_sc_set_desc(QsGam* restrict g, const nuint ptr)
 {
-	const nuint prev = self->desc;
-	self->desc = ptr;
+	const nuint prev = g->desc;
+	g->desc = ptr;
 	return prev;
 }

@@ -12,7 +12,7 @@
 // qmkc supp
 
 //
-const char* qg_qik_str(QikKey key)
+const char* qg_qik_str(const QikKey key)
 {
 #ifndef __EMSCRIPTEN__
 	static const char* s_key_names[] =
@@ -42,7 +42,7 @@ const char* qg_qik_str(QikKey key)
 }
 
 //
-const char* qg_qim_str(QimButton button)
+const char* qg_qim_str(const QimButton button)
 {
 #ifndef __EMSCRIPTEN__
 	static const char* s_button_names[] =
@@ -61,7 +61,7 @@ const char* qg_qim_str(QimButton button)
 }
 
 //
-const char* qg_qic_str(QicButton button)
+const char* qg_qic_str(const QicButton button)
 {
 #ifndef __EMSCRIPTEN__
 	static const char* s_button_names[] =
@@ -324,7 +324,7 @@ QikMask kmod_to_qikm(int modifier)
 // stub
 
 //
-const char* qg_event_str(QgEventType ev)
+const char* qg_string_event(const QgEventType ev)
 {
 #ifndef __EMSCRIPTEN__
 	static struct EventMap
@@ -351,6 +351,7 @@ const char* qg_event_str(QgEventType ev)
 		DEF_EVENT(DROPBEGIN),
 		DEF_EVENT(DROPEND),
 		DEF_EVENT(DROPFILE),
+		DEF_EVENT(MONITOR),
 		DEF_EVENT(EXIT),
 		{ 0, NULL },
 #undef DEF_EVENT
@@ -367,7 +368,7 @@ const char* qg_event_str(QgEventType ev)
 }
 
 //
-const char* qg_window_event_str(QgWindowEventType wev)
+const char* qg_string_window_event(const QgWindowEventType wev)
 {
 #ifndef __EMSCRIPTEN__
 	static struct WindowEventMap

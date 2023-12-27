@@ -15,21 +15,7 @@ extern QikMask kmod_to_qikm(int modifier);
 #endif
 
 // 모니터 타입
-typedef struct StubMonitor StubMonitor;
-struct StubMonitor
-{
-	char				name[64];
-	int					no;
-	uint				x;
-	uint				y;
-	uint				width;
-	uint				height;
-	uint				depth;
-	float				dpi;
-	float				hdpi;
-	float				vdpi;
-};
-QN_DECL_CTNR(StubMonitorCtnr, StubMonitor*);
+QN_DECL_CTNR(StubMonitorCtnr, QgUdevMonitor*);
 
 // 스터브 기본 타입
 typedef struct StubBase StubBase;
@@ -53,7 +39,7 @@ struct StubBase
 	QmRect				window_bound;						/// @brief 실제 윈도우의 위치와 크기 정보
 	QmSize				client_size;						// 시스템 스터브 관리, 그리기 영역 크기 (창 크기가 아님)
 
-	StubMonitorCtnr		mon;
+	StubMonitorCtnr		monitors;
 	QgUimKey			key;
 	QgUimMouse			mouse;
 };
@@ -62,9 +48,7 @@ struct StubBase
 extern StubBase* qg_stub_instance;
 
 // 시스템 스터브를 연다
-extern StubBase* stub_system_open(const char* title, int display, int width, int height, QgFlag flags);
-// 시스템 윈도우를 만든다
-extern bool stub_system_create_window(void);
+extern bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags);
 // 시스템 스터브를 정리한다
 extern void stub_system_finalize(void);
 // 시스템 스터브 폴링 (프로그램이 종료되면 거짓)
@@ -74,16 +58,18 @@ extern void stub_system_enable_drop(bool enable);
 // 시스템 도움꾼 켜고 끄기
 extern void stub_system_disable_acs(bool enable);
 // 시스템 스크린 세이버 켜고 끄기
-extern void stub_system_diable_scrsave(bool enable);
+extern void stub_system_disable_scr_save(bool enable);
 // 시스템 타이틀 설정
-extern void stub_system_set_title(const char* u8text);
-// 마우스 홀드
-extern void stub_system_hold_mouse(bool hold);
-// 레이아웃을 계산한다
-extern void stub_system_calc_layout(void);
+extern void stub_system_set_title(const char* title);
+// 시스템 바운드 영역을 업데이트한다
+extern void stub_system_update_bound(void);
+// 시스템 스터브를 포커스로 만든다
+extern void stub_system_focus(void);
 
 // 내부적으로 마우스 눌림을 연산한다
 extern bool stub_track_mouse_click(QimButton button, QimTrack track);
+// 모니터 이벤트 추가
+extern bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary);
 // 레이아웃 이벤트 추가
 extern bool stub_event_on_layout(bool enter);
 // 윈도우 이벤트 추가
@@ -105,11 +91,10 @@ extern bool stub_event_on_active(bool active, double delta);
 // 드랍 이벤트 추가
 extern bool stub_event_on_drop(char* data, int len, bool finish);
 
+// 스터보 기본 사양을 초기화 stub_system_open() 함수가 호출해야 한다
+extern void stub_initialize(StubBase* stub, int flags);
 // 내부적으로 토글을 설정한다 (완전 언세이프)
 extern void stub_toggle_keys(QikMask keymask, bool on);
-
-// (도움함수) 대각선 DPI를 구한다
-extern float stub_calc_diagonal_dpi(uint width, uint height, float horizontal, float vertical);
 
 
 // 렌더 디바이스

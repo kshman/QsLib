@@ -6,12 +6,14 @@
 #endif
 
 #ifdef USE_EMM_INTRIN
-#define _mm_ror_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((byte)((i)+3)%4,(byte)((i)+2)%4,(byte)((i)+1)%4,(byte)((i)+0)%4))) : (vec))  // NOLINT
-#define _mm_rol_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((byte)(7-(i))%4,(byte)(6-(i))%4,(byte)(5-(i))%4,(byte)(4-(i))%4))) : (vec))  // NOLINT
+#define _mm_ror_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((byte)((i)+3)%4,(byte)((i)+2)%4,(byte)((i)+1)%4,(byte)((i)+0)%4))) : (vec))
+#define _mm_rol_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((byte)(7-(i))%4,(byte)(6-(i))%4,(byte)(5-(i))%4,(byte)(4-(i))%4))) : (vec))		// NOLINT
 #endif
 
 //
-void qm_vec3_closed_line(QmVec3* restrict pv, const QmLine3* restrict line, const QmVec3* restrict loc)
+void qm_vec3_closed_line(QmVec3* restrict pv,
+	const QmLine3* restrict line,
+	const QmVec3* restrict loc)
 {
 	QmVec3 c, z;
 	qm_sub(&c, loc, &line->begin);
@@ -32,7 +34,10 @@ void qm_vec3_closed_line(QmVec3* restrict pv, const QmLine3* restrict line, cons
 }
 
 //
-void qm_vec3_lerp_len(QmVec3* restrict pv, const QmVec3* restrict left, const QmVec3* restrict right, float scale, float len)
+void qm_vec3_lerp_len(QmVec3* restrict pv,
+	const QmVec3* restrict left,
+	const QmVec3* restrict right,
+	const float scale, const float len)
 {
 	QmVec3 v0, v1;
 	qm_norm(&v0, left);
@@ -44,7 +49,10 @@ void qm_vec3_lerp_len(QmVec3* restrict pv, const QmVec3* restrict left, const Qm
 }
 
 //
-void qm_vec3_form_norm(QmVec3* restrict pv, const QmVec3* restrict v0, const QmVec3* restrict v1, const QmVec3* restrict v2)
+void qm_vec3_form_norm(QmVec3* restrict pv,
+	const QmVec3* restrict v0,
+	const QmVec3* restrict v1,
+	const QmVec3* restrict v2)
 {
 	QmVec3 t0, t1;
 	qm_sub(&t0, v1, v0);
@@ -78,7 +86,10 @@ bool qm_vec3_reflect(QmVec3* restrict pv, const QmVec3* restrict in, const QmVec
 }
 
 //
-bool qm_vec3_intersect_line(QmVec3* restrict pv, const QmPlane* restrict plane, const QmVec3* restrict loc, const QmVec3* restrict dir)
+bool qm_vec3_intersect_line(QmVec3* restrict pv,
+	const QmPlane* restrict plane,
+	const QmVec3* restrict loc,
+	const QmVec3* restrict dir)
 {
 	// v2->pl<-v1
 	const QmVec3* plvec= (const QmVec3*)plane;
@@ -99,7 +110,10 @@ bool qm_vec3_intersect_line(QmVec3* restrict pv, const QmPlane* restrict plane, 
 }
 
 //
-bool qm_vec3_intersect_point(QmVec3* restrict pv, const QmPlane* restrict plane, const QmVec3* restrict v1, const QmVec3* restrict v2)
+bool qm_vec3_intersect_point(QmVec3* restrict pv,
+	const QmPlane* restrict plane,
+	const QmVec3* restrict v1,
+	const QmVec3* restrict v2)
 {
 	QmVec3 dir;
 	qm_sub(&dir, v2, v1);
@@ -107,7 +121,10 @@ bool qm_vec3_intersect_point(QmVec3* restrict pv, const QmPlane* restrict plane,
 }
 
 //
-bool qm_vec3_intersect_between_point(QmVec3* restrict pv, const QmPlane* restrict plane, const QmVec3* restrict v1, const QmVec3* restrict v2)
+bool qm_vec3_intersect_between_point(QmVec3* restrict pv,
+	const QmPlane* restrict plane,
+	const QmVec3* restrict v1,
+	const QmVec3* restrict v2)
 {
 	QmVec3 dir;
 	qm_sub(&dir, v2, v1);
@@ -121,14 +138,20 @@ bool qm_vec3_intersect_between_point(QmVec3* restrict pv, const QmPlane* restric
 }
 
 //
-bool qm_vec3_intersect_planes(QmVec3* restrict pv, const QmPlane* restrict plane, const QmPlane* restrict other1, const QmPlane* restrict other2)
+bool qm_vec3_intersect_planes(QmVec3* restrict pv,
+	const QmPlane* restrict plane,
+	const QmPlane* restrict other1,
+	const QmPlane* restrict other2)
 {
 	QmVec3 dir, loc;
 	return (qm_plane_intersect(plane, &loc, &dir, other1)) ? qm_vec3_intersect_line(pv, other2, &loc, &dir) : false;
 }
 
 //
-void qm_quat_slerp(QmQuat* restrict pq, const QmQuat* restrict left, const QmQuat* restrict right, float change)
+void qm_quat_slerp(QmQuat* restrict pq,
+	const QmQuat* restrict left,
+	const QmQuat* restrict right,
+	const float change)
 {
 	float dot = qm_dot(left, right);
 
@@ -283,7 +306,7 @@ void qm_quat_ln(QmQuat* restrict pq, const QmQuat* restrict q)
 	else
 	{
 		// 법선이 1보다 작다. 이런일은 생기지 않는다!!!!
-		qn_assert(false, "법선이 1보다 작은데? 어째서???");
+		qn_assert(false && "법선이 1보다 작은데? 어째서???");
 		pq->x = 0.0f;
 		pq->y = 0.0f;
 		pq->z = 0.0f;
@@ -295,7 +318,7 @@ void qm_quat_ln(QmQuat* restrict pq, const QmQuat* restrict q)
 void qm_mat4_tran(QmMat4* restrict pm, const QmMat4* restrict m)
 {
 #ifdef USE_EMM_INTRIN
-#if 1
+#if true
 	__m128 mm0 = _mm_unpacklo_ps(_mm_loadu_ps(&m->_11), _mm_loadu_ps(&m->_21));
 	__m128 mm1 = _mm_unpacklo_ps(_mm_loadu_ps(&m->_31), _mm_loadu_ps(&m->_41));
 	__m128 mm2 = _mm_unpackhi_ps(_mm_loadu_ps(&m->_11), _mm_loadu_ps(&m->_21));
@@ -412,13 +435,13 @@ void qm_mat4_mul(QmMat4* restrict pm, const QmMat4* restrict left, const QmMat4*
 void qm_mat4_inv_det(QmMat4* restrict pm, const QmMat4* restrict m, float* /*NULLABLE*/determinant)
 {
 #ifdef USE_EMM_INTRIN
-	static const alignas(16) uint s_PNNP[] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };
+	static const uint _Alignas(16) PNNP[] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };		// NOLINT
 
-	__m128 A, B, C, D;
-	__m128 iA, iB, iC, iD;
-	__m128 DC, AB;
-	__m128 dA, dB, dC, dD;
-	__m128 det, d, d1, d2;
+	__m128 a, b, c, d;
+	__m128 ia, ib, ic, id;
+	__m128 dc, ab;
+	__m128 ma, mb, mc, md;
+	__m128 dt, d0, d1, d2;
 	__m128 rd;
 	__m128 b1, b2, b3, b4;
 
@@ -427,69 +450,69 @@ void qm_mat4_inv_det(QmMat4* restrict pm, const QmMat4* restrict m, float* /*NUL
 	b3 = _mm_loadu_ps(&m->_31);
 	b4 = _mm_loadu_ps(&m->_41);
 
-	A = _mm_movelh_ps(b1, b2);
-	B = _mm_movehl_ps(b2, b1);
-	C = _mm_movelh_ps(b3, b4);
-	D = _mm_movehl_ps(b4, b3);
+	a = _mm_movelh_ps(b1, b2);
+	b = _mm_movehl_ps(b2, b1);
+	c = _mm_movelh_ps(b3, b4);
+	d = _mm_movehl_ps(b4, b3);
 
-	AB = _mm_mul_ps(_mm_shuffle_ps(A, A, 0x0F), B);
-	AB = _mm_sub_ps(AB, _mm_mul_ps(_mm_shuffle_ps(A, A, 0xA5), _mm_shuffle_ps(B, B, 0x4E)));
-	DC = _mm_mul_ps(_mm_shuffle_ps(D, D, 0x0F), C);
-	DC = _mm_sub_ps(DC, _mm_mul_ps(_mm_shuffle_ps(D, D, 0xA5), _mm_shuffle_ps(C, C, 0x4E)));
+	ab = _mm_mul_ps(_mm_shuffle_ps(a, a, 0x0F), b);
+	ab = _mm_sub_ps(ab, _mm_mul_ps(_mm_shuffle_ps(a, a, 0xA5), _mm_shuffle_ps(b, b, 0x4E)));
+	dc = _mm_mul_ps(_mm_shuffle_ps(d, d, 0x0F), c);
+	dc = _mm_sub_ps(dc, _mm_mul_ps(_mm_shuffle_ps(d, d, 0xA5), _mm_shuffle_ps(c, c, 0x4E)));
 
-	dA = _mm_mul_ps(_mm_shuffle_ps(A, A, 0x5F), A);
-	dA = _mm_sub_ss(dA, _mm_movehl_ps(dA, dA));
-	dB = _mm_mul_ps(_mm_shuffle_ps(B, B, 0x5F), B);
-	dB = _mm_sub_ss(dB, _mm_movehl_ps(dB, dB));
+	ma = _mm_mul_ps(_mm_shuffle_ps(a, a, 0x5F), a);
+	ma = _mm_sub_ss(ma, _mm_movehl_ps(ma, ma));
+	mb = _mm_mul_ps(_mm_shuffle_ps(b, b, 0x5F), b);
+	mb = _mm_sub_ss(mb, _mm_movehl_ps(mb, mb));
 
-	dC = _mm_mul_ps(_mm_shuffle_ps(C, C, 0x5F), C);
-	dC = _mm_sub_ss(dC, _mm_movehl_ps(dC, dC));
-	dD = _mm_mul_ps(_mm_shuffle_ps(D, D, 0x5F), D);
-	dD = _mm_sub_ss(dD, _mm_movehl_ps(dD, dD));
+	mc = _mm_mul_ps(_mm_shuffle_ps(c, c, 0x5F), c);
+	mc = _mm_sub_ss(mc, _mm_movehl_ps(mc, mc));
+	md = _mm_mul_ps(_mm_shuffle_ps(d, d, 0x5F), d);
+	md = _mm_sub_ss(md, _mm_movehl_ps(md, md));
 
-	d = _mm_mul_ps(_mm_shuffle_ps(DC, DC, 0xD8), AB);
+	d0 = _mm_mul_ps(_mm_shuffle_ps(dc, dc, 0xD8), ab);
 
-	iD = _mm_mul_ps(_mm_shuffle_ps(C, C, 0xA0), _mm_movelh_ps(AB, AB));
-	iD = _mm_add_ps(iD, _mm_mul_ps(_mm_shuffle_ps(C, C, 0xF5), _mm_movehl_ps(AB, AB)));
-	iA = _mm_mul_ps(_mm_shuffle_ps(B, B, 0xA0), _mm_movelh_ps(DC, DC));
-	iA = _mm_add_ps(iA, _mm_mul_ps(_mm_shuffle_ps(B, B, 0xF5), _mm_movehl_ps(DC, DC)));
+	id = _mm_mul_ps(_mm_shuffle_ps(c, c, 0xA0), _mm_movelh_ps(ab, ab));
+	id = _mm_add_ps(id, _mm_mul_ps(_mm_shuffle_ps(c, c, 0xF5), _mm_movehl_ps(ab, ab)));
+	ia = _mm_mul_ps(_mm_shuffle_ps(b, b, 0xA0), _mm_movelh_ps(dc, dc));
+	ia = _mm_add_ps(ia, _mm_mul_ps(_mm_shuffle_ps(b, b, 0xF5), _mm_movehl_ps(dc, dc)));
 
-	d = _mm_add_ps(d, _mm_movehl_ps(d, d));
-	d = _mm_add_ss(d, _mm_shuffle_ps(d, d, 1));
-	d1 = _mm_mul_ps(dA, dD);
-	d2 = _mm_mul_ps(dB, dC);
+	d0 = _mm_add_ps(d0, _mm_movehl_ps(d0, d0));
+	d0 = _mm_add_ss(d0, _mm_shuffle_ps(d0, d0, 1));
+	d1 = _mm_mul_ps(ma, md);
+	d2 = _mm_mul_ps(mb, mc);
 
-	iD = _mm_sub_ps(_mm_mul_ps(D, _mm_shuffle_ps(dA, dA, 0)), iD);
-	iA = _mm_sub_ps(_mm_mul_ps(A, _mm_shuffle_ps(dD, dD, 0)), iA);
+	id = _mm_sub_ps(_mm_mul_ps(d, _mm_shuffle_ps(ma, ma, 0)), id);
+	ia = _mm_sub_ps(_mm_mul_ps(a, _mm_shuffle_ps(md, md, 0)), ia);
 
-	det = _mm_sub_ss(_mm_add_ss(d1, d2), d);
-	rd = _mm_div_ss(_mm_set_ss(1.0f), det);
+	dt = _mm_sub_ss(_mm_add_ss(d1, d2), d0);
+	rd = _mm_div_ss(_mm_set_ss(1.0f), dt);
 	// ZERO_SINGULAR
 	//rd=_mm_and_ps(_mm_cmpneq_ss(det,_mm_setzero_ps()),rd);
 
-	iB = _mm_mul_ps(D, _mm_shuffle_ps(AB, AB, 0x33));
-	iB = _mm_sub_ps(iB, _mm_mul_ps(_mm_shuffle_ps(D, D, 0xB1), _mm_shuffle_ps(AB, AB, 0x66)));
-	iC = _mm_mul_ps(A, _mm_shuffle_ps(DC, DC, 0x33));
-	iC = _mm_sub_ps(iC, _mm_mul_ps(_mm_shuffle_ps(A, A, 0xB1), _mm_shuffle_ps(DC, DC, 0x66)));
+	ib = _mm_mul_ps(d, _mm_shuffle_ps(ab, ab, 0x33));
+	ib = _mm_sub_ps(ib, _mm_mul_ps(_mm_shuffle_ps(d, d, 0xB1), _mm_shuffle_ps(ab, ab, 0x66)));
+	ic = _mm_mul_ps(a, _mm_shuffle_ps(dc, dc, 0x33));
+	ic = _mm_sub_ps(ic, _mm_mul_ps(_mm_shuffle_ps(a, a, 0xB1), _mm_shuffle_ps(dc, dc, 0x66)));
 
 	rd = _mm_shuffle_ps(rd, rd, 0);
-	rd = _mm_xor_ps(rd, *(__m128*)(&s_PNNP));  // NOLINT
+	rd = _mm_xor_ps(rd, *(__m128*)(&PNNP));  // NOLINT
 
-	iB = _mm_sub_ps(_mm_mul_ps(C, _mm_shuffle_ps(dB, dB, 0)), iB);
-	iC = _mm_sub_ps(_mm_mul_ps(B, _mm_shuffle_ps(dC, dC, 0)), iC);
+	ib = _mm_sub_ps(_mm_mul_ps(c, _mm_shuffle_ps(mb, mb, 0)), ib);
+	ic = _mm_sub_ps(_mm_mul_ps(b, _mm_shuffle_ps(mc, mc, 0)), ic);
 
-	iA = _mm_div_ps(iA, rd);
-	iB = _mm_div_ps(iB, rd);
-	iC = _mm_div_ps(iC, rd);
-	iD = _mm_div_ps(iD, rd);
+	ia = _mm_div_ps(ia, rd);
+	ib = _mm_div_ps(ib, rd);
+	ic = _mm_div_ps(ic, rd);
+	id = _mm_div_ps(id, rd);
 
-	_mm_storeu_ps(&pm->_11, _mm_shuffle_ps(iA, iB, 0x77));
-	_mm_storeu_ps(&pm->_21, _mm_shuffle_ps(iA, iB, 0x22));
-	_mm_storeu_ps(&pm->_31, _mm_shuffle_ps(iC, iD, 0x77));
-	_mm_storeu_ps(&pm->_41, _mm_shuffle_ps(iC, iD, 0x22));
+	_mm_storeu_ps(&pm->_11, _mm_shuffle_ps(ia, ib, 0x77));
+	_mm_storeu_ps(&pm->_21, _mm_shuffle_ps(ia, ib, 0x22));
+	_mm_storeu_ps(&pm->_31, _mm_shuffle_ps(ic, id, 0x77));
+	_mm_storeu_ps(&pm->_41, _mm_shuffle_ps(ic, id, 0x22));
 
 	if (determinant)
-		*determinant = *(float*)&det;
+		*determinant = *(float*)&dt;
 #else
 	float f =
 		(m->_11 * m->_22 - m->_21 * m->_12) * (m->_33 * m->_44 - m->_43 * m->_34) - (m->_11 * m->_32 - m->_31 * m->_12) * (m->_23 * m->_44 - m->_43 * m->_24) +
@@ -639,7 +662,11 @@ void qm_mat4_shadow(QmMat4* restrict pm, const QmVec4* restrict light, const QmP
 }
 
 //
-void qm_mat4_affine(QmMat4* restrict pm, const QmVec3* restrict scl, const QmVec3* restrict rotcenter, const QmQuat* restrict rot, const QmVec3* restrict loc)
+void qm_mat4_affine(QmMat4* restrict pm,
+	const QmVec3* restrict scl,
+	const QmVec3* restrict rotcenter,
+	const QmQuat* restrict rot,
+	const QmVec3* restrict loc)
 {
 	QmMat4 m1, m2, m3, m4, m5, p1, p2, p3;
 
@@ -676,7 +703,10 @@ void qm_mat4_affine(QmMat4* restrict pm, const QmVec3* restrict scl, const QmVec
 }
 
 //
-void qm_mat4_trfm(QmMat4* restrict m, const QmVec3* restrict loc, const QmQuat* restrict rot, const QmVec3* restrict scl)
+void qm_mat4_trfm(QmMat4* restrict m,
+	const QmVec3* restrict loc,
+	const QmQuat* restrict rot,
+	const QmVec3* restrict scl)
 {
 	float* f = m->f16;
 
@@ -713,7 +743,10 @@ void qm_mat4_trfm(QmMat4* restrict m, const QmVec3* restrict loc, const QmQuat* 
 }
 
 //
-void qm_mat4_trfm_vec(QmMat4* restrict m, const QmVec3* restrict loc, const QmVec3* restrict rot, const QmVec3* restrict scl)
+void qm_mat4_trfm_vec(QmMat4* restrict m,
+	const QmVec3* restrict loc,
+	const QmVec3* restrict rot,
+	const QmVec3* restrict scl)
 {
 	float* f = m->f16;
 
@@ -773,7 +806,10 @@ void qm_plane_trfm(QmPlane* restrict pp, const QmPlane* restrict plane, const Qm
 }
 
 //
-void qm_plane_points(QmPlane* restrict pp, const QmVec3* restrict v1, const QmVec3* restrict v2, const QmVec3* restrict v3)
+void qm_plane_points(QmPlane* restrict pp,
+	const QmVec3* restrict v1,
+	const QmVec3* restrict v2,
+	const QmVec3* restrict v3)
 {
 	QmVec3 t0, t1, t2;
 	qm_sub(&t0, v2, v1);
@@ -784,7 +820,10 @@ void qm_plane_points(QmPlane* restrict pp, const QmVec3* restrict v1, const QmVe
 }
 
 //
-bool qm_plane_intersect(const QmPlane* restrict p, QmVec3* restrict loc, QmVec3* restrict dir, const QmPlane* restrict o)
+bool qm_plane_intersect(const QmPlane* restrict p,
+	QmVec3* restrict loc,
+	QmVec3* restrict dir,
+	const QmPlane* restrict o)
 {
 	const float f0 = qm_len((const QmVec3*)p);
 	const float f1 = qm_len((const QmVec3*)o);
@@ -802,7 +841,9 @@ bool qm_plane_intersect(const QmPlane* restrict p, QmVec3* restrict loc, QmVec3*
 }
 
 //
-bool qm_line3_intersect_sphere(const QmLine3* restrict p, const QmVec3* restrict org, float rad, float* dist)
+bool qm_line3_intersect_sphere(const QmLine3* restrict p,
+	const QmVec3* restrict org,
+	const float rad, float* dist)
 {
 	QmVec3 t;
 	qm_sub(&t, org, &p->begin);

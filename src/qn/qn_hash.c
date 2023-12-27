@@ -5,16 +5,16 @@
 // 해시
 
 //
-size_t qn_hashptr(const void* p)
+size_t qn_hash_ptr(const void* ptr)
 {
 #ifdef _QN_64_
-	lldiv_t t = lldiv((long long)(size_t)p, 127773);
+	lldiv_t t = lldiv((long long)(size_t)ptr, 127773);
 	t.rem = 16807 * t.rem - 2836 * t.quot;
 
 	if (t.rem < 0)
 		t.rem += INT64_MAX;
 #else
-	ldiv_t t = ldiv((long)(size_t)p, 127773);
+	ldiv_t t = ldiv((long)(size_t)ptr, 127773);
 	t.rem = 16807 * t.rem - 2836 * t.quot;
 
 	if (t.rem < 0)
@@ -25,7 +25,7 @@ size_t qn_hashptr(const void* p)
 }
 
 //
-size_t qn_hashnow(void)
+size_t qn_hash_now(void)
 {
 	static size_t dif = 0;
 
@@ -51,13 +51,13 @@ size_t qn_hashnow(void)
 	return (h1 + dif++) ^ h2;
 }
 
-size_t qn_hashfn(int prime8, func_t func, const void* data)
+size_t qn_hash_func(const int prime8, const func_t func, const void* data)
 {
 	// PP FF FF FF FD DD DD DD
 	size_t h = (size_t)prime8 & 0xFFULL << 56ULL;
 	const any_t v = { .func = func };
-	h |= (qn_hashptr(v.p) & 0xFFFFFFF) << 28;
-	h |= qn_hashptr(data) & 0xFFFFFFF;
+	h |= (qn_hash_ptr(v.p) & 0xFFFFFFF) << 28;
+	h |= qn_hash_ptr(data) & 0xFFFFFFF;
 	return h;
 }
 
@@ -69,7 +69,7 @@ size_t qn_hashfn(int prime8, func_t func, const void* data)
  * @param[in] size 크기
  * @return 정수 값
  */
-static uint64_t qn_crc64(const byte* restrict data, size_t size)
+static uint64_t qn_crc64(const byte* restrict data, const size_t size)
 {
 	// https://github.com/srned/baselib/blob/master/crc64.c
 	/* Redis uses the CRC64 variant with "Jones" coefficients and init value of 0.
@@ -190,9 +190,9 @@ static uint64_t qn_crc64(const byte* restrict data, size_t size)
  * @param[in] size 크기
  * @return 정수 값
  */
-static uint32_t qn_crc32(const byte* restrict data, size_t size)
+static uint qn_crc32(const byte* restrict data, const size_t size)
 {
-	static const uint32_t crc32_table[] =
+	static const uint crc32_table[] =
 	{
 		0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3,
 		0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988, 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91,
@@ -227,7 +227,7 @@ static uint32_t qn_crc32(const byte* restrict data, size_t size)
 		0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605, 0xcdd70693, 0x54de5729, 0x23d967bf,
 		0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 	};
-	uint32_t crc32 = UINT32_MAX;
+	uint crc32 = UINT32_MAX;
 	for (size_t i = 0; i < size; i++)
 		crc32 = crc32_table[(crc32 ^ data[i]) & 0xFF] ^ (crc32 >> 8);
 	return ~crc32;
@@ -235,7 +235,7 @@ static uint32_t qn_crc32(const byte* restrict data, size_t size)
 #endif
 
 //
-size_t qn_hashcrc(const byte* data, size_t size)
+size_t qn_hash_crc(const byte* data, const size_t size)
 {
 #ifdef _QN_64_
 	return qn_crc64(data, size);
@@ -245,9 +245,9 @@ size_t qn_hashcrc(const byte* data, size_t size)
 }
 
 //
-uint32_t qn_primenear(uint32_t value)
+uint qn_prime_near(const uint value)
 {
-	static const uint32_t s_prime_table[] =
+	static const uint s_prime_table[] =
 	{
 		11, 19, 37, 73, 109, 163, 251, 367, 557, 823, 1237, 1861, 2777, 4177, 6247,
 		9371, 14057, 21089, 31627, 47431, 71143, 106721, 160073, 240101, 360163, 540217,
@@ -260,9 +260,9 @@ uint32_t qn_primenear(uint32_t value)
 }
 
 //
-uint32_t qn_primeshift(uint32_t value, uint32_t min, uint32_t* shift)
+uint qn_prime_shift(const uint value, const uint min, uint* shift)
 {
-	static const uint32_t s_prime_shift_table[] =
+	static const uint s_prime_shift_table[] =
 	{
 		/* 1 << 0 */
 		1, 2, 3, 7, 13, 31, 61, 127, 251, 509, 1021, 2039, 4093, 8191, 16381, 32749,
@@ -272,10 +272,10 @@ uint32_t qn_primeshift(uint32_t value, uint32_t min, uint32_t* shift)
 		/* 1 << 31 */
 		2147483647
 	};
-	uint32_t ts;
 
-	for (ts = 0; value; ts++)
-		value >>= 1;
+	uint ts = 0;
+	for (uint vs = value; vs; ts++)
+		vs >>= 1;
 
 	ts = QN_MAX(min, ts);
 

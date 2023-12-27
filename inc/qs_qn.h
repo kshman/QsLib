@@ -10,11 +10,10 @@
 
 //////////////////////////////////////////////////////////////////////////
 // includes
+#ifndef _QS_HEADER_
 #include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdalign.h>
-#include <stdnoreturn.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -31,6 +30,7 @@
 #endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#endif
 #endif
 
 
@@ -89,7 +89,7 @@
 #define QN_FNAME			__FUNCTION__
 #define QN_FALL_THROUGH
 #define QN_STRUCT_ALIGN(x)	__declspec(align(x))
-#define QN_STMT_BEGIN		_Pragma("warning(suppress:4127)") do
+#define QN_STMT_BEGIN		_Pragma("warning(suppress:4127 4296)") do
 #define QN_STMT_END			while(0)
 #elif defined __GNUC__
 #ifndef __cplusplus
@@ -124,11 +124,6 @@ QN_EXTC_BEGIN
 //////////////////////////////////////////////////////////////////////////
 // macro
 
-// compound & statement
-#ifdef _MSC_VER
-#else
-#endif
-
 // function support
 #define _QN_PRAGMA(x)		_Pragma(#x)
 #define _QN_STRING(x)		#x
@@ -140,7 +135,7 @@ QN_EXTC_BEGIN
 
 // function
 #define QN_TODO(todo)		_QN_PRAGMA(message("TODO: " #todo " (" QN_FNAME ")"))
-#define QN_DUMMY(dummy)		(void)dummy;
+#define QN_DUMMY(dummy)		(void)dummy
 #define QN_STRING(x)		_QN_STRING(x)					/// @brief 문자열로 정의
 #define QN_UNICODE(x)		_QN_UNICODE(x)					/// @brief 유니코드로 정의
 #define QN_CONCAT_2(x,y)	_QN_CONCAT_2(x, y)				/// @brief 두개 문구 합침
@@ -156,7 +151,7 @@ QN_EXTC_BEGIN
 #define QN_ABS(v)			(((v)<0)?-(v):(v))				/// @brief 절대값 얻기
 #define QN_CLAMP(v,l,h)		((v)<(l)?(l):(v)>(h)?(h):(v))	/// @brief 숫자를 최소/최대값으로 자르기
 
-#define QN_BIT(b)			(1<<(b))						/// @brief 비트 만들기
+#define QN_BIT(b)			(1<<(b))						/// @brief 마스크 만들기
 #define QN_TBIT(v,bit)		(((v)&(1<<(bit)))!=0)			/// @brief 비트가 있나 비교
 #define QN_TMASK(v,m)		(((v)&(m))!=0)					/// @brief 마스크가 있나 비교
 #ifdef _MSC_VER
@@ -168,6 +163,9 @@ QN_EXTC_BEGIN
 #endif
 
 // constant
+#define QN_VERSION_MAJOR	3
+#define QN_VERSION_MINER	5
+
 #define QN_USEC_PER_SEC		1000000							/// @brief 초당 마이크로초 
 #define QN_NSEC_PER_SEC		1000000000						/// @brief 초당 나노초 
 
@@ -292,11 +290,9 @@ typedef struct funcparam_t
 #define qn_val_if_ok(x,r)	QN_STMT_BEGIN{ if ((x)) return (r); }QN_STMT_END						/// @brief 값이 참이면 반환
 
 #ifdef _DEBUG
-#define qn_assert(expr,m)	QN_STMT_BEGIN{if (!(expr)) qn_debug_assert(#expr, m, __FILE__, __LINE__);}QN_STMT_END		/// @brief 표현이 거짓이면 메시지 출력
-#define qn_verify(expr)		QN_STMT_BEGIN{if (!(expr)) qn_debug_assert(#expr, NULL, __FILE__, __LINE__);}QN_STMT_END	/// @brief 표현이 거짓이면 표현 출력
+#define qn_assert(expr)		QN_STMT_BEGIN{ if (!(expr)) qn_debug_assert(#expr, QN_FNAME, __LINE__); }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
 #else
-#define qn_assert(expr,m)
-#define qn_verify(expr)
+#define qn_assert(expr)
 #endif
 
 
@@ -304,8 +300,11 @@ typedef struct funcparam_t
 // runtime
 
 /// @brief 런타임 초기화
-/// @param[out] v 버전 값. NULL 가능
-QSAPI void qn_runtime(int /*NULLABLE*/v[2]);
+QSAPI void qn_runtime(void);
+
+/// @brief 버전 문자열을 얻는다
+/// @return 버전 문자열 "QS VERSION major.minor" 형식
+QSAPI const char* qn_version(void);
 
 /// @brief 프로그램 종료할 때 실행할 함수 등록
 /// @param[in] func 실핼할 함수
@@ -347,16 +346,15 @@ QSAPI bool qn_set_syserror(int errcode);
 
 /// @brief 디버그용 검사 출력
 /// @param[in] expr 검사한 표현
-/// @param[in] mesg 오류 내용
 /// @param[in] filename 파일 이름이나 함수 이름
 /// @param[in] line 줄 번호
 /// @return 출력한 문자열 길이
-QSAPI int qn_debug_assert(const char* restrict expr, const char* restrict mesg, const char* restrict filename, int line);
+QSAPI int qn_debug_assert(const char* restrict expr, const char* restrict filename, int line);
 
 /// @brief HALT 메시지
 /// @param[in] head 머릿글
 /// @param[in] mesg 메시지
-QSAPI noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg);
+QSAPI _Noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg);
 
 /// @brief 디버그용 문자열 출력
 /// @param[in] breakpoint 참이면 디버거 연결시 중단점 표시
@@ -369,6 +367,7 @@ QSAPI int qn_debug_outputs(bool breakpoint, const char* restrict head, const cha
 /// @param[in] breakpoint 참이면 디버거 연결시 중단점 표시
 /// @param[in] head 머릿글
 /// @param[in] fmt 문자열 포맷
+/// @param ... 인수
 /// @return 출력한 문자열 길이
 QSAPI int qn_debug_outputf(bool breakpoint, const char* restrict head, const char* restrict fmt, ...);
 
@@ -385,17 +384,18 @@ QSAPI int qn_outputs(const char* mesg);
 
 /// @brief 문자열을 포맷하여 출력한다 (디버그 메시지 포함)
 /// @param[in] fmt 출력할 포맷
+/// @param ... 인수
 /// @return 출력한 문자열 길이
 QSAPI int qn_outputf(const char* fmt, ...);
 
 
 //////////////////////////////////////////////////////////////////////////
 // memory
-#define qn_alloc(c,t)		(t*)qn_memalc(NULL,(size_t)(c)*sizeof(t),false,QN_FNAME,__LINE__)		/// @brief 메모리 할당
-#define qn_alloc_1(t)		(t*)qn_memalc(NULL,sizeof(t),false,QN_FNAME,__LINE__)					/// @brief 메모리를 1개만 할당
-#define qn_alloc_zero(c,t)	(t*)qn_memalc(NULL,(size_t)(c)*sizeof(t),true,QN_FNAME,__LINE__)		/// @brief 메모리를 할당하고 메모리를 0으로
-#define qn_alloc_zero_1(t)	(t*)qn_memalc(NULL,sizeof(t),true,QN_FNAME,__LINE__)					/// @brief 메모리를 1개만 할당하고 0으로
-#define qn_realloc(p,c,t)	(t*)qn_memalc((void*)(p),(size_t)(c)*sizeof(t),false,QN_FNAME,__LINE__)	/// @brief 메모리를 다시 할당
+#define qn_alloc(c,t)		(t*)qn_memalc((size_t)(c)*sizeof(t),false,QN_FNAME,__LINE__)			/// @brief 메모리 할당
+#define qn_alloc_1(t)		(t*)qn_memalc(sizeof(t),false,QN_FNAME,__LINE__)						/// @brief 메모리를 1개만 할당
+#define qn_alloc_zero(c,t)	(t*)qn_memalc((size_t)(c)*sizeof(t),true,QN_FNAME,__LINE__)				/// @brief 메모리를 할당하고 메모리를 0으로
+#define qn_alloc_zero_1(t)	(t*)qn_memalc(sizeof(t),true,QN_FNAME,__LINE__)							/// @brief 메모리를 1개만 할당하고 0으로
+#define qn_realloc(p,c,t)	(t*)qn_memrea((void*)(p),(size_t)(c)*sizeof(t),QN_FNAME,__LINE__)		/// @brief 메모리를 다시 할당
 
 #define qn_free(p)			qn_memfre((void*)(p))													/// @brief 메모리 해제
 #define qn_free_ptr(pp)		QN_STMT_BEGIN{ qn_memfre((void*)*(pp)); *(pp)=NULL; }QN_STMT_END		/// @brief 메모리를 해제하고 포인터를 NULL로 만든다
@@ -407,7 +407,8 @@ QSAPI int qn_outputf(const char* fmt, ...);
 typedef struct QnAllocTable QnAllocTable;
 struct QnAllocTable
 {
-	void*(*_alloc)(void* ptr, size_t size, bool zero, const char* desc, size_t line);
+	void*(*_alloc)(size_t size, bool zero, const char* desc, size_t line);
+	void*(*_realloc)(void* ptr, size_t size, const char* desc, size_t line);
 	void(*_free)(void* ptr);
 };
 
@@ -465,20 +466,34 @@ QSAPI char* qn_memdmp(const void* restrict ptr, size_t size, char* restrict outb
 /// @brief 메모리 테이블을 등록한다
 /// @param[in] table 테이블
 /// @return 테이블 값 중에 빈게 있으면 거짓
+/// @warning qn_runtime() 호출 이전에 사용하지 않으면 이 기능은 사용할 수 없다
 QSAPI bool qn_memtbl(const QnAllocTable* table);
+
+/// @brief 메모리를 할당한다
+/// @param[in] size 할당할 메모리 크기
+/// @param[in] zero 할당한 메모리를 0으로 초기화 한다
+/// @param[in] desc 설명문
+/// @param[in] line 줄 번호
+/// @return 할당한 메모리
+QSAPI void* qn_memalc(size_t size, bool zero, const char* desc, size_t line);
 
 /// @brief 메모리를 할당/재할당/해제한다
 /// @param[in] ptr 재할당할 메모리 (이 값이 NULL이면 새로 할당)
 /// @param[in] size 재할당할 메모리 크기 (이 값이 0이면 ptr을 해제)
-/// @param[in] zero 할당할 때 메모리를 0으로 초기화 한다 (재할당일 경우 안함)
 /// @param[in] desc 설명문
 /// @param[in] line 줄 번호
 /// @return 할당한 새로운 메모리 (메모리 주소가 안바뀔 수도 있음)
-QSAPI void* qn_memalc(void* ptr, size_t size, bool zero, const char* desc, size_t line);
+QSAPI void* qn_memrea(void* ptr, size_t size, const char* desc, size_t line);
 
 /// @brief 메모리를 해제한다
 /// @param[in] ptr 해제할 메모리 (이 값이 NULL이면 아무것도 하지 않는다)
 QSAPI void qn_memfre(void* ptr);
+
+/// @brief 메모리를 복제한다
+/// @param ptr 복제할 메모리
+/// @param size_or_zero_if_psz 0이 아니면 그 값만금 복사, 0이면 문자열 취급
+/// @return 복사된 메모리
+QSAPI void* qn_memdup(const void* ptr, size_t size_or_zero_if_psz);
 
 /// @brief 내부 메모리 관리자의 메모리의 크기를 얻는다
 /// @return 관리하는 메모리의 크기
@@ -488,69 +503,76 @@ QSAPI size_t qn_mpfsize(void);
 /// @return 관리하는 메모리의 총 할당 갯수
 QSAPI size_t qn_mpfcnt(void);
 
-/// @brief 내부 메모리 관리자로 메모리를 할당/재할당/해제한다
+/// @brief 내부 메모리 관리자로 메모리 할당
+/// @param size 할당할 메모리
+/// @param zero 할당할 메모리를 0으로 채움
+/// @param desc 설명문
+/// @param line 줄 번호
+/// @return 할당한 메모리 포인터
+QSAPI void* qn_mpfalc(size_t size, bool zero, const char* desc, size_t line);
+
+/// @brief 내부 메모리 고나리자로 메모리 할당/재핼당/해제
 /// @param[in] ptr 재할당할 메모리 (이 값이 NULL이면 새로 할당)
 /// @param[in] size 재할당할 메모리 크기 (이 값이 0이면 ptr을 해제)
-/// @param[in] zero 할당할 때 메모리를 0으로 초기화 한다 (재할당일 경우 안함)
 /// @param[in] desc 설명문
 /// @param[in] line 줄 번호
 /// @return 할당한 새로운 메모리 (메모리 주소가 안바뀔 수도 있음)
-QSAPI void* qn_mpfalloc(void* ptr, size_t size, bool zero, const char* desc, size_t line);
+QSAPI void* qn_mpfrea(void* ptr, size_t size, const char* desc, size_t line);
 
 /// @brief 내부 메모리 관리자의 메모리를 해제한다
 /// @param[in] ptr 해제할 메모리 (이 값이 NULL이면 아무것도 하지 않는다)
-QSAPI void qn_mpffree(void* ptr);
+QSAPI void qn_mpffre(void* ptr);
 
 /// @brief 내부 메모리 관리자로 할당하여 메모리를 복사한다
 /// @param p 복사할 메모리
-/// @param size_or_zero_if_string 크기를 지정하면 크기만큼 복사. 0으로 지정하면 문자열 복사로 취급한다
+/// @param size_or_zero_if_psz 크기를 지정하면 크기만큼 복사. 0으로 지정하면 문자열 복사로 취급한다
 /// @param[in] desc 설명문
 /// @param[in] line 줄 번호
 /// @return 복사한 관리 메모리
-void* qn_mpfdup(const void* p, size_t size_or_zero_if_string, const char* desc, size_t line);
+void* qn_mpfdup(const void* p, size_t size_or_zero_if_psz, const char* desc, size_t line);
 
 /// @brief 디버그용 메모리 정보를 출력한다
-QSAPI void qn_debug_mpfprint(void);
+QSAPI void qn_mpfdbgprint(void);
 
 
 //////////////////////////////////////////////////////////////////////////
 // hash & sort
 
 /// @brief 포인터 해시. 일반적인 size_t 해시를 의미함
-/// @param[in]	p	입력 변수
+/// @param[in]	ptr	입력 변수
 /// @return	해시 값
 ///
-QSAPI size_t qn_hashptr(const void* p);
+QSAPI size_t qn_hash_ptr(const void* ptr);
 /// @brief 시간 해시. 현재 시각을 이용하여 해시값을 만든다
 /// @return	해시 값
 ///
-QSAPI size_t qn_hashnow(void);
+QSAPI size_t qn_hash_now(void);
 /// @brief 콜백 해시. 함수 콜백을 해시값으로 만들어 준다
 /// @param[in]	prime8	8비트 소수 값
 /// @param[in]	func  	콜백 함수
 /// @param[in]	data  	콜백 데이터
 /// @return	해시 값
 ///
-QSAPI size_t qn_hashfn(int prime8, func_t func, const void* data);
+QSAPI size_t qn_hash_func(int prime8, func_t func, const void* data);
 /// @brief 데이터를 crc로 해시한다
 /// @param[in] data 데이터
 /// @param[in] size 데이터 크기
 /// @return 해시 값
 ///
-QSAPI size_t qn_hashcrc(const byte* data, size_t size);
+QSAPI size_t qn_hash_crc(const byte* data, size_t size);
 /// @brief 가까운 소수 얻기. 처리할 수 있는 최소 소수는 QN_MAX_HASH(11), 최대 소수는 QN_MAX_HASH(13845163)
 /// @param[in] value 입력 값
 /// @return 소수 값
 /// @see QN_MIN_HASH, QN_MAX_HASH
 ///
-QSAPI uint32_t qn_primenear(uint32_t value);
+QSAPI uint32_t qn_prime_near(uint32_t value);
 /// @brief 제곱 소수 얻기. 근거리에 해당하는 제곱 소수를 계산해준다
 /// @param[in] value 입력 값
 /// @param[in] min 최소 값
 /// @param[out] shift 널이 아니면 쉬프트 크기
 /// @return 소수 값
 ///
-QSAPI uint32_t qn_primeshift(uint32_t value, uint32_t min, uint32_t* shift);
+QSAPI uint32_t qn_prime_shift(uint32_t value, uint32_t min, uint32_t* shift);
 
 /// @brief 퀵정렬
 /// @param[in,out] ptr 정렬할 데이터의 포인터
@@ -601,12 +623,14 @@ QSAPI char* qn_vapsprintf(const char* fmt, va_list va);
 /// @param[out] out 출력 문자열의 버퍼 포인터. 문자열 길이만 얻으려면 NULL로 설정
 /// @param[in] len 출력 문자열의 버퍼 포인터의 크기
 /// @param[in] fmt 포맷 문자열
+/// @param ... 인수
 /// @return 결과 문자열의 길이
 ///
 QSAPI int qn_snprintf(char* restrict out, size_t len, const char* restrict fmt, ...);
 /// @brief 문자열을 포맷하고 메모리 할당으로 만든다
 /// @param[out] out 출력 문자열의 버퍼 포인터. 이 값이 NULL이면 곤린하다
 /// @param[in] fmt 포맷 문자열
+/// @param ... 인수
 /// @return 결과 문자열의 길이
 /// @note out 인수로 만든 문자열은 qn_free 함수로 해제해야 한다
 /// @see qn_free
@@ -614,6 +638,7 @@ QSAPI int qn_snprintf(char* restrict out, size_t len, const char* restrict fmt, 
 QSAPI int qn_asprintf(char** out, const char* fmt, ...);
 /// @brief 문자열을 포맷하고 메모리를 반환한다
 /// @param[in] fmt 포맷 문자열
+/// @param ... 인수
 /// @return 결과 문자열
 /// @note 반환 값은 qn_free 함수로 해제해야 한다
 /// @see qn_free
@@ -690,6 +715,7 @@ QSAPI char* qn_stpcpy(char* restrict dest, const char* restrict src);
 QSAPI char* qn_strdup(const char* p);
 /// @brief 여러 문자열을 이어서 붙인다
 /// @param[in] p 첫 문자열
+/// @param ... 인수
 /// @note qn_free 함수로 해제해야 한다
 ///
 QSAPI char* qn_strcat(const char* p, ...);
@@ -803,12 +829,14 @@ QSAPI wchar* qn_vapswprintf(const wchar* fmt, va_list va);
 /// @param[out] out 출력 문자열의 버퍼 포인터. 문자열 길이만 얻으려면 NULL로 설정
 /// @param[in] len 출력 문자열의 버퍼 포인터의 크기
 /// @param[in] fmt 포맷 문자열
+/// @param ... 인수
 /// @return 결과 문자열의 길이
 ///
 QSAPI int qn_snwprintf(wchar* restrict out, size_t len, const wchar* restrict fmt, ...);
 /// @brief 문자열을 포맷하고 메모리 할당으로 만든다
 /// @param[out] out 출력 문자열의 버퍼 포인터. 이 값이 NULL이면 곤린하다
 /// @param[in] fmt 포맷 문자열
+/// @param ... 인수
 /// @return 결과 문자열의 길이
 /// @note out 인수로 만든 문자열은 qn_free 함수로 해제해야 한다
 /// @see qn_free
@@ -816,6 +844,7 @@ QSAPI int qn_snwprintf(wchar* restrict out, size_t len, const wchar* restrict fm
 QSAPI int qn_aswprintf(wchar** out, const wchar* restrict fmt, ...);
 /// @brief 문자열을 포맷하고 메모리를 반환한다
 /// @param[in] fmt 포맷 문자열
+/// @param ... 인수
 /// @return 결과 문자열
 /// @note 반환 값은 qn_free 함수로 해제해야 한다
 /// @see qn_free
@@ -892,6 +921,7 @@ QSAPI wchar* qn_wcpcpy(wchar* restrict dest, const wchar* restrict src);
 QSAPI wchar* qn_wcsdup(const wchar* p);
 /// @brief 여러 문자열을 이어서 붙인다
 /// @param[in] p 첫 문자열
+/// @param ... 이어 붙일 문자열들
 /// @note qn_free 함수로 해제해야 한다
 ///
 QSAPI wchar* qn_wcscat(const wchar* p, ...);
@@ -1083,7 +1113,7 @@ QSAPI size_t qn_u16to32(uchar4* restrict dest, size_t destsize, const uchar2* re
 /// @param[out]	dest (널값이 아니면) 대상 버퍼 (utf16)
 /// @param[in]	destsize 대상 버퍼 크기
 /// @param[in]	src 원본 (ucs4)
-/// @param[in]	srclen_org 원본 길이. 0으로 지정할 수 있음
+/// @param[in]	srclen 원본 길이. 0으로 지정할 수 있음
 /// @return	변환한 길이 또는 변환에 필요한 길이
 ///
 QSAPI size_t qn_u32to16(uchar2* restrict dest, size_t destsize, const uchar4* restrict src, size_t srclen);
@@ -1178,13 +1208,16 @@ QSAPI void qn_ssleep(uint seconds);
 /// @param[in]	microseconds	마이크로초 단위로 처리되는 microsecond
 QSAPI void qn_msleep(ullong microseconds);
 
+/// @brief 타임 스탬프
+typedef ullong				QnTimeStamp;
+
 /// @brief date time
-typedef struct QnDateTime QnDateTime;
+typedef struct QnDateTime	QnDateTime;
 struct QnDateTime
 {
 	union
 	{
-		ullong		stamp;				/// @brief 타임 스탬프
+		QnTimeStamp	stamp;				/// @brief 타임 스탬프
 		struct
 		{
 			uint	date;				/// @brief 날짜 스탬프
@@ -1205,23 +1238,24 @@ struct QnDateTime
 	};
 };
 
-/// @brief 현재 날짜 시간.
-/// @param[out]	dt	(널값이 아니면) 현재 날짜 시간
-QSAPI void qn_now(QnDateTime* dt);
 
-/// @brief 현재의 UTC 날짜 시간
-/// @param[out]	dt	(널값이 아니면) 현재 날짜 시간
-QSAPI void qn_utc(QnDateTime* dt);
+/// @brief 현재 시간 날짜를 포함하는 타임스탬프
+/// @returns 현재 타임스탬프. QnDateTime 으로 컨버전해서 사용할 수 있다
+QSAPI QnTimeStamp qn_now(void);
+
+/// @brief 현재의 UTC 시간 날짜를 포함하는 타임스탬프
+/// @returns 현재 타임스탬프. QnDateTime 으로 컨버전해서 사용할 수 있다
+QSAPI QnTimeStamp qn_utc(void);
 
 /// @brief 초를 시간으로
-/// @param[in]	sec   	초
-/// @param[out]	dt	(널값이 아니면) 변환된 시간
-QSAPI void qn_stod(double sec, QnDateTime* dt);
+/// @param[in] sec 초
+/// @return 계산된 타임스탬프
+QSAPI QnTimeStamp qn_stod(double sec);
 
 /// @brief 밀리초를 시간으로
-/// @param[in]	msec  	밀리초
-/// @param[out]	dt	(널값이 아니면) 변환된 시간
-QSAPI void qn_mstod(uint msec, QnDateTime* dt);
+/// @param msec 밀리초 
+/// @return 계산된 타임스탬프
+QSAPI QnTimeStamp qn_mstod(uint msec);
 
 /// @brief timer
 typedef struct QnTimer QnTimer;
@@ -1341,7 +1375,7 @@ QSAPI QnFile* qn_file_new(const char* restrict filename, const char* restrict mo
 /// @param[in]	src	(널값이 아닌) 원본
 /// @return	만들어진 반환 구조
 /// @retval NULL 복제하지 못했다
-QSAPI QnFile* qn_file_new_dup(QnFile* org);
+QSAPI QnFile* qn_file_new_dup(QnFile* src);
 
 /// @brief 파일 구조를 제거한다. 더 이상 파일 관리를 하지 않을 때 사용한다
 /// @param[in]	self	파일 개체
@@ -1403,6 +1437,7 @@ QSAPI bool qn_file_flush(const QnFile* self);
 /// @brief 파일에 포맷된 문자열 쓰기
 /// @param[in]	self	파일 개체
 /// @param[in]	fmt			포맷 문자열
+/// @param ... 인수
 /// @return	실제 쓴 길이
 QSAPI int qn_file_printf(QnFile* self, const char* restrict fmt, ...);
 
@@ -1415,11 +1450,11 @@ QSAPI int qn_file_vprintf(QnFile* self, const char* restrict fmt, va_list va);
 
 /// @brief 파일이 있나 조사한다
 /// @param[in]	filename	파일의 이름
-/// @param[out]	isdir 	(널값이 아니면) 파일 처리 플래그로 KFAS_로 시작하는 마스크 플래그
+/// @param[out]	is_dir 	(널값이 아니면) 파일 처리 플래그로 KFAS_로 시작하는 마스크 플래그
 /// @return 파일 조사 여부
 /// @retval true 파알이 있다
 /// @retval false 파일이 없다
-QSAPI bool qn_file_exist(const char* restrict filename, /*RET-NULLABLE*/bool* isdir);
+QSAPI bool qn_file_exist(const char* restrict filename, /*RET-NULLABLE*/bool* is_dir);
 
 /// @brief 파일 할당. 즉, 파일 전체를 읽어 메모리에 할당한 후 반환한다
 /// @param[in]	filename	파일의 이름
@@ -1436,11 +1471,11 @@ QSAPI QnFile* qn_file_new_l(const wchar* restrict filename, const wchar* restric
 
 /// @brief 파일이 있나 조사한다. 유니코드 버전
 /// @param[in]	filename	파일의 이름
-/// @param[out]	isdir 	(널값이 아니면) 파일 처리 플래그로 KFAS_로 시작하는 마스크 플래그
+/// @param[out]	is_dir 	(널값이 아니면) 파일 처리 플래그로 KFAS_로 시작하는 마스크 플래그
 /// @return	파일 존재 여부 반환
 /// @retval true 파일이 있따
 /// @retval false 파일이 없다
-QSAPI bool qn_file_exist_l(const wchar* restrict filename, /*RET-NULLABLE*/bool* isdir);
+QSAPI bool qn_file_exist_l(const wchar* restrict filename, /*RET-NULLABLE*/bool* is_dir);
 
 /// @brief 파일 할당. 즉, 파일 전체를 읽어 메모리에 할당한 후 반환한다. 유니코드 버전
 /// @param[in]	filename	파일의 이름
@@ -1533,7 +1568,7 @@ QSAPI void* qn_mod_func(QnModule* self, const char* restrict name);
 /// @brief 모듈의 참조값을 얻는다
 /// @param self 모듈
 /// @return 모듈의 참조값
-QSAPI int qn_mod_ref(QnModule* self);
+QSAPI int qn_mod_ref(const QnModule* self);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1670,7 +1705,7 @@ QSAPI void qn_mlu_foreach(const QnMlu* self, void(*func)(void*, QnMlTag*), void*
 /// @param[in]	self		개체나 인터페이스의 자기 자신 값
 /// @param[in]	func	콜백 함수
 ///
-QSAPI void qn_mlu_loopeach(const QnMlu* self, void(*func)(QnMlTag* tag));
+QSAPI void qn_mlu_each(const QnMlu* self, void(*func)(QnMlTag* tag));
 
 /// @brief 태그를 추가한다
 /// @param[in]	self	Mlu 개체
@@ -1691,10 +1726,10 @@ QSAPI QnMlTag* qn_mlu_add_tag(QnMlu* self, QnMlTag* restrict tag);
 /// @brief 태그를 제거한다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	name		태그 이름
-/// @param[in]	isall   	같은 이름 태그를 모두 지우려면 참으로 넣는다
+/// @param[in]	is_all   	같은 이름 태그를 모두 지우려면 참으로 넣는다
 /// @return	지운 태그의 갯수
 ///
-QSAPI int qn_mlu_remove(QnMlu* self, const char* restrict name, bool isall);
+QSAPI int qn_mlu_remove(QnMlu* self, const char* restrict name, bool is_all);
 /// @brief 태그를 순번으로 제거한다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	at			순번
@@ -1706,12 +1741,12 @@ QSAPI bool qn_mlu_remove_nth(QnMlu* self, int at);
 /// @brief 태그를 제거한다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	tag	(널값이 아님) 지울 태그
-/// @param[in]	isdelete   	태그를 삭제하려면 참으로 넣는다
+/// @param[in]	is_delete   	태그를 삭제하려면 참으로 넣는다
 /// @return	태그 제거 여부
 /// @retval true 태그 제거 성공
 /// @retval false 태그 제거 실패
 ///
-QSAPI bool qn_mlu_remove_tag(QnMlu* self, QnMlTag* restrict tag, bool isdelete);
+QSAPI bool qn_mlu_remove_tag(QnMlu* self, QnMlTag* restrict tag, bool is_delete);
 
 /// @brief 오류값을 추가한다
 /// @param[in]	self	Mlu 개체
@@ -1732,7 +1767,7 @@ QSAPI void qn_mlu_print_err(const QnMlu* self);
 /// @brief RML 정보 구성 내용을 디버그 콘솔로 출력한다
 /// @param[in]	self	Mlu 개체
 ///
-QSAPI void qn_mlu_print(QnMlu* self);
+QSAPI void qn_mlu_print(const QnMlu* self);
 
 // tag
 
@@ -1825,10 +1860,10 @@ QSAPI QnMlTag* qn_mltag_add_sub_tag(QnMlTag* restrict ptr, QnMlTag* restrict tag
 /// @brief 지정한 이름의 태그를 제거한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	name	   	태그 이름
-/// @param[in]	isall	   	같은 이름의 모든 태그를 지우려면 참으로 넣는다
+/// @param[in]	is_all	   	같은 이름의 모든 태그를 지우려면 참으로 넣는다
 /// @return	지운 태그의 갯수
 ///
-QSAPI int qn_mltag_remove_sub(QnMlTag* ptr, const char* restrict name, bool isall);
+QSAPI int qn_mltag_remove_sub(QnMlTag* ptr, const char* restrict name, bool is_all);
 /// @brief 지정한 순번의 하부 태그를 삭제한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	at			순번
@@ -1840,12 +1875,12 @@ QSAPI bool qn_mltag_remove_sub_nth(QnMlTag* ptr, int at);
 /// @brief 지정한 하부 태그를 삭제한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in,out]	tag	(널값이 아님) 지울 태그
-/// @param[in]	isdelete   	태그 자체를 삭제하려면 참으로 넣는다
+/// @param[in]	is_delete   	태그 자체를 삭제하려면 참으로 넣는다
 /// @return 하부 태그 삭제 여부
 /// @retval true 태그를 지웠다
 /// @retval false 태그를 지울 수 없다
 ///
-QSAPI bool qn_mltag_remove_sub_tag(QnMlTag* restrict ptr, QnMlTag* restrict tag, bool isdelete);
+QSAPI bool qn_mltag_remove_sub_tag(QnMlTag* restrict ptr, QnMlTag* restrict tag, bool is_delete);
 
 /// @brief 하부 태그에 대해 ForEach 연산을 수행한다
 /// @param[in]	ptr	MlTag 개체
@@ -1857,7 +1892,7 @@ QSAPI void qn_mltag_foreach_sub(QnMlTag* ptr, void(*func)(void* userdata, QnMlTa
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	func	콜백 함수
 ///
-QSAPI void qn_mltag_loopeach_sub(QnMlTag* ptr, void(*func)(QnMlTag* tag));
+QSAPI void qn_mltag_each_sub(QnMlTag* ptr, void(*func)(QnMlTag* tag));
 
 // tag - arg
 
@@ -1869,11 +1904,11 @@ QSAPI int qn_mltag_get_arity(QnMlTag* ptr);
 /// @brief 인수를 이름으로 찾는다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	name	   	인수 이름
-/// @param[in]	ifnotexist 	인수를 찾지 못하면 반환할 값
+/// @param[in]	if_not_exist 	인수를 찾지 못하면 반환할 값
 /// @return 이름에 해당하는 태그의 인수
 /// @retval ifnotexist 이름에 해당하는 인수 값이 없다
 ///
-QSAPI const char* qn_mltag_get_arg(QnMlTag* ptr, const char* restrict name, const char* restrict ifnotexist);
+QSAPI const char* qn_mltag_get_arg(QnMlTag* ptr, const char* restrict name, const char* restrict if_not_exist);
 /// @brief 다음 인수를 찾는다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in,out]	index	(널값이 아님) 내부 찾기 인덱스 데이터
@@ -1903,7 +1938,7 @@ QSAPI void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, char* 
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	func	콜백 함수
 ///
-QSAPI void qn_mltag_loopeach_arg(QnMlTag* ptr, void(*func)(char* const* name, char* const* data));
+QSAPI void qn_mltag_each_arg(QnMlTag* ptr, void(*func)(char* const* name, char* const* data));
 
 /// @brief 인수를 추가한다
 /// @param[in]	ptr	MlTag 개체
@@ -1949,7 +1984,7 @@ QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* restrict name);
 #endif
 
 typedef int volatile		QnSpinLock;						/// @brief 스핀락
-typedef void				QnTls;							/// @brief TLS
+typedef int					QnTls;							/// @brief TLS
 typedef struct QnMutex		QnMutex;						/// @brief 뮤텍스
 typedef struct QnCond		QnCond;							/// @brief 컨디션
 typedef struct QnSem		QnSem;							/// @brief 세마포어
@@ -1972,10 +2007,15 @@ QSAPI uint qn_spin_enter(QnSpinLock* lock);
 /// @param lock 스핀락
 QSAPI void qn_spin_leave(QnSpinLock* lock);
 
+#ifndef USE_NO_LOCK
 /// @brief 스핀락 들어간다
 #define QN_LOCK(sp)			qn_spin_enter(&sp)
 /// @brief 스핀락 나온다
-#define QN_UNLOCK(sp)		qn_spin_leave(&sp);
+#define QN_UNLOCK(sp)		qn_spin_leave(&sp)
+#else
+#define QN_LOCK(sp)
+#define QN_UNLOCK(sp)
+#endif
 
 
 /// @brief 스레드
@@ -2047,7 +2087,7 @@ QSAPI void qn_thread_exit(void* ret);
 /// @brief 스레드 우선 순위를 얻는다
 /// @param self 스레드
 /// @return 우선 순위 (-2 ~ 2)
-QSAPI int qn_thread_get_busy(QnThread* self);
+QSAPI int qn_thread_get_busy(const QnThread* self);
 
 /// @brief 스레드 우선 순위를 설정한다
 /// @param self 스레드
@@ -2060,17 +2100,17 @@ QSAPI bool qn_thread_set_busy(QnThread* self, int busy);
 /// @brief TLS를 만든다
 /// @param callback TLS가 제거될 때 필요한 콜백 (NULL 허용)
 /// @return TLS 값
-QSAPI QnTls* qn_tls(paramfunc_t callback);
+QSAPI QnTls qn_tls(paramfunc_t callback);
 
 /// @brief TLS에 값을 쓴다
 /// @param tls 대상 TLS
 /// @param data 넣을 값
-QSAPI void qn_tlsset(QnTls* tls, void* restrict data);
+QSAPI void qn_tlsset(QnTls tls, void* restrict data);
 
 /// @brief TLS에서 값을 읽는다
 /// @param tls 대상 TLS
 /// @return 읽은 값
-QSAPI void* qn_tlsget(QnTls* tls);
+QSAPI void* qn_tlsget(QnTls tls);
 
 // mutex
 

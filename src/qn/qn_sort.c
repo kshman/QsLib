@@ -19,7 +19,7 @@ static void qsort_swap(byte* a, byte* b, size_t stride)
 	}
 }
 
-static void qsort_short_context(byte* lo, byte* hi, size_t stride, int(*func)(void*, const void*, const void*), void* context)
+static void qsort_short_context(byte* lo, byte* hi, const size_t stride, int(*func)(void*, const void*, const void*), void* context)
 {
 	while (hi > lo)
 	{
@@ -37,7 +37,7 @@ static void qsort_short_context(byte* lo, byte* hi, size_t stride, int(*func)(vo
 }
 
 //
-void qn_qsortc(void* ptr, size_t count, size_t stride, int(*compfunc)(void*, const void*, const void*), void* context)
+void qn_qsortc(void* ptr, const size_t count, const size_t stride, int(*compfunc)(void*, const void*, const void*), void* context)
 {
 	qn_ret_if_fail(ptr);
 	qn_ret_if_fail(count > 1);
@@ -169,7 +169,7 @@ pos_recursive:
 	}
 }
 
-static void qsort_short(byte* lo, byte* hi, size_t stride, int(*func)(const void*, const void*))
+static void qsort_short(byte* lo, byte* hi, const size_t stride, int(*func)(const void*, const void*))
 {
 	while (hi > lo)
 	{
@@ -187,7 +187,7 @@ static void qsort_short(byte* lo, byte* hi, size_t stride, int(*func)(const void
 }
 
 //
-void qn_qsort(void* ptr, size_t count, size_t stride, int(*compfunc)(const void*, const void*))
+void qn_qsort(void* ptr, const size_t count, const size_t stride, int(*compfunc)(const void*, const void*))
 {
 	qn_ret_if_fail(ptr);
 	qn_ret_if_fail(count > 1);

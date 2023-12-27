@@ -251,6 +251,7 @@ typedef enum QgFlag
 	QGFLAG_NOTITLE = QN_BIT(3),								/// @brief 타이틀 바가 없음
 	QGFLAG_FOCUS = QN_BIT(4),								/// @brief 입력 포커스 받을 수 있음
 	QGFLAG_TEXT = QN_BIT(5),								/// @brief 텍스트 입력을 받을 수 있음
+	QGFLAG_DPISCALE = QN_BIT(6),							/// @brief DPI 스케일
 	// 미사용 (8~15)
 	// 렌더러 플래그 (16~23)
 	QGFLAG_VSYNC = QN_BIT(16),								/// @brief VSYNC 켜기
@@ -283,6 +284,7 @@ typedef enum QgStubStat
 typedef enum QgEventType
 {
 	QGEV_NONE,												/// @brief 이벤트 없음
+	QGEV_SYSWM,												/// @brief 시스템 메시지
 	QGEV_ACTIVE,											/// @brief 스터브 활성 상태 이벤트
 	QGEV_LAYOUT,											/// @brief 화면 크기 이벤트
 	QGEV_MOUSEMOVE,											/// @brief 마우스를 움직여요
@@ -294,10 +296,10 @@ typedef enum QgEventType
 	QGEV_KEYUP,												/// @brief 키보드에서 손을 뗐어요
 	QGEV_TEXTINPUT,											/// @brief 텍스트 입력
 	QGEV_WINDOW,											/// @brief 윈도우 이벤트
-	QGEV_SYSWM,												/// @brief 시스템 메시지
 	QGEV_DROPBEGIN,											/// @brief 드랍을 시작한다
 	QGEV_DROPEND,											/// @brief 드랍이 끝났다
 	QGEV_DROPFILE,											/// @brief 파일 드랍
+	QGEV_MONITOR,											/// @brief 모니터 이벤트
 	QGEV_EXIT,												/// @brief 끝내기
 	QGEV_MAX_VALUE,
 } QgEventType;
@@ -307,7 +309,7 @@ typedef enum QgWindowEventType
 	QGWEV_NONE,
 	QGWEV_SHOW,												/// @brief 윈도우가 보인다
 	QGWEV_HIDE,												/// @brief 윈도우가 안보인다
-	QGWEV_PAINTED,											/// @brief 윈도우가 그려진다
+	QGWEV_PAINTED,											/// @brief 윈도우가 그려진다 (=EXPOSED)
 	QGWEV_RESTORED,											/// @brief 윈도우 크기 복귀
 	QGWEV_MAXIMIZED,										/// @brief 윈도우가 최대화
 	QGWEV_MINIMIZED,										/// @brief 윈도우가 최소화
@@ -319,8 +321,10 @@ typedef enum QgWindowEventType
 	QGWEV_MAX_VALUE,
 } QgWindowEventType;
 
+#ifndef QGMAX_EVENTS
 /// @brief 최대 이벤트 갯수
 #define QGMAX_EVENTS		1000
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -415,87 +419,11 @@ typedef struct QgVarShader
 /// @brief 세이더 변수 콜백 함수
 typedef void(*QgVarShaderFunc)(void*, const QgVarShader*);
 
-/// @brief 이벤트
-typedef union QgEvent
-{
-	QgEventType			ev;									/// @brief 이벤트 타입
-	struct QgEventActive
-	{
-		QgEventType			ev;
-		bool32				active;							/// @brief 활성 상태면 참
-		double				delta;							/// @brief 마지막 활성 상태로 부터의 지난 시간(초)
-	}					active;								/// @brief 액티브 이벤트
-	struct QgEventLayout
-	{
-		QgEventType			ev;
-		QmRect				bound;							/// @brief 실제 윈도우의 사각 영역
-		QmSize				size;							/// @brief 그리기 영역 크기
-	}					layout;								/// @brief 레이아웃 이벤트
-	struct QgEventKeyboard
-	{
-		QgEventType			ev;
-		QikKey				key;							/// @brief 이벤트에 해당하는 키
-		QikMask				mask;							/// @brief 특수키 상태
-		bool32				repeat;							/// @brief 계속 눌려 있었다면 참
-	}					key;								/// @brief 키 눌림 떼임 이벤트
-	struct QgEventMouseMove
-	{
-		QgEventType			ev;
-		QmPoint				pt;								/// @brief 마우스 좌표
-		QmPoint				delta;							/// @brief 마우스 이동 거리
-		QimMask				mask;							/// @brief 마우스 버튼의 상태
-	}					mmove;								/// @brief 마우스 이동 이벤트
-	struct QgEventMouseButton
-	{
-		QgEventType			ev;
-		QmPoint				pt;								/// @brief 마우스 좌표
-		QimButton			button;							/// @brief 이벤트에 해당하는 버튼
-		QimMask				mask;							/// @brief 마으스 버튼의 상태
-	}					mbutton;							/// @brief 마우스 버튼 눌림 떼임 이벤트
-	struct QgEventMouseWheel
-	{
-		QgEventType			ev;
-		QmPoint				pt;								/// @brief 마우스 좌표
-		QmPoint				wheel;							/// @brief 휠 움직임 (Y가 기본휠, X는 틸트)
-		QmVec2				precise;						/// @brief 정밀한 움직임 (Y가 기본휠, X는 틸트)
-		int					direction;						/// @brief 참이면 뱡향이 반대
-	}					mwheel;								/// @brief 마우스 휠 이벤트
-	struct QgEventText
-	{
-		QgEventType			ev;
-		int					len;							/// @brief 텍스트 길이
-		char				data[16];						/// @brief 텍스트 내용
-	}					text;
-	struct QgEventDrop
-	{
-		QgEventType			ev;
-		int					len;							/// @brief 데이타의 길이
-		char*				data;							/// @brief 테이타 포인터. 데이터의 유효기간은 다음 loop 까지
-	}					drop;
-	struct QgEventWindowEvent
-	{
-		QgEventType			ev;
-		QgWindowEventType	mesg;							/// @brief 윈도우 이벤트 메시지
-		int					param1;							/// @brief 파라미터1
-		int					param2;							/// @brief 파라미터2
-	}					wevent;
-#if _QN_WINDOWS_
-	struct QgEventSysWindows
-	{
-		QgEventType			ev;
-		uint				mesg;							/// @brief 메시지
-		nuint				wparam;							/// @brief WPARAM
-		nint				lparam;							/// @brief LPARAM
-		void*				hwnd;							/// @brief 윈도우 핸들
-	}					windows;
-#endif
-} QgEvent;
-
 /// @brief 키 상태
 typedef struct QgUimKey
 {
 	QikMask				mask;								/// @brief 특수 키 상태
-	byte				key[QIK_MAX_VALUE / 8 + 1];			/// @brief 전체 키 상태 배열
+	byte				key[QIK_MAX_VALUE];					/// @brief 전체 키 상태 배열
 } QgUimKey;
 
 /// @brief 마우스 상태
@@ -556,6 +484,103 @@ typedef struct QgUimCtrlVib
 	ushort				left;
 	ushort				right;
 } QgUimCtrlVib;
+
+/// @brief 모니터 정보
+typedef struct QgUdevMonitor
+{
+	char				name[64];
+	uint				no;
+	uint				x;
+	uint				y;
+	uint				width;
+	uint				height;
+	uint				depth;
+	uint				mmwidth;
+	uint				mmheight;
+	void*				oshandle;
+} QgUdevMonitor;
+
+/// @brief 이벤트
+typedef union QgEvent
+{
+	QgEventType			ev;									/// @brief 이벤트 타입
+#if _QN_WINDOWS_
+	struct QgEventSysWindows
+	{
+		QgEventType			ev;
+		uint				mesg;							/// @brief 메시지
+		nuint				wparam;							/// @brief WPARAM
+		nint				lparam;							/// @brief LPARAM
+		void*				hwnd;							/// @brief 윈도우 핸들
+	}					windows;
+#endif
+	struct QgEventActive
+	{
+		QgEventType			ev;
+		bool32				active;							/// @brief 활성 상태면 참
+		double				delta;							/// @brief 마지막 활성 상태로 부터의 지난 시간(초)
+	}					active;								/// @brief 액티브 이벤트
+	struct QgEventLayout
+	{
+		QgEventType			ev;
+		QmRect				bound;							/// @brief 실제 윈도우의 사각 영역
+		QmSize				size;							/// @brief 그리기 영역 크기
+	}					layout;								/// @brief 레이아웃 이벤트
+	struct QgEventKeyboard
+	{
+		QgEventType			ev;
+		QikKey				key;							/// @brief 이벤트에 해당하는 키
+		QikMask				mask;							/// @brief 특수키 상태
+		bool32				repeat;							/// @brief 계속 눌려 있었다면 참
+	}					key;								/// @brief 키 눌림 떼임 이벤트
+	struct QgEventMouseMove
+	{
+		QgEventType			ev;
+		QmPoint				pt;								/// @brief 마우스 좌표
+		QmPoint				delta;							/// @brief 마우스 이동 거리
+		QimMask				mask;							/// @brief 마우스 버튼의 상태
+	}					mmove;								/// @brief 마우스 이동 이벤트
+	struct QgEventMouseButton
+	{
+		QgEventType			ev;
+		QmPoint				pt;								/// @brief 마우스 좌표
+		QimButton			button;							/// @brief 이벤트에 해당하는 버튼
+		QimMask				mask;							/// @brief 마으스 버튼의 상태
+	}					mbutton;							/// @brief 마우스 버튼 눌림 떼임 이벤트
+	struct QgEventMouseWheel
+	{
+		QgEventType			ev;
+		QmPoint				pt;								/// @brief 마우스 좌표
+		QmPoint				wheel;							/// @brief 휠 움직임 (Y가 기본휠, X는 틸트)
+		QmVec2				precise;						/// @brief 정밀한 움직임 (Y가 기본휠, X는 틸트)
+		int					direction;						/// @brief 참이면 뱡향이 반대
+	}					mwheel;								/// @brief 마우스 휠 이벤트
+	struct QgEventText
+	{
+		QgEventType			ev;
+		int					len;							/// @brief 텍스트 길이
+		char				data[16];						/// @brief 텍스트 내용
+	}					text;
+	struct QgEventDrop
+	{
+		QgEventType			ev;
+		int					len;							/// @brief 데이타의 길이
+		char*				data;							/// @brief 테이타 포인터. 데이터의 유효기간은 다음 loop 까지
+	}					drop;
+	struct QgEventWindowEvent
+	{
+		QgEventType			ev;
+		QgWindowEventType	mesg;							/// @brief 윈도우 이벤트 메시지
+		int					param1;							/// @brief 파라미터1
+		int					param2;							/// @brief 파라미터2
+	}					wevent;
+	struct QgEventMonitor
+	{
+		QgEventType			ev;
+		bool32				connectd;						/// @brief 참이면 연결, 거짓이면 연결 끊김
+		QgUdevMonitor*		monitor;						/// @brief 모니터 정보 포인터
+	}					monitor;
+} QgEvent;
 
 /// @brief 디바이스 정보
 typedef struct QgDeviceInfo
@@ -632,125 +657,128 @@ typedef struct QgRenderParam
 /// @param flags 생성 플래그 (QgFlag)
 /// @return 스터브가 만들어지면 참
 /// @see QgFlag qg_close_Stub
-///
 QSAPI bool qg_open_stub(const char* title, int display, int width, int height, int flags);
+
 /// @brief 스터브를 닫는다
 /// @see qg_open_Stub
-///
 QSAPI void qg_close_stub(void);
+
 /// @brief 스터브 사양을 켜고 끈다
 /// @param feature 대상 스터브 사양 (QGFEATURE_)
 /// @param enable 켜려면 참, 끄려면 거짓
 /// @return 처리한 사양 갯수
-///
 QSAPI int qg_feature(int feature, bool enable);
+
 /// @brief 스터브 윈도우 타이틀 설정
-/// @param title 타이틀 문자열
-///
-QSAPI void qg_set_title(const char* u8text);
+/// @param title 타이틀 문자열(UTF-8)
+QSAPI void qg_set_title(const char* title);
 
 /// @brief 스터브 루프를 처리한다
 /// @return 거짓이면 프로그램을 종료한다
-///
 QSAPI bool qg_loop(void);
+
 /// @brief 스터브 이벤트를 폴링한다
 /// @param[out] ev 폴링한 이벤트를 반환
 /// @return 처리할 이벤트가 더 이상 없으면 거짓
-///
 QSAPI bool qg_poll(QgEvent* ev);
-/// @brief 스터브 루프를 중단한다
-/// @see qg_loop qg_poll
+
+/// @brief 스터브 루프를 탈출한다
+/// @see qg_poll
 /// 
 /// 다만, 바로 프로그램을 종료하는 것은 아니며.실제로 이벤트를 처리하지 않도록 하는 역할을 한다
-///
 QSAPI void qg_exit_loop(void);
 
 /// @brief 전체 키 정보를 얻는다
 /// @return 키 정보 포인터
-///
 QSAPI const QgUimKey* qg_get_key_info(void);
+
 /// @brief 전체 마우스 정보를 얻는다
 /// @param  마우스 정보 포인터
 /// @return
-///
 QSAPI const QgUimMouse* qg_get_mouse_info(void);
+
 /// @brief 마우스 더블 클릭 정밀도를 설정한다
 /// @param density 더블 클릭하면서 마우스를 움직여도 되는 거리 (포인트, 최대값 50)
 /// @param interval 클릭과 클릭 사이의 시간 (밀리초, 최대값 5000)
 /// @return 인수의 범위를 벗어나면 거짓을 반환
 /// @see qg_get_mouse_info
-///
-QSAPI bool qg_set_prop_double_click(uint density, uint interval);
+QSAPI bool qg_set_double_click_prop(uint density, uint interval);
+
 /// @brief 키가 눌렸나 테스트 한다
 /// @param key 테스트할 키
 /// @return 눌렸으면 참
-///
 QSAPI bool qg_test_key(QikKey key);
+
 /// @brief 키의 눌림 상태를 설정한다
 /// @param key 설정할 키
 /// @param down 참이면 눌림, 거짓이면 안눌림
-///
 QSAPI void qg_set_key(QikKey key, bool down);
+
 /// @brief 초당 프레임(FPS)를 얻는다
 /// @return 초당 프레임 수
-///
 QSAPI float qg_get_fps(void);
+
 /// @brief 실행 시간을 얻는다
 /// @return 실행 시간
-///
 QSAPI double qg_get_run(void);
+
 /// @brief 프레임 당 시간을 얻는다
 /// @return 리퍼런스 시간
 /// @note 포즈 중에도 이 시간은 계산된다
-///
 QSAPI double qg_get_reference(void);
+
 /// @brief 수행 시간을 얻는다. 포즈 중에는 0
 /// @return 수행 시간
 /// @note 포즈 중에는 계산되지 않으므로 0이다
-///
 QSAPI double qg_get_advance(void);
+
 /// @brief 대기 상태(IDLE)일 때 대기할 밀리초
 /// @return 대기 상태에서의 대기 밀리초
-///
 QSAPI int qg_get_delay(void);
+
 /// @brief 대기 상태(IDLE)일 때 대기할 밀리초를 설정한다
 /// @param delay 대기 상태에서의 대기 밀리초
-///
 QSAPI void qg_set_delay(int delay);
 
 /// @brief 남은 이벤트 갯수를 얻는다
 /// @return 남은 이벤트 갯수
-///
 QSAPI int qg_left_events(void);
+
 /// @brief 이벤트를 모두 지운다
- ///
 QSAPI void qg_flush_event(void);
+
 /// @brief 이벤트를 추가한다
 /// @param[in] ev 이벤트 정보
+/// @param[in] prior 우선 순위 이벤트
 /// @return 총 이벤트 갯수
-///
-QSAPI int qg_add_event(const QgEvent* ev);
+QSAPI int qg_add_event(const QgEvent* ev, bool prior);
+
 /// @brief 이벤트를 추가하지만. 데이타는 없이 이벤트 종류만 추가한다
 /// @param type 이벤트 종류
+/// @param[in] prior 우선 순위 이벤트
 /// @return 총 이벤트 갯수
-///
-QSAPI int qg_add_event_type(QgEventType type);
+QSAPI int qg_add_signal_event(QgEventType type, bool prior);
+
+/// @brief 키를 갖고 있는 이벤트를 추가한다. 키 갖는 이벤트는 우선 순위 이벤트로 처리한다
+/// @param ev 이벤트 정보
+/// @param key 이벤트에 대한 키
+/// @return 총 이벤트 갯수
+QSAPI int qg_add_key_event(const QgEvent* ev, size_t key);
+
 /// @brief 맨 앞 이벤트를 꺼낸다. 꺼내면서 해당 이벤트는 큐에서 삭제
 /// @param[in] ev 얻은 이벤트 정보
 /// @return 이벤트가 있었다면 참. 없으면 거짓
-///
 QSAPI bool qg_pop_event(QgEvent* ev);
+
 /// @brief 이벤트를 문자열로
 /// @param ev 이벤트
 /// @return 이벤트 문자열
-///
-QSAPI const char* qg_event_str(QgEventType ev);
+QSAPI const char* qg_string_event(QgEventType ev);
+
 /// @brief 윈도우 이벤트를 문자열로
 /// @param wev 윈도우 이벤트
 /// @return 윈도우 이벤트 문자열
-///
-QSAPI const char* qg_window_event_str(QgWindowEventType wev);
-
+QSAPI const char* qg_string_window_event(QgWindowEventType wev);
 
 
 //////////////////////////////////////////////////////////////////////////

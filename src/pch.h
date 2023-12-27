@@ -5,6 +5,12 @@
 
 #pragma once
 
+#define _QS_HEADER_
+
+#ifndef no_init_all
+#define no_init_all deprecated
+#endif
+
 #ifdef __GNUC__
 #define _GNU_SOURCE
 #endif

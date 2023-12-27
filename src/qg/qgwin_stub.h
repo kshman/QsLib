@@ -12,28 +12,43 @@
 
 static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 
-#ifndef XINPUT_DEAD_ZONE
-/// @brief 컨트롤러 데드존
-#define XINPUT_DEAD_ZONE	(int)(0.24f*((float)INT16_MAX))
-#endif
-
-
 // DLL
 #define DEF_WIN_FUNC(ret,name,args)		typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;
-#define DEF_WIN_XIFUNC(ret,name,args)	typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;
+#define DEF_WIN_XINPUT_FUNC(ret,name,args)	typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;
 #include "qgwin_func.h"
 #define DEF_WIN_FUNC(ret,name,args)		extern QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
-#define DEF_WIN_XIFUNC(ret,name,args)	extern QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
+#define DEF_WIN_XINPUT_FUNC(ret,name,args)	extern QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
 #include "qgwin_func.h"
 
-/// @brief 윈도우 스터브
-typedef struct WindowsStub WindowsStub;
-struct WindowsStub
+// 윈도우 모니터 > QgUdevMonitor
+typedef struct WindowsMonitor
+{
+	QgUdevMonitor		base;
+
+	wchar				adapter[32];
+	wchar				display[32];
+} WindowsMonitor;
+
+// 마우스 이벤트 소스 (https://learn.microsoft.com/ko-kr/windows/win32/tablet/system-events-and-mouse-messages)
+#define MI_WP_SIGNATURE		0xFF515700
+#define SIGNATURE_MASK		0xFFFFFF00
+#define IsPenEvent(dw)		(((dw) & SIGNATURE_MASK) == MI_WP_SIGNATURE)
+
+// 마우스 이벤트 소스
+typedef enum WindowsMouseSource
+{
+	WINDOWS_MOUSE_SOURCE_MOUSE,
+	WINDOWS_MOUSE_SOURCE_TOUCH,
+	WINDOWS_MOUSE_SOURCE_PEN,
+} WindowsMouseSource;
+
+// 윈도우 스터브 > StubBase
+typedef struct WindowsStub
 {
 	StubBase			base;
 
-	HWND				hwnd;
 	HINSTANCE			instance;
+	HWND				hwnd;
 
 	wchar*				class_name;
 	wchar*				window_title;
@@ -42,6 +57,8 @@ struct WindowsStub
 	STICKYKEYS			acs_sticky;
 	TOGGLEKEYS			acs_toggle;
 	FILTERKEYS			acs_filter;
+	HHOOK				key_hook;
+	BYTE				key_hook_state[256];
 
 	HIMC				himc;
 	int					imcs;
@@ -57,7 +74,9 @@ struct WindowsStub
 
 	bool				class_registered;
 	bool				clear_background;
-};
+	bool				bool_padding1;
+	bool				bool_padding2;
+} WindowsStub;
 
-/// @brief 윈도우 메시지 => 문자열
-extern const char* windows_message_string(UINT mesg);
+// 윈도우 스터브 선언
+extern WindowsStub winStub;

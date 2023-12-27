@@ -29,8 +29,7 @@ void int_for_loop(int* key, double* value)
 
 int main(void)
 {
-	int v[2];
-	qn_runtime(v);
+	qn_runtime();
 
 	char** ps;
 
