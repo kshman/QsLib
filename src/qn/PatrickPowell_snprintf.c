@@ -1304,7 +1304,8 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 
 				ch = *format++;
 				state = DP_S_DEFAULT;
-				flags = cflags = vmin = base = 0;
+				flags = cflags = vmin = 0;
+				base = 0;
 				vmax = -1;
 				break;
 
@@ -1626,7 +1627,7 @@ static void ppw_fint(wchar* restrict buffer, size_t* restrict currlen, size_t ma
 			ppw_outch(buffer, currlen, maxlen, L',');
 #endif
 		}
-		}
+	}
 
 	// 왼쪽 정렬에 따른 공백
 	while (spadlen < 0)
@@ -1635,7 +1636,7 @@ static void ppw_fint(wchar* restrict buffer, size_t* restrict currlen, size_t ma
 		++spadlen;
 	}
 #undef MAX_CONVERT_PLACES
-	}
+}
 
 // 64비트 정수
 static void ppw_fllong(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, uint base, int vmin, int vmax, int flags)
@@ -1766,7 +1767,7 @@ static void ppw_fllong(wchar* restrict buffer, size_t* restrict currlen, size_t 
 			ppw_outch(buffer, currlen, maxlen, L',');
 #endif
 		}
-		}
+	}
 
 	// 왼쪽 정렬에 따른 공백
 	while (spadlen < 0)
@@ -1775,7 +1776,7 @@ static void ppw_fllong(wchar* restrict buffer, size_t* restrict currlen, size_t 
 		++spadlen;
 	}
 #undef MAX_CONVERT_PLACES
-	}
+}
 
 // 64비트 실수(double)
 // 여기서는, 오직 16자리 정수만 지원. 원래는 9, 19, 38 자리수에 따라 각각 32, 64, 128비트용이 있어야함
@@ -2017,7 +2018,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 			ppw_outch(buffer, currlen, maxlen, L',');
 #endif
 		}
-		}
+	}
 
 	// 소수점
 	if (dotpoint)
@@ -2054,7 +2055,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 		ppw_outch(buffer, currlen, maxlen, ' ');
 		++padlen;
 	}
-	}
+}
 
 //
 size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format, va_list args)
@@ -2408,7 +2409,8 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 
 				ch = *format++;
 				state = DP_S_DEFAULT;
-				flags = cflags = vmin = base = 0;
+				flags = cflags = vmin = 0;
+				base = 0;
 				vmax = -1;
 				break;
 

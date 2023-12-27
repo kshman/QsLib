@@ -25,9 +25,6 @@
     <Filter Include="소스 파일\qn\zlib">
       <UniqueIdentifier>{9186560c-4ecf-4b83-86bc-8779a46f03c4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="소스 파일\qn\PatrickPowell">
-      <UniqueIdentifier>{0b23bc80-36bf-4ec7-94ae-cde05dc26742}</UniqueIdentifier>
-    </Filter>
     <Filter Include="소스 파일\qg">
       <UniqueIdentifier>{4bcc6fad-7481-4b3c-8c10-df0245cee5ea}</UniqueIdentifier>
     </Filter>
@@ -227,9 +224,6 @@
     <ClCompile Include="qn\zlib\zutil.c">
       <Filter>소스 파일\qn\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="qn\PatrickPowell_snprintf.c">
-      <Filter>소스 파일\qn\PatrickPowell</Filter>
-    </ClCompile>
     <ClCompile Include="qg\qg_kmc.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
@@ -265,6 +259,9 @@
     </ClCompile>
     <ClCompile Include="qg\glad\glad.c">
       <Filter>소스 파일\qg\glad</Filter>
+    </ClCompile>
+    <ClCompile Include="qn\PatrickPowell_snprintf.c">
+      <Filter>소스 파일\qn</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

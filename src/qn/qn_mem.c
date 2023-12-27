@@ -5,12 +5,12 @@
 #endif
 
 //
-void* qn_memenc(void* restrict dest, const void* restrict src, size_t size)
+void* qn_memenc(void* restrict dest, const void* restrict src, const size_t size)
 {
 	const byte* ps = (const byte*)src;
 	byte* pd = (byte*)dest;
 
-	for (; size; --size, ++pd, ++ps)
+	for (size_t i = size; i; --i, ++pd, ++ps)
 	{
 		const byte z = (byte)(255 - *ps);
 		*pd = (byte)(z >> 4 | (z & 0xF) << 4);
@@ -20,12 +20,12 @@ void* qn_memenc(void* restrict dest, const void* restrict src, size_t size)
 }
 
 //
-void* qn_memdec(void* restrict dest, const void* restrict src, size_t size)
+void* qn_memdec(void* restrict dest, const void* restrict src, const size_t size)
 {
 	const byte* ps = (const byte*)src;
 	byte* pd = (byte*)dest;
 
-	for (; size; --size, ++pd, ++ps)
+	for (size_t i = size; i; --i, ++pd, ++ps)
 	{
 		const byte z = (byte)(255 - *ps);
 		*pd = (byte)(z << 4 | (z & 0xF0) >> 4);
@@ -35,7 +35,7 @@ void* qn_memdec(void* restrict dest, const void* restrict src, size_t size)
 }
 
 //
-void* qn_memzcpr(const void* src, size_t srcsize, /*NULLABLE*/size_t* destsize)
+void* qn_memzcpr(const void* src, const size_t srcsize, /*NULLABLE*/size_t* destsize)
 {
 #ifndef __EMSCRIPTEN__
 	qn_val_if_fail(src != NULL, NULL);
@@ -61,7 +61,7 @@ void* qn_memzcpr(const void* src, size_t srcsize, /*NULLABLE*/size_t* destsize)
 }
 
 //
-void* qn_memzucp(const void* src, size_t srcsize, size_t bufsize, /*NULLABLE*/size_t* destsize)
+void* qn_memzucp(const void* src, const size_t srcsize, const size_t bufsize, /*NULLABLE*/size_t* destsize)
 {
 #ifndef __EMSCRIPTEN__
 	qn_val_if_fail(src != NULL, NULL);
@@ -85,7 +85,7 @@ void* qn_memzucp(const void* src, size_t srcsize, size_t bufsize, /*NULLABLE*/si
 }
 
 //
-size_t qn_memagn(size_t size)
+size_t qn_memagn(const size_t size)
 {
 	const size_t align = size % 16;
 	if (align == 0)
@@ -95,7 +95,7 @@ size_t qn_memagn(size_t size)
 }
 
 //
-char qn_memhrb(size_t size, double* out)
+char qn_memhrb(const size_t size, double* out)
 {
 	qn_val_if_fail(out != NULL, ' ');
 	if (size > 1024ULL * 1024ULL * 1024ULL)
@@ -118,7 +118,7 @@ char qn_memhrb(size_t size, double* out)
 }
 
 //
-char* qn_memdmp(const void* restrict ptr, size_t size, char* restrict outbuf, size_t buflen)
+char* qn_memdmp(const void* restrict ptr, const size_t size, char* restrict outbuf, const size_t buflen)
 {
 	qn_val_if_fail(ptr != NULL, NULL);
 	qn_val_if_fail(outbuf != NULL, NULL);
@@ -149,8 +149,8 @@ char* qn_memdmp(const void* restrict ptr, size_t size, char* restrict outbuf, si
 
 #define MEMORY_GAP				4
 #define MEMORY_BLOCK_SIZE		16
-#define MEMORY_PAGE				256
-#define MEMORY_PAGE_SIZE		(MEMORY_BLOCK_SIZE*MEMORY_PAGE)
+//#define MEMORY_PAGE				256
+//#define MEMORY_PAGE_SIZE		(MEMORY_BLOCK_SIZE * MEMORY_PAGE)
 #define MEMORY_SIGN_HEAD		('Q' | 'M'<<8 | 'B'<<16 | '\0'<<24)
 #define MEMORY_SIGN_FREE		('B' | 'A'<<8 | 'D'<<16 | '\0'<<24)
 
@@ -195,7 +195,17 @@ static struct MemImpl
 #endif
 
 	char			dbg_buf[MAX_DEBUG_LENGTH];
-} mem_impl = { {qn_mpfalc, qn_mpfrea, qn_mpffre}, };
+} mem_impl =
+{
+	.table._alloc = qn_mpfalc,
+	.table._realloc = qn_mpfrea,
+	.table._free = qn_mpffre,
+	.frst = NULL, .last = NULL, .index = 0, .count = 0, .block_size = 0,
+#ifdef _QN_WINDOWS_
+	.heap = NULL,
+#endif
+	.lock = 0,
+};
 
 void qn_mpf_up(void)
 {
@@ -305,14 +315,14 @@ size_t qn_mpfcnt(void)
 }
 
 //
-static void qn_mpf_out_of_memory(const char* desc, size_t line, size_t size, size_t block)
+_Noreturn static void qn_mpf_out_of_memory(const char* desc, const size_t line, const size_t size, const size_t block)
 {
 	qn_snprintf(mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1, "out of memory : %s(%Lu) : %Lu(%Lu)", desc, line, size, block);
 	qn_debug_halt("MEMORY PROFILER", mem_impl.dbg_buf);
 }
 
 //
-static void qn_mpf_access_violation(const char* desc, size_t line, size_t size, size_t block)
+_Noreturn static void qn_mpf_access_violation(const char* desc, const size_t line, const size_t size, const size_t block)
 {
 	qn_snprintf(mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1, "access violation : %s(%Lu) : %Lu(%Lu)", desc, line, size, block);
 	qn_debug_halt("MEMORY PROFILER", mem_impl.dbg_buf);
@@ -321,7 +331,7 @@ static void qn_mpf_access_violation(const char* desc, size_t line, size_t size, 
 #ifdef _QN_WINDOWS_
 #pragma warning(disable: 4702)
 //
-static DWORD qn_windows_mpf_exception(DWORD ex, const char* desc, size_t line, size_t size, size_t block)
+static DWORD qn_windows_mpf_exception(const DWORD ex, const char* desc, const size_t line, const size_t size, const size_t block)
 {
 	if (ex == STATUS_NO_MEMORY)
 		qn_mpf_out_of_memory(desc, line, size, block);
@@ -329,13 +339,13 @@ static DWORD qn_windows_mpf_exception(DWORD ex, const char* desc, size_t line, s
 		qn_mpf_access_violation(desc, line, size, block);
 	else
 		return EXCEPTION_CONTINUE_SEARCH;
-	return EXCEPTION_EXECUTE_HANDLER;
+	//return EXCEPTION_EXECUTE_HANDLER;		// 도달하지 않는 코드
 }
 #pragma warning(default: 4702)
 #endif
 
 //
-void* qn_mpfalc(size_t size, bool zero, const char* desc, size_t line)
+void* qn_mpfalc(const size_t size, bool zero, const char* desc, const size_t line)
 {
 	qn_val_if_fail(size > 0, NULL);
 
@@ -457,7 +467,7 @@ void qn_mpffre(void* ptr)
 }
 
 //
-void* qn_mpfdup(const void* p, size_t size_or_zero_if_psz, const char* desc, size_t line)
+void* qn_mpfdup(const void* p, const size_t size_or_zero_if_psz, const char* desc, const size_t line)
 {
 	qn_val_if_fail(p != NULL, NULL);
 	if (size_or_zero_if_psz > 0)
@@ -466,7 +476,7 @@ void* qn_mpfdup(const void* p, size_t size_or_zero_if_psz, const char* desc, siz
 		memcpy(m, p, size_or_zero_if_psz);
 		return m;
 	}
-	size_t len = strlen((const char*)p) + 1;
+	const size_t len = strlen((const char*)p) + 1;
 	char* d = qn_mpfalc(len, false, desc, line);
 	qn_strcpy(d, len, (const char*)p);
 	return d;
@@ -484,7 +494,7 @@ void qn_mpfdbgprint(void)
 
 	QN_LOCK(mem_impl.lock);
 	size_t sum = 0, cnt = 1;
-	for (MemBlock* next = NULL, *node = mem_impl.frst; node; node = next, cnt++)
+	for (MemBlock* next, *node = mem_impl.frst; node; node = next, cnt++)
 	{
 		if (node->line)
 		{
@@ -526,13 +536,13 @@ bool qn_memtbl(const QnAllocTable* table)
 }
 
 //
-void* qn_memalc(size_t size, bool zero, const char* desc, size_t line)
+void* qn_memalc(const size_t size, const bool zero, const char* desc, const size_t line)
 {
 	return mem_impl.table._alloc(size, zero, desc, line);
 }
 
 //
-void* qn_memrea(void* ptr, size_t size, const char* desc, size_t line)
+void* qn_memrea(void* ptr, const size_t size, const char* desc, const size_t line)
 {
 	return mem_impl.table._realloc(ptr, size, desc, line);
 }
@@ -544,17 +554,17 @@ void qn_memfre(void* ptr)
 }
 
 //
-void* qn_memdup(const void* p, size_t size_or_zero_if_psz)
+void* qn_memdup(const void* ptr, const size_t size_or_zero_if_psz)
 {
-	qn_val_if_fail(p != NULL, NULL);
+	qn_val_if_fail(ptr != NULL, NULL);
 	if (size_or_zero_if_psz > 0)
 	{
 		byte* m = qn_alloc(size_or_zero_if_psz, byte);
-		memcpy(m, p, size_or_zero_if_psz);
+		memcpy(m, ptr, size_or_zero_if_psz);
 		return m;
 	}
-	size_t len = strlen((const char*)p) + 1;
+	const size_t len = strlen((const char*)ptr) + 1;
 	char* d = qn_alloc(len, char);
-	qn_strcpy(d, len, (const char*)p);
+	qn_strcpy(d, len, (const char*)ptr);
 	return d;
 }

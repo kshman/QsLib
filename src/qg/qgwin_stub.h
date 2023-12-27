@@ -14,10 +14,10 @@ static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 
 // DLL
 #define DEF_WIN_FUNC(ret,name,args)		typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;
-#define DEF_WIN_XIFUNC(ret,name,args)	typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;
+#define DEF_WIN_XINPUT_FUNC(ret,name,args)	typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;
 #include "qgwin_func.h"
 #define DEF_WIN_FUNC(ret,name,args)		extern QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
-#define DEF_WIN_XIFUNC(ret,name,args)	extern QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
+#define DEF_WIN_XINPUT_FUNC(ret,name,args)	extern QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
 #include "qgwin_func.h"
 
 // 윈도우 모니터 > QgUdevMonitor
@@ -25,7 +25,6 @@ typedef struct WindowsMonitor
 {
 	QgUdevMonitor		base;
 
-	HMONITOR			handle;
 	wchar				adapter[32];
 	wchar				display[32];
 } WindowsMonitor;

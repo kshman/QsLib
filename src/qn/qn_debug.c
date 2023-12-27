@@ -1,12 +1,15 @@
 ﻿#include "pch.h"
 #include "qs_qn.h"
 
+#ifdef DEBUG_BREAK
+#error macro _DEBUG_BREAK already defined!
+#endif
 #ifdef _QN_WINDOWS_
-#define _DEBUG_BREAK(x)			if (x) DebugBreak()
+#define DEBUG_BREAK(x)			if (x) DebugBreak()
 #elif defined __EMSCRIPTEN__
-#define _DEBUG_BREAK(x)
+#define DEBUG_BREAK(x)
 #else
-#define _DEBUG_BREAK(x)			if (x) raise(SIGTRAP)
+#define DEBUG_BREAK(x)			if (x) raise(SIGTRAP)
 #endif
 
 //
@@ -26,7 +29,19 @@ static struct DebugImpl
 	bool			redirect;
 	bool			__dummy1;
 	bool			__dummy2;
-} debug_impl = { NULL, "QS", };
+} debug_impl =
+{
+#ifdef _QN_WINDOWS_
+	.handle = NULL,
+#else
+	.fp = NULL,
+#endif
+	.tag = "QS",
+	.out_buf = "",
+	.out_pos = 0,
+	.debugger = false,
+	.redirect = false,
+};
 
 //
 void qn_debug_up(void)
@@ -52,7 +67,7 @@ void qn_debug_down(void)
 }
 
 //
-static void qn_dbg_buf_ch(int ch)
+static void qn_dbg_buf_ch(const int ch)
 {
 	if (1 + debug_impl.out_pos > MAX_DEBUG_LENGTH - 1)
 		return;
@@ -74,14 +89,14 @@ static void qn_dbg_buf_str(const char* restrict s)
 //
 static void qn_dbg_buf_va(const char* restrict fmt, va_list va)
 {
-	int len = qn_vsnprintf(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - debug_impl.out_pos, fmt, va);
+	const int len = qn_vsnprintf(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - debug_impl.out_pos, fmt, va);
 	debug_impl.out_pos += len;
 }
 
 //
-static void qn_dbg_buf_int(int value)
+static void qn_dbg_buf_int(const int value)
 {
-	int len = qn_itoa(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - debug_impl.out_pos, value, 10);
+	const int len = qn_itoa(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - debug_impl.out_pos, value, 10);
 	debug_impl.out_pos += len;
 }
 
@@ -119,13 +134,13 @@ static int qn_dbg_buf_flush(void)
 	__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, debug_impl.out_buf);
 #endif
 #endif
-	int ret = debug_impl.out_pos;
+	const int ret = debug_impl.out_pos;
 	debug_impl.out_pos = 0;
 	return ret;
 }
 
 //
-int qn_debug_assert(const char* restrict expr, const char* restrict filename, int line)
+int qn_debug_assert(const char* restrict expr, const char* restrict filename, const int line)
 {
 	qn_val_if_fail(expr, -1);
 	qn_dbg_buf_str("ASSERT FAILED : ");
@@ -137,12 +152,12 @@ int qn_debug_assert(const char* restrict expr, const char* restrict filename, in
 	qn_dbg_buf_ch('\n');
 	qn_dbg_buf_flush();
 
-	_DEBUG_BREAK(debug_impl.debugger);
+	DEBUG_BREAK(debug_impl.debugger);
 	return 0;
 }
 
 //
-noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg)
+_Noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg)
 {
 	qn_dbg_buf_str("HALT ");
 	qn_dbg_buf_head(head);
@@ -150,24 +165,24 @@ noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg
 	qn_dbg_buf_ch('\n');
 	qn_dbg_buf_flush();
 
-	_DEBUG_BREAK(debug_impl.debugger);
+	DEBUG_BREAK(debug_impl.debugger);
 	abort();
 }
 
 //
-int qn_debug_outputs(bool breakpoint, const char* restrict head, const char* restrict mesg)
+int qn_debug_outputs(const bool breakpoint, const char* restrict head, const char* restrict mesg)
 {
 	qn_dbg_buf_head(head);
 	qn_dbg_buf_str(mesg);
 	qn_dbg_buf_ch('\n');
-	int len = qn_dbg_buf_flush();
+	const int len = qn_dbg_buf_flush();
 
-	_DEBUG_BREAK(breakpoint && debug_impl.debugger);
+	DEBUG_BREAK(breakpoint && debug_impl.debugger);
 	return len;
 }
 
 //
-int qn_debug_outputf(bool breakpoint, const char* restrict head, const char* restrict fmt, ...)
+int qn_debug_outputf(const bool breakpoint, const char* restrict head, const char* restrict fmt, ...)
 {
 	qn_dbg_buf_head(head);
 	va_list va;
@@ -175,14 +190,14 @@ int qn_debug_outputf(bool breakpoint, const char* restrict head, const char* res
 	qn_dbg_buf_va(fmt, va);
 	va_end(va);
 	qn_dbg_buf_ch('\n');
-	int len = qn_dbg_buf_flush();
+	const int len = qn_dbg_buf_flush();
 
-	_DEBUG_BREAK(breakpoint && debug_impl.debugger);
+	DEBUG_BREAK(breakpoint && debug_impl.debugger);
 	return len;
 }
 
 //
-int qn_debug_output_error(bool breakpoint, const char* head)
+int qn_debug_output_error(const bool breakpoint, const char* head)
 {
 	const char* err = qn_get_error();
 	return qn_debug_outputs(breakpoint, head, err);

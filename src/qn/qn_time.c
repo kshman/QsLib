@@ -94,7 +94,7 @@ QnTimeStamp qn_utc(void)
 }
 
 //
-QnTimeStamp qn_stod(double sec)
+QnTimeStamp qn_stod(const double sec)
 {
 	QnDateTime dt;
 	const uint ns = (uint)sec;
@@ -109,7 +109,7 @@ QnTimeStamp qn_stod(double sec)
 }
 
 //
-QnTimeStamp qn_mstod(uint msec)
+QnTimeStamp qn_mstod(const uint msec)
 {
 	QnDateTime dt;
 	const uint ns = msec / 1000;
@@ -163,7 +163,7 @@ ullong qn_cycle(void)
 //
 ullong qn_tick(void)
 {
-	ullong cycle = qn_cycle();
+	const ullong cycle = qn_cycle();
 	return ((cycle - cycle_impl.start_count) * 1000) / cycle_impl.tick_count;
 }
 
@@ -217,7 +217,7 @@ void qn_msleep(ullong microseconds)
 		if (SwitchToThread())
 			qn_pause();
 		QueryPerformanceCounter(&t2);
-	} while (((double)(t2.QuadPart - t1.QuadPart) / cycle_impl.tick_count * 1000000) < dms);
+	} while (((double)(t2.QuadPart - t1.QuadPart) / (double)(cycle_impl.tick_count * 1000000)) < dms);
 #else
 #if defined __EMSCRIPTEN__
 	if (emscripten_has_asyncify())
@@ -269,12 +269,12 @@ typedef struct QnRealTimer
 	int					fps_frame;
 
 	uint			count;
-} qnRealTimer;
+} QnRealTimer;
 
 //
 QnTimer* qn_timer_new(void)
 {
-	qnRealTimer* self = qn_alloc_1(qnRealTimer);
+	QnRealTimer* self = qn_alloc_1(QnRealTimer);
 	qn_val_if_fail(self, NULL);
 
 	self->frame.q = cycle_impl.tick_count;
@@ -298,7 +298,7 @@ void qn_timer_delete(QnTimer* self)
 //
 void qn_timer_reset(QnTimer* self)
 {
-	qnRealTimer* impl = (qnRealTimer*)self;
+	QnRealTimer* impl = (QnRealTimer*)self;
 
 	impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
 	impl->basetime.q = impl->curtime.q;
@@ -312,7 +312,7 @@ void qn_timer_reset(QnTimer* self)
 //
 void qn_timer_start(QnTimer* self)
 {
-	qnRealTimer* impl = (qnRealTimer*)self;
+	QnRealTimer* impl = (QnRealTimer*)self;
 
 	impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
 
@@ -329,7 +329,7 @@ void qn_timer_start(QnTimer* self)
 //
 void qn_timer_stop(QnTimer* self)
 {
-	qnRealTimer* impl = (qnRealTimer*)self;
+	QnRealTimer* impl = (QnRealTimer*)self;
 
 	impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
 	impl->lasttime.q = impl->curtime.q;
@@ -342,7 +342,7 @@ void qn_timer_stop(QnTimer* self)
 //
 bool qn_timer_update(QnTimer* self, bool manual)
 {
-	qnRealTimer* impl = (qnRealTimer*)self;
+	QnRealTimer* impl = (QnRealTimer*)self;
 	bool ret;
 
 	impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
@@ -384,13 +384,13 @@ bool qn_timer_update(QnTimer* self, bool manual)
 //
 double qn_timer_get_cut(const QnTimer* self)
 {
-	const qnRealTimer* impl = (const qnRealTimer*)self;
+	const QnRealTimer* impl = (const QnRealTimer*)self;
 	return impl->cut;
 }
 
 //
-void qn_timer_set_cut(QnTimer* self, double cut)
+void qn_timer_set_cut(QnTimer* self, const double cut)
 {
-	qnRealTimer* impl = (qnRealTimer*)self;
+	QnRealTimer* impl = (QnRealTimer*)self;
 	impl->cut = cut;
 }

@@ -12,15 +12,15 @@
 #ifndef DEF_WIN_FUNC
 #define DEF_WIN_FUNC(ret,name,args)
 #endif
-#ifndef DEF_WIN_XIFUNC
-#define DEF_WIN_XIFUNC(ret,name,args)
+#ifndef DEF_WIN_XINPUT_FUNC
+#define DEF_WIN_XINPUT_FUNC(ret,name,args)
 #endif
 
 // XINPUT
-DEF_WIN_XIFUNC(DWORD, XInputGetState, (_In_ DWORD dwUserIndex, _Out_ XINPUT_STATE* pState))
-DEF_WIN_XIFUNC(DWORD, XInputSetState, (_In_ DWORD dwUserIndex, _In_ XINPUT_VIBRATION* pVibration))
-DEF_WIN_XIFUNC(DWORD, XInputGetCapabilities, (_In_ DWORD dwUserIndex, _In_ DWORD dwFlags, _Out_ XINPUT_CAPABILITIES* pCapabilities))
-DEF_WIN_XIFUNC(DWORD, XInputGetBatteryInformation, (_In_ DWORD dwUserIndex, _In_ BYTE devType, _Out_ XINPUT_BATTERY_INFORMATION* pBatteryInformation))
+DEF_WIN_XINPUT_FUNC(DWORD, XInputGetState, (_In_ DWORD dwUserIndex, _Out_ XINPUT_STATE* pState))
+DEF_WIN_XINPUT_FUNC(DWORD, XInputSetState, (_In_ DWORD dwUserIndex, _In_ XINPUT_VIBRATION* pVibration))
+DEF_WIN_XINPUT_FUNC(DWORD, XInputGetCapabilities, (_In_ DWORD dwUserIndex, _In_ DWORD dwFlags, _Out_ XINPUT_CAPABILITIES* pCapabilities))
+DEF_WIN_XINPUT_FUNC(DWORD, XInputGetBatteryInformation, (_In_ DWORD dwUserIndex, _In_ BYTE devType, _Out_ XINPUT_BATTERY_INFORMATION* pBatteryInformation))
 
 // NTDLL
 /*
@@ -63,4 +63,4 @@ DEF_WIN_DLL_END
 #undef DEF_WIN_DLL_BEGIN
 #undef DEF_WIN_DLL_END
 #undef DEF_WIN_FUNC
-#undef DEF_WIN_XIFUNC
+#undef DEF_WIN_XINPUT_FUNC

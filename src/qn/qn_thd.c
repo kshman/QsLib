@@ -1,6 +1,5 @@
 ﻿#include "pch.h"
 #include "qs_qn.h"
-#include "qs_ctn.h"
 #ifdef _QN_UNIX_
 #include <pthread.h>
 #include <semaphore.h>
@@ -37,7 +36,6 @@ bool qn_spin_try(QnSpinLock* lock)
 //
 uint qn_spin_enter(QnSpinLock* lock)
 {
-	const uint backoff = 64;
 	uint intrinsics = 0;
 #if defined _MSC_VER && (defined _M_IX86 || defined _M_X64)
 	// Intel(R) 64 and IA-32 Architectures Optimization Reference Manual, May 2020 Example 2-4
@@ -45,8 +43,9 @@ uint qn_spin_enter(QnSpinLock* lock)
 	uint current = 1;
 	while (_InterlockedExchange((long volatile*)lock, 1) != 0)
 	{
-		while (__iso_volatile_load32((int*)lock) != 0) {
-			for (int count = current; count != 0; --count)
+		const uint backoff = 64;
+		while (__iso_volatile_load32(lock) != 0) {
+			for (uint count = current; count != 0; --count)
 			{
 				intrinsics++;
 				qn_pause();
@@ -66,6 +65,7 @@ uint qn_spin_enter(QnSpinLock* lock)
 #else
 	for (; !qn_spin_try(lock); intrinsics++)
 	{
+		const uint backoff = 64;
 		if (intrinsics < backoff)
 			qn_pause();
 		else
@@ -176,7 +176,7 @@ void qn_thread_down(void)
 	}
 #endif
 
-	for (QnRealThread *next = NULL, *node = thread_impl.threads; node; node = next)
+	for (QnRealThread *next, *node = thread_impl.threads; node; node = next)
 	{
 		next = node->next;
 		_qn_thd_free(node, thread_impl.tls_index, true);
@@ -198,7 +198,7 @@ static void _qn_pthread_make_null(pthread_t* p)
 #endif
 
 //
-static void _qn_thd_free(QnRealThread* self, uint tls_count, bool force)
+static void _qn_thd_free(QnRealThread* self, const uint tls_count, const bool force)
 {
 	for (uint i = 0; i < tls_count; i++)
 	{
@@ -230,10 +230,10 @@ static void _qn_thd_free(QnRealThread* self, uint tls_count, bool force)
 }
 
 //
-static int _qn_thd_conv_busy(QnRealThread* self)
+static int _qn_thd_conv_busy(const QnRealThread* self)
 {
 #ifdef _QN_WINDOWS_
-	int n = GetThreadPriority(self->handle);
+	const int n = GetThreadPriority(self->handle);
 	switch (n)
 	{
 		case THREAD_PRIORITY_IDLE:			return -2;
@@ -250,7 +250,7 @@ static int _qn_thd_conv_busy(QnRealThread* self)
 }
 
 //
-static bool _qn_thd_set_busy(QnRealThread* self, int busy)
+static bool _qn_thd_set_busy(const QnRealThread* self, const int busy)
 {
 #ifdef _QN_WINDOWS_
 	switch (busy)
@@ -276,7 +276,7 @@ typedef struct tagTHREADNAME_INFO
 {
 	DWORD dwType; // Must be 0x1000.
 	LPCSTR szName; // Pointer to name (in user addr space).
-	DWORD dwThreadID; // Thread ID (-1=caller thread).
+	DWORD dwThreadId; // Thread ID (-1=caller thread).
 	DWORD dwFlags; // Reserved for future use, must be zero.
 } THREADNAME_INFO;
 #pragma pack(pop)
@@ -300,7 +300,7 @@ static void _qn_thd_set_name(QnRealThread* self)
 	if (Win32SetThreadDescription != NULL)
 	{
 		wchar* pw = qn_u8to16_dup(self->base.name, 0);
-		HRESULT hr = Win32SetThreadDescription(self->handle, pw);
+		const HRESULT hr = Win32SetThreadDescription(self->handle, pw);
 		qn_free(pw);
 		if (hr == S_OK)
 			return;
@@ -312,7 +312,7 @@ static void _qn_thd_set_name(QnRealThread* self)
 	{
 		.dwType = 0x1000,
 		.szName = self->base.name,
-		.dwThreadID = (DWORD)-1,
+		.dwThreadId = (DWORD)-1,
 		.dwFlags = 0,
 	};
 #pragma warning(push)
@@ -329,7 +329,7 @@ static void _qn_thd_set_name(QnRealThread* self)
 }
 
 //
-static void _qn_thd_exit(QnRealThread* self, bool call_exit)
+static void _qn_thd_exit(QnRealThread* self, const bool call_exit)
 {
 	if (self->base.managed)
 	{
@@ -348,7 +348,7 @@ static void _qn_thd_exit(QnRealThread* self, bool call_exit)
 		QN_UNLOCK(thread_impl.lock);
 	}
 
-	uint tls_count = thread_impl.tls_index;
+	const uint tls_count = thread_impl.tls_index;
 	_qn_thd_free(self, tls_count, false);
 #ifdef _QN_WINDOWS_
 	TlsSetValue(thread_impl.self_tls, NULL);
@@ -367,14 +367,13 @@ static void _qn_thd_exit(QnRealThread* self, bool call_exit)
 //
 static QnRealThread* _qn_thd_test_self(void)
 {
-	QnRealThread* self = (QnRealThread*)
 #ifdef _QN_WINDOWS_
-		TlsGetValue(thread_impl.self_tls);
+	QnRealThread* self = (QnRealThread*)TlsGetValue(thread_impl.self_tls);
 #else
-		pthread_getspecific(thread_impl.self_tls);
+	QnRealThread* self = (QnRealThread*)pthread_getspecific(thread_impl.self_tls);
 #endif
 	return self;
-	}
+}
 
 //
 QnThread* qn_thread_self(void)
@@ -385,7 +384,7 @@ QnThread* qn_thread_self(void)
 
 	self = qn_alloc_zero_1(QnRealThread);
 #ifdef _QN_WINDOWS_
-	HANDLE process = GetCurrentProcess();
+	const HANDLE process = GetCurrentProcess();
 	self->id = GetCurrentThreadId();
 	DuplicateHandle(process, GetCurrentThread(), process, &self->handle, 0, FALSE, DUPLICATE_SAME_ACCESS);
 #else
@@ -416,7 +415,7 @@ QnThread* qn_thread_self(void)
 }
 
 //
-QnThread* qn_thread_new(const char* restrict name, QnThreadCallback func, void* data, uint stack_size, int busy)
+QnThread* qn_thread_new(const char* restrict name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
 {
 	QnRealThread* self = qn_alloc_zero_1(QnRealThread);
 
@@ -445,20 +444,20 @@ QnThread* qn_thread_new(const char* restrict name, QnThreadCallback func, void* 
 }
 
 //
-void qn_thread_delete(QnThread* thread)
+void qn_thread_delete(QnThread* self)
 {
-	qn_ret_if_fail(thread->canwait != false);
-	QnRealThread* self = (QnRealThread*)thread;
+	qn_ret_if_fail(self->canwait != false);
+	QnRealThread* real = (QnRealThread*)self;
 
-	qn_thread_wait(thread);
+	qn_thread_wait(self);
 
-	if (self->base.managed)
+	if (real->base.managed)
 	{
-		self->base.managed = false;
+		real->base.managed = false;
 		QN_LOCK(thread_impl.lock);
 		for (QnRealThread *prev = NULL, *node = thread_impl.threads; node; prev = node, node = node->next)
 		{
-			if (node != (QnRealThread*)self)
+			if (node != (QnRealThread*)real)
 				continue;
 			if (prev)
 				prev->next = node->next;
@@ -469,12 +468,12 @@ void qn_thread_delete(QnThread* thread)
 		QN_UNLOCK(thread_impl.lock);
 	}
 
-	qn_free(self->base.name);
-	qn_free(self);
+	qn_free(real->base.name);
+	qn_free(real);
 }
 
 //
-bool qn_thread_once(const char* restrict name, QnThreadCallback func, void* data, uint stack_size, int busy)
+bool qn_thread_once(const char* restrict name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
 {
 	QnRealThread* self = qn_alloc_zero_1(QnRealThread);
 
@@ -530,63 +529,63 @@ static void* _qn_thd_entry(void* data)
 }
 
 //
-bool qn_thread_start(QnThread* thread)
+bool qn_thread_start(QnThread* self)
 {
-	QnRealThread* self = (QnRealThread*)thread;
+	QnRealThread* real = (QnRealThread*)self;
 
 #ifdef _QN_WINDOWS_
-	qn_val_if_fail(self->handle == NULL, false);
+	qn_val_if_fail(real->handle == NULL, false);
 
-	self->handle = CreateThread(NULL, self->base.stack_size, &_qn_thd_entry, self, 0, &self->id);
-	if (self->handle == NULL || self->handle == INVALID_HANDLE_VALUE)
+	real->handle = CreateThread(NULL, real->base.stack_size, &_qn_thd_entry, real, 0, &real->id);
+	if (real->handle == NULL || real->handle == INVALID_HANDLE_VALUE)
 		qn_debug_halt("THREAD", "cannot start thread");
 #else
-	qn_val_if_ok(_qn_pthread_is_null(&self->handle), false);
+	qn_val_if_ok(_qn_pthread_is_null(&real->handle), false);
 
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 
-	if (self->base.stack_size != 0)
+	if (real->base.stack_size != 0)
 	{
-		size_t stack_size = QN_MAX(thread_impl.max_stack, self->base.stack_size);
+		size_t stack_size = QN_MAX(thread_impl.max_stack, real->base.stack_size);
 		pthread_attr_setstacksize(&attr, stack_size);
 	}
 
-	int detach = self->base.canwait ? PTHREAD_CREATE_JOINABLE : PTHREAD_CREATE_DETACHED;
+	int detach = real->base.canwait ? PTHREAD_CREATE_JOINABLE : PTHREAD_CREATE_DETACHED;
 	pthread_attr_setdetachstate(&attr, detach);
 
-	int result = pthread_create(&self->handle, &attr, _qn_thd_entry, self);
+	int result = pthread_create(&real->handle, &attr, _qn_thd_entry, real);
 	if (result != 0)
 		qn_debug_halt("THREAD", "cannot start thread");
 #endif
 
-	if (_qn_thd_set_busy(self, self->base.busy) == false)
-		self->base.busy = _qn_thd_conv_busy(self);
+	if (_qn_thd_set_busy(real, real->base.busy) == false)
+		real->base.busy = _qn_thd_conv_busy(real);
 	return true;
 }
 
 //
-void* qn_thread_wait(QnThread* thread)
+void* qn_thread_wait(QnThread* self)
 {
-	QnRealThread* self = (QnRealThread*)thread;
-	qn_val_if_fail(self->base.canwait != false, NULL);
+	QnRealThread* real = (QnRealThread*)self;
+	qn_val_if_fail(real->base.canwait != false, NULL);
 #ifdef _QN_WINDOWS_
-	qn_val_if_fail(self->handle != NULL, NULL);
+	qn_val_if_fail(real->handle != NULL, NULL);
 
-	DWORD dw = WaitForSingleObjectEx(self->handle, INFINITE, FALSE);
+	const DWORD dw = WaitForSingleObjectEx(real->handle, INFINITE, FALSE);
 	if (dw != WAIT_OBJECT_0)
 		qn_debug_halt("THREAD", "thread wait failed");
-	CloseHandle(self->handle);
-	self->handle = NULL;
+	CloseHandle(real->handle);
+	real->handle = NULL;
 #else
-	qn_val_if_ok(_qn_pthread_is_null(&self->handle), NULL);
+	qn_val_if_ok(_qn_pthread_is_null(&real->handle), NULL);
 
 	void* ret;
-	pthread_join(self->handle, &ret);
-	_qn_pthread_make_null(&self->handle);
+	pthread_join(real->handle, &ret);
+	_qn_pthread_make_null(&real->handle);
 #endif
 
-	return self->base.cb_ret;
+	return real->base.cb_ret;
 }
 
 //
@@ -598,23 +597,23 @@ void qn_thread_exit(void* ret)
 	_qn_thd_exit((QnRealThread*)self, true);
 }
 
-int qn_thread_get_busy(QnThread* self)
+int qn_thread_get_busy(const QnThread* self)
 {
 	return self->busy;
 }
 
 //
-bool qn_thread_set_busy(QnThread* thread, int busy)
+bool qn_thread_set_busy(QnThread* self, const int busy)
 {
-	QnRealThread* self = (QnRealThread*)thread;
+	QnRealThread* real = (QnRealThread*)self;
 #ifdef _QN_WINDOWS_
-	qn_val_if_fail(self->handle != NULL, false);
+	qn_val_if_fail(real->handle != NULL, false);
 #else
-	qn_val_if_fail(self->handle != 0, false);
+	qn_val_if_fail(real->handle != 0, false);
 #endif
-	if (!_qn_thd_set_busy(self, busy))
+	if (!_qn_thd_set_busy(real, busy))
 		return false;
-	self->base.busy = busy;
+	real->base.busy = busy;
 	return true;
 }
 
@@ -623,10 +622,8 @@ bool qn_thread_set_busy(QnThread* thread, int busy)
 // TLS
 
 //
-QnTls qn_tls(paramfunc_t callback)
+QnTls qn_tls(const paramfunc_t callback)
 {
-	QnTls self;
-
 	QN_LOCK(thread_impl.lock);
 	if (thread_impl.tls_index >= MAX_TLS)
 	{
@@ -634,7 +631,7 @@ QnTls qn_tls(paramfunc_t callback)
 		qn_debug_halt("THREAD", "too many TLS used");
 	}
 
-	self = (int)thread_impl.tls_index;
+	const QnTls self = (int)thread_impl.tls_index;
 	thread_impl.tls_callback[thread_impl.tls_index++] = callback;
 	QN_UNLOCK(thread_impl.lock);
 
@@ -642,9 +639,9 @@ QnTls qn_tls(paramfunc_t callback)
 }
 
 //
-void qn_tlsset(QnTls tls, void* restrict data)
+void qn_tlsset(const QnTls tls, void* restrict data)
 {
-	uint nth = (uint)tls;
+	const uint nth = (uint)tls;
 	qn_ret_if_fail(nth < (uint)QN_COUNTOF(thread_impl.tls_callback));
 
 	QnRealThread* thd = (QnRealThread*)qn_thread_self();
@@ -652,12 +649,12 @@ void qn_tlsset(QnTls tls, void* restrict data)
 }
 
 //
-void* qn_tlsget(QnTls tls)
+void* qn_tlsget(const QnTls tls)
 {
-	uint nth = (uint)tls;
+	const uint nth = (uint)tls;
 	qn_val_if_fail(nth < (uint)QN_COUNTOF(thread_impl.tls_callback), NULL);
 
-	QnRealThread* thd = _qn_thd_test_self();
+	const QnRealThread* thd = _qn_thd_test_self();
 	return thd == NULL ? NULL : thd->tls[nth];
 }
 
@@ -858,7 +855,7 @@ struct QnSem
 QnSem* qn_sem_new(int initial)
 {
 #ifdef _QN_WINDOWS_
-	HANDLE handle = CreateSemaphoreEx(NULL, initial, 32 * 1024, NULL, 0, SEMAPHORE_ALL_ACCESS);
+	const HANDLE handle = CreateSemaphoreEx(NULL, initial, 32 * 1024, NULL, 0, SEMAPHORE_ALL_ACCESS);
 	if (handle == NULL || handle == INVALID_HANDLE_VALUE)
 		qn_debug_halt("SEM", "semaphore creation failed");
 
@@ -871,7 +868,7 @@ QnSem* qn_sem_new(int initial)
 	{
 		qn_debug_halt("SEM", "semaphore creation failed");
 		return NULL;
-}
+	}
 
 	QnSem* self = qn_alloc_1(QnSem);
 	self->sem = sem;

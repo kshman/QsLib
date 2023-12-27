@@ -490,11 +490,14 @@ typedef struct QgUdevMonitor
 {
 	char				name[64];
 	uint				no;
-	QmPoint				position;
+	uint				x;
+	uint				y;
 	uint				width;
 	uint				height;
+	uint				depth;
 	uint				mmwidth;
 	uint				mmheight;
+	void*				oshandle;
 } QgUdevMonitor;
 
 /// @brief 이벤트
@@ -667,8 +670,8 @@ QSAPI void qg_close_stub(void);
 QSAPI int qg_feature(int feature, bool enable);
 
 /// @brief 스터브 윈도우 타이틀 설정
-/// @param title 타이틀 문자열
-QSAPI void qg_set_title(const char* u8text);
+/// @param title 타이틀 문자열(UTF-8)
+QSAPI void qg_set_title(const char* title);
 
 /// @brief 스터브 루프를 처리한다
 /// @return 거짓이면 프로그램을 종료한다

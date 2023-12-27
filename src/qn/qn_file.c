@@ -1,4 +1,6 @@
-﻿#include "pch.h"
+﻿// ReSharper disable CppParameterMayBeConst
+
+#include "pch.h"
 #include "qs_qn.h"
 #include <fcntl.h>
 #ifdef _QN_UNIX_
@@ -559,7 +561,7 @@ void qn_file_delete(QnFile* self)
 }
 
 //
-int qn_file_get_flags(const QnFile* self, int mask)
+int qn_file_get_flags(const QnFile* self, const int mask)
 {
 	return (self->flag & mask) != 0;
 }
@@ -571,7 +573,7 @@ const char* qn_file_get_name(const QnFile* self)
 }
 
 //
-int qn_file_read(QnFile* self, void* restrict buffer, int offset, int size)
+int qn_file_read(QnFile* self, void* restrict buffer, const int offset, const int size)
 {
 	qn_val_if_fail(buffer != NULL, -1);
 	qn_val_if_fail(size >= 0, 0);
@@ -586,7 +588,7 @@ int qn_file_read(QnFile* self, void* restrict buffer, int offset, int size)
 }
 
 //
-int qn_file_write(QnFile* self, const void* restrict buffer, int offset, int size)
+int qn_file_write(QnFile* self, const void* restrict buffer, const int offset, const int size)
 {
 	qn_val_if_fail(buffer != NULL, -1);
 	qn_val_if_fail(size >= 0, 0);
@@ -634,11 +636,11 @@ llong qn_file_tell(QnFile* self)
 }
 
 //
-llong qn_file_seek(QnFile* self, llong offset, QnSeek org)
+llong qn_file_seek(QnFile* self, const llong offset, const QnSeek org)
 {
 #ifdef _QN_WINDOWS_
 	static_assert(FILE_BEGIN == QNSEEK_BEGIN && FILE_CURRENT == QNSEEK_CUR && FILE_END == QNSEEK_END, "QnSeek not equal to OS seek");
-	const LARGE_INTEGER* po = (LARGE_INTEGER*)&offset;
+	const LARGE_INTEGER* po = (const LARGE_INTEGER*)&offset;
 	LARGE_INTEGER ll;
 	const BOOL b = SetFilePointerEx(self->fd, *po, &ll, org);
 	return b ? ll.QuadPart : -1;
@@ -690,7 +692,7 @@ int qn_file_vprintf(QnFile* self, const char* restrict fmt, va_list va)
 }
 
 //
-bool qn_file_exist(const char* restrict filename, /*RET-NULLABLE*/bool* isdir)
+bool qn_file_exist(const char* restrict filename, /*RET-NULLABLE*/bool* is_dir)
 {
 	qn_val_if_fail(filename, false);
 
@@ -707,8 +709,8 @@ bool qn_file_exist(const char* restrict filename, /*RET-NULLABLE*/bool* isdir)
 	{
 		FindClose(h);
 
-		if (isdir != NULL)
-			*isdir = (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+		if (is_dir != NULL)
+			*is_dir = (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
 		return true;
 	}
@@ -720,8 +722,8 @@ bool qn_file_exist(const char* restrict filename, /*RET-NULLABLE*/bool* isdir)
 		return false;
 	else
 	{
-		if (isdir != NULL)
-			*isdir = (s.st_mode & 0x4000) != 0;
+		if (is_dir != NULL)
+			*is_dir = (s.st_mode & 0x4000) != 0;
 
 		return true;
 	}
@@ -729,7 +731,7 @@ bool qn_file_exist(const char* restrict filename, /*RET-NULLABLE*/bool* isdir)
 }
 
 //
-bool qn_file_exist_l(const wchar* restrict filename, /*RET-NULLABLE*/bool* isdir)
+bool qn_file_exist_l(const wchar* restrict filename, /*RET-NULLABLE*/bool* is_dir)
 {
 	qn_val_if_fail(filename, false);
 
@@ -743,8 +745,8 @@ bool qn_file_exist_l(const wchar* restrict filename, /*RET-NULLABLE*/bool* isdir
 	{
 		FindClose(h);
 
-		if (isdir != NULL)
-			*isdir = (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+		if (is_dir != NULL)
+			*is_dir = (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
 		return true;
 	}
@@ -758,8 +760,8 @@ bool qn_file_exist_l(const wchar* restrict filename, /*RET-NULLABLE*/bool* isdir
 		return false;
 	else
 	{
-		if (isdir != NULL)
-			*isdir = (s.st_mode & 0x4000) != 0;
+		if (is_dir != NULL)
+			*is_dir = (s.st_mode & 0x4000) != 0;
 
 		return true;
 	}
@@ -773,7 +775,7 @@ size_t qn_file_get_max_alloc_size(void)
 }
 
 //
-void qn_file_set_max_alloc_size(size_t n)
+void qn_file_set_max_alloc_size(const size_t n)
 {
 	max_file_alloc_size = n == 0 ? (512ULL * 1024ULL * 1024ULL) : n;
 }
@@ -1101,7 +1103,7 @@ int qn_dir_tell(QnDir* self)
 }
 
 //
-void qn_dir_seek(QnDir* self, int pos)
+void qn_dir_seek(QnDir* self, const int pos)
 {
 #ifdef _QN_WINDOWS_
 	if (pos < 0)
@@ -1185,7 +1187,7 @@ char* qn_dir_base_path(void)
 	qn_assert(i > 0 && "베이스 패스가 잘못된거 같은데요!");
 	pw[i + 1] = L'\0';
 
-	size_t sz = qn_u16to8(NULL, 0, pw, 0);
+	const size_t sz = qn_u16to8(NULL, 0, pw, 0);
 	path = qn_alloc(sz + 1, char);
 	qn_u16to8(path, sz + 1, pw, 0);
 	qn_free(pw);
@@ -1239,13 +1241,13 @@ char* qn_dir_base_path(void)
 // 모듈
 
 // 모듈 플래그
-enum QnModFlag
+typedef enum QnModFlag
 {
 	QNMDF_SYSTEM = QN_BIT(0),			// 시스템 모듈 (load 인수로 true)를 입력했을 때 반응하도록 함
 	QNMDF_RESIDENT = QN_BIT(1),			// 로드된 모듈로 만들어졌을 때
 	QNMDF_MULTIPLE = QN_BIT(2),			// 한번 이상 모듈이 만들어졌을 때
 	QNMDF_SELF = QN_BIT(7),				// 실행파일
-};
+} QnModFlag;
 
 // 단위 모듈 내용
 struct QnModule
@@ -1281,12 +1283,12 @@ void qn_module_up(void)
 //
 void qn_module_down(void)
 {
-	QnModule *next, *node = module_impl.modules;
+	QnModule* node = module_impl.modules;
 	while (node)
 	{
+		QnModule* next = node->next;
 		if (QN_TMASK(node->flags, QNMDF_SYSTEM | QNMDF_RESIDENT | QNMDF_MULTIPLE) == false)
 			qn_debug_outputf(false, "MODULE", "'%s' not unloaded (ref: %d)", node->filename, node->ref);
-		next = node->next;
 		if (QN_TMASK(node->flags, QNMDF_RESIDENT) == false && node->handle != NULL)
 #ifdef _QN_WINDOWS_
 			FreeLibrary(node->handle);
@@ -1306,7 +1308,7 @@ void qn_module_down(void)
 }
 
 //
-static QnModule* _qn_module_find(const char* filename, size_t hash)
+static QnModule* _qn_module_find(const char* filename, const size_t hash)
 {
 	QnModule* find = NULL;
 	QN_LOCK(module_impl.lock);
@@ -1358,7 +1360,7 @@ QnModule* qn_mod_self(void)
 	QnModule* self = qn_alloc_zero_1(QnModule);
 	self->handle = handle;
 	self->ref = 1;
-	self->flags = QNMDF_RESIDENT | QNMDF_SELF;
+	self->flags = (QnModFlag)(QNMDF_RESIDENT | QNMDF_SELF);
 
 	QN_LOCK(module_impl.lock);
 	module_impl.self = self;
@@ -1368,13 +1370,13 @@ QnModule* qn_mod_self(void)
 }
 
 //
-QnModule* qn_mod_load(const char* filename, int flags)
+QnModule* qn_mod_load(const char* filename, const int flags)
 {
 	qn_val_if_fail(filename != NULL, NULL);
 
 	qn_set_error(NULL);
 
-	size_t hash = qn_strhash(filename);
+	const size_t hash = qn_strhash(filename);
 	QnModule* self = _qn_module_find(filename, hash);
 	if (self != NULL)
 	{
@@ -1383,6 +1385,7 @@ QnModule* qn_mod_load(const char* filename, int flags)
 		return self;
 	}
 
+	QnModFlag mod_flag = (QnModFlag)flags;
 #ifdef _QN_WINDOWS_
 	wchar* pw = qn_u8to16_dup(filename, 0);
 #ifdef __WINRT__
@@ -1390,7 +1393,7 @@ QnModule* qn_mod_load(const char* filename, int flags)
 #else
 	HMODULE handle = GetModuleHandle(pw);
 	if (handle != NULL)
-		flags |= QNMDF_RESIDENT;
+		mod_flag |= QNMDF_RESIDENT;
 	else
 		handle = LoadLibrary(pw);
 #endif
@@ -1409,7 +1412,7 @@ QnModule* qn_mod_load(const char* filename, int flags)
 	self->hash = hash;
 	self->filename = qn_strdup(filename);
 	self->ref = 1;
-	self->flags = (enum QnModFlag)flags;
+	self->flags = mod_flag;
 	self->handle = handle;
 
 	QN_LOCK(module_impl.lock);
@@ -1420,7 +1423,7 @@ QnModule* qn_mod_load(const char* filename, int flags)
 }
 
 //
-static void _qn_mod_free(QnModule * self, bool dispose)
+static void _qn_mod_free(QnModule * self, const bool dispose)
 {
 	if (self->handle != NULL)
 	{
@@ -1488,7 +1491,7 @@ void* qn_mod_func(QnModule* self, const char* restrict name)
 }
 
 //
-int qn_mod_ref(QnModule* self)
+int qn_mod_ref(const QnModule* self)
 {
 	return self->ref;
 }

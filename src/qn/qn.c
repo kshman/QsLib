@@ -15,9 +15,9 @@ extern void qn_thread_down(void);
 
 // 프로퍼티
 QN_DECL_MUKUM(QnPropMukum, char*, char*);
-QN_MUKUM_CHAR_PTR_KEY(QnPropMukum);
-QN_MUKUM_KEY_FREE(QnPropMukum);
-QN_MUKUM_VALUE_FREE(QnPropMukum);
+QN_MUKUM_CHAR_PTR_KEY(QnPropMukum)
+QN_MUKUM_KEY_FREE(QnPropMukum)
+QN_MUKUM_VALUE_FREE(QnPropMukum)
 
 // 닫아라
 struct Closure
@@ -186,7 +186,7 @@ const char* qn_get_prop(const char* name)
 //
 const char* qn_get_error(void)
 {
-	char* mesg = (char*)qn_tlsget(runtime_impl.error);
+	const char* mesg = (const char*)qn_tlsget(runtime_impl.error);
 	return mesg;
 }
 
@@ -199,18 +199,17 @@ void qn_set_error(const char* mesg)
 }
 
 //
-bool qn_set_syserror(int errcode)
+bool qn_set_syserror(const int errcode)
 {
 	char* prev = (char*)qn_tlsget(runtime_impl.error);
 	qn_free(prev);
 
-	if (errcode == 0)
 #ifdef _QN_WINDOWS_
-		errcode = GetLastError();
+	DWORD ec = errcode == 0 ? GetLastError() : (DWORD)errcode;
 #else
-		errcode = errno;
+	int ec = errcode == 0 ? errno : errcode;
 #endif
-	if (errcode == 0)
+	if (ec == 0)
 	{
 		qn_tlsset(runtime_impl.error, NULL);
 		return false;	// 에러가 없다
@@ -219,22 +218,22 @@ bool qn_set_syserror(int errcode)
 	char* buf;
 #ifdef _QN_WINDOWS_
 	DWORD dw = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
-		NULL, (DWORD)errcode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), NULL, 0, NULL) + 1;
+		NULL, ec, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), NULL, 0, NULL) + 1;
 	if (dw == 1)
-		buf = qn_apsprintf("unknown error: %d", errcode);
+		buf = qn_apsprintf("unknown error: %u", ec);
 	else
 	{
 		wchar* pw = qn_alloc(dw, wchar);
 		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
-			NULL, (DWORD)errcode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), pw, dw, NULL);
+			NULL, ec, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), pw, dw, NULL);
 		dw -= 2;
 		pw[dw] = L'\0';
 		buf = qn_wcstombs_dup(pw, dw); // u16to8이 좋을지도 모르겠지만 윈도우 기본 출력은 멀티바이트 스트링
 		qn_free(pw);
 	}
 #else
-	const char* psz = strerror(errcode);
-	buf = psz == NULL ? qn_apsprintf("unknown error: %d", errcode) : qn_strdup(psz);
+	const char* psz = strerror(ec);
+	buf = psz == NULL ? qn_apsprintf("unknown error: %d", ec) : qn_strdup(psz);
 #endif
 	qn_tlsset(runtime_impl.error, buf);
 	return true;

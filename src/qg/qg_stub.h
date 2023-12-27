@@ -58,9 +58,9 @@ extern void stub_system_enable_drop(bool enable);
 // 시스템 도움꾼 켜고 끄기
 extern void stub_system_disable_acs(bool enable);
 // 시스템 스크린 세이버 켜고 끄기
-extern void stub_system_diable_scrsave(bool enable);
+extern void stub_system_disable_scr_save(bool enable);
 // 시스템 타이틀 설정
-extern void stub_system_set_title(const char* u8text);
+extern void stub_system_set_title(const char* title);
 // 시스템 바운드 영역을 업데이트한다
 extern void stub_system_update_bound(void);
 // 시스템 스터브를 포커스로 만든다
