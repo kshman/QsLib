@@ -494,7 +494,7 @@ typedef struct QgUdevMonitor
 	uint				y;
 	uint				width;
 	uint				height;
-	uint				depth;
+	uint				refresh;
 	uint				mmwidth;
 	uint				mmheight;
 	void*				oshandle;

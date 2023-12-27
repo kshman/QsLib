@@ -122,9 +122,8 @@
     <ClInclude Include="..\inc\qs_ctn.h" />
     <ClInclude Include="..\inc\qs_math.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="qg\glad\glad.h" />
-    <ClInclude Include="qg\glad\glad_proxy.h" />
-    <ClInclude Include="qg\glad\khrplatform.h" />
+    <ClInclude Include="qg\glad\gl.h" />
+    <ClInclude Include="qg\glad\gles2.h" />
     <ClInclude Include="qg\qgwin_func.h" />
     <ClInclude Include="qg\qgwin_stub.h" />
     <ClInclude Include="qg\qgwlx_func.h" />
@@ -133,6 +132,20 @@
     <ClInclude Include="qg\qggl_supp.h" />
     <ClInclude Include="qg\qggl_base.h" />
     <ClInclude Include="qg\qg_stub.h" />
+    <ClInclude Include="qg\wayland\wayland-client-protocol-code.h" />
+    <ClInclude Include="qg\wayland\wayland-client-protocol.h" />
+    <ClInclude Include="qg\wayland\wayland-idle-inhibit-unstable-v1-client-protocol-code.h" />
+    <ClInclude Include="qg\wayland\wayland-idle-inhibit-unstable-v1-client-protocol.h" />
+    <ClInclude Include="qg\wayland\wayland-pointer-constraints-unstable-v1-client-protocol-code.h" />
+    <ClInclude Include="qg\wayland\wayland-pointer-constraints-unstable-v1-client-protocol.h" />
+    <ClInclude Include="qg\wayland\wayland-relative-pointer-unstable-v1-client-protocol-code.h" />
+    <ClInclude Include="qg\wayland\wayland-relative-pointer-unstable-v1-client-protocol.h" />
+    <ClInclude Include="qg\wayland\wayland-viewporter-client-protocol-code.h" />
+    <ClInclude Include="qg\wayland\wayland-viewporter-client-protocol.h" />
+    <ClInclude Include="qg\wayland\wayland-xdg-decoration-client-protocol-code.h" />
+    <ClInclude Include="qg\wayland\wayland-xdg-decoration-client-protocol.h" />
+    <ClInclude Include="qg\wayland\wayland-xdg-shell-client-protocol-code.h" />
+    <ClInclude Include="qg\wayland\wayland-xdg-shell-client-protocol.h" />
     <ClInclude Include="qn\zlib\crc32.h" />
     <ClInclude Include="qn\zlib\deflate.h" />
     <ClInclude Include="qn\zlib\gzguts.h" />
@@ -150,7 +163,6 @@
   <ItemGroup>
     <ClCompile Include="..\zconsole\zz.c" />
     <ClCompile Include="pch.c" />
-    <ClCompile Include="qg\glad\glad.c" />
     <ClCompile Include="qg\qgwin_stub.c" />
     <ClCompile Include="qg\qgwlx_stub.c" />
     <ClCompile Include="qg\qg_kmc.c" />

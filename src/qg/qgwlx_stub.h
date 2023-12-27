@@ -20,14 +20,34 @@ typedef struct WaylandMonitor
 {
 	QgUdevMonitor		base;
 
-	wchar				adapter[32];
-	wchar				display[32];
+	uint32_t			name;
+	int					mode;
+	float				scale_factor;
+
+	enum wl_output_transform	transform;
 } WaylandMonitor;
 
 // 웨이랜드 스터브
 typedef struct WaylandStub
 {
 	StubBase			base;
+
+	struct wl_display*						display;
+	struct wl_registry*						registry;
+	struct wl_compositor*					compositor;
+	struct wl_subcompositor*				subcompositor;
+	struct wl_shm*							shm;
+	struct wl_seat*							seat;
+	struct wl_pointer*						pointer;
+	struct wl_keyboard*						keyboard;
+	struct wl_data_device_manager*			data_device_manager;
+	struct wl_data_device*					data_device;
+	struct xdg_wm_base*						wm_base;
+	struct zxdg_decoration_manager_v1*		decoration_manager;
+	struct wp_viewporter*					view_porter;
+	struct zwp_relative_pointer_manager_v1*	relative_pointer_manager;
+	struct zwp_pointer_constraints_v1*		pointer_constraints;
+	struct zwp_idle_inhibit_manager_v1*		idle_inhibit_manager;
 
 #if false
 	HINSTANCE			instance;
