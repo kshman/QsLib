@@ -334,62 +334,11 @@ void qg_set_title(const char* title)
 }
 
 //
-bool stub_track_mouse_click(QimButton button, QimTrack track)
-{
-	QgUimMouse* m = &qg_stub_instance->mouse;
-
-	if (track == QIMT_MOVE)
-	{
-		if (m->clk.tick > 0)
-		{
-			const int dx = m->clk.loc.x - m->pt.x;
-			const int dy = m->clk.loc.y - m->pt.y;
-			const uint d = (uint)(dx * dx) + (uint)(dy * dy);
-			if (d > m->lim.move)
-			{
-				// 마우스가 move 만큼 움직이면 두번 누르기 취소
-				m->clk.tick = 0;
-			}
-		}
-	}
-	else if (track == QIMT_DOWN)
-	{
-		if (m->clk.tick == 0)
-		{
-			m->clk.tick = (uint)qn_tick();
-			m->clk.loc = m->pt;
-			m->clk.btn = button;
-		}
-		else
-		{
-			if (m->clk.btn == button)
-			{
-				const uint d = (uint)qn_tick() - m->clk.tick;
-				if (d < m->lim.tick)
-				{
-					// 더블 클릭으로 인정
-					m->clk.ltick = m->clk.tick;
-					m->clk.tick = 0;
-					return true;
-				}
-			}
-			// 취소
-			m->clk.tick = 0;
-		}
-	}
-	else if (track == QIMT_UP)
-	{
-		// 버튼 업은 검사 안하지
-	}
-
-	return false;
-}
-
-//
 void qg_exit_loop(void)
 {
 	qn_ret_if_fail(qg_stub_instance);
 	QN_SMASK(&qg_stub_instance->stats, QGSSTT_EXIT, true);
+	qg_add_signal_event(QGEV_EXIT, true);
 }
 
 //
@@ -455,10 +404,10 @@ const QgUimMouse* qg_get_mouse_info(void)
 }
 
 //
-bool qg_set_prop_double_click(uint density, uint interval)
+bool qg_set_double_click_prop(uint density, uint interval)
 {
-	qn_val_if_fail((size_t)density < 50, false);
-	qn_val_if_fail((size_t)interval <= 5000, false);
+	qn_val_if_fail(density < 50, false);
+	qn_val_if_fail(interval <= 5000, false);
 
 	QgUimMouse* m = &qg_stub_instance->mouse;
 	m->lim.move = density * density;
@@ -470,18 +419,14 @@ bool qg_set_prop_double_click(uint density, uint interval)
 bool qg_test_key(QikKey key)
 {
 	qn_val_if_fail((size_t)key < QIK_MAX_VALUE && key != QIK_NONE, false);
-	byte nth = (byte)key / 8;
-	byte bit = (byte)key % 8;
-	return QN_TBIT(qg_stub_instance->key.key[nth], bit);
+	return qg_stub_instance->key.key[key];
 }
 
 //
 void qg_set_key(QikKey key, bool down)
 {
 	qn_ret_if_fail((size_t)key < QIK_MAX_VALUE && key != QIK_NONE);
-	byte nth = (byte)key / 8;
-	byte bit = (byte)key % 8;
-	QN_SBIT(&qg_stub_instance->key.key[nth], bit, down);
+	qg_stub_instance->key.key[key] = down;
 }
 
 //
@@ -540,36 +485,98 @@ bool qg_pop_event(QgEvent* ev)
 }
 
 //
-int qg_add_event(const QgEvent* ev)
+int qg_add_event(const QgEvent* ev, bool prior)
 {
 	qn_val_if_fail(ev, -1);
 
-	if (ev->ev == QGEV_WINDOW)
+	if (prior)
 	{
-		// 중복 이벤트는 해시로 저장
-		size_t key = (QGEV_WINDOW << 16) | (ushort)(ev->wevent.mesg & 0xFFFF);
-		shed_event_prior_queue(key, ev);
-	}
-	else if (ev->ev == QGEV_ACTIVE)
-	{
-		// 액티브 이벤트도 해시로 저장
-		shed_event_prior_queue(QGEV_ACTIVE, ev);
+		// 우선 순위 이벤트. 키는 이벤트 번호로
+		shed_event_prior_queue(ev->ev, ev);
 	}
 	else
 	{
-		// 기본 이벤트는 리스트로 저장
+		// 그냥 이벤트는 리스트로 저장
 		if (shed_event_queue(ev) == false)
 			return -2;
 	}
 
-	return (int)qn_nodelist_count(&shed_event.queue);
+	return qg_left_events();
 }
 
 //
-int qg_add_event_type(QgEventType type)
+int qg_add_signal_event(QgEventType type, bool prior)
 {
 	const QgEvent e = { .ev = type };
-	return qg_add_event(&e);
+	return qg_add_event(&e, prior);
+}
+
+//
+int qg_add_key_event(const QgEvent* ev, size_t key)
+{
+	qn_val_if_fail(ev, -1);
+	qn_val_if_fail(key != 0, -3);
+	shed_event_prior_queue(key, ev);
+	return qg_left_events();
+}
+
+//
+void stub_toggle_keys(QikMask keymask, bool on)
+{
+	QgUimKey* uk = &qg_stub_instance->key;
+	QN_SMASK(&uk->mask, keymask, on);
+}
+
+//
+bool stub_track_mouse_click(QimButton button, QimTrack track)
+{
+	QgUimMouse* m = &qg_stub_instance->mouse;
+
+	if (track == QIMT_MOVE)
+	{
+		if (m->clk.tick > 0)
+		{
+			const int dx = m->clk.loc.x - m->pt.x;
+			const int dy = m->clk.loc.y - m->pt.y;
+			const uint d = (uint)(dx * dx) + (uint)(dy * dy);
+			if (d > m->lim.move)
+			{
+				// 마우스가 move 만큼 움직이면 두번 누르기 취소
+				m->clk.tick = 0;
+			}
+		}
+	}
+	else if (track == QIMT_DOWN)
+	{
+		if (m->clk.tick == 0)
+		{
+			m->clk.tick = (uint)qn_tick();
+			m->clk.loc = m->pt;
+			m->clk.btn = button;
+		}
+		else
+		{
+			if (m->clk.btn == button)
+			{
+				const uint d = (uint)qn_tick() - m->clk.tick;
+				if (d < m->lim.tick)
+				{
+					// 더블 클릭으로 인정
+					m->clk.ltick = m->clk.tick;
+					m->clk.tick = 0;
+					return true;
+				}
+			}
+			// 취소
+			m->clk.tick = 0;
+		}
+	}
+	else if (track == QIMT_UP)
+	{
+		// 버튼 업은 검사 안하지
+	}
+
+	return false;
 }
 
 //
@@ -591,17 +598,24 @@ bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary)
 		if (nth >= 0)
 			qn_pctnr_remove_nth(&stub->monitors, nth);
 	}
+
+	// 모니터 번호 재할당
 	size_t i;
 	qn_pctnr_each_index(&stub->monitors, i, { qn_pctnr_nth(&stub->monitors, i)->no = (int)i; });
 
+	// 이벤트
 	QgUdevMonitor* another = qn_memdup(monitor, sizeof(QgUdevMonitor));
 	e.monitor.monitor = another;
 
 	shed_event_reserved_mem(another);
-	bool ret = qg_add_event(&e) > 0;
+	bool ret = qg_add_event(&e, false) > 0;
 
+	// 연결 끊긴 모니터는.. 뭐 그렇지
 	if (connected == false)
+	{
 		qn_free(monitor);
+		stub_system_update_bound();		// 위치가 바꼈을 수도 있다! 보통은 윈도우 메시지가 먼저 옴
+	}
 	return ret;
 }
 
@@ -619,7 +633,7 @@ bool stub_event_on_layout(bool enter)
 	QN_SMASK(&stub->stats, QGSSTT_LAYOUT, false);
 
 	QmSize prev = stub->client_size;
-	stub_system_calc_layout();
+	stub_system_update_bound();
 	if (qm_eq(&prev, &stub->client_size) == false)
 	{
 		// 크기가 변하면 레이아웃
@@ -629,7 +643,7 @@ bool stub_event_on_layout(bool enter)
 			.layout.bound = stub->window_bound,
 			.layout.size = stub->client_size,
 		};
-		return qg_add_event(&e) > 0;
+		return qg_add_event(&e, true) > 0;
 	}
 
 	return false;
@@ -643,42 +657,71 @@ bool stub_event_on_window_event(QgWindowEventType type, int param1, int param2)
 	switch (type)
 	{
 		case QGWEV_SHOW:
+			if (QN_TBIT(stub->window_stats, QGWEV_SHOW))
+				return false;
+			QN_SMASK(&stub->window_stats, QN_BIT(QGWEV_MINIMIZED) | QN_BIT(QGWEV_HIDE), false);
 			QN_SBIT(&stub->window_stats, QGWEV_SHOW, true);
+			// TODO: 풀스크린 플래그가 있다면 여기서 풀스크린으로 만들어야 한다
 			break;
+
 		case QGWEV_HIDE:
+			if (QN_TBIT(stub->window_stats, QGWEV_SHOW) == false)
+				return false;
 			QN_SBIT(&stub->window_stats, QGWEV_SHOW, false);
+			QN_SBIT(&stub->window_stats, QGWEV_HIDE, true);
+			// TODO: 풀스크린 플래그가 있다면 관련 기능 해제
 			break;
+
 		case QGWEV_PAINTED:
 			break;
-		case QGWEV_RESTORED:	// 갑자기 커졌거나, 크기 복귀 하면 사이즈 메시지가 없어서 레이아웃 처리함
-			QN_SBIT(&stub->window_stats, QGWEV_SHOW, true);
-			if (QN_TMASK(stub->stats, QGSSTT_LAYOUT) == false)
-				stub_system_calc_layout();
+
+		case QGWEV_RESTORED:
+			if (QN_TMASK(stub->window_stats, QN_BIT(QGWEV_MINIMIZED) | QN_BIT(QGWEV_MAXIMIZED)) == false)
+				return false;
+			QN_SMASK(&stub->window_stats, QN_BIT(QGWEV_MINIMIZED) | QN_BIT(QGWEV_MAXIMIZED), false);
 			break;
-		case QGWEV_MAXIMIZED:	// 갑자기 커졌거나, 크기 복귀 하면 사이즈 메시지가 없어서 레이아웃 처리함
-			QN_SBIT(&stub->window_stats, QGWEV_SHOW, true);
-			stub_system_calc_layout();
+
+		case QGWEV_MAXIMIZED:
+			if (QN_TBIT(stub->window_stats, QGWEV_MAXIMIZED))
+				return false;
+			QN_SBIT(&stub->window_stats, QGWEV_MINIMIZED, false);
+			QN_SBIT(&stub->window_stats, QGWEV_MAXIMIZED, true);
 			break;
+
 		case QGWEV_MINIMIZED:
-			QN_SBIT(&stub->window_stats, QGWEV_SHOW, false);
+			if (QN_TBIT(stub->window_stats, QGWEV_MINIMIZED))
+				return false;
+			QN_SBIT(&stub->window_stats, QGWEV_MAXIMIZED, false);
+			QN_SBIT(&stub->window_stats, QGWEV_MINIMIZED, true);
+			// SDL은 최소화 금지처리 기능이 있다
 			break;
+
 		case QGWEV_MOVED:
+			if (QN_TMASK(stub->flags, QGFLAG_FULLSCREEN))
+				return false;
 			if (stub->window_bound.left == param1 && stub->window_bound.top == param2)
-				return 0;
+				return false;
 			qm_rect_move(&stub->window_bound, param1, param2);
+			// SDL은 모니터 검사를 하고 다르면 모니터 이벤트를 추가한다
 			break;
+
 		case QGWEV_SIZED:
 			if (qm_rect_width(&stub->window_bound) == param1 && qm_rect_height(&stub->window_bound) == param2)
 				return 0;
 			qm_rect_resize(&stub->window_bound, param1, param2);
+			// 여기도 SDL은 모니터 검사를 하고 다르면 모니터 이벤트를 추가한다
 			break;
+
 		case QGWEV_FOCUS:
 			QN_SBIT(&stub->window_stats, QGWEV_FOCUS, true);
 			break;
+
 		case QGWEV_LOSTFOCUS:
 			QN_SBIT(&stub->window_stats, QGWEV_FOCUS, false);
 			break;
+
 		case QGWEV_CLOSE:
+			qg_add_signal_event(QGEV_EXIT, true);
 			break;
 	}
 
@@ -689,7 +732,7 @@ bool stub_event_on_window_event(QgWindowEventType type, int param1, int param2)
 		.wevent.param1 = param1,
 		.wevent.param2 = param2,
 	};
-	return qg_add_event(&e) > 0;
+	return qg_add_key_event(&e, (QGEV_WINDOW << 16) | (ushort)type) > 0;
 }
 
 //
@@ -708,7 +751,7 @@ bool stub_event_on_text(const char* text)
 		if (add == 0)
 			break;
 		pos += add;
-		ret = qg_add_event(&e) > 0;
+		ret = qg_add_event(&e, false) > 0;
 	}
 	return ret;
 }
@@ -775,7 +818,7 @@ bool stub_event_on_keyboard(QikKey key, bool down)
 	e.key.key = key;
 	e.key.mask = uk->mask;
 
-	return qg_add_event(&e) > 0;
+	return qg_add_event(&e, false) > 0;
 }
 
 //
@@ -785,18 +828,14 @@ bool stub_event_on_reset_keys(void)
 	QgUimKey* uk = &qg_stub_instance->key;
 
 	bool ret = false;
-	for (int i = 0; i < QIK_MAX_VALUE / 8 + 1; i++)
+	for (int i = 0; i < QIK_MAX_VALUE; i++)
 	{
-		byte key = uk->key[i];
-		if (key == 0)
+		if (uk->key[i] == false)
 			continue;
-		for (int n = 0; n < 8; n++)
-		{
-			if (QN_TBIT(key, n) == false)
-				continue;
-			e.key.key = (QikKey)(i * 8 + n);
-			ret = qg_add_event(&e) > 0;
-		}
+		uk->key[i] = false;
+		e.key.key = (QikKey)i;
+		if (qg_add_event(&e, false) <= 0)
+			ret = false;
 	}
 	return ret;
 }
@@ -815,7 +854,7 @@ bool stub_event_on_mouse_move(void)
 		.mmove.delta.x = um->last.x - um->pt.x,
 		.mmove.delta.y = um->last.y - um->pt.y,
 	};
-	return qg_add_event(&e) > 0;
+	return qg_add_event(&e, false) > 0;
 }
 
 //
@@ -831,7 +870,7 @@ bool stub_event_on_mouse_button(QimButton button, bool down)
 		.mbutton.button = button,
 		.mbutton.mask = um->mask,
 	};
-	bool ret = qg_add_event(&e) > 0;
+	bool ret = qg_add_event(&e, false) > 0;
 
 	if (stub_track_mouse_click(button, down ? QIMT_DOWN : QIMT_UP))
 	{
@@ -842,7 +881,7 @@ bool stub_event_on_mouse_button(QimButton button, bool down)
 			.mbutton.button = button,
 			.mbutton.mask = um->mask,
 		};
-		ret = qg_add_event(&de) > 0;
+		ret = qg_add_event(&de, false) > 0;
 	}
 
 	return ret;
@@ -899,7 +938,7 @@ bool stub_event_on_mouse_wheel(float x, float y, bool direction)
 		.mwheel.precise = um->wheel.precise,
 		.mwheel.direction = direction,
 	};
-	return qg_add_event(&e) > 0;
+	return qg_add_event(&e, false) > 0;
 }
 
 //
@@ -911,7 +950,7 @@ bool stub_event_on_active(bool active, double delta)
 		.active.active = active,
 		.active.delta = delta,
 	};
-	return qg_add_event(&e) > 0;
+	return qg_add_event(&e, true) > 0;
 }
 
 //
@@ -928,7 +967,7 @@ bool stub_event_on_drop(char* data, int len, bool finish)
 		s_enter = true;
 		QN_SMASK(&qg_stub_instance->stats, QGSSTT_DROP, true);
 		const QgEvent eb = { .drop.ev = QGEV_DROPBEGIN, };
-		ret = qg_add_event(&eb) > 0;
+		ret = qg_add_event(&eb, false) > 0;
 		if (ret == false)
 			return false;
 	}
@@ -939,7 +978,7 @@ bool stub_event_on_drop(char* data, int len, bool finish)
 		.drop.len = len,
 		.drop.data = data,
 	};
-	ret = qg_add_event(&e) > 0;
+	ret = qg_add_event(&e, false) > 0;
 
 	if (finish)
 	{
@@ -947,11 +986,4 @@ bool stub_event_on_drop(char* data, int len, bool finish)
 		s_enter = false;
 	}
 	return ret;
-}
-
-//
-void stub_toggle_keys(QikMask keymask, bool on)
-{
-	QgUimKey* uk = &qg_stub_instance->key;
-	QN_SMASK(&uk->mask, keymask, on);
 }

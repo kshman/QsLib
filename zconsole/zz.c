@@ -10,12 +10,12 @@ int main()
 	if (!qg_open_stub(NULL, 0, 0, 0, flags | features))
 		return -1;
 
+	QgEvent ev;
 	while (qg_loop())
 	{
-		QgEvent ev;
 		while (qg_poll(&ev))
 		{
-			const char* evstr = qg_event_str(ev.ev);
+			const char* evstr = qg_string_event(ev.ev);
 
 			if (ev.ev == QGEV_MOUSEMOVE)
 			{
@@ -23,16 +23,19 @@ int main()
 			}
 			else if (ev.ev == QGEV_WINDOW)
 			{
-				const char* wevstr = qg_window_event_str(ev.wevent.mesg);
+				const char* wevstr = qg_string_window_event(ev.wevent.mesg);
 				qn_outputf("\tWINDOW EVENT => %d:%s", ev.wevent.mesg, wevstr);
+			}
+			else if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_ESC)
+			{
+				qg_exit_loop();
 			}
 			else
 			{
 				qn_outputf("STUB EVENT => %d:%s", ev.ev, evstr);
+				if (ev.ev == QGEV_EXIT)
+					break;
 			}
-
-			if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_ESC)
-				qg_exit_loop();
 		}
 	}
 

@@ -61,8 +61,10 @@ extern void stub_system_disable_acs(bool enable);
 extern void stub_system_diable_scrsave(bool enable);
 // 시스템 타이틀 설정
 extern void stub_system_set_title(const char* u8text);
-// 레이아웃을 계산한다
-extern void stub_system_calc_layout(void);
+// 시스템 바운드 영역을 업데이트한다
+extern void stub_system_update_bound(void);
+// 시스템 스터브를 포커스로 만든다
+extern void stub_system_focus(void);
 
 // 내부적으로 마우스 눌림을 연산한다
 extern bool stub_track_mouse_click(QimButton button, QimTrack track);

@@ -53,6 +53,7 @@ typedef struct WindowsStub
 
 	wchar*				class_name;
 	wchar*				window_title;
+	DWORD				window_style;
 
 	STICKYKEYS			acs_sticky;
 	TOGGLEKEYS			acs_toggle;

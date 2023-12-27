@@ -20,7 +20,7 @@
 #endif
 
 // 선언부
-#pragma region 선언부
+#pragma region DLL 함수와 스터브 선언
 // DLL 선언
 #define DEF_WIN_FUNC(ret,name,args)		QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
 #define DEF_WIN_XIFUNC(ret,name,args)	QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
@@ -121,7 +121,7 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	}
 
 	// 크기 및 윈도우 위치
-	WindowsMonitor* monitor = (WindowsMonitor*)qn_pctnr_nth(&winStub.base.monitors,
+	const WindowsMonitor* monitor = (const WindowsMonitor*)qn_pctnr_nth(&winStub.base.monitors,
 		(size_t)display < qn_pctnr_count(&winStub.base.monitors) ? display : 0);
 	winStub.base.display = monitor->base.no;
 
@@ -146,26 +146,29 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 		}
 	}
 
-	QmSize scrsize = { monitor->base.width, monitor->base.height };
-	RECT rect;
+	const QmSize scrsize = { (int)monitor->base.width, (int)monitor->base.height };
+	QmSize clientsize;
 	if (width > 256 && height > 256)
-		SetRect(&rect, 0, 0, width, height);
+		qm_set2(&clientsize, width, height);
 	else
 	{
 		if (QN_TMASK(flags, QGFLAG_FULLSCREEN))
-			SetRect(&rect, 0, 0, scrsize.width, scrsize.height);
+			qm_set2(&clientsize, scrsize.width, scrsize.height);
 		else
 		{
 			if (scrsize.height > 800)
-				SetRect(&rect, 0, 0, 1280, 720);
+				qm_set2(&clientsize, 1280, 720);
 			else
-				SetRect(&rect, 0, 0, 720, 450);
+				qm_set2(&clientsize, 720, 450);
 		}
 	}
+
+	RECT rect;
+	SetRect(&rect, 0, 0, clientsize.width, clientsize.height);
 	AdjustWindowRect(&rect, style, FALSE);
 
+	const QmSize size = { rect.right - rect.left, rect.bottom - rect.top };
 	QmPoint pos = { monitor->base.position.x, monitor->base.position.y };
-	QmSize size = { rect.right - rect.left, rect.bottom - rect.top };
 	if (QN_TMASK(flags, QGFLAG_FULLSCREEN) == false)
 	{
 		pos.x += (scrsize.width - size.width) / 2;
@@ -174,6 +177,8 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 
 	// 값설정
 	qm_rect_set_pos_size(&winStub.base.window_bound, &pos, &size);
+	winStub.base.client_size = clientsize;
+
 	winStub.mouse_cursor = LoadCursor(NULL, IDC_ARROW);
 	winStub.window_title = qn_u8to16_dup(title ? title : "QS", 0);
 	winStub.deadzone_min = -CTRL_DEAD_ZONE;
@@ -189,7 +194,7 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 		QN_SMASK(&uk->mask, QIKM_NUM, true);
 
 	//윈도우 만들기
-	winStub.hwnd = CreateWindowEx(0, winStub.class_name, winStub.window_title,
+	winStub.hwnd = CreateWindowEx(WS_EX_APPWINDOW, winStub.class_name, winStub.window_title,
 		style, pos.x, pos.y, size.width, size.height,
 		NULL, NULL, winStub.instance, NULL);
 	if (winStub.hwnd == NULL)
@@ -198,19 +203,24 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 		return false;
 	}
 
+	// TODO: DPI 설정
+
+	// 표시하고
 	ShowWindow(winStub.hwnd, SW_SHOWNORMAL);
 	UpdateWindow(winStub.hwnd);
 
 	// 최종 스타일 변경
 	if (QN_TMASK(winStub.base.flags, QGFLAG_FULLSCREEN | QGFLAG_NOTITLE))
+	{
 		SetWindowLong(winStub.hwnd, GWL_STYLE, WS_POPUP | WS_SYSMENU | WS_VISIBLE);
+		winStub.window_style = (DWORD)(GWL_STYLE, WS_POPUP | WS_SYSMENU | WS_VISIBLE);
+	}
 	else
 	{
-		style = GetWindowLong(winStub.hwnd, GWL_STYLE);
-		SetWindowLong(winStub.hwnd, GWL_STYLE, style);
+		winStub.window_style = (DWORD)GetWindowLong(winStub.hwnd, GWL_STYLE);
+		SetWindowLong(winStub.hwnd, GWL_STYLE, (LONG)winStub.window_style);
 	}
-
-	stub_system_calc_layout();
+	stub_system_update_bound();
 
 	return true;
 }
@@ -249,8 +259,7 @@ void stub_system_finalize(void)
 //
 bool stub_system_poll(void)
 {
-	_Pragma("warning(suppress:28159)")
-		DWORD tick = GetTickCount() + 1;
+	_Pragma("warning(suppress:28159)") const DWORD tick = GetTickCount() + 1;
 	int count = 0;
 	MSG msg;
 
@@ -269,6 +278,7 @@ bool stub_system_poll(void)
 		}
 	}
 
+	// 쉬프트는 SYSKEYDOWN에서 처리 못한다. 마찬가지로 WIN키도 그런데 그건 후킹서 처리
 	if (qg_test_key(QIK_LSHIFT) && (GetKeyState(VK_LSHIFT) & 0x8000) == 0)
 		stub_event_on_keyboard(QIK_LSHIFT, false);
 	if (qg_test_key(QIK_RSHIFT) && (GetKeyState(VK_RSHIFT) & 0x8000) == 0)
@@ -367,7 +377,7 @@ void stub_system_set_title(const char* u8text)
 }
 
 //
-void stub_system_calc_layout(void)
+void stub_system_update_bound(void)
 {
 	RECT rect;
 
@@ -376,6 +386,15 @@ void stub_system_calc_layout(void)
 
 	GetClientRect(winStub.hwnd, &rect);
 	qm_set2(&winStub.base.client_size, rect.right - rect.left, rect.bottom - rect.top);
+
+}
+
+//
+void stub_system_focus(void)
+{
+	BringWindowToTop(winStub.hwnd);
+	SetForegroundWindow(winStub.hwnd);
+	SetFocus(winStub.hwnd);
 }
 #pragma endregion 시스템 함수
 
@@ -400,7 +419,7 @@ static bool _dll_init(void)
 {
 	static bool loaded = false;
 	qn_val_if_ok(loaded, true);
-	QnModule* module;
+	QnModule* module = NULL;
 	const char* dllname = NULL;
 	static char xinput_dll[64] = "XINPUT1_9";
 	for (int i = 4; i >= 1; i--)
@@ -438,7 +457,7 @@ static LRESULT CALLBACK _key_hook_callback(int code, WPARAM wp, LPARAM lp)
 	if (code < 0 || code != HC_ACTION || QN_TMASK(winStub.base.stats, QGSSTT_ACTIVE) == false)
 		return Win32CallNextHookEx(winStub.key_hook, code, wp, lp);
 
-	LPKBDLLHOOKSTRUCT kh = (LPKBDLLHOOKSTRUCT)lp;
+	const LPKBDLLHOOKSTRUCT kh = (LPKBDLLHOOKSTRUCT)lp;
 	switch (kh->vkCode)
 	{
 		case VK_LWIN: case VK_RWIN:
@@ -499,7 +518,9 @@ static BOOL CALLBACK _enum_display_callback(HMONITOR monitor, HDC dc, RECT* rect
 {
 	QN_DUMMY(dc);
 	QN_DUMMY(rect);
-	MONITORINFOEX mi = { sizeof(MONITORINFOEX), };
+	MONITORINFOEX mi;
+	ZeroMemory(&mi, sizeof(mi));
+	mi.cbSize = sizeof(mi);
 	if (GetMonitorInfo(monitor, (LPMONITORINFO)&mi))
 	{
 		WindowsMonitor* wm = (WindowsMonitor*)lp;
@@ -529,7 +550,7 @@ static WindowsMonitor* _get_monitor_info(DISPLAY_DEVICE* adev, DISPLAY_DEVICE* d
 	dm.dmSize = sizeof(DEVMODE);
 	EnumDisplaySettings(adev->DeviceName, ENUM_CURRENT_SETTINGS, &dm);
 
-	HDC hdc = CreateDC(L"DISPLAY", adev->DeviceName, NULL, NULL);
+	const HDC hdc = CreateDC(L"DISPLAY", adev->DeviceName, NULL, NULL);
 	mon->base.mmwidth = (uint)GetDeviceCaps(hdc, HORZSIZE);	// (int)(dm.dmPelsWidth * 25.4f / GetDeviceCaps(hdc, LOGPIXELSX))
 	mon->base.mmheight = (uint)GetDeviceCaps(hdc, VERTSIZE);	// (int)(dm.dmPelsHeight * 25.4f / GetDeviceCaps(hdc, LOGPIXELSY))
 	DeleteDC(hdc);
@@ -540,7 +561,8 @@ static WindowsMonitor* _get_monitor_info(DISPLAY_DEVICE* adev, DISPLAY_DEVICE* d
 	mon->base.height = (uint)dm.dmPelsHeight;
 
 	RECT rect;
-	SetRect(&rect, dm.dmPosition.x, dm.dmPosition.y, dm.dmPosition.x + dm.dmPelsWidth, dm.dmPosition.y + dm.dmPelsHeight);
+	SetRect(&rect, dm.dmPosition.x, dm.dmPosition.y,
+		(int)dm.dmPosition.x + (int)dm.dmPelsWidth, (int)dm.dmPosition.y + (int)dm.dmPelsHeight);
 	EnumDisplayMonitors(NULL, &rect, _enum_display_callback, (LPARAM)mon);
 	return mon;
 }
@@ -554,7 +576,7 @@ static bool _detect_displays(void)
 	size_t i;
 	for (DWORD adapter = 0; ; adapter++)
 	{
-		DISPLAY_DEVICE adev = { sizeof(DISPLAY_DEVICE), };
+		DISPLAY_DEVICE adev = { .cb = sizeof(DISPLAY_DEVICE), };
 		if (EnumDisplayDevices(NULL, adapter, &adev, 0) == FALSE)
 			break;
 		if (QN_TMASK(adev.StateFlags, DISPLAY_DEVICE_ACTIVE) == false)
@@ -563,7 +585,7 @@ static bool _detect_displays(void)
 		DWORD display;
 		for (display = 0; ; display++)
 		{
-			DISPLAY_DEVICE ddev = { sizeof(DISPLAY_DEVICE), };
+			DISPLAY_DEVICE ddev = { .cb = sizeof(DISPLAY_DEVICE), };
 			if (EnumDisplayDevices(adev.DeviceName, display, &ddev, 0) == FALSE)
 				break;
 			if (QN_TMASK(ddev.StateFlags, DISPLAY_DEVICE_ACTIVE) == false)
@@ -571,7 +593,7 @@ static bool _detect_displays(void)
 
 			qn_pctnr_each_index(&keep, i,
 				{
-					WindowsMonitor * mon = (WindowsMonitor*)qn_pctnr_nth(&keep, i);
+					const WindowsMonitor * mon = (WindowsMonitor*)qn_pctnr_nth(&keep, i);
 					if (mon == NULL || qn_wcseqv(mon->display, ddev.DeviceName) == false)
 						continue;
 					qn_pctnr_set(&keep, i, NULL);
@@ -589,7 +611,7 @@ static bool _detect_displays(void)
 		{
 			qn_pctnr_each_index(&keep, i,
 				{
-					WindowsMonitor * mon = (WindowsMonitor*)qn_pctnr_nth(&keep, i);
+					const WindowsMonitor * mon = (WindowsMonitor*)qn_pctnr_nth(&keep, i);
 					if (mon == NULL || qn_wcseqv(mon->adapter, adev.DeviceName) == false)
 						continue;
 					qn_pctnr_set(&keep, i, NULL);
@@ -636,7 +658,7 @@ static void _hold_mouse(bool hold)
 // 마우스 이벤트 소스
 static WindowsMouseSource _get_mouse_source(void)
 {
-	LPARAM info = GetMessageExtraInfo();
+	const LPARAM info = GetMessageExtraInfo();
 	if (IsPenEvent(info))
 	{
 		if (QN_TMASK(info, 0x80))
@@ -653,7 +675,7 @@ static void _set_mouse_point(LPARAM lp, bool save)
 		return;
 
 	QgUimMouse* mouse = &winStub.base.mouse;
-	POINT pt = { .x = GET_X_LPARAM(lp), .y = GET_Y_LPARAM(lp) };
+	const POINT pt = { .x = GET_X_LPARAM(lp), .y = GET_Y_LPARAM(lp) };
 
 	// TODO: 클리핑 영역 처리
 
@@ -683,7 +705,7 @@ static void _check_mouse_button(bool pressed, QimMask mask, QimButton button)
 // 마우스 눌림 해제 (한번에 처리)
 static void _check_mouse_release(void)
 {
-	QimMask mask = winStub.base.mouse.mask;
+	const QimMask mask = winStub.base.mouse.mask;
 	if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) == 0)
 		_check_mouse_button(FALSE, mask, QIM_LEFT);
 	if ((GetAsyncKeyState(VK_RBUTTON) & 0x8000) == 0)
@@ -702,7 +724,7 @@ static void _check_mouse_release(void)
 // 키보드 메시지
 static bool _mesg_keyboard(WPARAM wp, bool down)
 {
-	byte key = (byte)(wp & 0xFF);
+	const byte key = (byte)(wp & 0xFF);
 
 #ifdef _DEBUG
 	if (down && key == VK_F12)
@@ -718,11 +740,11 @@ static bool _mesg_keyboard(WPARAM wp, bool down)
 // 액티브 메시지
 static void _mesg_active(bool focus)
 {
-	double now = winStub.base.timer->abstime;
-	double delta = now - winStub.base.active;
+	const double now = winStub.base.timer->abstime;
+	const double delta = now - winStub.base.active;
 	winStub.base.active = now;
 
-	bool has_focus = GetForegroundWindow() == winStub.hwnd;
+	const bool has_focus = GetForegroundWindow() == winStub.hwnd;
 	if (has_focus != focus)
 		return;
 
@@ -775,7 +797,7 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 			.windows.wparam = wp,
 			.windows.lparam = lp,
 		};
-		qg_add_event(&e);
+		qg_add_event(&e, false);
 	}
 
 #ifdef DEBUG_WINPROC_MESG
@@ -888,7 +910,7 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 				ValidateRect(hwnd, NULL);
 				stub_event_on_window_event(QGWEV_PAINTED, 0, 0);
 			}
-			return 0;
+			result = 0;
 		} break;
 
 		case WM_CLOSE:
@@ -964,9 +986,11 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 			InvalidateRect(hwnd, NULL, FALSE);
 		}break;
 
+#if false
 		case WM_INPUTLANGCHANGE:
 			//result = 1;
 			break;
+#endif
 
 		case WM_NCCALCSIZE:
 			break;
@@ -980,15 +1004,11 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 				return HTCLIENT;
 			break;
 
-		case WM_NCLBUTTONUP:
-			// 타이틀 눌림
-			break;
-
 		case WM_DISPLAYCHANGE:
 			break;
 
 		case WM_NCCREATE:
-			if (Win32EnableNonClientDpiScaling != NULL)
+			if (Win32EnableNonClientDpiScaling != NULL && QN_TMASK(winStub.base.flags, QGFLAG_DPISCALE))
 				Win32EnableNonClientDpiScaling(hwnd);
 			break;
 
@@ -1091,9 +1111,38 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 			break;
 
 		case WM_DPICHANGED:
-			break;
+		{
+			if (QN_TMASK(winStub.base.flags, QGFLAG_DPISCALE) ||
+				Win32AdjustWindowRectExForDpi != NULL)
+			{
+				RECT* const suggested = (RECT*)lp;
+				SetWindowPos(hwnd, HWND_TOP, suggested->left, suggested->top,
+					suggested->right - suggested->left, suggested->bottom - suggested->top,
+					SWP_NOACTIVATE | SWP_NOZORDER);
+			}
+#if false
+			const float xdpi = HIWORD(wp) / 96.0f;
+			const float ydpi = LOWORD(wp) / 96.0f;
+			// TODO: 여기에 DPI 변경 알림 이벤트 날리면 좋겠네
+#endif
+		} break;
 
 		case WM_GETDPISCALEDSIZE:
+		{
+			if (QN_TMASK(winStub.base.flags, QGFLAG_DPISCALE) ||
+				Win32AdjustWindowRectExForDpi == NULL)
+				break;
+			RECT src = { 0, 0, 0, 0 };
+			RECT dst = { 0, 0, 0, 0 };
+			Win32AdjustWindowRectExForDpi(&src, winStub.window_style, FALSE, WS_EX_APPWINDOW, Win32GetDpiForWindow(hwnd));
+			Win32AdjustWindowRectExForDpi(&dst, winStub.window_style, FALSE, WS_EX_APPWINDOW, LOWORD(wp));
+			SIZE* size = (SIZE*)lp;
+			size->cx += (dst.right - dst.left) - (src.right - src.left);
+			size->cy += (dst.bottom - dst.top) - (src.bottom - src.top);
+			result = 1;
+		} break;
+
+		default:
 			break;
 	}
 
@@ -1101,7 +1150,7 @@ pos_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-	}
+}
 #pragma endregion 윈도우 메시지
 
 #endif

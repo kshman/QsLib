@@ -269,7 +269,7 @@ static bool _qn_thd_set_busy(QnRealThread* self, int busy)
 }
 
 #ifdef _QN_WINDOWS_
-typedef HRESULT(WINAPI *PFWinSetThreadDescription)(HANDLE, PCWSTR);
+typedef HRESULT(WINAPI *PFWin32SetThreadDescription)(HANDLE, PCWSTR);
 const DWORD MS_VC_EXCEPTION = 0x406D1388;
 #pragma pack(push,8)
 typedef struct tagTHREADNAME_INFO
@@ -290,17 +290,17 @@ static void _qn_thd_set_name(QnRealThread* self)
 #ifdef _QN_WINDOWS_
 #ifndef __WINRT__
 	static QnModule* kernel32 = NULL;
-	static PFWinSetThreadDescription WinSetThreadDescription = NULL;
+	static PFWin32SetThreadDescription Win32SetThreadDescription = NULL;
 	if (kernel32 == NULL)
 	{
 		kernel32 = qn_mod_load("KERNEL32", 0);
 		if (kernel32 != NULL)
-			WinSetThreadDescription = (PFWinSetThreadDescription)qn_mod_func(kernel32, "SetThreadDescription");
+			Win32SetThreadDescription = (PFWin32SetThreadDescription)qn_mod_func(kernel32, "SetThreadDescription");
 	}
-	if (WinSetThreadDescription != NULL)
+	if (Win32SetThreadDescription != NULL)
 	{
 		wchar* pw = qn_u8to16_dup(self->base.name, 0);
-		HRESULT hr = WinSetThreadDescription(self->handle, pw);
+		HRESULT hr = Win32SetThreadDescription(self->handle, pw);
 		qn_free(pw);
 		if (hr == S_OK)
 			return;

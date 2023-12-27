@@ -324,7 +324,7 @@ QikMask kmod_to_qikm(int modifier)
 // stub
 
 //
-const char* qg_event_str(QgEventType ev)
+const char* qg_string_event(QgEventType ev)
 {
 #ifndef __EMSCRIPTEN__
 	static struct EventMap
@@ -368,7 +368,7 @@ const char* qg_event_str(QgEventType ev)
 }
 
 //
-const char* qg_window_event_str(QgWindowEventType wev)
+const char* qg_string_window_event(QgWindowEventType wev)
 {
 #ifndef __EMSCRIPTEN__
 	static struct WindowEventMap

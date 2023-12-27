@@ -135,7 +135,7 @@ QN_EXTC_BEGIN
 
 // function
 #define QN_TODO(todo)		_QN_PRAGMA(message("TODO: " #todo " (" QN_FNAME ")"))
-#define QN_DUMMY(dummy)		(void)dummy;
+#define QN_DUMMY(dummy)		(void)dummy
 #define QN_STRING(x)		_QN_STRING(x)					/// @brief 문자열로 정의
 #define QN_UNICODE(x)		_QN_UNICODE(x)					/// @brief 유니코드로 정의
 #define QN_CONCAT_2(x,y)	_QN_CONCAT_2(x, y)				/// @brief 두개 문구 합침
@@ -151,7 +151,7 @@ QN_EXTC_BEGIN
 #define QN_ABS(v)			(((v)<0)?-(v):(v))				/// @brief 절대값 얻기
 #define QN_CLAMP(v,l,h)		((v)<(l)?(l):(v)>(h)?(h):(v))	/// @brief 숫자를 최소/최대값으로 자르기
 
-#define QN_BIT(b)			(1<<(b))						/// @brief 비트 만들기
+#define QN_BIT(b)			(1<<(b))						/// @brief 마스크 만들기
 #define QN_TBIT(v,bit)		(((v)&(1<<(bit)))!=0)			/// @brief 비트가 있나 비교
 #define QN_TMASK(v,m)		(((v)&(m))!=0)					/// @brief 마스크가 있나 비교
 #ifdef _MSC_VER
