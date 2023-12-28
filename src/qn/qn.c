@@ -45,7 +45,10 @@ static struct RuntimeImpl
 	QnTls			error;
 
 	QnPropMukum		props;
-} runtime_impl = { false, };
+} runtime_impl =
+{
+	.inited = false,
+};
 
 #if !defined _LIB && !defined _STATIC
 // 공유 라이브러리용 그냥 더미

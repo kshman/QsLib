@@ -82,7 +82,7 @@ extern WindowsStub winStub;
 	typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;\
 	extern QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
 #endif
-#include "qgwin_func.h"
+#include "qgwin_stub_func.h"
 
 // 별명
 #define SetProcessDPIAware					Win32SetProcessDPIAware

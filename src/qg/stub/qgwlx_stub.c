@@ -47,7 +47,7 @@ static void _wlx_display_registry(void);
 #define DEF_WLX_FUNC(ret,name,args)\
 	typedef ret(*QN_CONCAT(PFN_, name)) args;\
 	QN_CONCAT(PFN_, name) QN_CONCAT(wlx_, name);
-#include "qgwlx_func.h"
+#include "qgwlx_stub_func.h"
 
 // SO 함수
 static void* wlx_so_func(QnModule* module, const char* so_name, const char* func_name)
@@ -78,7 +78,7 @@ static bool wlx_so_init(void)
 	if (QN_CONCAT(wlx_, name) == NULL) {\
 		qn_debug_outputf(true, "WAYLAND STUB", "%s: '%s' in '%s'", "load failed", QN_STRING(NAME), so_name);\
 		return false; }
-#include "qgwlx_func.h"
+#include "qgwlx_stub_func.h"
 	return loaded = true;
 }
 #pragma endregion SO 처리
@@ -128,11 +128,11 @@ bool stub_system_open(const char* title, const int display, const int width, con
 		return false;
 	}
 
-	wlxStub.registry = wl_display_get_registry(wlxStub.display);
-	wlx_display_registry();
-
 	//
 	stub_initialize((StubBase*)&wlxStub, flags);
+
+	wlxStub.registry = wl_display_get_registry(wlxStub.display);
+	wlx_display_registry();
 
 
 	return true;

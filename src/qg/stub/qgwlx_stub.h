@@ -94,7 +94,7 @@ extern WaylandStub wlxStub;
 	typedef ret(*QN_CONCAT(PFN_, name)) args;\
 	extern QN_CONCAT(PFN_, name) QN_CONCAT(wlx_, name);
 #endif
-#include "qgwlx_func.h"
+#include "qgwlx_stub_func.h"
 
 // 별명
 #define wl_display_cancel_read						wlx_wl_display_cancel_read

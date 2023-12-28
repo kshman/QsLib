@@ -37,7 +37,7 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
 #define DEF_WIN_FUNC(ret,name,args)\
 	typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;\
 	QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
-#include "qgwin_func.h"
+#include "qgwin_stub_func.h"
 
 // DLL 함수
 static void* _load_dll_func(QnModule* module, const char* dll_name, const char* func_name)
@@ -81,7 +81,7 @@ static bool _dll_init(void)
 #define DEF_WIN_DLL_END }
 #define DEF_WIN_FUNC(ret,name,args)\
 	QN_CONCAT(Win32, name) = (QN_CONCAT(PFNWin32, name))_load_dll_func(module, dll_name, QN_STRING(name));
-#include "qgwin_func.h"
+#include "qgwin_stub_func.h"
 	return loaded = true;
 }
 #pragma endregion
@@ -454,6 +454,7 @@ void stub_system_focus(void)
 }
 #pragma endregion 시스템 함수
 
+
 //////////////////////////////////////////////////////////////////////////
 
 #pragma region 내부 정적 함수
@@ -723,6 +724,9 @@ static void _check_mouse_release(void)
 	winStub.mouse_wparam = 0;
 }
 #pragma endregion 내부 정적 함수
+
+
+//////////////////////////////////////////////////////////////////////////
 
 #pragma region 윈도우 메시지
 // 키보드 메시지
@@ -1142,13 +1146,13 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 
 		default:
 			break;
-		}
+	}
 
 pos_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-	}
+}
 #pragma endregion 윈도우 메시지
 
 #endif

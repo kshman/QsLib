@@ -1,5 +1,5 @@
 ﻿//
-// qgwin_func.h - WINDOWS 함수
+// qgwin_stub_func.h - WINDOWS 함수
 // 2023-12-23 by kim
 //
 
