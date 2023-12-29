@@ -89,6 +89,9 @@ const char* qg_qic_str(const QicButton button)
 }
 
 #ifdef USE_SDL2
+#include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_mouse.h>
+
 //
 QikKey sdlk_to_qik(uint sdlk)
 {
@@ -316,6 +319,20 @@ QikMask kmod_to_qikm(int modifier)
 	if (modifier & KMOD_CAPS) m |= QIKM_CAPS;
 	if (modifier & KMOD_MODE) m |= QIKM_SCRL;
 	return m;
+}
+
+//
+QimButton sdlm_to_qim(byte button)
+{
+	switch (button)
+	{
+		case SDL_BUTTON_LEFT:		return QIM_LEFT;
+		case SDL_BUTTON_RIGHT:		return QIM_RIGHT;
+		case SDL_BUTTON_MIDDLE:		return QIM_MIDDLE;
+		case SDL_BUTTON_X1:			return QIM_X1;
+		case SDL_BUTTON_X2:			return QIM_X2;
+		default:					return QIM_NONE;
+	}
 }
 #endif
 

@@ -230,19 +230,5 @@ orleans.codegen.cs
 Doxyfile
 builds/doxygen/
 
-# cmake 또는 linux build
-**/cmake-build-debug
-**/CMakeCache.txt
-**/cmake_install.cmake
-**/install_manifest.txt
-**/CMakeFiles/
-**/CTestTestfile.cmake
-**/Makefile
-**/*.cbp
-**/CMakeScripts
-**/compile_commands.json
-**/CPackConfig.cmake
-**/CPackSourceConfig.cmake
-**/DartConfiguration.tcl
-**/cmake/Makefile
-**/__par_compile_fail
+# 외부 라이브
+builds/msvc/external/

@@ -12,7 +12,7 @@
 
 #include "pch.h"
 #include "qs_qn.h"
-#ifdef _QN_WINDOWS_
+#if defined _QN_WINDOWS_ && !defined USE_SDL2
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include <windowsx.h>
@@ -329,7 +329,7 @@ bool stub_system_poll(void)
 
 		if ((int)(msg.time - tick) <= 0)
 		{
-			if (++count > MAX_POLL_MESGS)
+			if (++count > MAX_POLL_LENGTH)
 				break;
 		}
 	}
