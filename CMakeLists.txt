@@ -23,8 +23,8 @@ if (CMAKE_C_COMPILER_ID MATCHES "Clang|IntelLLVM")
 	endif()
 endif()
 
-set (LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
-set (EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
+set (LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
+set (EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
 
 # 하위 프로젝트를 포함합니다.
 add_subdirectory ("src")
