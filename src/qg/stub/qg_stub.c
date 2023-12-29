@@ -358,7 +358,6 @@ bool qg_loop(void)
 
 	shed_event.loop.reset = true;
 	shed_event.loop.count++;
-	shed_event_clear_reserved_mem();
 
 	if (QN_TMASK(stub->flags, QGSPECIFIC_VIRTUAL) == false)
 	{
@@ -397,7 +396,11 @@ bool qg_poll(QgEvent* ev)
 		shed_event.loop.poll = shed_event.loop.count;
 	}
 
-	return qg_pop_event(ev);
+	if (qg_pop_event(ev))
+		return true;
+
+	shed_event_clear_reserved_mem();
+	return false;
 }
 
 //
@@ -588,7 +591,7 @@ bool stub_track_mouse_click(const QimButton button, const QimTrack track)
 	return false;
 }
 
-//
+// monitor는 할당해서 와야한다!!!
 bool stub_event_on_monitor(QgUdevMonitor* monitor, const bool connected, const bool primary)
 {
 	StubBase* stub = qg_stub_instance;

@@ -1,4 +1,9 @@
-﻿// ReSharper disable CppParameterMayBeConst
+﻿//
+// qn_file.c - 파일 처리. 추가로 모듈 기능(DLL, SO)
+// 2023-12-27 by kim
+//
+
+// ReSharper disable CppParameterMayBeConst
 
 #include "pch.h"
 #include "qs_qn.h"

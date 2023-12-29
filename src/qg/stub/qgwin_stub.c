@@ -12,35 +12,90 @@
 
 #include "pch.h"
 #include "qs_qn.h"
-#ifdef _QN_WINDOWS_
+#if defined _QN_WINDOWS_ && !defined USE_SDL2
 #include "qs_qg.h"
 #include "qs_kmc.h"
-#include "qgwin_stub.h"
+#include <windowsx.h>
+#include <Xinput.h>
+#include <shellscalingapi.h>
 
 #ifdef _DEBUG
 #define DEBUG_WIN_DLL_TRACE
 #endif
 
-// 선언부
-#pragma region DLL 함수와 스터브 선언
-// DLL 선언
-#define DEF_WIN_FUNC(ret,name,args)			QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
-#define DEF_WIN_XINPUT_FUNC(ret,name,args)	QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
-#include "qgwin_func.h"
-
-// 윈도우 스터브 여기 있다!
-WindowsStub winStub;
-#pragma endregion
-
-// 정적 함수 미리 선언
 #pragma region 정적 함수 미리 선언
-static bool _dll_init(void);
 static void _set_key_hook(HINSTANCE instance);
 static void _set_dpi_awareness(void);
 static bool _detect_displays(void);
 static void _hold_mouse(bool hold);
 static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
 #pragma endregion
+
+#pragma region DLL 처리
+// DLL 정의
+#define DEF_WIN_TYPEDEF
+#define DEF_WIN_FUNC(ret,name,args)\
+	typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;\
+	QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
+#include "qgwin_stub_func.h"
+
+// DLL 함수
+static void* _load_dll_func(QnModule* module, const char* dll_name, const char* func_name)
+{
+	void* ret = qn_mod_func(module, func_name);
+#ifdef DEBUG_WIN_DLL_TRACE
+	qn_debug_outputf(false, "WINDOWS STUB", "\t%s: '%s' in '%s'",
+		ret == NULL ? "load failed" : "loaded", func_name, dll_name);
+#else
+	QN_DUMMY(dll_name);
+#endif
+	return ret;
+}
+
+// DLL 초기화
+static bool _dll_init(void)
+{
+	static bool loaded = false;
+	qn_val_if_ok(loaded, true);
+	QnModule* module = NULL;
+	const char* dll_name = NULL;
+	static char xinput_dll[64] = "XINPUT1_9";
+	for (int i = 4; i >= 1; i--)
+	{
+		xinput_dll[8] = (char)('0' + i);
+		if ((module = qn_mod_load(xinput_dll, 1)) != NULL)
+		{
+			dll_name = xinput_dll;
+			break;
+		}
+	}
+	if (module == NULL)
+	{
+		// 이건 오바다
+		qn_debug_outputf(true, "WINDOWS STUB", "no '%s' DLL found!", "XINPUT");
+		return false;
+	}
+#define DEF_WIN_DLL_BEGIN(name)\
+	module = qn_mod_load(dll_name = name, 1); if (module == NULL)\
+	{ qn_debug_outputf(true, "WINDOWS STUB", "no '%s' DLL found!", dll_name); return false; } else {
+#define DEF_WIN_DLL_END }
+#define DEF_WIN_FUNC(ret,name,args)\
+	QN_CONCAT(Win32, name) = (QN_CONCAT(PFNWin32, name))_load_dll_func(module, dll_name, QN_STRING(name));
+#include "qgwin_stub_func.h"
+	return loaded = true;
+}
+#pragma endregion
+
+
+//////////////////////////////////////////////////////////////////////////
+
+#pragma region 스터브 선언
+// 본편 시작
+#include "qgwin_stub.h"
+
+// 윈도우 스터브 여기 있다!
+WindowsStub winStub;
+#pragma endregion 스터브 선언
 
 #pragma region 시스템 함수
 //
@@ -234,8 +289,8 @@ void stub_system_finalize(void)
 		winStub.base.stats |= QGSSTT_EXIT;
 		_hold_mouse(false);
 
-		if (winStub.himc != NULL && Win32ImmAssociateContextEx != NULL)
-			Win32ImmAssociateContextEx(winStub.hwnd, winStub.himc, IACE_DEFAULT);
+		if (winStub.himc != NULL && ImmAssociateContextEx != NULL)
+			ImmAssociateContextEx(winStub.hwnd, winStub.himc, IACE_DEFAULT);
 		if (QN_TMASK(winStub.base.flags, QGSPECIFIC_VIRTUAL) == false)
 			SendMessage(winStub.hwnd, WM_CLOSE, 0, 0);
 	}
@@ -274,7 +329,7 @@ bool stub_system_poll(void)
 
 		if ((int)(msg.time - tick) <= 0)
 		{
-			if (++count > MAX_POLL_MESGS)
+			if (++count > MAX_POLL_LENGTH)
 				break;
 		}
 	}
@@ -399,64 +454,15 @@ void stub_system_focus(void)
 }
 #pragma endregion 시스템 함수
 
+
 //////////////////////////////////////////////////////////////////////////
-
-#pragma region DLL 처리
-// DLL 함수
-static void* _load_dll_func(QnModule* module, const char* dll_name, const char* func_name)
-{
-	void* ret = qn_mod_func(module, func_name);
-#ifdef DEBUG_WIN_DLL_TRACE
-	qn_debug_outputf(false, "WINDOWS STUB", "\t%s: '%s' in '%s'",
-		ret == NULL ? "load failed" : "loaded", func_name, dll_name);
-#else
-	QN_DUMMY(dll_name);
-#endif
-	return ret;
-}
-
-// DLL 초기화
-static bool _dll_init(void)
-{
-	static bool loaded = false;
-	qn_val_if_ok(loaded, true);
-	QnModule* module = NULL;
-	const char* dll_name = NULL;
-	static char xinput_dll[64] = "XINPUT1_9";
-	for (int i = 4; i >= 1; i--)
-	{
-		xinput_dll[8] = (char)('0' + i);
-		if ((module = qn_mod_load(xinput_dll, 1)) != NULL)
-		{
-			dll_name = xinput_dll;
-			break;
-		}
-	}
-	if (module == NULL)
-	{
-		// 이건 오바다
-		qn_debug_outputf(true, "WINDOWS STUB", "no %s DLL found!", "XINPUT");
-		return false;
-	}
-#define DEF_WIN_DLL_BEGIN(name)\
-	module = qn_mod_load(dll_name = QN_STRING(name), 1); if (module == NULL)\
-	{ qn_debug_outputf(true, "WINDOWS STUB", "no %s DLL found!", QN_STRING(name)); return false; } else {
-#define DEF_WIN_DLL_END }
-#define DEF_WIN_FUNC(ret,name,args)\
-	QN_CONCAT(Win32, name) = (QN_CONCAT(PFNWin32, name))_load_dll_func(module, dll_name, QN_STRING(name));
-#define DEF_WIN_XINPUT_FUNC(ret,name,args)\
-	QN_CONCAT(Win32, name) = (QN_CONCAT(PFNWin32, name))_load_dll_func(module, dll_name, QN_STRING(name));
-#include "qgwin_func.h"
-	return loaded = true;
-}
-#pragma endregion
 
 #pragma region 내부 정적 함수
 // 키 후킹 콜백
 static LRESULT CALLBACK _key_hook_callback(int code, WPARAM wp, LPARAM lp)
 {
 	if (code < 0 || code != HC_ACTION || QN_TMASK(winStub.base.stats, QGSSTT_ACTIVE) == false)
-		return Win32CallNextHookEx(winStub.key_hook, code, wp, lp);
+		return CallNextHookEx(winStub.key_hook, code, wp, lp);
 
 	const LPKBDLLHOOKSTRUCT kh = (LPKBDLLHOOKSTRUCT)lp;
 	switch (kh->vkCode)
@@ -469,7 +475,7 @@ static LRESULT CALLBACK _key_hook_callback(int code, WPARAM wp, LPARAM lp)
 #endif
 			break;
 		default:
-			return Win32CallNextHookEx(winStub.key_hook, code, wp, lp);
+			return CallNextHookEx(winStub.key_hook, code, wp, lp);
 	}
 
 	if (wp == WM_KEYDOWN || wp == WM_SYSKEYDOWN)
@@ -480,7 +486,7 @@ static LRESULT CALLBACK _key_hook_callback(int code, WPARAM wp, LPARAM lp)
 		if (kh->vkCode < 0xFF && winStub.key_hook_state[kh->vkCode])
 		{
 			winStub.key_hook_state[kh->vkCode] = 0;
-			return Win32CallNextHookEx(winStub.key_hook, code, wp, lp);
+			return CallNextHookEx(winStub.key_hook, code, wp, lp);
 		}
 	}
 	return 1;
@@ -491,27 +497,27 @@ static void _set_key_hook(const HINSTANCE instance)
 {
 	if (winStub.key_hook != NULL)
 	{
-		Win32UnhookWindowsHookEx(winStub.key_hook);
+		UnhookWindowsHookEx(winStub.key_hook);
 		winStub.key_hook = NULL;
 	}
 	if (instance == NULL)
 		return;
-	if (Win32GetKeyboardState(winStub.key_hook_state) == FALSE)
+	if (GetKeyboardState(winStub.key_hook_state) == FALSE)
 		return;
-	winStub.key_hook = Win32SetWindowsHookExW(WH_KEYBOARD_LL, _key_hook_callback, instance, 0);
+	winStub.key_hook = SetWindowsHookExW(WH_KEYBOARD_LL, _key_hook_callback, instance, 0);
 }
 
 // DPI 설정
 static void _set_dpi_awareness(void)
 {
-	if (Win32SetProcessDpiAwarenessContext != NULL &&
-		(Win32SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) ||
-			Win32SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)))
+	if (SetProcessDpiAwarenessContext != NULL &&
+		(SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) ||
+			SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)))
 		return;
-	if (Win32SetProcessDpiAwareness != NULL &&
-		Win32SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE) != E_INVALIDARG)
+	if (SetProcessDpiAwareness != NULL &&
+		SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE) != E_INVALIDARG)
 		return;
-	Win32SetProcessDPIAware();
+	SetProcessDPIAware();
 }
 
 // 모니터 핸들 얻기 콜백
@@ -718,6 +724,9 @@ static void _check_mouse_release(void)
 	winStub.mouse_wparam = 0;
 }
 #pragma endregion 내부 정적 함수
+
+
+//////////////////////////////////////////////////////////////////////////
 
 #pragma region 윈도우 메시지
 // 키보드 메시지
@@ -1001,8 +1010,8 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 			break;
 
 		case WM_NCCREATE:
-			if (Win32EnableNonClientDpiScaling != NULL && QN_TMASK(winStub.base.flags, QGFLAG_DPISCALE))
-				Win32EnableNonClientDpiScaling(hwnd);
+			if (EnableNonClientDpiScaling != NULL && QN_TMASK(winStub.base.flags, QGFLAG_DPISCALE))
+				EnableNonClientDpiScaling(hwnd);
 			break;
 
 		case WM_INPUT:
@@ -1106,7 +1115,7 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 		case WM_DPICHANGED:
 		{
 			if (QN_TMASK(winStub.base.flags, QGFLAG_DPISCALE) ||
-				Win32AdjustWindowRectExForDpi != NULL)
+				AdjustWindowRectExForDpi != NULL)
 			{
 				RECT* const suggested = (RECT*)lp;
 				SetWindowPos(hwnd, HWND_TOP, suggested->left, suggested->top,
@@ -1123,12 +1132,12 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 		case WM_GETDPISCALEDSIZE:
 		{
 			if (QN_TMASK(winStub.base.flags, QGFLAG_DPISCALE) ||
-				Win32AdjustWindowRectExForDpi == NULL)
+				AdjustWindowRectExForDpi == NULL)
 				break;
 			RECT src = { 0, 0, 0, 0 };
 			RECT dst = { 0, 0, 0, 0 };
-			Win32AdjustWindowRectExForDpi(&src, winStub.window_style, FALSE, WS_EX_APPWINDOW, Win32GetDpiForWindow(hwnd));
-			Win32AdjustWindowRectExForDpi(&dst, winStub.window_style, FALSE, WS_EX_APPWINDOW, LOWORD(wp));
+			AdjustWindowRectExForDpi(&src, winStub.window_style, FALSE, WS_EX_APPWINDOW, GetDpiForWindow(hwnd));
+			AdjustWindowRectExForDpi(&dst, winStub.window_style, FALSE, WS_EX_APPWINDOW, LOWORD(wp));
 			SIZE* size = (SIZE*)lp;
 			size->cx += (dst.right - dst.left) - (src.right - src.left);
 			size->cy += (dst.bottom - dst.top) - (src.bottom - src.top);
@@ -1137,13 +1146,13 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 
 		default:
 			break;
-		}
+	}
 
 pos_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-	}
+}
 #pragma endregion 윈도우 메시지
 
 #endif

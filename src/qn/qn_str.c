@@ -1,4 +1,9 @@
-﻿// ReSharper disable CppParameterMayBeConst
+﻿//
+// qn_str.c - CRT에 없는거나, 공통이 아닌것 재구현 (mbs,wcs,utf-8,utf 변환)
+// 2023-12-27 by kim
+//
+
+// ReSharper disable CppParameterMayBeConst
 
 #include "pch.h"
 #include "qs_qn.h"
@@ -6,7 +11,7 @@
 //////////////////////////////////////////////////////////////////////////
 // 공용
 
-// 문자를 진수 숫자로 (32진수까지, 아스키/유니코드 공통
+// 문자를 진수 숫자로 (32진수까지)
 static byte nbase_conv(const uint n)
 {
 	static const byte nbase_table[] =
@@ -23,6 +28,17 @@ static byte nbase_conv(const uint n)
 	return n < (uint)QN_COUNTOF(nbase_table) ? nbase_table[n] : 255;
 }
 
+// 숫자를 문자로 바꾸기 (32진수까지)
+static char nchar_conv(const uint n)
+{
+	static const char* nchar_table = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
+#if false
+	return n < (uint)QN_COUNTOF(nchar_table) ? nchar_table[n] : '\0';
+#else
+	// 오류 검사할 필요 없다
+	return nchar_table[n];
+#endif
+}
 
 //////////////////////////////////////////////////////////////////////////
 // 그냥 문자열
@@ -513,9 +529,6 @@ int qn_strnicmp(const char* p1, const char* p2, size_t len)
 }
 #endif
 
-// 숫자를 문자로 바꾸기용
-const char* s_base_str = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
-
 //
 int qn_itoa(char* p, const int size, const int n, const uint base)
 {
@@ -532,7 +545,7 @@ int qn_itoa(char* p, const int size, const int n, const uint base)
 	}
 	do
 	{
-		conv[place++] = s_base_str[uvalue % base];
+		conv[place++] = nchar_conv(uvalue % base);
 		uvalue = uvalue / base;
 	} while (uvalue && place < (int)QN_COUNTOF(conv));
 	if (place == (int)QN_COUNTOF(conv))
@@ -560,7 +573,7 @@ int qn_lltoa(char* p, const int size, const llong n, const uint base)
 	}
 	do
 	{
-		conv[place++] = s_base_str[uvalue % base];
+		conv[place++] = nchar_conv(uvalue % base);
 		uvalue = uvalue / base;
 	} while (uvalue && place < (int)QN_COUNTOF(conv));
 	if (place == (int)QN_COUNTOF(conv))
@@ -1076,9 +1089,6 @@ int qn_wcsnicmp(const wchar* p1, const wchar* p2, size_t len)
 }
 #endif
 
-// 숫자를 문자로 바꾸기용
-const wchar* s_base_wcs = L"0123456789ABCDEFGHIJKLMNOPQRSTUV";
-
 //
 int qn_itow(wchar* p, const int size, const int n, const uint base)
 {
@@ -1095,7 +1105,7 @@ int qn_itow(wchar* p, const int size, const int n, const uint base)
 	}
 	do
 	{
-		conv[place++] = s_base_wcs[uvalue % base];
+		conv[place++] = (wchar)nchar_conv(uvalue % base);
 		uvalue = uvalue / base;
 	} while (uvalue && place < (int)QN_COUNTOF(conv));
 	if (place == (int)QN_COUNTOF(conv))
@@ -1123,7 +1133,7 @@ int qn_lltow(wchar* p, const int size, const llong n, const uint base)
 	}
 	do
 	{
-		conv[place++] = s_base_wcs[uvalue % base];
+		conv[place++] = (wchar)nchar_conv(uvalue % base);
 		uvalue = uvalue / base;
 	} while (uvalue && place < (int)QN_COUNTOF(conv));
 	if (place == (int)QN_COUNTOF(conv))

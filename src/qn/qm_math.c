@@ -1,4 +1,9 @@
-﻿#include "pch.h"
+﻿//
+// qm_math.c - 수학 함수
+// 2023-12-27 by kim
+//
+
+#include "pch.h"
 #include "qs_qn.h"
 #include "qs_math.h"
 #if defined __INTRIN_H_ || defined _INCLUDED_MM2 || defined __XMMINTRIN_H || defined _XMMINTRIN_H_INCLUDED

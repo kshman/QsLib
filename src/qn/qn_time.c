@@ -1,4 +1,9 @@
-﻿#include "pch.h"
+﻿//
+// qn_time.c - 날짜와 시간, 그리고 타이머
+// 2023-12-27 by kim
+//
+
+#include "pch.h"
 #include "qs_qn.h"
 #ifdef _QN_UNIX_
 #include <unistd.h>

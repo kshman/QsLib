@@ -5,7 +5,7 @@
 #		define QSAPI					extern
 #	else
 #		if defined(_WIN32) || defined(_WIN64)
-#			define QSAPI				__declspec(dllimport)
+#			define QSAPI				__declspec(dllexport)
 #		else
 #			define QSAPI				__attribute__((__visibility__("default")))
 #		endif
@@ -30,4 +30,9 @@ static_assert(MAX_DEBUG_LENGTH >= 256 && MAX_DEBUG_LENGTH <= 4096, "256 <= MAX_D
 // 컨트롤러 데드존
 #ifndef CTRL_DEAD_ZONE
 #define CTRL_DEAD_ZONE		(int)(0.24f*((float)INT16_MAX))
+#endif
+
+// Poll 당 메시지 처리 개수
+#ifndef MAX_POLL_LENGTH
+#define MAX_POLL_LENGTH		3
 #endif

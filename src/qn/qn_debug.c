@@ -1,4 +1,9 @@
-﻿#include "pch.h"
+﻿//
+// qn_debug.c - 디버그 출력 관리자
+// 2023-12-27 by kim
+//
+
+#include "pch.h"
 #include "qs_qn.h"
 
 #ifdef DEBUG_BREAK
@@ -82,14 +87,14 @@ static void qn_dbg_buf_str(const char* restrict s)
 		len = MAX_DEBUG_LENGTH - debug_impl.out_pos - 1;
 	if (len <= 0)
 		return;
-	memcpy(debug_impl.out_buf + debug_impl.out_pos, s, len);
+	memcpy(debug_impl.out_buf + debug_impl.out_pos, s, (size_t)len);
 	debug_impl.out_pos += len;
 }
 
 //
 static void qn_dbg_buf_va(const char* restrict fmt, va_list va)
 {
-	const int len = qn_vsnprintf(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - debug_impl.out_pos, fmt, va);
+	const int len = qn_vsnprintf(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - (size_t)debug_impl.out_pos, fmt, va);
 	debug_impl.out_pos += len;
 }
 
