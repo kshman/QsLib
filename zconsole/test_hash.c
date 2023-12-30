@@ -60,7 +60,7 @@ int main(void)
 	qn_hash_init(IntHash, &ihash);
 	qn_hash_set(IntHash, &ihash, 10, 123.0);
 	qn_hash_set(IntHash, &ihash, 20, 987.0);
-	qn_hash_loopeach(IntHash, &ihash, int_for_loop);
+	qn_hash_each(IntHash, &ihash, int_for_loop);
 	qn_hash_set(IntHash, &ihash, 20, 999.0);
 	double* pi;
 	qn_hash_get(IntHash, &ihash, 20, &pi);

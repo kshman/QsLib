@@ -230,5 +230,8 @@ orleans.codegen.cs
 Doxyfile
 builds/doxygen/
 
-# 외부 라이브
-builds/msvc/external/
+# 외부 라이브러리
+builds/external/SDL2Windows
+builds/external/wayland
+#src/qg/stub/wayland*.h
+

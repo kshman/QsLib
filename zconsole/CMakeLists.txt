@@ -10,8 +10,22 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
 endif()
 
 # 추가
-if (MSVC)
-	target_link_libraries (zconsole qs)
-else()
-	target_link_libraries (zconsole PRIVATE qs PUBLIC m)
+target_link_libraries (zconsole PRIVATE qs)
+
+if (QSLIB_BUILD_WINDOWS)
+	target_compile_options (zconsole PRIVATE "/arch:AVX2" "/fp:fast")
+endif()
+
+if (UNIX AND NOT APPLE)
+	find_library (RT_LIBRARY rt)
+	mark_as_advanced (RT_LIBRARY)
+	if (RT_LIBRARY)
+		target_link_libraries (zconsole PRIVATE "${RT_LIBRARY}")
+	endif()
+
+	find_library (MATH_LIBRARY m)
+	mark_as_advanced (MATH_LIBRARY m)
+	if (MATH_LIBRARY)
+		target_link_libraries (zconsole PRIVATE "${MATH_LIBRARY}")
+	endif()
 endif()

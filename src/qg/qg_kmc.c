@@ -336,6 +336,15 @@ QimButton sdlm_to_qim(byte button)
 }
 #endif
 
+#ifdef USE_WAYLAND
+#include <xkbcommon/xkbcommon-keysyms.h>
+//
+QikKey xkbsym_to_qik(uint32_t sym)
+{
+	return QIK_NONE;
+}
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////
 // stub

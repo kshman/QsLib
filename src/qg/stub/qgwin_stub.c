@@ -12,7 +12,7 @@
 
 #include "pch.h"
 #include "qs_qn.h"
-#if defined _QN_WINDOWS_ && !defined USE_SDL2
+#ifdef _QN_WINDOWS_
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include <windowsx.h>
@@ -40,12 +40,18 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
 #include "qgwin_stub_func.h"
 
 // DLL 함수
-static void* _load_dll_func(QnModule* module, const char* dll_name, const char* func_name)
+static void* _load_dll_func(QnModule* module, const char* func_name, const char* dll_name)
 {
 	void* ret = qn_mod_func(module, func_name);
 #ifdef DEBUG_WIN_DLL_TRACE
-	qn_debug_outputf(false, "WINDOWS STUB", "\t%s: '%s' in '%s'",
-		ret == NULL ? "load failed" : "loaded", func_name, dll_name);
+	static const char* current_dll = NULL;
+	if (current_dll != dll_name)
+	{
+		current_dll = dll_name;
+		qn_debug_outputf(false, "WINDOWS STUB", "DLL: %s", dll_name);
+	}
+	qn_debug_outputf(false, "WINDOWS STUB", "%s: %s",
+		ret == NULL ? "load failed" : "loaded", func_name);
 #else
 	QN_DUMMY(dll_name);
 #endif
@@ -77,10 +83,10 @@ static bool _dll_init(void)
 	}
 #define DEF_WIN_DLL_BEGIN(name)\
 	module = qn_mod_load(dll_name = name, 1); if (module == NULL)\
-	{ qn_debug_outputf(true, "WINDOWS STUB", "no '%s' DLL found!", dll_name); return false; } else {
+	{ qn_debug_outputf(true, "WINDOWS STUB", "DLL load filed: %s", dll_name); return false; } else {
 #define DEF_WIN_DLL_END }
 #define DEF_WIN_FUNC(ret,name,args)\
-	QN_CONCAT(Win32, name) = (QN_CONCAT(PFNWin32, name))_load_dll_func(module, dll_name, QN_STRING(name));
+	QN_CONCAT(Win32, name) = (QN_CONCAT(PFNWin32, name))_load_dll_func(module, QN_STRING(name), dll_name);
 #include "qgwin_stub_func.h"
 	return loaded = true;
 }
@@ -686,7 +692,7 @@ static void _set_mouse_point(const LPARAM lp, const bool save)
 
 	if (save)
 		mouse->last = mouse->pt;
-	qm_point_set(&mouse->pt, pt.x, pt.y);
+	qm_set2(&mouse->pt, pt.x, pt.y);
 }
 
 // 지정한 마우스 버튼 처리
@@ -1155,4 +1161,4 @@ pos_mesg_proc_exit:
 }
 #pragma endregion 윈도우 메시지
 
-#endif
+#endif	// _QN_WINDOWS_

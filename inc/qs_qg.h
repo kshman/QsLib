@@ -7,6 +7,8 @@
 //
 #pragma once
 
+#define __QS_QG__
+
 #include <qs_qn.h>
 #include <qs_math.h>
 #include <qs_kmc.h>

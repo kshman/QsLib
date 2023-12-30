@@ -12,22 +12,71 @@ endif()
 project ("QsLib" LANGUAGES C VERSION 3.1.1)
 
 # 설정
-include_directories("./inc" "./src")
+option (BUILD_SHARED_LIBS "공유 라이브러리 만들기" ON)
 
-add_definitions (-DUNICODE -D_UNICODE)
+include (CMakeDependentOption)
+cmake_dependent_option (QSBUILD_WINDOWS "윈도우용으로 만들기" ON "WIN32" OFF)
+cmake_dependent_option (QSBUILD_WAYLAND "웨이랜드용으로 만들기" ON "UNIX;NOT APPLE" OFF)
+cmake_dependent_option (QSBUILD_EMSCRIPTEN "EMSCRIPTEN용으로 만들기" ON "EMSCRIPTEN" OFF)
+cmake_dependent_option (QSBUILD_SDL2 "SDL2용으로 만들기" OFF "WIN32;UNIX;APPLE" OFF)
+
+if (BUILD_SHARED_LIBS AND NOT QSBUILD_EMSCRIPTEN)
+	set (QSBUILD_LIBRARY_TYPE SHARED)
+else()
+	set (BUILD_SHARED_LIBS OFF)
+	set (QSBUILD_LIBRARY_TYPE STATIC)
+endif()
 
 if (CMAKE_C_COMPILER_ID MATCHES "Clang|IntelLLVM")
 	set (CLANG TRUE)
-	if (MSVC)
-		set (MSVC_CLANG TRUE)
-	endif()
 endif()
 
+if (QSBUILD_WINDOWS)
+	message (STATUS "윈도우용으로 만들어요")
+endif()
+if (QSBUILD_WAYLAND)
+	message (STATUS "웨이랜드용으로 만들어요")
+endif()
+if (QSBUILD_EMSCRIPTEN)
+	message (STATUS "EMSCRIPTEN용으로 만들어요")
+endif()
+if (QSBUILD_SDL2)
+	message (STATUS "SDL2용으로 만들어요")
+endif()
+if (CLANG)
+	message (STATUS "CLANG으로 컴파일해요")
+endif()
+if (MSVC)
+	message (STATUS "MSVC로 컴파일해요")
+endif()
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+	message (STATUS "디버그 모드")
+endif()
+if (CMAKE_BUILD_TYPE MATCHES Release)
+	message (STATUS "릴리즈 모드")
+endif()
+
+# 매크로
+macro(copy_file target filename destpath)
+	if (NOT IS_ABSOLUTE ${filename})
+		set (filename ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
+	endif()
+	add_custom_command (TARGET ${target} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+			"${filename}" "${destpath}")
+endmacro()
+
+# 모든 출력을 같은 위치로
 set (LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
 set (EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
+
+# 공통 설정
+include_directories("${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/inc" "${CMAKE_BINARY_DIR}/src")
+add_definitions (-DUNICODE -D_UNICODE)
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+	add_definitions (-D_DEBUG)
+endif()
 
 # 하위 프로젝트를 포함합니다.
 add_subdirectory ("src")
 add_subdirectory ("zconsole")
-
-add_dependencies (zconsole qs)

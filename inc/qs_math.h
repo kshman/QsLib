@@ -7,6 +7,8 @@
 //
 #pragma once
 
+#define __QS_MATH__
+
 #include <math.h>
 #if defined _MSC_VER
 #include <intrin.h>

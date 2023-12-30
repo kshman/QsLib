@@ -114,14 +114,3 @@ extern QgRdh* es2_allocator(void* oshandle, int flags);
 
 #define rdh_set_flush(rdh,v)	(qm_cast(rdh, QgRdh)->invokes.fluash=(v))
 #define rdh_inc_ends(rdh)		(qm_cast(rdh, QgRdh)->invokes.ends++)
-
-
-#ifdef USE_SDL2
-// SDLK를 QIK로
-extern QikKey sdlk_to_qik(uint32_t sdlk);
-// SDL 키보드 상태 변환
-extern QikMask kmod_to_qikm(int modifier);
-// SDL 마우스 버튼을 QIM으로
-extern QimButton sdlm_to_qim(byte button);
-#endif
-

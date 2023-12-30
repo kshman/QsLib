@@ -804,8 +804,8 @@ bool stub_event_on_keyboard(const QikKey key, const bool down)
 	if (down)
 	{
 		e.key.ev = QGEV_KEYDOWN;
-		if (qg_test_key(key))
-			e.key.repeat = true;
+		e.key.repeat = qg_test_key(key);
+		qg_set_key(key, true);
 
 		switch (key)	// NOLINT
 		{
