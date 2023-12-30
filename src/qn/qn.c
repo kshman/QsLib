@@ -266,7 +266,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	}
 	return true;
 }
-#elif __GNUC__
+#elif defined __GNUC__
 void __attribute__((constructor)) _attach(void)
 {
 	qn_runtime_attach();

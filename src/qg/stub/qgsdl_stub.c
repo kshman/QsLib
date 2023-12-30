@@ -5,6 +5,7 @@
 
 #include "pch.h"
 #include "qs_qn.h"
+#if defined USE_SDL2
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include "qg_stub.h"
@@ -12,11 +13,8 @@
 #include <SDL2/SDL_syswm.h>
 
 #pragma region 정적 함수 미리 선언
-// SDLK를 QIK로
 extern QikKey sdlk_to_qik(uint32_t sdlk);
-// SDL 키보드 상태 변환
 extern QikMask kmod_to_qikm(int modifier);
-// SDL 마우스 버튼을 QIM으로
 extern QimButton sdlm_to_qim(byte button);
 
 static bool _sdl_mesg_proc(void);
@@ -394,3 +392,5 @@ static bool _sdl_mesg_proc(void)
 }
 
 #pragma endregion SDL 폴링
+
+#endif	// USE_SDL2

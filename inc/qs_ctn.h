@@ -1504,11 +1504,11 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t);
 /// @brief 키 지우기
 #define QN_HASH_KEY(name,fn1)			QN_INLINE void name##_key(name##Key* key) { fn1(*key); }
 #define QN_HASH_KEY_FREE(name)			QN_INLINE void name##_key(name##Key* key) { qn_free(*key); }
-#define QN_HASH_KEY_NONE(name)			QN_INLINE void name##_key(name##Key* key) { }
+#define QN_HASH_KEY_NONE(name)			QN_INLINE void name##_key(name##Key* key) { QN_DUMMY(key); }
 /// @brief 값 지우기
 #define QN_HASH_VALUE(name,fn1)			QN_INLINE void name##_value(name##Value* value) { fn1(*value); }
 #define QN_HASH_VALUE_FREE(name)		QN_INLINE void name##_value(name##Value* value) { qn_free(*value); }
-#define QN_HASH_VALUE_NONE(name)		QN_INLINE void name##_value(name##Value* value) { }
+#define QN_HASH_VALUE_NONE(name)		QN_INLINE void name##_value(name##Value* value) { QN_DUMMY(value); }
 /// @brief 정수 키의 해시/비교
 #define QN_HASH_INT_KEY(name)			QN_INLINE size_t name##_hash(name##ConstKey* key) { return (size_t)(*key); }\
 										QN_INLINE bool name##_eq(name##ConstKey* k1, name##ConstKey* k2) { return (*k1)==(*k2); }
@@ -1583,11 +1583,11 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t);
 
 /// @brief 해시 loop each
 /// @param func2 loop each 함수 포인터. 인수는(keyptr,valueptr)
-#define qn_hash_each(name,p,func2)\
-	QN_STMT_BEGIN{\
-		for (struct name##Node* __node=(p)->last; __node; __node=__node->prev)\
-			func2(&__node->key, &__node->value);\
-	}QN_STMT_END
+#define qn_hash_each(name,p,keyptr,valueptr)\
+	struct name##Node* QN_CONCAT(n_,__LINE__);\
+	for (QN_CONCAT(n_,__LINE__)=(p)->last, keyptr=&(QN_CONCAT(n_,__LINE__)->key), valueptr=&(QN_CONCAT(n_,__LINE__)->value);\
+		QN_CONCAT(n_,__LINE__);\
+		QN_CONCAT(n_,__LINE__)=QN_CONCAT(n_,__LINE__)->prev, keyptr=&(QN_CONCAT(n_,__LINE__)->key), valueptr=&(QN_CONCAT(n_,__LINE__)->value))
 
 /// @brief 값만 for each
 /// @param func2 for each 함수 포인터. 인수는(data,valueptr)

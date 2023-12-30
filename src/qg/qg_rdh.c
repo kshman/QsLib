@@ -2,7 +2,7 @@
 #include "qs_qn.h"
 #include "qs_math.h"
 #include "qs_qg.h"
-#include "qg_stub.h"
+#include "stub/qg_stub.h"
 
 /** @brief 활성 렌더러 */
 QgRdh* qg_rdh_instance = NULL;

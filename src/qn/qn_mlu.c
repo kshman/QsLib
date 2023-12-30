@@ -1321,14 +1321,6 @@ void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, char* const*
 }
 
 //
-void qn_mltag_each_arg(QnMlTag* ptr, void(*func)(char* const* name, char* const* data))
-{
-	const QnRealTag* self = (QnRealTag*)ptr;
-
-	qn_hash_each(ArgHash, &self->args, func);
-}
-
-//
 void qn_mltag_set_arg(QnMlTag* ptr, const char* restrict name, const char* restrict value)
 {
 	qn_ret_if_fail(name);

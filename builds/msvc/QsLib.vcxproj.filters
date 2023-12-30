@@ -236,9 +236,6 @@
     <ClCompile Include="..\..\src\pch.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qg_rdh.c">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\qg\stub\qg_stub.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
@@ -253,6 +250,9 @@
     </ClCompile>
     <ClCompile Include="..\..\zconsole\zz.c">
       <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qg_rdh.c">
+      <Filter>소스 파일\qg\rdh</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

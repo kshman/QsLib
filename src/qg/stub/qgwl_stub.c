@@ -4,6 +4,7 @@
 //
 
 #include "pch.h"
+#ifdef USE_WAYLAND
 #include "qs_qn.h"
 #include "qs_qg.h"
 #include "qs_kmc.h"
@@ -524,3 +525,4 @@ void xdg_shell_pong(void* data, xdg_wm_base* wm_base, uint32_t serial)
 
 #pragma endregion 레지스트리
 
+#endif	// USE_WAYLAND

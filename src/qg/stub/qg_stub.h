@@ -69,7 +69,7 @@ extern bool stub_event_on_keyboard(QikKey key, bool down);
 // 키보드 리셋 이벤츠 추가
 extern bool stub_event_on_reset_keys(void);
 // 마우스 이동 이벤트 추가
-extern bool stub_event_on_mouse_move(void);
+extern bool stub_event_on_mouse_move(int x, int y);
 // 마우스 버튼 이벤트 추가
 extern bool stub_event_on_mouse_button(QimButton button, bool down);
 // 마우스 휠 이벤트 추가

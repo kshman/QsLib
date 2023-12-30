@@ -1936,11 +1936,6 @@ QSAPI bool qn_mltag_contains_arg(QnMlTag* ptr, const char* restrict name);
 /// @param	userdata		콜백 데이터
 ///
 QSAPI void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, char* const* name, char* const* data), void* userdata);
-/// @brief 인수에 대해 LoopEach 연산을 수행한다
-/// @param[in]	ptr	MlTag 개체
-/// @param[in]	func	콜백 함수
-///
-QSAPI void qn_mltag_each_arg(QnMlTag* ptr, void(*func)(char* const* name, char* const* data));
 
 /// @brief 인수를 추가한다
 /// @param[in]	ptr	MlTag 개체

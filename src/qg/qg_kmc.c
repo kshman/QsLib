@@ -92,7 +92,7 @@ const char* qg_qic_str(const QicButton button)
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_mouse.h>
 
-//
+// SDLK를 QIK로
 QikKey sdlk_to_qik(uint sdlk)
 {
 	static byte s_key_codes[] =
@@ -308,7 +308,7 @@ QikKey sdlk_to_qik(uint sdlk)
 	return QIK_NONE;
 }
 
-//
+// SDL 키보드 상태 변환
 QikMask kmod_to_qikm(int modifier)
 {
 	QikMask m = (QikMask)0;
@@ -321,7 +321,7 @@ QikMask kmod_to_qikm(int modifier)
 	return m;
 }
 
-//
+// SDL 마우스 버튼을 QIM으로
 QimButton sdlm_to_qim(byte button)
 {
 	switch (button)
@@ -387,7 +387,9 @@ const char* qg_string_event(const QgEventType ev)
 		if (p->ev == (size_t)ev)
 			return p->str;
 	}
-	return "UNKNOWN";
+	static char unknown_text[32];
+	qn_snprintf(unknown_text, 32-1, "UNKNOWN(%d)", ev);
+	return unknown_text;
 #else
 	return NULL;
 #endif
@@ -425,7 +427,9 @@ const char* qg_string_window_event(const QgWindowEventType wev)
 		if (p->wev == (size_t)wev)
 			return p->str;
 	}
-	return "UNKNOWN";
+	static char unknown_text[32];
+	qn_snprintf(unknown_text, 32 - 1, "UNKNOWN(%d)", wev);
+	return unknown_text;
 #else
 	return NULL;
 #endif

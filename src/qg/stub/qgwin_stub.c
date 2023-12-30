@@ -12,7 +12,7 @@
 
 #include "pch.h"
 #include "qs_qn.h"
-#ifdef _QN_WINDOWS_
+#if defined _QN_WINDOWS_ && !defined USE_SDL2
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include <windowsx.h>
@@ -679,22 +679,6 @@ static WindowsMouseSource _get_mouse_source(void)
 	return WINDOWS_MOUSE_SOURCE_MOUSE;
 }
 
-// 마으스 위치 저장
-static void _set_mouse_point(const LPARAM lp, const bool save)
-{
-	if (winStub.mouse_lparam == lp)
-		return;
-
-	QgUimMouse* mouse = &winStub.base.mouse;
-	const POINT pt = { .x = GET_X_LPARAM(lp), .y = GET_Y_LPARAM(lp) };
-
-	// TODO: 클리핑 영역 처리
-
-	if (save)
-		mouse->last = mouse->pt;
-	qm_set2(&mouse->pt, pt.x, pt.y);
-}
-
 // 지정한 마우스 버튼 처리
 static void _check_mouse_button(const bool pressed, const QimMask mask, const QimButton button)
 {
@@ -819,15 +803,14 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 	{
 		if (mesg == WM_MOUSEMOVE)
 		{
-			_set_mouse_point(lp, true);
+			QmPoint pt = { GET_X_LPARAM(lp), GET_Y_LPARAM(lp) };
+			stub_event_on_mouse_move(pt.x, pt.y);
 			stub_track_mouse_click(QIM_NONE, QIMT_MOVE);
-			stub_event_on_mouse_move();
 		}
 		else if ((mesg >= WM_LBUTTONDOWN && mesg <= WM_MBUTTONDBLCLK) || (mesg >= WM_XBUTTONDOWN && mesg <= WM_XBUTTONDBLCLK))
 		{
 			if (_get_mouse_source() != WINDOWS_MOUSE_SOURCE_TOUCH)
 			{
-				_set_mouse_point(lp, false);
 				if (winStub.mouse_wparam != wp)
 				{
 					winStub.mouse_wparam = wp;

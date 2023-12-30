@@ -856,18 +856,24 @@ bool stub_event_on_reset_keys(void)
 }
 
 //
-bool stub_event_on_mouse_move(void)
+bool stub_event_on_mouse_move(int x, int y)
 {
-	// 마우스 정보는 시스템 스터브에서 해와야함
-	const QgUimMouse* um = &qg_stub_instance->mouse;
+	// 이동 이외의 정보는 해와야함
+	QgUimMouse* um = &qg_stub_instance->mouse;
+	if (um->last.x == x && um->last.y == y)
+		return false;
+
+	um->last = um->pt;
+	qm_set2(&um->pt, x, y);
+
 	const QgEvent e =
 	{
 		.mmove.ev = QGEV_MOUSEMOVE,
 		.mmove.mask = um->mask,
-		.mmove.pt.x = um->pt.x,
-		.mmove.pt.y = um->pt.y,
-		.mmove.delta.x = um->last.x - um->pt.x,
-		.mmove.delta.y = um->last.y - um->pt.y,
+		.mmove.pt.x = x,
+		.mmove.pt.y = y,
+		.mmove.delta.x = um->last.x - x,
+		.mmove.delta.y = um->last.y - y,
 	};
 	return qg_add_event(&e, false) > 0;
 }

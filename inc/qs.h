@@ -41,5 +41,5 @@
 
 // MSVC library
 #ifdef _MSC_VER
-#pragma comment(lib, "qs")
+//#pragma comment(lib, "qs")
 #endif
