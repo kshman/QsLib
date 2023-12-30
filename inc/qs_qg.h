@@ -434,6 +434,7 @@ typedef struct QgUimMouse
 	QimMask				mask;								/// @brief 마우스 버튼 상태
 	QmPoint				pt;									/// @brief 마우스 좌표
 	QmPoint				last;								/// @brief 마우스의 이전 좌표
+	QmPoint				delta;								/// @brief 이동 거리 차이
 
 	struct QgUimMouseClick
 	{
@@ -444,7 +445,7 @@ typedef struct QgUimMouse
 	}					clk;								/// @brief 마우스 눌림 정보
 	struct QgUimMouseLimit
 	{
-		uint					move;						/// @brief 제한 이동 거리(포인트)의 제곱
+		uint				move;							/// @brief 제한 이동 거리(포인트)의 제곱
 		uint				tick;							/// @brief 제한 클릭 시간(밀리초)
 	}					lim;								/// @brief 마우스 더블 클릭 구현 정보
 	struct QgUimMouseWheel

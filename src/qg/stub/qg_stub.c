@@ -279,7 +279,7 @@ void stub_initialize(StubBase* stub, const int flags)
 	stub->run = stub->timer->runtime;
 	stub->active = stub->timer->abstime;
 
-	stub->mouse.lim.move = 5 * 5;							// 제한 이동 거리(포인트)의 제곱
+	stub->mouse.lim.move = 10 * 10 + 10 * 10;						// 제한 이동 거리(포인트)의 제곱
 	stub->mouse.lim.tick = 500;								// 제한 클릭 시간(밀리초)
 
 	qn_pctnr_init(&stub->monitors, 0);
@@ -579,8 +579,10 @@ bool stub_track_mouse_click(const QimButton button, const QimTrack track)
 					return true;
 				}
 			}
-			// 취소
+			// 취소 -> 새로운 시작
 			m->clk.tick = 0;
+			m->clk.loc = m->pt;
+			m->clk.btn = button;
 		}
 	}
 	else if (track == QIMT_UP)
@@ -860,11 +862,14 @@ bool stub_event_on_mouse_move(int x, int y)
 {
 	// 이동 이외의 정보는 해와야함
 	QgUimMouse* um = &qg_stub_instance->mouse;
-	if (um->last.x == x && um->last.y == y)
-		return false;
 
 	um->last = um->pt;
+	um->delta.x = um->pt.x - x;
+	um->delta.y = um->pt.y - y;
 	qm_set2(&um->pt, x, y);
+
+	if (um->delta.x == 0 && um->delta.y == 0)
+		return false;
 
 	const QgEvent e =
 	{
