@@ -15,29 +15,22 @@
 #if defined _QN_WINDOWS_ && !defined USE_SDL2
 #include "qs_qg.h"
 #include "qs_kmc.h"
+#include "qg_stub.h"
 #include <windowsx.h>
 #include <Xinput.h>
 #include <shellscalingapi.h>
+
+static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 
 #ifdef _DEBUG
 #define DEBUG_WIN_DLL_TRACE
 #endif
 
-#pragma region 정적 함수 미리 선언
-static void _set_key_hook(HINSTANCE instance);
-static void _set_dpi_awareness(void);
-static bool _detect_displays(void);
-static void _hold_mouse(bool hold);
-static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
-#pragma endregion
-
 #pragma region DLL 처리
 // DLL 정의
-#define DEF_WIN_TYPEDEF
 #define DEF_WIN_FUNC(ret,name,args)\
-	typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;\
-	QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
-#include "qgwin_stub_func.h"
+	ret (WINAPI* QN_CONCAT(Win32, name)) args;
+#include "qgwin_func.h"
 
 // DLL 함수
 static void* _load_dll_func(QnModule* module, const char* func_name, const char* dll_name)
@@ -86,21 +79,108 @@ static bool _dll_init(void)
 	{ qn_debug_outputf(true, "WINDOWS STUB", "DLL load filed: %s", dll_name); return false; } else {
 #define DEF_WIN_DLL_END }
 #define DEF_WIN_FUNC(ret,name,args)\
-	QN_CONCAT(Win32, name) = (QN_CONCAT(PFNWin32, name))_load_dll_func(module, QN_STRING(name), dll_name);
-#include "qgwin_stub_func.h"
+	QN_CONCAT(Win32, name) = (ret(WINAPI*)args)_load_dll_func(module, QN_STRING(name), dll_name);
+#include "qgwin_func.h"
 	return loaded = true;
 }
+
+// 별명
+#define SetProcessDPIAware					Win32SetProcessDPIAware
+#define SetProcessDpiAwarenessContext		Win32SetProcessDpiAwarenessContext
+#define SetThreadDpiAwarenessContext		Win32SetThreadDpiAwarenessContext
+#define GetThreadDpiAwarenessContext		Win32GetThreadDpiAwarenessContext
+#define GetAwarenessFromDpiAwarenessContext	Win32GetAwarenessFromDpiAwarenessContext
+#define EnableNonClientDpiScaling			Win32EnableNonClientDpiScaling
+#define AdjustWindowRectExForDpi			Win32AdjustWindowRectExForDpi
+#define GetDpiForWindow						Win32GetDpiForWindow
+#define AreDpiAwarenessContextsEqual		Win32AreDpiAwarenessContextsEqual
+#define IsValidDpiAwarenessContext			Win32IsValidDpiAwarenessContext
+#define EnableNonClientDpiScaling			Win32EnableNonClientDpiScaling
+#define CallNextHookEx						Win32CallNextHookEx
+#define GetSystemMetricsForDpi				Win32GetSystemMetricsForDpi
+#define ChangeWindowMessageFilterEx			Win32ChangeWindowMessageFilterEx
+#define UnhookWindowsHookEx					Win32UnhookWindowsHookEx
+#define SetWindowsHookExW					Win32SetWindowsHookExW
+#define GetKeyboardState					Win32GetKeyboardState
+
+#define GetDpiForMonitor					Win32GetDpiForMonitor
+#define SetProcessDpiAwareness				Win32SetProcessDpiAwareness
+
+#define ImmAssociateContextEx				Win32ImmAssociateContextEx
 #pragma endregion
 
 
 //////////////////////////////////////////////////////////////////////////
 
 #pragma region 스터브 선언
-// 본편 시작
-#include "qgwin_stub.h"
+
+// 윈도우 모니터 > QgUdevMonitor
+typedef struct WindowsMonitor
+{
+	QgUdevMonitor		base;
+
+	wchar				adapter[32];
+	wchar				display[32];
+} WindowsMonitor;
+
+// 마우스 이벤트 소스 (https://learn.microsoft.com/ko-kr/windows/win32/tablet/system-events-and-mouse-messages)
+#define MI_WP_SIGNATURE		0xFF515700
+#define SIGNATURE_MASK		0xFFFFFF00
+#define IsPenEvent(dw)		(((dw) & SIGNATURE_MASK) == MI_WP_SIGNATURE)
+
+// 마우스 이벤트 소스
+typedef enum WindowsMouseSource
+{
+	WINDOWS_MOUSE_SOURCE_MOUSE,
+	WINDOWS_MOUSE_SOURCE_TOUCH,
+	WINDOWS_MOUSE_SOURCE_PEN,
+} WindowsMouseSource;
+
+// 윈도우 스터브 > StubBase
+typedef struct WindowsStub
+{
+	StubBase			base;
+
+	HINSTANCE			instance;
+	HWND				hwnd;
+
+	wchar*				class_name;
+	wchar*				window_title;
+	DWORD				window_style;
+
+	STICKYKEYS			acs_sticky;
+	TOGGLEKEYS			acs_toggle;
+	FILTERKEYS			acs_filter;
+	HHOOK				key_hook;
+	BYTE				key_hook_state[256];
+
+	HIMC				himc;
+	int					imcs;
+	int					high_surrogate;
+
+	int					deadzone_min;
+	int					deadzone_max;
+
+	HCURSOR				mouse_cursor;
+	WPARAM				mouse_wparam;
+	LPARAM				mouse_lparam;
+	QimMask				mouse_pending;
+
+	bool				class_registered;
+	bool				clear_background;
+	bool				bool_padding1;
+	bool				bool_padding2;
+} WindowsStub;
 
 // 윈도우 스터브 여기 있다!
 WindowsStub winStub;
+
+//
+static void _set_key_hook(HINSTANCE instance);
+static void _set_dpi_awareness(void);
+static bool _detect_displays(void);
+static void _hold_mouse(bool hold);
+static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
 #pragma endregion 스터브 선언
 
 #pragma region 시스템 함수

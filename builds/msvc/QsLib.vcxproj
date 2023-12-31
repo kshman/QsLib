@@ -259,11 +259,8 @@
     <ClInclude Include="..\..\inc\qs_ctn.h" />
     <ClInclude Include="..\..\inc\qs_math.h" />
     <ClInclude Include="..\..\src\pch.h" />
-    <ClInclude Include="..\..\src\qg\stub\qgwin_stub.h" />
-    <ClInclude Include="..\..\src\qg\stub\qgwin_stub_func.h" />
-    <ClInclude Include="..\..\src\qg\stub\qgwl_stub.h" />
-    <ClInclude Include="..\..\src\qg\stub\qgwl_stub_func.h" />
-    <ClInclude Include="..\..\src\qg\stub\qgwl_stub_so.h" />
+    <ClInclude Include="..\..\src\qg\stub\qgwin_func.h" />
+    <ClInclude Include="..\..\src\qg\stub\qgwlx_func.h" />
     <ClInclude Include="..\..\src\qg\stub\qg_stub.h" />
     <ClInclude Include="..\..\src\qg\stub\wayland-wayland-code.h" />
     <ClInclude Include="..\..\src\qg\stub\wayland-wayland.h" />
@@ -294,7 +291,7 @@
     </ClCompile>
     <ClCompile Include="..\..\src\qg\stub\qgsdl_stub.c" />
     <ClCompile Include="..\..\src\qg\stub\qgwin_stub.c" />
-    <ClCompile Include="..\..\src\qg\stub\qgwl_stub.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgwlx_stub.c" />
     <ClCompile Include="..\..\src\qg\stub\qg_stub.c" />
     <ClCompile Include="..\..\zconsole\zz.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
