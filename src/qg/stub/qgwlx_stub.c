@@ -11,6 +11,7 @@
 #include "qg_stub.h"
 #include <unistd.h>
 #include <poll.h>
+#include <syscall.h>
 #include <sys/mman.h>
 #include <sys/timerfd.h>
 
@@ -209,8 +210,9 @@ typedef struct nkk_window
 } nkk_window;
 
 //
-typedef struct nkk_xkb
+typedef struct nkk_keyboard
 {
+	// XKB
 	struct xkb_keymap*	keymap;
 	struct xkb_context*	context;
 	struct xkb_state*	state;
@@ -227,27 +229,27 @@ typedef struct nkk_xkb
 	uint32_t			serial;		// 키보드 시리얼은 여기에
 	uint32_t			depressed;
 	uint32_t			latchlocked;
-} nkk_xkb;
+
+	// 반복
+	struct
+	{
+		int					fd;
+		uint32_t			rate;
+		uint32_t			delay;
+		uint32_t			scancode;
+	}					repeat;
+} nkk_keyboard;
 
 //
-typedef struct nkk_key_repeat
-{
-	int					fd;
-	uint32_t			rate;
-	uint32_t			delay;
-	uint32_t			scancode;
-	uint32_t			serial;
-} nkk_key_repeat;
-
-//
-typedef struct nkk_pointer_event
+typedef struct nkk_pointer
 {
 	struct wl_surface*	surface;
 	wl_fixed_t			kx, ky;
 	double				axis_x, axis_y;
 	bool				axis;
 	bool				hover;
-} nkk_pointer_event;
+	uint32_t			serial;		// 마우스 시리얼
+} nkk_pointer;
 
 //
 typedef struct nkk_cursor
@@ -298,9 +300,8 @@ typedef struct WaylandStub
 	const char*			tag;
 	nkk_interface		ifce;
 
-	nkk_xkb				xkb;
-	nkk_key_repeat		key_repeat;
-	nkk_pointer_event	pointer_event;
+	nkk_keyboard		keyboard;
+	nkk_pointer			pointer;
 	nkk_cursor			cursor;
 	nkk_window			win;
 } WaylandStub;
@@ -344,7 +345,11 @@ static void xdg_shell_pong(void*, xdg_wm_base*, uint32_t);
 static void xdg_surface_configure(void *, struct xdg_surface *, uint32_t);
 static void xdg_toplevel_close(void *, struct xdg_toplevel *);
 static void xdg_toplevel_configure(void *, struct xdg_toplevel *, int32_t, int32_t, struct wl_array *);
+static void buffer_release(void *, struct wl_buffer *);
 
+static const struct wl_buffer_listener events_buffer = {
+	.release = buffer_release,
+};
 static const struct wl_registry_listener events_registry =
 {
 	.global = registry_global,
@@ -395,10 +400,38 @@ static const struct xdg_toplevel_listener events_xdg_toplevel =
 };
 
 //
-static void xdg_surface_configure(void *data, struct xdg_surface *xdg_surface, uint32_t serial)
+static void buffer_release(void* data, struct wl_buffer* buffer)
+{
+	wl_buffer_destroy(buffer);
+}
+
+//
+static void xdg_surface_configure(void *data, struct xdg_surface *surface, uint32_t serial)
 {
 	WL_TRACE_FUNC();
-	xdg_surface_ack_configure(xdg_surface, serial);
+	xdg_surface_ack_configure(surface, serial);
+
+	// 임시로 그려보자
+	int width = wlxStub.win.width;
+	int height = wlxStub.win.height;
+	int size = width * height * 4;
+	int fd = (int)syscall(SYS_memfd_create, "buffer", 0);
+	int ret = ftruncate(fd, size);
+	if (ret == -1)
+		return;
+	byte* mapped = mmap(NULL, (size_t)size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	uint* ptr = (uint*)mapped;
+	for (int i = 0; i < width * height; i++)
+		*ptr = 0xFF00AA00;
+	struct wl_shm_pool* pool = wl_shm_create_pool(wlxStub.ifce.shm, fd, size);
+	wl_buffer* buffer = wl_shm_pool_create_buffer(pool, 0, width, height, width * 4, WL_SHM_FORMAT_ARGB8888);
+	wl_shm_pool_destroy(pool);
+	close(fd);
+	munmap(mapped, (size_t)size);
+	wl_buffer_add_listener(buffer, &events_buffer, NULL);
+	wl_surface_attach(wlxStub.win.surface, buffer, 0, 0);
+	wl_surface_damage_buffer(wlxStub.win.surface, 0, 0, width, height);
+	wl_surface_commit(wlxStub.win.surface);
 }
 
 //
@@ -423,7 +456,7 @@ static void xdg_toplevel_configure(void *data, struct xdg_toplevel *xdg, int32_t
 static void keyboard_keymap(void *data, wl_keyboard *wl_keyboard, uint32_t fmt, int32_t fd, uint32_t size)
 {
 	WL_TRACE_FUNC();
-	nkk_xkb* xkb = &wlxStub.xkb;
+	nkk_keyboard* xkb = &wlxStub.keyboard;
 
 	if (fmt != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1)
 	{
@@ -440,7 +473,7 @@ static void keyboard_keymap(void *data, wl_keyboard *wl_keyboard, uint32_t fmt, 
 	}
 
 	WL_DESTROY(xkb->keymap, xkb_keymap_unref);
-	xkb->keymap = xkb_keymap_new_from_string(wlxStub.xkb.context, map,
+	xkb->keymap = xkb_keymap_new_from_string(wlxStub.keyboard.context, map,
 		XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
 
 	munmap(map, size);
@@ -502,7 +535,7 @@ static void keyboard_enter(void *data, wl_keyboard *kb, uint32_t serial, wl_surf
 {
 	WL_TRACE_FUNC();
 	qn_ret_if_fail(surface);
-	wlxStub.xkb.serial = serial;
+	wlxStub.keyboard.serial = serial;
 	// 포커스라면 여기에 메시지
 }
 
@@ -511,15 +544,15 @@ static void keyboard_leave(void* data, wl_keyboard* wl_keyboard, uint32_t serial
 {
 	WL_TRACE_FUNC();
 	struct itimerspec ts = { 0, };
-	timerfd_settime(wlxStub.key_repeat.fd, 0, &ts, NULL);
-	wlxStub.xkb.serial = serial;
+	timerfd_settime(wlxStub.keyboard.repeat.fd, 0, &ts, NULL);
+	wlxStub.keyboard.serial = serial;
 	// 포커스 읽음이라면 여기서 메시지
 }
 
 // 텍스트 메시지. 키 입력에서 쓰는데, 루프에서 반복 눌림 검사때도 쓴다
 static void keyboard_text(xkb_keysym_t scancode)
 {
-	nkk_xkb* xkb = &wlxStub.xkb;
+	nkk_keyboard* xkb = &wlxStub.keyboard;
 	const xkb_keysym_t keycode = scancode + 8;
 	const xkb_keysym_t* syms;
 	if (xkb_state_key_get_syms(xkb->state, keycode, &syms) != 1)
@@ -553,11 +586,10 @@ static void keyboard_text(xkb_keysym_t scancode)
 static void keyboard_key(void *data, wl_keyboard *keyboard, uint32_t serial, uint32_t time, uint32_t scancode, uint32_t state)
 {
 	WL_TRACE_FUNC();
-	qn_ret_if_fail(wlxStub.xkb.state);
+	qn_ret_if_fail(wlxStub.keyboard.state);
 
-	nkk_xkb* xkb = &wlxStub.xkb;
-	nkk_key_repeat* repeat = &wlxStub.key_repeat;
-	wlxStub.xkb.serial = serial;
+	nkk_keyboard* kbd = &wlxStub.keyboard;
+	wlxStub.keyboard.serial = serial;
 
 	const xkb_keycode_t keycode = scancode + 8;
 	const bool down = state == WL_KEYBOARD_KEY_STATE_PRESSED;
@@ -565,18 +597,18 @@ static void keyboard_key(void *data, wl_keyboard *keyboard, uint32_t serial, uin
 
 	if (down)
 	{
-		if (xkb_keymap_key_repeats(xkb->keymap, keycode) && repeat->rate > 0)
+		if (xkb_keymap_key_repeats(kbd->keymap, keycode) && kbd->repeat.rate > 0)
 		{
-			repeat->scancode = scancode;
-			if (repeat->rate > 1)
-				ts.it_interval.tv_nsec = QN_NSEC_PER_SEC / repeat->rate;
+			kbd->repeat.scancode = scancode;
+			if (kbd->repeat.rate > 1)
+				ts.it_interval.tv_nsec = QN_NSEC_PER_SEC / kbd->repeat.rate;
 			else
 				ts.it_interval.tv_sec = 1;
-			ts.it_value.tv_sec = repeat->delay / QN_MSEC_PER_SEC;
-			ts.it_value.tv_nsec = (repeat->delay % QN_MSEC_PER_SEC) * QN_USEC_PER_SEC;
+			ts.it_value.tv_sec = kbd->repeat.delay / QN_MSEC_PER_SEC;
+			ts.it_value.tv_nsec = (kbd->repeat.delay % QN_MSEC_PER_SEC) * QN_USEC_PER_SEC;
 		}
 	}
-	timerfd_settime(repeat->fd, 0, &ts, NULL);
+	timerfd_settime(kbd->repeat.fd, 0, &ts, NULL);
 
 	// 키 메시지, keycode 변환 해야하능데...
 	stub_event_on_keyboard((QikKey)keycode, true);
@@ -591,30 +623,30 @@ static void keyboard_modifiers(void *data, wl_keyboard *wl_keyboard, uint32_t se
 	uint32_t mods_latched, uint32_t mods_locked, uint32_t group)
 {
 	WL_TRACE_FUNC();
-	nkk_xkb* xkb = &wlxStub.xkb;
-	xkb_state_update_mask(xkb->state, mods_depressed, mods_latched, mods_locked, 0, 0, group);
+	nkk_keyboard* kbd = &wlxStub.keyboard;
+	xkb_state_update_mask(kbd->state, mods_depressed, mods_latched, mods_locked, 0, 0, group);
 
 	const uint32_t latchlocked = mods_latched | mods_locked;
-	if (xkb->depressed != mods_depressed && xkb->latchlocked != latchlocked)
+	if (kbd->depressed != mods_depressed && kbd->latchlocked != latchlocked)
 	{
 		QikMask mask = 0;
 
-		if (QN_TMASK(mods_depressed, xkb->mod_shift))
+		if (QN_TMASK(mods_depressed, kbd->mod_shift))
 			mask |= QIKM_SHIFT;
-		if (QN_TMASK(mods_depressed, xkb->mod_ctrl))
+		if (QN_TMASK(mods_depressed, kbd->mod_ctrl))
 			mask |= QIKM_CTRL;
-		if (QN_TMASK(mods_depressed, xkb->mod_alt))
+		if (QN_TMASK(mods_depressed, kbd->mod_alt))
 			mask |= QIKM_ALT;
-		if (QN_TMASK(mods_depressed, xkb->mod_win))
+		if (QN_TMASK(mods_depressed, kbd->mod_win))
 			mask |= QIKM_WIN;
 
-		if (QN_TMASK(latchlocked, xkb->mod_caps))
+		if (QN_TMASK(latchlocked, kbd->mod_caps))
 			mask |= QIKM_CAPS;
-		if (QN_TMASK(latchlocked, xkb->mod_num))
+		if (QN_TMASK(latchlocked, kbd->mod_num))
 			mask |= QIKM_NUM;
 
-		xkb->depressed = mods_depressed;
-		xkb->latchlocked = latchlocked;
+		kbd->depressed = mods_depressed;
+		kbd->latchlocked = latchlocked;
 
 		wlxStub.base.key.mask = mask;
 	}
@@ -625,8 +657,8 @@ static void keyboard_repeat_info(void *data, wl_keyboard* keyboard, int32_t rate
 {
 	WL_TRACE_FUNC();
 	qn_ret_if_fail(wlxStub.ifce.keyboard == keyboard);
-	wlxStub.key_repeat.rate = rate;
-	wlxStub.key_repeat.delay = delay;
+	wlxStub.keyboard.repeat.rate = (uint32_t)rate;
+	wlxStub.keyboard.repeat.delay = (uint32_t)delay;
 }
 
 //
@@ -634,84 +666,52 @@ static void pointer_enter(void *data, wl_pointer *ptr, uint32_t serial, wl_surfa
 	wl_fixed_t sx, wl_fixed_t sy)
 {
 	WL_TRACE_FUNC();
-	/*nkk_display *dpy = data;
-	wlxStub.ptr_ev.mask |= NkkPointerEnter;
-	wlxStub.ptr_ev.serial = serial;
-	wlxStub.ptr_ev.surface = surface;
-	wlxStub.ptr_ev.sx = sx,
-		wlxStub.ptr_ev.sy = sy;*/
+	nkk_pointer* pm = &wlxStub.pointer;
+	pm->serial = serial;
+	pm->hover = true;
+
+	// 커서 업데이트
+	// 마우스 들어옴 이벤트?
 }
 
 //
 static void pointer_leave(void *data, wl_pointer *ptr, uint32_t serial, wl_surface *surface)
 {
 	WL_TRACE_FUNC();
-	/*nkk_display *dpy = data;
-	wlxStub.ptr_ev.mask |= NkkPointerLeave;
-	wlxStub.ptr_ev.surface = surface;*/
+	nkk_pointer* pm = &wlxStub.pointer;
+	pm->serial = serial;
+
+	// 마우스 나감 이벤트?
 }
 
 //
 static void pointer_motion(void *data, wl_pointer *ptr, uint32_t time, wl_fixed_t sx, wl_fixed_t sy)
 {
 	WL_TRACE_FUNC();
-	/*nkk_display *dpy = data;
-	wlxStub.ptr_ev.mask |= NkkPointerMotion;
-	wlxStub.ptr_ev.sx = sx;
-	wlxStub.ptr_ev.sy = sy;*/
+	nkk_pointer* pm = &wlxStub.pointer;
+
+	if (pm->kx == sx && pm->ky == sy)
+		return;
+
+	pm->kx = sx;
+	pm->ky = sy;
+	int x = wl_fixed_to_int(sx);
+	int y = wl_fixed_to_int(sy);
+
+	stub_event_on_mouse_move(x, y);
+	stub_track_mouse_click(QIM_NONE, QIMT_MOVE);
 };
 
 //
 static void pointer_axis(void *data, wl_pointer *ptr, uint32_t time, uint32_t axis, wl_fixed_t value)
 {
 	WL_TRACE_FUNC();
-	/*nkk_display *dpy = data;
-	wlxStub.ptr_ev.mask |= NkkPointerAxis;
-	if (axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL)
-		wlxStub.ptr_ev.axis_x = value;
-	else if (axis == WL_POINTER_AXIS_VERTICAL_SCROLL)
-		wlxStub.ptr_ev.axis_y = value;*/
 }
 
 //
 static void pointer_frame(void *data, wl_pointer *ptr)
 {
 	WL_TRACE_FUNC();
-	//nkk_display *dpy = data;
-	//static wl_surface *target;
-	//nkk_pointer_event *e = &wlxStub.ptr_ev;
-
-	//if (e->mask & (NkkPointerEnter | NkkPointerLeave) && e->surface)
-	//	target = e->surface;
-	//nkk_window *win;
-	//wl_list_for_each(win, &wlxStub.windows, link)
-	//	if (win->surface == target) break;
-	//if (e->mask & NkkPointerLeave)
-	//	target = NULL;
-	//if (!win) return;
-
-	//if (e->mask & (NkkPointerEnter | NkkPointerMotion)) {
-	//	win->mx = wl_fixed_to_double(e->sx);
-	//	win->my = wl_fixed_to_double(e->sy);
-	//}
-	//if (e->mask & NkkPointerEnter)
-	//	wl_pointer_set_cursor(ptr, wlxStub.ptr_ev.serial, win->cursor_surface,
-	//		win->cursor_image->hotspot_x, win->cursor_image->hotspot_y);
-
-	//if (e->mask & NkkPointerEnter && win->mouseenter)
-	//	win->mouseenter(win, win->mx, win->my);
-	//if (e->mask & NkkPointerLeave && win->mouseleave)
-	//	win->mouseleave(win);
-	//if (e->mask & NkkPointerMotion && win->mousemotion)
-	//	win->mousemotion(win, win->mx, win->my);
-	//if (e->mask & NkkPointerButton && e->state && win->mousedown)
-	//	win->mousedown(win, wlxStub.key_repeat.mods, e->button, win->mx, win->my);
-	//if (e->mask & NkkPointerButton && !e->state && win->mouseup)
-	//	win->mouseup(win, wlxStub.key_repeat.mods, e->button, win->mx, win->my);
-	//if (e->mask & NkkPointerAxis && win->mousewheel)
-	//	win->mousewheel(win, wl_fixed_to_double(e->axis_x), wl_fixed_to_double(e->axis_y));
-	//// TODO need NkkPointerDiscrete?
-	//memset(e, 0, sizeof(nkk_pointer_event));
 }
 
 //
@@ -736,11 +736,6 @@ static void pointer_axis_discrete(void *data, wl_pointer *ptr, uint32_t axis, in
 static void pointer_button(void *data, wl_pointer *ptr, uint32_t serial, uint32_t time, uint32_t button, uint32_t state)
 {
 	WL_TRACE_FUNC();
-	/*nkk_display *dpy = data;
-	wlxStub.ptr_ev.mask |= NkkPointerButton;
-	wlxStub.ptr_ev.serial = serial;
-	wlxStub.ptr_ev.button = button;
-	wlxStub.ptr_ev.state = state;*/
 }
 
 //
@@ -834,12 +829,12 @@ static bool nkk_display_open(void)
 	if (!(wlxStub.ifce.display = wl_display_connect(NULL)))
 		return false;
 	wlxStub.ifce.registry = wl_display_get_registry(wlxStub.ifce.display);
-	wlxStub.xkb.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	wlxStub.keyboard.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	wl_registry_add_listener(wlxStub.ifce.registry, &events_registry, NULL);
 	wl_display_roundtrip(wlxStub.ifce.display);		// 레지스트리 에빈트
 	wl_display_roundtrip(wlxStub.ifce.display);		// 아웃풋 이벤트
 
-	wlxStub.key_repeat.fd = wl_seat_get_version(wlxStub.ifce.seat) < WL_KEYBOARD_REPEAT_INFO_SINCE_VERSION ?
+	wlxStub.keyboard.repeat.fd = wl_seat_get_version(wlxStub.ifce.seat) < WL_KEYBOARD_REPEAT_INFO_SINCE_VERSION ?
 		-1 : timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
 
 	wlxStub.cursor.theme = wl_cursor_theme_load(NULL, 24, wlxStub.ifce.shm);
@@ -853,10 +848,10 @@ static void nkk_display_close(void)
 {
 	qn_ret_if_fail(wlxStub.ifce.display);
 
-	WL_DESTROY(wlxStub.xkb.keymap, xkb_keymap_unref);
-	WL_DESTROY(wlxStub.xkb.state, xkb_state_unref);
-	WL_DESTROY(wlxStub.xkb.compose_table, xkb_compose_table_unref);
-	WL_DESTROY(wlxStub.xkb.compose_state, xkb_compose_state_unref);
+	WL_DESTROY(wlxStub.keyboard.keymap, xkb_keymap_unref);
+	WL_DESTROY(wlxStub.keyboard.state, xkb_state_unref);
+	WL_DESTROY(wlxStub.keyboard.compose_table, xkb_compose_table_unref);
+	WL_DESTROY(wlxStub.keyboard.compose_state, xkb_compose_state_unref);
 
 	WL_DESTROY(wlxStub.ifce.pointer, wl_pointer_destroy);
 	WL_DESTROY(wlxStub.ifce.keyboard, wl_keyboard_destroy);
@@ -872,8 +867,8 @@ static void nkk_display_close(void)
 	WL_DESTROY(wlxStub.ifce.registry, wl_registry_destroy);
 	wl_display_disconnect(wlxStub.ifce.display);
 
-	if (wlxStub.key_repeat.fd >= 0)
-		close(wlxStub.key_repeat.fd);
+	if (wlxStub.keyboard.repeat.fd >= 0)
+		close(wlxStub.keyboard.repeat.fd);
 }
 
 // 윈도우 열기
@@ -1006,7 +1001,7 @@ static bool nkk_poll_events(uint ms/*타임아웃*/)
 	struct pollfd fds[] =
 	{
 		{ wl_display_get_fd(display), POLLIN,},
-		{ wlxStub.key_repeat.fd, POLLIN,},
+		{ wlxStub.keyboard.repeat.fd, POLLIN,},
 		{-1,POLLIN,},
 	};
 
@@ -1120,7 +1115,8 @@ void stub_system_finalize(void)
 //
 bool stub_system_poll(void)
 {
-	nkk_main_loop();
+	if (false)
+		nkk_main_loop();
 	if (nkk_poll_events(0) == false)
 		return false;
 	return true;
