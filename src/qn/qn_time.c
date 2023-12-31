@@ -279,7 +279,7 @@ typedef struct QnRealTimer
 //
 QnTimer* qn_timer_new(void)
 {
-	QnRealTimer* self = qn_alloc_1(QnRealTimer);
+	QnRealTimer* self = qn_alloc_zero_1(QnRealTimer);
 	qn_val_if_fail(self, NULL);
 
 	self->frame.q = cycle_impl.tick_count;

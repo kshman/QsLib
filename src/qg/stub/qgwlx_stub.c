@@ -10,6 +10,7 @@
 #include "qs_kmc.h"
 #include "qg_stub.h"
 #include <unistd.h>
+#include <poll.h>
 #include <sys/mman.h>
 #include <sys/timerfd.h>
 
@@ -195,17 +196,15 @@ static bool _so_init(void)
 
 
 //////////////////////////////////////////////////////////////////////////
-// 스터브 본문
+// 스터브 선언
 
 //
 typedef struct nkk_window
 {
-	uint32_t			width, height;	// 목적 수치
-	struct wl_surface*	surface;
-	struct wl_surface*	cursor_surface;
-	struct wl_cursor_image*	cursor_image;
-	struct xdg_surface*		layer;
-	struct xdg_toplevel*	toplevel;
+	int32_t				width, height;	// 펜딩
+	wl_surface*			surface;
+	xdg_surface*		layer;
+	xdg_toplevel*		toplevel;
 } nkk_window;
 
 //
@@ -246,6 +245,14 @@ typedef struct nkk_pointer_event
 } nkk_pointer_event;
 
 //
+typedef struct nkk_cursor
+{
+	wl_cursor_theme*	theme;
+	wl_cursor_image*	image;
+	wl_surface*			surface;
+} nkk_cursor;
+
+//
 typedef struct nkk_monitor
 {
 	QgUdevMonitor		base;
@@ -257,11 +264,8 @@ typedef struct nkk_monitor
 } nkk_monitor;
 
 //
-typedef struct WaylandStub
+typedef struct nkk_interface
 {
-	StubBase			base;
-	const char*			tag;
-
 	wl_display*			display;
 	wl_registry*		registry;
 	wl_compositor*		compositor;
@@ -271,13 +275,6 @@ typedef struct WaylandStub
 	wl_keyboard*		keyboard;
 	xdg_wm_base*		xdg_shell;
 
-	wl_cursor_theme*	cursor_theme;
-
-	nkk_xkb				xkb;
-	nkk_key_repeat		key_repeat;
-	nkk_pointer_event	pointer_event;
-	nkk_window			win;
-
 	// 언젠간 쓰겠지
 	wl_data_device_manager*				data_device_manager;
 	wl_data_device*						data_device;
@@ -286,86 +283,40 @@ typedef struct WaylandStub
 	zwp_relative_pointer_manager_v1*	relative_pointer_manager;
 	zwp_pointer_constraints_v1*			pointer_constraints;
 	zwp_idle_inhibit_manager_v1*		idle_inhibit_manager;
+} nkk_interface;
+
+//
+typedef struct WaylandStub
+{
+	StubBase			base;
+
+	const char*			tag;
+	nkk_interface		ifce;
+
+	nkk_xkb				xkb;
+	nkk_key_repeat		key_repeat;
+	nkk_pointer_event	pointer_event;
+	nkk_cursor			cursor;
+	nkk_window			win;
 } WaylandStub;
 
 // 여기야 여기!
 WaylandStub wlxStub;
 
-//
-static bool nkk_display_open(void);
-static void nkk_display_close(void);
-
-//
-bool stub_system_open(const char* title, const int display, const int width, const int height, QgFlag flags)
-{
-	if (_so_init() == false)
-	{
-		qn_debug_outputs(true, "WLX STUB", "so load failed");
-		return false;
-	}
-	if (nkk_display_open()==false)
-	{
-		qn_debug_outputs(true, "WLX STUB", "cannot open display");
-		return false;
-	}
-
-	//
-	stub_initialize((StubBase*)&wlxStub, flags);
-
-	return true;
-}
-
-//
-void stub_system_finalize(void)
-{
-	nkk_display_close();
-}
-
-//
-bool stub_system_poll(void)
-{
-	return false;
-}
-
-//
-void stub_system_disable_acs(const bool enable)
-{
-	QN_DUMMY(enable);
-}
-
-//
-void stub_system_disable_scr_save(const bool enable)
-{
-	QN_DUMMY(enable);
-}
-
-//
-void stub_system_enable_drop(const bool enable)
-{
-	QN_DUMMY(enable);
-}
-
-//
-void stub_system_set_title(const char* title)
-{
-	QN_DUMMY(title);
-}
-
-//
-void stub_system_update_bound(void)
-{
-}
-
-//
-void stub_system_focus(void)
-{
-}
 
 //////////////////////////////////////////////////////////////////////////
 // 웨이랜드 이벤트
 
 #define WL_DESTROY(var,func)	QN_STMT_BEGIN{ if (var) func(var); }QN_STMT_END
+#ifdef _DEBUG
+#define WL_TRACE(...)			qn_debug_outputf(false, "WLX STUB", __VA_ARGS__)
+#define WL_TRACE_FUNC()			qn_debug_outputs(false, "WLX STUB", __PRETTY_FUNCTION__);
+#else
+#define WL_TRACE(...)
+#define WL_TRACE_FUNC()
+#endif
 
+static void nkk_window_close(void);
 static void keyboard_key(void*, wl_keyboard*, uint32_t, uint32_t, uint32_t, uint32_t);
 static void keyboard_enter(void*, wl_keyboard*, uint32_t, wl_surface*, struct wl_array*);
 static void keyboard_keymap(void*, wl_keyboard*, uint32_t, int32_t, uint32_t);
@@ -385,6 +336,9 @@ static void registry_global(void*, wl_registry*, uint32_t, const char*, uint32_t
 static void seat_name(void*, wl_seat*, const char*);
 static void seat_capabilities(void*, wl_seat*, uint32_t);
 static void xdg_shell_pong(void*, xdg_wm_base*, uint32_t);
+static void xdg_surface_configure(void *, struct xdg_surface *, uint32_t);
+static void xdg_toplevel_close(void *, struct xdg_toplevel *);
+static void xdg_toplevel_configure(void *, struct xdg_toplevel *, int32_t, int32_t, struct wl_array *);
 
 static const struct wl_registry_listener events_registry =
 {
@@ -425,10 +379,45 @@ static const struct xdg_wm_base_listener events_xdg_shell =
 {
 	.ping = xdg_shell_pong,
 };
+static const struct xdg_surface_listener events_xdg_surface =
+{
+	.configure = xdg_surface_configure,
+};
+static const struct xdg_toplevel_listener events_xdg_toplevel =
+{
+	.close = xdg_toplevel_close,
+	.configure = xdg_toplevel_configure,
+};
+
+//
+static void xdg_surface_configure(void *data, struct xdg_surface *xdg_surface, uint32_t serial)
+{
+	WL_TRACE_FUNC();
+	xdg_surface_ack_configure(xdg_surface, serial);
+}
+
+//
+static void xdg_toplevel_close(void *data, struct xdg_toplevel *xdg)
+{
+	WL_TRACE_FUNC();
+	nkk_window_close();
+}
+
+//
+static void xdg_toplevel_configure(void *data, struct xdg_toplevel *xdg, int32_t width, int32_t height, struct wl_array *states)
+{
+	WL_TRACE_FUNC();
+	if (!width || !height)
+		return;
+	nkk_window* win = &wlxStub.win;
+	win->width = width;
+	win->height = height;
+}
 
 //
 static void keyboard_enter(void *data, wl_keyboard *kb, uint32_t n, wl_surface *surface, struct wl_array *keys)
 {
+	WL_TRACE_FUNC();
 	//nkk_display *dpy = data;
 	//nkk_window *win, *tmp;
 	//wl_list_for_each_safe(win, tmp, &wlxStub.windows, link) {
@@ -443,6 +432,7 @@ static void keyboard_enter(void *data, wl_keyboard *kb, uint32_t n, wl_surface *
 //
 static void keyboard_key(void *data, wl_keyboard *keyboard, uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
 {
+	WL_TRACE_FUNC();
 	/*nkk_display *dpy = data;
 	if (wlxStub.xkb_state == NULL)
 		return;
@@ -467,6 +457,7 @@ static void keyboard_key(void *data, wl_keyboard *keyboard, uint32_t serial, uin
 //
 static void keyboard_keymap(void *data, wl_keyboard *wl_keyboard, uint32_t fmt, int32_t fd, uint32_t size)
 {
+	WL_TRACE_FUNC();
 	/*if (fmt != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1)
 	{
 		close(fd);
@@ -495,13 +486,14 @@ static void keyboard_keymap(void *data, wl_keyboard *wl_keyboard, uint32_t fmt, 
 //
 static void keyboard_leave(void* data, wl_keyboard* wl_keyboard, uint32_t serial, wl_surface* surface)
 {
+	WL_TRACE_FUNC();
 }
-
 
 //
 static void keyboard_modifiers(void *data, wl_keyboard *wl_keyboard, uint32_t serial, uint32_t mods_depressed,
 	uint32_t mods_latched, uint32_t mods_locked, uint32_t group)
 {
+	WL_TRACE_FUNC();
 	/*nkk_display *dpy = data;
 	if (wlxStub.xkb_keymap == NULL)
 		return;
@@ -520,6 +512,7 @@ static void keyboard_modifiers(void *data, wl_keyboard *wl_keyboard, uint32_t se
 //
 static void keyboard_repeat_info(void *data, wl_keyboard *wl_keyboard, int32_t rate, int32_t delay)
 {
+	WL_TRACE_FUNC();
 	/*nkk_display *dpy = data;
 	wlxStub.key_repeat.delay.tv_usec = 1000 * delay;
 	wlxStub.key_repeat.repeat.tv_usec = 1000 * 1000 / rate;*/
@@ -528,6 +521,7 @@ static void keyboard_repeat_info(void *data, wl_keyboard *wl_keyboard, int32_t r
 //
 static void pointer_axis(void *data, wl_pointer *ptr, uint32_t time, uint32_t axis, wl_fixed_t value)
 {
+	WL_TRACE_FUNC();
 	/*nkk_display *dpy = data;
 	wlxStub.ptr_ev.mask |= NkkPointerAxis;
 	if (axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL)
@@ -539,21 +533,25 @@ static void pointer_axis(void *data, wl_pointer *ptr, uint32_t time, uint32_t ax
 //
 static void pointer_axis_discrete(void *data, wl_pointer *ptr, uint32_t axis, int32_t discrete)
 {
+	WL_TRACE_FUNC();
 }
 
 //
 static void pointer_axis_source(void *data, wl_pointer *ptr, uint32_t axis_source)
 {
+	WL_TRACE_FUNC();
 }
 
 //
 static void pointer_axis_stop(void *data, wl_pointer *ptr, uint32_t time, uint32_t axis)
 {
+	WL_TRACE_FUNC();
 }
 
 //
 static void pointer_button(void *data, wl_pointer *ptr, uint32_t serial, uint32_t time, uint32_t button, uint32_t state)
 {
+	WL_TRACE_FUNC();
 	/*nkk_display *dpy = data;
 	wlxStub.ptr_ev.mask |= NkkPointerButton;
 	wlxStub.ptr_ev.serial = serial;
@@ -565,6 +563,7 @@ static void pointer_button(void *data, wl_pointer *ptr, uint32_t serial, uint32_
 static void pointer_enter(void *data, wl_pointer *ptr, uint32_t serial, wl_surface *surface,
 	wl_fixed_t sx, wl_fixed_t sy)
 {
+	WL_TRACE_FUNC();
 	/*nkk_display *dpy = data;
 	wlxStub.ptr_ev.mask |= NkkPointerEnter;
 	wlxStub.ptr_ev.serial = serial;
@@ -576,6 +575,7 @@ static void pointer_enter(void *data, wl_pointer *ptr, uint32_t serial, wl_surfa
 //
 static void pointer_frame(void *data, wl_pointer *ptr)
 {
+	WL_TRACE_FUNC();
 	//nkk_display *dpy = data;
 	//static wl_surface *target;
 	//nkk_pointer_event *e = &wlxStub.ptr_ev;
@@ -616,6 +616,7 @@ static void pointer_frame(void *data, wl_pointer *ptr)
 //
 static void pointer_leave(void *data, wl_pointer *ptr, uint32_t serial, wl_surface *surface)
 {
+	WL_TRACE_FUNC();
 	/*nkk_display *dpy = data;
 	wlxStub.ptr_ev.mask |= NkkPointerLeave;
 	wlxStub.ptr_ev.surface = surface;*/
@@ -624,6 +625,7 @@ static void pointer_leave(void *data, wl_pointer *ptr, uint32_t serial, wl_surfa
 //
 static void pointer_motion(void *data, wl_pointer *ptr, uint32_t time, wl_fixed_t sx, wl_fixed_t sy)
 {
+	WL_TRACE_FUNC();
 	/*nkk_display *dpy = data;
 	wlxStub.ptr_ev.mask |= NkkPointerMotion;
 	wlxStub.ptr_ev.sx = sx;
@@ -633,93 +635,393 @@ static void pointer_motion(void *data, wl_pointer *ptr, uint32_t time, wl_fixed_
 //
 static void registry_global(void *data, wl_registry *reg, uint32_t name, const char *iface, uint32_t ver)
 {
+	WL_TRACE("레지스트리: %s (version: %u)", iface, ver);
 	if (strcmp(iface, "wl_compositor") == 0)			// 컴포지터
-		wlxStub.compositor = wl_registry_bind(reg, name, &wl_compositor_interface, QN_MIN(4, ver));
+		wlxStub.ifce.compositor = wl_registry_bind(reg, name, &wl_compositor_interface, QN_MIN(4, ver));
 	else if (strcmp(iface, "wl_shm") == 0)				// 메모리 처리
-		wlxStub.shm = wl_registry_bind(reg, name, &wl_shm_interface, 1);
+		wlxStub.ifce.shm = wl_registry_bind(reg, name, &wl_shm_interface, 1);
 	else if (strcmp(iface, "xdg_wm_base") == 0)			// XDG 쉘 윈도우
 	{
-		wlxStub.xdg_shell = wl_registry_bind(reg, name, &xdg_wm_base_interface, QN_MIN(6, ver));
-		xdg_wm_base_add_listener(wlxStub.xdg_shell, &events_xdg_shell, NULL);
+		wlxStub.ifce.xdg_shell = wl_registry_bind(reg, name, &xdg_wm_base_interface, QN_MIN(6, ver));
+		xdg_wm_base_add_listener(wlxStub.ifce.xdg_shell, &events_xdg_shell, NULL);
 	}
 	else if (strcmp(iface, "wl_seat") == 0)				// 입력
 	{
 		// 7 마으스 됨, 4 키보드 됨, 5 둘다 됨
-		wlxStub.seat = wl_registry_bind(reg, name, &wl_seat_interface, QN_MIN(5,ver));		
-		wl_seat_add_listener(wlxStub.seat, &events_seat, wlxStub.display);
+		wlxStub.ifce.seat = wl_registry_bind(reg, name, &wl_seat_interface, QN_MIN(5, ver));
+		wl_seat_add_listener(wlxStub.ifce.seat, &events_seat, NULL);
 	}
 }
 
 //
 static void seat_capabilities(void *data, wl_seat *wl_seat, uint32_t capabilities)
 {
+	WL_TRACE_FUNC();
 	bool kb = capabilities & WL_SEAT_CAPABILITY_KEYBOARD;
 	bool ptr = capabilities & WL_SEAT_CAPABILITY_POINTER;
-	if (kb && wlxStub.keyboard == NULL) {
-		wlxStub.keyboard = wl_seat_get_keyboard(wlxStub.seat);
-		wl_keyboard_add_listener(wlxStub.keyboard, &events_keyboard, wlxStub.display);
+	if (kb && wlxStub.ifce.keyboard == NULL) {
+		wlxStub.ifce.keyboard = wl_seat_get_keyboard(wlxStub.ifce.seat);
+		wl_keyboard_add_listener(wlxStub.ifce.keyboard, &events_keyboard, NULL);
 	}
-	else if (!kb && wlxStub.keyboard) {
-		wl_keyboard_release(wlxStub.keyboard);
-		wlxStub.keyboard = NULL;
+	else if (!kb && wlxStub.ifce.keyboard) {
+		wl_keyboard_release(wlxStub.ifce.keyboard);
+		wlxStub.ifce.keyboard = NULL;
 	}
-	if (ptr && wlxStub.pointer == NULL) {
-		wlxStub.pointer = wl_seat_get_pointer(wlxStub.seat);
-		wl_pointer_add_listener(wlxStub.pointer, &events_pointer, wlxStub.display);
+	if (ptr && wlxStub.ifce.pointer == NULL) {
+		wlxStub.ifce.pointer = wl_seat_get_pointer(wlxStub.ifce.seat);
+		wl_pointer_add_listener(wlxStub.ifce.pointer, &events_pointer, NULL);
 	}
-	else if (!ptr && wlxStub.pointer) {
-		wl_pointer_release(wlxStub.pointer);
-		wlxStub.pointer = NULL;
+	else if (!ptr && wlxStub.ifce.pointer) {
+		wl_pointer_release(wlxStub.ifce.pointer);
+		wlxStub.ifce.pointer = NULL;
 	}
 }
 
 //
 static void seat_name(void *data, wl_seat *seat, const char *name)
 {
+	WL_TRACE_FUNC();
 }
 
 //
 static void xdg_shell_pong(void* data, xdg_wm_base* wm_base, uint32_t serial)
 {
+	WL_TRACE_FUNC();
 	xdg_wm_base_pong(wm_base, serial);
 }
 
-//
+
+//////////////////////////////////////////////////////////////////////////
+// 웨이런댜 구현
+
+// 커서 설정
+static void nkk_set_system_cursor(const char* name)
+{
+	if (wlxStub.cursor.surface)
+	{
+		wl_surface_attach(wlxStub.cursor.surface, NULL, 0, 0);
+		wl_surface_commit(wlxStub.cursor.surface);
+		wl_surface_destroy(wlxStub.cursor.surface);
+	}
+	if (name == NULL)
+	{
+		wlxStub.cursor.surface = NULL;
+		return;
+	}
+	wl_cursor *cursor = wl_cursor_theme_get_cursor(wlxStub.cursor.theme, name);
+	if (cursor == NULL || (wlxStub.cursor.image = cursor->images[0]) == NULL)
+		return;
+	wl_buffer *cursor_buffer = wl_cursor_image_get_buffer(wlxStub.cursor.image);
+	wlxStub.cursor.surface = wl_compositor_create_surface(wlxStub.ifce.compositor);
+	wl_surface_attach(wlxStub.cursor.surface, cursor_buffer, 0, 0);
+	wl_surface_commit(wlxStub.cursor.surface);
+}
+
+// 디스플레이 열기
 static bool nkk_display_open(void)
 {
-	if (!(wlxStub.display = wl_display_connect(NULL)))
+	if (!(wlxStub.ifce.display = wl_display_connect(NULL)))
 		return false;
-	wlxStub.registry = wl_display_get_registry(wlxStub.display);
+	wlxStub.ifce.registry = wl_display_get_registry(wlxStub.ifce.display);
 	wlxStub.xkb.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-	wl_registry_add_listener(wlxStub.registry, &events_registry, wlxStub.display);
-	wl_display_roundtrip(wlxStub.display);
-	wl_display_roundtrip(wlxStub.display);
+	wl_registry_add_listener(wlxStub.ifce.registry, &events_registry, NULL);
+	wl_display_roundtrip(wlxStub.ifce.display);
+	wl_display_roundtrip(wlxStub.ifce.display);
 
-	wlxStub.key_repeat.fd = wl_seat_get_version(wlxStub.seat) < WL_KEYBOARD_REPEAT_INFO_SINCE_VERSION ?
+	wlxStub.key_repeat.fd = wl_seat_get_version(wlxStub.ifce.seat) < WL_KEYBOARD_REPEAT_INFO_SINCE_VERSION ?
 		-1 : timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
 
-	wlxStub.cursor_theme = wl_cursor_theme_load(NULL, 24, wlxStub.shm);
+	wlxStub.cursor.theme = wl_cursor_theme_load(NULL, 24, wlxStub.ifce.shm);
+	nkk_set_system_cursor("left_ptr");
 
 	return true;
 }
 
+// 디스플레이 닫기
 static void nkk_display_close(void)
 {
-	qn_ret_if_fail(wlxStub.display);
+	qn_ret_if_fail(wlxStub.ifce.display);
 
-	WL_DESTROY(wlxStub.pointer, wl_pointer_destroy);
-	WL_DESTROY(wlxStub.keyboard, wl_keyboard_destroy);
+	WL_DESTROY(wlxStub.ifce.pointer, wl_pointer_destroy);
+	WL_DESTROY(wlxStub.ifce.keyboard, wl_keyboard_destroy);
 
-	WL_DESTROY(wlxStub.seat, wl_seat_destroy);
-	WL_DESTROY(wlxStub.xdg_shell, xdg_wm_base_destroy);
-	WL_DESTROY(wlxStub.compositor, wl_compositor_destroy);
+	WL_DESTROY(wlxStub.ifce.seat, wl_seat_destroy);
+	WL_DESTROY(wlxStub.ifce.xdg_shell, xdg_wm_base_destroy);
+	WL_DESTROY(wlxStub.ifce.compositor, wl_compositor_destroy);
 
-	WL_DESTROY(wlxStub.cursor_theme, wl_cursor_theme_destroy);
-	WL_DESTROY(wlxStub.registry, wl_registry_destroy);
-	wl_display_disconnect(wlxStub.display);
+	nkk_set_system_cursor(NULL);
+	WL_DESTROY(wlxStub.cursor.theme, wl_cursor_theme_destroy);
+
+	WL_DESTROY(wlxStub.ifce.shm, wl_shm_destroy);
+	WL_DESTROY(wlxStub.ifce.registry, wl_registry_destroy);
+	wl_display_disconnect(wlxStub.ifce.display);
 
 	if (wlxStub.key_repeat.fd >= 0)
 		close(wlxStub.key_repeat.fd);
+}
+
+// 윈도우 열기
+static bool nkk_window_open(int32_t width, int32_t height)
+{
+	qn_val_if_fail(wlxStub.ifce.display, false);
+	qn_val_if_fail(wlxStub.ifce.xdg_shell, false);
+	nkk_window* win = &wlxStub.win;
+
+	// 기본 서피스
+	win->width = width;		// 펜딩!
+	win->height = height;	// 펜딩!
+	win->surface = wl_compositor_create_surface(wlxStub.ifce.compositor);
+
+	// XDG
+	win->layer = xdg_wm_base_get_xdg_surface(wlxStub.ifce.xdg_shell, win->surface);
+	xdg_surface_add_listener(win->layer, &events_xdg_surface, NULL);
+	win->toplevel = xdg_surface_get_toplevel(win->layer);
+	xdg_toplevel_add_listener(win->toplevel, &events_xdg_toplevel, NULL);
+	wl_surface_commit(win->surface);
+	wl_display_roundtrip(wlxStub.ifce.display);
+
+	return true;
+}
+
+// 윈도우 닫기
+static void nkk_window_close(void)
+{
+	nkk_window* win = &wlxStub.win;
+
+	WL_DESTROY(win->toplevel, xdg_toplevel_destroy);
+	WL_DESTROY(win->layer, xdg_surface_destroy);
+
+	if (win->surface)
+	{
+		wl_surface_attach(win->surface, NULL, 0, 0);
+		wl_surface_commit(win->surface);
+		wl_surface_destroy(win->surface);
+	}
+}
+
+#if false
+//
+void nkk_window_set_fullscreen(nkk_window* win, bool on)
+{
+
+	if ((win->type & NkkTypeXdg) == 0) return;
+	if (on) xdg_toplevel_set_fullscreen(win->parent.toplevel, NULL);
+	else xdg_toplevel_unset_fullscreen(win->parent.toplevel);
+}
+
+//
+void nkk_window_set_size(nkk_window* win, uint32_t w, uint32_t h)
+{
+	if ((win->type & NkkTypeXdg) == 0)
+		return;
+	win->w = w;
+	win->h = h;
+}
+
+//
+void nkk_window_set_title(nkk_window* win, const char *title)
+{
+	if ((win->type & NkkTypeXdg) == 0)
+		return;
+	xdg_toplevel_set_title(win->parent.toplevel, title);
+}
+#endif
+
+//
+static bool nkk_os_poll(struct pollfd* fds, nfds_t count, uint ms)
+{
+	llong timeout = ms;
+	for (;;)
+	{
+		if (timeout != (uint)-1)
+		{
+			const ullong entry = qn_tick();
+#if defined _QN_FREEBSD_ || defined _QN_LINUX_
+			const struct timespec ts =
+			{
+				.tv_sec = timeout / 1000,
+				.tv_nsec = (timeout % 1000) * 1000000,
+			};
+			const int res = ppoll(fds, count, &ts, NULL);
+#else
+			const int res = poll(fds, count, timeout);
+#endif
+			timeout -= (llong)(qn_tick() - entry);
+
+			if (res > 0)
+				return true;
+			if (res == -1 && errno != EINTR && errno != EAGAIN)
+				return false;
+			if (timeout < 0)
+				return false;
+			}
+		else
+		{
+			const int res = poll(fds, count, -1);
+			if (res > 0)
+				return true;
+			if (res == -1 && errno != EINTR && errno != EAGAIN)
+				return false;
+		}
+		}
+	}
+
+//
+static bool nkk_display_flush(void)
+{
+	wl_display* display = wlxStub.ifce.display;
+	while (wl_display_flush(display) == -1)
+	{
+		if (errno != EAGAIN)
+			return false;
+
+		struct pollfd fd = { wl_display_get_fd(display), POLLOUT };
+		while (nkk_os_poll(&fd, 1, 0) == false)
+			return false;
+	}
+	return true;
+}
+
+//
+static bool nkk_poll_events(uint ms/*타임아웃*/)
+{
+	bool loop = true;
+	wl_display* display = wlxStub.ifce.display;
+	struct pollfd fds[] =
+	{
+		{ wl_display_get_fd(display), POLLIN,},
+		{ wlxStub.key_repeat.fd, POLLIN,},
+		{-1,POLLIN,},
+	};
+
+	while (loop)
+	{
+		while (wl_display_prepare_read(display) != 0)
+		{
+			if (wl_display_dispatch_pending(display) > 0)
+				return false;
+		}
+		if (nkk_display_flush() == false)
+		{
+			// 오류 났네. 종료
+			wl_display_cancel_read(display);
+			qg_exit_loop();
+			return false;
+		}
+
+		// 폴링
+		if (nkk_os_poll(fds, QN_COUNTOF(fds), ms) == false)
+		{
+			wl_display_cancel_read(display);
+			return true;
+		}
+
+		// 디스플레이
+		if (QN_TMASK(fds[0].revents, POLLIN) == false)
+			wl_display_cancel_read(display);
+		else
+		{
+			wl_display_read_events(display);
+			if (wl_display_dispatch_pending(display) > 0)
+				loop = false;
+		}
+
+		// 키 눌림
+		if (QN_TMASK(fds[1].revents, POLLIN))
+		{
+			ullong count;
+			if (read(fds[1].fd, &count, sizeof(count)) == 0)
+			{
+				for (ullong i = 0; i < count; i++)
+				{
+					// 키 눌림 이벤트 보내야함
+				}
+			}
+			loop = false;
+		}
+
+		// 커서
+		// libdecor
+	}
+
+	return true;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// 시스템 함수
+
+//
+bool stub_system_open(const char* title, const int display, const int width, const int height, QgFlag flags)
+{
+	if (_so_init() == false)
+	{
+		qn_debug_outputs(true, "WLX STUB", "so load failed");
+		return false;
+	}
+	if (nkk_display_open() == false)
+	{
+		qn_debug_outputs(true, "WLX STUB", "cannot open display");
+		return false;
+	}
+
+	//
+	stub_initialize((StubBase*)&wlxStub, flags);
+
+	//
+	nkk_window_open(width, height);
+	wl_display_roundtrip(wlxStub.ifce.display);
+
+	return true;
+}
+
+//
+void stub_system_finalize(void)
+{
+	nkk_window_close();
+	nkk_display_close();
+}
+
+//
+bool stub_system_poll(void)
+{
+	if (nkk_poll_events(0) == false)
+		return false;
+	return true;
+}
+
+//
+void stub_system_disable_acs(const bool enable)
+{
+	QN_DUMMY(enable);
+}
+
+//
+void stub_system_disable_scr_save(const bool enable)
+{
+	QN_DUMMY(enable);
+}
+
+//
+void stub_system_enable_drop(const bool enable)
+{
+	QN_DUMMY(enable);
+}
+
+//
+void stub_system_set_title(const char* title)
+{
+	QN_DUMMY(title);
+}
+
+//
+void stub_system_update_bound(void)
+{
+}
+
+//
+void stub_system_focus(void)
+{
 }
 
 #endif	// USE_WAYLAND

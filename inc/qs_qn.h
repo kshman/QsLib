@@ -168,6 +168,7 @@ QN_EXTC_BEGIN
 #define QN_VERSION_MAJOR	3
 #define QN_VERSION_MINER	5
 
+#define QN_MSEC_PER_SEC		1000							/// @brief 초당 밀리초
 #define QN_USEC_PER_SEC		1000000							/// @brief 초당 마이크로초 
 #define QN_NSEC_PER_SEC		1000000000						/// @brief 초당 나노초 
 
