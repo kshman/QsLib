@@ -15,6 +15,7 @@
 
 DEF_WLX_SO_BEGIN("libwayland-client")
 DEF_WLX_FUNC(const char* const*, wl_proxy_get_tag, (struct wl_proxy*))
+DEF_WLX_FUNC(int, wl_display_dispatch, (struct wl_display *display))
 DEF_WLX_FUNC(int, wl_display_dispatch_pending, (struct wl_display* display))
 DEF_WLX_FUNC(int, wl_display_flush, (struct wl_display* display))
 DEF_WLX_FUNC(int, wl_display_get_fd, (struct wl_display*))
@@ -70,6 +71,7 @@ DEF_WLX_FUNC(void, xkb_state_unref, (struct xkb_state*))
 DEF_WLX_FUNC(xkb_keysym_t, xkb_compose_state_get_one_sym, (struct xkb_compose_state*))
 DEF_WLX_FUNC(xkb_layout_index_t, xkb_state_key_get_layout, (struct xkb_state*, xkb_keycode_t))
 DEF_WLX_FUNC(xkb_mod_index_t, xkb_keymap_mod_get_index, (struct xkb_keymap*, const char*))
+DEF_WLX_FUNC(int, xkb_keysym_to_utf8, (xkb_keysym_t keysym, char *buffer, size_t size))
 DEF_WLX_SO_END
 
 DEF_WLX_SO_BEGIN("libdecor-0")
