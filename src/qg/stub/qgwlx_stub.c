@@ -30,6 +30,7 @@ typedef struct wl_data_offer					wl_data_offer;
 typedef struct wl_output						wl_output;
 typedef struct wl_pointer						wl_pointer;
 typedef struct wl_proxy							wl_proxy;
+typedef struct wl_region						wl_region;
 typedef struct wl_registry						wl_registry;
 typedef struct wl_seat							wl_seat;
 typedef struct wl_shm							wl_shm;
@@ -208,12 +209,34 @@ typedef enum wl_output_transform			wl_output_transform;
 // 스터브 선언
 
 //
+typedef struct nkk_scale
+{
+	wl_output*			output;
+	int					factor;
+} nkk_scale;
+QN_DECL_CTNR(nkk_scale_ctnr, nkk_scale);
+
+//
 typedef struct nkk_window
 {
-	int32_t				width, height;	// 펜딩
 	wl_surface*			surface;
 	xdg_surface*		layer;
 	xdg_toplevel*		toplevel;
+
+	char*				title;
+	char*				class_name;
+
+	int					content_scale;
+	nkk_scale_ctnr		scales;
+
+	int32_t				width, height;
+	struct
+	{
+		bool				active;
+		bool				maximized;
+		bool				fullscreen;
+		int32_t				width, height;
+	}					pending;
 } nkk_window;
 
 //
@@ -277,7 +300,7 @@ typedef struct nkk_monitor
 
 	uint32_t			name;
 	int					mode;
-	float				scale_factor;
+	int					scale_factor;
 
 	char				description[32];
 } nkk_monitor;
@@ -355,139 +378,79 @@ WaylandStub wlxStub;
 #define WL_TRACE_FUNC()
 #endif
 
-static void data_offer_offer(void*, wl_data_offer*, const char*);
-static void data_device_data_offer(void*, wl_data_device*, wl_data_offer*);
-static void data_device_enter(void*, wl_data_device*, uint32_t, wl_surface*, wl_fixed_t, wl_fixed_t, wl_data_offer*);
-static void data_device_leave(void*, wl_data_device*);
-static void data_device_motion(void*, wl_data_device*, uint32_t, wl_fixed_t, wl_fixed_t);
-static void data_device_drop(void*, wl_data_device*);
-static void data_device_selection(void*, wl_data_device*, wl_data_offer*);
-static void output_geometry(void*, wl_output*, int, int, int, int, int, const char*, const char*, int);
-static void output_mode(void*, wl_output*, uint32_t, int32_t, int32_t, int32_t);
-static void output_done(void*, wl_output*);
-static void output_scale(void*, wl_output*, int32_t);
-static void output_name(void*, wl_output*, const char*);
-static void output_description(void*, wl_output*, const char*);
-static void zxdg_output_logical_position(void* data, zxdg_output_v1* zxdg_output, int32_t x, int32_t y);
-static void zxdg_output_logical_size(void* data, zxdg_output_v1* zxdg_output, int32_t width, int32_t height);
-static void zxdg_output_done(void* data, zxdg_output_v1* zxdg_output);
-static void zxdg_output_name(void* data, zxdg_output_v1* zxdg_output, const char* name);
-static void zxdg_output_description(void* data, zxdg_output_v1* zxdg_output, const char* description);
-static void keyboard_key(void*, wl_keyboard*, uint32_t, uint32_t, uint32_t, uint32_t);
-static void keyboard_enter(void*, wl_keyboard*, uint32_t, wl_surface*, struct wl_array*);
-static void keyboard_keymap(void*, wl_keyboard*, uint32_t, int32_t, uint32_t);
-static void keyboard_leave(void*, wl_keyboard*, uint32_t, wl_surface*);
-static void keyboard_modifiers(void*, wl_keyboard*, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
-static void keyboard_repeat_info(void*, wl_keyboard*, int32_t, int32_t);
-static void pointer_axis(void*, wl_pointer*, uint32_t, uint32_t, wl_fixed_t);
-static void pointer_axis_discrete(void*, wl_pointer*, uint32_t, int32_t);
-static void pointer_axis_source(void*, wl_pointer*, uint32_t);
-static void pointer_axis_stop(void*, wl_pointer*, uint32_t, uint32_t);
-static void pointer_button(void*, wl_pointer*, uint32_t, uint32_t, uint32_t, uint32_t);
-static void pointer_enter(void*, wl_pointer*, uint32_t, wl_surface*, wl_fixed_t, wl_fixed_t);
-static void pointer_frame(void*, wl_pointer*);
-static void pointer_leave(void*, wl_pointer*, uint32_t, wl_surface*);
-static void pointer_motion(void*, wl_pointer*, uint32_t, wl_fixed_t, wl_fixed_t);
-static void registry_global(void*, wl_registry*, uint32_t, const char*, uint32_t);
-static void registry_global_remove(void*, wl_registry*, uint32_t);
-static void seat_name(void*, wl_seat*, const char*);
-static void seat_capabilities(void*, wl_seat*, uint32_t);
-static void xdg_shell_pong(void*, xdg_wm_base*, uint32_t);
-static void xdg_surface_configure(void *, struct xdg_surface *, uint32_t);
-static void xdg_toplevel_close(void *, struct xdg_toplevel *);
-static void xdg_toplevel_configure(void *, struct xdg_toplevel *, int32_t, int32_t, struct wl_array *);
-static void buffer_release(void *, struct wl_buffer *);
-
-static const struct wl_registry_listener events_registry =
+//
+static void set_opaque_region(void)
 {
-	.global = registry_global,
-	.global_remove = registry_global_remove,
-};
-static const struct wl_output_listener events_output =
-{
-	.geometry = output_geometry,
-	.mode = output_mode,
-	.done = output_done,
-	.scale = output_scale,
-#if defined WL_OUTPUT_NAME_SINCE_VERSION && WL_OUTPUT_NAME_SINCE_VERSION >= 4
-	.name = output_name,
-	.description = output_description,
-#endif
-};
-static const struct zxdg_output_v1_listener events_zxdg_output =
-{
-	.logical_position = zxdg_output_logical_position,
-	.logical_size = zxdg_output_logical_size,
-	.done = zxdg_output_done,
-	.name = zxdg_output_name,
-	.description = zxdg_output_description,
-};
-static const struct wl_seat_listener events_seat =
-{
-	.capabilities = seat_capabilities,
-	.name = seat_name,
-};
-static const struct wl_keyboard_listener events_keyboard =
-{
-	.keymap = keyboard_keymap,
-	.enter = keyboard_enter,
-	.leave = keyboard_leave,
-	.key = keyboard_key,
-	.modifiers = keyboard_modifiers,
-#if defined WL_KEYBOARD_REPEAT_INFO_SINCE_VERSION && WL_KEYBOARD_REPEAT_INFO_SINCE_VERSION >= 4
-	.repeat_info = keyboard_repeat_info,
-#endif
-};
-static const struct wl_pointer_listener events_pointer =
-{
-	.enter = pointer_enter,
-	.leave = pointer_leave,
-	.motion = pointer_motion,
-	.button = pointer_button,
-	.axis = pointer_axis,
-#if defined WL_POINTER_FRAME_SINCE_VERSION && WL_POINTER_FRAME_SINCE_VERSION >= 5
-	.frame = pointer_frame,
-	.axis_source = pointer_axis_source,
-	.axis_stop = pointer_axis_stop,
-	.axis_discrete = pointer_axis_discrete,
-#endif
-};
-static const struct xdg_wm_base_listener events_xdg_shell =
-{
-	.ping = xdg_shell_pong,
-};
-static const struct xdg_surface_listener events_xdg_surface =
-{
-	.configure = xdg_surface_configure,
-};
-static const struct xdg_toplevel_listener events_xdg_toplevel =
-{
-	.close = xdg_toplevel_close,
-	.configure = xdg_toplevel_configure,
-};
-static const struct wl_buffer_listener events_buffer =
-{
-	.release = buffer_release,
-};
-static const struct wl_data_device_listener events_data_device =
-{
-	.data_offer = data_device_data_offer,
-	.enter = data_device_enter,
-	.leave = data_device_leave,
-	.motion = data_device_motion,
-	.drop = data_device_drop,
-	.selection = data_device_selection,
-};
-static const struct wl_data_offer_listener events_data_offer =
-{
-	.offer = data_offer_offer,
-};
+	nkk_window* win = &wlxStub.win;
+	wl_region* region = wl_compositor_create_region(wlxStub.ifce.compositor);
+	qn_ret_if_ok(region);
+	wl_region_add(region, 0, 0, win->width, win->height);
+	wl_surface_set_opaque_region(win->surface, region);
+	wl_region_destroy(region);
+}
 
 //
-static void buffer_release(void* data, struct wl_buffer* buffer)
+static void resize_window(void)
+{
+	//nkk_window* win = &wlxStub.win;
+	//int width = (int)win->width * win->content_scale;
+	//int height = (int)win->height * win->content_scale;
+	set_opaque_region();
+}
+
+//
+static void update_window_scale(void)
+{
+	qn_ret_if_ok(wl_compositor_get_version(wlxStub.ifce.compositor) < WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION);
+
+	nkk_window* win = &wlxStub.win;
+	int max = 1;
+	size_t i;
+	qn_ctnr_foreach(&win->scales, i)
+	{
+		nkk_scale* scale = &qn_ctnr_nth(&win->scales, i);
+		max = QN_MAX(max, scale->factor);
+	}
+
+	if (win->content_scale != max)
+	{
+		win->content_scale = max;
+		wl_surface_set_buffer_scale(win->surface, max);
+		// 스케일 변경 이벤트
+		resize_window();
+		// 더티 처리
+	}
+}
+
+//
+static void surface_enter(void* data, wl_surface* surface, wl_output* output)
 {
 	WL_TRACE_FUNC();
-	wl_buffer_destroy(buffer);
+	qn_ret_if_fail(wl_proxy_get_tag((wl_proxy*)output) == &wlxStub.tag);
+	nkk_monitor* mon = (nkk_monitor*)wl_output_get_user_data(output);
+	qn_ret_if_fail(mon != NULL);
+
+	nkk_window* win = &wlxStub.win;
+	qn_ctnr_expand(nkk_scale_ctnr, &win->scales, 1);
+	nkk_scale* scale = &qn_ctnr_inv(&win->scales, 0);
+	scale->factor = mon->scale_factor;
+	scale->output = output;
+	update_window_scale();
+}
+
+static bool surface_leave_output_callback(wl_output* output, nkk_scale* scale)
+{
+	return scale->output == output;
+}
+
+//
+static void surface_leave(void* data, wl_surface* surface, wl_output* output)
+{
+	WL_TRACE_FUNC();
+	qn_ret_if_fail(wl_proxy_get_tag((wl_proxy*)output) == &wlxStub.tag);
+	nkk_window* win = &wlxStub.win;
+	qn_ctnr_remove_cmp_ptr(nkk_scale_ctnr, &win->scales, surface_leave_output_callback, output);
+	update_window_scale();
 }
 
 //
@@ -495,28 +458,24 @@ static void xdg_surface_configure(void *data, struct xdg_surface *surface, uint3
 {
 	WL_TRACE_FUNC();
 	xdg_surface_ack_configure(surface, serial);
+	nkk_window* win = &wlxStub.win;
 
-	// 임시로 그려보자
-	int width = wlxStub.win.width;
-	int height = wlxStub.win.height;
-	int size = width * height * 4;
-	int fd = (int)syscall(SYS_memfd_create, "buffer", 0);
-	int ret = ftruncate(fd, size);
-	if (ret == -1)
-		return;
-	byte* mapped = mmap(NULL, (size_t)size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	uint* ptr = (uint*)mapped;
-	for (int i = 0; i < width * height; i++)
-		*ptr = 0xFF00AA00;
-	struct wl_shm_pool* pool = wl_shm_create_pool(wlxStub.ifce.shm, fd, size);
-	wl_buffer* buffer = wl_shm_pool_create_buffer(pool, 0, width, height, width * 4, WL_SHM_FORMAT_ARGB8888);
-	wl_shm_pool_destroy(pool);
-	close(fd);
-	munmap(mapped, (size_t)size);
-	wl_buffer_add_listener(buffer, &events_buffer, NULL);
-	wl_surface_attach(wlxStub.win.surface, buffer, 0, 0);
-	wl_surface_damage_buffer(wlxStub.win.surface, 0, 0, width, height);
-	wl_surface_commit(wlxStub.win.surface);
+	if (QN_TMASK(wlxStub.base.stats, QGSSTT_ACTIVE) != win->pending.active)
+		QN_SMASK(&wlxStub.base.stats, QGSSTT_ACTIVE, win->pending.active);
+
+	if (QN_TBIT(wlxStub.base.window_stats, QGWEV_MAXIMIZED) != win->pending.maximized)
+		stub_event_on_window_event(QGWEV_MAXIMIZED, 0, 0);
+
+	int width = win->pending.width;
+	int height = win->pending.height;
+
+	if (win->width != width || win->height != height)
+	{
+		win->width = width;
+		win->height = height;
+		resize_window();
+		stub_event_on_window_event(QGWEV_SIZED, width, height);
+	}
 }
 
 // 윈도우가 닫히면 (사실은 디스플레이의 마지막 윈도우가 닫히면)
@@ -530,11 +489,37 @@ static void xdg_toplevel_close(void *data, struct xdg_toplevel *xdg)
 static void xdg_toplevel_configure(void *data, struct xdg_toplevel *xdg, int32_t width, int32_t height, struct wl_array *states)
 {
 	WL_TRACE_FUNC();
-	if (!width || !height)
-		return;
 	nkk_window* win = &wlxStub.win;
-	win->width = width;
-	win->height = height;
+	win->pending.active = false;
+	win->pending.maximized = false;
+	win->pending.fullscreen = false;
+
+	uint32_t* s;
+	wl_array_for_each(s, states)
+	{
+		switch (*s)
+		{
+			case XDG_TOPLEVEL_STATE_MAXIMIZED:
+				win->pending.maximized = true;
+				break;
+			case XDG_TOPLEVEL_STATE_FULLSCREEN:
+				win->pending.fullscreen = true;
+				break;
+			case XDG_TOPLEVEL_STATE_RESIZING:
+				break;
+			case XDG_TOPLEVEL_STATE_ACTIVATED:
+				win->pending.active = true;
+				break;
+			default:
+				break;
+		}
+	}
+
+	if (width && height)
+	{
+		win->pending.width = width;
+		win->pending.height = height;
+	}
 }
 
 //
@@ -558,6 +543,11 @@ static void data_offer_offer(void* data, wl_data_offer* offer, const char* mime_
 //
 static void data_device_data_offer(void* data, wl_data_device* device, wl_data_offer* offer)
 {
+	static const struct wl_data_offer_listener events_data_offer =
+	{
+		.offer = data_offer_offer,
+	};
+
 	qn_ctnr_expand(nkk_offer_ctnr, &wlxStub.offer.offers, 1);
 	nkk_offer_item* p = &qn_ctnr_inv(&wlxStub.offer.offers, 0);
 	qn_zero_1(p);
@@ -691,7 +681,18 @@ static void output_scale(void* data, struct wl_output* output, int32_t factor)
 {
 	WL_TRACE_FUNC();
 	nkk_monitor* mon = data;
-	mon->scale_factor = (float)factor;
+	mon->scale_factor = factor;
+
+	nkk_window* win = &wlxStub.win;
+	size_t i;
+	qn_ctnr_foreach(&win->scales, i)
+	{
+		nkk_scale* scale = &qn_ctnr_nth(&win->scales, i);
+		if (scale->output != mon->output)
+			continue;
+		update_window_scale();
+		break;
+	}
 }
 
 #ifdef WL_OUTPUT_NAME_SINCE_VERSION
@@ -1059,6 +1060,33 @@ static void pointer_button(void *data, wl_pointer *ptr, uint32_t serial, uint32_
 static void seat_capabilities(void *data, wl_seat *wl_seat, uint32_t capabilities)
 {
 	WL_TRACE_FUNC();
+
+	static const struct wl_keyboard_listener events_keyboard =
+	{
+		.keymap = keyboard_keymap,
+		.enter = keyboard_enter,
+		.leave = keyboard_leave,
+		.key = keyboard_key,
+		.modifiers = keyboard_modifiers,
+#if defined WL_KEYBOARD_REPEAT_INFO_SINCE_VERSION && WL_KEYBOARD_REPEAT_INFO_SINCE_VERSION >= 4
+		.repeat_info = keyboard_repeat_info,
+#endif
+	};
+	static const struct wl_pointer_listener events_pointer =
+	{
+		.enter = pointer_enter,
+		.leave = pointer_leave,
+		.motion = pointer_motion,
+		.button = pointer_button,
+		.axis = pointer_axis,
+#if defined WL_POINTER_FRAME_SINCE_VERSION && WL_POINTER_FRAME_SINCE_VERSION >= 5
+		.frame = pointer_frame,
+		.axis_source = pointer_axis_source,
+		.axis_stop = pointer_axis_stop,
+		.axis_discrete = pointer_axis_discrete,
+#endif
+	};
+
 	bool kb = capabilities & WL_SEAT_CAPABILITY_KEYBOARD;
 	bool ptr = capabilities & WL_SEAT_CAPABILITY_POINTER;
 	if (kb && wlxStub.ifce.keyboard == NULL) {
@@ -1144,6 +1172,36 @@ static void registry_global_remove(void* data, wl_registry* reg, uint32_t name)
 static void registry_global(void *data, wl_registry *reg, uint32_t name, const char *iface, uint32_t ver)
 {
 	WL_TRACE("레지스트리: %s (version: %u)", iface, ver);
+
+	static const struct wl_output_listener events_output =
+	{
+		.geometry = output_geometry,
+		.mode = output_mode,
+		.done = output_done,
+		.scale = output_scale,
+#if defined WL_OUTPUT_NAME_SINCE_VERSION && WL_OUTPUT_NAME_SINCE_VERSION >= 4
+		.name = output_name,
+		.description = output_description,
+#endif
+	};
+	static const struct wl_seat_listener events_seat =
+	{
+		.capabilities = seat_capabilities,
+		.name = seat_name,
+	};
+	static const struct zxdg_output_v1_listener events_zxdg_output =
+	{
+		.logical_position = zxdg_output_logical_position,
+		.logical_size = zxdg_output_logical_size,
+		.done = zxdg_output_done,
+		.name = zxdg_output_name,
+		.description = zxdg_output_description,
+	};
+	static const struct xdg_wm_base_listener events_xdg_shell =
+	{
+		.ping = xdg_shell_pong,
+	};
+
 	if (strcmp(iface, "wl_compositor") == 0)				// 컴포지터
 		wlxStub.ifce.compositor = wl_registry_bind(reg, name, &wl_compositor_interface, QN_MIN(WAYLAND_COMPOSITOR_VERSION, ver));
 	else if (strcmp(iface, "wl_shm") == 0)					// 메모리 처리
@@ -1223,11 +1281,27 @@ static void nkk_set_system_cursor(const char* name)
 // 디스플레이 열기
 static bool nkk_display_open(void)
 {
+	static const struct wl_registry_listener events_registry =
+	{
+		.global = registry_global,
+		.global_remove = registry_global_remove,
+	};
+	static const struct wl_data_device_listener events_data_device =
+	{
+		.data_offer = data_device_data_offer,
+		.enter = data_device_enter,
+		.leave = data_device_leave,
+		.motion = data_device_motion,
+		.drop = data_device_drop,
+		.selection = data_device_selection,
+	};
+
 	if (!(wlxStub.ifce.display = wl_display_connect(NULL)))
 		return false;
+
 	wlxStub.ifce.registry = wl_display_get_registry(wlxStub.ifce.display);
-	wlxStub.keyboard.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	wl_registry_add_listener(wlxStub.ifce.registry, &events_registry, NULL);
+	wlxStub.keyboard.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	wl_display_roundtrip(wlxStub.ifce.display);		// 레지스트리 에빈트
 	wl_display_roundtrip(wlxStub.ifce.display);		// 아웃풋 이벤트
 
@@ -1284,24 +1358,55 @@ static void nkk_display_close(void)
 }
 
 // 윈도우 열기
-static bool nkk_window_open(int32_t width, int32_t height)
+static bool nkk_window_open(nkk_window* win, const char* title, int32_t width, int32_t height)
 {
+	static const struct wl_surface_listener events_surface =
+	{
+		.enter = surface_enter,
+		.leave = surface_leave,
+	};
+	static const struct xdg_surface_listener events_xdg_surface =
+	{
+		.configure = xdg_surface_configure,
+	};
+	static const struct xdg_toplevel_listener events_xdg_toplevel =
+	{
+		.close = xdg_toplevel_close,
+		.configure = xdg_toplevel_configure,
+	};
+
 	qn_val_if_fail(wlxStub.ifce.display, false);
 	qn_val_if_fail(wlxStub.ifce.xdg_shell, false);
-	nkk_window* win = &wlxStub.win;
 
-	// 기본 서피스
-	win->width = width;		// 펜딩!
-	win->height = height;	// 펜딩!
+	// 
+	win->pending.width = width;
+	win->pending.height = height;
+	win->title = qn_strdup(title && *title ? title : "QS");
+	win->class_name = "qg_wlx_stub_class";
+
+	win->content_scale = 1;
+	qn_ctnr_init(nkk_scale_ctnr, &win->scales, 0);
+
+	// 서피스
 	win->surface = wl_compositor_create_surface(wlxStub.ifce.compositor);
+	wl_proxy_set_tag((wl_proxy*)win->surface, &wlxStub.tag);
+	wl_surface_add_listener(win->surface, &events_surface, NULL);
 
-	// XDG
+	// XDG 서피스
 	win->layer = xdg_wm_base_get_xdg_surface(wlxStub.ifce.xdg_shell, win->surface);
 	xdg_surface_add_listener(win->layer, &events_xdg_surface, NULL);
+
 	win->toplevel = xdg_surface_get_toplevel(win->layer);
 	xdg_toplevel_add_listener(win->toplevel, &events_xdg_toplevel, NULL);
+
+	xdg_toplevel_set_app_id(win->toplevel, win->class_name);
+	xdg_toplevel_set_title(win->toplevel, win->title);
+
 	wl_surface_commit(win->surface);
 	wl_display_roundtrip(wlxStub.ifce.display);
+
+	//
+	set_opaque_region();
 
 	return true;
 }
@@ -1320,6 +1425,9 @@ static void nkk_window_close(void)
 		wl_surface_commit(win->surface);
 		wl_surface_destroy(win->surface);
 	}
+
+	qn_ctnr_disp(&win->scales);
+	qn_free(win->title);
 }
 
 #if false
@@ -1386,7 +1494,7 @@ static bool nkk_os_poll(struct pollfd* fds, nfds_t count, uint ms)
 			if (res == -1 && errno != EINTR && errno != EAGAIN)
 				return false;
 		}
-}
+	}
 }
 
 //
@@ -1486,6 +1594,8 @@ bool stub_system_open(const char* title, const int display, const int width, con
 		return false;
 	}
 
+	wlxStub.tag = "qg_wlx_stub";
+
 	// 먼저 안하면 안된다
 	stub_initialize((StubBase*)&wlxStub, flags);
 
@@ -1497,8 +1607,7 @@ bool stub_system_open(const char* title, const int display, const int width, con
 	}
 
 	//
-	nkk_window_open(width, height);
-	wl_display_roundtrip(wlxStub.ifce.display);
+	nkk_window_open(&wlxStub.win, title, width, height);
 
 	return true;
 }

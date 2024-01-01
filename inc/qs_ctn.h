@@ -109,12 +109,12 @@ QN_DECL_CTNR(QnAnyCtn, any_t);								/// @brief any_t 배열
 		}\
 		(p)->count=__cnt;\
 	}QN_STMT_END
-#define qn_ctnr_remove_cmp(name,p,func2,item)\
+#define qn_ctnr_remove_cmp(name,p,func2,userdata)\
 	QN_STMT_BEGIN{\
 		size_t __i, __cnt=(p)->count;\
 		for (__i=0; __i<__cnt; __i++) {\
 			name##Type* __t = (p)->data+__i;\
-			if (func2(*__t,item)) {\
+			if (func2(userdata,*__t)) {\
 				memmove(__t, __t+1, qn_ctn_sizeof_type(name)*(__cnt-(__i+1)));\
 				__cnt--;\
 				break;\
@@ -122,12 +122,12 @@ QN_DECL_CTNR(QnAnyCtn, any_t);								/// @brief any_t 배열
 		}\
 		(p)->count=__cnt;\
 	}QN_STMT_END
-#define qn_ctnr_remove_cmp_ptr(name,p,func2,item)\
+#define qn_ctnr_remove_cmp_ptr(name,p,func2,userdata)\
 	QN_STMT_BEGIN{\
 		size_t __i, __cnt=(p)->count;\
 		for (__i=0; __i<__cnt; __i++) {\
 			name##Type* __t = (p)->data+__i;\
-			if (func2(__t,&(item))) {\
+			if (func2(userdata,__t)) {\
 				memmove(__t, __t+1, qn_ctn_sizeof_type(name)*(__cnt-(__i+1)));\
 				__cnt--;\
 				break;\
