@@ -119,6 +119,7 @@ typedef struct WindowsMonitor
 {
 	QgUdevMonitor		base;
 
+	HMONITOR			handle;
 	wchar				adapter[32];
 	wchar				display[32];
 } WindowsMonitor;
@@ -616,7 +617,7 @@ static BOOL CALLBACK _enum_display_callback(HMONITOR monitor, HDC dc, RECT* rect
 	{
 		WindowsMonitor* wm = (WindowsMonitor*)lp;
 		if (qn_wcseqv(mi.szDevice, wm->adapter))
-			wm->base.oshandle = monitor;
+			wm->handle = monitor;
 	}
 	return TRUE;
 }

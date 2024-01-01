@@ -41,6 +41,7 @@ typedef struct xdg_wm_base						xdg_wm_base;
 typedef struct wp_viewporter					wp_viewporter;
 typedef struct wl_data_device_manager			wl_data_device_manager;
 typedef struct wl_data_device					wl_data_device;
+typedef struct zxdg_output_v1					zxdg_output_v1;
 typedef struct zxdg_output_manager_v1			zxdg_output_manager_v1;
 typedef struct zxdg_decoration_manager_v1		zxdg_decoration_manager_v1;
 typedef struct zwp_relative_pointer_manager_v1	zwp_relative_pointer_manager_v1;
@@ -199,6 +200,8 @@ static bool _so_init(void)
 #include "wayland-xdg-shell-code.h"
 #include "wayland-xdg-output-unstable-v1-code.h"
 
+typedef enum wl_output_transform			wl_output_transform;
+
 
 //////////////////////////////////////////////////////////////////////////
 // 스터브 선언
@@ -267,10 +270,15 @@ typedef struct nkk_monitor
 {
 	QgUdevMonitor		base;
 
+	wl_output*			output;
+	zxdg_output_v1*		zxdg_output;
+	wl_output_transform	transform;
+
 	uint32_t			name;
 	int					mode;
 	float				scale_factor;
-	enum wl_output_transform	transform;
+
+	char				description[32];
 } nkk_monitor;
 
 //
@@ -284,7 +292,7 @@ typedef struct nkk_interface
 	wl_pointer*			pointer;
 	wl_keyboard*		keyboard;
 	xdg_wm_base*		xdg_shell;
-	zxdg_output_manager_v1 *xdg_output_manager;
+	zxdg_output_manager_v1 *zxdg_output_manager;
 
 	// 언젠간 쓰겠지
 	wl_data_device_manager*				data_device_manager;
@@ -332,6 +340,11 @@ static void output_done(void*, wl_output*);
 static void output_scale(void*, wl_output*, int32_t);
 static void output_name(void*, wl_output*, const char*);
 static void output_description(void*, wl_output*, const char*);
+static void zxdg_output_logical_position(void* data, zxdg_output_v1* zxdg_output, int32_t x, int32_t y);
+static void zxdg_output_logical_size(void* data, zxdg_output_v1* zxdg_output, int32_t width, int32_t height);
+static void zxdg_output_done(void* data, zxdg_output_v1* zxdg_output);
+static void zxdg_output_name(void* data, zxdg_output_v1* zxdg_output, const char* name);
+static void zxdg_output_description(void* data, zxdg_output_v1* zxdg_output, const char* description);
 static void keyboard_key(void*, wl_keyboard*, uint32_t, uint32_t, uint32_t, uint32_t);
 static void keyboard_enter(void*, wl_keyboard*, uint32_t, wl_surface*, struct wl_array*);
 static void keyboard_keymap(void*, wl_keyboard*, uint32_t, int32_t, uint32_t);
@@ -348,6 +361,7 @@ static void pointer_frame(void*, wl_pointer*);
 static void pointer_leave(void*, wl_pointer*, uint32_t, wl_surface*);
 static void pointer_motion(void*, wl_pointer*, uint32_t, wl_fixed_t, wl_fixed_t);
 static void registry_global(void*, wl_registry*, uint32_t, const char*, uint32_t);
+static void registry_global_remove(void*, wl_registry*, uint32_t);
 static void seat_name(void*, wl_seat*, const char*);
 static void seat_capabilities(void*, wl_seat*, uint32_t);
 static void xdg_shell_pong(void*, xdg_wm_base*, uint32_t);
@@ -359,7 +373,7 @@ static void buffer_release(void *, struct wl_buffer *);
 static const struct wl_registry_listener events_registry =
 {
 	.global = registry_global,
-	.global_remove = NULL,
+	.global_remove = registry_global_remove,
 };
 static const struct wl_output_listener events_output =
 {
@@ -371,6 +385,14 @@ static const struct wl_output_listener events_output =
 	.name = output_name,
 	.description = output_description,
 #endif
+};
+static const struct zxdg_output_v1_listener events_zxdg_output =
+{
+	.logical_position = zxdg_output_logical_position,
+	.logical_size = zxdg_output_logical_size,
+	.done = zxdg_output_done,
+	.name = zxdg_output_name,
+	.description = zxdg_output_description,
 };
 static const struct wl_seat_listener events_seat =
 {
@@ -422,6 +444,7 @@ static const struct wl_buffer_listener events_buffer = {
 //
 static void buffer_release(void* data, struct wl_buffer* buffer)
 {
+	WL_TRACE_FUNC();
 	wl_buffer_destroy(buffer);
 }
 
@@ -477,6 +500,7 @@ static void output_geometry(void* data, wl_output* output,
 	int32_t x, int32_t y, int32_t physical_width, int physical_height, int32_t subpixel,
 	const char *make, const char *model, int32_t transform)
 {
+	WL_TRACE_FUNC();
 	nkk_monitor* mon = data;
 	mon->base.x = (uint)x;
 	mon->base.y = (uint)y;
@@ -492,6 +516,7 @@ static void output_geometry(void* data, wl_output* output,
 static void output_mode(void* data, wl_output* output,
 	uint32_t flags, int32_t width, int32_t height, int32_t refresh)
 {
+	WL_TRACE_FUNC();
 	if (QN_TMASK(flags, WL_OUTPUT_MODE_CURRENT) == false)
 		return;
 
@@ -504,6 +529,7 @@ static void output_mode(void* data, wl_output* output,
 //
 static void output_done(void* data, struct wl_output* output)
 {
+	WL_TRACE_FUNC();
 	nkk_monitor* mon = data;
 
 	if (mon->base.mmwidth == 0 || mon->base.mmheight == 0)
@@ -521,6 +547,7 @@ static void output_done(void* data, struct wl_output* output)
 //
 static void output_scale(void* data, struct wl_output* output, int32_t factor)
 {
+	WL_TRACE_FUNC();
 	nkk_monitor* mon = data;
 	mon->scale_factor = (float)factor;
 }
@@ -529,6 +556,7 @@ static void output_scale(void* data, struct wl_output* output, int32_t factor)
 //
 static void output_name(void* data, struct wl_output* output, const char* name)
 {
+	WL_TRACE_FUNC();
 	nkk_monitor* mon = data;
 	qn_strncpy(mon->base.name, QN_COUNTOF(mon->base.name), name, QN_COUNTOF(mon->base.name) - 1);
 }
@@ -536,11 +564,54 @@ static void output_name(void* data, struct wl_output* output, const char* name)
 //
 static void output_description(void* data, struct wl_output* output, const char* description)
 {
+	WL_TRACE_FUNC();
 	QN_DUMMY(data);
 	QN_DUMMY(output);
 	QN_DUMMY(description);
 }
 #endif
+
+//
+static void zxdg_output_logical_position(void* data, zxdg_output_v1* zxdg_output, int32_t x, int32_t y)
+{
+	WL_TRACE_FUNC();
+	nkk_monitor* mon = (nkk_monitor*)data;
+	mon->base.x = (uint)x;
+	mon->base.y = (uint)y;
+}
+
+//
+static void zxdg_output_logical_size(void* data, zxdg_output_v1* zxdg_output, int32_t width, int32_t height)
+{
+	WL_TRACE_FUNC();
+	nkk_monitor* mon = (nkk_monitor*)data;
+	mon->base.width = (uint)width;
+	mon->base.height = (uint)height;
+}
+
+//
+static void zxdg_output_done(void* data, zxdg_output_v1* zxdg_output)
+{
+	WL_TRACE_FUNC();
+	nkk_monitor* mon = (nkk_monitor*)data;
+	if (zxdg_output_v1_get_version(mon->zxdg_output) < 3)
+		output_done(data, mon->output);
+}
+
+//
+static void zxdg_output_name(void* data, zxdg_output_v1* zxdg_output, const char* name)
+{
+	WL_TRACE_FUNC();
+}
+
+//
+static void zxdg_output_description(void* data, zxdg_output_v1* zxdg_output, const char* description)
+{
+	WL_TRACE_FUNC();
+	nkk_monitor* mon = (nkk_monitor*)data;
+	if (wl_output_get_version(mon->output) < WL_OUTPUT_DESCRIPTION_SINCE_VERSION)
+		qn_strncpy(mon->description, QN_COUNTOF(mon->description), description, QN_COUNTOF(mon->description) - 1);
+}
 
 // 키보드 매핑
 static void keyboard_keymap(void *data, wl_keyboard *wl_keyboard, uint32_t fmt, int32_t fd, uint32_t size)
@@ -912,11 +983,28 @@ static void registry_global(void *data, wl_registry *reg, uint32_t name, const c
 	{
 		wl_output* output = wl_registry_bind(reg, name, &wl_output_interface, QN_MIN(WAYLAND_OUTPUT_VERSION, ver));
 		nkk_monitor* mon = qn_alloc_zero_1(nkk_monitor);
-		mon->base.oshandle = output;
+		mon->output = output;
 		mon->name = name;
 		mon->scale_factor = 1.0f;
 		wl_proxy_set_tag((wl_proxy*)output, &wlxStub.tag);
 		wl_output_add_listener(output, &events_output, mon);
+
+		if (wlxStub.ifce.zxdg_output_manager != NULL)
+		{
+			mon->zxdg_output = zxdg_output_manager_v1_get_xdg_output(wlxStub.ifce.zxdg_output_manager, mon->output);
+			zxdg_output_v1_add_listener(mon->zxdg_output, &events_zxdg_output, mon);
+		}
+	}
+	else if (strcmp(iface, "zxdg_output_manager_v1") == 0)
+	{
+		wlxStub.ifce.zxdg_output_manager = wl_registry_bind(reg, name, &zxdg_output_manager_v1_interface, QN_MIN(3, ver));
+		size_t i;
+		qn_pctnr_foreach(&wlxStub.base.monitors, i)
+		{
+			nkk_monitor* mon = (nkk_monitor*)qn_pctnr_nth(&wlxStub.base.monitors, i);
+			mon->zxdg_output = zxdg_output_manager_v1_get_xdg_output(wlxStub.ifce.zxdg_output_manager, mon->output);
+			zxdg_output_v1_add_listener(mon->zxdg_output, &events_zxdg_output, mon);
+		}
 	}
 	else if (strcmp(iface, "xdg_wm_base") == 0)			// XDG 쉘 윈도우
 	{
@@ -929,9 +1017,32 @@ static void registry_global(void *data, wl_registry *reg, uint32_t name, const c
 		wlxStub.ifce.seat = wl_registry_bind(reg, name, &wl_seat_interface, QN_MIN(WAYLAND_SEAT_VERSION, ver));
 		wl_seat_add_listener(wlxStub.ifce.seat, &events_seat, NULL);
 	}
-	else if (strcmp(iface, "zxdg_output_manager_v1") == 0)
+}
+
+//
+static void monitor_clean(QgUdevMonitor* monitor)
+{
+	nkk_monitor* mon = (nkk_monitor*)monitor;
+	WL_DESTROY(mon->zxdg_output, zxdg_output_v1_destroy);
+	if (wl_output_get_version(mon->output) >= WL_OUTPUT_RELEASE_SINCE_VERSION)
+		wl_output_release(mon->output);
+	else
+		wl_output_destroy(mon->output);
+}
+
+//
+static void registry_global_remove(void* data, wl_registry* reg, uint32_t name)
+{
+	size_t i;
+	qn_pctnr_foreach(&wlxStub.base.monitors, i)
 	{
-		wlxStub.ifce.xdg_output_manager = wl_registry_bind(reg, name, &zxdg_output_manager_v1_interface, QN_MIN(3, ver));
+		nkk_monitor* mon = (nkk_monitor*)qn_pctnr_nth(&wlxStub.base.monitors, i);
+		if (mon->name != name)
+			continue;
+
+		monitor_clean((QgUdevMonitor*)mon);
+		stub_event_on_monitor((QgUdevMonitor*)mon, false, false);
+		break;
 	}
 }
 
@@ -987,7 +1098,7 @@ static void nkk_display_close(void)
 {
 	qn_ret_if_fail(wlxStub.ifce.display);
 
-	qn_pctnr_each
+	qn_pctnr_foreach_1(&wlxStub.base.monitors, monitor_clean);
 
 	WL_DESTROY(wlxStub.keyboard.keymap, xkb_keymap_unref);
 	WL_DESTROY(wlxStub.keyboard.state, xkb_state_unref);
@@ -997,7 +1108,6 @@ static void nkk_display_close(void)
 	WL_DESTROY(wlxStub.ifce.pointer, wl_pointer_destroy);
 	WL_DESTROY(wlxStub.ifce.keyboard, wl_keyboard_destroy);
 
-	WL_DESTROY(wlxStub.ifce.output, wl_output_destroy);
 	WL_DESTROY(wlxStub.ifce.seat, wl_seat_destroy);
 	WL_DESTROY(wlxStub.ifce.xdg_shell, xdg_wm_base_destroy);
 	WL_DESTROY(wlxStub.ifce.compositor, wl_compositor_destroy);
@@ -1077,7 +1187,7 @@ void nkk_window_set_title(nkk_window* win, const char *title)
 	if ((win->type & NkkTypeXdg) == 0)
 		return;
 	xdg_toplevel_set_title(win->parent.toplevel, title);
-}
+	}
 #endif
 
 //

@@ -500,7 +500,6 @@ typedef struct QgUdevMonitor
 	uint				refresh;
 	uint				mmwidth;
 	uint				mmheight;
-	void*				oshandle;
 } QgUdevMonitor;
 
 /// @brief 이벤트
