@@ -682,15 +682,15 @@ static bool _detect_displays(void)
 			if (QN_TMASK(display_device.StateFlags, DISPLAY_DEVICE_ACTIVE) == false)
 				break;
 
-			qn_pctnr_each_index(&keep, i,
-				{
-					const WindowsMonitor * mon = (WindowsMonitor*)qn_pctnr_nth(&keep, i);
-					if (mon == NULL || qn_wcseqv(mon->display, display_device.DeviceName) == false)
-						continue;
-					qn_pctnr_set(&keep, i, NULL);
-					EnumDisplayMonitors(NULL, NULL, _enum_display_callback, (LPARAM)&qn_pctnr_nth(&winStub.base.monitors, i));
-					break;
-				});
+			qn_pctnr_foreach(&keep, i)
+			{
+				const WindowsMonitor * mon = (WindowsMonitor*)qn_pctnr_nth(&keep, i);
+				if (mon == NULL || qn_wcseqv(mon->display, display_device.DeviceName) == false)
+					continue;
+				qn_pctnr_set(&keep, i, NULL);
+				EnumDisplayMonitors(NULL, NULL, _enum_display_callback, (LPARAM)&qn_pctnr_nth(&winStub.base.monitors, i));
+				break;
+			}
 			if (i < qn_pctnr_count(&keep))
 				continue;
 
@@ -700,14 +700,14 @@ static bool _detect_displays(void)
 
 		if (display == 0)
 		{
-			qn_pctnr_each_index(&keep, i,
-				{
-					const WindowsMonitor * mon = (const WindowsMonitor*)qn_pctnr_nth(&keep, i);
-					if (mon == NULL || qn_wcseqv(mon->adapter, adapter_device.DeviceName) == false)
-						continue;
-					qn_pctnr_set(&keep, i, NULL);
-					break;
-				});
+			qn_pctnr_foreach(&keep, i)
+			{
+				const WindowsMonitor* mon = (const WindowsMonitor*)qn_pctnr_nth(&keep, i);
+				if (mon == NULL || qn_wcseqv(mon->adapter, adapter_device.DeviceName) == false)
+					continue;
+				qn_pctnr_set(&keep, i, NULL);
+				break;
+			}
 			if (i < qn_pctnr_count(&keep))
 				continue;
 
@@ -716,12 +716,12 @@ static bool _detect_displays(void)
 		}
 	}
 
-	QgUdevMonitor* mon;
-	qn_pctnr_each_item(&keep, mon,
-		{
-			if (mon != NULL)
-				stub_event_on_monitor(mon, false, false);
-		});
+	qn_pctnr_foreach(&keep, i)
+	{
+		QgUdevMonitor* mon = qn_pctnr_nth(&keep, i);
+		if (mon != NULL)
+			stub_event_on_monitor(mon, false, false);
+	}
 	qn_pctnr_disp(&keep);
 
 	return qn_pctnr_is_have(&winStub.base.monitors);
@@ -1215,13 +1215,13 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 
 		default:
 			break;
-	}
+		}
 
 pos_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-}
+	}
 #pragma endregion 윈도우 메시지
 
 #endif	// _QN_WINDOWS_

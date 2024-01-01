@@ -67,6 +67,8 @@
     <ClInclude Include="..\..\src\qg\stub\qg_stub.h" />
     <ClInclude Include="..\..\src\qg\stub\wayland-wayland-code.h" />
     <ClInclude Include="..\..\src\qg\stub\wayland-wayland.h" />
+    <ClInclude Include="..\..\src\qg\stub\wayland-xdg-output-unstable-v1-code.h" />
+    <ClInclude Include="..\..\src\qg\stub\wayland-xdg-output-unstable-v1.h" />
     <ClInclude Include="..\..\src\qg\stub\wayland-xdg-shell-code.h" />
     <ClInclude Include="..\..\src\qg\stub\wayland-xdg-shell.h" />
     <ClInclude Include="..\..\src\qn\zlib\crc32.h" />

@@ -41,6 +41,7 @@ typedef struct xdg_wm_base						xdg_wm_base;
 typedef struct wp_viewporter					wp_viewporter;
 typedef struct wl_data_device_manager			wl_data_device_manager;
 typedef struct wl_data_device					wl_data_device;
+typedef struct zxdg_output_manager_v1			zxdg_output_manager_v1;
 typedef struct zxdg_decoration_manager_v1		zxdg_decoration_manager_v1;
 typedef struct zwp_relative_pointer_manager_v1	zwp_relative_pointer_manager_v1;
 typedef struct zwp_pointer_constraints_v1		zwp_pointer_constraints_v1;
@@ -193,8 +194,10 @@ static bool _so_init(void)
 
 #include "wayland-wayland.h"
 #include "wayland-xdg-shell.h"
+#include "wayland-xdg-output-unstable-v1.h"
 #include "wayland-wayland-code.h"
 #include "wayland-xdg-shell-code.h"
+#include "wayland-xdg-output-unstable-v1-code.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -281,6 +284,7 @@ typedef struct nkk_interface
 	wl_pointer*			pointer;
 	wl_keyboard*		keyboard;
 	xdg_wm_base*		xdg_shell;
+	zxdg_output_manager_v1 *xdg_output_manager;
 
 	// 언젠간 쓰겠지
 	wl_data_device_manager*				data_device_manager;
@@ -316,13 +320,18 @@ WaylandStub wlxStub;
 #define WL_DESTROY(var,func)	QN_STMT_BEGIN{ if (var) func(var); }QN_STMT_END
 #ifdef _DEBUG
 #define WL_TRACE(...)			qn_debug_outputf(false, "WLX STUB", __VA_ARGS__)
-#define WL_TRACE_FUNC()			qn_debug_outputs(false, "WLX STUB", __PRETTY_FUNCTION__);
+#define WL_TRACE_FUNC()			qn_debug_outputf(false, "WLX STUB", "%llu: %s", qn_tick(), __FUNCTION__);
 #else
 #define WL_TRACE(...)
 #define WL_TRACE_FUNC()
 #endif
 
-static void nkk_window_close(void);
+static void output_geometry(void*, wl_output*, int, int, int, int, int, const char*, const char*, int);
+static void output_mode(void*, wl_output*, uint32_t, int32_t, int32_t, int32_t);
+static void output_done(void*, wl_output*);
+static void output_scale(void*, wl_output*, int32_t);
+static void output_name(void*, wl_output*, const char*);
+static void output_description(void*, wl_output*, const char*);
 static void keyboard_key(void*, wl_keyboard*, uint32_t, uint32_t, uint32_t, uint32_t);
 static void keyboard_enter(void*, wl_keyboard*, uint32_t, wl_surface*, struct wl_array*);
 static void keyboard_keymap(void*, wl_keyboard*, uint32_t, int32_t, uint32_t);
@@ -347,13 +356,21 @@ static void xdg_toplevel_close(void *, struct xdg_toplevel *);
 static void xdg_toplevel_configure(void *, struct xdg_toplevel *, int32_t, int32_t, struct wl_array *);
 static void buffer_release(void *, struct wl_buffer *);
 
-static const struct wl_buffer_listener events_buffer = {
-	.release = buffer_release,
-};
 static const struct wl_registry_listener events_registry =
 {
 	.global = registry_global,
 	.global_remove = NULL,
+};
+static const struct wl_output_listener events_output =
+{
+	.geometry = output_geometry,
+	.mode = output_mode,
+	.done = output_done,
+	.scale = output_scale,
+#if defined WL_OUTPUT_NAME_SINCE_VERSION && WL_OUTPUT_NAME_SINCE_VERSION >= 4
+	.name = output_name,
+	.description = output_description,
+#endif
 };
 static const struct wl_seat_listener events_seat =
 {
@@ -398,6 +415,9 @@ static const struct xdg_toplevel_listener events_xdg_toplevel =
 	.close = xdg_toplevel_close,
 	.configure = xdg_toplevel_configure,
 };
+static const struct wl_buffer_listener events_buffer = {
+	.release = buffer_release,
+};
 
 //
 static void buffer_release(void* data, struct wl_buffer* buffer)
@@ -434,11 +454,11 @@ static void xdg_surface_configure(void *data, struct xdg_surface *surface, uint3
 	wl_surface_commit(wlxStub.win.surface);
 }
 
-//
+// 윈도우가 닫히면 (사실은 디스플레이의 마지막 윈도우가 닫히면)
 static void xdg_toplevel_close(void *data, struct xdg_toplevel *xdg)
 {
 	WL_TRACE_FUNC();
-	nkk_window_close();
+	qg_exit_loop();
 }
 
 //
@@ -451,6 +471,76 @@ static void xdg_toplevel_configure(void *data, struct xdg_toplevel *xdg, int32_t
 	win->width = width;
 	win->height = height;
 }
+
+//
+static void output_geometry(void* data, wl_output* output,
+	int32_t x, int32_t y, int32_t physical_width, int physical_height, int32_t subpixel,
+	const char *make, const char *model, int32_t transform)
+{
+	nkk_monitor* mon = data;
+	mon->base.x = (uint)x;
+	mon->base.y = (uint)y;
+	mon->base.mmwidth = physical_width < 0 ? 0 : (uint)physical_width;
+	mon->base.mmheight = physical_height < 0 ? 0 : (uint)physical_height;
+	mon->transform = (enum wl_output_transform)transform;
+
+	if (*mon->base.name == '\0')
+		qn_snprintf(mon->base.name, QN_COUNTOF(mon->base.name), "%s %s", make, model);
+}
+
+//
+static void output_mode(void* data, wl_output* output,
+	uint32_t flags, int32_t width, int32_t height, int32_t refresh)
+{
+	if (QN_TMASK(flags, WL_OUTPUT_MODE_CURRENT) == false)
+		return;
+
+	nkk_monitor* mon = data;
+	mon->base.width = (uint)width;
+	mon->base.height = (uint)height;
+	mon->base.refresh = (uint)round(refresh / 1000.0);
+}
+
+//
+static void output_done(void* data, struct wl_output* output)
+{
+	nkk_monitor* mon = data;
+
+	if (mon->base.mmwidth == 0 || mon->base.mmheight == 0)
+	{
+		mon->base.mmwidth = (uint)((float)mon->base.width * 25.4f / 96.0f);
+		mon->base.mmheight = (uint)((float)mon->base.height * 25.4f / 96.0f);
+	}
+
+	int nth;
+	qn_pctnr_contains(&wlxStub.base.monitors, (QgUdevMonitor*)mon, &nth);
+	if (nth < 0)
+		stub_event_on_monitor((QgUdevMonitor*)mon, true, false);
+}
+
+//
+static void output_scale(void* data, struct wl_output* output, int32_t factor)
+{
+	nkk_monitor* mon = data;
+	mon->scale_factor = (float)factor;
+}
+
+#ifdef WL_OUTPUT_NAME_SINCE_VERSION
+//
+static void output_name(void* data, struct wl_output* output, const char* name)
+{
+	nkk_monitor* mon = data;
+	qn_strncpy(mon->base.name, QN_COUNTOF(mon->base.name), name, QN_COUNTOF(mon->base.name) - 1);
+}
+
+//
+static void output_description(void* data, struct wl_output* output, const char* description)
+{
+	QN_DUMMY(data);
+	QN_DUMMY(output);
+	QN_DUMMY(description);
+}
+#endif
 
 // 키보드 매핑
 static void keyboard_keymap(void *data, wl_keyboard *wl_keyboard, uint32_t fmt, int32_t fd, uint32_t size)
@@ -536,7 +626,14 @@ static void keyboard_enter(void *data, wl_keyboard *kb, uint32_t serial, wl_surf
 	WL_TRACE_FUNC();
 	qn_ret_if_fail(surface);
 	wlxStub.keyboard.serial = serial;
+
 	// 포커스라면 여기에 메시지
+	const double now = wlxStub.base.timer->abstime;
+	const double delta = now - wlxStub.base.active;
+	wlxStub.base.active = now;
+	QN_SMASK(&wlxStub.base.stats, QGSSTT_ACTIVE, true);
+	stub_event_on_window_event(QGWEV_FOCUS, 0, 0);
+	stub_event_on_active(true, delta);
 }
 
 // 키보드 제거 때 또는 포커스 잃음 둘 중 하나일듯
@@ -546,7 +643,14 @@ static void keyboard_leave(void* data, wl_keyboard* wl_keyboard, uint32_t serial
 	struct itimerspec ts = { 0, };
 	timerfd_settime(wlxStub.keyboard.repeat.fd, 0, &ts, NULL);
 	wlxStub.keyboard.serial = serial;
-	// 포커스 읽음이라면 여기서 메시지
+
+	// 포커스 잃음이라면 여기서 메시지
+	const double now = wlxStub.base.timer->abstime;
+	const double delta = now - wlxStub.base.active;
+	wlxStub.base.active = now;
+	QN_SMASK(&wlxStub.base.stats, QGSSTT_ACTIVE, false);
+	stub_event_on_window_event(QGWEV_LOSTFOCUS, 0, 0);
+	stub_event_on_active(false, delta);
 }
 
 // 텍스트 메시지. 키 입력에서 쓰는데, 루프에서 반복 눌림 검사때도 쓴다
@@ -611,7 +715,7 @@ static void keyboard_key(void *data, wl_keyboard *keyboard, uint32_t serial, uin
 	timerfd_settime(kbd->repeat.fd, 0, &ts, NULL);
 
 	// 키 메시지, keycode 변환 해야하능데...
-	stub_event_on_keyboard((QikKey)keycode, true);
+	stub_event_on_keyboard((QikKey)keycode, down);
 
 	// 텍스트 메시지
 	if (down)
@@ -739,27 +843,6 @@ static void pointer_button(void *data, wl_pointer *ptr, uint32_t serial, uint32_
 }
 
 //
-static void registry_global(void *data, wl_registry *reg, uint32_t name, const char *iface, uint32_t ver)
-{
-	WL_TRACE("레지스트리: %s (version: %u)", iface, ver);
-	if (strcmp(iface, "wl_compositor") == 0)			// 컴포지터
-		wlxStub.ifce.compositor = wl_registry_bind(reg, name, &wl_compositor_interface, QN_MIN(4, ver));
-	else if (strcmp(iface, "wl_shm") == 0)				// 메모리 처리
-		wlxStub.ifce.shm = wl_registry_bind(reg, name, &wl_shm_interface, 1);
-	else if (strcmp(iface, "xdg_wm_base") == 0)			// XDG 쉘 윈도우
-	{
-		wlxStub.ifce.xdg_shell = wl_registry_bind(reg, name, &xdg_wm_base_interface, QN_MIN(6, ver));
-		xdg_wm_base_add_listener(wlxStub.ifce.xdg_shell, &events_xdg_shell, NULL);
-	}
-	else if (strcmp(iface, "wl_seat") == 0)				// 입력
-	{
-		// 7 마으스 됨, 4 키보드 됨, 5 둘다 됨
-		wlxStub.ifce.seat = wl_registry_bind(reg, name, &wl_seat_interface, QN_MIN(5, ver));
-		wl_seat_add_listener(wlxStub.ifce.seat, &events_seat, NULL);
-	}
-}
-
-//
 static void seat_capabilities(void *data, wl_seat *wl_seat, uint32_t capabilities)
 {
 	WL_TRACE_FUNC();
@@ -794,6 +877,62 @@ static void xdg_shell_pong(void* data, xdg_wm_base* wm_base, uint32_t serial)
 {
 	WL_TRACE_FUNC();
 	xdg_wm_base_pong(wm_base, serial);
+}
+
+//
+#define CHECK_WAYLAND_VERSION(major, minor)\
+	(WAYLAND_VERSION_MAJOR > major || (WAYLAND_VERSION_MAJOR == major && WAYLAND_VERSION_MINOR >= minor))
+#if CHECK_WAYLAND_VERSION(1, 22)
+#define WAYLAND_COMPOSITOR_VERSION		6
+#else
+#define WAYLAND_COMPOSITOR_VERSION		4
+#endif
+#if CHECK_WAYLAND_VERSION(1, 20)
+#define WAYLAND_OUTPUT_VERSION			4
+#else
+#define WAYLAND_OUTPUT_VERSION			3
+#endif
+#if CHECK_WAYLAND_VERSION(1, 22)
+#define WAYLAND_SEAT_VERSION			9
+#elif CHECK_WAYLAND_VERSION(1, 21)
+#define WAYLAND_SEAT_VERSION			8
+#else
+#define	WAYLAND_SEAT_VERSION			5
+#endif
+
+//
+static void registry_global(void *data, wl_registry *reg, uint32_t name, const char *iface, uint32_t ver)
+{
+	WL_TRACE("레지스트리: %s (version: %u)", iface, ver);
+	if (strcmp(iface, "wl_compositor") == 0)			// 컴포지터
+		wlxStub.ifce.compositor = wl_registry_bind(reg, name, &wl_compositor_interface, QN_MIN(WAYLAND_COMPOSITOR_VERSION, ver));
+	else if (strcmp(iface, "wl_shm") == 0)				// 메모리 처리
+		wlxStub.ifce.shm = wl_registry_bind(reg, name, &wl_shm_interface, 1);
+	else if (qn_streqv(iface, "wl_output"))				// 출력 장치 (모니터)
+	{
+		wl_output* output = wl_registry_bind(reg, name, &wl_output_interface, QN_MIN(WAYLAND_OUTPUT_VERSION, ver));
+		nkk_monitor* mon = qn_alloc_zero_1(nkk_monitor);
+		mon->base.oshandle = output;
+		mon->name = name;
+		mon->scale_factor = 1.0f;
+		wl_proxy_set_tag((wl_proxy*)output, &wlxStub.tag);
+		wl_output_add_listener(output, &events_output, mon);
+	}
+	else if (strcmp(iface, "xdg_wm_base") == 0)			// XDG 쉘 윈도우
+	{
+		wlxStub.ifce.xdg_shell = wl_registry_bind(reg, name, &xdg_wm_base_interface, QN_MIN(6, ver));
+		xdg_wm_base_add_listener(wlxStub.ifce.xdg_shell, &events_xdg_shell, NULL);
+	}
+	else if (strcmp(iface, "wl_seat") == 0)				// 입력
+	{
+		// 7 마으스 됨, 4 키보드 됨, 5 둘다 됨
+		wlxStub.ifce.seat = wl_registry_bind(reg, name, &wl_seat_interface, QN_MIN(WAYLAND_SEAT_VERSION, ver));
+		wl_seat_add_listener(wlxStub.ifce.seat, &events_seat, NULL);
+	}
+	else if (strcmp(iface, "zxdg_output_manager_v1") == 0)
+	{
+		wlxStub.ifce.xdg_output_manager = wl_registry_bind(reg, name, &zxdg_output_manager_v1_interface, QN_MIN(3, ver));
+	}
 }
 
 
@@ -838,7 +977,7 @@ static bool nkk_display_open(void)
 		-1 : timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
 
 	wlxStub.cursor.theme = wl_cursor_theme_load(NULL, 24, wlxStub.ifce.shm);
-	//nkk_set_system_cursor("left_ptr");
+	nkk_set_system_cursor("left_ptr");
 
 	return true;
 }
@@ -848,6 +987,8 @@ static void nkk_display_close(void)
 {
 	qn_ret_if_fail(wlxStub.ifce.display);
 
+	qn_pctnr_each
+
 	WL_DESTROY(wlxStub.keyboard.keymap, xkb_keymap_unref);
 	WL_DESTROY(wlxStub.keyboard.state, xkb_state_unref);
 	WL_DESTROY(wlxStub.keyboard.compose_table, xkb_compose_table_unref);
@@ -856,6 +997,7 @@ static void nkk_display_close(void)
 	WL_DESTROY(wlxStub.ifce.pointer, wl_pointer_destroy);
 	WL_DESTROY(wlxStub.ifce.keyboard, wl_keyboard_destroy);
 
+	WL_DESTROY(wlxStub.ifce.output, wl_output_destroy);
 	WL_DESTROY(wlxStub.ifce.seat, wl_seat_destroy);
 	WL_DESTROY(wlxStub.ifce.xdg_shell, xdg_wm_base_destroy);
 	WL_DESTROY(wlxStub.ifce.compositor, wl_compositor_destroy);
@@ -1046,6 +1188,9 @@ static bool nkk_poll_events(uint ms/*타임아웃*/)
 				for (ullong i = 0; i < count; i++)
 				{
 					// 키 눌림 이벤트 보내야함
+					uint32_t scancode = wlxStub.keyboard.repeat.scancode;
+					stub_event_on_keyboard((QikKey)scancode + 8, true);
+					keyboard_text(scancode);
 				}
 			}
 			loop = false;
@@ -1056,25 +1201,6 @@ static bool nkk_poll_events(uint ms/*타임아웃*/)
 	}
 
 	return true;
-}
-
-//
-static void nkk_main_loop(void)
-{
-	wl_display* display = wlxStub.ifce.display;
-	wl_display_roundtrip(display);
-	wl_display_dispatch(display);
-	int fd = wl_display_get_fd(display);
-	fd_set fds;
-	for (;;)
-	{
-		FD_ZERO(&fds);
-		FD_SET(fd, &fds);
-		if (select(1, &fds, NULL, NULL, NULL) == -1)
-			qn_debug_outputs(true, "WLX STUB", "select failed");
-
-		wl_display_flush(display);
-	}
 }
 
 
@@ -1089,14 +1215,16 @@ bool stub_system_open(const char* title, const int display, const int width, con
 		qn_debug_outputs(true, "WLX STUB", "so load failed");
 		return false;
 	}
+
+	// 먼저 안하면 안된다
+	stub_initialize((StubBase*)&wlxStub, flags);
+
+	//
 	if (nkk_display_open() == false)
 	{
 		qn_debug_outputs(true, "WLX STUB", "cannot open display");
 		return false;
 	}
-
-	//
-	stub_initialize((StubBase*)&wlxStub, flags);
 
 	//
 	nkk_window_open(width, height);
@@ -1115,8 +1243,6 @@ void stub_system_finalize(void)
 //
 bool stub_system_poll(void)
 {
-	if (false)
-		nkk_main_loop();
 	if (nkk_poll_events(0) == false)
 		return false;
 	return true;

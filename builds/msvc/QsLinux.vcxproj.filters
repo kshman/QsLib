@@ -135,6 +135,12 @@
     <ClInclude Include="..\..\src\qg\stub\qgwin_func.h">
       <Filter>헤더 파일\qg\stub</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\wayland-xdg-output-unstable-v1.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\wayland-xdg-output-unstable-v1-code.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\qn\qn.c">

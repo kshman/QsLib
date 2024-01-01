@@ -30,6 +30,12 @@ int main(void)
 			{
 				qg_exit_loop();
 			}
+			else if (ev.ev == QGEV_TEXTINPUT && ev.text.len>0)
+			{
+				char sz[32];
+				qn_strncpy(sz, 32, ev.text.data, (size_t)ev.text.len);
+				qn_outputf("\t텍스트 입력: %s", sz);
+			}
 			else
 			{
 				qn_outputf("STUB EVENT => %d:%s", ev.ev, evstr);
