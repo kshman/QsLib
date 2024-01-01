@@ -15,37 +15,36 @@
 #if defined _QN_WINDOWS_ && !defined USE_SDL2
 #include "qs_qg.h"
 #include "qs_kmc.h"
+#include "qg_stub.h"
 #include <windowsx.h>
 #include <Xinput.h>
 #include <shellscalingapi.h>
+
+static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 
 #ifdef _DEBUG
 #define DEBUG_WIN_DLL_TRACE
 #endif
 
-#pragma region 정적 함수 미리 선언
-static void _set_key_hook(HINSTANCE instance);
-static void _set_dpi_awareness(void);
-static bool _detect_displays(void);
-static void _hold_mouse(bool hold);
-static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
-#pragma endregion
-
 #pragma region DLL 처리
 // DLL 정의
-#define DEF_WIN_TYPEDEF
 #define DEF_WIN_FUNC(ret,name,args)\
-	typedef ret(WINAPI* QN_CONCAT(PFNWin32, name)) args;\
-	QN_CONCAT(PFNWin32, name) QN_CONCAT(Win32, name);
-#include "qgwin_stub_func.h"
+	ret (WINAPI* QN_CONCAT(Win32, name)) args;
+#include "qgwin_func.h"
 
 // DLL 함수
-static void* _load_dll_func(QnModule* module, const char* dll_name, const char* func_name)
+static void* _load_dll_func(QnModule* module, const char* func_name, const char* dll_name)
 {
 	void* ret = qn_mod_func(module, func_name);
 #ifdef DEBUG_WIN_DLL_TRACE
-	qn_debug_outputf(false, "WINDOWS STUB", "\t%s: '%s' in '%s'",
-		ret == NULL ? "load failed" : "loaded", func_name, dll_name);
+	static const char* current_dll = NULL;
+	if (current_dll != dll_name)
+	{
+		current_dll = dll_name;
+		qn_debug_outputf(false, "WINDOWS STUB", "DLL: %s", dll_name);
+	}
+	qn_debug_outputf(false, "WINDOWS STUB", "%s: %s",
+		ret == NULL ? "load failed" : "loaded", func_name);
 #else
 	QN_DUMMY(dll_name);
 #endif
@@ -77,24 +76,112 @@ static bool _dll_init(void)
 	}
 #define DEF_WIN_DLL_BEGIN(name)\
 	module = qn_mod_load(dll_name = name, 1); if (module == NULL)\
-	{ qn_debug_outputf(true, "WINDOWS STUB", "no '%s' DLL found!", dll_name); return false; } else {
+	{ qn_debug_outputf(true, "WINDOWS STUB", "DLL load filed: %s", dll_name); return false; } else {
 #define DEF_WIN_DLL_END }
 #define DEF_WIN_FUNC(ret,name,args)\
-	QN_CONCAT(Win32, name) = (QN_CONCAT(PFNWin32, name))_load_dll_func(module, dll_name, QN_STRING(name));
-#include "qgwin_stub_func.h"
+	QN_CONCAT(Win32, name) = (ret(WINAPI*)args)_load_dll_func(module, QN_STRING(name), dll_name);
+#include "qgwin_func.h"
 	return loaded = true;
 }
+
+// 별명
+#define SetProcessDPIAware					Win32SetProcessDPIAware
+#define SetProcessDpiAwarenessContext		Win32SetProcessDpiAwarenessContext
+#define SetThreadDpiAwarenessContext		Win32SetThreadDpiAwarenessContext
+#define GetThreadDpiAwarenessContext		Win32GetThreadDpiAwarenessContext
+#define GetAwarenessFromDpiAwarenessContext	Win32GetAwarenessFromDpiAwarenessContext
+#define EnableNonClientDpiScaling			Win32EnableNonClientDpiScaling
+#define AdjustWindowRectExForDpi			Win32AdjustWindowRectExForDpi
+#define GetDpiForWindow						Win32GetDpiForWindow
+#define AreDpiAwarenessContextsEqual		Win32AreDpiAwarenessContextsEqual
+#define IsValidDpiAwarenessContext			Win32IsValidDpiAwarenessContext
+#define EnableNonClientDpiScaling			Win32EnableNonClientDpiScaling
+#define CallNextHookEx						Win32CallNextHookEx
+#define GetSystemMetricsForDpi				Win32GetSystemMetricsForDpi
+#define ChangeWindowMessageFilterEx			Win32ChangeWindowMessageFilterEx
+#define UnhookWindowsHookEx					Win32UnhookWindowsHookEx
+#define SetWindowsHookExW					Win32SetWindowsHookExW
+#define GetKeyboardState					Win32GetKeyboardState
+
+#define GetDpiForMonitor					Win32GetDpiForMonitor
+#define SetProcessDpiAwareness				Win32SetProcessDpiAwareness
+
+#define ImmAssociateContextEx				Win32ImmAssociateContextEx
 #pragma endregion
 
 
 //////////////////////////////////////////////////////////////////////////
 
 #pragma region 스터브 선언
-// 본편 시작
-#include "qgwin_stub.h"
+
+// 윈도우 모니터 > QgUdevMonitor
+typedef struct WindowsMonitor
+{
+	QgUdevMonitor		base;
+
+	HMONITOR			handle;
+	wchar				adapter[32];
+	wchar				display[32];
+} WindowsMonitor;
+
+// 마우스 이벤트 소스 (https://learn.microsoft.com/ko-kr/windows/win32/tablet/system-events-and-mouse-messages)
+#define MI_WP_SIGNATURE		0xFF515700
+#define SIGNATURE_MASK		0xFFFFFF00
+#define IsPenEvent(dw)		(((dw) & SIGNATURE_MASK) == MI_WP_SIGNATURE)
+
+// 마우스 이벤트 소스
+typedef enum WindowsMouseSource
+{
+	WINDOWS_MOUSE_SOURCE_MOUSE,
+	WINDOWS_MOUSE_SOURCE_TOUCH,
+	WINDOWS_MOUSE_SOURCE_PEN,
+} WindowsMouseSource;
+
+// 윈도우 스터브 > StubBase
+typedef struct WindowsStub
+{
+	StubBase			base;
+
+	HINSTANCE			instance;
+	HWND				hwnd;
+
+	wchar*				class_name;
+	wchar*				window_title;
+	DWORD				window_style;
+
+	STICKYKEYS			acs_sticky;
+	TOGGLEKEYS			acs_toggle;
+	FILTERKEYS			acs_filter;
+	HHOOK				key_hook;
+	BYTE				key_hook_state[256];
+
+	HIMC				himc;
+	int					imcs;
+	int					high_surrogate;
+
+	int					deadzone_min;
+	int					deadzone_max;
+
+	HCURSOR				mouse_cursor;
+	WPARAM				mouse_wparam;
+	LPARAM				mouse_lparam;
+	QimMask				mouse_pending;
+
+	bool				class_registered;
+	bool				clear_background;
+	bool				bool_padding1;
+	bool				bool_padding2;
+} WindowsStub;
 
 // 윈도우 스터브 여기 있다!
 WindowsStub winStub;
+
+//
+static void _set_key_hook(HINSTANCE instance);
+static void _set_dpi_awareness(void);
+static bool _detect_displays(void);
+static void _hold_mouse(bool hold);
+static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
 #pragma endregion 스터브 선언
 
 #pragma region 시스템 함수
@@ -530,7 +617,7 @@ static BOOL CALLBACK _enum_display_callback(HMONITOR monitor, HDC dc, RECT* rect
 	{
 		WindowsMonitor* wm = (WindowsMonitor*)lp;
 		if (qn_wcseqv(mi.szDevice, wm->adapter))
-			wm->base.oshandle = monitor;
+			wm->handle = monitor;
 	}
 	return TRUE;
 }
@@ -596,15 +683,15 @@ static bool _detect_displays(void)
 			if (QN_TMASK(display_device.StateFlags, DISPLAY_DEVICE_ACTIVE) == false)
 				break;
 
-			qn_pctnr_each_index(&keep, i,
-				{
-					const WindowsMonitor * mon = (WindowsMonitor*)qn_pctnr_nth(&keep, i);
-					if (mon == NULL || qn_wcseqv(mon->display, display_device.DeviceName) == false)
-						continue;
-					qn_pctnr_set(&keep, i, NULL);
-					EnumDisplayMonitors(NULL, NULL, _enum_display_callback, (LPARAM)&qn_pctnr_nth(&winStub.base.monitors, i));
-					break;
-				});
+			qn_pctnr_foreach(&keep, i)
+			{
+				const WindowsMonitor * mon = (WindowsMonitor*)qn_pctnr_nth(&keep, i);
+				if (mon == NULL || qn_wcseqv(mon->display, display_device.DeviceName) == false)
+					continue;
+				qn_pctnr_set(&keep, i, NULL);
+				EnumDisplayMonitors(NULL, NULL, _enum_display_callback, (LPARAM)&qn_pctnr_nth(&winStub.base.monitors, i));
+				break;
+			}
 			if (i < qn_pctnr_count(&keep))
 				continue;
 
@@ -614,14 +701,14 @@ static bool _detect_displays(void)
 
 		if (display == 0)
 		{
-			qn_pctnr_each_index(&keep, i,
-				{
-					const WindowsMonitor * mon = (const WindowsMonitor*)qn_pctnr_nth(&keep, i);
-					if (mon == NULL || qn_wcseqv(mon->adapter, adapter_device.DeviceName) == false)
-						continue;
-					qn_pctnr_set(&keep, i, NULL);
-					break;
-				});
+			qn_pctnr_foreach(&keep, i)
+			{
+				const WindowsMonitor* mon = (const WindowsMonitor*)qn_pctnr_nth(&keep, i);
+				if (mon == NULL || qn_wcseqv(mon->adapter, adapter_device.DeviceName) == false)
+					continue;
+				qn_pctnr_set(&keep, i, NULL);
+				break;
+			}
 			if (i < qn_pctnr_count(&keep))
 				continue;
 
@@ -630,12 +717,12 @@ static bool _detect_displays(void)
 		}
 	}
 
-	QgUdevMonitor* mon;
-	qn_pctnr_each_item(&keep, mon,
-		{
-			if (mon != NULL)
-				stub_event_on_monitor(mon, false, false);
-		});
+	qn_pctnr_foreach(&keep, i)
+	{
+		QgUdevMonitor* mon = qn_pctnr_nth(&keep, i);
+		if (mon != NULL)
+			stub_event_on_monitor(mon, false, false);
+	}
 	qn_pctnr_disp(&keep);
 
 	return qn_pctnr_is_have(&winStub.base.monitors);
@@ -671,22 +758,6 @@ static WindowsMouseSource _get_mouse_source(void)
 		return WINDOWS_MOUSE_SOURCE_PEN;
 	}
 	return WINDOWS_MOUSE_SOURCE_MOUSE;
-}
-
-// 마으스 위치 저장
-static void _set_mouse_point(const LPARAM lp, const bool save)
-{
-	if (winStub.mouse_lparam == lp)
-		return;
-
-	QgUimMouse* mouse = &winStub.base.mouse;
-	const POINT pt = { .x = GET_X_LPARAM(lp), .y = GET_Y_LPARAM(lp) };
-
-	// TODO: 클리핑 영역 처리
-
-	if (save)
-		mouse->last = mouse->pt;
-	qm_point_set(&mouse->pt, pt.x, pt.y);
 }
 
 // 지정한 마우스 버튼 처리
@@ -813,15 +884,14 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 	{
 		if (mesg == WM_MOUSEMOVE)
 		{
-			_set_mouse_point(lp, true);
+			QmPoint pt = { GET_X_LPARAM(lp), GET_Y_LPARAM(lp) };
+			stub_event_on_mouse_move(pt.x, pt.y);
 			stub_track_mouse_click(QIM_NONE, QIMT_MOVE);
-			stub_event_on_mouse_move();
 		}
 		else if ((mesg >= WM_LBUTTONDOWN && mesg <= WM_MBUTTONDBLCLK) || (mesg >= WM_XBUTTONDOWN && mesg <= WM_XBUTTONDBLCLK))
 		{
 			if (_get_mouse_source() != WINDOWS_MOUSE_SOURCE_TOUCH)
 			{
-				_set_mouse_point(lp, false);
 				if (winStub.mouse_wparam != wp)
 				{
 					winStub.mouse_wparam = wp;
@@ -1146,13 +1216,13 @@ static LRESULT CALLBACK _mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 
 		default:
 			break;
-	}
+		}
 
 pos_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-}
+	}
 #pragma endregion 윈도우 메시지
 
-#endif
+#endif	// _QN_WINDOWS_

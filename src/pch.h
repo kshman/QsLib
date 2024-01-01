@@ -5,7 +5,7 @@
 
 #pragma once
 
-#define _QS_HEADER_
+#define __PCH__
 
 #ifndef no_init_all
 #define no_init_all deprecated

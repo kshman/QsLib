@@ -8,6 +8,8 @@
 
 #pragma once
 
+#define __QS_QN__
+
 //////////////////////////////////////////////////////////////////////////
 // includes
 #ifndef _QS_HEADER_
@@ -166,6 +168,7 @@ QN_EXTC_BEGIN
 #define QN_VERSION_MAJOR	3
 #define QN_VERSION_MINER	5
 
+#define QN_MSEC_PER_SEC		1000							/// @brief 초당 밀리초
 #define QN_USEC_PER_SEC		1000000							/// @brief 초당 마이크로초 
 #define QN_NSEC_PER_SEC		1000000000						/// @brief 초당 나노초 
 
@@ -1934,11 +1937,6 @@ QSAPI bool qn_mltag_contains_arg(QnMlTag* ptr, const char* restrict name);
 /// @param	userdata		콜백 데이터
 ///
 QSAPI void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, char* const* name, char* const* data), void* userdata);
-/// @brief 인수에 대해 LoopEach 연산을 수행한다
-/// @param[in]	ptr	MlTag 개체
-/// @param[in]	func	콜백 함수
-///
-QSAPI void qn_mltag_each_arg(QnMlTag* ptr, void(*func)(char* const* name, char* const* data));
 
 /// @brief 인수를 추가한다
 /// @param[in]	ptr	MlTag 개체

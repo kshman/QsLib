@@ -39,6 +39,11 @@ int main(void)
 	qn_hash_set(StrHash, &shash, qn_strdup("test"), qn_strdup("value"));
 	qn_hash_set(StrHash, &shash, qn_strdup("bruce"), qn_strdup("kim"));
 	qn_hash_foreach(StrHash, &shash, str_for_each, NULL);
+	char **shash_keyptr, **shash_valueptr;
+	qn_hash_each(StrHash, &shash, shash_keyptr, shash_valueptr)
+	{
+		qn_outputf("%s -> %s", *shash_keyptr, *shash_valueptr);
+	}
 	qn_hash_set(StrHash, &shash, qn_strdup("test"), qn_strdup("changed"));
 	qn_hash_get(StrHash, &shash, "test", &ps);
 	qn_outputf("test -> %s\n", ps == NULL ? "(null)" : *ps);
@@ -60,7 +65,12 @@ int main(void)
 	qn_hash_init(IntHash, &ihash);
 	qn_hash_set(IntHash, &ihash, 10, 123.0);
 	qn_hash_set(IntHash, &ihash, 20, 987.0);
-	qn_hash_loopeach(IntHash, &ihash, int_for_loop);
+	int *ihash_keyptr;
+	double *ihash_valueptr;
+	qn_hash_each(IntHash, &ihash, ihash_keyptr, ihash_valueptr)
+	{
+		qn_outputf("%d -> %f", *ihash_valueptr, *ihash_valueptr);
+	}
 	qn_hash_set(IntHash, &ihash, 20, 999.0);
 	double* pi;
 	qn_hash_get(IntHash, &ihash, 20, &pi);

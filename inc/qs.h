@@ -7,6 +7,8 @@
 //
 #pragma once
 
+#define __QS__
+
 //////////////////////////////////////////////////////////////////////////
 // API
 #ifndef QSAPI
@@ -39,5 +41,5 @@
 
 // MSVC library
 #ifdef _MSC_VER
-#pragma comment(lib, "qs")
+//#pragma comment(lib, "qs")
 #endif

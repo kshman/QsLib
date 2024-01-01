@@ -147,14 +147,14 @@ void qn_mlu_delete(QnMlu* self)
 //
 void qn_mlu_clean_tags(QnMlu* self)
 {
-	qn_arr_each_ptr(&self->tags, _qn_realtag_delete_ptr);
+	qn_arr_foreach_ptr_1(&self->tags, _qn_realtag_delete_ptr);
 	qn_arr_clear(&self->tags);
 }
 
 //
 void qn_mlu_clean_errs(QnMlu* self)
 {
-	qn_arr_each_ptr(&self->errs, error_array_delete_ptr);
+	qn_arr_foreach_ptr_1(&self->errs, error_array_delete_ptr);
 	qn_arr_clear(&self->errs);
 }
 
@@ -802,7 +802,7 @@ static void _qn_realtag_delete_ptr(QnRealTag** ptr)
 	qn_free(self->base.name);
 	qn_free(self->base.context);
 
-	qn_arr_each_ptr(&self->subs, _qn_realtag_delete_ptr);
+	qn_arr_foreach_ptr_1(&self->subs, _qn_realtag_delete_ptr);
 	qn_arr_disp(&self->subs);
 
 	qn_hash_disp(ArgHash, &self->args);
@@ -1002,7 +1002,7 @@ static bool _qn_realtag_write_file(const QnRealTag* self, QnFile* file, int iden
 				qn_bstr_format(&bs, "%s<%s", szident, self->base.name);
 				qn_file_write(file, bs.data, 0, (int)bs.len);
 
-				qn_hash_foreach(ArgHash, &self->args, _qn_realtag_write_file_arg, file);
+				qn_hash_foreach_3(ArgHash, &self->args, _qn_realtag_write_file_arg, file);
 
 				qn_bstr_format(&bs, ">%s</%s>\n", self->base.context, self->base.name);
 				qn_file_write(file, bs.data, 0, (int)bs.len);
@@ -1021,7 +1021,7 @@ static bool _qn_realtag_write_file(const QnRealTag* self, QnFile* file, int iden
 				qn_bstr_format(&bs, "%s<%s", szident, self->base.name);
 				qn_file_write(file, bs.data, 0, (int)bs.len);
 
-				qn_hash_foreach(ArgHash, &self->args, _qn_realtag_write_file_arg, file);
+				qn_hash_foreach_3(ArgHash, &self->args, _qn_realtag_write_file_arg, file);
 
 				qn_bstr_set(&bs, "/>\n");
 				qn_file_write(file, bs.data, 0, (int)bs.len);
@@ -1040,7 +1040,7 @@ static bool _qn_realtag_write_file(const QnRealTag* self, QnFile* file, int iden
 			qn_bstr_format(&bs, "%s<%s", szident, self->base.name);
 			qn_file_write(file, bs.data, 0, (int)bs.len);
 
-			qn_hash_foreach(ArgHash, &self->args, _qn_realtag_write_file_arg, file);
+			qn_hash_foreach_3(ArgHash, &self->args, _qn_realtag_write_file_arg, file);
 
 			qn_bstr_set(&bs, ">\n");
 			qn_file_write(file, bs.data, 0, (int)bs.len);
@@ -1317,15 +1317,7 @@ void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, char* const*
 {
 	const QnRealTag* self = (QnRealTag*)ptr;
 
-	qn_hash_foreach(ArgHash, &self->args, func, userdata);
-}
-
-//
-void qn_mltag_each_arg(QnMlTag* ptr, void(*func)(char* const* name, char* const* data))
-{
-	const QnRealTag* self = (QnRealTag*)ptr;
-
-	qn_hash_each(ArgHash, &self->args, func);
+	qn_hash_foreach_3(ArgHash, &self->args, func, userdata);
 }
 
 //

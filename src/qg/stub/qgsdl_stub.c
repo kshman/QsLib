@@ -5,14 +5,26 @@
 
 #include "pch.h"
 #include "qs_qn.h"
-#ifdef USE_SDL2
+#if defined USE_SDL2
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include "qg_stub.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
 
+#ifdef _MSC_VER
+#ifdef _QN_64_
+#pragma comment(lib, "SDL2x64")
+#else
+#pragma comment(lib, "SDL2")
+#endif
+#endif
+
 #pragma region 정적 함수 미리 선언
+extern QikKey sdlk_to_qik(uint32_t sdlk);
+extern QikMask kmod_to_qikm(int modifier);
+extern QimButton sdlm_to_qim(byte button);
+
 static bool _sdl_mesg_proc(void);
 #pragma endregion
 
@@ -248,19 +260,9 @@ static void _sdl_mesg_keyboard(SDL_KeyCode sdl_key, const bool down)
 	stub_event_on_keyboard(key, down);
 }
 
-// 마우스 이동 포인터
-static void _sdl_set_mouse_point(int x, int y)
-{
-	QgUimMouse* um = &sdlStub.base.mouse;
-	um->last = um->pt;
-	qm_set2(&um->pt, x, y);
-}
-
 // 마우스 버튼
 static void _sdl_mesg_mouse_button(SDL_MouseButtonEvent* se, bool isdown)
 {
-	_sdl_set_mouse_point(se->x, se->y);
-
 	QimButton button = sdlm_to_qim(se->button);
 	QgUimMouse* um = &sdlStub.base.mouse;
 	QN_SBIT(&um->mask, button, isdown);
@@ -335,9 +337,8 @@ static bool _sdl_mesg_proc(void)
 				break;
 
 			case SDL_MOUSEMOTION:
-				_sdl_set_mouse_point(ev.motion.x, ev.motion.y);
+				stub_event_on_mouse_move(ev.motion.x, ev.motion.y);
 				stub_track_mouse_click(QIM_NONE, QIMT_MOVE);
-				stub_event_on_mouse_move();
 				break;
 
 			case SDL_MOUSEBUTTONDOWN:
@@ -389,4 +390,4 @@ static bool _sdl_mesg_proc(void)
 
 #pragma endregion SDL 폴링
 
-#endif
+#endif	// USE_SDL2

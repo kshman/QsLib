@@ -81,7 +81,7 @@ static void shed_event_dispose(void)
 	qn_ret_if_fail(shed_event.mutex != NULL);
 
 	// 예약 메모리
-	qn_parr_each(&shed_event.reserved_mems, qn_memfre);
+	qn_parr_foreach_1(&shed_event.reserved_mems, qn_memfre);
 	qn_parr_disp(&shed_event.reserved_mems);
 	// 우선 순위 큐
 	qn_nodelist_disp_cb(EventNodeList, &shed_event.prior, qn_memfre);
@@ -192,10 +192,8 @@ static void shed_event_flush_callback(EventNode* node)
 static void shed_event_flush(void)
 {
 	qn_mutex_enter(shed_event.mutex);
-
-	qn_nodelist_each(EventNodeList, &shed_event.prior, shed_event_flush_callback);
-	qn_nodelist_each(EventNodeList, &shed_event.queue, shed_event_flush_callback);
-
+	qn_nodelist_foreach_1(EventNodeList, &shed_event.prior, shed_event_flush_callback);
+	qn_nodelist_foreach_1(EventNodeList, &shed_event.queue, shed_event_flush_callback);
 	qn_mutex_leave(shed_event.mutex);
 }
 
@@ -213,7 +211,7 @@ static void shed_event_clear_reserved_mem(void)
 	qn_mutex_enter(shed_event.mutex);
 	if (qn_parr_is_have(&shed_event.reserved_mems))
 	{
-		qn_parr_each(&shed_event.reserved_mems, qn_free);
+		qn_parr_foreach_1(&shed_event.reserved_mems, qn_free);
 		qn_parr_clear(&shed_event.reserved_mems);
 	}
 	qn_mutex_leave(shed_event.mutex);
@@ -279,7 +277,7 @@ void stub_initialize(StubBase* stub, const int flags)
 	stub->run = stub->timer->runtime;
 	stub->active = stub->timer->abstime;
 
-	stub->mouse.lim.move = 5 * 5;							// 제한 이동 거리(포인트)의 제곱
+	stub->mouse.lim.move = 10 * 10 + 10 * 10;						// 제한 이동 거리(포인트)의 제곱
 	stub->mouse.lim.tick = 500;								// 제한 클릭 시간(밀리초)
 
 	qn_pctnr_init(&stub->monitors, 0);
@@ -294,7 +292,7 @@ void qg_close_stub(void)
 
 	qn_timer_delete(qg_stub_instance->timer);
 
-	qn_pctnr_each(&qg_stub_instance->monitors, qn_memfre);
+	qn_pctnr_foreach_1(&qg_stub_instance->monitors, qn_memfre);
 	qn_pctnr_disp(&qg_stub_instance->monitors);
 
 	shed_event_dispose();
@@ -579,8 +577,10 @@ bool stub_track_mouse_click(const QimButton button, const QimTrack track)
 					return true;
 				}
 			}
-			// 취소
+			// 취소 -> 새로운 시작
 			m->clk.tick = 0;
+			m->clk.loc = m->pt;
+			m->clk.btn = button;
 		}
 	}
 	else if (track == QIMT_UP)
@@ -613,7 +613,8 @@ bool stub_event_on_monitor(QgUdevMonitor* monitor, const bool connected, const b
 
 	// 모니터 번호 재할당
 	size_t i;
-	qn_pctnr_each_index(&stub->monitors, i, { qn_pctnr_nth(&stub->monitors, i)->no = (int)i; });
+	qn_pctnr_foreach(&stub->monitors, i)
+		qn_pctnr_nth(&stub->monitors, i)->no = (int)i;
 
 	// 이벤트
 	QgUdevMonitor* another = qn_memdup(monitor, sizeof(QgUdevMonitor));
@@ -804,8 +805,8 @@ bool stub_event_on_keyboard(const QikKey key, const bool down)
 	if (down)
 	{
 		e.key.ev = QGEV_KEYDOWN;
-		if (qg_test_key(key))
-			e.key.repeat = true;
+		e.key.repeat = qg_test_key(key);
+		qg_set_key(key, true);
 
 		switch (key)	// NOLINT
 		{
@@ -856,18 +857,27 @@ bool stub_event_on_reset_keys(void)
 }
 
 //
-bool stub_event_on_mouse_move(void)
+bool stub_event_on_mouse_move(int x, int y)
 {
-	// 마우스 정보는 시스템 스터브에서 해와야함
-	const QgUimMouse* um = &qg_stub_instance->mouse;
+	// 이동 이외의 정보는 해와야함
+	QgUimMouse* um = &qg_stub_instance->mouse;
+
+	um->last = um->pt;
+	um->delta.x = um->pt.x - x;
+	um->delta.y = um->pt.y - y;
+	qm_set2(&um->pt, x, y);
+
+	if (um->delta.x == 0 && um->delta.y == 0)
+		return false;
+
 	const QgEvent e =
 	{
 		.mmove.ev = QGEV_MOUSEMOVE,
 		.mmove.mask = um->mask,
-		.mmove.pt.x = um->pt.x,
-		.mmove.pt.y = um->pt.y,
-		.mmove.delta.x = um->last.x - um->pt.x,
-		.mmove.delta.y = um->last.y - um->pt.y,
+		.mmove.pt.x = x,
+		.mmove.pt.y = y,
+		.mmove.delta.x = um->last.x - x,
+		.mmove.delta.y = um->last.y - y,
 	};
 	return qg_add_event(&e, false) > 0;
 }

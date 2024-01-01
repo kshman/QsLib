@@ -117,9 +117,6 @@
     <ClInclude Include="..\..\src\qg\stub\qg_stub.h">
       <Filter>헤더 파일\qg\stub</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\qgwin_func.h">
-      <Filter>헤더 파일\qg\stub</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\qg\stub\wayland-wayland.h">
       <Filter>헤더 파일\qg\stub</Filter>
     </ClInclude>
@@ -133,6 +130,15 @@
       <Filter>헤더 파일\qg\stub</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\qg\stub\qgwlx_func.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\qgwin_func.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\wayland-xdg-output-unstable-v1.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\wayland-xdg-output-unstable-v1-code.h">
       <Filter>헤더 파일\qg\stub</Filter>
     </ClInclude>
   </ItemGroup>
@@ -238,9 +244,6 @@
     </ClCompile>
     <ClCompile Include="..\..\zconsole\zz.c">
       <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qg\qg_rdh.c">
-      <Filter>소스 파일\qg\rdh</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qg\stub\qgwlx_stub.c">
       <Filter>소스 파일\qg\stub</Filter>

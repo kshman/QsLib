@@ -7,6 +7,8 @@
 //
 #pragma once
 
+#define __QS_MATH__
+
 #include <math.h>
 #if defined _MSC_VER
 #include <intrin.h>
@@ -2143,6 +2145,26 @@ QN_INLINE void qm_point_set(QmPoint* pt, int x, int y)
 	pt->y = y;
 }
 
+/// @brief 점의 덧셈
+/// @param pt 결과를 넣을 점
+/// @param left 왼쪽 점
+/// @param right 오른쪽 점
+QN_INLINE void qm_point_add(QmPoint* pt, const QmPoint* left, QmPoint* right)
+{
+	pt->x = left->x + right->x;
+	pt->y = left->y + right->y;
+}
+
+/// @brief 점의 뺄셈
+/// @param pt 결과를 넣을 점
+/// @param left 왼쪽 점
+/// @param right 오른쪽 점
+QN_INLINE void qm_point_sub(QmPoint* pt, const QmPoint* left, QmPoint* right)
+{
+	pt->x = left->x - right->x;
+	pt->y = left->y - right->y;
+}
+
 /// @brief 두 점이 같은가 비교한다
 /// @param left 왼쪽 점
 /// @param right 오른쪽 점
@@ -3167,6 +3189,7 @@ QN_INLINE float qm_dpi_diag(const uint width, const uint height, const float hor
 							QmVec4*: qm_vec4_add,\
 							QmQuat*: qm_quat_add,\
 							QmMat4*: qm_mat4_add,\
+							QmPoint*: qm_point_add,\
 							QmColor*: qm_color_add,\
 							QmKolor*: qm_kolor_add)(o,l,r)
 /// @brief (제네릭) 뺄셈
@@ -3176,6 +3199,7 @@ QN_INLINE float qm_dpi_diag(const uint width, const uint height, const float hor
 							QmVec4*: qm_vec4_sub,\
 							QmQuat*: qm_quat_sub,\
 							QmMat4*: qm_mat4_sub,\
+							QmPoint*: qm_point_sub,\
 							QmColor*: qm_color_sub,\
 							QmKolor*: qm_kolor_sub)(o,l,r)
 /// @brief (제네릭) 확대
