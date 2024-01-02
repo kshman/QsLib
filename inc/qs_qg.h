@@ -254,11 +254,14 @@ typedef enum QgFlag
 	QGFLAG_FOCUS = QN_BIT(4),								/// @brief 입력 포커스 받을 수 있음
 	QGFLAG_TEXT = QN_BIT(5),								/// @brief 텍스트 입력을 받을 수 있음
 	QGFLAG_DPISCALE = QN_BIT(6),							/// @brief DPI 스케일
-	// 미사용 (8~15)
-	// 렌더러 플래그 (16~23)
-	QGFLAG_VSYNC = QN_BIT(16),								/// @brief VSYNC 켜기
-	QGFLAG_DITHER = QN_BIT(17),								/// @brief 16비트 모드 사용
-	QGFLAG_MSAA = QN_BIT(18),								/// @brief 멀티 샘플링 사용
+	// 렌더러 플래그 (8~15)
+	QGFLAG_VSYNC = QN_BIT(8),								/// @brief VSYNC 켜기
+	QGFLAG_DITHER = QN_BIT(9),								/// @brief 16비트 모드 사용
+	QGFLAG_MSAA = QN_BIT(10),								/// @brief 멀티 샘플링 사용
+	// 렌더러 종류 (16~23)
+	QGRENDERER_ES3 = QN_BIT(21),
+	QGRENDERER_OPENGL = QN_BIT(22),
+	QGRENDERER_DIRECTX = QN_BIT(23),
 	// 스터브 사양 (24~31)
 	QGFEATURE_DISABLE_ACS = QN_BIT(24),						/// @brief 접근성 끄기
 	QGFEATURE_DISABLE_SCRSAVE = QN_BIT(25),					/// @brief 화면 보호기 끄기
@@ -831,7 +834,7 @@ qv_name(QgRdh)
 /// @retval NULL 랜더러를 만들 수가 없다
 /// @note 내부에서 qg_open_stub 함수를 호출한다
 ///
-QSAPI QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, int flags);
+QSAPI QgRdh* qg_rdh_new(const char* driver, const char* title, int display, int width, int height, int flags);
 
 /// @brief 루프를 시작한다
 /// @param g 렌더러

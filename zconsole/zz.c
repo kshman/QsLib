@@ -7,7 +7,7 @@ int main(void)
 
 	int flags = /*QGFLAG_BORDERLESS |*/ QGFLAG_RESIZABLE;
 	int features = QGFEATURE_DISABLE_ACS | QGFEATURE_DISABLE_SCRSAVE | QGFEATURE_ENABLE_IDLE | QGFEATURE_ENABLE_DROP;
-	if (!qg_open_stub(NULL, 0, 300, 300, flags | features))
+	if (!qg_open_stub(NULL, 0, 0, 0, flags | features))
 		return -1;
 
 	QgEvent ev;

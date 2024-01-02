@@ -100,17 +100,17 @@ extern void rdh_internal_dispose(QsGam* g);
 extern void rdh_internal_reset(QgRdh* self);
 
 /**
- * @brief OPENGL ES2 할당
+ * @brief OPENGL ES3 할당
  * @param oshandle OS 핸들
  * @param flags 스터브 & 렌더러 플래그
- * @return 만들어진 ES2 렌더러
+ * @return 만들어진 ES3 렌더러
 */
-extern QgRdh* es2_allocator(void* oshandle, int flags);
+extern QgRdh* es_allocator(int flags);
 
-#define rdh_caps(rdh)			(qm_cast(rdh, QgRdh)->caps)
-#define rdh_tm(rdh)				(qm_cast(rdh, QgRdh)->tm)
-#define rdh_param(rdh)			(qm_cast(rdh, QgRdh)->param)
-#define rdh_invokes(rdh)		(qm_cast(rdh, QgRdh)->invokes)
+#define rdh_caps(rdh)			(qs_cast(rdh, QgRdh)->caps)
+#define rdh_tm(rdh)				(qs_cast(rdh, QgRdh)->tm)
+#define rdh_param(rdh)			(qs_cast(rdh, QgRdh)->param)
+#define rdh_invokes(rdh)		(qs_cast(rdh, QgRdh)->invokes)
 
-#define rdh_set_flush(rdh,v)	(qm_cast(rdh, QgRdh)->invokes.fluash=(v))
-#define rdh_inc_ends(rdh)		(qm_cast(rdh, QgRdh)->invokes.ends++)
+#define rdh_set_flush(rdh,v)	(qs_cast(rdh, QgRdh)->invokes.fluash=(v))
+#define rdh_inc_ends(rdh)		(qs_cast(rdh, QgRdh)->invokes.ends++)
