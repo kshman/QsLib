@@ -37,15 +37,6 @@
     <Filter Include="소스 파일\qg\gl">
       <UniqueIdentifier>{15b5bc29-0129-420d-8fb8-00d15fee3f41}</UniqueIdentifier>
     </Filter>
-    <Filter Include="소스 파일\qg\rdh">
-      <UniqueIdentifier>{1b57b24d-4186-4d0c-bbfc-ebd9dc250bf0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\qg\glad">
-      <UniqueIdentifier>{90557222-48b7-44f9-81cb-a6b4181d8b85}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="헤더 파일\qg\glad">
-      <UniqueIdentifier>{903faeba-30b5-4322-a198-adc65276213b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="헤더 파일\qg\stub">
       <UniqueIdentifier>{ca19cfa2-72c5-4ba0-a9be-503b7f6ceffd}</UniqueIdentifier>
     </Filter>
@@ -134,6 +125,27 @@
     </ClInclude>
     <ClInclude Include="..\..\src\qg\stub\qgwlx_func.h">
       <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\gl\gl.h">
+      <Filter>헤더 파일\qg\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\gl\gles2.h">
+      <Filter>헤더 파일\qg\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\gl\qggl_base.h">
+      <Filter>헤더 파일\qg\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\gl\qges_rdh.h">
+      <Filter>헤더 파일\qg\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\gl\qggl_code.h">
+      <Filter>헤더 파일\qg\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\gl\egl.h">
+      <Filter>헤더 파일\qg\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\gl\wgl.h">
+      <Filter>헤더 파일\qg\gl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -239,11 +251,14 @@
     <ClCompile Include="..\..\zconsole\zz.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qg_rdh.c">
-      <Filter>소스 파일\qg\rdh</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\qg\stub\qgwlx_stub.c">
       <Filter>소스 파일\qg\stub</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\gl\qges_rdh.c">
+      <Filter>소스 파일\qg\gl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qg_rdh.c">
+      <Filter>소스 파일\qg</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

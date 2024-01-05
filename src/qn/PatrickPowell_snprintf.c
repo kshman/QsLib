@@ -160,10 +160,12 @@ typedef union sn_any
 	ptrdiff_t*			pff;
 } sn_any;
 
+// 숫자 변환 아스키/유니코드 공용
+extern byte qn_char_to_int_base(const uint n);
+extern char qn_int_base_to_char(const uint n, bool upper);
+#define char_to_int(p)	(int)((p) - '0')
 
-//////////////////////////////////////////////////////////////////////////
-// 인라인 도구
-
+//
 QN_INLINE double pp_pow10(int exp)
 {
 	double result = 1;
@@ -180,6 +182,7 @@ QN_INLINE double pp_pow10(int exp)
 	return result;
 }
 
+//
 QN_INLINE double pp_round(double value)
 {
 	const ullong intpart = (ullong)value;
@@ -187,17 +190,20 @@ QN_INLINE double pp_round(double value)
 	return (double)(value >= 0.5 ? intpart + 1 : intpart);
 }
 
+//
 QN_INLINE bool pp_is_nan(const double value)
 {
 	// ReSharper disable once CppIdenticalOperandsInBinaryExpression
 	return value != value;
 }
 
+//
 QN_INLINE bool pp_is_inf(const double value)
 {
 	return value != 0.0 && value + value == value;  // NOLINT
 }
 
+//
 QN_INLINE int pp_exponent(const double value)
 {
 	double d = value < 0.0 ? -value : value;
@@ -207,6 +213,7 @@ QN_INLINE int pp_exponent(const double value)
 	return exp;
 }
 
+//
 QN_INLINE ullong pp_intpart(const double value)
 {
 	if (value >= (double)UINT64_MAX)
@@ -219,16 +226,6 @@ QN_INLINE ullong pp_intpart(const double value)
 //////////////////////////////////////////////////////////////////////////
 // 아스키 버전
 
-// 문자를 숫자로
-#define char_to_int(p)	(int)((p) - '0')
-
-// 진수별 처리
-static const char* pps_nbase[2] =
-{
-	"0123456789abcdef",
-	"0123456789ABCDEF",
-};
-
 // 포인터 표시를 어떤거 쓰나
 #ifdef _QN_64_
 #define pps_fsize		pps_fllong
@@ -239,44 +236,41 @@ static const char* pps_nbase[2] =
 // 32비트 숫자를 문자열로
 static int pps_toi(uint value, char* restrict buf, int size, uint base, bool caps)
 {
-	const char* bts = pps_nbase[caps ? 1 : 0];
 	int pos = 0;
-
 	do
 	{
-		buf[pos++] = bts[value % base];
+		buf[pos++] = qn_int_base_to_char(value % base, caps);
 		value /= base;
 	} while (value && pos < size);
-
 	buf[pos] = '\0';
-
 	return pos;
 }
 
 // 64비트 숫자를 문자열로
 static int pps_toll(ullong value, char* restrict buf, int size, uint base, bool caps)
 {
-	const char* bts = pps_nbase[caps ? 1 : 0];
 	int pos = 0;
-
 	do
 	{
-		buf[pos++] = bts[value % base];
+		buf[pos++] = qn_int_base_to_char(value % base, caps);
 		value /= base;
 	} while (value && pos < size);
-
 	buf[pos] = '\0';
-
 	return pos;
 }
 
 // 숫자 분리 (보통 천단위 통화 분리자, 한자 문화권은 만단위가 좋은데)
-static int pps_quote(int value, int flags
+static int pps_quote(int value, int flags,
 #if USE_LOCALE_INFO
-	, const struct lconv* lc
+	const struct lconv* lc
+#else
+	const void* lc
 #endif
 )
 {
+#if !USE_LOCALE_INFO
+	QN_DUMMY(lc);
+#endif
 	int ret;
 
 	if (!(flags & DP_F_QUOTE))
@@ -302,7 +296,8 @@ static void pps_outch(char* restrict buffer, size_t* restrict currlen, size_t ma
 }
 
 // 문자열 널기
-static void pps_outs(char* restrict buffer, size_t* restrict currlen, size_t maxlen, const char* restrict value, int len, int flags, int vmin, int vmax)
+static void pps_outs(char* restrict buffer, size_t* restrict currlen, size_t maxlen,
+	const char* restrict value, int len, int flags, int vmin, int vmax)
 {
 	int padlen = vmin - len;
 
@@ -347,7 +342,8 @@ static void pps_fchar(char* restrict buffer, size_t* restrict currlen, size_t ma
 }
 
 // 문자열 변환
-static void pps_fstr(char* restrict buffer, size_t* restrict currlen, size_t maxlen, const /*char*/void* restrict value, int flags, int vmin, int vmax)
+static void pps_fstr(char* restrict buffer, size_t* restrict currlen, size_t maxlen,
+	const /*char*/void* restrict value, int flags, int vmin, int vmax)
 {
 	if (!value)
 	{
@@ -397,7 +393,14 @@ static void pps_fstr(char* restrict buffer, size_t* restrict currlen, size_t max
 }
 
 // 32비트 정수
-static void pps_fint(char* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, uint base, int vmin, int vmax, int flags)
+static void pps_fint(char* restrict buffer, size_t* restrict currlen, size_t maxlen,
+	const sn_any* value, uint base, int vmin, int vmax, int flags,
+#if USE_LOCALE_INFO
+	const struct lconv* lc
+#else
+	const void* lc
+#endif
+)
 {
 #define MAX_CONVERT_PLACES 40
 	uint uvalue;
@@ -408,9 +411,6 @@ static void pps_fint(char* restrict buffer, size_t* restrict currlen, size_t max
 	int spadlen;
 	int zpadlen;
 	int quote;
-#if USE_LOCALE_INFO
-	const struct lconv* lc = localeconv();	// CRT 로캘 / NOLINT
-#endif
 
 	//
 	if (vmax < 0)
@@ -459,11 +459,7 @@ static void pps_fint(char* restrict buffer, size_t* restrict currlen, size_t max
 		hexprefix = '\0';
 
 	//
-#if USE_LOCALE_INFO
 	quote = pps_quote(place, flags, lc);
-#else
-	quote = pps_quote(place, flags);
-#endif
 	zpadlen = vmax - place - quote;
 	spadlen = vmin - quote - QN_MAX(vmax, place) - (signvalue ? 1 : 0) - (hexprefix ? 2 : 0);
 
@@ -534,7 +530,14 @@ static void pps_fint(char* restrict buffer, size_t* restrict currlen, size_t max
 }
 
 // 64비트 정수
-static void pps_fllong(char* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, uint base, int vmin, int vmax, int flags)
+static void pps_fllong(char* restrict buffer, size_t* restrict currlen, size_t maxlen,
+	const sn_any* value, uint base, int vmin, int vmax, int flags,
+#if USE_LOCALE_INFO
+	const struct lconv* lc
+#else
+	const void* lc
+#endif
+)
 {
 #define MAX_CONVERT_PLACES 80
 	ullong uvalue;
@@ -545,9 +548,6 @@ static void pps_fllong(char* restrict buffer, size_t* restrict currlen, size_t m
 	int spadlen;
 	int zpadlen;
 	int quote;
-#if USE_LOCALE_INFO
-	const struct lconv* lc = localeconv();  // NOLINT
-#endif
 
 	//
 	if (vmax < 0)
@@ -596,11 +596,7 @@ static void pps_fllong(char* restrict buffer, size_t* restrict currlen, size_t m
 		hexprefix = '\0';
 
 	//
-#if USE_LOCALE_INFO
 	quote = pps_quote(place, flags, lc);
-#else
-	quote = pps_quote(place, flags);
-#endif
 	zpadlen = vmax - place - quote;
 	spadlen = vmin - quote - QN_MAX(vmax, place) - (signvalue ? 1 : 0) - (hexprefix ? 2 : 0);
 
@@ -675,7 +671,14 @@ static void pps_fllong(char* restrict buffer, size_t* restrict currlen, size_t m
 
 // 64비트 실수(double)
 // 여기서는, 오직 16자리 정수만 지원. 원래는 9, 19, 38 자리수에 따라 각각 32, 64, 128비트용이 있어야함
-static void pps_ffp(char* restrict buffer, size_t* restrict currlen, size_t maxlen, sn_any* value, int vmin, int vmax, int flags)
+static void pps_ffp(char* restrict buffer, size_t* restrict currlen, size_t maxlen,
+	sn_any* value, int vmin, int vmax, int flags,
+#if USE_LOCALE_INFO
+	const struct lconv* lc
+#else
+	const void* lc
+#endif
+)
 {
 	double fvalue;
 	double uvalue;
@@ -699,9 +702,6 @@ static void pps_ffp(char* restrict buffer, size_t* restrict currlen, size_t maxl
 	int omitzeros;
 	int omitcount;
 	const char* psz;
-#if USE_LOCALE_INFO
-	const struct lconv* lc = localeconv();  // NOLINT
-#endif
 
 	/*
 	* AIX manpage says the default is 0, but Solaris says the default
@@ -856,11 +856,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 	dotpoint = vmax > 0 || (flags & DP_F_NUM);
 
 	//
-#if USE_LOCALE_INFO
 	quote = pps_quote(iplace, flags, lc);
-#else
-	quote = pps_quote(iplace, flags);
-#endif
 
 	// -1은 정수 포인트용, 부호를 출력하면 추가로 -1;
 	padlen = vmin - iplace - eplace - vmax - quote - (dotpoint ? 1 : 0) - (signvalue ? 1 : 0);
@@ -963,6 +959,11 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 	uint base = 0;
 	size_t currlen = 0;
 	sn_any value = { .ff = 0 };
+#if USE_LOCALE_INFO
+	const struct lconv* lc = localeconv();
+#else
+	const void* lc = NULL;
+#endif
 
 	if (!buffer)
 		maxlen = 0;
@@ -1125,33 +1126,33 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 						{
 							case DP_C_SHORT:
 								value.i = va_arg(args, int);
-								pps_fint(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pps_fint(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 							case DP_C_LONG:
 								value.g = va_arg(args, long);
-								pps_fsize(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pps_fsize(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 							case DP_C_LLONG:
 								value.ll = va_arg(args, long long);
-								pps_fllong(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pps_fllong(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:
 								value.sz = va_arg(args, size_t);
-								pps_fsize(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pps_fsize(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 							case DP_C_INTMAX:   // 최대 정수, 2023년 현재 64비트
 								value.im = va_arg(args, intmax_t);
-								pps_fllong(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pps_fllong(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 							case DP_C_PTRDIFF:
 								value.ff = va_arg(args, ptrdiff_t);
-								pps_fsize(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pps_fsize(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 							case DP_C_CHAR:
 							default:
 								value.i = va_arg(args, int);
-								pps_fint(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								pps_fint(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 						}
 						break;
@@ -1167,36 +1168,36 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 						{
 							case DP_C_SHORT:
 								value.ui = (unsigned short)va_arg(args, unsigned int);
-								pps_fint(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pps_fint(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							case DP_C_LONG:
 								value.ug = va_arg(args, unsigned long);
-								pps_fsize(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pps_fsize(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							case DP_C_LLONG:
 								value.ull = va_arg(args, unsigned long long);
-								pps_fllong(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pps_fllong(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:
 								value.sz = va_arg(args, size_t);
-								pps_fsize(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pps_fsize(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							case DP_C_INTMAX:   // 64비트 취급
 								value.im = va_arg(args, intmax_t);
-								pps_fllong(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pps_fllong(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							case DP_C_PTRDIFF:
 								value.ff = va_arg(args, ptrdiff_t);
-								pps_fsize(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pps_fsize(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							case DP_C_CHAR:
 								value.ui = (unsigned char)va_arg(args, int);
-								pps_fint(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pps_fint(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							default:
 								value.ui = va_arg(args, unsigned int);
-								pps_fint(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								pps_fint(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 						}
 						break;
@@ -1210,7 +1211,7 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 							value.d = (double)va_arg(args, long double);
 						else
 							value.d = va_arg(args, double);
-						pps_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
+						pps_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags, lc);
 						break;
 					case 'E':       // 지수 표시 (대문자)
 						flags |= DP_F_UP; QN_FALL_THROUGH;
@@ -1221,7 +1222,7 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 							value.d = (double)va_arg(args, long double);
 						else
 							value.d = va_arg(args, double);
-						pps_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
+						pps_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags, lc);
 						break;
 					case 'G':       // 지수 표시 (대문자)
 						flags |= DP_F_UP; QN_FALL_THROUGH;
@@ -1234,7 +1235,7 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 							value.d = (double)va_arg(args, long double);
 						else
 							value.d = va_arg(args, double);
-						pps_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
+						pps_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags, lc);
 						break;
 					case 'c':
 						if (cflags == DP_C_LONG)
@@ -1255,7 +1256,7 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 					case 'p':
 						flags |= DP_F_UNSIGNED | DP_F_UP;
 						value.s = va_arg(args, char*);
-						pps_fsize(buffer, &currlen, maxlen, &value, 16, vmin, vmax, flags);
+						pps_fsize(buffer, &currlen, maxlen, &value, 16, vmin, vmax, flags, lc);
 						break;
 					case 'n':
 						switch (cflags)
@@ -1324,16 +1325,6 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 //////////////////////////////////////////////////////////////////////////
 // 유니코드 버전
 
-// 문자를 숫자로
-#define wchar_to_int(p)	(int)((p) - L'0')
-
-// 진수별 처리
-static const wchar* ppw_nbase[2] =
-{
-	L"0123456789abcdef",
-	L"0123456789ABCDEF",
-};
-
 // 포인터 표시를 어떤거 쓰나
 #ifdef _QN_64_
 #define ppw_fsize		ppw_fllong
@@ -1344,44 +1335,41 @@ static const wchar* ppw_nbase[2] =
 // 32비트 숫자를 문자열로
 static int ppw_toi(uint value, wchar* restrict buf, int size, uint base, bool caps)
 {
-	const wchar* bts = ppw_nbase[caps ? 1 : 0];
 	int pos = 0;
-
 	do
 	{
-		buf[pos++] = bts[value % base];
+		buf[pos++] = qn_int_base_to_char(value % base, caps);
 		value /= base;
 	} while (value && pos < size);
-
 	buf[pos] = L'\0';
-
 	return pos;
 }
 
 // 64비트 숫자를 문자열로
 static int ppw_toll(ullong value, wchar* restrict buf, int size, uint base, bool caps)
 {
-	const wchar* bts = ppw_nbase[caps ? 1 : 0];
 	int pos = 0;
-
 	do
 	{
-		buf[pos++] = bts[value % base];
+		buf[pos++] = qn_int_base_to_char(value % base, caps);
 		value /= base;
 	} while (value && pos < size);
-
 	buf[pos] = L'\0';
-
 	return pos;
 }
 
 // 숫자 분리 (보통 천단위 통화 분리자)
-static int ppw_quote(int value, int flags
+static int ppw_quote(int value, int flags,
 #if USE_WIDE_LOCALE
-	, const struct lconv* lc
+	const struct lconv* lc
+#else
+	const void* lc
 #endif
 )
 {
+#if !USE_WIDE_LOCALE
+	QN_DUMMY(lc);
+#endif
 	int ret;
 
 	if (!(flags & DP_F_QUOTE))
@@ -1407,7 +1395,8 @@ static void ppw_outch(wchar* restrict buffer, size_t* restrict currlen, size_t m
 }
 
 // 문자열 널기
-static void ppw_outs(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, const wchar* restrict value, int len, int flags, int vmin, int vmax)
+static void ppw_outs(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen,
+	const wchar* restrict value, int len, int flags, int vmin, int vmax)
 {
 	int padlen = vmin - len;
 
@@ -1452,7 +1441,8 @@ static void ppw_fchar(wchar* restrict buffer, size_t* restrict currlen, size_t m
 }
 
 // 문자열 변환
-static void ppw_fstr(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, const wchar* restrict value, int flags, int vmin, int vmax)
+static void ppw_fstr(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen,
+	const wchar* restrict value, int flags, int vmin, int vmax)
 {
 	if (!value)
 	{
@@ -1502,7 +1492,14 @@ static void ppw_fstr(wchar* restrict buffer, size_t* restrict currlen, size_t ma
 }
 
 // 32비트 정수
-static void ppw_fint(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, uint base, int vmin, int vmax, int flags)
+static void ppw_fint(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen,
+	const sn_any* value, uint base, int vmin, int vmax, int flags,
+#if USE_WIDE_LOCALE
+	const struct lconv* lc
+#else
+	const void* lc
+#endif
+)
 {
 #define MAX_CONVERT_PLACES 40
 	uint uvalue;
@@ -1513,9 +1510,6 @@ static void ppw_fint(wchar* restrict buffer, size_t* restrict currlen, size_t ma
 	int spadlen;
 	int zpadlen;
 	int quote;
-#if USE_WIDE_LOCALE
-	const struct lconv* lc = localeconv();  // NOLINT
-#endif
 
 	//
 	if (vmax < 0)
@@ -1564,11 +1558,7 @@ static void ppw_fint(wchar* restrict buffer, size_t* restrict currlen, size_t ma
 		hexprefix = L'\0';
 
 	//
-#if USE_WIDE_LOCALE
 	quote = ppw_quote(place, flags, lc);
-#else
-	quote = ppw_quote(place, flags);
-#endif
 	zpadlen = vmax - place - quote;
 	spadlen = vmin - quote - QN_MAX(vmax, place) - (signvalue ? 1 : 0) - (hexprefix ? 2 : 0);
 
@@ -1639,7 +1629,14 @@ static void ppw_fint(wchar* restrict buffer, size_t* restrict currlen, size_t ma
 }
 
 // 64비트 정수
-static void ppw_fllong(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, const sn_any* value, uint base, int vmin, int vmax, int flags)
+static void ppw_fllong(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen,
+	const sn_any* value, uint base, int vmin, int vmax, int flags,
+#if USE_WIDE_LOCALE
+	const struct lconv* lc
+#else
+	const void* lc
+#endif
+)
 {
 #define MAX_CONVERT_PLACES 80
 	ullong uvalue;
@@ -1650,9 +1647,6 @@ static void ppw_fllong(wchar* restrict buffer, size_t* restrict currlen, size_t 
 	int spadlen;
 	int zpadlen;
 	int quote;
-#if USE_WIDE_LOCALE
-	const struct lconv* lc = localeconv();  // NOLINT
-#endif
 
 	//
 	if (vmax < 0)
@@ -1701,11 +1695,7 @@ static void ppw_fllong(wchar* restrict buffer, size_t* restrict currlen, size_t 
 		hexprefix = L'\0';
 
 	//
-#if USE_WIDE_LOCALE
 	quote = ppw_quote(place, flags, lc);
-#else
-	quote = ppw_quote(place, flags);
-#endif
 	zpadlen = vmax - place - quote;
 	spadlen = vmin - quote - QN_MAX(vmax, place) - (signvalue ? 1 : 0) - (hexprefix ? 2 : 0);
 
@@ -1780,7 +1770,14 @@ static void ppw_fllong(wchar* restrict buffer, size_t* restrict currlen, size_t 
 
 // 64비트 실수(double)
 // 여기서는, 오직 16자리 정수만 지원. 원래는 9, 19, 38 자리수에 따라 각각 32, 64, 128비트용이 있어야함
-static void ppw_ffp(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, sn_any* value, int vmin, int vmax, int flags)
+static void ppw_ffp(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen,
+	sn_any* value, int vmin, int vmax, int flags,
+#if USE_WIDE_LOCALE
+	const struct lconv* lc
+#else
+	const void* lc
+#endif
+)
 {
 	double fvalue;
 	double uvalue;
@@ -1804,9 +1801,6 @@ static void ppw_ffp(wchar* restrict buffer, size_t* restrict currlen, size_t max
 	int omitzeros;
 	int omitcount;
 	const wchar* pwz;
-#if USE_WIDE_LOCALE
-	const struct lconv* lc = localeconv();  // NOLINT
-#endif
 
 	/*
 	* AIX manpage says the default is 0, but Solaris says the default
@@ -1961,11 +1955,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 	dotpoint = vmax > 0 || (flags & DP_F_NUM);
 
 	//
-#if USE_WIDE_LOCALE
 	quote = ppw_quote(iplace, flags, lc);
-#else
-	quote = ppw_quote(iplace, flags);
-#endif
 
 	// -1은 정수 포인트용, 부호를 출력하면 추가로 -1;
 	padlen = vmin - iplace - eplace - vmax - quote - (dotpoint ? 1 : 0) - (signvalue ? 1 : 0);
@@ -2068,6 +2058,11 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 	uint base = 0;
 	size_t currlen = 0;
 	sn_any value = { .ff = 0 };
+#if USE_WIDE_LOCALE
+	const struct lconv* lc = localeconv();	// CRT 로캘 / NOLINT
+#else
+	const void* lc = NULL;
+#endif
 
 	if (!buffer)
 		maxlen = 0;
@@ -2124,7 +2119,7 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 			case DP_S_MIN:
 				if (iswdigit((wint_t)ch))
 				{
-					vmin = 10 * vmin + wchar_to_int((wint_t)ch);
+					vmin = 10 * vmin + char_to_int((wint_t)ch);
 					ch = *format++;
 				}
 				else if (ch == L'*')
@@ -2157,7 +2152,7 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 				{
 					if (vmax < 0)
 						vmax = 0;
-					vmax = 10 * vmax + wchar_to_int(ch);
+					vmax = 10 * vmax + char_to_int(ch);
 					ch = *format++;
 				}
 				else if (ch == L'*')
@@ -2230,33 +2225,33 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 						{
 							case DP_C_SHORT:
 								value.i = va_arg(args, int);
-								ppw_fint(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								ppw_fint(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 							case DP_C_LONG:
 								value.g = va_arg(args, long);
-								ppw_fsize(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								ppw_fsize(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 							case DP_C_LLONG:
 								value.ll = va_arg(args, long long);
-								ppw_fllong(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								ppw_fllong(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:
 								value.sz = va_arg(args, size_t);
-								ppw_fsize(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								ppw_fsize(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 							case DP_C_INTMAX:   // 최대 정수, 2023년 현재 64비트
 								value.im = va_arg(args, intmax_t);
-								ppw_fllong(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								ppw_fllong(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 							case DP_C_PTRDIFF:
 								value.ff = va_arg(args, ptrdiff_t);
-								ppw_fsize(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								ppw_fsize(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 							case DP_C_CHAR:
 							default:
 								value.i = va_arg(args, int);
-								ppw_fint(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags);
+								ppw_fint(buffer, &currlen, maxlen, &value, 10, vmin, vmax, flags, lc);
 								break;
 						}
 						break;
@@ -2272,36 +2267,36 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 						{
 							case DP_C_SHORT:
 								value.ui = (unsigned short)va_arg(args, unsigned int);
-								ppw_fint(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								ppw_fint(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							case DP_C_LONG:
 								value.sz = va_arg(args, unsigned long);
-								ppw_fsize(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								ppw_fsize(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							case DP_C_LLONG:
 								value.ull = va_arg(args, unsigned long long);
-								ppw_fllong(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								ppw_fllong(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							case DP_C_LDOUBLE:
 							case DP_C_SIZE:
 								value.sz = va_arg(args, size_t);
-								ppw_fsize(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								ppw_fsize(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							case DP_C_INTMAX:   // 64비트
 								value.im = va_arg(args, intmax_t);
-								ppw_fllong(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								ppw_fllong(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							case DP_C_PTRDIFF:
 								value.ff = va_arg(args, ptrdiff_t);
-								ppw_fsize(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								ppw_fsize(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							case DP_C_CHAR:
 								value.ui = (unsigned char)va_arg(args, int);
-								ppw_fint(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								ppw_fint(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 							default:
 								value.ui = va_arg(args, unsigned int);
-								ppw_fint(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags);
+								ppw_fint(buffer, &currlen, maxlen, &value, base, vmin, vmax, flags, lc);
 								break;
 						}
 						break;
@@ -2315,7 +2310,7 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 							value.d = (double)va_arg(args, long double);
 						else
 							value.d = va_arg(args, double);
-						ppw_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
+						ppw_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags, lc);
 						break;
 					case L'E':      // 지수 표시 (대문자)
 						flags |= DP_F_UP; QN_FALL_THROUGH;
@@ -2326,7 +2321,7 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 							value.d = (double)va_arg(args, long double);
 						else
 							value.d = va_arg(args, double);
-						ppw_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
+						ppw_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags, lc);
 						break;
 					case L'G':      // 지수 표시 (대문자)
 						flags |= DP_F_UP; QN_FALL_THROUGH;
@@ -2339,7 +2334,7 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 							value.d = (double)va_arg(args, long double);
 						else
 							value.d = va_arg(args, double);
-						ppw_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags);
+						ppw_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags, lc);
 						break;
 					case L'c':
 						if (cflags != DP_C_SHORT)
@@ -2360,7 +2355,7 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 					case L'p':
 						flags |= DP_F_UNSIGNED | DP_F_UP;
 						value.s = va_arg(args, char*);
-						ppw_fsize(buffer, &currlen, maxlen, &value, 16, vmin, vmax, flags);
+						ppw_fsize(buffer, &currlen, maxlen, &value, 16, vmin, vmax, flags, lc);
 						break;
 					case L'n':
 						switch (cflags)

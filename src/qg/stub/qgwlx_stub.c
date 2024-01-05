@@ -209,14 +209,6 @@ typedef enum wl_output_transform			wl_output_transform;
 // 스터브 선언
 
 //
-typedef struct nkk_scale
-{
-	wl_output*			output;
-	int					factor;
-} nkk_scale;
-QN_DECL_CTNR(nkk_scale_ctnr, nkk_scale);
-
-//
 typedef struct nkk_window
 {
 	wl_surface*			surface;
@@ -226,16 +218,11 @@ typedef struct nkk_window
 	char*				title;
 	char*				class_name;
 
-	int					content_scale;
-	nkk_scale_ctnr		scales;
-
-	int32_t				width, height;
+	QmSize				size;
+	QmSize				window_size;
 	struct
 	{
-		bool				active;
-		bool				maximized;
-		bool				fullscreen;
-		int32_t				width, height;
+		QmSize				size;
 	}					pending;
 } nkk_window;
 
@@ -399,27 +386,43 @@ static void resize_window(void)
 }
 
 //
-static void update_window_scale(void)
+static void configure_geometry(void)
 {
-	qn_ret_if_ok(wl_compositor_get_version(wlxStub.ifce.compositor) < WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION);
-
 	nkk_window* win = &wlxStub.win;
-	int max = 1;
-	size_t i;
-	qn_ctnr_foreach(&win->scales, i)
+	bool size_changed = win->pending.size.width != win->size.width || win->pending.size.width!=win->size.height;
+
+	wl_surface_set_buffer_scale(win->surface, 1);
+
+	if (size_changed)
 	{
-		nkk_scale* scale = &qn_ctnr_nth(&win->scales, i);
-		max = QN_MAX(max, scale->factor);
+		xdg_surface_set_window_geometry(win->layer, 0, 0, win->pending.size.width, win->pending.size.height);
+
+		wl_region* region = wl_compositor_create_region(wlxStub.ifce.compositor);
+		wl_region_add(region, 0, 0, win->pending.size.width, win->pending.size.height);
+		wl_surface_set_opaque_region(win->surface, region);
+		wl_region_destroy(region);
 	}
 
-	if (win->content_scale != max)
+	QmSize min, max;
+	if (QN_TMASK(wlxStub.base.flags, QGFLAG_FULLSCREEN))
 	{
-		win->content_scale = max;
-		wl_surface_set_buffer_scale(win->surface, max);
-		// 스케일 변경 이벤트
-		resize_window();
-		// 더티 처리
+		qm_set2(&min, 0, 0);
+		qm_set2(&max, 0, 0);
 	}
+	else if (QN_TMASK(wlxStub.base.flags, QGFLAG_RESIZABLE))
+	{
+		QgUdevMonitor* mon = qn_pctnr_nth(&wlxStub.base.monitors, wlxStub.base.display);
+		qm_set2(&min, 256, 256);
+		qm_set2(&max, mon->width, mon->height);
+	}
+	xdg_toplevel_set_min_size(win->toplevel, min.width, min.height);
+	xdg_toplevel_set_max_size(win->toplevel, max.width, max.height);
+
+	win->size = win->pending.size;
+	stub_event_on_window_event(QGWEV_SIZED, win->size.width, win->size.height);
+
+	if (size_changed)
+		stub_event_on_window_event(QGWEV_PAINTED, 0, 0);
 }
 
 //
@@ -429,18 +432,6 @@ static void surface_enter(void* data, wl_surface* surface, wl_output* output)
 	qn_ret_if_fail(wl_proxy_get_tag((wl_proxy*)output) == &wlxStub.tag);
 	nkk_monitor* mon = (nkk_monitor*)wl_output_get_user_data(output);
 	qn_ret_if_fail(mon != NULL);
-
-	nkk_window* win = &wlxStub.win;
-	qn_ctnr_expand(nkk_scale_ctnr, &win->scales, 1);
-	nkk_scale* scale = &qn_ctnr_inv(&win->scales, 0);
-	scale->factor = mon->scale_factor;
-	scale->output = output;
-	update_window_scale();
-}
-
-static bool surface_leave_output_callback(wl_output* output, nkk_scale* scale)
-{
-	return scale->output == output;
 }
 
 //
@@ -448,9 +439,6 @@ static void surface_leave(void* data, wl_surface* surface, wl_output* output)
 {
 	WL_TRACE_FUNC();
 	qn_ret_if_fail(wl_proxy_get_tag((wl_proxy*)output) == &wlxStub.tag);
-	nkk_window* win = &wlxStub.win;
-	qn_ctnr_remove_cmp_ptr(nkk_scale_ctnr, &win->scales, surface_leave_output_callback, output);
-	update_window_scale();
 }
 
 //
@@ -458,8 +446,9 @@ static void xdg_surface_configure(void *data, struct xdg_surface *surface, uint3
 {
 	WL_TRACE_FUNC();
 	xdg_surface_ack_configure(surface, serial);
-	nkk_window* win = &wlxStub.win;
 
+	/*
+	nkk_window* win = &wlxStub.win;
 	if (QN_TMASK(wlxStub.base.stats, QGSSTT_ACTIVE) != win->pending.active)
 		QN_SMASK(&wlxStub.base.stats, QGSSTT_ACTIVE, win->pending.active);
 
@@ -476,6 +465,7 @@ static void xdg_surface_configure(void *data, struct xdg_surface *surface, uint3
 		resize_window();
 		stub_event_on_window_event(QGWEV_SIZED, width, height);
 	}
+	*/
 }
 
 // 윈도우가 닫히면 (사실은 디스플레이의 마지막 윈도우가 닫히면)
@@ -489,6 +479,7 @@ static void xdg_toplevel_close(void *data, struct xdg_toplevel *xdg)
 static void xdg_toplevel_configure(void *data, struct xdg_toplevel *xdg, int32_t width, int32_t height, struct wl_array *states)
 {
 	WL_TRACE_FUNC();
+	/*
 	nkk_window* win = &wlxStub.win;
 	win->pending.active = false;
 	win->pending.maximized = false;
@@ -520,6 +511,7 @@ static void xdg_toplevel_configure(void *data, struct xdg_toplevel *xdg, int32_t
 		win->pending.width = width;
 		win->pending.height = height;
 	}
+	*/
 }
 
 //
@@ -682,17 +674,6 @@ static void output_scale(void* data, struct wl_output* output, int32_t factor)
 	WL_TRACE_FUNC();
 	nkk_monitor* mon = data;
 	mon->scale_factor = factor;
-
-	nkk_window* win = &wlxStub.win;
-	size_t i;
-	qn_ctnr_foreach(&win->scales, i)
-	{
-		nkk_scale* scale = &qn_ctnr_nth(&win->scales, i);
-		if (scale->output != mon->output)
-			continue;
-		update_window_scale();
-		break;
-	}
 }
 
 #ifdef WL_OUTPUT_NAME_SINCE_VERSION
@@ -1255,6 +1236,36 @@ static void registry_global(void *data, wl_registry *reg, uint32_t name, const c
 //////////////////////////////////////////////////////////////////////////
 // 웨이런댜 구현
 
+// 실행 파일 이름
+const char* get_program_name(void)
+{
+	static const char* proc_name = NULL;
+	if (proc_name == NULL)
+	{
+#if defined _QN_FREEBSD_ || defined _QN_LINUX_
+		static char link[1024];
+#if defined _QN_FREEBSD_
+		const char* path = "/proc/curproc/file";
+#else
+		const char* path = "/proc/self/exe";
+#endif
+		int size = readlink(path, link, QN_COUNTOF(link) - 1);
+		if (size > 0)
+		{
+			link[size] = '\0';
+			proc_name = strrchr(link, '/');
+			if (proc_name)
+				++proc_name;
+			else
+				proc_name = link;
+		}
+#else
+		proc_name = "qg_wlx_stub";
+#endif
+	}
+	return proc_name;
+}
+
 // 커서 설정
 static void nkk_set_system_cursor(const char* name)
 {
@@ -1358,7 +1369,7 @@ static void nkk_display_close(void)
 }
 
 // 윈도우 열기
-static bool nkk_window_open(nkk_window* win, const char* title, int32_t width, int32_t height)
+static bool nkk_window_open(nkk_window* win, const nkk_monitor* monitor, const char* title, int32_t width, int32_t height)
 {
 	static const struct wl_surface_listener events_surface =
 	{
@@ -1378,14 +1389,33 @@ static bool nkk_window_open(nkk_window* win, const char* title, int32_t width, i
 	qn_val_if_fail(wlxStub.ifce.display, false);
 	qn_val_if_fail(wlxStub.ifce.xdg_shell, false);
 
-	// 
-	win->pending.width = width;
-	win->pending.height = height;
-	win->title = qn_strdup(title && *title ? title : "QS");
-	win->class_name = "qg_wlx_stub_class";
+	// 크기
+	const QmSize scrsize = { (int)monitor->base.width, (int)monitor->base.height };
+	QmSize clientsize;
+	if (width > 256 && height > 256)
+		qm_set2(&clientsize, width, height);
+	else
+	{
+		if (scrsize.height > 800)
+			qm_set2(&clientsize, 1280, 720);
+		else
+			qm_set2(&clientsize, 720, 450);
+	}
+	QmPoint pos =
+	{
+		(int)monitor->base.x + (scrsize.width - clientsize.width) / 2,
+		(int)monitor->base.y + (scrsize.height - clientsize.height) / 2,
+	};
 
-	win->content_scale = 1;
-	qn_ctnr_init(nkk_scale_ctnr, &win->scales, 0);
+	// 값설정
+	qm_rect_set_pos_size(&wlxStub.base.window_bound, &pos, &clientsize);
+	wlxStub.base.client_size = clientsize;
+
+	win->size = clientsize;
+	win->window_size = clientsize;
+	win->pending.size = clientsize;
+	win->title = qn_strdup(title && *title ? title : "QS");
+	win->class_name = qn_strdup(get_program_name());
 
 	// 서피스
 	win->surface = wl_compositor_create_surface(wlxStub.ifce.compositor);
@@ -1406,7 +1436,7 @@ static bool nkk_window_open(nkk_window* win, const char* title, int32_t width, i
 	wl_display_roundtrip(wlxStub.ifce.display);
 
 	//
-	set_opaque_region();
+	configure_geometry();
 
 	return true;
 }
@@ -1426,8 +1456,8 @@ static void nkk_window_close(void)
 		wl_surface_destroy(win->surface);
 	}
 
-	qn_ctnr_disp(&win->scales);
 	qn_free(win->title);
+	qn_free(win->class_name);
 }
 
 #if false
@@ -1607,7 +1637,9 @@ bool stub_system_open(const char* title, const int display, const int width, con
 	}
 
 	//
-	nkk_window_open(&wlxStub.win, title, width, height);
+	const nkk_monitor* monitor = (const nkk_monitor*)qn_pctnr_nth(&wlxStub.base.monitors,
+		(size_t)display < qn_pctnr_count(&wlxStub.base.monitors) ? display : 0);
+	nkk_window_open(&wlxStub.win, monitor, title, width, height);
 
 	return true;
 }

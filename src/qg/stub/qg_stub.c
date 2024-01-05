@@ -25,8 +25,8 @@ bool qg_stub_atexit = false;
 typedef struct EventNode	EventNode;
 struct EventNode
 {
-	EventNode*			prev;
-	EventNode*			next;
+	EventNode*			PREV;
+	EventNode*			NEXT;
 	QgEvent				event;
 	size_t				key;
 	/* 32비트에서 4바이트 패딩 */

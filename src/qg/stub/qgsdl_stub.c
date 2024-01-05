@@ -89,7 +89,6 @@ bool stub_system_open(const char* title, const int display, const int width, con
 		mon->refresh = (uint)mode.refresh_rate;
 		mon->mmwidth = (uint)((rect.w * 25.0f) / hdpi);
 		mon->mmheight = (uint)((rect.h * 25.0f) / vdpi);
-		mon->oshandle = NULL;
 
 		stub_event_on_monitor(mon, true, false);
 	}
@@ -210,6 +209,18 @@ void stub_system_update_bound(void)
 void stub_system_focus(void)
 {
 	SDL_RaiseWindow(sdlStub.window);
+}
+
+//
+void* stub_system_get_window(void)
+{
+	return (void*)sdlStub.window;
+}
+
+//
+void* stub_system_get_display(void)
+{
+	return NULL;
 }
 #pragma endregion 시스템 함수
 

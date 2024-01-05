@@ -4,7 +4,7 @@
 #include "qs_qg.h"
 #include "stub/qg_stub.h"
 
-/** @brief 활성 렌더러 */
+// 활성 렌더러
 QgRdh* qg_rdh_instance = NULL;
 
 
@@ -12,37 +12,41 @@ QgRdh* qg_rdh_instance = NULL;
 // 렌더 디바이스
 
 //
-QgRdh* qg_rdh_new(const char* driver, const char* title, int width, int height, int flags)
+QgRdh* qg_rdh_new(const char* driver, const char* title, int display, int width, int height, int flags)
 {
-	qg_open_stub(title, width, height, flags);
-	qn_val_if_fail(qg_stub_instance, NULL);
-
-	static struct
+	struct rdh_renderer
 	{
 		const char* name;
 		const char* alias;
-		QgRdh* (*func)(void*, int);
-	} s_allocators[] =
-	{
-		{ "ES2", "GLES2", es2_allocator },
-		{ NULL, NULL, es2_allocator },
+		QgRdh* (*allocator)(int);
+		QgFlag renderer;
 	};
-
-	QgRdh* (*allocator)(void*, int) = s_allocators[QN_COUNTOF(s_allocators) - 1].func;
+	static struct rdh_renderer renderers[] =
+	{
+		{ "ES", "GLES", es_allocator, QGRENDERER_ES3 },
+		{ NULL, NULL, es_allocator, 0 },
+	};
+	struct rdh_renderer* renderer = &renderers[QN_COUNTOF(renderers) - 1];
 	if (driver != NULL)
 	{
-		for (size_t i = 0; i < QN_COUNTOF(s_allocators); i++)
-			if (qn_stricmp(s_allocators[i].name, driver) == 0 || qn_stricmp(s_allocators[i].alias, driver) == 0)
+		for (size_t i = 0; i < QN_COUNTOF(renderers) - 1; i++)
+			if (qn_stricmp(renderers[i].name, driver) == 0 || qn_stricmp(renderers[i].alias, driver) == 0)
 			{
-				allocator = s_allocators[i].func;
+				renderer = &renderer[i];
 				break;
 			}
 	}
 
+	qg_open_stub(title, display, width, height, flags | renderer->renderer);
+	qn_val_if_fail(qg_stub_instance, NULL);
+
 	// 개별 디바이스
-	QgRdh* self = allocator(qg_stub_instance->handle, flags);
+	QgRdh* self = renderer->allocator(flags);
 	if (self == NULL)
+	{
+		qg_close_stub();
 		return NULL;
+	}
 
 	// 뒤에서 쓸지도 모르니 미리 설정
 	qg_rdh_instance = self;
@@ -79,9 +83,11 @@ void rdh_internal_dispose(QsGam* g)
 //
 void rdh_internal_reset(QgRdh* self)
 {
+	const QmSize client_size = qg_stub_instance->client_size;
+
 	// tm
 	QgRenderTm* tm = &self->tm;
-	qm_set1(&tm->size, &qg_stub_instance->size);
+	qm_set1(&tm->size, &client_size);
 	const float aspect = tm->size.x / tm->size.y;
 	qm_rst(&tm->world);
 	qm_rst(&tm->view);
@@ -92,7 +98,7 @@ void rdh_internal_reset(QgRdh* self)
 	qm_rst(&tm->frm);
 	for (size_t i = 0; i < QN_COUNTOF(tm->tex); i++)
 		qm_rst(&tm->tex[i]);
-	qm_set4(&tm->scissor, 0, 0, qg_stub_instance->size.width, qg_stub_instance->size.height);
+	qm_set4(&tm->scissor, 0, 0, client_size.width, client_size.height);
 
 	// param
 	QgRenderParam* param = &self->param;
@@ -126,10 +132,10 @@ bool qg_rdh_loop(QgRdh* self)
 //
 static bool qg_rdh_eq_size(QgRdh* self)
 {
-	const QmSize* size = &qg_stub_instance->size;
+	const QmSize size = qg_stub_instance->client_size;
 	const int width = (int)self->tm.size.x;
 	const int height = (int)self->tm.size.y;
-	return size->width == width && size->height == height;
+	return size.width == width && size.height == height;
 }
 
 //
@@ -148,6 +154,7 @@ bool qg_rdh_poll(QgRdh* self, QgEvent* ev)
 //
 void qg_rdh_exit_loop(QgRdh* self)
 {
+	QN_DUMMY(self);
 	qg_exit_loop();
 }
 

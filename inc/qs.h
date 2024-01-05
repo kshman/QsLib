@@ -9,6 +9,11 @@
 
 #define __QS__
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4820)		// 'bytes'바이트 채움 문자가 construct 'member_name' 뒤에 추가되었습니다. (패딩)
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 // API
 #ifndef QSAPI
@@ -39,7 +44,6 @@
 #include <qs_kmc.h>
 #include <qs_qg.h>
 
-// MSVC library
 #ifdef _MSC_VER
-//#pragma comment(lib, "qs")
+#pragma warning(pop)
 #endif

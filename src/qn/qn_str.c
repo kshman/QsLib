@@ -12,7 +12,7 @@
 // 공용
 
 // 문자를 진수 숫자로 (32진수까지)
-static byte nbase_conv(const uint n)
+byte qn_char_to_int_base(const uint n)
 {
 	static const byte nbase_table[] =
 	{
@@ -29,14 +29,18 @@ static byte nbase_conv(const uint n)
 }
 
 // 숫자를 문자로 바꾸기 (32진수까지)
-static char nchar_conv(const uint n)
+char qn_int_base_to_char(const uint n, bool upper)
 {
-	static const char* nchar_table = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
+	static const char* nchar_table[] =
+	{
+		"0123456789abcdefghijklmnopqrstuv",
+		"0123456789ABCDEFGHIJKLMNOPQRSTUV",
+	};
 #if false
 	return n < (uint)QN_COUNTOF(nchar_table) ? nchar_table[n] : '\0';
 #else
 	// 오류 검사할 필요 없다
-	return nchar_table[n];
+	return nchar_table[upper][n];
 #endif
 }
 
@@ -530,9 +534,11 @@ int qn_strnicmp(const char* p1, const char* p2, size_t len)
 #endif
 
 //
-int qn_itoa(char* p, const int size, const int n, const uint base)
+int qn_itoa(char* p, const int size, const int n, const uint base, bool upper)
 {
 	qn_val_if_fail(base <= 32, -1);
+	if (upper > 1)
+		upper = 1;
 	char conv[32];
 	int place = 0;
 	uint uvalue;
@@ -545,7 +551,7 @@ int qn_itoa(char* p, const int size, const int n, const uint base)
 	}
 	do
 	{
-		conv[place++] = nchar_conv(uvalue % base);
+		conv[place++] = qn_int_base_to_char(uvalue % base, true);
 		uvalue = uvalue / base;
 	} while (uvalue && place < (int)QN_COUNTOF(conv));
 	if (place == (int)QN_COUNTOF(conv))
@@ -558,9 +564,11 @@ int qn_itoa(char* p, const int size, const int n, const uint base)
 }
 
 //
-int qn_lltoa(char* p, const int size, const llong n, const uint base)
+int qn_lltoa(char* p, const int size, const llong n, const uint base, bool upper)
 {
 	qn_val_if_fail(base <= 32, -1);
+	if (upper > 1)
+		upper = 1;
 	char conv[64];
 	int place = 0;
 	ullong uvalue;
@@ -573,7 +581,7 @@ int qn_lltoa(char* p, const int size, const llong n, const uint base)
 	}
 	do
 	{
-		conv[place++] = nchar_conv(uvalue % base);
+		conv[place++] = qn_int_base_to_char(uvalue % base, upper);
 		uvalue = uvalue / base;
 	} while (uvalue && place < (int)QN_COUNTOF(conv));
 	if (place == (int)QN_COUNTOF(conv))
@@ -592,11 +600,11 @@ uint qn_strtoi(const char* p, const uint base)
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	uint v = 0;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
-	uint ch = nbase_conv((uint)*p++);
+	uint ch = qn_char_to_int_base((uint)*p++);
 	while (ch < base)
 	{
 		v = v * base + ch;
-		ch = nbase_conv((uint)*p++);
+		ch = qn_char_to_int_base((uint)*p++);
 	}
 	return v;
 }
@@ -608,11 +616,11 @@ ullong qn_strtoll(const char* p, const uint base)
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	ullong v = 0;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
-	uint ch = nbase_conv((uint)*p++);
+	uint ch = qn_char_to_int_base((uint)*p++);
 	while (ch < base)
 	{
 		v = v * base + ch;
-		ch = nbase_conv((uint)*p++);
+		ch = qn_char_to_int_base((uint)*p++);
 	}
 	return v;
 }
@@ -1090,9 +1098,11 @@ int qn_wcsnicmp(const wchar* p1, const wchar* p2, size_t len)
 #endif
 
 //
-int qn_itow(wchar* p, const int size, const int n, const uint base)
+int qn_itow(wchar* p, const int size, const int n, const uint base, bool upper)
 {
 	qn_val_if_fail(base <= 32, -1);
+	if (upper > 1)
+		upper = 1;
 	wchar conv[32];
 	int place = 0;
 	uint uvalue;
@@ -1105,7 +1115,7 @@ int qn_itow(wchar* p, const int size, const int n, const uint base)
 	}
 	do
 	{
-		conv[place++] = (wchar)nchar_conv(uvalue % base);
+		conv[place++] = (wchar)qn_int_base_to_char(uvalue % base, upper);
 		uvalue = uvalue / base;
 	} while (uvalue && place < (int)QN_COUNTOF(conv));
 	if (place == (int)QN_COUNTOF(conv))
@@ -1118,9 +1128,11 @@ int qn_itow(wchar* p, const int size, const int n, const uint base)
 }
 
 //
-int qn_lltow(wchar* p, const int size, const llong n, const uint base)
+int qn_lltow(wchar* p, const int size, const llong n, const uint base, bool upper)
 {
 	qn_val_if_fail(base <= 32, -1);
+	if (upper > 1)
+		upper = 1;
 	wchar conv[64];
 	int place = 0;
 	ullong uvalue;
@@ -1133,7 +1145,7 @@ int qn_lltow(wchar* p, const int size, const llong n, const uint base)
 	}
 	do
 	{
-		conv[place++] = (wchar)nchar_conv(uvalue % base);
+		conv[place++] = (wchar)qn_int_base_to_char(uvalue % base, upper);
 		uvalue = uvalue / base;
 	} while (uvalue && place < (int)QN_COUNTOF(conv));
 	if (place == (int)QN_COUNTOF(conv))
@@ -1152,11 +1164,11 @@ uint qn_wcstoi(const wchar* p, const uint base)
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	uint v = 0;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
-	uint ch = nbase_conv((uint)*p++);
+	uint ch = qn_char_to_int_base((uint)*p++);
 	while (ch < base)
 	{
 		v = v * base + ch;
-		ch = nbase_conv((uint)*p++);
+		ch = qn_char_to_int_base((uint)*p++);
 	}
 	return v;
 }
@@ -1168,11 +1180,11 @@ ullong qn_wcstoll(const wchar* p, const uint base)
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	ullong v = 0;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
-	uint ch = nbase_conv((uint)*p++);
+	uint ch = qn_char_to_int_base((uint)*p++);
 	while (ch < base)
 	{
 		v = v * base + ch;
-		ch = nbase_conv((uint)*p++);
+		ch = qn_char_to_int_base((uint)*p++);
 	}
 	return v;
 }
@@ -1269,6 +1281,14 @@ const char* qn_u8nch(const char* s)
 //
 size_t qn_u8len(const char* s)
 {
+#if true
+	// 새니타이저에 안걸리는 방법
+	size_t cnt = 0;
+	while (*s)
+		cnt += (*s++ & 0xC0) != 0x80;
+	return cnt;
+#else
+	// 이 루틴은 새니타이저에 걸린다
 #define MASK    ((size_t)(-1)/0xFF)
 	const char* t;
 	size_t cnt;
@@ -1314,6 +1334,7 @@ size_t qn_u8len(const char* s)
 pos_done:
 	return ((size_t)(t - s) - cnt);
 #undef MASK
+#endif
 }
 
 //
