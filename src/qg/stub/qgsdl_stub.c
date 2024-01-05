@@ -8,7 +8,7 @@
 #if defined USE_SDL2
 #include "qs_qg.h"
 #include "qs_kmc.h"
-#include "qg_stub.h"
+#include "qg/qg_stub.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
 
@@ -38,7 +38,6 @@ typedef struct SDLStub
 	StubBase			base;
 
 	SDL_Window*			window;
-	SDL_SysWMinfo		syswm;
 } SDLStub;
 
 // SDL 스터브 여기 있다!
@@ -51,8 +50,8 @@ bool stub_system_open(const char* title, const int display, const int width, con
 {
 	qn_zero_1(&sdlStub);
 
-	// SDL_INIT_TIMER SDL_INIT_AUDIO SDL_INIT_GAMECONTROLLER SDL_INIT_EVENTS SDL_INIT_SENSOR
-	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+	// SDL_INIT_AUDIO SDL_INIT_GAMECONTROLLER SDL_INIT_EVENTS SDL_INIT_SENSOR
+	if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER) != 0)
 	{
 		qn_debug_outputs(true, "SDL STUB", "SDL_Init() failed");
 		return false;
@@ -80,7 +79,7 @@ bool stub_system_open(const char* title, const int display, const int width, con
 		SDL_GetDisplayDPI(i, &ddpi, &hdpi, &vdpi);
 
 		QgUdevMonitor* mon = qn_alloc_1(QgUdevMonitor);
-		qn_strncpy(mon->name, QN_COUNTOF(mon->name), name, QN_COUNTOF(mon->name) - 1);
+		qn_strncpy(mon->name, name, QN_COUNTOF(mon->name) - 1);
 		mon->no = i;
 		mon->x = (uint)rect.x;
 		mon->y = (uint)rect.y;
@@ -98,13 +97,31 @@ bool stub_system_open(const char* title, const int display, const int width, con
 		(size_t)display < qn_pctnr_count(&sdlStub.base.monitors) ? display : 0);
 	sdlStub.base.display = monitor->no;
 
-	int window_flags = SDL_WINDOW_OPENGL;
+	int window_flags = SDL_WINDOW_SHOWN;
 	if (QN_TMASK(flags, QGFLAG_FULLSCREEN))
 		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	if (QN_TMASK(flags, QGFLAG_BORDERLESS))
 		window_flags |= SDL_WINDOW_BORDERLESS;
 	if (QN_TMASK(flags, QGFLAG_RESIZABLE))
 		window_flags |= SDL_WINDOW_RESIZABLE;
+	if (QN_TMASK(flags, QGRENDERER_OPENGL | QGRENDERER_ES3))
+	{
+		window_flags |= SDL_WINDOW_OPENGL;
+		if (QN_TMASK(flags, QGRENDERER_ES3))
+		{
+			SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengles2");
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_ES, SDL_GL_CONTEXT_PROFILE_ES);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+		}
+		else
+		{
+			SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_ES, SDL_GL_CONTEXT_PROFILE_CORE);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+		}
+	}
 
 	QmSize clientsize;
 	if (width > 256 && height > 256)
@@ -131,8 +148,6 @@ bool stub_system_open(const char* title, const int display, const int width, con
 		qn_debug_outputs(true, "SDL STUB", "SDL_CreateWindow() failed");
 		return false;
 	}
-
-	SDL_GetWindowWMInfo(sdlStub.window, &sdlStub.syswm);
 
 	// 오케
 	stub_system_update_bound();

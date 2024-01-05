@@ -15,7 +15,7 @@
 #if defined _QN_WINDOWS_ && !defined USE_SDL2
 #include "qs_qg.h"
 #include "qs_kmc.h"
-#include "qg_stub.h"
+#include "qg/qg_stub.h"
 #include <windowsx.h>
 #include <Xinput.h>
 #include <shellscalingapi.h>

@@ -16,7 +16,6 @@
 QN_EXTC_BEGIN
 
 //
-typedef struct QgRdh		QgRdh;							/// @brief 렌더러
 typedef struct QgGam		QgGam;							/// @brief 런더 감
 typedef struct QgBuffer		QgBuffer;						/// @brief 버퍼
 typedef struct QgRender		QgRender;						/// @brief 렌더 파이프라인
@@ -586,69 +585,6 @@ typedef union QgEvent
 	}					monitor;
 } QgEvent;
 
-/// @brief 디바이스 정보
-typedef struct QgDeviceInfo
-{
-	char				name[64];
-	char				renderer[64];						/// @brief 렌더러 이름
-	char				vendor[64];							/// @brief 디바이스 제조사
-	int					renderer_version;					/// @brief 렌더러 버전
-	int					shader_version;						/// @brief 세이더 버전
-	int					max_layout_count;					/// @brief 최대 레이아웃(=정점 속성) 갯수
-	int					max_indices;						/// @brief 최대 인덱스 갯수
-	int					max_vertices;						/// @brief 최대 정점 갯수
-	int					max_tex_dim;						/// @brief 최대 텍스쳐 크기
-	int					max_tex_count;						/// @brief 최대 텍스쳐 갯수
-	int					max_off_count;						/// @brief 최대 오프 텍스쳐(=렌더타겟/프레임버퍼) 갯수
-	QgClrFmt			clr_fmt;							/// @brief 색깔 포맷
-
-} QgDeviceInfo;
-
-/// @brief 렌더러 추적 정보
-typedef struct QgRenderInvoke
-{
-	uint				frames;
-	uint				creations;
-
-	uint				invokes;
-	uint				begins;
-	uint				ends;
-	uint				renders;
-	uint				params;
-	uint				vars;
-	uint				transforms;
-	uint				draws;
-	uint				primitives;
-
-	bool				flush;
-} QgRenderInvoke;
-
-/// @brief 렌더러 트랜스 포매이션
-typedef struct QgRenderTm
-{
-	QmVec2				size;
-	QmDepth				depth;
-	QmMat4				world;
-	QmMat4				view;
-	QmMat4				project;
-	QmMat4				view_project;
-	QmMat4				inv;								/// @brief inverse view
-	QmMat4				ortho;								/// @brief ortho transform
-	QmMat4				frm;								/// @brief tex formation
-	QmMat4				tex[4];
-	QmRect				scissor;
-} QgRenderTm;
-
-/// @brief 렌더러 인수
-typedef struct QgRenderParam
-{
-	QmColor				bgc;
-	QmVec4				v[4];
-	QmMat4				m[4];
-	QmMat4*				bone_ptr;
-	int					bone_count;
-} QgRenderParam;
-
 
 //////////////////////////////////////////////////////////////////////////
 // stub
@@ -788,225 +724,143 @@ QSAPI const char* qg_string_window_event(QgWindowEventType wev);
 //////////////////////////////////////////////////////////////////////////
 // render device
 
-/// @brief 렌더러 디바이스
-struct QgRdh
-{
-	QsGam				base;
-
-	QgDeviceInfo		caps;
-
-	QgRenderTm			tm;
-	QgRenderParam		param;
-	QgRenderInvoke		invokes;
-};
-
-qv_name(QgRdh)
-{
-	qv_name(QsGam)	base;
-	void (*reset)(QgRdh*);
-	void (*clear)(QgRdh*, int, const QmColor*, int, float);
-
-	bool (*begin)(QgRdh*, bool);
-	void (*end)(QgRdh*);
-	void (*flush)(QgRdh*);
-
-	QgBuffer* (*create_buffer)(QgRdh*, QgBufType, int, int, const void*);
-	QgRender* (*create_render)(QgRdh*, const QgPropRender*, bool);
-
-	bool (*set_index)(QgRdh*, QgBuffer*);
-	bool (*set_vertex)(QgRdh*, QgLoStage, QgBuffer*);
-	void (*set_render)(QgRdh*, QgRender*);
-
-	bool (*draw)(QgRdh*, QgTopology, int);
-	bool (*draw_indexed)(QgRdh*, QgTopology, int);
-	bool (*ptr_draw)(QgRdh*, QgTopology, int, int, const void*);
-	bool (*ptr_draw_indexed)(QgRdh*, QgTopology, int, int, const void*, int, int, const void*);
-};
-
-/// @brief 렌더러를 만든다
+/// @brief 렌더러를 연다
 /// @param driver 드라이버 이름 (NULL로 지정하여 기본값)
 /// @param title 윈도우 타이틀
 /// @param width 윈도우 너비
 /// @param height 윈도우 높이
 /// @param flags 스터브 및 렌더러 플래그
-/// @return 만들어진 랜더러
-/// @retval NULL 랜더러를 만들 수가 없다
-/// @note 내부에서 qg_open_stub 함수를 호출한다
+/// @return 만들어졌으면 참
+/// @note 내부에서 qg_open_stub 함수를 호출한다 (미리 만들어 놔도 된다)
 ///
-QSAPI QgRdh* qg_rdh_new(const char* driver, const char* title, int display, int width, int height, int flags);
+QSAPI bool qg_open_rdh(const char* driver, const char* title, int display, int width, int height, int flags);
 
-/// @brief 루프를 시작한다
-/// @param g 렌더러
-/// @return 루프 확인 결과
-/// @retval true 루프를 진행한다
-/// @retval false 프로그램의 종료
-/// @note 내부에서 qg_loop 함수를 호출한다
-///
-QSAPI bool qg_rdh_loop(QgRdh* g);
-/// @brief 이벤트를 폴링한다
-/// @param g 렌더러
-/// @param ev 이벤트 결과
-/// @return 폴링 결과
-/// @retval true 이벤트가 남아있다
-/// @retval false 처리할 이벤트가 없다
-/// @note 내부에서 qg_poll 함수를 호출한다
-///
-QSAPI bool qg_rdh_poll(QgRdh* g, QgEvent* ev);
-/// @brief 루프를 종료한다. 자세한 사항은 qg_exit_loop 함수 참조
-/// @param g 렌더러
-///
-QSAPI void qg_rdh_exit_loop(QgRdh* g);
+/// @brief 렌더러를 닫는다
+QSAPI void qg_close_rdh(void);
 
 /// @brief 렌더러를 준비한다
-/// @param g 렌더러
 /// @param clear 배경, 스텐실, 뎁스를 초기화 하려면 true 로 한다
 /// @return 렌더러가 준비됐으면 참
 /// @retval true 렌더러가 준비됐다
 /// @retval false 렌더러가 준비되지 않았거나, 프로그램이 종료했다
-///
-QSAPI bool qg_rdh_begin(QgRdh* g, bool clear);
+QSAPI bool qg_rdh_begin(bool clear);
+
 /// @brief 렌더러를 끝낸다
-/// @param g 렌더러
-///
-QSAPI void qg_rdh_end(QgRdh* g);
+QSAPI void qg_rdh_end(void);
+
 /// @brief 렌더러 결과를 화면으로 출력한다
-/// @param g 렌더러
-///
-QSAPI void qg_rdh_flush(QgRdh* g);
+QSAPI void qg_rdh_flush(void);
 
 /// @brief 렌더러 상태를 초기화 한다
-/// @param g 렌더러
 /// @note 이 함수는 직접 호출하지 않아도 좋다. 외부 스터브 사용할 때 화면 크기가 바뀔 때 사용하면 좋음
-///
-QSAPI void qg_rdh_reset(QgRdh* g);
+QSAPI void qg_rdh_reset(void);
+
 /// @brief 렌더러를 지운다
-/// @param g 렌더러
 /// @param clear 지우기 플래그
 /// @param color 배경색
 /// @param stencil 스텐실 값
 /// @param depth 뎁스 값
-///
-QSAPI void qg_rdh_clear(QgRdh* g, QgClear clear, const QmColor* color, int stencil, float depth);
+QSAPI void qg_rdh_clear(QgClear clear, const QmColor* color, int stencil, float depth);
 
 /// @brief 세이더 vec3 타입 파라미터 설정
-/// @param g 렌더러
 /// @param at 0부터 3까지 총 4가지
 /// @param v vec3 타입 값
 /// @note 내부에서 vec4 타입으로 처리한다
 /// @see qg_rdh_set_param_vec4
-///
-QSAPI void qg_rdh_set_param_vec3(QgRdh* g, int at, const QmVec3* v);
+QSAPI void qg_rdh_set_param_vec3(int at, const QmVec3* v);
+
 /// @brief 세이더 vec4 타입 파라미터 설정
-/// @param g 렌더러
 /// @param at 0부터 3까지 총 4가지
 /// @param v vec4 타입 값
-///
-QSAPI void qg_rdh_set_param_vec4(QgRdh* g, int at, const QmVec4* v);
+
+QSAPI void qg_rdh_set_param_vec4(int at, const QmVec4* v);
+
 /// @brief 세이더 mat4 타입 파라미터 설정
-/// @param g 렌더러
 /// @param at 0부터 3까지 총 4가지
 /// @param m mat4 타입 값
-///
-QSAPI void qg_rdh_set_param_mat4(QgRdh* g, int at, const QmMat4* m);
+QSAPI void qg_rdh_set_param_mat4(int at, const QmMat4* m);
+
 /// @brief 세이더 영향치(주로 뼈대 팔레트) 파라미터 설정
-/// @param g 렌더러
 /// @param count 행렬 갯수
 /// @param weight 영향치 행렬
-///
-QSAPI void qg_rdh_set_param_weight(QgRdh* g, int count, QmMat4* weight);
+QSAPI void qg_rdh_set_param_weight(int count, QmMat4* weight);
+
 /// @brief 배경색을 설정한다
-/// @param g 렌더러
 /// @param background_color 배경색
-///
-QSAPI void qg_rdh_set_background(QgRdh* g, const QmColor* background_color);
+QSAPI void qg_rdh_set_background(const QmColor* background_color);
+
 /// @brief 월드 행렬을 설정한다
-/// @param g 렌더러
 /// @param world 월드 행렬
-///
-QSAPI void qg_rdh_set_world(QgRdh* g, const QmMat4* world);
+QSAPI void qg_rdh_set_world(const QmMat4* world);
+
 /// @brief 뷰 행렬을 설정한다
-/// @param g 렌더러
 /// @param view 뷰 행렬
-///
-QSAPI void qg_rdh_set_view(QgRdh* g, const QmMat4* view);
+QSAPI void qg_rdh_set_view(const QmMat4* view);
+
 /// @brief 투영 행렬을 설정한다
-/// @param g 렌더러
 /// @param proj 투영 행렬
-///
-QSAPI void qg_rdh_set_project(QgRdh* g, const QmMat4* proj);
+QSAPI void qg_rdh_set_project(const QmMat4* proj);
+
 /// @brief 뷰와 투영 행렬을 설정한다
-/// @param g 렌더러
 /// @param proj 투영 행렬
 /// @param view 뷰 행렬
-///
-QSAPI void qg_rdh_set_view_project(QgRdh* g, const QmMat4* proj, const QmMat4* view);
+QSAPI void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view);
 
 /// @brief 버퍼를 만든다
-/// @param g 렌더러
 /// @param type 버퍼 타입
 /// @param count 요소 개수
 /// @param stride 요소의 너비
 /// @param data 초기화할 요소 데이터로 이 값이 NULL이면 동적 버퍼, 값이 있으면 정적 버퍼로 만들어진다
 /// @return 만들어진 버퍼
 /// @details data 파라미터의 설명에도 있지만, 정적 버퍼로 만들고 나중에 데이터를 넣으면 문제가 생길 수도 있다
-///
-QSAPI QgBuffer* qg_rdh_create_buffer(QgRdh* g, QgBufType type, int count, int stride, const void* data);
+QSAPI QgBuffer* qg_rdh_create_buffer(QgBufType type, int count, int stride, const void* data);
+
 /// @brief 렌더 파이프라인을 만든다
-/// @param g 렌더러
 /// @param prop 렌더 파이프라인 속성
 /// @param compile_shader 속성에 있는 세이더의 값이 소스임을 지정, 내부에서 컴파일을 지시
 /// @return 만들어진 렌더 파이프라인
-///
-QSAPI QgRender* qg_rdh_create_render(QgRdh* g, const QgPropRender* prop, bool compile_shader);
+QSAPI QgRender* qg_rdh_create_render(const QgPropRender* prop, bool compile_shader);
 
 /// @brief 인덱스 버퍼를 설정한다
-/// @param g 렌더러
 /// @param buffer 설정할 버퍼
 /// @return 실패하면 거짓을 반환
 /// @retval true 문제 없이 인덱스 버퍼를 설정했다
 /// @retval false buffer 인수에 문제가 있거나 인덱스 버퍼가 아니다
-///
-QSAPI bool qg_rdh_set_index(QgRdh* g, QgBuffer* buffer);
+QSAPI bool qg_rdh_set_index(QgBuffer* buffer);
+
 /// @brief 정점 버퍼를 설정한다
-/// @param g 렌더러
 /// @param stage 버퍼를 지정할 스테이지
 /// @param buffer 설정할 버퍼
 /// @return 실패하면 거짓을 반환
 /// @retval true 문제 없이 정점 버퍼를 설정했다
 /// @retval false buffer 인수에 문제가 있거나 정점 버퍼가 아니다
-///
-QSAPI bool qg_rdh_set_vertex(QgRdh* g, QgLoStage stage, QgBuffer* buffer);
+QSAPI bool qg_rdh_set_vertex(QgLoStage stage, QgBuffer* buffer);
+
 /// @brief 렌더 파이프라인을 설정한다
-/// @param g 렌더러
 /// @param render 렌더 파이프라인
-///
-QSAPI void qg_rdh_set_render(QgRdh* g, QgRender* render);
+QSAPI void qg_rdh_set_render(QgRender* render);
 
 /// @brief 정점으로 그리기
-/// @param g 렌더러
 /// @param tpg 그릴 모양의 토폴로지
 /// @param vertices 정점 갯수
 /// @return 문제없이 그리면 참
-///
-QSAPI bool qg_rdh_draw(QgRdh* g, QgTopology tpg, int vertices);
+QSAPI bool qg_rdh_draw(QgTopology tpg, int vertices);
+
 /// @brief 인덱스와 정점으로 그리기
-/// @param g 렌더러
 /// @param tpg 그릴 모양의 토폴로지
 /// @param indices 그릴 인덱스 갯수
 /// @return 문제없이 그리면 참
-///
-QSAPI bool qg_rdh_draw_indexed(QgRdh* g, QgTopology tpg, int indices);
+QSAPI bool qg_rdh_draw_indexed(QgTopology tpg, int indices);
+
 /// @brief 사용자 지정 정점 데이터로 그리기
-/// @param g 렌더러
 /// @param tpg 그릴 모양의 토폴로지
 /// @param vertices 정점 갯수
 /// @param vertex_stride 정점 너비
 /// @param vertex_data 정점 데이터
 /// @return 문제없이 그리면 참
-///
-QSAPI bool qg_rdh_ptr_draw(QgRdh* g, QgTopology tpg, int vertices, int vertex_stride, const void* vertex_data);
+QSAPI bool qg_rdh_ptr_draw(QgTopology tpg, int vertices, int vertex_stride, const void* vertex_data);
+
 /// @brief 사용자 지정 인덱스와 정점 데이터로 그리기
-/// @param g 렌더러
 /// @param tpg 그릴 모양의 토폴로지
 /// @param vertices 정점 갯수
 /// @param vertex_stride 정점 너비
@@ -1015,8 +869,7 @@ QSAPI bool qg_rdh_ptr_draw(QgRdh* g, QgTopology tpg, int vertices, int vertex_st
 /// @param index_stride 인덱스 너비
 /// @param index_data 인덱스 데이터
 /// @return 문제없이 그리면 참
-///
-QSAPI bool qg_rdh_ptr_draw_indexed(QgRdh* g, QgTopology tpg,
+QSAPI bool qg_rdh_ptr_draw_indexed(QgTopology tpg,
 	int vertices, int vertex_stride, const void* vertex_data,
 	int indices, int index_stride, const void* index_data);
 

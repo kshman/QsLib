@@ -71,6 +71,10 @@
 #define _QN_MOBILE_			1
 #endif
 
+#ifdef __EMSCRIPTEN__
+#define _QN_EMSCRIPTEN_		1
+#endif
+
 #if defined __XBOXONE__ || defined __XBOXSERIES__
 #define _QN_XBOX_			1
 #endif

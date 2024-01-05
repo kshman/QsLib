@@ -13,41 +13,41 @@
     <AlternativeType Name="ErrorArray"/>
     <AlternativeType Name="SubArray"/>
     <AlternativeType Name="StubMonitorCtnr"/>
-    <DisplayString>[갯수: {count}]</DisplayString>
+    <DisplayString>[갯수: {COUNT}]</DisplayString>
     <Expand>
-      <Item Name="[갯수]">count</Item>
-      <Item Name="[용량]" Optional="true">capa</Item>
-      <Item Name="[최대]" Optional="true">max</Item>
+      <Item Name="[갯수]">COUNT</Item>
+      <Item Name="[용량]" Optional="true">CAPA</Item>
+      <Item Name="[최대]" Optional="true">MAXIMUM</Item>
       <ArrayItems>
-        <Size>count</Size>
-        <ValuePointer>data</ValuePointer>
+        <Size>COUNT</Size>
+        <ValuePointer>DATA</ValuePointer>
       </ArrayItems>
     </Expand>
   </Type>
   
   <!-- 리스트 -->
   <Type Name="QnPtrList">
-    <DisplayString>[갯수: {count}]</DisplayString>
+    <DisplayString>[갯수: {COUNT}]</DisplayString>
     <Expand>
-      <Item Name="[갯수]">count</Item>
+      <Item Name="[갯수]">COUNT</Item>
       <LinkedListItems>
-        <Size>count</Size>
-        <HeadPointer>frst</HeadPointer>
-        <NextPointer>next</NextPointer>
-        <ValueNode>data</ValueNode>
+        <Size>COUNT</Size>
+        <HeadPointer>FIRST</HeadPointer>
+        <NextPointer>NEXT</NextPointer>
+        <ValueNode>DATA</ValueNode>
       </LinkedListItems>
     </Expand>
   </Type>
   
   <!-- 노드 리스트 -->
   <Type Name="EventNodeList">
-    <DisplayString>[갯수: {count}]</DisplayString>
+    <DisplayString>[갯수: {COUNT}]</DisplayString>
     <Expand>
-      <Item Name="[갯수]">count</Item>
+      <Item Name="[갯수]">COUNT</Item>
       <LinkedListItems>
-        <Size>count</Size>
-        <HeadPointer>frst</HeadPointer>
-        <NextPointer>next</NextPointer>
+        <Size>COUNT</Size>
+        <HeadPointer>FIRST</HeadPointer>
+        <NextPointer>NEXT</NextPointer>
         <ValueNode>this</ValueNode>
       </LinkedListItems>
     </Expand>
@@ -55,26 +55,26 @@
   
   <!-- 해시 노드 -->
   <Type Name="QnInlineHashNode">
-    <DisplayString>[key={key}, value={value}]</DisplayString>
+    <DisplayString>[key={KEY}, value={NEXT}]</DisplayString>
     <Expand>
       <LinkedListItems>
         <HeadPointer>this</HeadPointer>
-        <NextPointer>sib</NextPointer>
-        <ValueNode>value</ValueNode>
+        <NextPointer>SIB</NextPointer>
+        <ValueNode>VALUE</ValueNode>
       </LinkedListItems>
     </Expand>
   </Type>
 
   <!-- 해시 -->
   <Type Name="QnInlineHash">
-    <DisplayString>[갯수: {count} (리비전: {revision}, 바구니: {bucket})]</DisplayString>
+    <DisplayString>[갯수: {COUNT} (리비전: {REVISION}, 바구니: {BUCKET})]</DisplayString>
     <Expand>
-      <Item Name="[갯수]">count</Item>
-      <Item Name="[리비전]">revision</Item>
-      <Item Name="[바구니]">bucket</Item>
+      <Item Name="[갯수]">COUNT</Item>
+      <Item Name="[리비전]">REVISION</Item>
+      <Item Name="[바구니]">BUCKET</Item>
       <IndexListItems>
-        <Size>bucket</Size>
-        <ValueNode>nodes[$i]</ValueNode>
+        <Size>BUCKET</Size>
+        <ValueNode>NODES[$i]</ValueNode>
       </IndexListItems>
     </Expand>
   </Type>
@@ -286,7 +286,7 @@
   
   <!-- ShedEvent -->
   <Type Name="ShedEvent">
-    <DisplayString>[q={queue.count} / p={prior.count} / c={cache.count} / m={reserved_mems.count} ({loop.count})</DisplayString>
+    <DisplayString>[q={queue.COUNT} / p={prior.COUNT} / c={cache.COUNT} / m={reserved_mems.COUNT} ({loop.count})</DisplayString>
   </Type>
 
 </AutoVisualizer>

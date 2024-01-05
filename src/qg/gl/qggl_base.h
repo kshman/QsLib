@@ -3,7 +3,7 @@
 #include "qs_qn.h"
 #include "qs_math.h"
 #include "qs_qg.h"
-#include "qg/stub/qg_stub.h"
+#include "qg/qg_stub.h"
 
 //
 typedef struct QglRdh		QglRdh;
@@ -13,7 +13,7 @@ typedef struct QglBuf		QglBuf;
 #define GL_INVALID_HANDLE	(GLuint)-1
 #endif
 
-#define QGL_RDH_INSTANCE	((QglRdh*)qg_rdh_instance)
+#define QGL_RDH_INSTANCE	((QglRdh*)qg_instance_rdh)
 
 // 참조 핸들
 typedef struct QglRefHandle
@@ -45,20 +45,12 @@ typedef struct QglPending
 // GL 렌더 디바이스
 struct QglRdh
 {
-	QgRdh				base;
+	RdhBase				base;
 
 	QglSession			ss;
 	QglPending			pd;
 
 	nint				disposed;
-};
-
-qv_name(QglRdh)
-{
-	qv_name(QgRdh);
-
-	void (*swap_interval)(void*, int);
-	void (*swap_buffers)(void*, void*);
 };
 
 // 버퍼

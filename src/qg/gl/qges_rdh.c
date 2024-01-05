@@ -1,6 +1,9 @@
 ﻿#include "pch.h"
-#if !defined STATIC_ES_LIBRARY && !defined USE_SDL2
+
+#ifndef STATIC_ES_LIBRARY
+#ifndef USE_SDL2
 #define GLAD_EGL_IMPLEMENTATION		1
+#endif
 #define GLAD_GLES2_IMPLEMENTATION	1
 #endif
 #include "qges_rdh.h"
@@ -12,12 +15,12 @@
 // OPENGL ES 렌더 디바이스
 
 static void es_dispose(QsGam* g);
-static void es_reset(QgRdh* rdh);
-static void es_flush(QgRdh* rdh);
+static void es_reset(RdhBase* rdh);
+static void es_flush(RdhBase* rdh);
 
-qv_name(QgRdh) vt_es_rdh =
+qv_name(RdhBase) vt_es_rdh =
 {
-	.base.name = "ESDevice",
+	.base.name = "ESRDH",
 	.base.dispose = es_dispose,
 
 	.reset = es_reset,
@@ -145,7 +148,19 @@ static bool es_init_api(int major)
 }
 #endif
 
-#if !defined USE_SDL2
+#ifdef USE_SDL2
+//
+static GLADapiproc es_load_sdl_api(const char* name)
+{
+	return (GLADapiproc)SDL_GL_GetProcAddress(name);
+}
+
+//
+static bool esl_init_sdl_api(void)
+{
+	return gladLoadGLES2(es_load_sdl_api) != 0;
+}
+#else
 //
 static const char* es_egl_error_string(EGLint error)
 {
@@ -184,10 +199,11 @@ static EGLint es_get_config_attr(EsRdh* self, EGLConfig config, EGLenum name)
 }
 
 //
-static const EsConfig* es_find_config(EsConfig* configs, int count, bool support3)
+static const EsConfig* es_find_config(const EsConfig* wanted, EsConfig* configs, int count, bool support3)
 {
-	int least_missing = INT_MAX;
-	int least_extra = INT_MAX;
+	uint least_missing = UINT_MAX;
+	uint least_color = UINT_MAX;
+	uint least_extra = UINT_MAX;
 	const EsConfig* found = NULL;
 	for (int i = 0; i < count; i++)
 	{
@@ -195,24 +211,41 @@ static const EsConfig* es_find_config(EsConfig* configs, int count, bool support
 		if (support3 && c->version == 2)
 			continue;
 
-		int missing = 0;
-		if (c->alpha == 0) missing++;
-		if (c->depth == 0) missing++;
-		if (c->stencil == 0) missing++;
-		if (c->samples == 0) missing++;
+		uint missing = 0;
+		if (wanted->alpha > 0 && c->alpha == 0) missing++;
+		if (wanted->depth > 0 && c->depth == 0) missing++;
+		if (wanted->stencil > 0 && c->stencil == 0) missing++;
+		if (wanted->samples > 0 && c->samples == 0) missing++;
 
-		int extra = 0;
-		extra += (8 - c->alpha) * (8 - c->alpha);
-		extra += (8 - c->depth) * (8 - c->depth);
-		extra += (8 - c->stencil) * (8 - c->stencil);
+		uint color = 0;
+		if (wanted->red > 0)
+			color += (wanted->red - c->red) * (wanted->red - c->red);
+		if (wanted->blue > 0)
+			color += (wanted->blue - c->blue) * (wanted->blue - c->blue);
+		if (wanted->green > 0)
+			color += (wanted->green - c->green) * (wanted->green - c->green);
+
+		uint extra = 0;
+		if (wanted->alpha > 0)
+			extra += (wanted->alpha - c->alpha) * (wanted->alpha - c->alpha);
+		if (wanted->depth > 0)
+			extra += (wanted->depth - c->depth) * (wanted->depth - c->depth);
+		if (wanted->stencil > 0)
+			extra += (wanted->stencil - c->stencil) * (wanted->stencil - c->stencil);
+		if (wanted->samples > 0)
+			extra += (wanted->samples - c->samples) * (wanted->samples - c->samples);
 
 		if (missing < least_missing)
 			found = c;
-		else if (missing == least_missing && extra < least_extra)
-			found = c;
+		else if (missing == least_missing)
+		{
+			if (color < least_color || (color == least_color && extra < least_extra))
+				found = c;
+		}
 		if (found == c)
 		{
 			least_missing = missing;
+			least_color = color;
 			least_extra = extra;
 		}
 	}
@@ -220,7 +253,7 @@ static const EsConfig* es_find_config(EsConfig* configs, int count, bool support
 }
 #endif
 
-QgRdh* es_allocator(int flags)
+RdhBase* es_allocator(int flags)
 {
 #if !defined STATIC_ES_LIBRARY && !defined USE_SDL2
 	if (es_init_egl() == false)
@@ -229,7 +262,60 @@ QgRdh* es_allocator(int flags)
 
 	EsRdh* self = qn_alloc_zero_1(EsRdh);
 
-#if !defined USE_SDL2
+#ifdef USE_SDL2
+	self->window = (SDL_Window*)stub_system_get_window();
+	self->context = SDL_GL_CreateContext(self->window);
+
+	if (QN_TMASK(flags, QGFLAG_DITHER))
+	{
+		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 4);
+		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 4);
+		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 4);
+		SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 1);
+		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 4);
+	}
+	else
+	{
+		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+	}
+	if (QN_TMASK(flags, QGFLAG_MSAA))
+	{
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+	}
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+
+	Uint32 sdl_flag = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
+	if (QN_TMASK(flags, QGFLAG_VSYNC) == false)
+		SDL_GL_SetSwapInterval(0);
+	else
+	{
+		if (SDL_GL_SetSwapInterval(-1) < 0)
+			SDL_GL_SetSwapInterval(1);
+		sdl_flag |= SDL_RENDERER_PRESENTVSYNC;
+	}
+
+	self->renderer = SDL_CreateRenderer(self->window, -1, sdl_flag);
+	if (self->renderer == NULL || SDL_GL_LoadLibrary(NULL) != 0)
+	{
+		qn_debug_outputf(true, "ESRDH", "failed to create renderer (%s)", SDL_GetError());
+		goto pos_fail_exit;
+	}
+
+	// GL 함수 초기화
+	if (esl_init_sdl_api() == false)
+	{
+		qn_debug_outputs(true, "ESRDH", "cannot initialize es client");
+		goto pos_fail_exit;
+	}
+#else
 	self->native_window = stub_system_get_window();
 	self->native_display = stub_system_get_display();
 
@@ -295,8 +381,14 @@ QgRdh* es_allocator(int flags)
 		config_entry_count++;
 	}
 
-	const EsConfig* found_entry = es_find_config(config_entries, config_entry_count, support3);
-	self->config = found_entry->handle;
+	static const EsConfig config_normal = { NULL, 8, 8, 8, 8, 24, 8, 0, 0, };
+	static const EsConfig config_dither = { NULL, 5, 5, 5, 1, 8, -1, 0, 0, };
+	EsConfig want_config = QN_TMASK(flags, QGFLAG_DITHER) ? config_dither : config_normal;
+	if (QN_TMASK(flags, QGFLAG_DITHER) == false && QN_TMASK(flags, QGFLAG_MSAA))
+		want_config.samples = 4;
+
+	const EsConfig* found_entry = es_find_config(&want_config, config_entries, config_entry_count, support3);
+	self->config = *found_entry;
 	qn_free(egl_configs);
 	qn_free(config_entries);
 
@@ -311,13 +403,13 @@ QgRdh* es_allocator(int flags)
 		EGL_CONTEXT_CLIENT_VERSION, support3 ? 3 : 2,
 		EGL_NONE, EGL_NONE,
 	};
-	self->context = eglCreateContext(self->display, self->config, NULL, context_attrs);
+	self->context = eglCreateContext(self->display, self->config.handle, NULL, context_attrs);
 	if (self->context == EGL_NO_CONTEXT)
 	{
 		if (support3)
 		{
 			context_attrs[1] = 2;
-			self->context = eglCreateContext(self->display, self->config, NULL, context_attrs);
+			self->context = eglCreateContext(self->display, self->config.handle, NULL, context_attrs);
 			if (self->context != EGL_NO_CONTEXT)
 				goto pos_context_ok;
 		}
@@ -337,7 +429,7 @@ pos_context_ok:
 	{
 		EGL_NONE, EGL_NONE,
 	};
-	self->surface = eglCreateWindowSurface(self->display, self->config, self->native_window, surface_attrs);
+	self->surface = eglCreateWindowSurface(self->display, self->config.handle, self->native_window, surface_attrs);
 	if (self->surface == EGL_NO_SURFACE)
 	{
 		qn_debug_outputf(true, "ESRDH", "failed to create surface: %s", es_egl_error_string(eglGetError()));
@@ -356,26 +448,31 @@ pos_context_ok:
 		goto pos_fail_exit;
 #endif
 
-	eglSwapInterval(self->display, 0);
+	eglSwapInterval(self->display, QN_TMASK(flags, QGFLAG_VSYNC) ? 1 : 0);
 #endif
 
 	int renderer_version = qgl_get_version(GL_VERSION, "OPENGLES", "OPENGL ES");
 	int shader_version = qgl_get_version(GL_SHADING_LANGUAGE_VERSION, "OPENGL ES GLSL ES ", "OPENGL ES GLSL ");
 	qgl_initialize(&self->base, flags, renderer_version, shader_version);
 
-	QgDeviceInfo* caps = &rdh_caps(self);
-	caps->max_off_count = 1;
-	caps->max_layout_count = QN_MIN(caps->max_layout_count, ES_MAX_LAYOUT_COUNT);
+	RendererInfo* infos = &rdh_info(self);
+	infos->max_off_count = 1;
+	infos->max_layout_count = QN_MIN(infos->max_layout_count, ES_MAX_LAYOUT_COUNT);
 
-	return qs_init(self, QgRdh, &vt_es_rdh);
+	return qs_init(self, RdhBase, &vt_es_rdh);
 
 pos_fail_exit:
+#ifdef USE_SDL2
+	if (self->renderer)
+		SDL_DestroyRenderer(self->renderer);
+#else
 	if (self->context != EGL_NO_CONTEXT)
 		eglDestroyContext(self->display, self->context);
 	if (self->surface != EGL_NO_SURFACE)
 		eglDestroySurface(self->display, self->surface);
 	if (self->display != EGL_NO_DISPLAY)
 		eglTerminate(self->display);
+#endif
 	qn_free(self);
 	return NULL;
 }
@@ -387,28 +484,37 @@ static void es_dispose(QsGam* g)
 
 	qgl_finalize(qs_cast(self, QglRdh));
 
+#ifdef USE_SDL2
+	if (self->renderer)
+		SDL_DestroyRenderer(self->renderer);
+#else
 	if (self->context != EGL_NO_CONTEXT)
 		eglDestroyContext(self->display, self->context);
 	if (self->surface != EGL_NO_SURFACE)
 		eglDestroySurface(self->display, self->surface);
 	if (self->display != EGL_NO_DISPLAY)
 		eglTerminate(self->display);
+#endif
 
-	rdh_internal_dispose(g);
+	rdh_internal_dispose();
 }
 
 //
-static void es_reset(QgRdh* rdh)
+static void es_reset(RdhBase* rdh)
 {
 	qgl_reset(rdh);
 }
 
 //
-static void es_flush(QgRdh* rdh)
+static void es_flush(RdhBase* rdh)
 {
 	EsRdh* self = qs_cast(rdh, EsRdh);
 
 	qgl_flush(rdh);
+#ifdef USE_SDL2
+	SDL_GL_SwapWindow(self->window);
+#else
 	eglSwapBuffers(self->display, self->surface);
+#endif
 }
 

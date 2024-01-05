@@ -90,24 +90,6 @@
     <ClInclude Include="..\..\src\qs_conf.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\inc\qs_ctn.h">
-      <Filter>헤더 파일\qn</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\inc\qs_math.h">
-      <Filter>헤더 파일\qn</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\inc\qs_qn.h">
-      <Filter>헤더 파일\qn</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\inc\qs_kmc.h">
-      <Filter>헤더 파일\qg</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\inc\qs_qg.h">
-      <Filter>헤더 파일\qg</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\qg_stub.h">
-      <Filter>헤더 파일\qg\stub</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\qg\stub\qgwin_func.h">
       <Filter>헤더 파일\qg\stub</Filter>
     </ClInclude>
@@ -149,6 +131,24 @@
     </ClInclude>
     <ClInclude Include="..\..\src\qg\gl\glad_supp.h">
       <Filter>헤더 파일\qg\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\qg_stub.h">
+      <Filter>헤더 파일\qg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\inc\qs_qg.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\inc\qs_kmc.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\inc\qs_ctn.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\inc\qs_math.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\inc\qs_qn.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -242,9 +242,6 @@
     <ClCompile Include="..\..\src\pch.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\stub\qg_stub.c">
-      <Filter>소스 파일\qg\stub</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\qg\stub\qgsdl_stub.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
@@ -261,6 +258,9 @@
       <Filter>소스 파일\qg\gl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qg\qg_rdh.c">
+      <Filter>소스 파일\qg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qg_stub.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
   </ItemGroup>
