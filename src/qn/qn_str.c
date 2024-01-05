@@ -218,7 +218,7 @@ const char* qn_strbrk(const char* p, const char* c)
 }
 
 //
-char* qn_strmid(char* restrict dest, const size_t destsize, const char* restrict src, const size_t pos, const size_t len)
+char* qn_strmid(char* restrict dest, const char* restrict src, const size_t pos, const size_t len)
 {
 	const size_t size = strlen(src);
 
@@ -226,7 +226,7 @@ char* qn_strmid(char* restrict dest, const size_t destsize, const char* restrict
 		*dest = '\0';
 	else
 	{
-		qn_strncpy(dest, destsize, src + pos, len);
+		qn_strncpy(dest, src + pos, len);
 		*(dest + len) = '\0';
 	}
 
@@ -311,7 +311,7 @@ char* qn_strdup(const char* p)
 	qn_val_if_fail(p != NULL, NULL);
 	const size_t len = strlen(p) + 1;
 	char* d = qn_alloc(len, char);
-	qn_strcpy(d, len, p);
+	qn_strcpy(d, p);
 	return d;
 }
 
@@ -459,11 +459,48 @@ bool qn_strieqv(const char* p1, const char* p2)
 	return p1 == p2 ? true : qn_stricmp(p1, p2) == 0;
 }
 
-#ifndef _MSC_VER
-/** @brief 문자열을 대문자로 */
-char* qn_strupr(char* p, size_t size)
+//
+char* qn_strcpy(char* p, const char* src)
 {
-	QN_DUMMY(size);
+#ifdef __GNUC__
+	return strcpy(p, src);
+#else
+	char* o = p;
+	while ((*p++ = *src++));
+	return o;
+#endif
+}
+
+//
+char* qn_strpcpy(char* p, const char* src)
+{
+	do (*p++ = *src);
+	while (*src++ != '\0');
+	return p - 1;
+}
+
+//
+char* qn_strncpy(char* p, const char* src, size_t len)
+{
+#ifdef __GNUC__
+	return strncpy(p, src, len);
+#else
+	char* o = p;
+	while (len && (*p++ = *src++))
+		--len;
+	*p = '\0';
+	if (len)
+	{
+		while (--len)
+			*p++ = '\0';
+	}
+	return o;
+#endif
+}
+
+//
+char* qn_strupr(char* p)
+{
 	char* s = p;
 	for (; *s; ++s)
 		if ((*s >= 'a') && (*s <= 'z'))
@@ -471,10 +508,9 @@ char* qn_strupr(char* p, size_t size)
 	return p;
 }
 
-/** @brief 문자열을 소문자로 */
-char* qn_strlwr(char* p, size_t size)
+//
+char* qn_strlwr(char* p)
 {
-	QN_DUMMY(size);
 	char* s = p;
 	for (; *s; ++s)
 		if ((*s >= 'A') && (*s <= 'Z'))
@@ -482,23 +518,29 @@ char* qn_strlwr(char* p, size_t size)
 	return p;
 }
 
-/** @brief strncmp */
+//
 int qn_strncmp(const char* p1, const char* p2, size_t len)
 {
+#if defined _MSC_VER || defined __GNUC__
+	return strncmp(p1, p2, len);
+#else
 	if (!len)
 		return 0;
-
 	while (--len && *p1 && *p1 == *p2)
 		++p1, ++p2;
-
 	return *p1 - *p2;
+#endif
 }
 
-/** @brief stricmp */
+//
 int qn_stricmp(const char* p1, const char* p2)
 {
+#ifdef _MSC_VER
+	return _stricmp(p1, p2);
+#elif defined __GNUC__
+	return strcasecmp(p1, p2);
+#else
 	int	f, l;
-
 	do
 	{
 		f = (unsigned char)(*(p1++));
@@ -506,15 +548,19 @@ int qn_stricmp(const char* p1, const char* p2)
 		if (f >= 'A' && f <= 'Z')	f -= 'A' - 'a';
 		if (l >= 'A' && l <= 'Z')	l -= 'A' - 'a';
 	} while (f && (f == l));
-
 	return (f - l);
+#endif
 }
 
-/** @brief strnicmp */
+//
 int qn_strnicmp(const char* p1, const char* p2, size_t len)
 {
+#ifdef _MSC_VER
+	return _strnicmp(p1, p2, len);
+#elif defined __GNUC__
+	return strncasecmp(p1, p2, len);
+#else
 	int	f, l;
-
 	while (len && *p1 && *p2)
 	{
 		--len;
@@ -528,13 +574,12 @@ int qn_strnicmp(const char* p1, const char* p2, size_t len)
 		++p1;
 		++p2;
 	}
-
 	return (len) ? (int)(p1 - p2) : 0;
-}
 #endif
+}
 
 //
-int qn_itoa(char* p, const int size, const int n, const uint base, bool upper)
+int qn_itoa(char* p, const int n, const uint base, bool upper)
 {
 	qn_val_if_fail(base <= 32, -1);
 	if (upper > 1)
@@ -557,14 +602,13 @@ int qn_itoa(char* p, const int size, const int n, const uint base, bool upper)
 	if (place == (int)QN_COUNTOF(conv))
 		place--;
 	conv[place] = '\0';
-	if (p == NULL)
-		return place;
-	qn_strncpy(p, size, conv, (size_t)place);
-	return QN_MIN(size - 1, place);
+	if (p != NULL)
+		qn_strcpy(p, conv);
+	return place;
 }
 
 //
-int qn_lltoa(char* p, const int size, const llong n, const uint base, bool upper)
+int qn_lltoa(char* p, const llong n, const uint base, bool upper)
 {
 	qn_val_if_fail(base <= 32, -1);
 	if (upper > 1)
@@ -587,10 +631,9 @@ int qn_lltoa(char* p, const int size, const llong n, const uint base, bool upper
 	if (place == (int)QN_COUNTOF(conv))
 		place--;
 	conv[place] = '\0';
-	if (p == NULL)
-		return place;
-	qn_strncpy(p, size, conv, (size_t)place);
-	return QN_MIN(size - 1, place);
+	if (p != NULL)
+		qn_strcpy(p, conv);
+	return place;
 }
 
 //
@@ -611,570 +654,6 @@ uint qn_strtoi(const char* p, const uint base)
 
 //
 ullong qn_strtoll(const char* p, const uint base)
-{
-	qn_val_if_fail(p != NULL, 0);
-	qn_val_if_fail(base >= 2 && base < 32, 0);
-	ullong v = 0;
-	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
-	uint ch = qn_char_to_int_base((uint)*p++);
-	while (ch < base)
-	{
-		v = v * base + ch;
-		ch = qn_char_to_int_base((uint)*p++);
-	}
-	return v;
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-// 유니코드 문자열
-//
-
-#ifndef _MSC_VER
-#ifndef towupper
-#define towupper(c)					((((c)>=L'a') && ((c)<=L'z')) ? ((c)-L'a'+L'A') : (c))
-#endif
-#ifndef towlower
-#define towlower(c)					((((c)>=L'A') && ((c)<=L'Z')) ? ((c)-L'A'+L'a') : (c))
-#endif
-#endif
-
-extern size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format, va_list args);
-
-//
-int qn_vsnwprintf(wchar* restrict out, size_t len, const wchar* restrict fmt, va_list va)
-{
-	qn_val_if_fail(fmt != NULL, -1);
-
-	const size_t res = doprw(out, len, fmt, va);
-	if (len)
-		len--;
-
-	return out ? (int)QN_MIN(res, len) : (int)res;
-}
-
-//
-int qn_vaswprintf(wchar** out, const wchar* fmt, va_list va)
-{
-	qn_val_if_fail(out != NULL, -2);
-	qn_val_if_fail(fmt != NULL, -1);
-
-	size_t len = doprw(NULL, 0, fmt, va);
-	if (len == 0)
-		*out = NULL;
-	else
-	{
-		*out = qn_alloc(len + 1, wchar);
-		len = doprw(*out, len + 1, fmt, va);
-	}
-
-	return (int)len;
-}
-
-//
-wchar* qn_vapswprintf(const wchar* fmt, va_list va)
-{
-	qn_val_if_fail(fmt != NULL, NULL);
-
-	const size_t len = doprw(NULL, 0, fmt, va);
-	if (len == 0)
-		return NULL;
-
-	wchar* ret = qn_alloc(len + 1, wchar);
-	doprw(ret, len + 1, fmt, va);
-
-	return ret;
-}
-
-//
-int qn_snwprintf(wchar* restrict out, const size_t len, const wchar* restrict fmt, ...)
-{
-	va_list va;
-
-	va_start(va, fmt);
-	const int ret = qn_vsnwprintf(out, len, fmt, va);
-	va_end(va);
-
-	return ret;
-}
-
-//
-int qn_aswprintf(wchar** out, const wchar* restrict fmt, ...)
-{
-	va_list va;
-
-	va_start(va, fmt);
-	const int ret = qn_vaswprintf(out, fmt, va);
-	va_end(va);
-
-	return ret;
-}
-
-//
-wchar* qn_apswprintf(const wchar* fmt, ...)
-{
-	va_list va;
-
-	va_start(va, fmt);
-	wchar* ret = qn_vapswprintf(fmt, va);
-	va_end(va);
-
-	return ret;
-}
-
-//
-size_t qn_wcsfll(wchar* dest, const size_t pos, const size_t end, const int ch)
-{
-	if (pos >= end)
-		return pos;
-	const size_t cnt = end - pos;
-	for (size_t i = 0; i < cnt; i++)
-		dest[pos + i] = (wchar)ch;
-	return pos + cnt;
-}
-
-//
-size_t qn_wcshash(const wchar* p)
-{
-	const wchar* sz = p;
-	size_t h = (size_t)*sz++;
-	if (!h)
-		return 0;
-	else
-	{
-		size_t c;
-		for (c = 0; *sz && c < 256; sz++, c++)
-			h = (h << 5) - h + (size_t)*sz;
-		h = (h << 5) - h + c;
-		return h;
-	}
-}
-
-//
-size_t qn_wcsihash(const wchar* p)
-{
-	const wchar* sz = p;
-	size_t h = (size_t)towupper(*sz);
-	if (!h)
-		return 0;
-	else
-	{
-		size_t c;
-		sz++;
-		for (c = 0; *sz && c < 256; sz++, c++)
-			h = (h << 5) - h + (size_t)towupper(*sz);
-		h = (h << 5) - h + c;
-		return h;
-	}
-}
-
-//
-const wchar* qn_wcsbrk(const wchar* p, const wchar* c)
-{
-	while (*p)
-	{
-		for (const wchar* t = c; *t; t++)
-		{
-			if (*t == *p)
-				return p;
-		}
-		p++;
-	}
-	return NULL;
-}
-
-//
-wchar* qn_wcsmid(wchar* restrict dest, const size_t destsize, const wchar* restrict src, const size_t pos, const size_t len)
-{
-	const size_t size = wcslen(src);
-
-	if (pos > size)
-		*dest = L'\0';
-	else
-	{
-		qn_wcsncpy(dest, destsize, src + pos, len);
-		*(dest + len) = L'\0';
-	}
-
-	return dest;
-}
-
-//
-wchar* qn_wcsltm(wchar* dest)
-{
-	wchar* s;
-	for (s = dest; *s && iswspace((wint_t)*s); s++) {}
-	if (dest != s)
-		memmove(dest, s, (wcslen(s) + 1) * sizeof(wchar));
-	return dest;
-}
-
-//
-wchar* qn_wcsrtm(wchar* dest)
-{
-	size_t len = wcslen(dest);
-	while (len--)
-	{
-		if (!iswspace((wint_t)dest[len]))
-			break;
-		dest[len] = L'\0';
-	}
-	return dest;
-}
-
-//
-wchar* qn_wcstrm(wchar* dest)
-{
-	return qn_wcsrtm(qn_wcsltm(dest));
-}
-
-//
-wchar* qn_wcsrem(wchar* restrict p, const wchar* restrict rmlist)
-{
-	const wchar* p1 = p;
-	wchar* p2 = p;
-
-	while (*p1)
-	{
-		const wchar* ps = rmlist;
-		bool b = false;
-
-		while (*ps)
-		{
-			if (*p1 == *ps)
-			{
-				b = true;
-				break;
-			}
-			++ps;
-		}
-
-		if (!b)
-		{
-			*p2 = *p1;
-			++p2;
-		}
-
-		++p1;
-	}
-
-	*p2 = L'\0';
-
-	return p;
-}
-
-//
-wchar* qn_wcpcpy(wchar* restrict dest, const wchar* restrict src)
-{
-	do (*dest++ = *src);
-	while (*src++ != L'\0');
-	return dest - 1;
-}
-
-//
-wchar* qn_wcsdup(const wchar* p)
-{
-	qn_val_if_fail(p != NULL, NULL);
-	const size_t len = wcslen(p) + 1;
-	wchar* d = qn_alloc(len, wchar);
-	qn_wcscpy(d, len, p);
-	return d;
-}
-
-//
-wchar* qn_wcscat(const wchar* p, ...)
-{
-	va_list va, vq;
-	va_start(va, p);
-	va_copy(vq, va);
-
-	size_t size = wcslen(p) + 1;
-	const wchar* s = va_arg(va, wchar*);
-	while (s)
-	{
-		size += wcslen(s);
-		s = va_arg(va, wchar*);
-	}
-
-	wchar* str = qn_alloc(size, wchar);
-	wchar* c = qn_wcpcpy(str, p);
-	s = va_arg(vq, wchar*);
-	while (s)
-	{
-		c = qn_wcpcpy(c, s);
-		s = va_arg(vq, wchar*);
-	}
-	va_end(vq);
-
-	va_end(va);
-	return str;
-}
-
-//
-bool qn_wcswcm(const wchar* string, const wchar* wild)
-{
-	const wchar *cp = NULL, *mp = NULL;
-
-	while ((*string) && (*wild != L'*'))
-	{
-		if ((*wild != *string) && (*wild != L'?'))
-			return false;
-		wild++;
-		string++;
-	}
-
-	while (*string)
-	{
-		if (*wild == L'*')
-		{
-			if (!*++wild)
-				return 1;
-			mp = wild;
-			cp = string + 1;
-		}
-		else if ((*wild == *string) || (*wild == L'?'))
-		{
-			wild++;
-			string++;
-		}
-		else
-		{
-			wild = mp;
-			string = cp++;
-		}
-	}
-
-	while (*wild == L'*')
-		wild++;
-
-	return *wild != L'\0';
-}
-
-//
-bool qn_wcsiwcm(const wchar* string, const wchar* wild)
-{
-	const wchar *cp = NULL, *mp = NULL;
-
-	while ((*string) && (*wild != L'*'))
-	{
-		if ((towupper(*wild) != towupper(*string)) && (*wild != L'?'))
-			return 0;
-		wild++;
-		string++;
-	}
-
-	while (*string)
-	{
-		if (*wild == L'*')
-		{
-			if (!*++wild)
-				return 1;
-			mp = wild;
-			cp = string + 1;
-		}
-		else if ((towupper(*wild) == towupper(*string)) || (*wild == L'?'))
-		{
-			wild++;
-			string++;
-		}
-		else
-		{
-			wild = mp;
-			string = cp++;
-		}
-	}
-
-	while (*wild == L'*')
-		wild++;
-
-	return *wild != L'\0';
-}
-
-//
-int qn_wcsfnd(const wchar* src, const wchar* find, const size_t index)
-{
-	const wchar* p = src + index;
-
-	while (*p)
-	{
-		const wchar* s1 = p;
-		const wchar* s2 = find;
-
-		while (*s1 && *s2 && !(*s1 - *s2))
-		{
-			++s1;
-			++s2;
-		}
-
-		if (!*s2)
-			return (int)(src + index - p);
-	}
-
-	return -1;
-}
-
-//
-bool qn_wcseqv(const wchar* p1, const wchar* p2)
-{
-	return p1 == p2 ? true : wcscmp(p1, p2) == 0;
-}
-
-//
-bool qn_wcsieqv(const wchar* p1, const wchar* p2)
-{
-	return p1 == p2 ? true : qn_wcsicmp(p1, p2) == 0;
-}
-
-#ifndef _MSC_VER
-/** @brief 문자열을 대문자로 */
-wchar* qn_wcsupr(wchar* p, size_t size)
-{
-	QN_DUMMY(size);
-	wchar* s = p;
-	for (; *s; ++s)
-		if ((*s >= L'a') && (*s <= L'z'))
-			*s -= (wchar)(L'a' - L'A');
-	return p;
-}
-
-/** @brief 문자열을 소문자로 */
-wchar* qn_wcslwr(wchar* p, size_t size)
-{
-	QN_DUMMY(size);
-	wchar* s = p;
-	for (; *s; ++s)
-		if ((*s >= L'A') && (*s <= L'Z'))
-			*s += (wchar)(L'a' - L'A');
-	return p;
-}
-
-/** @brief wcsncmp */
-int qn_wcsncmp(const wchar* p1, const wchar* p2, size_t len)
-{
-	if (!len)
-		return 0;
-
-	while (--len && *p1 && *p1 == *p2)
-		++p1, ++p2;
-
-	return (int)(*p1 - *p2);
-}
-
-/** @brief wcsicmp */
-int qn_wcsicmp(const wchar* p1, const wchar* p2)
-{
-	wchar f, l;
-
-	do
-	{
-		f = (wchar)towlower(*p1);
-		l = (wchar)towlower(*p2);
-		++p1;
-		++p2;
-	} while (f && (f == l));
-
-	return (int)(f - l);
-}
-
-/** @brief wcsnicmp */
-int qn_wcsnicmp(const wchar* p1, const wchar* p2, size_t len)
-{
-	wchar f, l;
-
-	while (len && *p1 && *p2)
-	{
-		--len;
-
-		f = (wchar)towlower(*p1);
-		l = (wchar)towlower(*p2);
-
-		if (f != l) return (f - l);
-		++p1;
-		++p2;
-	}
-
-	return (len) ? (int)(p1 - p2) : 0;
-}
-#endif
-
-//
-int qn_itow(wchar* p, const int size, const int n, const uint base, bool upper)
-{
-	qn_val_if_fail(base <= 32, -1);
-	if (upper > 1)
-		upper = 1;
-	wchar conv[32];
-	int place = 0;
-	uint uvalue;
-	if (n >= 0 || base != 10)
-		uvalue = (uint)n;
-	else
-	{
-		conv[place++] = L'-';
-		uvalue = (uint)-n;
-	}
-	do
-	{
-		conv[place++] = (wchar)qn_int_base_to_char(uvalue % base, upper);
-		uvalue = uvalue / base;
-	} while (uvalue && place < (int)QN_COUNTOF(conv));
-	if (place == (int)QN_COUNTOF(conv))
-		place--;
-	conv[place] = L'\0';
-	if (p == NULL)
-		return place;
-	qn_wcsncpy(p, size, conv, (size_t)place);
-	return QN_MIN(size - 1, place);
-}
-
-//
-int qn_lltow(wchar* p, const int size, const llong n, const uint base, bool upper)
-{
-	qn_val_if_fail(base <= 32, -1);
-	if (upper > 1)
-		upper = 1;
-	wchar conv[64];
-	int place = 0;
-	ullong uvalue;
-	if (n >= 0 || base != 10)
-		uvalue = (ullong)n;
-	else
-	{
-		conv[place++] = L'-';
-		uvalue = (ullong)-n;
-	}
-	do
-	{
-		conv[place++] = (wchar)qn_int_base_to_char(uvalue % base, upper);
-		uvalue = uvalue / base;
-	} while (uvalue && place < (int)QN_COUNTOF(conv));
-	if (place == (int)QN_COUNTOF(conv))
-		place--;
-	conv[place] = L'\0';
-	if (p == NULL)
-		return place;
-	qn_wcsncpy(p, size, conv, (size_t)place);
-	return QN_MIN(size - 1, place);
-}
-
-//
-uint qn_wcstoi(const wchar* p, const uint base)
-{
-	qn_val_if_fail(p != NULL, 0);
-	qn_val_if_fail(base >= 2 && base < 32, 0);
-	uint v = 0;
-	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
-	uint ch = qn_char_to_int_base((uint)*p++);
-	while (ch < base)
-	{
-		v = v * base + ch;
-		ch = qn_char_to_int_base((uint)*p++);
-	}
-	return v;
-}
-
-//
-ullong qn_wcstoll(const wchar* p, const uint base)
 {
 	qn_val_if_fail(p != NULL, 0);
 	qn_val_if_fail(base >= 2 && base < 32, 0);

@@ -2117,13 +2117,13 @@ QN_DECL_BSTR(4k, 4096);
 #define qn_bstr_set(p, str)\
 	QN_STMT_BEGIN{\
 		(p)->LENGTH=strlen(str);\
-		qn_strcpy((p)->DATA, QN_COUNTOF((p)->DATA), (str));\
+		qn_strcpy((p)->DATA, (str));\
 	}QN_STMT_END
 
 #define qn_bstr_set_bstr(p, right)\
 	QN_STMT_BEGIN{\
 		(p)->LENGTH=(right)->LENGTH;\
-		qn_strcpy((p)->DATA, QN_COUNTOF((p)->DATA), (right)->DATA);\
+		qn_strcpy((p)->DATA, (right)->DATA);\
 	}QN_STMT_END
 
 #define qn_bstr_set_len(p, str, len)\
@@ -2131,7 +2131,7 @@ QN_DECL_BSTR(4k, 4096);
 		if ((len)<0) qn_bstr_set(p,str);\
 		else {\
 			(p)->LENGTH=len;\
-			qn_strncpy((p)->DATA, QN_COUNTOF((p)->DATA), (str), (len));\
+			qn_strncpy((p)->DATA, (str), (len));\
 		}\
 	}QN_STMT_END
 
@@ -2219,10 +2219,10 @@ QN_INLINE void qn_inl_bstr_append_format(QnBstr* p, size_t size, const char* fmt
 }
 
 #define qn_bstr_upper(p)\
-	qn_strupr(((QnBstr*)(p))->DATA, ((QnBstr*)(p))->LENGTH)
+	qn_strupr(((QnBstr*)(p))->DATA)
 
 #define qn_bstr_lower(p)\
-	qn_strlwr(((QnBstr*)(p))->DATA, ((QnBstr*)(p))->LENGTH)
+	qn_strlwr(((QnBstr*)(p))->DATA)
 
 #define qn_bstr_trim(p)\
 	QN_STMT_BEGIN{\
@@ -2260,8 +2260,8 @@ QN_INLINE int qn_bstr_find_char(const void* p, size_t at, char ch)
 }
 
 #define qn_bstr_sub_bstr(p, s, pos, len)\
-	qn_inl_bstr_sub_bstr(((QnBstr*)(p)), QN_COUNTOF((p)->DATA)-1, (const QnBstr*)(s), pos, len)
-QN_INLINE bool qn_inl_bstr_sub_bstr(QnBstr* p, size_t psize, const QnBstr* s, size_t pos, int len)
+	qn_inl_bstr_sub_bstr(((QnBstr*)(p)), (const QnBstr*)(s), pos, len)
+QN_INLINE bool qn_inl_bstr_sub_bstr(QnBstr* p, const QnBstr* s, size_t pos, int len)
 {
 	qn_val_if_fail(s->LENGTH >= pos, false);
 
@@ -2270,7 +2270,7 @@ QN_INLINE bool qn_inl_bstr_sub_bstr(QnBstr* p, size_t psize, const QnBstr* s, si
 	else
 		len = (int)s->LENGTH - (int)pos;
 
-	qn_strmid(p->DATA, psize, s->DATA, pos, (size_t)len);
+	qn_strmid(p->DATA, s->DATA, pos, (size_t)len);
 	p->LENGTH = (size_t)len;
 	return true;
 }

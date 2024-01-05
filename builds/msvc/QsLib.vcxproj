@@ -54,7 +54,6 @@
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <EnableASAN>true</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -76,7 +75,6 @@
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <EnableASAN>true</EnableASAN>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -275,6 +273,7 @@
     <ClInclude Include="..\..\src\pch.h" />
     <ClInclude Include="..\..\src\qg\gl\egl.h" />
     <ClInclude Include="..\..\src\qg\gl\gl.h" />
+    <ClInclude Include="..\..\src\qg\gl\glad_supp.h" />
     <ClInclude Include="..\..\src\qg\gl\gles2.h" />
     <ClInclude Include="..\..\src\qg\gl\qges_rdh.h" />
     <ClInclude Include="..\..\src\qg\gl\qggl_base.h" />

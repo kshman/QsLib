@@ -483,7 +483,7 @@ void* qn_mpfdup(const void* p, const size_t size_or_zero_if_psz, const char* des
 	}
 	const size_t len = strlen((const char*)p) + 1;
 	char* d = qn_mpfalc(len, false, desc, line);
-	qn_strcpy(d, len, (const char*)p);
+	qn_strcpy(d, (const char*)p);
 	return d;
 }
 
@@ -570,6 +570,6 @@ void* qn_memdup(const void* ptr, const size_t size_or_zero_if_psz)
 	}
 	const size_t len = strlen((const char*)ptr) + 1;
 	char* d = qn_alloc(len, char);
-	qn_strcpy(d, len, (const char*)ptr);
+	qn_strcpy(d, (const char*)ptr);
 	return d;
 }

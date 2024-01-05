@@ -147,6 +147,9 @@
     <ClInclude Include="..\..\src\qg\gl\wgl.h">
       <Filter>헤더 파일\qg\gl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\qg\gl\glad_supp.h">
+      <Filter>헤더 파일\qg\gl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\qn\qn.c">

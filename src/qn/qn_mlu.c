@@ -787,7 +787,7 @@ QnMlTag* qn_mltag_new(const char* name)
 	qn_val_if_fail(self, NULL);
 
 	self->base.name = qn_strdup(name);
-	qn_strupr(self->base.name, strlen(self->base.name));
+	qn_strupr(self->base.name);
 
 	self->base.name_len = (int)strlen(self->base.name);
 	self->name_hash = qn_strhash(self->base.name);
@@ -839,7 +839,7 @@ void qn_mltag_add_context(QnMlTag* ptr, const char* restrict cntx, const int siz
 		self->base.context = qn_alloc(len + 1, char);
 		qn_ret_if_fail(self->base.context);
 
-		qn_strcpy(self->base.context, len + 1, cntx);
+		qn_strcpy(self->base.context, cntx);
 		self->base.context_len = len;
 		self->context_hash = qn_strhash(self->base.context);
 	}
@@ -1330,7 +1330,7 @@ void qn_mltag_set_arg(QnMlTag* ptr, const char* restrict name, const char* restr
 	char* dn = qn_strdup(name);
 	char* dv = qn_strdup(value);
 
-	qn_strupr(dn, strlen(dn));
+	qn_strupr(dn);
 
 	if (!self->args.BUCKET)
 		qn_hash_init(ArgHash, &self->args);

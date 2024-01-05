@@ -543,37 +543,36 @@ QSAPI void qn_mpfdbgprint(void);
 /// @brief 포인터 해시. 일반적인 size_t 해시를 의미함
 /// @param[in]	ptr	입력 변수
 /// @return	해시 값
-///
 QSAPI size_t qn_hash_ptr(const void* ptr);
+
 /// @brief 시간 해시. 현재 시각을 이용하여 해시값을 만든다
 /// @return	해시 값
-///
 QSAPI size_t qn_hash_now(void);
+
 /// @brief 콜백 해시. 함수 콜백을 해시값으로 만들어 준다
 /// @param[in]	prime8	8비트 소수 값
 /// @param[in]	func  	콜백 함수
 /// @param[in]	data  	콜백 데이터
 /// @return	해시 값
-///
 QSAPI size_t qn_hash_func(int prime8, func_t func, const void* data);
+
 /// @brief 데이터를 crc로 해시한다
 /// @param[in] data 데이터
 /// @param[in] size 데이터 크기
 /// @return 해시 값
-///
 QSAPI size_t qn_hash_crc(const byte* data, size_t size);
+
 /// @brief 가까운 소수 얻기. 처리할 수 있는 최소 소수는 QN_MAX_HASH(11), 최대 소수는 QN_MAX_HASH(13845163)
 /// @param[in] value 입력 값
 /// @return 소수 값
 /// @see QN_MIN_HASH, QN_MAX_HASH
-///
 QSAPI uint32_t qn_prime_near(uint32_t value);
+
 /// @brief 제곱 소수 얻기. 근거리에 해당하는 제곱 소수를 계산해준다
 /// @param[in] value 입력 값
 /// @param[in] min 최소 값
 /// @param[out] shift 널이 아니면 쉬프트 크기
 /// @return 소수 값
-///
 QSAPI uint32_t qn_prime_shift(uint32_t value, uint32_t min, uint32_t* shift);
 
 /// @brief 퀵정렬
@@ -581,15 +580,14 @@ QSAPI uint32_t qn_prime_shift(uint32_t value, uint32_t min, uint32_t* shift);
 /// @param[in] count 데이터의 갯수
 /// @param[in] stride 데이터의 폭
 /// @param[in] compfunc 비교 연산 콜백 함수
-///
 QSAPI void qn_qsort(void* ptr, size_t count, size_t stride, int(*compfunc)(const void*, const void*));
+
 /// @brief 콘텍스트 입력 받는 퀵정렬
 /// @param[in,out] ptr 정렬할 데이터의 포인터
 /// @param[in] count 데이터의 갯수
 /// @param[in] stride 데이터의 폭
 /// @param[in] compfunc 비교 연산 콜백 함수
 /// @param[in] context 콜백 함수용 콘텍스트
-///
 QSAPI void qn_qsortc(void* ptr, size_t count, size_t stride, int(*compfunc)(void*, const void*, const void*), void* context);
 
 
@@ -602,8 +600,8 @@ QSAPI void qn_qsortc(void* ptr, size_t count, size_t stride, int(*compfunc)(void
 /// @param[in] fmt 포맷 문자열
 /// @param[in] va 가변 인수
 /// @return 결과 문자열의 길이
-///
 QSAPI int qn_vsnprintf(char* restrict out, size_t len, const char* restrict fmt, va_list va);
+
 /// @brief 가변 포맷 문자열을 메모리 할당으로 만든다
 /// @param[out] out 출력 문자열의 버퍼 포인터. 이 값이 NULL이면 곤린하다
 /// @param[in] fmt 포맷 문자열
@@ -611,24 +609,24 @@ QSAPI int qn_vsnprintf(char* restrict out, size_t len, const char* restrict fmt,
 /// @return 결과 문자열의 길이
 /// @note out 인수로 만든 문자열은 qn_free 함수로 해제해야 한다
 /// @see qn_free
-///
 QSAPI int qn_vasprintf(char** out, const char* fmt, va_list va);
+
 /// @brief 가변 포맷 문자열을 메모리 할당으로 만들어 반환한다
 /// @param[in] fmt 포맷 문자열
 /// @param[in] va 가변 인수
 /// @return 결과 문자열
 /// @note 반환 값은 qn_free 함수로 해제해야 한다
 /// @see qn_free
-///
 QSAPI char* qn_vapsprintf(const char* fmt, va_list va);
+
 /// @brief 문자열을 포맷한다
 /// @param[out] out 출력 문자열의 버퍼 포인터. 문자열 길이만 얻으려면 NULL로 설정
 /// @param[in] len 출력 문자열의 버퍼 포인터의 크기
 /// @param[in] fmt 포맷 문자열
 /// @param ... 인수
 /// @return 결과 문자열의 길이
-///
 QSAPI int qn_snprintf(char* restrict out, size_t len, const char* restrict fmt, ...);
+
 /// @brief 문자열을 포맷하고 메모리 할당으로 만든다
 /// @param[out] out 출력 문자열의 버퍼 포인터. 이 값이 NULL이면 곤린하다
 /// @param[in] fmt 포맷 문자열
@@ -636,419 +634,240 @@ QSAPI int qn_snprintf(char* restrict out, size_t len, const char* restrict fmt, 
 /// @return 결과 문자열의 길이
 /// @note out 인수로 만든 문자열은 qn_free 함수로 해제해야 한다
 /// @see qn_free
-///
 QSAPI int qn_asprintf(char** out, const char* fmt, ...);
+
 /// @brief 문자열을 포맷하고 메모리를 반환한다
 /// @param[in] fmt 포맷 문자열
 /// @param ... 인수
 /// @return 결과 문자열
 /// @note 반환 값은 qn_free 함수로 해제해야 한다
 /// @see qn_free
-///
 QSAPI char* qn_apsprintf(const char* fmt, ...);
+
 /// @brief 글자로 채우기
 /// @param[in,out] dest 채울 대상 버퍼
 /// @param[in] pos 채울 시작 위치
 /// @param[in] end 채울 끝 위치
 /// @param[in] ch 채울 문자
 /// @return 마지막으로 채운 곳 + 1의 위치
-///
 QSAPI size_t qn_strfll(char* dest, size_t pos, size_t end, int ch);
+
 /// @brief 문자열 해시
 /// @param[in] p 해시할 문자열
 /// @return 해시 값
-///
 QSAPI size_t qn_strhash(const char* p);
+
 /// @brief 문자열 해시 (대소문자 구별 안함
 /// @param[in] p 해시할 문자열
 /// @return 해시 값
-///
 QSAPI size_t qn_strihash(const char* p);
+
 /// @brief 문자열에서 문자열을 찾는다
 /// @param[in] p 대상 문자열
 /// @param[in] c 찾을 문자열
 /// @return 찾을 경우 대상 문자열의 위치 포인터
 /// @retval NULL 못 찾았다
-///
 QSAPI const char* qn_strbrk(const char* p, const char* c);
+
 /// @brief 문자열을 특정 위치에서 얻는다
 /// @param[in,out] dest 얻은 문자열 버퍼
-/// @param[in] destsize 얻은 문자열 버퍼 크기
 /// @param[in] src 원본 문자열
 /// @param[in] pos 찾을 위치
 /// @param[in] len 얻을 길이
 /// @return 얻은 문자열 버퍼 그대로
-///
-QSAPI char* qn_strmid(char* restrict dest, size_t destsize, const char* restrict src, size_t pos, size_t len);
+QSAPI char* qn_strmid(char* restrict dest, const char* restrict src, size_t pos, size_t len);
+
 /// @brief 문자열에서 왼쪽 공백을 없앤다
 /// @param[in,out] dest 대상 문자열
 /// @return 대상 문자열 그대로
-///
 QSAPI char* qn_strltm(char* dest);
+
 /// @brief 문자열에서 오른쪽 공백을 없앤다
 /// @param[in,out] dest 대상 문자열
 /// @return 대상 문자열 그대로
-///
 QSAPI char* qn_strrtm(char* dest);
+
 /// @brief 문자열에서 왼쪽/오른쪽 공백을 없앤다
 /// @param[in,out] dest 대상 문자열
 /// @return 대상 문자열 그대로
-///
 QSAPI char* qn_strtrm(char* dest);
+
 /// @brief 대상 문자열에서 지정한 문자들을 지운다
 /// @param[in,out] p 대상 문자열
 /// @param[in] rmlist 지울 문자 배열
 /// @return 대상 문자열 그대로
-///
 QSAPI char* qn_strrem(char* restrict p, const char* restrict rmlist);
+
 /// @brief 문자열을 복사하고 대상 문자열을 끝부분을 반환한다
 /// @param[in,out] dest 대상 문자열
 /// @param[in] src 복사할 문자열
 /// @return 복사한 다음 대상 문자열 끝부분
 /// @details strcpy(dest, src); dest = dest + strlen(src) 라고 보면 된다
-///
 QSAPI char* qn_stpcpy(char* restrict dest, const char* restrict src);
+
 /// @brief 문자열을 복제한다
 /// @param p 복제할 문자열
 /// @return 복제한 새로운 문자열
 /// @retval NULL 인수 p 가 NULL
 /// @note qn_free 함수로 헤재해야 한다
-///
 QSAPI char* qn_strdup(const char* p);
+
 /// @brief 여러 문자열을 이어서 붙인다
 /// @param[in] p 첫 문자열
 /// @param ... 인수
 /// @note qn_free 함수로 해제해야 한다
-///
 QSAPI char* qn_strcat(const char* p, ...);
+
 /// @brief 문자열에서 와일드 카드 찾기
 /// @param[in] string 대상 문자열
 /// @param[in] wild 찾을 와일드 카드
 /// @return 대상 문자열에 있으면 참
 /// @copyright Written by Jack Handy - jakkhandy@hotmail.com (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
-///
 QSAPI bool qn_strwcm(const char* string, const char* wild);
+
 /// @brief 문자열에서 와일드 카드 찾기 (대소문자 구분 안함)
 /// @param[in] string 대상 문자열
 /// @param[in] wild 찾을 와일드 카드
 /// @return 대상 문자열에 있으면 참
 /// @copyright Written by Jack Handy - jakkhandy@hotmail.com (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
-///
 QSAPI bool qn_striwcm(const char* string, const char* wild);
+
 /// @brief 문자열을 찾는다
 /// @param[in] src 대상 문자열
 /// @param[in] find 찾을 문자열
 /// @param[in] index 찾기 시작할 대상 문자열의 위치
 /// @return 찾으면 찾은 위치를 반환
 /// @retval -1 찾지 못했을 때
-///
 QSAPI int qn_strfnd(const char* src, const char* find, size_t index);
+
 /// @brief 문자열이 서로 같은지 비교
 /// @param p1 왼쪽 문자열
 /// @param p2 오른쪽 문자열
 /// @return 서로 같으면 참을 반환
-///
 QSAPI bool qn_streqv(const char* p1, const char* p2);
+
 /// @brief 문자열이 서로 같은지 대소문자 무시하고 비교
 /// @param p1 왼쪽 문자열
 /// @param p2 오른쪽 문자열
 /// @return 서로 같으면 참을 반환
-///
 QSAPI bool qn_strieqv(const char* p1, const char* p2);
+
 /// @brief 32비트 정수를 문자열로 변환
 /// @param p 문자열 버퍼
-/// @param size 문자열 버퍼 크기
 /// @param n 32비트 정수
 /// @param base 진수
 /// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
-///
-QSAPI int qn_itoa(char* p, int size, int n, uint base, bool upper);
+QSAPI int qn_itoa(char* p, int n, uint base, bool upper);
+
 /// @brief 64비트 정수를 문자열로 변환
 /// @param p 문자열 버퍼
-/// @param size 문자열 버퍼 크기
 /// @param n 64비트 정수
 /// @param base 진수
 /// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
-///
-QSAPI int qn_lltoa(char* p, int size, llong n, uint base, bool upper);
+QSAPI int qn_lltoa(char* p, llong n, uint base, bool upper);
+
 /// @brief 문자열을 32비트 정수로
 /// @param p 문자열
 /// @param base 진수
 /// @return 바꾼 정수값
-///
 QSAPI uint qn_strtoi(const char* p, uint base);
+
 /// @brief 문자열을 64비트 정수로
 /// @param p 문자열
 /// @param base 진수
 /// @return 바꾼 정수값
-///
 QSAPI ullong qn_strtoll(const char* p, uint base);
 
-#ifdef _MSC_VER
-#define qn_strcpy			strcpy_s						/// @brief strcpy
-#define qn_strncpy			strncpy_s						/// @brief strncpy
-#define qn_strupr			_strupr_s						/// @brief strupr
-#define qn_strlwr			_strlwr_s						/// @brief strlwr
-#define qn_strncmp			strncmp							/// @brief strncmp
-#define qn_stricmp			_stricmp						/// @brief stricmp
-#define qn_strnicmp			_strnicmp						/// @brief strnicmp
-#else
-#define qn_strcpy(a,b,c)	strcpy(a,c)
-#define qn_strncpy(a,b,c,d)	strncpy(a,c,d)
-QSAPI char* qn_strupr(char* p, size_t size);
-QSAPI char* qn_strlwr(char* p, size_t size);
+/// @brief 문자열 복사
+/// @param p 대상
+/// @param src 원본
+/// @return 대상 포인터
+QSAPI char* qn_strcpy(char* p, const char* src);
+
+/// @brief 문자열 복사
+/// @param p 대상
+/// @param src 원본
+/// @return 대상에서 복사한 길이 만큼 위치
+QSAPI char* qn_strpcpy(char* p, const char* src);
+
+/// @brief 문자열 길이 만큼 복사
+/// @param p 대상
+/// @param src 원본
+/// @param len 복사할 길이
+/// @return 대상 포인터
+QSAPI char* qn_strncpy(char* p, const char* src, size_t len);
+
+/// @brief 문자열을 대문자로
+/// @param p 대문자로 바꿀 문자열
+/// @return 대상 포인터
+QSAPI char* qn_strupr(char* p);
+
+/// @brief 문자열을 소문자로
+/// @param p 소문자로 바꿀 문자열
+/// @return 대상 포인터
+QSAPI char* qn_strlwr(char* p);
+
+/// @brief 문자열 길이 만큼 비교
+/// @param p1 문자열1
+/// @param p2 문자열2
+/// @param len 비교할 길이
+/// @return 문자열 비교 값 (0보다 작으면 문자열1이, 0보다 크면 문자열2가 크다. 0이면 같음)
 QSAPI int qn_strncmp(const char* p1, const char* p2, size_t len);
+
+/// @brief 문자열을 대소문자 구별없이 비교
+/// @param p1 문자열1
+/// @param p2 문자열2
+/// @return 문자열 비교 값 (0보다 작으면 문자열1이, 0보다 크면 문자열2가 크다. 0이면 같음)
 QSAPI int qn_stricmp(const char* p1, const char* p2);
+
+/// @brief 문자열을 길이 만큼 대소문자 구별없이 비교
+/// @param p1 문자열1
+/// @param p2 문자열2
+/// @param len 비교할 길이
+/// @return 문자열 비교 값 (0보다 작으면 문자열1이, 0보다 크면 문자열2가 크다. 0이면 같음)
 QSAPI int qn_strnicmp(const char* p1, const char* p2, size_t len);
-#endif
 
-/// @brief 가변 포맷 문자열
-/// @param[out] out 출력 문자열 버퍼. 문자열 길이만 얻으려면 NULL로 설정
-/// @param[in] len 출력 문자열 버퍼 크기
-/// @param[in] fmt 포맷 문자열
-/// @param[in] va 가변 인수
-/// @return 결과 문자열의 길이
-///
-QSAPI int qn_vsnwprintf(wchar* restrict out, size_t len, const wchar* restrict fmt, va_list va);
-/// @brief 가변 포맷 문자열을 메모리 할당으로 만든다
-/// @param[out] out 출력 문자열의 버퍼 포인터. 이 값이 NULL이면 곤린하다
-/// @param[in] fmt 포맷 문자열
-/// @param[in] va 가변 인수
-/// @return 결과 문자열의 길이
-/// @note out 인수로 만든 문자열은 qn_free 함수로 해제해야 한다
-/// @see qn_free
-///
-QSAPI int qn_vaswprintf(wchar** out, const wchar* fmt, va_list va);
-/// @brief 가변 포맷 문자열을 메모리 할당으로 만들어 반환한다
-/// @param[in] fmt 포맷 문자열
-/// @param[in] va 가변 인수
-/// @return 결과 문자열
-/// @note 반환 값은 qn_free 함수로 해제해야 한다
-/// @see qn_free
-///
-QSAPI wchar* qn_vapswprintf(const wchar* fmt, va_list va);
-/// @brief 문자열을 포맷한다
-/// @param[out] out 출력 문자열의 버퍼 포인터. 문자열 길이만 얻으려면 NULL로 설정
-/// @param[in] len 출력 문자열의 버퍼 포인터의 크기
-/// @param[in] fmt 포맷 문자열
-/// @param ... 인수
-/// @return 결과 문자열의 길이
-///
-QSAPI int qn_snwprintf(wchar* restrict out, size_t len, const wchar* restrict fmt, ...);
-/// @brief 문자열을 포맷하고 메모리 할당으로 만든다
-/// @param[out] out 출력 문자열의 버퍼 포인터. 이 값이 NULL이면 곤린하다
-/// @param[in] fmt 포맷 문자열
-/// @param ... 인수
-/// @return 결과 문자열의 길이
-/// @note out 인수로 만든 문자열은 qn_free 함수로 해제해야 한다
-/// @see qn_free
-///
-QSAPI int qn_aswprintf(wchar** out, const wchar* restrict fmt, ...);
-/// @brief 문자열을 포맷하고 메모리를 반환한다
-/// @param[in] fmt 포맷 문자열
-/// @param ... 인수
-/// @return 결과 문자열
-/// @note 반환 값은 qn_free 함수로 해제해야 한다
-/// @see qn_free
-///
-QSAPI wchar* qn_apswprintf(const wchar* fmt, ...);
-/// @brief 글자로 채우기
-/// @param[in,out] dest 채울 대상 버퍼
-/// @param[in] pos 채울 시작 위치
-/// @param[in] end 채울 끝 위치
-/// @param[in] ch 채울 문자
-/// @return 마지막으로 채운 곳 + 1의 위치
-///
-QSAPI size_t qn_wcsfll(wchar* dest, size_t pos, size_t end, int ch);
-/// @brief 문자열 해시
-/// @param[in] p 해시할 문자열
-/// @return 해시 값
-///
-QSAPI size_t qn_wcshash(const wchar* p);
-/// @brief 문자열 해시 (대소문자 구별 안함
-/// @param[in] p 해시할 문자열
-/// @return 해시 값
-///
-QSAPI size_t qn_wcsihash(const wchar* p);
-/// @brief 문자열에서 문자열을 찾는다
-/// @param[in] p 대상 문자열
-/// @param[in] c 찾을 문자열
-/// @return 찾을 경우 대상 문자열의 위치 포인터
-/// @retval NULL 찾지 못했다
-///
-QSAPI const wchar* qn_wcsbrk(const wchar* p, const wchar* c);
-/// @brief 문자열을 특정 위치에서 얻는다
-/// @param[in,out] dest 얻은 문자열 버퍼
-/// @param[in] destsize 얻은 문자열 버퍼 크기
-/// @param[in] src 원본 문자열
-/// @param[in] pos 찾을 위치
-/// @param[in] len 얻을 길이
-/// @return 얻은 문자열 버퍼 그대로
-///
-QSAPI wchar* qn_wcsmid(wchar* restrict dest, size_t destsize, const wchar* restrict src, size_t pos, size_t len);
-/// @brief 문자열에서 왼쪽 공백을 없앤다
-/// @param[in,out] dest 대상 문자열
-/// @return 대상 문자열 그대로
-///
-QSAPI wchar* qn_wcsltm(wchar* dest);
-/// @brief 문자열에서 오른쪽 공백을 없앤다
-/// @param[in,out] dest 대상 문자열
-/// @return 대상 문자열 그대로
-///
-QSAPI wchar* qn_wcsrtm(wchar* dest);
-/// @brief 문자열에서 왼쪽/오른쪽 공백을 없앤다
-/// @param[in,out] dest 대상 문자열
-/// @return 대상 문자열 그대로
-///
-QSAPI wchar* qn_wcstrm(wchar* dest);
-/// @brief 대상 문자열에서 지정한 문자들을 지운다
-/// @param[in,out] p 대상 문자열
-/// @param[in] rmlist 지울 문자 배열
-/// @return 대상 문자열 그대로
-///
-QSAPI wchar* qn_wcsrem(wchar* restrict p, const wchar* restrict rmlist);
-/// @brief 문자열을 복사하고 대상 문자열을 끝부분을 반환한다
-/// @param[in,out] dest 대상 문자열
-/// @param[in] src 복사할 문자열
-/// @return 복사한 다음 대상 문자열 끝부분
-/// @details wcscpy(dest, src); dest = dest + wcslen(src) 라고 보면 된다
-///
-QSAPI wchar* qn_wcpcpy(wchar* restrict dest, const wchar* restrict src);
-/// @brief 문자열을 복제한다
-/// @param p 복제할 문자열
-/// @return 복제한 새로운 문자열
-/// @retval NULL 인수 p 가 NULL
-/// @note qn_free 함수로 헤재해야 한다
-///
-QSAPI wchar* qn_wcsdup(const wchar* p);
-/// @brief 여러 문자열을 이어서 붙인다
-/// @param[in] p 첫 문자열
-/// @param ... 이어 붙일 문자열들
-/// @note qn_free 함수로 해제해야 한다
-///
-QSAPI wchar* qn_wcscat(const wchar* p, ...);
-/// @brief 문자열에서 와일드 카드 찾기
-/// @param[in] string 대상 문자열
-/// @param[in] wild 찾을 와일드 카드
-/// @return 대상 문자열에 있으면 참
-/// @copyright Written by Jack Handy - jakkhandy@hotmail.com (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
-///
-QSAPI bool qn_wcswcm(const wchar* string, const wchar* wild);
-/// @brief 문자열에서 와일드 카드 찾기 (대소문자 구분 안함)
-/// @param[in] string 대상 문자열
-/// @param[in] wild 찾을 와일드 카드
-/// @return 대상 문자열에 있으면 참
-/// @copyright Written by Jack Handy - jakkhandy@hotmail.com (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
-///
-QSAPI bool qn_wcsiwcm(const wchar* string, const wchar* wild);
-/// @brief 문자열을 찾는다
-/// @param[in] src 대상 문자열
-/// @param[in] find 찾을 문자열
-/// @param[in] index 찾기 시작할 대상 문자열의 위치
-/// @return 찾으면 찾은 위치를. 찾지 못하면 -1
-///
-QSAPI int qn_wcsfnd(const wchar* src, const wchar* find, size_t index);
-/// @brief 문자열이 서로 같은지 비교
-/// @param p1 왼쪽 문자열
-/// @param p2 오른쪽 문자열
-/// @return 서로 같으면 참을 반환
-///
-QSAPI bool qn_wcseqv(const wchar* p1, const wchar* p2);
-/// @brief 문자열이 서로 같은지 대소문자 무시하고 비교
-/// @param p1 왼쪽 문자열
-/// @param p2 오른쪽 문자열
-/// @return 서로 같으면 참을 반환
-///
-QSAPI bool qn_wcsieqv(const wchar* p1, const wchar* p2);
-/// @brief 32비트 정수를 문자열로 변환
-/// @param p 문자열 버퍼
-/// @param size 문자열 버퍼 크기
-/// @param n 32비트 정수
-/// @param base 진수
-/// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
-///
-QSAPI int qn_itow(wchar* p, int size, int n, uint base, bool upper);
-/// @brief 64비트 정수를 문자열로 변환
-/// @param p 문자열 버퍼
-/// @param size 문자열 버퍼 크기
-/// @param n 64비트 정수
-/// @param base 진수
-/// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
-///
-QSAPI int qn_lltow(wchar* p, int size, llong n, uint base, bool upper);
-/// @brief 문자열을 32비트 정수로
-/// @param p 문자열
-/// @param base 진수
-/// @return 바꾼 정수값
-///
-QSAPI uint qn_wcstoi(const wchar* p, uint base);
-/// @brief 문자열을 64비트 정수로
-/// @param p 문자열
-/// @param base 진수
-/// @return 바꾼 정수값
-///
-QSAPI ullong qn_wcstoll(const wchar* p, uint base);
-
-#ifdef _MSC_VER
-#define qn_wcscpy			wcscpy_s						/// @brief wcscpy
-#define qn_wcsncpy			wcsncpy_s						/// @brief wcsncpy
-#define qn_wcsupr			_wcsupr_s						/// @brief wcsupr
-#define qn_wcslrw			_wcslwr_s						/// @brief wcslwr
-#define qn_wcsncmp			wcsncmp							/// @brief wcsncmp
-#define qn_wcsicmp			_wcsicmp						/// @brief wcsicmp
-#define qn_wcsnicmp			_wcsnicmp						/// @brief wcsnicmp
-#else
-#define qn_wcscpy(a,b,c)	wcscpy(a,c)
-#define qn_wcsncpy(a,b,c,d)	wcsncpy(a,c,d)
-QSAPI wchar* qn_wcsupr(wchar* p, size_t size);
-QSAPI wchar* qn_wcslwr(wchar* p, size_t size);
-QSAPI int qn_wcsncmp(const wchar* p1, const wchar* p2, size_t len);
-QSAPI int qn_wcsicmp(const wchar* p1, const wchar* p2);
-QSAPI int qn_wcsnicmp(const wchar* p1, const wchar* p2, size_t len);
-#endif
 
 /// @brief UTF-8 문자를 UCS-4 문자로.
 /// @param[in] p utf8 문자.
 /// @return ucs4 문자.
-///
 QSAPI uchar4 qn_u8cbn(const char* p);
+
 /// @brief UTF-8 다음 글자
 /// @param[in] s utf8 문자열
 /// @return 다음 글자 위치
-///
 QSAPI const char* qn_u8nch(const char* s);
+
 /// @brief UTF-8 글자 길이
 /// @param[in] s utf8 문자열
 /// @author cp_strlen_utf8 (http://www.daemonology.net/blog/2008-06-05-faster-utf8-strlen.html)
-///
 QSAPI size_t qn_u8len(const char* s);
+
 /// @brief UTF-8 문자열 복사
 /// @param dest 대상 문자열
 /// @param src 원본 문자열 
 /// @param len 복사할 길이
 /// @return 대상 문자열 버퍼 그대로
-///
 QSAPI char* qn_u8ncpy(char* restrict dest, const char* restrict src, size_t len);
+
 /// @brief UTF-8 문자열 복사
 /// @param dest 대상 문자열
 /// @param src 원본 문자열
 /// @param len 복사할 길이
 /// @return 대상 문자열의 길이
-///
 QSAPI size_t qn_u8lcpy(char* restrict dest, const char* restrict src, size_t len);
 
 /// @brief UCS-4 문자를 UTF-8 문자로
 /// @param[in] c ucs4 문자.
 /// @param[out] out	utf8 문자가 들어갈 배열. 최소 6개 항목의 배열이어야 한다
 /// @return utf8문자를 구성하는 문자열의 길이.
-///
 QSAPI int qn_u32ucb(uchar4 c, char* out);
+
 /// @brief UTF-16 문자를 UTF-8 문자로
 /// @param[in] high UTF-16 상위 서로게이트
 /// @param[in] low UTF-16 하위 서로게이트
 /// @param[out] out	utf8 문자가 들어갈 배열. 최소 6개 항목의 배열이어야 한다
 /// @return utf8문자를 구성하는 문자열의 길이.
-///
 QSAPI int qn_u16ucb(uchar2 high, uchar2 low, char* out);
 
 /// @brief 멀티바이트 문자열을 와이드 문자열로 변환
@@ -1059,8 +878,8 @@ QSAPI int qn_u16ucb(uchar2 high, uchar2 low, char* out);
 /// @return 와이드 문자열의 길이
 /// @remark 와이드 문자열 버퍼가 NULL이면 최종 문자열 길이만 얻는다
 /// @see mbstowcs
-///
 QSAPI size_t qn_mbstowcs(wchar* restrict outwcs, size_t outsize, const char* restrict inmbs, size_t insize);
+
 /// @brief 와이드 문자열을 멀티바이트 문자열로 변환
 /// @param[out] outmbs 출력할 멀티바이트 문자열 버퍼 (NULL 가능)
 /// @param[in] outsize 멀티바이트 문자열 버퍼 크기
@@ -1069,111 +888,110 @@ QSAPI size_t qn_mbstowcs(wchar* restrict outwcs, size_t outsize, const char* res
 /// @return 멀티바이트 문자열의 길이
 /// @remark 멀티바이트 문자열 버퍼가 NULL이면 최종 문자열 길이만 얻는다
 /// @see wcstombs
-///
 QSAPI size_t qn_wcstombs(char* restrict outmbs, size_t outsize, const wchar* restrict inwcs, size_t insize);
+
 /// @brief utf8 -> ucs4 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
 /// @param[out]	dest (널값이 아니면) 대상 버퍼 (ucs4)
 /// @param[in]	destsize 대상 버퍼 크기
 /// @param[in]	src 원본 (utf8)
 /// @param[in]	srclen 원본 길이. 0으로 지정할 수 있음
 /// @return	변환한 길이 또는 변환에 필요한 길이
-///
 QSAPI size_t qn_u8to32(uchar4* restrict dest, size_t destsize, const char* restrict src, size_t srclen);
+
 /// @brief utf8 -> utf16 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
 /// @param[out]	dest (널값이 아니면) 대상 버퍼 (utf16)
 /// @param[in]	destsize 대상 버퍼 크기
 /// @param[in]	src 원본 (utf8)
 /// @param[in]	srclen 원본 길이. 0으로 지정할 수 있음
 /// @return	변환한 길이 또는 변환에 필요한 길이
-///
 QSAPI size_t qn_u8to16(uchar2* restrict dest, size_t destsize, const char* restrict src, size_t srclen);
+
 /// @brief ucs4 -> utf8 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
 /// @param[out]	dest (널값이 아니면) 대상 버퍼 (utf8)
 /// @param[in]	destsize 대상 버퍼 크기
 /// @param[in]	src 원본 (ucs4)
 /// @param[in]	srclen 원본 길이. 0으로 지정할 수 있음
 /// @return	변환한 길이 또는 변환에 필요한 길이
-///
 QSAPI size_t qn_u32to8(char* restrict dest, size_t destsize, const uchar4* restrict src, size_t srclen);
+
 /// @brief utf16 -> utf8 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
 /// @param[out]	dest (널값이 아니면) 대상 버퍼 (utf8)
 /// @param[in]	destsize 대상 버퍼 크기
 /// @param[in]	src 원본 (utf16)
 /// @param[in]	srclen 원본 길이. 0으로 지정할 수 있음
 /// @return	변환한 길이 또는 변환에 필요한 길이
-///
 QSAPI size_t qn_u16to8(char* restrict dest, size_t destsize, const uchar2* restrict src, size_t srclen);
+
 /// @brief utf16 -> ucs4 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
 /// @param[out]	dest (널값이 아니면) 대상 버퍼 (ucs4)
 /// @param[in]	destsize 대상 버퍼 크기
 /// @param[in]	src 원본 (utf16)
 /// @param[in]	srclen 원본 길이. 0으로 지정할 수 있음
 /// @return	변환한 길이 또는 변환에 필요한 길이
-///
 QSAPI size_t qn_u16to32(uchar4* restrict dest, size_t destsize, const uchar2* restrict src, size_t srclen);
+
 /// @brief ucs4 -> utf16 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
 /// @param[out]	dest (널값이 아니면) 대상 버퍼 (utf16)
 /// @param[in]	destsize 대상 버퍼 크기
 /// @param[in]	src 원본 (ucs4)
 /// @param[in]	srclen 원본 길이. 0으로 지정할 수 있음
 /// @return	변환한 길이 또는 변환에 필요한 길이
-///
 QSAPI size_t qn_u32to16(uchar2* restrict dest, size_t destsize, const uchar4* restrict src, size_t srclen);
+
 /// @brief 멀티바이트 문자열 -> 와이드 문자열로 변환하고 버퍼 반환
 /// @param src 원본 문자열
 /// @param srclen 원본 문자열 길이
 /// @return 변환한 버퍼 메모리
 /// @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
-///
 QSAPI wchar* qn_mbstowcs_dup(const char* src, size_t srclen);
+
 /// @brief 와이드 문자열 -> 멀티바이트 문자열로 변환하고 버퍼 반환
 /// @param src 원본 문자열
 /// @param srclen 원본 문자열 길이
 /// @return 변환한 버퍼 메모리
 /// @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
-///
 QSAPI char* qn_wcstombs_dup(const wchar* src, size_t srclen);
+
 /// @brief utf8 -> ucs4로 변환하고 버퍼 반환
 /// @param src 원본 문자열
 /// @param srclen 원본 문자열 길이
 /// @return 변환한 버퍼 메모리
 /// @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
-///
 QSAPI uchar4* qn_u8to32_dup(const char* src, size_t srclen);
+
 /// @brief utf8 -> utf16으로 변환하고 버퍼 반환
 /// @param src 원본 문자열
 /// @param srclen 원본 문자열 길이
 /// @return 변환한 버퍼 메모리
 /// @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
-///
 QSAPI uchar2* qn_u8to16_dup(const char* src, size_t srclen);
+
 /// @brief ucs4 -> utf8로 변환하고 버퍼 반환
 /// @param src 원본 문자열
 /// @param srclen 원본 문자열 길이
 /// @return 변환한 버퍼 메모리
 /// @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
-///
 QSAPI char* qn_u32to8_dup(const uchar4* src, size_t srclen);
+
 /// @brief utf16 -> utf8로 변환하고 버퍼 반환
 /// @param src 원본 문자열
 /// @param srclen 원본 문자열 길이
 /// @return 변환한 버퍼 메모리
 /// @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
-///
 QSAPI char* qn_u16to8_dup(const uchar2* src, size_t srclen);
+
 /// @brief utf16 -> ucs4로 변환하고 버퍼 반환
 /// @param src 원본 문자열
 /// @param srclen 원본 문자열 길이
 /// @return 변환한 버퍼 메모리
 /// @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
-///
 QSAPI uchar4* qn_u16to32_dup(const uchar2* src, size_t srclen);
+
 /// @brief ucs4 -> utf16으로 변환하고 버퍼 반환
 /// @param src 원본 문자열
 /// @param srclen 원본 문자열 길이
 /// @return 변환한 버퍼 메모리
 /// @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
-///
 QSAPI uchar2* qn_u32to16_dup(const uchar4* src, size_t srclen);
 
 
@@ -1276,10 +1094,12 @@ QSAPI QnTimer* qn_timer_new(void);
 /// @brief 타이머 제거
 /// @param[in]	self	타이머 개체
 QSAPI void qn_timer_delete(QnTimer* self);
+
 /// @brief 타이머 리셋
 /// @param[in]	self	타이머 개체
 
 QSAPI void qn_timer_reset(QnTimer* self);
+
 /// @brief 타이머 시작
 /// @param[in]	self	타이머 개체
 
@@ -1313,8 +1133,10 @@ QSAPI void qn_timer_set_cut(QnTimer* self, double cut);
 
 /// @brief 디렉토리
 typedef struct QnDir					QnDir;
+
 /// @brief 파일
 typedef struct QnFile					QnFile;
+
 /// @brief 모듈
 typedef struct QnModule					QnModule;
 
@@ -1595,40 +1417,39 @@ struct QnMlTag
 /// @brief RML을 만든다
 /// @return 만들어진 RML 개체
 /// @retval NULL 문제가 있거나 실패했을 때
-///
 QSAPI QnMlu* qn_mlu_new(void);
+
 /// @brief 파일에서 RML을 만든다
 /// @param[in]	filename	파일의 이름
 /// @return 만들어진 RML 개체
 /// @retval NULL 문제가 있거나 실패했을 때
-///
 QSAPI QnMlu* qn_mlu_new_file(const char* filename);
+
 /// @brief 파일에서 RML을 만든다. 유니코드 파일 이름을 사용한다
 /// @param[in]	filename	파일의 이름
 /// @return 만들어진 RML 개체
 /// @retval NULL 문제가 있거나 실패했을 때
-///
 QSAPI QnMlu* qn_mlu_new_file_l(const wchar* filename);
+
 /// @brief 버퍼에서 RML을 만든다
 /// @param[in]	data	버퍼
 /// @param[in]	size	버퍼 크기
 /// @return 만들어진 RML 개체
 /// @retval NULL 문제가 있거나 실패했을 때
-///
 QSAPI QnMlu* qn_mlu_new_buffer(const void* restrict data, int size);
+
 /// @brief RML을 제거한다
 /// @param[in]	self	Mlu 개체
-///
 QSAPI void qn_mlu_delete(QnMlu* self);
 
 /// @brief 모든 RML 태그를 삭제한다
 /// @param[in]	self	Mlu 개체
-///
 QSAPI void qn_mlu_clean_tags(QnMlu* self);
+
 /// @brief 모든 RML 오류를 삭제한다
 /// @param[in]	self	Mlu 개체
-///
 QSAPI void qn_mlu_clean_errs(QnMlu* self);
+
 /// @brief 버퍼에서 RML을 분석하여 읽는다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	data		버퍼
@@ -1636,77 +1457,74 @@ QSAPI void qn_mlu_clean_errs(QnMlu* self);
 /// @return 분석하고 읽는 것 성공 여부
 /// @retval true 버퍼에서 읽는데 성공
 /// @retval false 버퍼에서 읽을 수가 없다
-///
 QSAPI bool qn_mlu_load_buffer(QnMlu* self, const void* restrict data, int size);
+
 /// @brief RML 내용을 파일로 저장한다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	filename	파일의 이름
 /// @return 파일로 저장 성공 여부
 /// @retval true 저장 성공
 /// @retval false 저장할 수 없었다
-///
 QSAPI bool qn_mlu_write_file(const QnMlu* self, const char* restrict filename);
 
 /// @brief 갖고 있는 최상위 태그의 갯수를 반환한다
 /// @param[in]	self	Mlu 개체
 /// @return	최상위 태그 갯수
-///
 QSAPI int qn_mlu_get_count(const QnMlu* self);
+
 /// @brief 갖고 있는 오류를 순번으로 얻는다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	at			오류 순번
 /// @return at 번째 오류 메시지
 /// @retval NULL 더 이상 오류가 없다
-///
 QSAPI const char* qn_mlu_get_err(const QnMlu* self, int at);
+
 /// @brief 최상위 태그를 찾는다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	name		태그 이름
 /// @return	이름에 해당하는 태그 개체
 /// @retval NULL 이름에 해당하는 태그가 없다
-///
 QSAPI QnMlTag* qn_mlu_get_tag(const QnMlu* self, const char* restrict name);
+
 /// @brief 최상위 태그를 순번으로 얻는다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	at			순번
 /// @return at 번째 태그
 /// @retval NULL 해당하는 순번에 개체가 없거나, at 범위 밖이다
-///
 QSAPI QnMlTag* qn_mlu_get_tag_nth(const QnMlu* self, int at);
+
 /// @brief 최상위 태그가 갖고 있는 컨텍스트를 얻는다
 /// @param[in]	self  	개체나 인터페이스의 자기 자신 값
 /// @param[in]	name	  	태그 이름
 /// @param[in]	ifnotexist	태그가 존재하지 않을 경우 반환할 값
 /// @return 태그 컨텍스트
 /// @retval ifnotexist 이름에 해당하는 태그가 없거나 문제가 있다
-///
 QSAPI const char* qn_mlu_get_context(const QnMlu* self, const char* restrict name, const char* restrict ifnotexist);
+
 /// @brief 최상위 태그가 갖고 있는 컨텍스트를 얻는다. 태그는 순번으로 검사한다
 /// @param[in]	self  	개체나 인터페이스의 자기 자신 값
 /// @param[in]	at		  	순번
 /// @param[in]	ifnotexist	태그가 존재하지 않을 경우 반환할 값
 /// @return 태그 컨텍스트
 /// @retval ifnotexist 이름에 해당하는 태그가 없거나 문제가 있다
-///
 QSAPI const char* qn_mlu_get_context_nth(const QnMlu* self, int at, const char* restrict ifnotexist);
+
 /// @brief 지정한 태그가 있나 검사한다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	tag	(널값이 아님) 지정한 태그
 /// @return 지정한 태그가 몇번째 인가 반환
 /// @retval -1 지정한 태그가 없다
-///
 QSAPI int qn_mlu_contains(const QnMlu* self, QnMlTag* restrict tag);
 
 /// @brief 최상위 태그에 대해 ForEach를 수행한다
 /// @param[in]	self		개체나 인터페이스의 자기 자신 값
 /// @param[in]	func	콜백 함수
 /// @param	userdata		콜백 데이터
-///
 QSAPI void qn_mlu_foreach(const QnMlu* self, void(*func)(void*, QnMlTag*), void* userdata);
+
 /// @brief 최상위 태그에 대해 LoopEach를 수행한다
 /// @param[in]	self		개체나 인터페이스의 자기 자신 값
 /// @param[in]	func	콜백 함수
-///
 QSAPI void qn_mlu_each(const QnMlu* self, void(*func)(QnMlTag* tag));
 
 /// @brief 태그를 추가한다
@@ -1716,30 +1534,30 @@ QSAPI void qn_mlu_each(const QnMlu* self, void(*func)(QnMlTag* tag));
 /// @param[in]	line		줄번호
 /// @return 추가한 새 태그
 /// @retval NULL 태그를 추가할 수 없었다
-///
 QSAPI QnMlTag* qn_mlu_add(QnMlu* self, const char* restrict name, const char* restrict context, int line);
+
 /// @brief 태그를 추가한다
 /// @param[in]	self   	Ml 개체
 /// @param[in]	tag	(널값이 아님) 추가할 태그
 /// @return 추가한 새 태그
 /// @retval NULL 태그를 추가할 수 없었다
-///
 QSAPI QnMlTag* qn_mlu_add_tag(QnMlu* self, QnMlTag* restrict tag);
+
 /// @brief 태그를 제거한다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	name		태그 이름
 /// @param[in]	is_all   	같은 이름 태그를 모두 지우려면 참으로 넣는다
 /// @return	지운 태그의 갯수
-///
 QSAPI int qn_mlu_remove(QnMlu* self, const char* restrict name, bool is_all);
+
 /// @brief 태그를 순번으로 제거한다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	at			순번
 /// @return 태그 제거 여부
 /// @retval true 제거 성공
 /// @retval false 제거 실패
-///
 QSAPI bool qn_mlu_remove_nth(QnMlu* self, int at);
+
 /// @brief 태그를 제거한다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	tag	(널값이 아님) 지울 태그
@@ -1747,28 +1565,25 @@ QSAPI bool qn_mlu_remove_nth(QnMlu* self, int at);
 /// @return	태그 제거 여부
 /// @retval true 태그 제거 성공
 /// @retval false 태그 제거 실패
-///
 QSAPI bool qn_mlu_remove_tag(QnMlu* self, QnMlTag* restrict tag, bool is_delete);
 
 /// @brief 오류값을 추가한다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	msg			메시지
-///
 QSAPI void qn_mlu_add_err(QnMlu* self, const char* restrict msg);
+
 /// @brief 오류값을 포맷 방식으로 추가한다
 /// @param[in]	self	Mlu 개체
 /// @param[in]	fmt			포맷 문자열
 /// @param ...
-///
 QSAPI void qn_mlu_add_errf(QnMlu* self, const char* restrict fmt, ...);
+
 /// @brief 갖고 있는 오류를 디버그 콘솔로 출력한다
 /// @param[in]	self	Mlu 개체
-///
 QSAPI void qn_mlu_print_err(const QnMlu* self);
 
 /// @brief RML 정보 구성 내용을 디버그 콘솔로 출력한다
 /// @param[in]	self	Mlu 개체
-///
 QSAPI void qn_mlu_print(const QnMlu* self);
 
 // tag
@@ -1777,11 +1592,10 @@ QSAPI void qn_mlu_print(const QnMlu* self);
 /// @param[in]	name	태그 이름
 /// @return	만들어지느 태그 노드
 /// @retval NULL 태그 노드를 만들 수가 없었다
-///
 QSAPI QnMlTag* qn_mltag_new(const char* name);
+
 /// @brief 태그 노드를 제거한다
 /// @param[in]	self	MlTag 개체
-///
 QSAPI void qn_mltag_delete(QnMlTag* self);
 
 // tag - context
@@ -1790,13 +1604,12 @@ QSAPI void qn_mltag_delete(QnMlTag* self);
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	cntx	   	컨텍스트
 /// @param[in]	size	   	컨텍스트의 크기
-///
 QSAPI void qn_mltag_add_context(QnMlTag* ptr, const char* restrict cntx, int size);
+
 /// @brief 태그에 내용을 쓴다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	cntx 컨텍스트
 /// @param[in]	size 컨텍스트의 크기
-///
 QSAPI void qn_mltag_set_context(QnMlTag* ptr, const char* restrict cntx, int size);
 
 // tag - sub
@@ -1804,45 +1617,45 @@ QSAPI void qn_mltag_set_context(QnMlTag* ptr, const char* restrict cntx, int siz
 /// @brief 하부 태그의 갯수를 얻는다
 /// @param[in]	ptr	MlTag 개체
 /// @return	하부 태그의 갯수
-///
 QSAPI int qn_mltag_get_sub_count(QnMlTag* ptr);
+
 /// @brief 하부 태그를 찾는다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	name	   	찾을 태그 이름
 /// @return 이름에 해당하는 태그
 /// @retval NULL 이름에 해당하는 태그가 없다
-///
 QSAPI QnMlTag* qn_mltag_get_sub(QnMlTag* ptr, const char* restrict name);
+
 /// @brief 하부 태그를 순번으로 찾는다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	at		   	순번
 /// @return 순번에 해당하는 태그
 /// @retval NULL 순번에 해당하는 태그가 없거나 범위 밖이다
-///
 QSAPI QnMlTag* qn_mltag_get_sub_nth(QnMlTag* ptr, int at);
+
 /// @brief 하부 태그의 컨텍스트를 얻는다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	name	   	태그 이름
 /// @param[in]	ifnotexist 	태그를 찾을 수 없으면 반환할 값
 /// @return 태그의 컨텍스트
 /// @retval ifnotexist 태그가 찾을 수 없다
-///
 QSAPI const char* qn_mltag_get_sub_context(QnMlTag* ptr, const char* restrict name, const char* restrict ifnotexist);
+
 /// @brief 하부 태그의 컨텍스트를 순번으로 얻는다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	at			순번
 /// @param[in]	ifnotexist 	태그를 찾을 수 없으면 반환할 값
 /// @return	서브 컨텍스트 내용
 /// @retval ifnotexist 서브 컨텍스트를 찾을 수 없다
-///
 QSAPI const char* qn_mltag_get_sub_context_nth(QnMlTag* ptr, int at, const char* restrict ifnotexist);
+
 /// @brief 지정한 태그를 하부 태그로 갖고 있나 조사
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	tag	찾을 태그
 /// @return 하부 태그의 인덱스 순번
 /// @retval -1 해당하는 태그가 없다
-///
 QSAPI int qn_mltag_contains_sub(QnMlTag* restrict ptr, QnMlTag* restrict tag);
+
 /// @brief 하부 태그를 추가한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	name	   	태그 이름
@@ -1850,30 +1663,30 @@ QSAPI int qn_mltag_contains_sub(QnMlTag* restrict ptr, QnMlTag* restrict tag);
 /// @param[in]	line	   	줄 번호
 /// @return 추가한 하부 태그
 /// @retval NULL 하부 태그를 추가할 수 없다
-///
 QSAPI QnMlTag* qn_mltag_add_sub(QnMlTag* ptr, const char* restrict name, const char* restrict context, int line);
+
 /// @brief 하부 태그를 추가한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	tag	추가할 태그
 /// @return 추가한 하부 태그
 /// @retval NULL 하부 태그를 추가할 수 없다
-///
 QSAPI QnMlTag* qn_mltag_add_sub_tag(QnMlTag* restrict ptr, QnMlTag* restrict tag);
+
 /// @brief 지정한 이름의 태그를 제거한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	name	   	태그 이름
 /// @param[in]	is_all	   	같은 이름의 모든 태그를 지우려면 참으로 넣는다
 /// @return	지운 태그의 갯수
-///
 QSAPI int qn_mltag_remove_sub(QnMlTag* ptr, const char* restrict name, bool is_all);
+
 /// @brief 지정한 순번의 하부 태그를 삭제한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	at			순번
 /// @return 하부 태그 삭제 여부
 /// @retval true 태그를 지웠다
 /// @retval false 태그를 지울 수 없다
-///
 QSAPI bool qn_mltag_remove_sub_nth(QnMlTag* ptr, int at);
+
 /// @brief 지정한 하부 태그를 삭제한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in,out]	tag	(널값이 아님) 지울 태그
@@ -1881,19 +1694,17 @@ QSAPI bool qn_mltag_remove_sub_nth(QnMlTag* ptr, int at);
 /// @return 하부 태그 삭제 여부
 /// @retval true 태그를 지웠다
 /// @retval false 태그를 지울 수 없다
-///
 QSAPI bool qn_mltag_remove_sub_tag(QnMlTag* restrict ptr, QnMlTag* restrict tag, bool is_delete);
 
 /// @brief 하부 태그에 대해 ForEach 연산을 수행한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	func	콜백 함수
 /// @param	userdata		콜백 데이터
-///
 QSAPI void qn_mltag_foreach_sub(QnMlTag* ptr, void(*func)(void* userdata, QnMlTag* tag), void* userdata);
+
 /// @brief 하부 태그에 대해 LoopEach 연산을 수행한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	func	콜백 함수
-///
 QSAPI void qn_mltag_each_sub(QnMlTag* ptr, void(*func)(QnMlTag* tag));
 
 // tag - arg
@@ -1901,16 +1712,16 @@ QSAPI void qn_mltag_each_sub(QnMlTag* ptr, void(*func)(QnMlTag* tag));
 /// @brief 태그의 인수의 개수를 반환한다
 /// @param[in]	ptr	MlTag 개체
 /// @return	인수의 개수
-///
 QSAPI int qn_mltag_get_arity(QnMlTag* ptr);
+
 /// @brief 인수를 이름으로 찾는다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	name	   	인수 이름
 /// @param[in]	if_not_exist 	인수를 찾지 못하면 반환할 값
 /// @return 이름에 해당하는 태그의 인수
 /// @retval ifnotexist 이름에 해당하는 인수 값이 없다
-///
 QSAPI const char* qn_mltag_get_arg(QnMlTag* ptr, const char* restrict name, const char* restrict if_not_exist);
+
 /// @brief 다음 인수를 찾는다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in,out]	index	(널값이 아님) 내부 찾기 인덱스 데이터
@@ -1919,37 +1730,34 @@ QSAPI const char* qn_mltag_get_arg(QnMlTag* ptr, const char* restrict name, cons
 /// @return 다음 인수의 존재 여부
 /// @retval true 다음 인수가 있다
 /// @retval false 다음 인수가 없다
-///
 QSAPI bool qn_mltag_next_arg(QnMlTag* ptr, void** restrict index, const char** restrict name, const char** restrict data);
+
 /// @brief 이름에 해당하는 인수가 있는지 조사한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	name	   	인수 이름
 /// @return 이름에 해당하는 인수 존재 여부
 /// @retval true 인수가 있다
 /// @retval false 인수가 없다
-///
 QSAPI bool qn_mltag_contains_arg(QnMlTag* ptr, const char* restrict name);
 
 /// @brief 인수에 대해 ForEach 연산을 수행한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	func	콜백 함수
 /// @param	userdata		콜백 데이터
-///
 QSAPI void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, char* const* name, char* const* data), void* userdata);
 
 /// @brief 인수를 추가한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	name	   	인수 이름
 /// @param[in]	value	   	인수 값
-///
 QSAPI void qn_mltag_set_arg(QnMlTag* ptr, const char* restrict name, const char* restrict value);
+
 /// @brief 인수를 제거한다
 /// @param[in]	ptr	MlTag 개체
 /// @param[in]	name	   	제거할 인수 이름
 /// @return	인수 제거 여부
 /// @retval true 인수 제거의 성공
 /// @retval false 인수 제거의 실패
-///
 QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* restrict name);
 
 

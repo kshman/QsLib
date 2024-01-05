@@ -91,7 +91,7 @@ QN_INLINE char* qgl_copy_string(char* buf, size_t size, GLenum name)
 	if (s == NULL)
 		buf[0] = '\0';
 	else
-		qn_strncpy(buf, size, s, size - 1);
+		qn_strncpy(buf, s, size - 1);
 	return buf;
 }
 

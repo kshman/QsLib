@@ -101,7 +101,7 @@ static void qn_dbg_buf_va(const char* restrict fmt, va_list va)
 //
 static void qn_dbg_buf_int(const int value)
 {
-	const int len = qn_itoa(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - debug_impl.out_pos, value, 10, true);
+	const int len = qn_itoa(debug_impl.out_buf + debug_impl.out_pos, value, 10, true);
 	debug_impl.out_pos += len;
 }
 

@@ -14,6 +14,7 @@
 #pragma warning(push)
 #pragma warning(disable:4191)
 #endif
+#include "glad_supp.h"
 #include "egl.h"
 #include "gles2.h"
 #ifdef _MSC_VER
