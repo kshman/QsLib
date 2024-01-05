@@ -29,7 +29,7 @@ QgRdh* qg_rdh_new(const char* driver, const char* title, int display, int width,
 	struct rdh_renderer* renderer = &renderers[QN_COUNTOF(renderers) - 1];
 	if (driver != NULL)
 	{
-		for (size_t i = 0; i < QN_COUNTOF(renderers); i++)
+		for (size_t i = 0; i < QN_COUNTOF(renderers) - 1; i++)
 			if (qn_stricmp(renderers[i].name, driver) == 0 || qn_stricmp(renderers[i].alias, driver) == 0)
 			{
 				renderer = &renderer[i];
@@ -43,7 +43,10 @@ QgRdh* qg_rdh_new(const char* driver, const char* title, int display, int width,
 	// 개별 디바이스
 	QgRdh* self = renderer->allocator(flags);
 	if (self == NULL)
+	{
+		qg_close_stub();
 		return NULL;
+	}
 
 	// 뒤에서 쓸지도 모르니 미리 설정
 	qg_rdh_instance = self;

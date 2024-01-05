@@ -245,212 +245,6 @@ static void qn_file_access_parse(const char* mode, QnFileAccess* self, int* flag
 #endif
 }
 
-static void qn_file_access_parse_l(const wchar* mode, QnFileAccess* self, int* flag)
-{
-#ifdef _QN_WINDOWS_
-	self->mode = 0;
-
-	if (mode)
-	{
-		self->access = 0;
-		self->share = FILE_SHARE_READ;
-		self->attr = FILE_ATTRIBUTE_NORMAL;
-
-		for (wchar ch; *mode; ++mode)
-		{
-			switch (*mode)
-			{
-				case L'a':
-					self->mode = OPEN_ALWAYS;
-					self->access = GENERIC_WRITE;
-					*flag = QNFF_WRITE | QNFF_SEEK;
-					break;
-
-				case L'r':
-					self->mode = OPEN_EXISTING;
-					self->access = GENERIC_READ;
-					*flag = QNFF_READ | QNFF_SEEK;
-					break;
-
-				case L'w':
-					self->mode = CREATE_ALWAYS;
-					self->access = GENERIC_WRITE;
-					*flag = QNFF_WRITE | QNFF_SEEK;
-					break;
-
-				case L'+':
-					self->access = GENERIC_WRITE | GENERIC_READ;
-					*flag = QNFF_READ | QNFF_WRITE | QNFF_SEEK;
-					break;
-
-				case L'@':
-					ch = *(mode + 1);
-
-					if (ch == L'R')
-					{
-						self->share = FILE_SHARE_READ;
-						++mode;
-					}
-					else if (ch == L'W')
-					{
-						self->share = FILE_SHARE_WRITE;
-						++mode;
-					}
-					else if (ch == L'+')
-					{
-						self->share = FILE_SHARE_READ | FILE_SHARE_WRITE;
-						++mode;
-					}
-					break;
-
-				case L'!':
-					if (self->mode == CREATE_ALWAYS)
-						self->attr |= FILE_FLAG_DELETE_ON_CLOSE;
-
-					break;
-
-				default:
-					break;
-			}
-		}
-	}
-
-	if (self->mode == 0)
-	{
-		*flag = QNFF_READ | QNFF_SEEK;
-		self->mode = OPEN_EXISTING;
-		self->access = GENERIC_READ;
-		self->attr = FILE_ATTRIBUTE_NORMAL;
-		self->share = FILE_SHARE_READ;
-	}
-#else
-	wchar ch, cm;
-
-	self->mode = 0;
-	self->access = 0;
-
-	if (mode)
-	{
-		for (; *mode; ++mode)
-		{
-			switch (*mode)
-			{
-				case L'a':
-					self->mode = O_WRONLY | O_APPEND | O_CREAT;
-					*flag = QNFF_WRITE | QNFF_SEEK;
-					break;
-
-				case L'r':
-					self->mode = O_RDONLY;
-					*flag = QNFF_READ | QNFF_SEEK;
-					break;
-
-				case L'w':
-					self->mode = O_WRONLY | O_TRUNC | O_CREAT;
-					*flag = QNFF_WRITE | QNFF_SEEK;
-					break;
-
-				case L'+':
-					self->mode |= O_RDWR;
-					*flag = QNFF_READ | QNFF_WRITE | QNFF_SEEK;
-					break;
-
-				case L'@':
-					cm = *(mode + 1);
-
-					if (cm != L'\0')
-					{
-						if (cm == L'U')
-						{
-							ch = *(mode + 2);
-
-							if (ch != L'\0')
-							{
-								if (ch == L'R')
-									self->access |= S_IRUSR;
-								else if (ch == L'W')
-									self->access |= S_IWUSR;
-								else if (ch == L'X')
-									self->access |= S_IXUSR;
-
-								mode++;
-							}
-
-							mode++;
-						}
-						else if (cm == L'G')
-						{
-							ch = *(mode + 2);
-
-							if (ch != L'\0')
-							{
-								if (ch == L'R')
-									self->access |= S_IRGRP;
-								else if (ch == L'W')
-									self->access |= S_IWGRP;
-								else if (ch == L'X')
-									self->access |= S_IXGRP;
-
-								mode++;
-							}
-
-							mode++;
-						}
-						else if (cm == L'O')
-						{
-							ch = *(mode + 2);
-
-							if (ch != L'\0')
-							{
-								if (ch == L'R')
-									self->access |= S_IROTH;
-								else if (ch == L'W')
-									self->access |= S_IWOTH;
-								else if (ch == L'X')
-									self->access |= S_IXOTH;
-
-								mode++;
-							}
-
-							mode++;
-						}
-						else if (iswdigit((wint_t)cm))
-						{
-							const wchar* p = mode + 2;
-
-							while (iswdigit((wint_t)*p))
-								p++;
-
-							if ((p - (mode + 1)) < 63)
-							{
-								wchar sz[64];
-								wcsncpy(sz, (mode + 1), (size_t)(p - (mode + 1)));
-								self->access = qn_wcstoi(sz, 8);
-							}
-
-							mode = p;
-						}
-					}
-
-					break;
-
-				case L'!':
-					break;
-			}
-		}
-	}
-
-	if (self->mode == 0)
-	{
-		self->mode = O_RDONLY;
-		*flag = QNFF_READ | QNFF_SEEK;
-	}
-
-	if (self->access == 0 && (self->mode & O_CREAT) != 0)
-		self->access = (S_IRUSR | S_IWUSR) | (S_IRGRP) | (S_IROTH);
-#endif
-}
-
 //
 QnFile* qn_file_new(const char* restrict filename, const char* restrict mode)
 {
@@ -490,7 +284,14 @@ QnFile* qn_file_new_l(const wchar* restrict filename, const wchar* restrict mode
 	QnFile* self = qn_alloc_1(QnFile);
 	qn_val_if_fail(self, NULL);
 
-	qn_file_access_parse_l(mode, &self->acs, &self->flag);
+	char cmode[64];
+#ifdef _QN_WINDOWS_
+	qn_u16to8(cmode, QN_COUNTOF(cmode), mode, 0);
+#else
+	qn_u32to8(cmode, QN_COUNTOF(cmode), mode, 0);
+#endif
+
+	qn_file_access_parse(cmode, &self->acs, &self->flag);
 
 	char* u8;
 #ifdef _QN_WINDOWS_
@@ -529,7 +330,6 @@ QnFile* qn_file_new_dup(QnFile* src)
 	if (!DuplicateHandle(p, self->fd, p, &d, 0, false, DUPLICATE_SAME_ACCESS))
 	{
 		qn_free(self);
-
 		return NULL;
 	}
 
@@ -540,7 +340,6 @@ QnFile* qn_file_new_dup(QnFile* src)
 	if (self->fd < 0)
 	{
 		qn_free(self);
-
 		return NULL;
 	}
 #endif
@@ -702,11 +501,10 @@ bool qn_file_exist(const char* restrict filename, /*RET-NULLABLE*/bool* is_dir)
 	qn_val_if_fail(filename, false);
 
 #ifdef _QN_WINDOWS_
-	wchar uni[QN_MAX_PATH];
-	qn_u8to16(uni, QN_MAX_PATH - 1, filename, 0);
-
+	wchar* pw = qn_u8to16_dup(filename, 0);
 	WIN32_FIND_DATA ffd = { 0, };
-	const HANDLE h = FindFirstFileEx(uni, FindExInfoStandard, &ffd, FindExSearchNameMatch, NULL, 0);
+	const HANDLE h = FindFirstFileEx(pw, FindExInfoStandard, &ffd, FindExSearchNameMatch, NULL, 0);
+	qn_free(pw);
 
 	if (h == INVALID_HANDLE_VALUE)
 		return false;
@@ -853,7 +651,7 @@ struct QnDir
 	char			file[MAX_PATH];
 #else
 	DIR*			pd;
-	wchar			ufile[QN_MAX_PATH];
+	wchar			ufile[FILENAME_MAX];
 #endif
 };
 
@@ -863,17 +661,16 @@ QnDir* qn_dir_new(const char* path)
 #ifdef _QN_WINDOWS_
 	qn_val_if_fail(path != NULL, NULL);
 
-	wchar uni[MAX_PATH];
-	qn_u8to16(uni, MAX_PATH - 1, path, 0);
-
+	wchar* pw = qn_u8to16_dup(path, 0);
 	WIN32_FILE_ATTRIBUTE_DATA fad = { 0, };
-	if (!GetFileAttributesEx(uni, GetFileExInfoStandard, &fad))
+	if (!GetFileAttributesEx(pw, GetFileExInfoStandard, &fad))
 		return NULL;
 	if (!(fad.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 		return NULL;
 
-	wchar fpath[MAX_PATH];
-	(void)_wfullpath(fpath, uni, MAX_PATH);  // NOLINT
+	wchar fpath[1024];
+	(void)_wfullpath(fpath, pw, QN_COUNTOF(fpath) - 1);  // NOLINT
+	qn_free(pw);
 
 	size_t len = wcslen(fpath) + 1/*슬래시*/ + 1/*서픽스*/ + 1/*널*/;
 	wchar* suffix = qn_alloc(len, wchar);
@@ -926,8 +723,8 @@ QnDir* qn_dir_new_l(const wchar* path)
 	if (!(fad.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 		return NULL;
 
-	wchar fpath[MAX_PATH];
-	(void)_wfullpath(fpath, path, MAX_PATH);
+	wchar fpath[1024];
+	(void)_wfullpath(fpath, path, QN_COUNTOF(fpath) - 1);
 
 	size_t len = wcslen(fpath) + 1/*슬래시*/ + 1/*서픽스*/ + 1/*널*/;
 	wchar* suffix = qn_alloc(len, wchar);
@@ -978,8 +775,10 @@ void qn_dir_delete(QnDir* self)
 		FindClose(self->handle);
 
 	qn_free(self->name);
+	qn_free(self->file);
 #else
 	closedir(self->pd);
+	qn_free(self->ufile);
 #endif
 
 	qn_free(self);
@@ -1017,8 +816,7 @@ const char* qn_dir_read(QnDir* self)
 		if (wcscmp(self->ffd.cFileName, L".") == 0 || wcscmp(self->ffd.cFileName, L"..") == 0)
 			continue;
 
-		qn_u16to8(self->file, MAX_PATH - 1, self->ffd.cFileName, 0);
-
+		qn_u16to8(self->file, QN_COUNTOF(self->file) - 1, self->ffd.cFileName, 0);
 		return self->file;
 	}
 #else
@@ -1075,7 +873,7 @@ const wchar* qn_dir_read_l(QnDir* self)
 		return NULL;
 	else
 	{
-		qn_u8to32((uchar4*)self->ufile, 260 - 1, ent->d_name, 0);
+		qn_u8to32((uchar4*)self->ufile, QN_COUNTOF(self->ufile) - 1, ent->d_name, 0);
 		return self->ufile;
 	}
 #endif

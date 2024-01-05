@@ -3,7 +3,7 @@
 #include "qs_qn.h"
 #include "qs_math.h"
 #include "qs_qg.h"
-#include "../stub/qg_stub.h"
+#include "qg/stub/qg_stub.h"
 
 //
 typedef struct QglRdh		QglRdh;

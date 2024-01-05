@@ -406,7 +406,6 @@ typedef struct QgPropRender
 	QgPropLayout		layout;								/// @brief 정점 레이아웃
 	QgPropRvFormat		format;								/// @brief 렌더 포맷
 	QgTopology			topology;							/// @brief 토폴로지
-	uint				__mask;								/// @brief 용도 못 찾음
 } QgPropRender;
 
 /// @brief 세이더 변수
@@ -428,7 +427,7 @@ typedef void(*QgVarShaderFunc)(void*, const QgVarShader*);
 typedef struct QgUimKey
 {
 	QikMask				mask;								/// @brief 특수 키 상태
-	byte				key[QIK_MAX_VALUE];					/// @brief 전체 키 상태 배열
+	byte				key[QIK_MAX_VALUE + 1];				/// @brief 전체 키 상태 배열
 } QgUimKey;
 
 /// @brief 마우스 상태

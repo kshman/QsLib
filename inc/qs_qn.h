@@ -7,7 +7,6 @@
 //
 
 #pragma once
-
 #define __QS_QN__
 
 //////////////////////////////////////////////////////////////////////////
@@ -763,7 +762,7 @@ QSAPI bool qn_strieqv(const char* p1, const char* p2);
 /// @param base 진수
 /// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
 ///
-QSAPI int qn_itoa(char* p, int size, int n, uint base);
+QSAPI int qn_itoa(char* p, int size, int n, uint base, bool upper);
 /// @brief 64비트 정수를 문자열로 변환
 /// @param p 문자열 버퍼
 /// @param size 문자열 버퍼 크기
@@ -771,7 +770,7 @@ QSAPI int qn_itoa(char* p, int size, int n, uint base);
 /// @param base 진수
 /// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
 ///
-QSAPI int qn_lltoa(char* p, int size, llong n, uint base);
+QSAPI int qn_lltoa(char* p, int size, llong n, uint base, bool upper);
 /// @brief 문자열을 32비트 정수로
 /// @param p 문자열
 /// @param base 진수
@@ -968,7 +967,7 @@ QSAPI bool qn_wcsieqv(const wchar* p1, const wchar* p2);
 /// @param base 진수
 /// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
 ///
-QSAPI int qn_itow(wchar* p, int size, int n, uint base);
+QSAPI int qn_itow(wchar* p, int size, int n, uint base, bool upper);
 /// @brief 64비트 정수를 문자열로 변환
 /// @param p 문자열 버퍼
 /// @param size 문자열 버퍼 크기
@@ -976,7 +975,7 @@ QSAPI int qn_itow(wchar* p, int size, int n, uint base);
 /// @param base 진수
 /// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
 ///
-QSAPI int qn_lltow(wchar* p, int size, llong n, uint base);
+QSAPI int qn_lltow(wchar* p, int size, llong n, uint base, bool upper);
 /// @brief 문자열을 32비트 정수로
 /// @param p 문자열
 /// @param base 진수

@@ -1,37 +1,28 @@
 ﻿#pragma once
 
 // 렌더러 초기화
-void qgl_initialize(QglRdh* self, const int flags,
-	const char* version_name_1, const char* version_name_2,
-	const char* shader_name_1, const char* shader_name_2)
+static void qgl_initialize(QglRdh* self, const int flags, int renderer_version, int shader_version)
 {
 	// capa
 	QgDeviceInfo* caps = &rdh_caps(self);
 
 	qgl_copy_string(caps->renderer, QN_COUNTOF(caps->renderer), GL_RENDERER);
 	qgl_copy_string(caps->vendor, QN_COUNTOF(caps->vendor), GL_VENDOR);
-	caps->renderer_version = qgl_get_version(version_name_1, version_name_2);
-	caps->shader_version = qgl_get_version(shader_name_1, shader_name_2);
+	caps->renderer_version = renderer_version;
+	caps->shader_version = shader_version;
 
 	caps->max_layout_count = qgl_get_integer_v(GL_MAX_VERTEX_ATTRIBS);
 	caps->max_tex_dim = qgl_get_integer_v(GL_MAX_TEXTURE_SIZE);
 	caps->max_tex_count = qgl_get_integer_v(GL_MAX_TEXTURE_IMAGE_UNITS);
 	caps->max_off_count = qgl_get_integer_v(GL_FRAMEBUFFER_BINDING);			// 이 값은 이상할 수 있다. 각자 렌더러가 다시 설정
-
-	const SDL_Surface* surface = SDL_GetWindowSurface(window);
-	caps->clr_fmt = surface->format->BitsPerPixel == 16 ?
-		surface->format->Amask != 0 ? QGCF16_RGBA : QGCF16_RGB :
-		surface->format->Amask != 0 ? QGCF32_RGBA : QGCF32_RGB;
+	caps->clr_fmt = QN_TMASK(flags, QGFLAG_DITHER) ? QGCF16_RGBA : QGCF32_RGBA;
 
 	// 세이더 자동 유니폼
 	//gl_shd_init_auto_uniforms();
 }
 
-/**
- * @brief GL 렌더러 정리
- * @param self GL 렌더러
-*/
-void gl_finalize(QglRdh* self)
+// 렌더러 정리
+static void qgl_finalize(QglRdh* self)
 {
 	qn_ret_if_ok(self->disposed);
 
@@ -46,22 +37,19 @@ void gl_finalize(QglRdh* self)
 	self->disposed = true;
 }
 
-/**
- * @brief 리셋
- * @param rdh GL 렌더러
-*/
-void gl_reset(QgRdh* rdh)
+// 리셋
+void qgl_reset(QgRdh* rdh)
 {
 	rdh_internal_reset(rdh);
 
 	QglRdh* self = qs_cast(rdh, QglRdh);
-	QgDeviceInfo* caps = &rdh_caps(self);
+	//QgDeviceInfo* caps = &rdh_caps(self);
 
 	//----- 펜딩
-	GlPending* pd = &self->pd;
+	//QglPending* pd = &self->pd;
 
 	//----- 세션
-	GlSession* ss = &self->ss;
+	QglSession* ss = &self->ss;
 	ss->depth = QGDEPTH_LE;
 	ss->stencil = QGSTENCIL_OFF;
 
@@ -69,82 +57,83 @@ void gl_reset(QgRdh* rdh)
 	QgRenderTm* tm = &rdh->tm;
 	qm_mat4_ortho_lh(&tm->ortho, tm->size.x, tm->size.y, -1.0f, 1.0f);
 	qm_mat4_loc(&tm->ortho, -1.0f, 1.0f, 0.0f, false);
-	gl_mat4_irrcht_texture(&tm->frm, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -1.0f);
+	qgl_mat4_irrcht_texture(&tm->frm, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -1.0f);
 
 	//----- 설정
-	GL_FUNC(glPixelStorei)(GL_PACK_ALIGNMENT, 1);
-	GL_FUNC(glPixelStorei)(GL_UNPACK_ALIGNMENT, 1);
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	// 뎁스 스텐실
-	GL_FUNC(glEnable)(GL_DEPTH_TEST);
-	GL_FUNC(glDepthMask)(GL_TRUE);
-	GL_FUNC(glDepthFunc)(GL_LEQUAL);
-	GL_FUNC(glDisable)(GL_STENCIL_TEST);
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LEQUAL);
+	glDisable(GL_STENCIL_TEST);
 
 	// 래스터라이즈
-	GL_FUNC(glEnable)(GL_CULL_FACE);
-	GL_FUNC(glCullFace)(GL_BACK);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 
-	GL_FUNC(glDisable)(GL_POLYGON_OFFSET_FILL);
+	glDisable(GL_POLYGON_OFFSET_FILL);
 
 	// 블렌드 상태 리셋은 각자 알아서
 	// 텍스쳐 상태도 각자 알아서
 
 	// 가위질
-	GL_FUNC(glDisable)(GL_SCISSOR_TEST);
-	GL_FUNC(glFrontFace)(GL_CW);
-}
-
-// 시작
-bool gl_begin(QgRdh* rdh, bool clear)
-{
-	//QglRdh* self = qm_cast(rdh, QglRdh);
-	if (clear)
-		gl_clear(rdh, QGCLEAR_DEPTH | QGCLEAR_STENCIL | QGCLEAR_RENDER, &rdh->param.bgc, 0, 1.0f);
-	return true;
-}
-
-// 끝
-void gl_end(QgRdh* rdh)
-{
-}
-
-// 플러시
-void gl_flush(QgRdh* rdh)
-{
-	const QglRdh* self = qs_cast(rdh, QglRdh);
-	GL_FUNC(glFlush)();
-	SDL_GL_SwapWindow(self->window);
+	glDisable(GL_SCISSOR_TEST);
+	glFrontFace(GL_CW);
 }
 
 // 지우기
-void gl_clear(QgRdh* rdh, int flag, const QmColor* color, int stencil, float depth)
+void qgl_clear(QgRdh* rdh, int flag, const QmColor* color, int stencil, float depth)
 {
 	// 도움: https://open.gl/depthstencils
 	GLbitfield cf = 0;
 
 	if (QN_TMASK(flag, QGCLEAR_STENCIL))
 	{
-		GL_FUNC(glStencilMaskSeparate)(GL_FRONT_AND_BACK, stencil);
+		glStencilMaskSeparate(GL_FRONT_AND_BACK, stencil);
 		cf |= GL_STENCIL_BUFFER_BIT;
 	}
 	if (QN_TMASK(flag, QGCLEAR_DEPTH))
 	{
-		GL_FUNC(glDepthMask)(GL_TRUE);
-		GL_FUNC(glClearDepthf)(depth);
+		glDepthMask(GL_TRUE);
+		glClearDepthf(depth);
 		cf |= GL_DEPTH_BUFFER_BIT;
 	}
 	if (QN_TMASK(flag, QGCLEAR_RENDER))
 	{
 		if (color == NULL)
 			color = &rdh->param.bgc;
-		GL_FUNC(glClearColor)(color->r, color->g, color->b, color->a);
+		glClearColor(color->r, color->g, color->b, color->a);
 		cf |= GL_COLOR_BUFFER_BIT;
 	}
 
 	if (cf != 0)
-		GL_FUNC(glClear)(cf);
+		glClear(cf);
 }
+
+// 시작
+bool qgl_begin(QgRdh* rdh, bool clear)
+{
+	if (clear)
+		qgl_clear(rdh, QGCLEAR_DEPTH | QGCLEAR_STENCIL | QGCLEAR_RENDER, &rdh->param.bgc, 0, 1.0f);
+	return true;
+}
+
+// 끝
+void qgl_end(QgRdh* rdh)
+{
+	QN_DUMMY(rdh);
+}
+
+// 플러시
+void qgl_flush(QgRdh* rdh)
+{
+	QN_DUMMY(rdh);
+	glFlush();
+}
+
+#if false
 
 // 세이더 설정
 void gl_set_shader(QgRdh* rdh, QgShd* shader, QgVlo* layout)
@@ -818,3 +807,4 @@ void gl_commit_depth_stencil(QglRdh* self)
 	}
 }
 
+#endif

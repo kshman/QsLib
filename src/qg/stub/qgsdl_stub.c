@@ -210,6 +210,18 @@ void stub_system_focus(void)
 {
 	SDL_RaiseWindow(sdlStub.window);
 }
+
+//
+void* stub_system_get_window(void)
+{
+	return (void*)sdlStub.window;
+}
+
+//
+void* stub_system_get_display(void)
+{
+	return NULL;
+}
 #pragma endregion 시스템 함수
 
 

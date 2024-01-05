@@ -141,6 +141,12 @@
     <ClInclude Include="..\..\src\qg\gl\qggl_code.h">
       <Filter>헤더 파일\qg\gl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\qg\gl\egl.h">
+      <Filter>헤더 파일\qg\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\gl\wgl.h">
+      <Filter>헤더 파일\qg\gl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\qn\qn.c">

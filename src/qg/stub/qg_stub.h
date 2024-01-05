@@ -53,6 +53,10 @@ extern void stub_system_set_title(const char* title);
 extern void stub_system_update_bound(void);
 // 시스템 스터브를 포커스로 만든다
 extern void stub_system_focus(void);
+// 시스템 핸들을 얻는다
+extern void* stub_system_get_window(void);
+// 시스템 디스플레이 핸들을 얻는다 (윈도우에서는 HDC)
+extern void* stub_system_get_display(void);
 
 // 내부적으로 마우스 눌림을 연산한다
 extern bool stub_track_mouse_click(QimButton button, QimTrack track);

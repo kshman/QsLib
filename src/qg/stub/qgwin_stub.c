@@ -23,7 +23,7 @@
 static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 
 #ifdef _DEBUG
-#define DEBUG_WIN_DLL_TRACE
+//#define DEBUG_WIN_DLL_TRACE
 #endif
 
 #pragma region DLL 처리
@@ -538,6 +538,18 @@ void stub_system_focus(void)
 	BringWindowToTop(winStub.hwnd);
 	SetForegroundWindow(winStub.hwnd);
 	SetFocus(winStub.hwnd);
+}
+
+//
+void* stub_system_get_window(void)
+{
+	return (void*)winStub.hwnd;
+}
+
+//
+void* stub_system_get_display(void)
+{
+	return (void*)GetDC(winStub.hwnd);
 }
 #pragma endregion 시스템 함수
 
