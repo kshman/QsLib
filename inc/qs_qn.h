@@ -34,7 +34,6 @@
 #endif
 #endif
 
-
 //////////////////////////////////////////////////////////////////////////
 // compiler configuration
 
@@ -89,29 +88,29 @@
 
 // compiler specific
 #ifdef _MSC_VER
-#define QN_INLINE			_Pragma("warning(suppress:4514 4710)") __inline
+#define QN_INLINE			_QN_PRAGMA(warning(suppress:4514 4710)) __inline
 #define QN_FORCE_LINE		__forceinline
 #define QN_FNAME			__FUNCTION__
+#define QN_ALIGN(x)			__declspec(align(x))
 #define QN_FALL_THROUGH
-#define QN_STRUCT_ALIGN(x)	__declspec(align(x))
-#define QN_STMT_BEGIN		_Pragma("warning(suppress:4127 4296)") do
+#define QN_STMT_BEGIN		_QN_PRAGMA(warning(suppress:4127 4296)) do
 #define QN_STMT_END			while(0)
+#define QN_WARN_PUSH		_QN_PRAGMA(warning(push))
+#define QN_WARN_POP			_QN_PRAGMA(warning(pop))
+#define QN_WARN_SIGN
+#define QN_WARN_ASSIGN		_QN_PRAGMA(warning(disable:4706))
 #elif defined __GNUC__
-#ifndef __cplusplus
 #define QN_INLINE			static inline
 #define QN_FORCE_LINE		static inline __attribute__ ((always_inline))
-#else
-#define QN_INLINE			inline
-#define QN_FORCE_LINE		inline __attribute__ ((always_inline))
-#endif
 #define QN_FNAME			__FUNCTION__/*__PRETTY_FUNCTION__*/
+#define QN_ALIGN(x)			__attribute__((aligned(x)))
 #define QN_FALL_THROUGH		__attribute__((fallthrough))
-#define QN_STRUCT_ALIGN(x)	__attribute__((aligned(x)))
 #define QN_STMT_BEGIN		do
 #define QN_STMT_END			while(0)
-#define QN_DIAG_PUSH		_QN_PRAGMA(GCC diagnostic push)
-#define QN_DIAG_POP			_QN_PRAGMA(GCC diagnostic pop)
-#define QN_DIAG_SIGN		_QN_PRAGMA(GCC diagnostic ignored "-Wsign-conversion")
+#define QN_STMT_ASSIGN
+#define QN_WARN_PUSH		_QN_PRAGMA(GCC diagnostic push)
+#define QN_WARN_POP			_QN_PRAGMA(GCC diagnostic pop)
+#define QN_WARN_SIGN		_QN_PRAGMA(GCC diagnostic ignored "-Wsign-conversion")
 #endif
 
 #ifdef __cplusplus
@@ -163,8 +162,8 @@ QN_EXTC_BEGIN
 #define QN_SBIT(pv,b,set)	((set)?((*(pv))|=(1<<(b))):((*(pv))&=~(1<<(b))))						/// @brief 비트 설정
 #define QN_SMASK(pv,m,set)	((set)?((*(pv))|=(m)):((*(pv))&=~(m)))									/// @brief 마스크 설정
 #else
-#define QN_SBIT(pv,b,set)	QN_DIAG_PUSH QN_DIAG_SIGN ((set)?((*(pv))|=(1<<(b))):((*(pv))&=~(1<<(b)))) QN_DIAG_POP
-#define QN_SMASK(pv,m,set)	QN_DIAG_PUSH QN_DIAG_SIGN ((set)?((*(pv))|=(m)):((*(pv))&=~(m))) QN_DIAG_POP
+#define QN_SBIT(pv,b,set)	QN_WARN_PUSH QN_WARN_SIGN ((set)?((*(pv))|=(1<<(b))):((*(pv))&=~(1<<(b)))) QN_WARN_POP
+#define QN_SMASK(pv,m,set)	QN_WARN_PUSH QN_WARN_SIGN ((set)?((*(pv))|=(m)):((*(pv))&=~(m))) QN_WARN_POP
 #endif
 
 // constant
