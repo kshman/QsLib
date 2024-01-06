@@ -158,7 +158,7 @@
     <ClCompile Include="..\..\src\qn\qn_time.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_debug.c">
+    <ClCompile Include="..\..\src\qn\qn_prf.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qn\qn_file.c">
@@ -167,19 +167,10 @@
     <ClCompile Include="..\..\src\qn\qs_gam.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_hash.c">
-      <Filter>소스 파일\qn</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\qn\qm_math.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_mem.c">
-      <Filter>소스 파일\qn</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\qn\qn_mlu.c">
-      <Filter>소스 파일\qn</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_sort.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qn\qn_str.c">

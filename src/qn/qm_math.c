@@ -10,10 +10,158 @@
 #define USE_EMM_INTRIN		1
 #endif
 
-#ifdef USE_EMM_INTRIN
+#if defined QM_USE_SSE
 #define _mm_ror_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((byte)((i)+3)%4,(byte)((i)+2)%4,(byte)((i)+1)%4,(byte)((i)+0)%4))) : (vec))
 #define _mm_rol_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((byte)(7-(i))%4,(byte)(6-(i))%4,(byte)(5-(i))%4,(byte)(4-(i))%4))) : (vec))		// NOLINT
-#endif
+
+// SSE 행렬곱
+void qm_sse_mat4_mul(QmMat4* pm, const QmMat4* restrict left, const QmMat4* restrict right)
+{
+	register __m128 r1, r2;
+	register __m128 b1, b2, b3, b4;
+
+	b1 = _mm_loadu_ps(&right->_11);
+	b2 = _mm_loadu_ps(&right->_21);
+	b3 = _mm_loadu_ps(&right->_31);
+	b4 = _mm_loadu_ps(&right->_41);
+
+	r1 = _mm_mul_ps(_mm_set_ps1(left->_11), b1);
+	r2 = _mm_mul_ps(_mm_set_ps1(left->_21), b1);
+	r1 = _mm_add_ps(r1, _mm_mul_ps(_mm_set_ps1(left->_12), b2));
+	r2 = _mm_add_ps(r2, _mm_mul_ps(_mm_set_ps1(left->_22), b2));
+	r1 = _mm_add_ps(r1, _mm_mul_ps(_mm_set_ps1(left->_13), b3));
+	r2 = _mm_add_ps(r2, _mm_mul_ps(_mm_set_ps1(left->_23), b3));
+	r1 = _mm_add_ps(r1, _mm_mul_ps(_mm_set_ps1(left->_14), b4));
+	r2 = _mm_add_ps(r2, _mm_mul_ps(_mm_set_ps1(left->_24), b4));
+	_mm_storeu_ps(&pm->_11, r1);
+	_mm_storeu_ps(&pm->_21, r2);
+
+	r1 = _mm_mul_ps(_mm_set_ps1(left->_31), b1);
+	r2 = _mm_mul_ps(_mm_set_ps1(left->_41), b1);
+	r1 = _mm_add_ps(r1, _mm_mul_ps(_mm_set_ps1(left->_32), b2));
+	r2 = _mm_add_ps(r2, _mm_mul_ps(_mm_set_ps1(left->_42), b2));
+	r1 = _mm_add_ps(r1, _mm_mul_ps(_mm_set_ps1(left->_33), b3));
+	r2 = _mm_add_ps(r2, _mm_mul_ps(_mm_set_ps1(left->_43), b3));
+	r1 = _mm_add_ps(r1, _mm_mul_ps(_mm_set_ps1(left->_34), b4));
+	r2 = _mm_add_ps(r2, _mm_mul_ps(_mm_set_ps1(left->_44), b4));
+	_mm_storeu_ps(&pm->_31, r1);
+	_mm_storeu_ps(&pm->_41, r2);
+}
+
+// SSE 행렬식
+float qm_sse_mat4_det(const QmMat4* m)
+{
+	__m128 va, vb, vc;
+	__m128 r1, r2, r3;
+	__m128 t1, t2, sum;
+	__m128 det;
+
+	t1 = _mm_loadu_ps(&m->_41);
+	t2 = _mm_loadu_ps(&m->_31);
+	t2 = _mm_ror_ps(t2, 1);
+	vc = _mm_mul_ps(t2, _mm_ror_ps(t1, 0));
+	va = _mm_mul_ps(t2, _mm_ror_ps(t1, 2));
+	vb = _mm_mul_ps(t2, _mm_ror_ps(t1, 3));
+
+	r1 = _mm_sub_ps(_mm_ror_ps(va, 1), _mm_ror_ps(vc, 2));
+	r2 = _mm_sub_ps(_mm_ror_ps(vb, 2), _mm_ror_ps(vb, 0));
+	r3 = _mm_sub_ps(_mm_ror_ps(va, 0), _mm_ror_ps(vc, 1));
+
+	va = _mm_loadu_ps(&m->_21);
+	va = _mm_ror_ps(va, 1);	sum = _mm_mul_ps(va, r1);
+	vb = _mm_ror_ps(va, 1);	sum = _mm_add_ps(sum, _mm_mul_ps(vb, r2));
+	vc = _mm_ror_ps(vb, 1);	sum = _mm_add_ps(sum, _mm_mul_ps(vc, r3));
+
+	det = _mm_mul_ps(sum, _mm_loadu_ps(&m->_11));
+	det = _mm_add_ps(det, _mm_movehl_ps(det, det));
+	det = _mm_sub_ss(det, _mm_shuffle_ps(det, det, 1));
+
+	return *(((float*)&det) + 0);
+}
+
+// SSE 역행렬
+void qm_sse_mat4_inv(QmMat4* restrict pm, const QmMat4* restrict m)
+{
+	static const QN_ALIGN(16) uint PNNP[] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };		// NOLINT
+
+	__m128 a, b, c, d;
+	__m128 ia, ib, ic, id;
+	__m128 dc, ab;
+	__m128 ma, mb, mc, md;
+	__m128 dt, d0, d1, d2;
+	__m128 rd;
+	__m128 b1, b2, b3, b4;
+
+	b1 = _mm_loadu_ps(&m->_11);
+	b2 = _mm_loadu_ps(&m->_21);
+	b3 = _mm_loadu_ps(&m->_31);
+	b4 = _mm_loadu_ps(&m->_41);
+
+	a = _mm_movelh_ps(b1, b2);
+	b = _mm_movehl_ps(b2, b1);
+	c = _mm_movelh_ps(b3, b4);
+	d = _mm_movehl_ps(b4, b3);
+
+	ab = _mm_mul_ps(_mm_shuffle_ps(a, a, 0x0F), b);
+	ab = _mm_sub_ps(ab, _mm_mul_ps(_mm_shuffle_ps(a, a, 0xA5), _mm_shuffle_ps(b, b, 0x4E)));
+	dc = _mm_mul_ps(_mm_shuffle_ps(d, d, 0x0F), c);
+	dc = _mm_sub_ps(dc, _mm_mul_ps(_mm_shuffle_ps(d, d, 0xA5), _mm_shuffle_ps(c, c, 0x4E)));
+
+	ma = _mm_mul_ps(_mm_shuffle_ps(a, a, 0x5F), a);
+	ma = _mm_sub_ss(ma, _mm_movehl_ps(ma, ma));
+	mb = _mm_mul_ps(_mm_shuffle_ps(b, b, 0x5F), b);
+	mb = _mm_sub_ss(mb, _mm_movehl_ps(mb, mb));
+
+	mc = _mm_mul_ps(_mm_shuffle_ps(c, c, 0x5F), c);
+	mc = _mm_sub_ss(mc, _mm_movehl_ps(mc, mc));
+	md = _mm_mul_ps(_mm_shuffle_ps(d, d, 0x5F), d);
+	md = _mm_sub_ss(md, _mm_movehl_ps(md, md));
+
+	d0 = _mm_mul_ps(_mm_shuffle_ps(dc, dc, 0xD8), ab);
+
+	id = _mm_mul_ps(_mm_shuffle_ps(c, c, 0xA0), _mm_movelh_ps(ab, ab));
+	id = _mm_add_ps(id, _mm_mul_ps(_mm_shuffle_ps(c, c, 0xF5), _mm_movehl_ps(ab, ab)));
+	ia = _mm_mul_ps(_mm_shuffle_ps(b, b, 0xA0), _mm_movelh_ps(dc, dc));
+	ia = _mm_add_ps(ia, _mm_mul_ps(_mm_shuffle_ps(b, b, 0xF5), _mm_movehl_ps(dc, dc)));
+
+	d0 = _mm_add_ps(d0, _mm_movehl_ps(d0, d0));
+	d0 = _mm_add_ss(d0, _mm_shuffle_ps(d0, d0, 1));
+	d1 = _mm_mul_ps(ma, md);
+	d2 = _mm_mul_ps(mb, mc);
+
+	id = _mm_sub_ps(_mm_mul_ps(d, _mm_shuffle_ps(ma, ma, 0)), id);
+	ia = _mm_sub_ps(_mm_mul_ps(a, _mm_shuffle_ps(md, md, 0)), ia);
+
+	dt = _mm_sub_ss(_mm_add_ss(d1, d2), d0);
+	rd = _mm_div_ss(_mm_set_ss(1.0f), dt);
+	// ZERO_SINGULAR
+	//rd=_mm_and_ps(_mm_cmpneq_ss(det,_mm_setzero_ps()),rd);
+
+	ib = _mm_mul_ps(d, _mm_shuffle_ps(ab, ab, 0x33));
+	ib = _mm_sub_ps(ib, _mm_mul_ps(_mm_shuffle_ps(d, d, 0xB1), _mm_shuffle_ps(ab, ab, 0x66)));
+	ic = _mm_mul_ps(a, _mm_shuffle_ps(dc, dc, 0x33));
+	ic = _mm_sub_ps(ic, _mm_mul_ps(_mm_shuffle_ps(a, a, 0xB1), _mm_shuffle_ps(dc, dc, 0x66)));
+
+	rd = _mm_shuffle_ps(rd, rd, 0);
+	rd = _mm_xor_ps(rd, *(__m128*)(&PNNP));  // NOLINT
+
+	ib = _mm_sub_ps(_mm_mul_ps(c, _mm_shuffle_ps(mb, mb, 0)), ib);
+	ic = _mm_sub_ps(_mm_mul_ps(b, _mm_shuffle_ps(mc, mc, 0)), ic);
+
+	ia = _mm_div_ps(ia, rd);
+	ib = _mm_div_ps(ib, rd);
+	ic = _mm_div_ps(ic, rd);
+	id = _mm_div_ps(id, rd);
+
+	_mm_storeu_ps(&pm->_11, _mm_shuffle_ps(ia, ib, 0x77));
+	_mm_storeu_ps(&pm->_21, _mm_shuffle_ps(ia, ib, 0x22));
+	_mm_storeu_ps(&pm->_31, _mm_shuffle_ps(ic, id, 0x77));
+	_mm_storeu_ps(&pm->_41, _mm_shuffle_ps(ic, id, 0x22));
+
+	// 행렬식: *(float*)&dt
+}
+
+#endif // QM_USE_SSE
 
 //
 void qm_vec3_closed_line(QmVec3* restrict pv,
@@ -153,57 +301,6 @@ bool qm_vec3_intersect_planes(QmVec3* restrict pv,
 }
 
 //
-void qm_quat_slerp(QmQuat* restrict pq,
-	const QmQuat* restrict left,
-	const QmQuat* restrict right,
-	const float change)
-{
-	float dot = qm_dot(left, right);
-
-	QmQuat q1, q2;
-	if (dot < 0.0f)
-	{
-		qm_ivt(&q1, left);
-		q2 = *right;
-		dot = -dot;
-	}
-	else
-	{
-		q1 = *left;
-		q2 = *right;
-	}
-
-	float f1, f2;
-	if ((dot + 1.0f) > 0.05f)
-	{
-		if ((1.0f - dot) < 0.05f)
-		{
-			f1 = 1.0f - change;
-			f2 = change;
-		}
-		else
-		{
-			float fs, fc;
-			qm_sincosf(dot, &fs, &fc);	// fs 는 sinf(fc) 일 수도 있다
-
-			f1 = sinf(fc * (1.0f - change)) / fs;
-			f2 = sinf(fc * change) / fs;
-		}
-	}
-	else
-	{
-		qm_set4(&q2, -q1.y, q1.x, -q1.w, q1.z);
-		f1 = sinf((float)QM_PI * (0.5f - change));
-		f2 = sinf((float)QM_PI * change);
-	}
-
-	pq->x = f1 * q1.x + f2 * q2.x;
-	pq->y = f1 * q1.y + f2 * q2.y;
-	pq->z = f1 * q1.z + f2 * q2.z;
-	pq->w = f1 * q1.w + f2 * q2.w;
-}
-
-//
 void qm_quat_mat4(QmQuat* restrict pq, const QmMat4* restrict rot)
 {
 	const float diag = rot->_11 + rot->_22 + rot->_33 + 1.0f;
@@ -317,302 +414,6 @@ void qm_quat_ln(QmQuat* restrict pq, const QmQuat* restrict q)
 		pq->z = 0.0f;
 		pq->w = 0.0f;
 	}
-}
-
-//
-void qm_mat4_tran(QmMat4* restrict pm, const QmMat4* restrict m)
-{
-#ifdef USE_EMM_INTRIN
-#if true
-	__m128 mm0 = _mm_unpacklo_ps(_mm_loadu_ps(&m->_11), _mm_loadu_ps(&m->_21));
-	__m128 mm1 = _mm_unpacklo_ps(_mm_loadu_ps(&m->_31), _mm_loadu_ps(&m->_41));
-	__m128 mm2 = _mm_unpackhi_ps(_mm_loadu_ps(&m->_11), _mm_loadu_ps(&m->_21));
-	__m128 mm3 = _mm_unpackhi_ps(_mm_loadu_ps(&m->_31), _mm_loadu_ps(&m->_41));
-
-	_mm_storeu_ps(&pm->_11, _mm_movelh_ps(mm0, mm1));
-	_mm_storeu_ps(&pm->_21, _mm_movehl_ps(mm1, mm0));
-	_mm_storeu_ps(&pm->_31, _mm_movelh_ps(mm2, mm3));
-	_mm_storeu_ps(&pm->_41, _mm_movehl_ps(mm3, mm2));
-#else
-	__m128 mm0 = _mm_load_ps(&m->_11);
-	__m128 mm1 = _mm_load_ps(&m->_21);
-	__m128 mm2 = _mm_load_ps(&m->_31);
-	__m128 mm3 = _mm_load_ps(&m->_41);
-
-	__m128 sm0 = _mm_shuffle_ps(mm0, mm1, 0x44);
-	__m128 sm1 = _mm_shuffle_ps(mm0, mm1, 0xEE);
-	__m128 sm2 = _mm_shuffle_ps(mm2, mm3, 0x44);
-	__m128 sm3 = _mm_shuffle_ps(mm2, mm3, 0xEE);
-
-	_mm_store_ps(&pm->_11, _mm_shuffle_ps(sm0, sm1, 0x88));
-	_mm_store_ps(&pm->_12, _mm_shuffle_ps(sm0, sm1, 0xDD));
-	_mm_store_ps(&pm->_13, _mm_shuffle_ps(sm2, sm3, 0x88));
-	_mm_store_ps(&pm->_14, _mm_shuffle_ps(sm2, sm3, 0xDD));
-#endif
-#else
-	QmMat4 t =
-	{
-		._11 = m->_11,
-		._12 = m->_21,
-		._13 = m->_31,
-		._14 = m->_41,
-
-		._21 = m->_12,
-		._22 = m->_22,
-		._23 = m->_32,
-		._24 = m->_42,
-
-		._31 = m->_13,
-		._32 = m->_23,
-		._33 = m->_33,
-		._34 = m->_43,
-
-		._41 = m->_14,
-		._42 = m->_24,
-		._43 = m->_34,
-		._44 = m->_44,
-	};
-	*pm = t;
-#endif
-}
-
-//
-void qm_mat4_mul(QmMat4* restrict pm, const QmMat4* restrict left, const QmMat4* restrict right)
-{
-#ifdef USE_EMM_INTRIN
-	register __m128 r1, r2;
-	register __m128 b1, b2, b3, b4;
-
-	b1 = _mm_loadu_ps(&right->_11);
-	b2 = _mm_loadu_ps(&right->_21);
-	b3 = _mm_loadu_ps(&right->_31);
-	b4 = _mm_loadu_ps(&right->_41);
-
-	r1 = _mm_mul_ps(_mm_set_ps1(left->_11), b1);
-	r2 = _mm_mul_ps(_mm_set_ps1(left->_21), b1);
-	r1 = _mm_add_ps(r1, _mm_mul_ps(_mm_set_ps1(left->_12), b2));
-	r2 = _mm_add_ps(r2, _mm_mul_ps(_mm_set_ps1(left->_22), b2));
-	r1 = _mm_add_ps(r1, _mm_mul_ps(_mm_set_ps1(left->_13), b3));
-	r2 = _mm_add_ps(r2, _mm_mul_ps(_mm_set_ps1(left->_23), b3));
-	r1 = _mm_add_ps(r1, _mm_mul_ps(_mm_set_ps1(left->_14), b4));
-	r2 = _mm_add_ps(r2, _mm_mul_ps(_mm_set_ps1(left->_24), b4));
-	_mm_storeu_ps(&pm->_11, r1);
-	_mm_storeu_ps(&pm->_21, r2);
-
-	r1 = _mm_mul_ps(_mm_set_ps1(left->_31), b1);
-	r2 = _mm_mul_ps(_mm_set_ps1(left->_41), b1);
-	r1 = _mm_add_ps(r1, _mm_mul_ps(_mm_set_ps1(left->_32), b2));
-	r2 = _mm_add_ps(r2, _mm_mul_ps(_mm_set_ps1(left->_42), b2));
-	r1 = _mm_add_ps(r1, _mm_mul_ps(_mm_set_ps1(left->_33), b3));
-	r2 = _mm_add_ps(r2, _mm_mul_ps(_mm_set_ps1(left->_43), b3));
-	r1 = _mm_add_ps(r1, _mm_mul_ps(_mm_set_ps1(left->_34), b4));
-	r2 = _mm_add_ps(r2, _mm_mul_ps(_mm_set_ps1(left->_44), b4));
-	_mm_storeu_ps(&pm->_31, r1);
-	_mm_storeu_ps(&pm->_41, r2);
-#else
-	QmMat4 m =
-	{
-		._11 = left->_11 * right->_11 + left->_12 * right->_21 + left->_13 * right->_31 + left->_14 * right->_41,
-		._12 = left->_11 * right->_12 + left->_12 * right->_22 + left->_13 * right->_32 + left->_14 * right->_42,
-		._13 = left->_11 * right->_13 + left->_12 * right->_23 + left->_13 * right->_33 + left->_14 * right->_43,
-		._14 = left->_11 * right->_14 + left->_12 * right->_24 + left->_13 * right->_34 + left->_14 * right->_44,
-
-		._21 = left->_21 * right->_11 + left->_22 * right->_21 + left->_23 * right->_31 + left->_24 * right->_41,
-		._22 = left->_21 * right->_12 + left->_22 * right->_22 + left->_23 * right->_32 + left->_24 * right->_42,
-		._23 = left->_21 * right->_13 + left->_22 * right->_23 + left->_23 * right->_33 + left->_24 * right->_43,
-		._24 = left->_21 * right->_14 + left->_22 * right->_24 + left->_23 * right->_34 + left->_24 * right->_44,
-
-		._31 = left->_31 * right->_11 + left->_32 * right->_21 + left->_33 * right->_31 + left->_34 * right->_41,
-		._32 = left->_31 * right->_12 + left->_32 * right->_22 + left->_33 * right->_32 + left->_34 * right->_42,
-		._33 = left->_31 * right->_13 + left->_32 * right->_23 + left->_33 * right->_33 + left->_34 * right->_43,
-		._34 = left->_31 * right->_14 + left->_32 * right->_24 + left->_33 * right->_34 + left->_34 * right->_44,
-
-		._41 = left->_41 * right->_11 + left->_42 * right->_21 + left->_43 * right->_31 + left->_44 * right->_41,
-		._42 = left->_41 * right->_12 + left->_42 * right->_22 + left->_43 * right->_32 + left->_44 * right->_42,
-		._43 = left->_41 * right->_13 + left->_42 * right->_23 + left->_43 * right->_33 + left->_44 * right->_43,
-		._44 = left->_41 * right->_14 + left->_42 * right->_24 + left->_43 * right->_34 + left->_44 * right->_44,
-	};
-	*pm = m;
-#endif
-}
-
-//
-void qm_mat4_inv_det(QmMat4* restrict pm, const QmMat4* restrict m, float* /*NULLABLE*/determinant)
-{
-#ifdef USE_EMM_INTRIN
-	static const uint _Alignas(16) PNNP[] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };		// NOLINT
-
-	__m128 a, b, c, d;
-	__m128 ia, ib, ic, id;
-	__m128 dc, ab;
-	__m128 ma, mb, mc, md;
-	__m128 dt, d0, d1, d2;
-	__m128 rd;
-	__m128 b1, b2, b3, b4;
-
-	b1 = _mm_loadu_ps(&m->_11);
-	b2 = _mm_loadu_ps(&m->_21);
-	b3 = _mm_loadu_ps(&m->_31);
-	b4 = _mm_loadu_ps(&m->_41);
-
-	a = _mm_movelh_ps(b1, b2);
-	b = _mm_movehl_ps(b2, b1);
-	c = _mm_movelh_ps(b3, b4);
-	d = _mm_movehl_ps(b4, b3);
-
-	ab = _mm_mul_ps(_mm_shuffle_ps(a, a, 0x0F), b);
-	ab = _mm_sub_ps(ab, _mm_mul_ps(_mm_shuffle_ps(a, a, 0xA5), _mm_shuffle_ps(b, b, 0x4E)));
-	dc = _mm_mul_ps(_mm_shuffle_ps(d, d, 0x0F), c);
-	dc = _mm_sub_ps(dc, _mm_mul_ps(_mm_shuffle_ps(d, d, 0xA5), _mm_shuffle_ps(c, c, 0x4E)));
-
-	ma = _mm_mul_ps(_mm_shuffle_ps(a, a, 0x5F), a);
-	ma = _mm_sub_ss(ma, _mm_movehl_ps(ma, ma));
-	mb = _mm_mul_ps(_mm_shuffle_ps(b, b, 0x5F), b);
-	mb = _mm_sub_ss(mb, _mm_movehl_ps(mb, mb));
-
-	mc = _mm_mul_ps(_mm_shuffle_ps(c, c, 0x5F), c);
-	mc = _mm_sub_ss(mc, _mm_movehl_ps(mc, mc));
-	md = _mm_mul_ps(_mm_shuffle_ps(d, d, 0x5F), d);
-	md = _mm_sub_ss(md, _mm_movehl_ps(md, md));
-
-	d0 = _mm_mul_ps(_mm_shuffle_ps(dc, dc, 0xD8), ab);
-
-	id = _mm_mul_ps(_mm_shuffle_ps(c, c, 0xA0), _mm_movelh_ps(ab, ab));
-	id = _mm_add_ps(id, _mm_mul_ps(_mm_shuffle_ps(c, c, 0xF5), _mm_movehl_ps(ab, ab)));
-	ia = _mm_mul_ps(_mm_shuffle_ps(b, b, 0xA0), _mm_movelh_ps(dc, dc));
-	ia = _mm_add_ps(ia, _mm_mul_ps(_mm_shuffle_ps(b, b, 0xF5), _mm_movehl_ps(dc, dc)));
-
-	d0 = _mm_add_ps(d0, _mm_movehl_ps(d0, d0));
-	d0 = _mm_add_ss(d0, _mm_shuffle_ps(d0, d0, 1));
-	d1 = _mm_mul_ps(ma, md);
-	d2 = _mm_mul_ps(mb, mc);
-
-	id = _mm_sub_ps(_mm_mul_ps(d, _mm_shuffle_ps(ma, ma, 0)), id);
-	ia = _mm_sub_ps(_mm_mul_ps(a, _mm_shuffle_ps(md, md, 0)), ia);
-
-	dt = _mm_sub_ss(_mm_add_ss(d1, d2), d0);
-	rd = _mm_div_ss(_mm_set_ss(1.0f), dt);
-	// ZERO_SINGULAR
-	//rd=_mm_and_ps(_mm_cmpneq_ss(det,_mm_setzero_ps()),rd);
-
-	ib = _mm_mul_ps(d, _mm_shuffle_ps(ab, ab, 0x33));
-	ib = _mm_sub_ps(ib, _mm_mul_ps(_mm_shuffle_ps(d, d, 0xB1), _mm_shuffle_ps(ab, ab, 0x66)));
-	ic = _mm_mul_ps(a, _mm_shuffle_ps(dc, dc, 0x33));
-	ic = _mm_sub_ps(ic, _mm_mul_ps(_mm_shuffle_ps(a, a, 0xB1), _mm_shuffle_ps(dc, dc, 0x66)));
-
-	rd = _mm_shuffle_ps(rd, rd, 0);
-	rd = _mm_xor_ps(rd, *(__m128*)(&PNNP));  // NOLINT
-
-	ib = _mm_sub_ps(_mm_mul_ps(c, _mm_shuffle_ps(mb, mb, 0)), ib);
-	ic = _mm_sub_ps(_mm_mul_ps(b, _mm_shuffle_ps(mc, mc, 0)), ic);
-
-	ia = _mm_div_ps(ia, rd);
-	ib = _mm_div_ps(ib, rd);
-	ic = _mm_div_ps(ic, rd);
-	id = _mm_div_ps(id, rd);
-
-	_mm_storeu_ps(&pm->_11, _mm_shuffle_ps(ia, ib, 0x77));
-	_mm_storeu_ps(&pm->_21, _mm_shuffle_ps(ia, ib, 0x22));
-	_mm_storeu_ps(&pm->_31, _mm_shuffle_ps(ic, id, 0x77));
-	_mm_storeu_ps(&pm->_41, _mm_shuffle_ps(ic, id, 0x22));
-
-	if (determinant)
-		*determinant = *(float*)&dt;
-#else
-	float f =
-		(m->_11 * m->_22 - m->_21 * m->_12) * (m->_33 * m->_44 - m->_43 * m->_34) - (m->_11 * m->_32 - m->_31 * m->_12) * (m->_23 * m->_44 - m->_43 * m->_24) +
-		(m->_11 * m->_42 - m->_41 * m->_12) * (m->_23 * m->_34 - m->_33 * m->_24) + (m->_21 * m->_32 - m->_31 * m->_22) * (m->_13 * m->_44 - m->_43 * m->_14) -
-		(m->_21 * m->_42 - m->_41 * m->_22) * (m->_13 * m->_34 - m->_33 * m->_14) + (m->_31 * m->_42 - m->_41 * m->_32) * (m->_13 * m->_24 - m->_23 * m->_14);
-	if (qm_eqf(f, 0.0f))
-	{
-		if (determinant)
-			*determinant = 0.0f;
-		if (pm != m)
-			*pm = *m;
-		return;
-	}
-
-	f = 1.0f / f;
-	QmMat4 t =
-	{
-		._11 = f * (m->_22 * (m->_33 * m->_44 - m->_43 * m->_34) + m->_32 * (m->_43 * m->_24 - m->_23 * m->_44) + m->_42 * (m->_23 * m->_34 - m->_33 * m->_24)),
-		._12 = f * (m->_32 * (m->_13 * m->_44 - m->_43 * m->_14) + m->_42 * (m->_33 * m->_14 - m->_13 * m->_34) + m->_12 * (m->_43 * m->_34 - m->_33 * m->_44)),
-		._13 = f * (m->_42 * (m->_13 * m->_24 - m->_23 * m->_14) + m->_12 * (m->_23 * m->_44 - m->_43 * m->_24) + m->_22 * (m->_43 * m->_14 - m->_13 * m->_44)),
-		._14 = f * (m->_12 * (m->_33 * m->_24 - m->_23 * m->_34) + m->_22 * (m->_13 * m->_34 - m->_33 * m->_14) + m->_32 * (m->_23 * m->_14 - m->_13 * m->_24)),
-
-		._21 = f * (m->_23 * (m->_31 * m->_44 - m->_41 * m->_34) + m->_33 * (m->_41 * m->_24 - m->_21 * m->_44) + m->_43 * (m->_21 * m->_34 - m->_31 * m->_24)),
-		._22 = f * (m->_33 * (m->_11 * m->_44 - m->_41 * m->_14) + m->_43 * (m->_31 * m->_14 - m->_11 * m->_34) + m->_13 * (m->_41 * m->_34 - m->_31 * m->_44)),
-		._23 = f * (m->_43 * (m->_11 * m->_24 - m->_21 * m->_14) + m->_13 * (m->_21 * m->_44 - m->_41 * m->_24) + m->_23 * (m->_41 * m->_14 - m->_11 * m->_44)),
-		._24 = f * (m->_13 * (m->_31 * m->_24 - m->_21 * m->_34) + m->_23 * (m->_11 * m->_34 - m->_31 * m->_14) + m->_33 * (m->_21 * m->_14 - m->_11 * m->_24)),
-
-		._31 = f * (m->_24 * (m->_31 * m->_42 - m->_41 * m->_32) + m->_34 * (m->_41 * m->_22 - m->_21 * m->_42) + m->_44 * (m->_21 * m->_32 - m->_31 * m->_22)),
-		._32 = f * (m->_34 * (m->_11 * m->_42 - m->_41 * m->_12) + m->_44 * (m->_31 * m->_12 - m->_11 * m->_32) + m->_14 * (m->_41 * m->_32 - m->_31 * m->_42)),
-		._33 = f * (m->_44 * (m->_11 * m->_22 - m->_21 * m->_12) + m->_14 * (m->_21 * m->_42 - m->_41 * m->_22) + m->_24 * (m->_41 * m->_12 - m->_11 * m->_42)),
-		._34 = f * (m->_14 * (m->_31 * m->_22 - m->_21 * m->_32) + m->_24 * (m->_11 * m->_32 - m->_31 * m->_12) + m->_34 * (m->_21 * m->_12 - m->_11 * m->_22)),
-
-		._41 = f * (m->_21 * (m->_42 * m->_33 - m->_32 * m->_43) + m->_31 * (m->_22 * m->_43 - m->_42 * m->_23) + m->_41 * (m->_32 * m->_23 - m->_22 * m->_33)),
-		._42 = f * (m->_31 * (m->_42 * m->_13 - m->_12 * m->_43) + m->_41 * (m->_12 * m->_33 - m->_32 * m->_13) + m->_11 * (m->_32 * m->_43 - m->_42 * m->_33)),
-		._43 = f * (m->_41 * (m->_22 * m->_13 - m->_12 * m->_23) + m->_11 * (m->_42 * m->_23 - m->_22 * m->_43) + m->_21 * (m->_12 * m->_43 - m->_42 * m->_13)),
-		._44 = f * (m->_11 * (m->_22 * m->_33 - m->_32 * m->_23) + m->_21 * (m->_32 * m->_13 - m->_12 * m->_33) + m->_31 * (m->_12 * m->_23 - m->_22 * m->_13)),
-	};
-	*pm = t;
-
-	if (determinant)
-		*determinant = f;
-#endif
-}
-
-//
-void qm_mat4_inv(QmMat4* restrict pm, const QmMat4* restrict m)
-{
-	qm_mat4_inv_det(pm, m, NULL);
-}
-
-//
-void qm_mat4_tmul(QmMat4* restrict pm, const QmMat4* restrict left, const QmMat4* restrict right)
-{
-	QmMat4 m;
-	qm_mul(&m, left, right);
-	qm_mat4_tran(pm, &m);
-}
-
-//
-float qm_mat4_det(const QmMat4* m)
-{
-#ifdef USE_EMM_INTRIN
-	__m128 va, vb, vc;
-	__m128 r1, r2, r3;
-	__m128 t1, t2, sum;
-	__m128 det;
-
-	t1 = _mm_loadu_ps(&m->_41);
-	t2 = _mm_loadu_ps(&m->_31);
-	t2 = _mm_ror_ps(t2, 1);
-	vc = _mm_mul_ps(t2, _mm_ror_ps(t1, 0));
-	va = _mm_mul_ps(t2, _mm_ror_ps(t1, 2));
-	vb = _mm_mul_ps(t2, _mm_ror_ps(t1, 3));
-
-	r1 = _mm_sub_ps(_mm_ror_ps(va, 1), _mm_ror_ps(vc, 2));
-	r2 = _mm_sub_ps(_mm_ror_ps(vb, 2), _mm_ror_ps(vb, 0));
-	r3 = _mm_sub_ps(_mm_ror_ps(va, 0), _mm_ror_ps(vc, 1));
-
-	va = _mm_loadu_ps(&m->_21);
-	va = _mm_ror_ps(va, 1);	sum = _mm_mul_ps(va, r1);
-	vb = _mm_ror_ps(va, 1);	sum = _mm_add_ps(sum, _mm_mul_ps(vb, r2));
-	vc = _mm_ror_ps(vb, 1);	sum = _mm_add_ps(sum, _mm_mul_ps(vc, r3));
-
-	det = _mm_mul_ps(sum, _mm_loadu_ps(&m->_11));
-	det = _mm_add_ps(det, _mm_movehl_ps(det, det));
-	det = _mm_sub_ss(det, _mm_shuffle_ps(det, det, 1));
-
-	return *(((float*)&det) + 0);
-#else
-	float f =
-		(m->_11 * m->_22 - m->_21 * m->_12) * (m->_33 * m->_44 - m->_43 * m->_34) - (m->_11 * m->_32 - m->_31 * m->_12) * (m->_23 * m->_44 - m->_43 * m->_24) +
-		(m->_11 * m->_42 - m->_41 * m->_12) * (m->_23 * m->_34 - m->_33 * m->_24) + (m->_21 * m->_32 - m->_31 * m->_22) * (m->_13 * m->_44 - m->_43 * m->_14) -
-		(m->_21 * m->_42 - m->_41 * m->_22) * (m->_13 * m->_34 - m->_33 * m->_14) + (m->_31 * m->_42 - m->_41 * m->_32) * (m->_13 * m->_24 - m->_23 * m->_14);
-	return qm_eqf(f, 0.0f) ? 0.0f : 1.0f / f;
-#endif
 }
 
 //

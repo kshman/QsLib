@@ -80,3 +80,6 @@ endif()
 # 하위 프로젝트를 포함합니다.
 add_subdirectory ("src")
 add_subdirectory ("zconsole")
+
+# 참고: 컴파일러 정의
+# echo | clang -dM -E -

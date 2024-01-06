@@ -4,44 +4,20 @@
 //
 
 #pragma once
-
 #define __PCH__
 
-#ifndef no_init_all
-#define no_init_all deprecated
+#ifdef _MSC_VER
+#define no_init_all deprecated		// VS2022 알 수 없는 특성
 #endif
-
 #ifdef __GNUC__
 #define _GNU_SOURCE
-#endif
-
-#include <assert.h>
-#include <ctype.h>
-#include <errno.h>
-#include <math.h>
-#include <signal.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <wchar.h>
-#include <wctype.h>
-#ifdef _MSC_VER
-#include <intrin.h>
-#include <crtdbg.h>
-#endif
-#ifdef __unix__
-#include <sys/time.h>
 #endif
 
 // Windows
 #ifdef _WIN32
 #define STRICT
 #define WIN32_LEAN_AND_MEAN
+#include <crtdbg.h>
 #include <excpt.h>
 #include <sdkddkver.h>
 #include <windows.h>

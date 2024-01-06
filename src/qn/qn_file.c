@@ -7,9 +7,10 @@
 
 #include "pch.h"
 #include "qs_qn.h"
-#include <fcntl.h>
+#include <stdlib.h>
 #ifdef _QN_UNIX_
 #include <unistd.h>
+#include <fcntl.h>
 #include <dirent.h>
 #include <dlfcn.h>
 #include <sys/types.h>

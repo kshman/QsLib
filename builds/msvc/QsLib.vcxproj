@@ -328,14 +328,11 @@
     <ClCompile Include="..\..\src\qn\qn.c" />
     <ClCompile Include="..\..\src\qn\qn_thd.c" />
     <ClCompile Include="..\..\src\qn\qn_time.c" />
-    <ClCompile Include="..\..\src\qn\qn_debug.c" />
+    <ClCompile Include="..\..\src\qn\qn_prf.c" />
     <ClCompile Include="..\..\src\qn\qn_file.c" />
     <ClCompile Include="..\..\src\qn\qs_gam.c" />
-    <ClCompile Include="..\..\src\qn\qn_hash.c" />
     <ClCompile Include="..\..\src\qn\qm_math.c" />
-    <ClCompile Include="..\..\src\qn\qn_mem.c" />
     <ClCompile Include="..\..\src\qn\qn_mlu.c" />
-    <ClCompile Include="..\..\src\qn\qn_sort.c" />
     <ClCompile Include="..\..\src\qn\qn_str.c" />
     <ClCompile Include="..\..\src\qn\zlib\adler32.c" />
     <ClCompile Include="..\..\src\qn\zlib\compress.c" />

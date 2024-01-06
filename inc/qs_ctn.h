@@ -9,9 +9,11 @@
 #pragma once
 #define __QS_CTN__
 
+#include <string.h>
+
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable: 4200)
+#pragma warning(disable: 4200)			// 비표준 확장이 사용됨: 구조체/공용 구조체의 배열 크기가 0입니다.
 #endif
 
 QN_EXTC_BEGIN
@@ -1947,7 +1949,7 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t);
 
 // 묶음 룩업
 #define qn_inl_mukum_lookup_hash(name,p,keyptr,ret_node,ret_hash)\
-	qn_assert((p)->NODES!=NULL && "uninitialized memory");\
+	/*qn_assert((p)->NODES!=NULL && "uninitialized memory");*/\
 	size_t __lh=name##_Hash((name##ConstKey*)(keyptr));\
 	struct name##Node *__lnn, **__ln=&(p)->NODES[__lh%(p)->BUCKET];\
 	while ((__lnn=*__ln)!=NULL) {\
@@ -2097,7 +2099,7 @@ QN_DECL_BSTR(4k, 4096);
 
 #define qn_bstr_init(p,str)\
 	QN_STMT_BEGIN{\
-		if ((str)) { (p)->LENGTH=strlen(str); qn_strcpy((p)->DATA, QN_COUNTOF((p)->DATA), (str)); }\
+		if ((str)) { (p)->LENGTH=strlen(str); qn_strcpy((p)->DATA, (str)); }\
 		else { (p)->LENGTH=0; (p)->DATA[0]='\0'; }\
 	}QN_STMT_END
 
@@ -2180,10 +2182,10 @@ QN_DECL_BSTR(4k, 4096);
 	((igcase) ? qn_strihash((p)->DATA) : qn_strhash((p)->DATA))
 
 #define qn_bstr_compare(p, s, igcase)\
-	((igcase) ? qn_stricmp((p)->DATA, s) : strcmp((p)->DATA, s))
+	((igcase) ? qn_stricmp((p)->DATA, s) : qn_strcmp((p)->DATA, s))
 
 #define qn_bstr_compare_bstr(p1, p2, igcase)\
-	((igcase) ? qn_stricmp((p1)->DATA, (p2)->DATA) : strcmp((p1)->DATA, (p2)->DATA))
+	((igcase) ? qn_stricmp((p1)->DATA, (p2)->DATA) : qn_strcmp((p1)->DATA, (p2)->DATA))
 
 #define qn_bstr_compare_bstr_length(p1, p2, len, igcase)\
 	((igcase) ? qn_strnicmp((p1)->DATA, (p2)->DATA, len) : qn_strncmp((p1)->DATA, (p2)->DATA, len))

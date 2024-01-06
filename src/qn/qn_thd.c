@@ -5,7 +5,10 @@
 
 #include "pch.h"
 #include "qs_qn.h"
-#ifdef _QN_UNIX_
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
+#ifdef __GNUC__
 #include <pthread.h>
 #include <semaphore.h>
 #endif

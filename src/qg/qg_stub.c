@@ -929,35 +929,35 @@ bool stub_event_on_mouse_wheel(const float x, const float y, const bool directio
 
 	if (x > 0.0f)
 	{
-		if (um->wheel.accm.x < 0.0f)
-			um->wheel.accm.x = 0.0f;
+		if (um->wheel.accm.X < 0.0f)
+			um->wheel.accm.X = 0.0f;
 	}
 	else if (x < 0.0f)
 	{
-		if (um->wheel.accm.x > 0.0f)
-			um->wheel.accm.x = 0.0f;
+		if (um->wheel.accm.X > 0.0f)
+			um->wheel.accm.X = 0.0f;
 	}
-	um->wheel.accm.x += x;
+	um->wheel.accm.X += x;
 	const int ix =
-		(um->wheel.accm.x > 0.0f) ? (int)floorf(um->wheel.accm.x) :		// NOLINT
-		(um->wheel.accm.x < 0.0f) ? (int)ceilf(um->wheel.accm.x) : 0;	// NOLINT
-	um->wheel.accm.x -= (float)ix;
+		(um->wheel.accm.X > 0.0f) ? (int)floorf(um->wheel.accm.X) :		// NOLINT
+		(um->wheel.accm.X < 0.0f) ? (int)ceilf(um->wheel.accm.X) : 0;	// NOLINT
+	um->wheel.accm.X -= (float)ix;
 
 	if (y > 0.0f)
 	{
-		if (um->wheel.accm.y < 0.0f)
-			um->wheel.accm.y = 0.0f;
+		if (um->wheel.accm.Y < 0.0f)
+			um->wheel.accm.Y = 0.0f;
 	}
 	else if (y < 0.0f)
 	{
-		if (um->wheel.accm.y > 0.0f)
-			um->wheel.accm.y = 0.0f;
+		if (um->wheel.accm.Y > 0.0f)
+			um->wheel.accm.Y = 0.0f;
 	}
-	um->wheel.accm.y += y;
+	um->wheel.accm.Y += y;
 	const int iy =
-		(um->wheel.accm.y > 0.0f) ? (int)floorf(um->wheel.accm.y) :		// NOLINT
-		(um->wheel.accm.y < 0.0f) ? (int)ceilf(um->wheel.accm.y) : 0;	// NOLINT
-	um->wheel.accm.y -= (float)iy;
+		(um->wheel.accm.Y > 0.0f) ? (int)floorf(um->wheel.accm.Y) :		// NOLINT
+		(um->wheel.accm.Y < 0.0f) ? (int)ceilf(um->wheel.accm.Y) : 0;	// NOLINT
+	um->wheel.accm.Y -= (float)iy;
 
 	qm_point_set(&um->wheel.integral, ix, iy);
 	qm_vec2_set(&um->wheel.precise, x, y);

@@ -55,7 +55,7 @@ void qgl_reset(RdhBase* rdh)
 
 	//----- TM
 	RenderTransform* tm = &rdh_transform(self);
-	qm_mat4_ortho_lh(&tm->ortho, tm->size.x, tm->size.y, -1.0f, 1.0f);
+	qm_mat4_ortho_lh(&tm->ortho, tm->size.X, tm->size.Y, -1.0f, 1.0f);
 	qm_mat4_loc(&tm->ortho, -1.0f, 1.0f, 0.0f, false);
 	qgl_mat4_irrcht_texture(&tm->frm, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -1.0f);
 

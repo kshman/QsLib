@@ -98,7 +98,7 @@ void rdh_internal_reset(void)
 	// tm
 	RenderTransform* tm = &self->tm;
 	qm_set1(&tm->size, &client_size);
-	const float aspect = tm->size.x / tm->size.y;
+	const float aspect = tm->size.X / tm->size.Y;
 	qm_rst(&tm->world);
 	qm_rst(&tm->view);
 	qm_mat4_perspective_lh(&tm->project, QM_PI_H, aspect, &tm->depth);
@@ -138,8 +138,8 @@ void rdh_internal_check_layout(void)
 {
 	RdhBase* self = qg_instance_rdh;
 	const QmSize size = qg_instance_stub->client_size;
-	const int width = (int)self->tm.size.x;
-	const int height = (int)self->tm.size.y;
+	const int width = (int)self->tm.size.X;
+	const int height = (int)self->tm.size.Y;
 	if (size.width == width && size.height == height)
 		return;
 	qv_cast(self, RdhBase)->reset(self);

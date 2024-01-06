@@ -9,29 +9,13 @@
 #pragma once
 #define __QS_QN__
 
-//////////////////////////////////////////////////////////////////////////
-// includes
-#ifndef _QS_HEADER_
 #include <assert.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <time.h>
-#include <signal.h>
-#include <wchar.h>
-#ifdef _MSC_VER
-#include <intrin.h>
-#include <crtdbg.h>
-#endif
-#ifdef __unix__
-#include <sys/time.h>
-#endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-#endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -41,76 +25,64 @@
 #if !defined _MSC_VER && !defined __GNUC__
 #error unknown compiler! (support: MSVC, CLANG, GCC)
 #endif
+#ifdef _CHAR_UNSIGNED
+#error "Compiler option: char type must be signed"
+#endif
 
 // platform
 #ifdef _WIN32
 #define _QN_WINDOWS_		1
 #endif
-
 #ifdef __unix__
 #define _QN_UNIX_			1
 #endif
-
-#if defined __FreeBSD__ || defined __OpenBSD__
-#define _QN_BSD_			1
-#if defined __FreeBSD__
+#ifdef __FreeBSD__
 #define _QN_FREEBSD_		1
 #endif
-#if defined __OpenBSD__
-#define _QN_OPENBSD_		1
-#endif
-#endif
-
 #ifdef __linux__
 #define _QN_LINUX_			1
 #endif
-
 #ifdef __android__
 #define _QN_ANDROID_		1
 #define _QN_MOBILE_			1
 #endif
-
 #ifdef __EMSCRIPTEN__
 #define _QN_EMSCRIPTEN_		1
 #endif
-
 #if defined __XBOXONE__ || defined __XBOXSERIES__
 #define _QN_XBOX_			1
 #endif
-
-#if defined _WIN64 || defined _M_X64 || defined __LP64__ || defined __amd64__ || defined __x86_64__ || defined __aarch64__
+#if defined _WIN64 || defined _M_AMD64 || defined _M_X64 || defined __LP64__ || defined __amd64__ || defined __x86_64__ || defined __aarch64__
 #define _QN_64_				1
-#endif
-
-#ifdef _CHAR_UNSIGNED
-#error "Compiler option: char type must be signed"
 #endif
 
 // compiler specific
 #ifdef _MSC_VER
-#define QN_INLINE			_QN_PRAGMA(warning(suppress:4514 4710)) __inline
-#define QN_FORCE_LINE		__forceinline
+#define QN_INLINE			QN_PRAGMA(warning(suppress:4514 4710)) __inline
+#define QN_FINLINE			__forceinline
 #define QN_FNAME			__FUNCTION__
 #define QN_ALIGN(x)			__declspec(align(x))
+#define QN_DEPRECATED(x)	__declspec(deprecated(x))
 #define QN_FALL_THROUGH
-#define QN_STMT_BEGIN		_QN_PRAGMA(warning(suppress:4127 4296)) do
+#define QN_STMT_BEGIN		QN_PRAGMA(warning(suppress:4127 4296)) do
 #define QN_STMT_END			while(0)
-#define QN_WARN_PUSH		_QN_PRAGMA(warning(push))
-#define QN_WARN_POP			_QN_PRAGMA(warning(pop))
+#define QN_WARN_PUSH		QN_PRAGMA(warning(push))
+#define QN_WARN_POP			QN_PRAGMA(warning(pop))
 #define QN_WARN_SIGN
-#define QN_WARN_ASSIGN		_QN_PRAGMA(warning(disable:4706))
+#define QN_WARN_ASSIGN		QN_PRAGMA(warning(disable:4706))
 #elif defined __GNUC__
 #define QN_INLINE			static inline
-#define QN_FORCE_LINE		static inline __attribute__ ((always_inline))
+#define QN_FINLINE			static inline __attribute__ ((always_inline))
 #define QN_FNAME			__FUNCTION__/*__PRETTY_FUNCTION__*/
 #define QN_ALIGN(x)			__attribute__((aligned(x)))
+#define QN_DEPRECATED(x)	__attribute__((deprecated(x)))
 #define QN_FALL_THROUGH		__attribute__((fallthrough))
 #define QN_STMT_BEGIN		do
 #define QN_STMT_END			while(0)
-#define QN_STMT_ASSIGN
-#define QN_WARN_PUSH		_QN_PRAGMA(GCC diagnostic push)
-#define QN_WARN_POP			_QN_PRAGMA(GCC diagnostic pop)
-#define QN_WARN_SIGN		_QN_PRAGMA(GCC diagnostic ignored "-Wsign-conversion")
+#define QN_WARN_PUSH		QN_PRAGMA(GCC diagnostic push)
+#define QN_WARN_POP			QN_PRAGMA(GCC diagnostic pop)
+#define QN_WARN_SIGN		QN_PRAGMA(GCC diagnostic ignored "-Wsign-conversion")
+#define QN_WARN_ASSIGN
 #endif
 
 #ifdef __cplusplus
@@ -129,26 +101,26 @@ QN_EXTC_BEGIN
 // macro
 
 // function support
-#define _QN_PRAGMA(x)		_Pragma(#x)
-#define _QN_STRING(x)		#x
-#define _QN_UNICODE(x)		L##x
-#define _QN_CONCAT_2(x,y)	x##y
-#define _QN_CONCAT_3(x,y,z)	x##y##z
-#define _QN_GET_MAC_2(_1,_2,N,...)		N
-#define _QN_GET_MAC_3(_1,_2,_3,N,...)	N
+#define QN_PRAGMA(x)		_Pragma(#x)
+#define QN_XSTRING(x)		#x
+#define QN_XUNICODE(x)		L##x
+#define QN_XCCAT_2(x,y)		x##y
+#define QN_XCCAT_3(x,y,z)	x##y##z
+#define QN_XCCAT_4(x,y,z,w)	x##y##z##w
+#define QN_XMAC_2(_1,_2,N,...)			N
+#define QN_XMAC_3(_1,_2,_3,N,...)		N
+#define QN_XMAC_4(_1,_2,_3,_4,N,...)	N
 
 // function
-#define QN_TODO(todo)		_QN_PRAGMA(message("TODO: " #todo " (" QN_FNAME ")"))
 #define QN_DUMMY(dummy)		(void)dummy
-#define QN_STRING(x)		_QN_STRING(x)					/// @brief 문자열로 정의
-#define QN_UNICODE(x)		_QN_UNICODE(x)					/// @brief 유니코드로 정의
-#define QN_CONCAT_2(x,y)	_QN_CONCAT_2(x, y)				/// @brief 두개 문구 합침
-#define QN_CONCAT_3(x,y,z)	_QN_CONCAT_3(x, y, z)			/// @brief 세개 문구 합침
-#define QN_CONCAT(...)		_QN_GET_MAC_3(__VA_ARGS__, QN_CONCAT_3, QN_CONCAT_2)(__VA_ARGS__)		/// @brief 문구 합침 (세개까지)
+#define QN_TODO(todo)		QN_PRAGMA(message("TODO: " #todo " (" QN_FNAME ")"))
+#define QN_STRING(x)		QN_XSTRING(x)					/// @brief 문자열로 정의
+#define QN_UNICODE(x)		QN_XUNICODE(x)					/// @brief 유니코드로 정의
+#define QN_CONCAT(...)		QN_XMAC_3(__VA_ARGS__, QN_XCCAT_4, QN_XCCAT_3, QN_XCCAT_2)(__VA_ARGS__)	/// @brief 문구 합침
 
 #define QN_COUNTOF(arr)		(sizeof(arr)/sizeof((arr)[0]))	/// @brief 배열 갯수 얻기
 #define QN_OFFSETOF(t,m)	((size_t)((char*)&((t*)0)->m))	/// @brief 구조체에서 위치 얻기
-#define QN_MEMBEROF(t,p,o)	(*(t*)((void*)((char*)(p)+(size_t)(o))))								/// @brief 구조체에서 위치 얻기(포인터)
+#define QN_MEMBEROF(t,p,o)	(*(t*)((void*)((char*)(p)+(size_t)(o))))	/// @brief 구조체에서 위치 얻기(포인터)
 
 #define QN_MAX(a,b)			(((a)>(b))?(a):(b))				/// @brief 최대값 얻기
 #define QN_MIN(a,b)			(((a)<(b))?(a):(b))				/// @brief 최소값 얻기
@@ -158,13 +130,8 @@ QN_EXTC_BEGIN
 #define QN_BIT(b)			(1<<(b))						/// @brief 마스크 만들기
 #define QN_TBIT(v,bit)		(((v)&(1<<(bit)))!=0)			/// @brief 비트가 있나 비교
 #define QN_TMASK(v,m)		(((v)&(m))!=0)					/// @brief 마스크가 있나 비교
-#ifdef _MSC_VER
-#define QN_SBIT(pv,b,set)	((set)?((*(pv))|=(1<<(b))):((*(pv))&=~(1<<(b))))						/// @brief 비트 설정
-#define QN_SMASK(pv,m,set)	((set)?((*(pv))|=(m)):((*(pv))&=~(m)))									/// @brief 마스크 설정
-#else
-#define QN_SBIT(pv,b,set)	QN_WARN_PUSH QN_WARN_SIGN ((set)?((*(pv))|=(1<<(b))):((*(pv))&=~(1<<(b)))) QN_WARN_POP
-#define QN_SMASK(pv,m,set)	QN_WARN_PUSH QN_WARN_SIGN ((set)?((*(pv))|=(m)):((*(pv))&=~(m))) QN_WARN_POP
-#endif
+#define QN_SBIT(pv,b,set)	QN_WARN_PUSH QN_WARN_SIGN ((set)?((*(pv))|=(1<<(b))):((*(pv))&=~(1<<(b)))) QN_WARN_POP	/// @brief 비트 설정
+#define QN_SMASK(pv,m,set)	QN_WARN_PUSH QN_WARN_SIGN ((set)?((*(pv))|=(m)):((*(pv))&=~(m))) QN_WARN_POP			/// @brief 마스크 설정
 
 // constant
 #define QN_VERSION_MAJOR	3
@@ -173,13 +140,10 @@ QN_EXTC_BEGIN
 #define QN_MSEC_PER_SEC		1000							/// @brief 초당 밀리초
 #define QN_USEC_PER_SEC		1000000							/// @brief 초당 마이크로초 
 #define QN_NSEC_PER_SEC		1000000000						/// @brief 초당 나노초 
-
 #define QN_MIN_HASH			11								/// @brief 최소 해시 갯수
 #define QN_MAX_HASH			13845163						/// @brief 최대 해시 갯수
 #define QN_MAX_RAND			0x7FFF							/// @brief 최대 난수
 #define QN_MAX_PATH			1024							/// @brief 경로의 최대 길이
-
-// path separator
 #ifdef _QN_WINDOWS_
 #define QN_PATH_SEP			'\\'							/// @brief 경로 분리 문자
 #else
@@ -569,14 +533,14 @@ QSAPI size_t qn_hash_crc(const byte* data, size_t size);
 /// @param[in] value 입력 값
 /// @return 소수 값
 /// @see QN_MIN_HASH, QN_MAX_HASH
-QSAPI uint32_t qn_prime_near(uint32_t value);
+QSAPI uint qn_prime_near(const uint value);
 
 /// @brief 제곱 소수 얻기. 근거리에 해당하는 제곱 소수를 계산해준다
 /// @param[in] value 입력 값
 /// @param[in] min 최소 값
 /// @param[out] shift 널이 아니면 쉬프트 크기
 /// @return 소수 값
-QSAPI uint32_t qn_prime_shift(uint32_t value, uint32_t min, uint32_t* shift);
+QSAPI uint qn_prime_shift(const uint value, const uint min, uint* shift);
 
 /// @brief 퀵정렬
 /// @param[in,out] ptr 정렬할 데이터의 포인터
@@ -612,7 +576,7 @@ QSAPI int qn_vsnprintf(char* restrict out, size_t len, const char* restrict fmt,
 /// @return 결과 문자열의 길이
 /// @note out 인수로 만든 문자열은 qn_free 함수로 해제해야 한다
 /// @see qn_free
-QSAPI int qn_vasprintf(char** out, const char* fmt, va_list va);
+QSAPI int qn_vasprintf(char** restrict out, const char* restrict fmt, va_list va);
 
 /// @brief 가변 포맷 문자열을 메모리 할당으로 만들어 반환한다
 /// @param[in] fmt 포맷 문자열
@@ -620,7 +584,7 @@ QSAPI int qn_vasprintf(char** out, const char* fmt, va_list va);
 /// @return 결과 문자열
 /// @note 반환 값은 qn_free 함수로 해제해야 한다
 /// @see qn_free
-QSAPI char* qn_vapsprintf(const char* fmt, va_list va);
+QSAPI char* qn_vapsprintf(const char* restrict fmt, va_list va);
 
 /// @brief 문자열을 포맷한다
 /// @param[out] out 출력 문자열의 버퍼 포인터. 문자열 길이만 얻으려면 NULL로 설정
@@ -637,7 +601,7 @@ QSAPI int qn_snprintf(char* restrict out, size_t len, const char* restrict fmt, 
 /// @return 결과 문자열의 길이
 /// @note out 인수로 만든 문자열은 qn_free 함수로 해제해야 한다
 /// @see qn_free
-QSAPI int qn_asprintf(char** out, const char* fmt, ...);
+QSAPI int qn_asprintf(char** restrict out, const char* restrict fmt, ...);
 
 /// @brief 문자열을 포맷하고 메모리를 반환한다
 /// @param[in] fmt 포맷 문자열
@@ -645,7 +609,40 @@ QSAPI int qn_asprintf(char** out, const char* fmt, ...);
 /// @return 결과 문자열
 /// @note 반환 값은 qn_free 함수로 해제해야 한다
 /// @see qn_free
-QSAPI char* qn_apsprintf(const char* fmt, ...);
+QSAPI char* qn_apsprintf(const char* restrict fmt, ...);
+
+/// @brief 문자열 복사
+/// @param p 대상
+/// @param src 원본
+/// @return 대상 포인터
+QSAPI char* qn_strcpy(char* restrict p, const char* restrict src);
+
+/// @brief 문자열 길이 만큼 복사
+/// @param p 대상
+/// @param src 원본
+/// @param len 복사할 길이
+/// @return 대상 포인터
+QSAPI char* qn_strncpy(char* restrict p, const char* restrict src, size_t len);
+
+/// @brief 문자열을 복사하고 대상 문자열을 끝부분을 반환한다
+/// @param[in,out] dest 대상 문자열
+/// @param[in] src 복사할 문자열
+/// @return 복사한 다음 대상 문자열 끝부분
+/// @details strcpy(dest, src); dest = dest + strlen(src) 라고 보면 된다
+QSAPI char* qn_stpcpy(char* restrict dest, const char* restrict src);
+
+/// @brief 문자열을 복제한다
+/// @param p 복제할 문자열
+/// @return 복제한 새로운 문자열
+/// @retval NULL 인수 p 가 NULL
+/// @note qn_free 함수로 헤재해야 한다
+QSAPI char* qn_strdup(const char* p);
+
+/// @brief 여러 문자열을 이어서 붙인다
+/// @param[in] p 첫 문자열
+/// @param ... 인수
+/// @note qn_free 함수로 해제해야 한다
+QSAPI char* qn_strcat(const char* p, ...);
 
 /// @brief 글자로 채우기
 /// @param[in,out] dest 채울 대상 버퍼
@@ -653,7 +650,7 @@ QSAPI char* qn_apsprintf(const char* fmt, ...);
 /// @param[in] end 채울 끝 위치
 /// @param[in] ch 채울 문자
 /// @return 마지막으로 채운 곳 + 1의 위치
-QSAPI size_t qn_strfll(char* dest, size_t pos, size_t end, int ch);
+QSAPI size_t qn_strfll(char* dest, const size_t pos, const size_t end, const int ch);
 
 /// @brief 문자열 해시
 /// @param[in] p 해시할 문자열
@@ -664,6 +661,66 @@ QSAPI size_t qn_strhash(const char* p);
 /// @param[in] p 해시할 문자열
 /// @return 해시 값
 QSAPI size_t qn_strihash(const char* p);
+
+/// @brief 문자열 비교
+/// @param p1 문자열1
+/// @param p2 문자열2
+/// @return 문자열 비교 값 (0보다 작으면 문자열1이, 0보다 크면 문자열2가 크다. 0이면 같음)
+QSAPI int qn_strcmp(const char* p1, const char* p2);
+
+/// @brief 문자열 길이 만큼 비교
+/// @param p1 문자열1
+/// @param p2 문자열2
+/// @param len 비교할 길이
+/// @return 문자열 비교 값 (0보다 작으면 문자열1이, 0보다 크면 문자열2가 크다. 0이면 같음)
+QSAPI int qn_strncmp(const char* p1, const char* p2, size_t len);
+
+/// @brief 문자열을 대소문자 구별없이 비교
+/// @param p1 문자열1
+/// @param p2 문자열2
+/// @return 문자열 비교 값 (0보다 작으면 문자열1이, 0보다 크면 문자열2가 크다. 0이면 같음)
+QSAPI int qn_stricmp(const char* p1, const char* p2);
+
+/// @brief 문자열을 길이 만큼 대소문자 구별없이 비교
+/// @param p1 문자열1
+/// @param p2 문자열2
+/// @param len 비교할 길이
+/// @return 문자열 비교 값 (0보다 작으면 문자열1이, 0보다 크면 문자열2가 크다. 0이면 같음)
+QSAPI int qn_strnicmp(const char* p1, const char* p2, size_t len);
+
+/// @brief 문자열을 찾는다
+/// @param[in] src 대상 문자열
+/// @param[in] find 찾을 문자열
+/// @param[in] index 찾기 시작할 대상 문자열의 위치
+/// @return 찾으면 찾은 위치를 반환
+/// @retval -1 찾지 못했을 때
+QSAPI int qn_strfnd(const char* src, const char* find, const size_t index);
+
+/// @brief 문자열에서 와일드 카드 찾기
+/// @param[in] string 대상 문자열
+/// @param[in] wild 찾을 와일드 카드
+/// @return 대상 문자열에 있으면 참
+/// @copyright Written by Jack Handy - jakkhandy@hotmail.com (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
+QSAPI bool qn_strwcm(const char* string, const char* wild);
+
+/// @brief 문자열에서 와일드 카드 찾기 (대소문자 구분 안함)
+/// @param[in] string 대상 문자열
+/// @param[in] wild 찾을 와일드 카드
+/// @return 대상 문자열에 있으면 참
+/// @copyright Written by Jack Handy - jakkhandy@hotmail.com (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
+QSAPI bool qn_striwcm(const char* string, const char* wild);
+
+/// @brief 문자열이 서로 같은지 비교
+/// @param p1 왼쪽 문자열
+/// @param p2 오른쪽 문자열
+/// @return 서로 같으면 참을 반환
+QSAPI bool qn_streqv(const char* p1, const char* p2);
+
+/// @brief 문자열이 서로 같은지 대소문자 무시하고 비교
+/// @param p1 왼쪽 문자열
+/// @param p2 오른쪽 문자열
+/// @return 서로 같으면 참을 반환
+QSAPI bool qn_strieqv(const char* p1, const char* p2);
 
 /// @brief 문자열에서 문자열을 찾는다
 /// @param[in] p 대상 문자열
@@ -678,7 +735,7 @@ QSAPI const char* qn_strbrk(const char* p, const char* c);
 /// @param[in] pos 찾을 위치
 /// @param[in] len 얻을 길이
 /// @return 얻은 문자열 버퍼 그대로
-QSAPI char* qn_strmid(char* restrict dest, const char* restrict src, size_t pos, size_t len);
+QSAPI char* qn_strmid(char* restrict dest, const char* restrict src, const size_t pos, const size_t len);
 
 /// @brief 문자열에서 왼쪽 공백을 없앤다
 /// @param[in,out] dest 대상 문자열
@@ -701,105 +758,6 @@ QSAPI char* qn_strtrm(char* dest);
 /// @return 대상 문자열 그대로
 QSAPI char* qn_strrem(char* restrict p, const char* restrict rmlist);
 
-/// @brief 문자열을 복사하고 대상 문자열을 끝부분을 반환한다
-/// @param[in,out] dest 대상 문자열
-/// @param[in] src 복사할 문자열
-/// @return 복사한 다음 대상 문자열 끝부분
-/// @details strcpy(dest, src); dest = dest + strlen(src) 라고 보면 된다
-QSAPI char* qn_stpcpy(char* restrict dest, const char* restrict src);
-
-/// @brief 문자열을 복제한다
-/// @param p 복제할 문자열
-/// @return 복제한 새로운 문자열
-/// @retval NULL 인수 p 가 NULL
-/// @note qn_free 함수로 헤재해야 한다
-QSAPI char* qn_strdup(const char* p);
-
-/// @brief 여러 문자열을 이어서 붙인다
-/// @param[in] p 첫 문자열
-/// @param ... 인수
-/// @note qn_free 함수로 해제해야 한다
-QSAPI char* qn_strcat(const char* p, ...);
-
-/// @brief 문자열에서 와일드 카드 찾기
-/// @param[in] string 대상 문자열
-/// @param[in] wild 찾을 와일드 카드
-/// @return 대상 문자열에 있으면 참
-/// @copyright Written by Jack Handy - jakkhandy@hotmail.com (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
-QSAPI bool qn_strwcm(const char* string, const char* wild);
-
-/// @brief 문자열에서 와일드 카드 찾기 (대소문자 구분 안함)
-/// @param[in] string 대상 문자열
-/// @param[in] wild 찾을 와일드 카드
-/// @return 대상 문자열에 있으면 참
-/// @copyright Written by Jack Handy - jakkhandy@hotmail.com (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
-QSAPI bool qn_striwcm(const char* string, const char* wild);
-
-/// @brief 문자열을 찾는다
-/// @param[in] src 대상 문자열
-/// @param[in] find 찾을 문자열
-/// @param[in] index 찾기 시작할 대상 문자열의 위치
-/// @return 찾으면 찾은 위치를 반환
-/// @retval -1 찾지 못했을 때
-QSAPI int qn_strfnd(const char* src, const char* find, size_t index);
-
-/// @brief 문자열이 서로 같은지 비교
-/// @param p1 왼쪽 문자열
-/// @param p2 오른쪽 문자열
-/// @return 서로 같으면 참을 반환
-QSAPI bool qn_streqv(const char* p1, const char* p2);
-
-/// @brief 문자열이 서로 같은지 대소문자 무시하고 비교
-/// @param p1 왼쪽 문자열
-/// @param p2 오른쪽 문자열
-/// @return 서로 같으면 참을 반환
-QSAPI bool qn_strieqv(const char* p1, const char* p2);
-
-/// @brief 32비트 정수를 문자열로 변환
-/// @param p 문자열 버퍼
-/// @param n 32비트 정수
-/// @param base 진수
-/// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
-QSAPI int qn_itoa(char* p, int n, uint base, bool upper);
-
-/// @brief 64비트 정수를 문자열로 변환
-/// @param p 문자열 버퍼
-/// @param n 64비트 정수
-/// @param base 진수
-/// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
-QSAPI int qn_lltoa(char* p, llong n, uint base, bool upper);
-
-/// @brief 문자열을 32비트 정수로
-/// @param p 문자열
-/// @param base 진수
-/// @return 바꾼 정수값
-QSAPI uint qn_strtoi(const char* p, uint base);
-
-/// @brief 문자열을 64비트 정수로
-/// @param p 문자열
-/// @param base 진수
-/// @return 바꾼 정수값
-QSAPI ullong qn_strtoll(const char* p, uint base);
-
-/// @brief 문자열 복사
-/// @param p 대상
-/// @param src 원본
-/// @return 대상 포인터
-QSAPI char* qn_strcpy(char* p, const char* src);
-
-/// @brief 문자열 복사
-/// @param p 대상
-/// @param src 원본
-/// @return 대상에서 복사한 길이 만큼 위치
-QSAPI char* qn_strpcpy(char* p, const char* src);
-
-/// @brief 문자열 길이 만큼 복사
-/// @param p 대상
-/// @param src 원본
-/// @param len 복사할 길이
-/// @return 대상 포인터
-QSAPI char* qn_strncpy(char* p, const char* src, size_t len);
-
 /// @brief 문자열을 대문자로
 /// @param p 대문자로 바꿀 문자열
 /// @return 대상 포인터
@@ -810,26 +768,234 @@ QSAPI char* qn_strupr(char* p);
 /// @return 대상 포인터
 QSAPI char* qn_strlwr(char* p);
 
+/// @brief 문자열을 32비트 정수로
+/// @param p 문자열
+/// @param base 진수
+/// @return 바꾼 정수값
+QSAPI uint qn_atoi(const char* p, const uint base);
+
+/// @brief 문자열을 64비트 정수로
+/// @param p 문자열
+/// @param base 진수
+/// @return 바꾼 정수값
+QSAPI ullong qn_atoll(const char* p, const uint base);
+
+/// @brief 문자열을 32비트 실수로
+/// @param p 문자열
+/// @return 바꾼 실수값
+QSAPI float qn_atof(const char* p);
+
+/// @brief 문자열을 64비트 실수로
+/// @param p 문자열
+/// @return 바꾼 실수값
+QSAPI double qn_atod(const char* p);
+
+/// @brief 32비트 정수를 문자열로 변환
+/// @param p 문자열 버퍼
+/// @param n 32비트 정수
+/// @param base 진수
+/// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
+QSAPI int qn_itoa(char* p, const int n, const uint base, bool upper);
+
+/// @brief 64비트 정수를 문자열로 변환
+/// @param p 문자열 버퍼
+/// @param n 64비트 정수
+/// @param base 진수
+/// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
+QSAPI int qn_lltoa(char* p, const llong n, const uint base, bool upper);
+
+/// @brief 문자열 복사
+/// @param p 대상
+/// @param src 원본
+/// @return 대상 포인터
+QSAPI wchar* qn_wcscpy(wchar* restrict p, const wchar* restrict src);
+
+/// @brief 문자열 길이 만큼 복사
+/// @param p 대상
+/// @param src 원본
+/// @param len 복사할 길이
+/// @return 대상 포인터
+QSAPI wchar* qn_wcsncpy(wchar* restrict p, const wchar* restrict src, size_t len);
+
+/// @brief 문자열을 복사하고 대상 문자열을 끝부분을 반환한다
+/// @param[in,out] dest 대상 문자열
+/// @param[in] src 복사할 문자열
+/// @return 복사한 다음 대상 문자열 끝부분
+/// @details strcpy(dest, src); dest = dest + strlen(src) 라고 보면 된다
+QSAPI wchar* qn_wcpcpy(wchar* restrict dest, const wchar* restrict src);
+
+/// @brief 문자열을 복제한다
+/// @param p 복제할 문자열
+/// @return 복제한 새로운 문자열
+/// @retval NULL 인수 p 가 NULL
+/// @note qn_free 함수로 헤재해야 한다
+QSAPI wchar* qn_wcsdup(const wchar* p);
+
+/// @brief 여러 문자열을 이어서 붙인다
+/// @param[in] p 첫 문자열
+/// @param ... 인수
+/// @note qn_free 함수로 해제해야 한다
+QSAPI wchar* qn_wcscat(const wchar* p, ...);
+
+/// @brief 글자로 채우기
+/// @param[in,out] dest 채울 대상 버퍼
+/// @param[in] pos 채울 시작 위치
+/// @param[in] end 채울 끝 위치
+/// @param[in] ch 채울 문자
+/// @return 마지막으로 채운 곳 + 1의 위치
+QSAPI size_t qn_wcsfll(wchar* dest, const size_t pos, const size_t end, const wint_t ch);
+
+/// @brief 문자열 해시
+/// @param[in] p 해시할 문자열
+/// @return 해시 값
+QSAPI size_t qn_wcshash(const wchar* p);
+
+/// @brief 문자열 해시 (대소문자 구별 안함
+/// @param[in] p 해시할 문자열
+/// @return 해시 값
+QSAPI size_t qn_wcsihash(const wchar* p);
+
+/// @brief 문자열 비교
+/// @param p1 문자열1
+/// @param p2 문자열2
+/// @return 문자열 비교 값 (0보다 작으면 문자열1이, 0보다 크면 문자열2가 크다. 0이면 같음)
+QSAPI int qn_wcscmp(const wchar* p1, const wchar* p2);
+
 /// @brief 문자열 길이 만큼 비교
 /// @param p1 문자열1
 /// @param p2 문자열2
 /// @param len 비교할 길이
 /// @return 문자열 비교 값 (0보다 작으면 문자열1이, 0보다 크면 문자열2가 크다. 0이면 같음)
-QSAPI int qn_strncmp(const char* p1, const char* p2, size_t len);
+QSAPI int qn_wcsncmp(const wchar* p1, const wchar* p2, size_t len);
 
 /// @brief 문자열을 대소문자 구별없이 비교
 /// @param p1 문자열1
 /// @param p2 문자열2
 /// @return 문자열 비교 값 (0보다 작으면 문자열1이, 0보다 크면 문자열2가 크다. 0이면 같음)
-QSAPI int qn_stricmp(const char* p1, const char* p2);
+QSAPI int qn_wcsicmp(const wchar* p1, const wchar* p2);
 
 /// @brief 문자열을 길이 만큼 대소문자 구별없이 비교
 /// @param p1 문자열1
 /// @param p2 문자열2
 /// @param len 비교할 길이
 /// @return 문자열 비교 값 (0보다 작으면 문자열1이, 0보다 크면 문자열2가 크다. 0이면 같음)
-QSAPI int qn_strnicmp(const char* p1, const char* p2, size_t len);
+QSAPI int qn_wcsnicmp(const wchar* p1, const wchar* p2, size_t len);
 
+/// @brief 문자열을 찾는다
+/// @param[in] src 대상 문자열
+/// @param[in] find 찾을 문자열
+/// @param[in] index 찾기 시작할 대상 문자열의 위치
+/// @return 찾으면 찾은 위치를 반환
+/// @retval -1 찾지 못했을 때
+QSAPI int qn_wcsfnd(const wchar* src, const wchar* find, const size_t index);
+
+/// @brief 문자열에서 와일드 카드 찾기
+/// @param[in] string 대상 문자열
+/// @param[in] wild 찾을 와일드 카드
+/// @return 대상 문자열에 있으면 참
+/// @copyright Written by Jack Handy - jakkhandy@hotmail.com (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
+QSAPI bool qn_wcswcm(const wchar* string, const wchar* wild);
+
+/// @brief 문자열에서 와일드 카드 찾기 (대소문자 구분 안함)
+/// @param[in] string 대상 문자열
+/// @param[in] wild 찾을 와일드 카드
+/// @return 대상 문자열에 있으면 참
+/// @copyright Written by Jack Handy - jakkhandy@hotmail.com (http://www.codeproject.com/Articles/1088/Wildcard-string-compare-globbing)
+QSAPI bool qn_wcsiwcm(const wchar* string, const wchar* wild);
+
+/// @brief 문자열이 서로 같은지 비교
+/// @param p1 왼쪽 문자열
+/// @param p2 오른쪽 문자열
+/// @return 서로 같으면 참을 반환
+QSAPI bool qn_wcseqv(const wchar* p1, const wchar* p2);
+
+/// @brief 문자열이 서로 같은지 대소문자 무시하고 비교
+/// @param p1 왼쪽 문자열
+/// @param p2 오른쪽 문자열
+/// @return 서로 같으면 참을 반환
+QSAPI bool qn_wcsieqv(const wchar* p1, const wchar* p2);
+
+/// @brief 문자열에서 문자열을 찾는다
+/// @param[in] p 대상 문자열
+/// @param[in] c 찾을 문자열
+/// @return 찾을 경우 대상 문자열의 위치 포인터
+/// @retval NULL 못 찾았다
+QSAPI const wchar* qn_wcsbrk(const wchar* p, const wchar* c);
+
+/// @brief 문자열을 특정 위치에서 얻는다
+/// @param[in,out] dest 얻은 문자열 버퍼
+/// @param[in] src 원본 문자열
+/// @param[in] pos 찾을 위치
+/// @param[in] len 얻을 길이
+/// @return 얻은 문자열 버퍼 그대로
+QSAPI wchar* qn_wcsmid(wchar* restrict dest, const wchar* restrict src, const size_t pos, const size_t len);
+
+/// @brief 문자열에서 왼쪽 공백을 없앤다
+/// @param[in,out] dest 대상 문자열
+/// @return 대상 문자열 그대로
+QSAPI wchar* qn_wcsltm(wchar* dest);
+
+/// @brief 문자열에서 오른쪽 공백을 없앤다
+/// @param[in,out] dest 대상 문자열
+/// @return 대상 문자열 그대로
+QSAPI wchar* qn_wcsrtm(wchar* dest);
+
+/// @brief 문자열에서 왼쪽/오른쪽 공백을 없앤다
+/// @param[in,out] dest 대상 문자열
+/// @return 대상 문자열 그대로
+QSAPI wchar* qn_wcstrm(wchar* dest);
+
+/// @brief 대상 문자열에서 지정한 문자들을 지운다
+/// @param[in,out] p 대상 문자열
+/// @param[in] rmlist 지울 문자 배열
+/// @return 대상 문자열 그대로
+QSAPI wchar* qn_wcsrem(wchar* restrict p, const wchar* restrict rmlist);
+
+/// @brief 문자열을 대문자로
+/// @param p 대문자로 바꿀 문자열
+/// @return 대상 포인터
+QSAPI wchar* qn_wcsupr(wchar* p);
+
+/// @brief 문자열을 소문자로
+/// @param p 소문자로 바꿀 문자열
+/// @return 대상 포인터
+QSAPI wchar* qn_wcslwr(wchar* p);
+
+/// @brief 문자열을 32비트 정수로
+/// @param p 문자열
+/// @param base 진수
+/// @return 바꾼 정수값
+QSAPI uint qn_wtoi(const wchar* p, const uint base);
+
+/// @brief 문자열을 64비트 정수로
+/// @param p 문자열
+/// @param base 진수
+/// @return 바꾼 정수값
+QSAPI ullong qn_wtoll(const wchar* p, const uint base);
+
+/// @brief 문자열을 32비트 실수로
+/// @param p 문자열
+/// @return 바꾼 실수값
+QSAPI float qn_wtof(const wchar* p);
+
+/// @brief 문자열을 64비트 실수로
+/// @param p 문자열
+/// @return 바꾼 실수값
+QSAPI double qn_wtod(const wchar* p);
+
+/// @brief 32비트 정수를 문자열로 변환
+/// @param p 문자열 버퍼
+/// @param n 32비트 정수
+/// @param base 진수
+/// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
+QSAPI int qn_itow(wchar* p, const int n, const uint base, bool upper);
+
+/// @brief 64비트 정수를 문자열로 변환
+/// @param p 문자열 버퍼
+/// @param n 64비트 정수
+/// @param base 진수
+/// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
+QSAPI int qn_lltow(wchar* p, const llong n, const uint base, bool upper);
 
 /// @brief UTF-8 문자를 UCS-4 문자로.
 /// @param[in] p utf8 문자.

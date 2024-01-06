@@ -4,6 +4,7 @@
 //
 
 #include "pch.h"
+#include <stdlib.h>
 #include "qs_qn.h"
 #include "qs_ctn.h"
 
