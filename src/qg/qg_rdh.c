@@ -22,7 +22,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	};
 	static struct rdh_renderer renderers[] =
 	{
-#ifdef USE_ES
+#if defined USE_ES
 		{ "ES", "GLES", es_allocator, QGRENDERER_ES3 },
 #endif
 #if defined USE_ES
@@ -41,7 +41,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 				break;
 			}
 	}
-	if (renderer == NULL)
+	if (renderer->allocator == NULL)
 	{
 		qn_debug_outputs(true, "RDH", "cannot found valid renderer");
 		return false;

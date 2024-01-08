@@ -4,10 +4,10 @@
 
 # 이 프로젝트의 실행 파일에 소스를 추가합니다.
 add_library (qs ${QSBUILD_LIBRARY_TYPE} 
-	"pch.c" "pch.h" "qs_conf.h" "qn/PatrickPowell_snprintf.c" 
-	"qn/qn.c" "qn/qn.c" "qn/qn_debug.c" "qn/qn_file.c" "qn/qn_hash.c" "qn/qn_mem.c" "qn/qn_mlu.c" "qn/qn_sort.c" "qn/qn_str.c" "qn/qn_thd.c" "qn/qn_time.c" "qn/qm_math.c" "qn/qs_gam.c" 
+	"pch.c" "pch.h" "qs_conf.h" "qn/PatrickPowell_snprintf.c" "qn/qm_math.c" 
+	"qn/qn.c" "qn/qn_file.c" "qn/qn_prf.c" "qn/qn_mlu.c" "qn/qn_str.c" "qn/qn_thd.c" "qn/qn_time.c" "qn/qs_gam.c" 
 	"qn/zlib/adler32.c" "qn/zlib/compress.c" "qn/zlib/crc32.c" "qn/zlib/deflate.c" "qn/zlib/gzclose.c" "qn/zlib/gzlib.c" "qn/zlib/gzread.c" "qn/zlib/gzwrite.c" "qn/zlib/infback.c" "qn/zlib/inffast.c" "qn/zlib/inflate.c" "qn/zlib/inftrees.c" "qn/zlib/trees.c" "qn/zlib/uncompr.c" "qn/zlib/zutil.c" 
-	"qg/qg_kmc.c" "qg/stub/qg_stub.c")
+	"qg/qg_kmc.c" "qg/qg_stub.c" "qg/qg_rdh.c" "qg/stub/qgrdh_es.c")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET qs PROPERTY C_STANDARD 17)
@@ -16,9 +16,10 @@ endif()
 # 설정
 if (QSBUILD_SDL2)
 	target_compile_definitions(qs PRIVATE USE_SDL2)
-	target_sources(qs PRIVATE "qg/stub/qgsdl_stub.c")
+	target_sources(qs PRIVATE "qg/stub/qgstub_sdl.c")
 	if (MSVC)
 		set (MSVC_SDL2_DIRECTORY ../builds/external/SDL2Windows)
+		target_compile_definitions(qs PRIVATE USE_D12 USE_ES)
 		target_include_directories(qs PRIVATE "${MSVC_SDL2_DIRECTORY}")
 		target_link_directories(qs PRIVATE "${MSVC_SDL2_DIRECTORY}")
 		if (CMAKE_CL_64)
@@ -28,18 +29,19 @@ if (QSBUILD_SDL2)
 			target_link_options (qs PRIVATE SDL2.lib)
 			#copy_file(qs "${MSVC_SDL2_DIRECTORY}/SDL2.dll" "${LIBRARY_OUTPUT_PATH}")
 		endif()
-	elseif()
+	else()
+		target_compile_definitions(qs PRIVATE USE_ES)
 		target_link_libraries (qs PRIVATE SDL2)
 	endif()
 endif()
 if (QSBUILD_WINDOWS)
-	target_sources(qs PRIVATE "qg/stub/qgwin_stub.h" "qg/stub/qgwin_stub.c" "qg/stub/qgwin_stub_func.h")
+	target_sources(qs PRIVATE "qg/stub/qgstub_win.c" "qg/stub/qgstub_win_func.h")
 	target_compile_options (qs PRIVATE "/arch:AVX2" "/fp:fast")
-	target_compile_definitions(qs PRIVATE USE_D12 USE_ES3)
+	target_compile_definitions(qs PRIVATE USE_D12 USE_ES)
 endif()
 if (QSBUILD_WAYLAND)
-	target_sources(qs PRIVATE "qg/stub/qgwl_stub.h" "qg/stub/qgwl_stub.c" "qg/stub/qgwl_stub_func.h" "qg/stub/qgwl_stub_so.h")
-	target_compile_definitions(qs PRIVATE USE_WAYLAND USE_ES3)
+	target_sources(qs PRIVATE "qg/stub/qgstub_wlx.c" "qg/stub/qgstub_wlx_func.h")
+	target_compile_definitions(qs PRIVATE USE_WAYLAND USE_ES)
 	
 	find_program(WAYLAND_SCANNER NAMES wayland-scanner)
 	include (FindPkgConfig)
@@ -71,8 +73,8 @@ if (QSBUILD_WAYLAND)
 	target_include_directories (qs PRIVATE ${Wayland_INCLUDE_DIRS})
 endif()
 if (QSBUILD_EMSCRIPTEN)
-	target_sources(qs PRIVATE "qg/stub/qgems_stub.c")
-	target_compile_definitions(qs PRIVATE USE_ES3)
+	target_sources(qs PRIVATE "qg/stub/qgstub_emscripten.c")
+	target_compile_definitions(qs PRIVATE USE_ES)
 	target_link_options (qs PRIVATE "-sASYNCIFY")
 endif()
 

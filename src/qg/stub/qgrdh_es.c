@@ -319,14 +319,8 @@ RdhBase* es_allocator(QgFlag flags)
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 
 	Uint32 sdl_flag = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
-	if (QN_TMASK(flags, QGFLAG_VSYNC) == false)
-		SDL_GL_SetSwapInterval(0);
-	else
-	{
-		if (SDL_GL_SetSwapInterval(-1) < 0)
-			SDL_GL_SetSwapInterval(1);
+	if (QN_TMASK(flags, QGFLAG_VSYNC))
 		sdl_flag |= SDL_RENDERER_PRESENTVSYNC;
-	}
 
 	self->renderer = SDL_CreateRenderer(self->window, -1, sdl_flag);
 	if (self->renderer == NULL || SDL_GL_LoadLibrary(NULL) != 0)
@@ -340,7 +334,15 @@ RdhBase* es_allocator(QgFlag flags)
 	{
 		qn_debug_outputs(true, "ESRDH", "cannot initialize es client");
 		goto pos_fail_exit;
-}
+	}
+
+	if (QN_TMASK(flags, QGFLAG_VSYNC) == false)
+		SDL_GL_SetSwapInterval(0);
+	else
+	{
+		if (SDL_GL_SetSwapInterval(-1) < 0)
+			SDL_GL_SetSwapInterval(1);
+	}
 #else
 	//----- EGL 초기화
 	self->native_window = stub_system_get_window();

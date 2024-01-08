@@ -5,7 +5,6 @@
 
 #include "pch.h"
 #include "qs_qn.h"
-#include <stdlib.h>
 #ifdef __GNUC__
 #include <signal.h>
 #include <stdio.h>
@@ -252,6 +251,7 @@ typedef struct MemBlock
 	const char*			desc;
 
 	size_t				index;
+	size_t				align;
 
 	size_t				size;
 	size_t				block;

@@ -13,6 +13,8 @@
 #define _GNU_SOURCE
 #endif
 
+#include <assert.h>
+
 // Windows
 #ifdef _WIN32
 #define STRICT

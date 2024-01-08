@@ -6,6 +6,9 @@
 #include "pch.h"
 #include "qs_qn.h"
 #include "qs_ctn.h"
+#ifdef __GNUC__
+#include <stdio.h>
+#endif
 
 typedef struct QnRealTag QnRealTag;
 

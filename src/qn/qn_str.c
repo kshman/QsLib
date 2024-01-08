@@ -9,8 +9,6 @@
 #include "qs_qn.h"
 #include <ctype.h>
 #include <wctype.h>
-#include <stdlib.h>
-#include <string.h>
 #ifdef __GNUC__
 #include <strings.h>
 #endif

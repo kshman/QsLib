@@ -1474,7 +1474,7 @@ QN_INLINE QmVec4 qm_vec4_cross(const QmVec4 v1, const QmVec4 v2, const QmVec4 v3
 		.Z = v1.X * (v2.Y * v3.W - v3.Y * v2.W) - v1.Y * (v2.X * v3.W - v3.X * v2.W) + v1.W * (v2.X * v3.Y - v3.X * v2.Y),
 		.W = -(v1.X * (v2.Y * v3.Z - v3.Y * v2.Z) - v1.Y * (v2.X * v3.Z - v3.X * v2.Z) + v1.Z * (v2.X * v3.Y - v3.X * v2.Y)),
 	};
-#endif;
+#endif
 	return r;
 }
 
@@ -1782,7 +1782,7 @@ QN_INLINE void qm_veci3_rst(QmVecI3* v)		// identify
 
 /// @brief 벡터3 대각값 설정 (모두 같은값으로 설정)
 /// @param void 대각값
-QN_INLINE QmVecI3 qm_veci3_diag(QmVecI3* v, const int diag)
+QN_INLINE void qm_veci3_diag(QmVecI3* v, const int diag)
 {
 	v->X = diag;
 	v->Y = diag;
@@ -2279,7 +2279,7 @@ QN_INLINE void qm_quat_setv4(QmQuat* q, const QmVec4 v)
 /// @brief 사원수 값 설정
 /// @param p 입력 벡터3
 /// @param w w 요소
-QN_INLINE QmQuat qm_quat_setv3(QmQuat* q, const QmVec3 p, const float w)
+QN_INLINE void qm_quat_setv3(QmQuat* q, const QmVec3 p, const float w)
 {
 #if defined QM_USE_SSE
 	q->m128 = _mm_setr_ps(p.X, p.Y, p.Z, w);

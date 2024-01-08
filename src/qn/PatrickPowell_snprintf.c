@@ -75,6 +75,8 @@
 
 #include "pch.h"
 #include "qs_qn.h"
+#include <ctype.h>
+#include <wctype.h>
 #include <locale.h>
 
 /*

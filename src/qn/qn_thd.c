@@ -9,8 +9,11 @@
 #include <intrin.h>
 #endif
 #ifdef __GNUC__
+#include <errno.h>
+#include <signal.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <sys/time.h>
 #endif
 
 #ifdef _QN_WINDOWS_

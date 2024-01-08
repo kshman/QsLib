@@ -110,14 +110,14 @@ bool stub_system_open(const char* title, const int display, const int width, con
 		if (QN_TMASK(flags, QGRENDERER_ES3))
 		{
 			SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengles2");
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_ES, SDL_GL_CONTEXT_PROFILE_ES);
+			//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_ES, SDL_GL_CONTEXT_PROFILE_ES);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 		}
 		else
 		{
 			SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_ES, SDL_GL_CONTEXT_PROFILE_CORE);
+			//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_ES, SDL_GL_CONTEXT_PROFILE_CORE);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 		}
@@ -125,24 +125,24 @@ bool stub_system_open(const char* title, const int display, const int width, con
 
 	QmSize clientsize;
 	if (width > 256 && height > 256)
-		qm_set2(&clientsize, width, height);
+		clientsize = qm_size(width, height);
 	else
 	{
 		if (QN_TMASK(flags, QGFLAG_FULLSCREEN))
-			qm_set2(&clientsize, 256, 256);	// SDL은 풀스크린일 때 너비/높이 무시함
+			clientsize = qm_size(256, 256);
 		else
 		{
 			if (monitor->height > 800)
-				qm_set2(&clientsize, 1280, 720);
+				clientsize = qm_size(1280, 720);
 			else
-				qm_set2(&clientsize, 720, 450);
+				clientsize = qm_size(720, 450);
 		}
 	}
 
 	sdlStub.window = SDL_CreateWindow(title && *title ? title : "QS",
 		SDL_WINDOWPOS_CENTERED_DISPLAY(sdlStub.base.display),
 		SDL_WINDOWPOS_CENTERED_DISPLAY(sdlStub.base.display),
-		clientsize.width, clientsize.height, window_flags);
+		clientsize.Width, clientsize.Height, window_flags);
 	if (sdlStub.window == NULL)
 	{
 		qn_debug_outputs(true, "SDL STUB", "SDL_CreateWindow() failed");
@@ -215,9 +215,9 @@ void stub_system_set_title(const char* title)
 //
 void stub_system_update_bound(void)
 {
-	SDL_GetWindowSize(sdlStub.window, &sdlStub.base.client_size.width, &sdlStub.base.client_size.height);
-	SDL_GetWindowPosition(sdlStub.window, &sdlStub.base.window_bound.left, &sdlStub.base.window_bound.top);
-	qm_rect_resize(&sdlStub.base.window_bound, sdlStub.base.client_size.width, sdlStub.base.client_size.height);
+	SDL_GetWindowSize(sdlStub.window, &sdlStub.base.client_size.Width, &sdlStub.base.client_size.Height);
+	SDL_GetWindowPosition(sdlStub.window, &sdlStub.base.window_bound.Left, &sdlStub.base.window_bound.Top);
+	sdlStub.base.window_bound = qm_rect_resize(sdlStub.base.window_bound, sdlStub.base.client_size.Width, sdlStub.base.client_size.Height);
 }
 
 //

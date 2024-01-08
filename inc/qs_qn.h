@@ -10,12 +10,18 @@
 #define __QS_QN__
 
 #include <assert.h>
-#include <stdarg.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #ifdef _MSC_VER
 #include <intrin.h>
+#endif
+#ifdef __GNUC__
+#include <wchar.h>
 #endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>

@@ -150,11 +150,11 @@ typedef struct RenderTransform
 // 렌더 인수
 typedef struct RenderParam
 {
-	QmColor				bgc;
 	QmVec4				v[4];
 	QmMat4				m[4];
 	QmMat4*				bone_ptr;
 	int					bone_count;
+	QmColor				bgc;
 } RenderParam;
 
 // 렌더러 디바이스
