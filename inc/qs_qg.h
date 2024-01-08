@@ -15,17 +15,15 @@
 
 QN_EXTC_BEGIN
 
-//
-typedef struct QgGam		QgGam;							/// @brief 런더 감
-typedef struct QgBuffer		QgBuffer;						/// @brief 버퍼
-typedef struct QgRender		QgRender;						/// @brief 렌더 파이프라인
-
 
 //////////////////////////////////////////////////////////////////////////
 // property
 #define QG_PROP_WINDOWS_ICON			"QG_PROP_WINDOWS_ICON"
 #define QG_PROP_WINDOWS_SMALLICON		"QG_PROP_WINDOWS_SMALLICON"
-#define QG_PROP_OPENGL					"QG_PROP_OPENGL"
+#define QG_PROP_RGBA_SIZE				"QG_PROP_RGBA_SIZE"
+#define QG_PROP_DEPTH_SIZE				"QG_PROP_DEPTH_SIZE"
+#define QG_PROP_STENCIL_SIZE			"QG_PROP_STENCIL_SIZE"
+#define QG_PROP_MSAA					"QG_PROP_MSAA"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -255,8 +253,9 @@ typedef enum QgFlag
 	QGFLAG_DPISCALE = QN_BIT(6),							/// @brief DPI 스케일
 	// 렌더러 플래그 (8~15)
 	QGFLAG_VSYNC = QN_BIT(8),								/// @brief VSYNC 켜기
-	QGFLAG_DITHER = QN_BIT(9),								/// @brief 16비트 모드 사용
-	QGFLAG_MSAA = QN_BIT(10),								/// @brief 멀티 샘플링 사용
+	QGFLAG_MSAA = QN_BIT(9),								/// @brief 멀티 샘플링 사용
+	QGFLAG_DITHER = QN_BIT(10),								/// @brief 16비트 모드 사용
+	QGFLAG_DITHER_ALPHA_STENCIL = QN_BIT(11),				/// @brief 16비트 모드일 때 알파 1비트 추가하고 스텐실도 켬
 	// 렌더러 종류 (16~23)
 	QGRENDERER_ES3 = QN_BIT(21),
 	QGRENDERER_OPENGL = QN_BIT(22),
@@ -415,7 +414,7 @@ typedef struct QgVarShader
 	nuint				offset;								/// @brief 변수 옵셋
 	ushort				size;								/// @brief 변수의 크기
 
-	ushort				manual;								/// @brief 수동 모드 여부
+	bool16				manual;								/// @brief 수동 모드 여부
 	QgShdConstType		type;								/// @brief 변수 타입
 } QgVarShader;
 
@@ -724,6 +723,10 @@ QSAPI const char* qg_string_window_event(QgWindowEventType wev);
 //////////////////////////////////////////////////////////////////////////
 // render device
 
+typedef struct QgGam		QgGam;							/// @brief 런더 감
+typedef struct QgBuffer		QgBuffer;						/// @brief 버퍼
+typedef struct QgRender		QgRender;						/// @brief 렌더 파이프라인
+
 /// @brief 렌더러를 연다
 /// @param driver 드라이버 이름 (NULL로 지정하여 기본값)
 /// @param title 윈도우 타이틀
@@ -875,7 +878,16 @@ QSAPI bool qg_rdh_ptr_draw_indexed(QgTopology tpg,
 
 
 //////////////////////////////////////////////////////////////////////////
-// 버퍼
+// 렌더 오브젝트
+
+/// @brief 렌더 파이프라인
+struct QgRender
+{
+	QsGam				base;
+
+	size_t				hash;
+	nint				settle;
+};
 
 /// @brief 버퍼
 struct QgBuffer

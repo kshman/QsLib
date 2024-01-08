@@ -553,9 +553,7 @@ bool stub_track_mouse_click(const QimButton button, const QimTrack track)
 	{
 		if (m->clk.tick > 0)
 		{
-			const int dx = m->clk.loc.x - m->pt.x;
-			const int dy = m->clk.loc.y - m->pt.y;
-			const uint d = (uint)(dx * dx) + (uint)(dy * dy);
+			const uint d = qm_len_sq(qm_sub(m->clk.loc, m->pt));
 			if (d > m->lim.move)
 			{
 				// 마우스가 move 만큼 움직이면 두번 누르기 취소
@@ -654,7 +652,7 @@ bool stub_event_on_layout(const bool enter)
 
 	QmSize prev = stub->client_size;
 	stub_system_update_bound();
-	if (qm_eq(&prev, &stub->client_size) == false)
+	if (qm_eq(prev, stub->client_size) == false)
 	{
 		// 크기가 변하면 레이아웃
 		const QgEvent e =
@@ -719,16 +717,16 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 		case QGWEV_MOVED:
 			if (QN_TMASK(stub->flags, QGFLAG_FULLSCREEN))
 				return false;
-			if (stub->window_bound.left == param1 && stub->window_bound.top == param2)
+			if (stub->window_bound.Left == param1 && stub->window_bound.Top == param2)
 				return false;
-			qm_rect_move(&stub->window_bound, param1, param2);
+			stub->window_bound = qm_rect_move(stub->window_bound, param1, param2);
 			// SDL은 모니터 검사를 하고 다르면 모니터 이벤트를 추가한다
 			break;
 
 		case QGWEV_SIZED:
-			if (qm_rect_width(&stub->window_bound) == param1 && qm_rect_height(&stub->window_bound) == param2)
+			if (qm_rect_width(stub->window_bound) == param1 && qm_rect_height(stub->window_bound) == param2)
 				return 0;
-			qm_rect_resize(&stub->window_bound, param1, param2);
+			stub->window_bound = qm_rect_resize(stub->window_bound, param1, param2);
 			// 여기도 SDL은 모니터 검사를 하고 다르면 모니터 이벤트를 추가한다
 			break;
 
@@ -870,21 +868,21 @@ bool stub_event_on_mouse_move(int x, int y)
 	QgUimMouse* um = &qg_instance_stub->mouse;
 
 	um->last = um->pt;
-	um->delta.x = um->pt.x - x;
-	um->delta.y = um->pt.y - y;
-	qm_set2(&um->pt, x, y);
+	um->delta.X = um->pt.X - x;
+	um->delta.Y = um->pt.Y - y;
+	um->pt = qm_point(x, y);
 
-	if (um->delta.x == 0 && um->delta.y == 0)
+	if (um->delta.X == 0 && um->delta.Y == 0)
 		return false;
 
 	const QgEvent e =
 	{
 		.mmove.ev = QGEV_MOUSEMOVE,
 		.mmove.mask = um->mask,
-		.mmove.pt.x = x,
-		.mmove.pt.y = y,
-		.mmove.delta.x = um->last.x - x,
-		.mmove.delta.y = um->last.y - y,
+		.mmove.pt.X = x,
+		.mmove.pt.Y = y,
+		.mmove.delta.X = um->last.X - x,
+		.mmove.delta.Y = um->last.Y - y,
 	};
 	return qg_add_event(&e, false) > 0;
 }
@@ -959,8 +957,8 @@ bool stub_event_on_mouse_wheel(const float x, const float y, const bool directio
 		(um->wheel.accm.Y < 0.0f) ? (int)ceilf(um->wheel.accm.Y) : 0;	// NOLINT
 	um->wheel.accm.Y -= (float)iy;
 
-	qm_point_set(&um->wheel.integral, ix, iy);
-	qm_vec2_set(&um->wheel.precise, x, y);
+	um->wheel.integral = qm_point(ix, iy);
+	um->wheel.precise = qm_vec2(x, y);
 
 	const QgEvent e =
 	{

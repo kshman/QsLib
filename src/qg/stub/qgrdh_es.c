@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#ifdef USE_ES
 
 #ifndef STATIC_ES_LIBRARY
 #ifndef USE_SDL2
@@ -6,8 +7,7 @@
 #endif
 #define GLAD_GLES2_IMPLEMENTATION	1
 #endif
-#include "qges_rdh.h"
-#include "qggl_code.h"
+#include "qgrdh_es.h"
 
 #define ES_MAX_LAYOUT_COUNT		16
 
@@ -15,8 +15,11 @@
 // OPENGL ES 렌더 디바이스
 
 static void es_dispose(QsGam* g);
-static void es_reset(RdhBase* rdh);
-static void es_flush(RdhBase* rdh);
+static void es_reset(void);
+static void es_clear(int flags, const QmColor* color, int stencil, float depth);
+static bool es_begin(bool clear);
+static void es_end(void);
+static void es_flush(void);
 
 qv_name(RdhBase) vt_es_rdh =
 {
@@ -24,10 +27,10 @@ qv_name(RdhBase) vt_es_rdh =
 	.base.dispose = es_dispose,
 
 	.reset = es_reset,
-	.clear = qgl_clear,
+	.clear = es_clear,
 
-	.begin = qgl_begin,
-	.end = qgl_end,
+	.begin = es_begin,
+	.end = es_end,
 	.flush = es_flush,
 };
 
@@ -199,7 +202,7 @@ static EGLint es_get_config_attr(EsRdh* self, EGLConfig config, EGLenum name)
 }
 
 //
-static const EsConfig* es_find_config(const EsConfig* wanted, EsConfig* configs, int count, bool support3)
+static const EsConfig* es_find_config(const EsConfig* wanted, EsConfig* configs, int count)
 {
 	uint least_missing = UINT_MAX;
 	uint least_color = UINT_MAX;
@@ -208,7 +211,7 @@ static const EsConfig* es_find_config(const EsConfig* wanted, EsConfig* configs,
 	for (int i = 0; i < count; i++)
 	{
 		const EsConfig* c = &configs[i];
-		if (support3 && c->version == 2)
+		if (c->version < wanted->version)
 			continue;
 
 		uint missing = 0;
@@ -253,41 +256,64 @@ static const EsConfig* es_find_config(const EsConfig* wanted, EsConfig* configs,
 }
 #endif
 
-RdhBase* es_allocator(int flags)
+RdhBase* es_allocator(QgFlag flags)
 {
 #if !defined STATIC_ES_LIBRARY && !defined USE_SDL2
 	if (es_init_egl() == false)
 		return NULL;
 #endif
 
+	// 프로퍼티에 있으면 가져온다
+	int size_red = 8, size_green = 8, size_blue = 8, size_alpha = 8;
+	const char* size_prop = qn_get_prop(QG_PROP_RGBA_SIZE);
+	if (size_prop != NULL && strlen(size_prop) >= 4)
+	{
+		size_red = size_prop[0] - '0';
+		size_green = size_prop[1] - '0';
+		size_blue = size_prop[2] - '0';
+		size_alpha = size_prop[3] - '0';
+	}
+	int size_depth = qn_get_prop_int(QG_PROP_DEPTH_SIZE, 24, 4, 32);
+	int size_stencil = qn_get_prop_int(QG_PROP_STENCIL_SIZE, 8, 4, 16);
+	int msaa_value = qn_get_prop_int(QG_PROP_MSAA, 4, 0, 8);
+
+	if (QN_TMASK(flags, QGFLAG_DITHER | QGFLAG_DITHER_ALPHA_STENCIL))	// 디더 강제로 줄여
+	{
+		size_red = 5;
+		size_blue = 5;
+		if (QN_TMASK(flags, QGFLAG_DITHER_ALPHA_STENCIL))
+		{
+			size_green = 5;
+			size_alpha = 1;
+			size_stencil = 8;
+		}
+		else
+		{
+			size_green = 6;
+			size_alpha = 0;
+			size_stencil = 0;
+		}
+		size_depth = 16;
+	}
+
+	//
 	EsRdh* self = qn_alloc_zero_1(EsRdh);
 
 #ifdef USE_SDL2
+	//----- SDL 초기화
 	self->window = (SDL_Window*)stub_system_get_window();
 	self->context = SDL_GL_CreateContext(self->window);
 
-	if (QN_TMASK(flags, QGFLAG_DITHER))
-	{
-		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 4);
-		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 4);
-		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 4);
-		SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 1);
-		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
-		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 4);
-	}
-	else
-	{
-		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-		SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-	}
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, size_red);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, size_green);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, size_blue);
+	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, size_alpha);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, size_depth);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, size_stencil);
 	if (QN_TMASK(flags, QGFLAG_MSAA))
 	{
 		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaa_value);
 	}
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
@@ -314,8 +340,9 @@ RdhBase* es_allocator(int flags)
 	{
 		qn_debug_outputs(true, "ESRDH", "cannot initialize es client");
 		goto pos_fail_exit;
-	}
+}
 #else
+	//----- EGL 초기화
 	self->native_window = stub_system_get_window();
 	self->native_display = stub_system_get_display();
 
@@ -332,7 +359,7 @@ RdhBase* es_allocator(int flags)
 		goto pos_fail_exit;
 	}
 #if !defined STATIC_ES_LIBRARY
-	// eglInitialize 이후에나 버전을 알 수 있다
+	// eglInitialize 이후에나 버전을 알 수 있다. glad egl은 버전이 필요함
 	es_reload_egl(self->display);
 #endif
 
@@ -381,13 +408,14 @@ RdhBase* es_allocator(int flags)
 		config_entry_count++;
 	}
 
-	static const EsConfig config_normal = { NULL, 8, 8, 8, 8, 24, 8, 0, 0, };
-	static const EsConfig config_dither = { NULL, 5, 5, 5, 1, 8, -1, 0, 0, };
-	EsConfig want_config = QN_TMASK(flags, QGFLAG_DITHER) ? config_dither : config_normal;
-	if (QN_TMASK(flags, QGFLAG_DITHER) == false && QN_TMASK(flags, QGFLAG_MSAA))
-		want_config.samples = 4;
-
-	const EsConfig* found_entry = es_find_config(&want_config, config_entries, config_entry_count, support3);
+	EsConfig want_config=
+	{
+		NULL,
+		size_red, size_green, size_blue, size_alpha,
+		size_depth, size_stencil, QN_TMASK(flags, QGFLAG_MSAA) ? msaa_value : 0,
+		support3 ? 3 : 2
+	};
+	const EsConfig* found_entry = es_find_config(&want_config, config_entries, config_entry_count);
 	self->config = *found_entry;
 	qn_free(egl_configs);
 	qn_free(config_entries);
@@ -451,14 +479,25 @@ pos_context_ok:
 	eglSwapInterval(self->display, QN_TMASK(flags, QGFLAG_VSYNC) ? 1 : 0);
 #endif
 
-	int renderer_version = qgl_get_version(GL_VERSION, "OPENGLES", "OPENGL ES");
-	int shader_version = qgl_get_version(GL_SHADING_LANGUAGE_VERSION, "OPENGL ES GLSL ES ", "OPENGL ES GLSL ");
-	qgl_initialize(&self->base, flags, renderer_version, shader_version);
+	//----- 정보 설정
+	RendererInfo* infos = &self->base.base.info;	// 여기서 rdh_info()는 쓸 수 없다
 
-	RendererInfo* infos = &rdh_info(self);
+	qgl_copy_string(infos->renderer, QN_COUNTOF(infos->renderer), GL_RENDERER);
+	qgl_copy_string(infos->vendor, QN_COUNTOF(infos->vendor), GL_VENDOR);
+	infos->renderer_version = qgl_get_version(GL_VERSION, "OPENGLES", "OPENGL ES");
+	infos->shader_version = qgl_get_version(GL_SHADING_LANGUAGE_VERSION, "OPENGL ES GLSL ES ", "OPENGL ES GLSL ");
+
+	int max_layout_count = qgl_get_integer_v(GL_MAX_VERTEX_ATTRIBS);
+	infos->max_layout_count = QN_MIN(max_layout_count, ES_MAX_LAYOUT_COUNT);
+	infos->max_tex_dim = qgl_get_integer_v(GL_MAX_TEXTURE_SIZE);
+	infos->max_tex_count = qgl_get_integer_v(GL_MAX_TEXTURE_IMAGE_UNITS);
+	infos->max_off_count = 1; //qgl_get_integer_v(GL_FRAMEBUFFER_BINDING);
+	infos->clr_fmt = qg_clrfmt_from_size(size_red, size_green, size_blue, size_alpha, false);
 	infos->max_off_count = 1;
-	infos->max_layout_count = QN_MIN(infos->max_layout_count, ES_MAX_LAYOUT_COUNT);
 
+	// 여기서 세이더 유니폼 함수 등록
+
+	//
 	return qs_init(self, RdhBase, &vt_es_rdh);
 
 pos_fail_exit:
@@ -481,9 +520,18 @@ pos_fail_exit:
 static void es_dispose(QsGam* g)
 {
 	EsRdh* self = qs_cast(g, EsRdh);
+	qn_ret_if_ok(self->base.disposed);
 
-	qgl_finalize(qs_cast(self, QglRdh));
+	//----- 펜딩
+	QglPending* pd = &self->base.pd;
+	qs_unload(pd->draw.index_buffer);
+	for (int i = 0; i < QGLOS_MAX_VALUE; i++)
+		qs_unload(pd->draw.vertex_buffers[i]);
 
+	//----- 세션
+
+
+	//----- 장치 제거
 #ifdef USE_SDL2
 	if (self->renderer)
 		SDL_DestroyRenderer(self->renderer);
@@ -496,21 +544,115 @@ static void es_dispose(QsGam* g)
 		eglTerminate(self->display);
 #endif
 
+	self->base.disposed = true;
 	rdh_internal_dispose();
 }
 
 //
-static void es_reset(RdhBase* rdh)
+static void es_reset(void)
 {
-	qgl_reset(rdh);
+	rdh_internal_reset();
+
+	EsRdh* self = ES_RDH_INSTANCE;
+	const RendererInfo* info = &rdh_info();
+	RenderTransform* tm = &rdh_transform();
+
+	//----- 펜딩
+
+	//----- 세션
+	QglSession* ss = &self->base.ss;
+	ss->depth = QGDEPTH_LE;
+	ss->stencil = QGSTENCIL_OFF;
+
+	//----- 트랜스폼
+	tm->ortho = qm_mat4_ortho_lh(tm->size.X, tm->size.Y, -1.0f, 1.0f);
+	//qm_mat4_loc(&tm->ortho, -1.0f, 1.0f, 0.0f, false);
+	tm->frm = qgl_mat4_irrcht_texture(0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -1.0f);
+
+	//----- 장치 설정
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	// 뎁스 스텐실
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LEQUAL);
+	glDisable(GL_STENCIL_TEST);
+
+	// 래스터라이즈
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
+	glDisable(GL_POLYGON_OFFSET_FILL);
+
+	// 블렌드
+	glEnable(GL_BLEND);
+	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+
+	glDisable(GL_BLEND);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	// 텍스쳐
+	for (int i = 0; i < info->max_tex_count; i++)
+	{
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	// 가위질
+	glDisable(GL_SCISSOR_TEST);
+	glFrontFace(GL_CW);
 }
 
-//
-static void es_flush(RdhBase* rdh)
+// 지우기
+static void es_clear(int flags, const QmColor* color, int stencil, float depth)
 {
-	EsRdh* self = qs_cast(rdh, EsRdh);
+	// 도움: https://open.gl/depthstencils
+	GLbitfield cf = 0;
 
-	qgl_flush(rdh);
+	if (QN_TMASK(flags, QGCLEAR_STENCIL))
+	{
+		glStencilMaskSeparate(GL_FRONT_AND_BACK, stencil);
+		cf |= GL_STENCIL_BUFFER_BIT;
+	}
+	if (QN_TMASK(flags, QGCLEAR_DEPTH))
+	{
+		glDepthMask(GL_TRUE);
+		glClearDepthf(depth);
+		cf |= GL_DEPTH_BUFFER_BIT;
+	}
+	if (QN_TMASK(flags, QGCLEAR_RENDER))
+	{
+		if (color == NULL)
+			color = &rdh_param().bgc;
+		glClearColor(color->R, color->G, color->B, color->A);
+		cf |= GL_COLOR_BUFFER_BIT;
+	}
+
+	if (cf != 0)
+		glClear(cf);
+}
+
+// 시작
+static bool es_begin(bool clear)
+{
+	if (clear)
+		es_clear(QGCLEAR_DEPTH | QGCLEAR_STENCIL | QGCLEAR_RENDER, NULL, 0, 1.0f);
+	return true;
+}
+
+// 끝
+static void es_end(void)
+{
+}
+
+// 플러시
+static void es_flush(void)
+{
+	EsRdh* self = ES_RDH_INSTANCE;
+
+	glFlush();
 #ifdef USE_SDL2
 	SDL_GL_SwapWindow(self->window);
 #else
@@ -518,3 +660,4 @@ static void es_flush(RdhBase* rdh)
 #endif
 }
 
+#endif // USE_ES

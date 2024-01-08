@@ -55,9 +55,9 @@ void qgl_reset(RdhBase* rdh)
 
 	//----- TM
 	RenderTransform* tm = &rdh_transform(self);
-	qm_mat4_ortho_lh(&tm->ortho, tm->size.X, tm->size.Y, -1.0f, 1.0f);
-	qm_mat4_loc(&tm->ortho, -1.0f, 1.0f, 0.0f, false);
-	qgl_mat4_irrcht_texture(&tm->frm, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -1.0f);
+	tm->ortho = qm_mat4_ortho_lh(tm->size.X, tm->size.Y, -1.0f, 1.0f);
+	//qm_mat4_loc(&tm->ortho, -1.0f, 1.0f, 0.0f, false);
+	tm->frm = qgl_mat4_irrcht_texture(0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -1.0f);
 
 	//----- 설정
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
@@ -104,7 +104,7 @@ void qgl_clear(RdhBase* rdh, int flag, const QmColor* color, int stencil, float 
 	{
 		if (color == NULL)
 			color = &rdh->param.bgc;
-		glClearColor(color->r, color->g, color->b, color->a);
+		glClearColor(color->R, color->G, color->B, color->A);
 		cf |= GL_COLOR_BUFFER_BIT;
 	}
 

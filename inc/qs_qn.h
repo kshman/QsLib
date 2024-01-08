@@ -14,6 +14,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
@@ -116,7 +119,7 @@ QN_EXTC_BEGIN
 #define QN_TODO(todo)		QN_PRAGMA(message("TODO: " #todo " (" QN_FNAME ")"))
 #define QN_STRING(x)		QN_XSTRING(x)					/// @brief 문자열로 정의
 #define QN_UNICODE(x)		QN_XUNICODE(x)					/// @brief 유니코드로 정의
-#define QN_CONCAT(...)		QN_XMAC_3(__VA_ARGS__, QN_XCCAT_4, QN_XCCAT_3, QN_XCCAT_2)(__VA_ARGS__)	/// @brief 문구 합침
+#define QN_CONCAT(...)		QN_XMAC_4(__VA_ARGS__, QN_XCCAT_4, QN_XCCAT_3, QN_XCCAT_2)(__VA_ARGS__)	/// @brief 문구 합침
 
 #define QN_COUNTOF(arr)		(sizeof(arr)/sizeof((arr)[0]))	/// @brief 배열 갯수 얻기
 #define QN_OFFSETOF(t,m)	((size_t)((char*)&((t*)0)->m))	/// @brief 구조체에서 위치 얻기
@@ -299,6 +302,22 @@ QSAPI void qn_set_prop(const char* restrict name, const char* restrict value);
 /// @param name 프로퍼티 이름
 /// @return 문자열의 프로퍼티 값
 QSAPI const char* qn_get_prop(const char* name);
+
+/// @brief 프로퍼티를 얻고 정수로 바꾼다
+/// @param name 프로퍼티 이름
+/// @param default_value 프로퍼티가 없을 경우 기본 값
+/// @param min_value 최소값
+/// @param max_value 최대값
+/// @return 얻은 정수값
+QSAPI int qn_get_prop_int(const char* name, int default_value, int min_value, int max_value);
+
+/// @brief 프로퍼티를 얻고 실수로 바꾼다
+/// @param name 프로퍼티 이름
+/// @param default_value 프로퍼티가 없을 경우 기본 값
+/// @param min_value 최소값
+/// @param max_value 최대값
+/// @return 얻은 실수값
+QSAPI float qn_get_prop_float(const char* name, float default_value, float min_value, float max_value);
 
 /// @brief 에러 메시지를 얻는다
 /// @return 에러 메시지 문자열. 없다면 NULL
@@ -772,23 +791,23 @@ QSAPI char* qn_strlwr(char* p);
 /// @param p 문자열
 /// @param base 진수
 /// @return 바꾼 정수값
-QSAPI uint qn_atoi(const char* p, const uint base);
+QSAPI int qn_strtoi(const char* p, const uint base);
 
 /// @brief 문자열을 64비트 정수로
 /// @param p 문자열
 /// @param base 진수
 /// @return 바꾼 정수값
-QSAPI ullong qn_atoll(const char* p, const uint base);
+QSAPI llong qn_strtoll(const char* p, const uint base);
 
 /// @brief 문자열을 32비트 실수로
 /// @param p 문자열
 /// @return 바꾼 실수값
-QSAPI float qn_atof(const char* p);
+QSAPI float qn_strtof(const char* p);
 
 /// @brief 문자열을 64비트 실수로
 /// @param p 문자열
 /// @return 바꾼 실수값
-QSAPI double qn_atod(const char* p);
+QSAPI double qn_strtod(const char* p);
 
 /// @brief 32비트 정수를 문자열로 변환
 /// @param p 문자열 버퍼
@@ -965,23 +984,23 @@ QSAPI wchar* qn_wcslwr(wchar* p);
 /// @param p 문자열
 /// @param base 진수
 /// @return 바꾼 정수값
-QSAPI uint qn_wtoi(const wchar* p, const uint base);
+QSAPI int qn_wcstoi(const wchar* p, const uint base);
 
 /// @brief 문자열을 64비트 정수로
 /// @param p 문자열
 /// @param base 진수
 /// @return 바꾼 정수값
-QSAPI ullong qn_wtoll(const wchar* p, const uint base);
+QSAPI llong qn_wcstoll(const wchar* p, const uint base);
 
 /// @brief 문자열을 32비트 실수로
 /// @param p 문자열
 /// @return 바꾼 실수값
-QSAPI float qn_wtof(const wchar* p);
+QSAPI float qn_wcstof(const wchar* p);
 
 /// @brief 문자열을 64비트 실수로
 /// @param p 문자열
 /// @return 바꾼 실수값
-QSAPI double qn_wtod(const wchar* p);
+QSAPI double qn_wcstod(const wchar* p);
 
 /// @brief 32비트 정수를 문자열로 변환
 /// @param p 문자열 버퍼

@@ -2,7 +2,7 @@
 #include "qs_qn.h"
 #include "qs_math.h"
 #include "qs_qg.h"
-#include "qg/qg_stub.h"
+#include "qg_stub.h"
 
 //////////////////////////////////////////////////////////////////////////
 // 렌더 디바이스
@@ -17,13 +17,19 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	{
 		const char* name;
 		const char* alias;
-		RdhBase* (*allocator)(int);
+		RdhBase* (*allocator)(QgFlag);
 		QgFlag renderer;
 	};
 	static struct rdh_renderer renderers[] =
 	{
+#ifdef USE_ES
 		{ "ES", "GLES", es_allocator, QGRENDERER_ES3 },
+#endif
+#if defined USE_ES
 		{ NULL, NULL, es_allocator, QGRENDERER_ES3 },
+#else
+		{ NULL, NULL, NULL, 0 },
+#endif
 	};
 	struct rdh_renderer* renderer = &renderers[QN_COUNTOF(renderers) - 1];
 	if (driver != NULL)
@@ -34,6 +40,11 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 				renderer = &renderer[i];
 				break;
 			}
+	}
+	if (renderer == NULL)
+	{
+		qn_debug_outputs(true, "RDH", "cannot found valid renderer");
+		return false;
 	}
 
 	bool open_stub = qg_open_stub(title, display, width, height, flags | renderer->renderer);
@@ -58,14 +69,14 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	tm->depth.Far = 100000.0f;
 
 	RenderParam* param = &self->param;
-	qm_set4(&param->bgc, 0.1f, 0.1f, 0.1f, 1.0f);
+	param->bgc = qm_color(0.1f, 0.1f, 0.1f, 1.0f);
 	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)
 		qm_rst(&param->v[i]);
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)
 		qm_rst(&param->m[i]);
 
 	//
-	qv_cast(self, RdhBase)->reset(self);
+	qv_cast(self, RdhBase)->reset();
 	return true;
 }
 
@@ -94,21 +105,21 @@ void rdh_internal_reset(void)
 {
 	RdhBase* self = qg_instance_rdh;
 	const QmSize client_size = qg_instance_stub->client_size;
+	const float aspect = qm_size_aspect(client_size);
 
 	// tm
 	RenderTransform* tm = &self->tm;
-	qm_set1(&tm->size, &client_size);
-	const float aspect = tm->size.X / tm->size.Y;
+	tm->size = qm_vec2v(client_size);
 	qm_rst(&tm->world);
 	qm_rst(&tm->view);
-	qm_mat4_perspective_lh(&tm->project, QM_PI_H, aspect, &tm->depth);
-	qm_mul(&tm->view_project, &tm->view, &tm->project);
+	tm->project = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->depth.Near, tm->depth.Far);
+	tm->view_project = qm_mul(tm->view, tm->project);
 	qm_rst(&tm->inv);
 	qm_rst(&tm->ortho);
 	qm_rst(&tm->frm);
 	for (size_t i = 0; i < QN_COUNTOF(tm->tex); i++)
 		qm_rst(&tm->tex[i]);
-	qm_set4(&tm->scissor, 0, 0, client_size.width, client_size.height);
+	tm->scissor = qm_rect_set_pos_size(qm_point(0, 0), client_size);
 
 	// param
 	RenderParam* param = &self->param;
@@ -140,9 +151,9 @@ void rdh_internal_check_layout(void)
 	const QmSize size = qg_instance_stub->client_size;
 	const int width = (int)self->tm.size.X;
 	const int height = (int)self->tm.size.Y;
-	if (size.width == width && size.height == height)
+	if (size.Width == width && size.Height == height)
 		return;
-	qv_cast(self, RdhBase)->reset(self);
+	qv_cast(self, RdhBase)->reset();
 }
 
 //
@@ -152,7 +163,7 @@ bool qg_rdh_begin(bool clear)
 	self->invokes.invokes++;
 	self->invokes.begins++;
 	self->invokes.flush = false;
-	return qv_cast(self, RdhBase)->begin(self, clear);
+	return qv_cast(self, RdhBase)->begin(clear);
 }
 
 //
@@ -162,7 +173,7 @@ void qg_rdh_end(void)
 	self->invokes.invokes++;
 	self->invokes.ends++;
 	self->invokes.flush = true;
-	qv_cast(self, RdhBase)->end(self);
+	qv_cast(self, RdhBase)->end();
 }
 
 //
@@ -174,7 +185,7 @@ void qg_rdh_flush(void)
 		qn_debug_outputs(true, "RDH", "use end before flush");
 		qg_rdh_end();
 	}
-	qv_cast(self, RdhBase)->flush(self);
+	qv_cast(self, RdhBase)->flush();
 	self->invokes.invokes++;
 	self->invokes.frames++;
 }
@@ -184,7 +195,7 @@ void qg_rdh_reset(void)
 {
 	RdhBase* self = qg_instance_rdh;
 	self->invokes.invokes++;
-	qv_cast(self, RdhBase)->reset(self);
+	qv_cast(self, RdhBase)->reset();
 }
 
 //
@@ -192,7 +203,7 @@ void qg_rdh_clear(QgClear clear, const QmColor* color, int stencil, float depth)
 {
 	RdhBase* self = qg_instance_rdh;
 	self->invokes.invokes++;
-	qv_cast(self, RdhBase)->clear(self, clear, color, stencil, depth);
+	qv_cast(self, RdhBase)->clear(clear, color, stencil, depth);
 }
 
 //
@@ -200,7 +211,7 @@ void qg_rdh_set_param_vec3(int at, const QmVec3* v)
 {
 	RdhBase* self = qg_instance_rdh;
 	qn_ret_if_fail(v && (size_t)at < QN_COUNTOF(self->param.v));
-	qm_set4(&self->param.v[at], v->x, v->y, v->z, 0.0f);
+	self->param.v[at] = qm_vec4v(*v, 0.0f);
 	self->invokes.invokes++;
 }
 
@@ -239,7 +250,7 @@ void qg_rdh_set_background(const QmColor* color)
 	if (color)
 		self->param.bgc = *color;
 	else
-		qm_set4(&self->param.bgc, 0.0f, 0.0f, 0.0f, 1.0f);
+		self->param.bgc = qm_color(0.0f, 0.0f, 0.0f, 1.0f);
 	self->invokes.invokes++;
 }
 
@@ -259,8 +270,8 @@ void qg_rdh_set_view(const QmMat4* view)
 	qn_ret_if_fail(view);
 	RdhBase* self = qg_instance_rdh;
 	self->tm.view = *view;
-	qm_inv(&self->tm.inv, view);
-	qm_mul(&self->tm.view_project, view, &self->tm.project);
+	self->tm.inv = qm_inv(*view);
+	self->tm.view_project = qm_mul(*view, self->tm.project);
 	self->invokes.invokes++;
 	self->invokes.transforms++;
 }
@@ -271,7 +282,7 @@ void qg_rdh_set_project(const QmMat4* proj)
 	qn_ret_if_fail(proj);
 	RdhBase* self = qg_instance_rdh;
 	self->tm.project = *proj;
-	qm_mul(&self->tm.view_project, &self->tm.view, proj);
+	self->tm.view_project = qm_mul(self->tm.view, *proj);
 	self->invokes.invokes++;
 	self->invokes.transforms++;
 }
@@ -283,8 +294,8 @@ void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view)
 	RdhBase* self = qg_instance_rdh;
 	self->tm.project = *proj;
 	self->tm.view = *view;
-	qm_inv(&self->tm.inv, view);
-	qm_mul(&self->tm.view_project, proj, view);
+	self->tm.inv = qm_inv(*view);
+	self->tm.view_project = qm_mul(*proj, *view);
 	self->invokes.invokes++;
 	self->invokes.transforms++;
 }
@@ -296,7 +307,7 @@ QgBuffer* qg_rdh_create_buffer(QgBufType type, int count, int stride, const void
 	RdhBase* self = qg_instance_rdh;
 	self->invokes.creations++;
 	self->invokes.invokes++;
-	return qv_cast(self, RdhBase)->create_buffer(self, type, count, stride, data);
+	return qv_cast(self, RdhBase)->create_buffer(type, count, stride, data);
 }
 
 //
@@ -340,7 +351,7 @@ QgRender* qg_rdh_create_render(const QgPropRender* prop, bool compile_shader)
 	RdhBase* self = qg_instance_rdh;
 	self->invokes.creations++;
 	self->invokes.invokes++;
-	return qv_cast(self, RdhBase)->create_render(self, prop, compile_shader);
+	return qv_cast(self, RdhBase)->create_render(prop, compile_shader);
 }
 
 //
@@ -348,7 +359,7 @@ bool qg_rdh_set_index(QgBuffer* buffer)
 {
 	RdhBase* self = qg_instance_rdh;
 	self->invokes.invokes++;
-	return qv_cast(self, RdhBase)->set_index(self, buffer);
+	return qv_cast(self, RdhBase)->set_index(buffer);
 }
 
 //
@@ -357,7 +368,7 @@ bool qg_rdh_set_vertex(QgLoStage stage, QgBuffer* buffer)
 	qn_val_if_fail((size_t)stage < QGLOS_MAX_VALUE, false);
 	RdhBase* self = qg_instance_rdh;
 	self->invokes.invokes++;
-	return qv_cast(self, RdhBase)->set_vertex(self, stage, buffer);
+	return qv_cast(self, RdhBase)->set_vertex(stage, buffer);
 }
 
 //
@@ -365,7 +376,7 @@ void qg_rdh_set_render(QgRender* render)
 {
 	RdhBase* self = qg_instance_rdh;
 	self->invokes.invokes++;
-	qv_cast(self, RdhBase)->set_render(self, render);
+	qv_cast(self, RdhBase)->set_render(render);
 }
 
 //
@@ -376,7 +387,7 @@ bool qg_rdh_draw(QgTopology tpg, int vertices)
 	RdhBase* self = qg_instance_rdh;
 	self->invokes.invokes++;
 	self->invokes.draws++;
-	return qv_cast(self, RdhBase)->draw(self, tpg, vertices);
+	return qv_cast(self, RdhBase)->draw(tpg, vertices);
 }
 
 //
@@ -387,7 +398,7 @@ bool qg_rdh_draw_indexed(QgTopology tpg, int indices)
 	RdhBase* self = qg_instance_rdh;
 	self->invokes.invokes++;
 	self->invokes.draws++;
-	return qv_cast(self, RdhBase)->draw_indexed(self, tpg, indices);
+	return qv_cast(self, RdhBase)->draw_indexed(tpg, indices);
 }
 
 //
@@ -399,7 +410,7 @@ bool qg_rdh_ptr_draw(QgTopology tpg, int vertices, int stride, const void* verte
 	RdhBase* self = qg_instance_rdh;
 	self->invokes.invokes++;
 	self->invokes.draws++;
-	return qv_cast(self, RdhBase)->ptr_draw(self, tpg, vertices, stride, vertex_data);
+	return qv_cast(self, RdhBase)->ptr_draw(tpg, vertices, stride, vertex_data);
 
 }
 
@@ -415,7 +426,7 @@ bool qg_rdh_ptr_draw_indexed(QgTopology tpg,
 	RdhBase* self = qg_instance_rdh;
 	self->invokes.invokes++;
 	self->invokes.draws++;
-	return qv_cast(self, RdhBase)->ptr_draw_indexed(self, tpg, vertices, vertex_stride, vertex_data, indices, index_stride, index_data);
+	return qv_cast(self, RdhBase)->ptr_draw_indexed(tpg, vertices, vertex_stride, vertex_data, indices, index_stride, index_data);
 }
 
 

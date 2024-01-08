@@ -172,28 +172,33 @@ typedef struct RdhBase
 qv_name(RdhBase)
 {
 	qv_name(QsGam)	base;
-	void (*reset)(RdhBase*);
-	void (*clear)(RdhBase*, int, const QmColor*, int, float);
+	void (*reset)(void);
+	void (*clear)(int, const QmColor*, int, float);
 
-	bool (*begin)(RdhBase*, bool);
-	void (*end)(RdhBase*);
-	void (*flush)(RdhBase*);
+	bool (*begin)(bool);
+	void (*end)(void);
+	void (*flush)(void);
 
-	QgBuffer* (*create_buffer)(RdhBase*, QgBufType, int, int, const void*);
-	QgRender* (*create_render)(RdhBase*, const QgPropRender*, bool);
+	QgBuffer* (*create_buffer)(QgBufType, int, int, const void*);
+	QgRender* (*create_render)(const QgPropRender*, bool);
 
-	bool (*set_index)(RdhBase*, QgBuffer*);
-	bool (*set_vertex)(RdhBase*, QgLoStage, QgBuffer*);
-	void (*set_render)(RdhBase*, QgRender*);
+	bool (*set_index)(QgBuffer*);
+	bool (*set_vertex)(QgLoStage, QgBuffer*);
+	void (*set_render)(QgRender*);
 
-	bool (*draw)(RdhBase*, QgTopology, int);
-	bool (*draw_indexed)(RdhBase*, QgTopology, int);
-	bool (*ptr_draw)(RdhBase*, QgTopology, int, int, const void*);
-	bool (*ptr_draw_indexed)(RdhBase*, QgTopology, int, int, const void*, int, int, const void*);
+	bool (*draw)(QgTopology, int);
+	bool (*draw_indexed)(QgTopology, int);
+	bool (*ptr_draw)(QgTopology, int, int, const void*);
+	bool (*ptr_draw_indexed)(QgTopology, int, int, const void*, int, int, const void*);
 };
 
 // 렌더 디바이스
 extern RdhBase* qg_instance_rdh;
+
+#ifdef USE_ES
+// OPENGL ES 할당
+extern RdhBase* es_allocator(QgFlag flags);
+#endif
 
 // 렌더러 최종 제거
 extern void rdh_internal_dispose(void);
@@ -204,13 +209,13 @@ extern void rdh_internal_invoke_reset(void);
 // 레이아웃 검사
 extern void rdh_internal_check_layout(void);
 
-// OPENGL ES 할당
-extern RdhBase* es_allocator(int flags);
+#define rdh_info()			(qs_cast(qg_instance_rdh, RdhBase)->info)
+#define rdh_transform()		(qs_cast(qg_instance_rdh, RdhBase)->tm)
+#define rdh_param()			(qs_cast(qg_instance_rdh, RdhBase)->param)
+#define rdh_invokes()		(qs_cast(qg_instance_rdh, RdhBase)->invokes)
 
-#define rdh_info(rdh)			(qs_cast(rdh, RdhBase)->info)
-#define rdh_transform(rdh)		(qs_cast(rdh, RdhBase)->tm)
-#define rdh_param(rdh)			(qs_cast(rdh, RdhBase)->param)
-#define rdh_invokes(rdh)		(qs_cast(rdh, RdhBase)->invokes)
+#define rdh_set_flush(v)	(qs_cast(qg_instance_rdh, RdhBase)->invokes.flush=(v))
+#define rdh_inc_ends()		(qs_cast(qg_instance_rdh, RdhBase)->invokes.ends++)
 
-#define rdh_set_flush(rdh,v)	(qs_cast(rdh, RdhBase)->invokes.flush=(v))
-#define rdh_inc_ends(rdh)		(qs_cast(rdh, RdhBase)->invokes.ends++)
+// 색깔 변환
+extern QgClrFmt qg_clrfmt_from_size(int red, int green, int blue, int alpha, bool is_float);

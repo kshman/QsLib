@@ -128,7 +128,7 @@
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>USE_D12;USE_ES3;_STATIC;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_D12;USE_ES;_STATIC;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -198,7 +198,7 @@
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>USE_D12;USE_ES3;_STATIC;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_D12;USE_ES;_STATIC;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -271,21 +271,16 @@
     <ClInclude Include="..\..\inc\qs_ctn.h" />
     <ClInclude Include="..\..\inc\qs_math.h" />
     <ClInclude Include="..\..\src\pch.h" />
-    <ClInclude Include="..\..\src\qg\gl\egl.h" />
-    <ClInclude Include="..\..\src\qg\gl\gl.h" />
-    <ClInclude Include="..\..\src\qg\gl\glad_supp.h" />
-    <ClInclude Include="..\..\src\qg\gl\gles2.h" />
-    <ClInclude Include="..\..\src\qg\gl\qges_rdh.h" />
-    <ClInclude Include="..\..\src\qg\gl\qggl_base.h" />
-    <ClInclude Include="..\..\src\qg\gl\qggl_code.h" />
-    <ClInclude Include="..\..\src\qg\gl\wgl.h" />
     <ClInclude Include="..\..\src\qg\qg_stub.h" />
-    <ClInclude Include="..\..\src\qg\stub\qgwin_func.h" />
-    <ClInclude Include="..\..\src\qg\stub\qgwlx_func.h" />
-    <ClInclude Include="..\..\src\qg\stub\wayland-wayland-code.h" />
-    <ClInclude Include="..\..\src\qg\stub\wayland-wayland.h" />
-    <ClInclude Include="..\..\src\qg\stub\wayland-xdg-shell-code.h" />
-    <ClInclude Include="..\..\src\qg\stub\wayland-xdg-shell.h" />
+    <ClInclude Include="..\..\src\qg\stub\gl\egl.h" />
+    <ClInclude Include="..\..\src\qg\stub\gl\gl.h" />
+    <ClInclude Include="..\..\src\qg\stub\gl\glad_supp.h" />
+    <ClInclude Include="..\..\src\qg\stub\gl\gles2.h" />
+    <ClInclude Include="..\..\src\qg\stub\gl\wgl.h" />
+    <ClInclude Include="..\..\src\qg\stub\qgrdh_es.h" />
+    <ClInclude Include="..\..\src\qg\stub\qgrdh_glbase.h" />
+    <ClInclude Include="..\..\src\qg\stub\qgstub_win_func.h" />
+    <ClInclude Include="..\..\src\qg\stub\qgstub_wlx_func.h" />
     <ClInclude Include="..\..\src\qn\zlib\crc32.h" />
     <ClInclude Include="..\..\src\qn\zlib\deflate.h" />
     <ClInclude Include="..\..\src\qn\zlib\gzguts.h" />
@@ -301,12 +296,12 @@
     <ClInclude Include="..\..\src\qs_conf.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\qg\gl\qges_rdh.c" />
     <ClCompile Include="..\..\src\qg\qg_rdh.c" />
     <ClCompile Include="..\..\src\qg\qg_stub.c" />
-    <ClCompile Include="..\..\src\qg\stub\qgsdl_stub.c" />
-    <ClCompile Include="..\..\src\qg\stub\qgwin_stub.c" />
-    <ClCompile Include="..\..\src\qg\stub\qgwlx_stub.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgrdh_es.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgstub_sdl.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgstub_win.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgstub_wlx.c" />
     <ClCompile Include="..\..\zconsole\zz.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='SDLDebug|Win32'">NotUsing</PrecompiledHeader>

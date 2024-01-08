@@ -16,14 +16,14 @@
 #include <GLES3/gl3ext.h>
 #elif defined USE_SDL2
 #include <SDL2/SDL.h>
-#include "glad_supp.h"
-#include "gles2.h"
+#include "gl/glad_supp.h"
+#include "gl/gles2.h"
 #else
-#include "glad_supp.h"
-#include "egl.h"
-#include "gles2.h"
+#include "gl/glad_supp.h"
+#include "gl/egl.h"
+#include "gl/gles2.h"
 #endif
-#include "qggl_base.h"
+#include "qgrdh_glbase.h"
 
 typedef struct EsRdh					EsRdh;
 

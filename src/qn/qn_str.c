@@ -1276,52 +1276,69 @@ char* qn_strlwr(char* p)
 }
 
 //
-uint qn_atoi(const char* p, const uint base)
+int qn_strtoi(const char* p, const uint base)
 {
 	qn_val_if_fail(p != NULL, 0);
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	const byte* table = qn_num_base_table();
 	uint v = 0;
+	int sign = 1;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
+	if (*p == '+')
+		p++;
+	else if (*p == '-')
+	{
+		sign = -1;
+		p++;
+	}
 	uint ch = table[*p++];
 	while (ch < base)
 	{
 		v = v * base + ch;
 		ch = table[*p++];
 	}
-	return v;
+	return sign * (int)v;
 }
 
 //
-ullong qn_atoll(const char* p, const uint base)
+llong qn_strtoll(const char* p, const uint base)
 {
 	qn_val_if_fail(p != NULL, 0);
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	const byte* table = qn_num_base_table();
 	ullong v = 0;
+	llong sign = 1LL;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
+	if (*p == '+')
+		p++;
+	else if (*p == '-')
+	{
+		sign = -1LL;
+		p++;
+	}
 	uint ch = table[*p++];
 	while (ch < base)
 	{
 		v = v * base + ch;
 		ch = table[*p++];
 	}
-	return v;
+	return sign * (llong)v;
 }
 
 //
-float qn_atof(const char* p)
+float qn_strtof(const char* p)
 {
 	float f = 0.0f;
 	int e = 0;
 	int ch;
+	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
 	while ((ch = *p++) != '\0' && isdigit(ch))
 		f = f * 10.0f + (ch - '0');
 	if (ch == '.')
 	{
 		while ((ch = *p++) != '\0' && isdigit(ch))
 		{
-			f = f * 10.0f + (ch - '\0');
+			f = f * 10.0f + (ch - '0');
 			e--;
 		}
 	}
@@ -1358,18 +1375,19 @@ float qn_atof(const char* p)
 }
 
 //
-double qn_atod(const char* p)
+double qn_strtod(const char* p)
 {
 	double d = 0.0;
 	int e = 0;
 	int ch;
+	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
 	while ((ch = *p++) != '\0' && isdigit(ch))
 		d = d * 10.0 + (ch - '0');
 	if (ch == '.')
 	{
 		while ((ch = *p++) != '\0' && isdigit(ch))
 		{
-			d = d * 10.0 + (ch - '\0');
+			d = d * 10.0 + (ch - '0');
 			e--;
 		}
 	}
@@ -1748,7 +1766,7 @@ int qn_wcsfnd(const wchar* src, const wchar* find, const size_t index)
 			return (int)(src + index - p);
 	}
 	return -1;
-}
+	}
 
 //
 bool qn_wcswcm(const wchar* string, const wchar* wild)
@@ -1865,7 +1883,7 @@ wchar* qn_wcsmid(wchar* restrict dest, const wchar* restrict src, const size_t p
 		*(dest + len) = L'\0';
 	}
 	return dest;
-}
+		}
 
 //
 wchar* qn_wcsltm(wchar* dest)
@@ -1944,13 +1962,21 @@ wchar* qn_wcslwr(wchar* p)
 }
 
 //
-uint qn_wtoi(const wchar* p, const uint base)
+int qn_wcstoi(const wchar* p, const uint base)
 {
 	qn_val_if_fail(p != NULL, 0);
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	const byte* table = qn_num_base_table();
 	uint v = 0;
+	int sign = 1;
 	while (*p == L' ' || *p == L'\n' || *p == L'\r' || *p == L'\t') ++p;
+	if (*p == L'+')
+		p++;
+	else if (*p == L'-')
+	{
+		sign = -1;
+		p++;
+	}
 	uint rc = *p++;
 	uint ch = rc < 256 ? table[rc] : 255;
 	while (ch < base)
@@ -1959,17 +1985,25 @@ uint qn_wtoi(const wchar* p, const uint base)
 		rc = *p++;
 		ch = rc < 256 ? table[rc] : 255;
 	}
-	return v;
+	return sign * (int)v;
 }
 
 //
-ullong qn_wtoll(const wchar* p, const uint base)
+llong qn_wcstoll(const wchar* p, const uint base)
 {
 	qn_val_if_fail(p != NULL, 0);
 	qn_val_if_fail(base >= 2 && base < 32, 0);
 	const byte* table = qn_num_base_table();
 	ullong v = 0;
+	llong sign = 1LL;
 	while (*p == L' ' || *p == L'\n' || *p == L'\r' || *p == L'\t') ++p;
+	if (*p == L'+')
+		p++;
+	else if (*p == L'-')
+	{
+		sign = -1LL;
+		p++;
+	}
 	uint rc = *p++;
 	uint ch = rc < 256 ? table[rc] : 255;
 	while (ch < base)
@@ -1978,22 +2012,23 @@ ullong qn_wtoll(const wchar* p, const uint base)
 		rc = *p++;
 		ch = rc < 256 ? table[rc] : 255;
 	}
-	return v;
+	return sign * (llong)v;
 }
 
 //
-float qn_wtof(const wchar* p)
+float qn_wcstof(const wchar* p)
 {
 	float f = 0.0f;
 	int e = 0;
 	wint_t ch;
+	while (*p == L' ' || *p == L'\n' || *p == L'\r' || *p == L'\t') ++p;
 	while ((ch = (wint_t)*p++) != L'\0' && iswdigit(ch))
 		f = f * 10.0f + (ch - L'0');
 	if (ch == L'.')
 	{
 		while ((ch = (wint_t)*p++) != L'\0' && iswdigit(ch))
 		{
-			f = f * 10.0f + (ch - L'\0');
+			f = f * 10.0f + (ch - L'0');
 			e--;
 		}
 	}
@@ -2030,18 +2065,19 @@ float qn_wtof(const wchar* p)
 }
 
 //
-double qn_wtod(const wchar* p)
+double qn_wcstod(const wchar* p)
 {
 	double d = 0.0;
 	int e = 0;
 	wint_t ch;
+	while (*p == L' ' || *p == L'\n' || *p == L'\r' || *p == L'\t') ++p;
 	while ((ch = (wint_t)*p++) != L'\0' && iswdigit(ch))
 		d = d * 10.0 + (ch - L'0');
 	if (ch == L'.')
 	{
 		while ((ch = *p++) != L'\0' && iswdigit(ch))
 		{
-			d = d * 10.0 + (ch - L'\0');
+			d = d * 10.0 + (ch - L'0');
 			e--;
 		}
 	}

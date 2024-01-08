@@ -193,6 +193,26 @@ const char* qn_get_prop(const char* name)
 }
 
 //
+int qn_get_prop_int(const char* name, int default_value, int min_value, int max_value)
+{
+	const char* v = qn_get_prop(name);
+	if (v == NULL)
+		return default_value;
+	int i = qn_strtoi(v, 10);
+	return QN_CLAMP(i, min_value, max_value);
+}
+
+//
+float qn_get_prop_float(const char* name, float default_value, float min_value, float max_value)
+{
+	const char* v = qn_get_prop(name);
+	if (v == NULL)
+		return default_value;
+	float f = qn_strtof(v);
+	return QN_CLAMP(f, min_value, max_value);
+}
+
+//
 const char* qn_get_error(void)
 {
 	const char* mesg = (const char*)qn_tlsget(runtime_impl.error);

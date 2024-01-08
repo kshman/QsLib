@@ -11,8 +11,8 @@
 // ReSharper disable CppParameterMayBeConstPtrOrRef
 
 #include "pch.h"
+#if defined _WIN32 && !defined USE_SDL2
 #include "qs_qn.h"
-#if defined _QN_WINDOWS_ && !defined USE_SDL2
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include "qg/qg_stub.h"
@@ -30,7 +30,7 @@ static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 // DLL 정의
 #define DEF_WIN_FUNC(ret,name,args)\
 	ret (WINAPI* QN_CONCAT(Win32, name)) args;
-#include "qgwin_func.h"
+#include "qgstub_win_func.h"
 
 // DLL 함수
 static void* windows_dll_func(QnModule* module, const char* func_name, const char* dll_name)
@@ -80,7 +80,7 @@ static bool windows_dll_init(void)
 #define DEF_WIN_DLL_END }
 #define DEF_WIN_FUNC(ret,name,args)\
 	QN_CONCAT(Win32, name) = (ret(WINAPI*)args)windows_dll_func(module, QN_STRING(name), dll_name);
-#include "qgwin_func.h"
+#include "qgstub_win_func.h"
 	return loaded = true;
 }
 
@@ -294,34 +294,34 @@ bool stub_system_open(const char* title, const int display, const int width, con
 	const QmSize scrsize = { (int)monitor->base.width, (int)monitor->base.height };
 	QmSize clientsize;
 	if (width > 256 && height > 256)
-		qm_set2(&clientsize, width, height);
+		clientsize = qm_size(width, height);
 	else
 	{
 		if (QN_TMASK(flags, QGFLAG_FULLSCREEN))
-			qm_set2(&clientsize, scrsize.width, scrsize.height);
+			clientsize = scrsize;
 		else
 		{
-			if (scrsize.height > 800)
-				qm_set2(&clientsize, 1280, 720);
+			if (scrsize.Height > 800)
+				clientsize = qm_size(1280, 720);
 			else
-				qm_set2(&clientsize, 720, 450);
+				clientsize = qm_size(720, 450);
 		}
 	}
 
 	RECT rect;
-	SetRect(&rect, 0, 0, clientsize.width, clientsize.height);
+	SetRect(&rect, 0, 0, clientsize.Width, clientsize.Height);
 	AdjustWindowRect(&rect, style, FALSE);
 
 	const QmSize size = { rect.right - rect.left, rect.bottom - rect.top };
 	QmPoint pos = { (int)monitor->base.x, (int)monitor->base.y };
 	if (QN_TMASK(flags, QGFLAG_FULLSCREEN) == false)
 	{
-		pos.x += (scrsize.width - size.width) / 2;
-		pos.y += (scrsize.height - size.height) / 2;
+		pos.X += (scrsize.Width - size.Width) / 2;
+		pos.Y += (scrsize.Height - size.Height) / 2;
 	}
 
 	// 값설정
-	qm_rect_set_pos_size(&winStub.base.window_bound, &pos, &size);
+	winStub.base.window_bound = qm_rect_set_pos_size(pos, size);
 	winStub.base.client_size = clientsize;
 
 	winStub.mouse_cursor = LoadCursor(NULL, IDC_ARROW);
@@ -340,7 +340,7 @@ bool stub_system_open(const char* title, const int display, const int width, con
 
 	//윈도우 만들기
 	winStub.hwnd = CreateWindowEx(WS_EX_APPWINDOW, winStub.class_name, winStub.window_title,
-		style, pos.x, pos.y, size.width, size.height,
+		style, pos.X, pos.Y, size.Width, size.Height,
 		NULL, NULL, winStub.instance, NULL);
 	if (winStub.hwnd == NULL)
 	{
@@ -530,7 +530,7 @@ void stub_system_update_bound(void)
 	memcpy(&winStub.base.window_bound, &rect, sizeof(RECT));
 
 	GetClientRect(winStub.hwnd, &rect);
-	qm_set2(&winStub.base.client_size, rect.right - rect.left, rect.bottom - rect.top);
+	winStub.base.client_size = qm_size(rect.right - rect.left, rect.bottom - rect.top);
 
 }
 
@@ -898,8 +898,8 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 	{
 		if (mesg == WM_MOUSEMOVE)
 		{
-			QmPoint pt = { GET_X_LPARAM(lp), GET_Y_LPARAM(lp) };
-			stub_event_on_mouse_move(pt.x, pt.y);
+			QmPoint pt = qm_point(GET_X_LPARAM(lp), GET_Y_LPARAM(lp));
+			stub_event_on_mouse_move(pt.X, pt.Y);
 			stub_track_mouse_click(QIM_NONE, QIMT_MOVE);
 		}
 		else if ((mesg >= WM_LBUTTONDOWN && mesg <= WM_MBUTTONDBLCLK) || (mesg >= WM_XBUTTONDOWN && mesg <= WM_XBUTTONDBLCLK))
@@ -1239,4 +1239,4 @@ poswindows_mesg_proc_exit:
 }
 #pragma endregion 윈도우 메시지
 
-#endif	// _QN_WINDOWS_
+#endif // _WIN32 && !USE_SDL2

@@ -128,81 +128,71 @@
 
   <!-- vec2 -->
   <Type Name="QmVec2">
+    <AlternativeType Name="QmVecI2"/>
     <AlternativeType Name="QmVecH2"/>
-    <AlternativeType Name="QmPoint"/>
-    <DisplayString>[({x}, {y})]</DisplayString>
+    <DisplayString>[({X}, {Y})]</DisplayString>
     <Expand>
-      <Item Name="x">x</Item>
-      <Item Name="y">y</Item>
+      <Item Name="X">X</Item>
+      <Item Name="Y">Y</Item>
     </Expand>
   </Type>
 
   <!-- vec3 -->
   <Type Name="QmVec3">
+    <AlternativeType Name="QmVecI3"/>
     <AlternativeType Name="QmVecH3"/>
-    <DisplayString>[({x}, {y}, {z})]</DisplayString>
+    <DisplayString>[({X}, {Y}, {Z})]</DisplayString>
     <Expand>
-      <Item Name="x">x</Item>
-      <Item Name="y">y</Item>
-      <Item Name="z">z</Item>
+      <Item Name="X">X</Item>
+      <Item Name="Y">Y</Item>
+      <Item Name="Z">Z</Item>
     </Expand>
   </Type>
 
   <!-- vec4 -->
   <Type Name="QmVec4">
+    <AlternativeType Name="QmVecI4"/>
     <AlternativeType Name="QmVecH4"/>
     <AlternativeType Name="QmQuat"/>
-    <DisplayString>[({x}, {y}, {z}, {w})]</DisplayString>
+    <DisplayString>[({X}, {Y}, {Z}, {W})]</DisplayString>
     <Expand>
-      <Item Name="x">x</Item>
-      <Item Name="y">y</Item>
-      <Item Name="z">z</Item>
-      <Item Name="w">w</Item>
+      <Item Name="X">X</Item>
+      <Item Name="Y">Y</Item>
+      <Item Name="Z">Z</Item>
+      <Item Name="W">W</Item>
     </Expand>
   </Type>
 
   <!-- mat4 -->
   <Type Name="QmMat4">
-    <DisplayString>[({_11}, {_12}, {_13}, {_14}) ({_21}, {_22}, {_23}, {_24}) ({_31}, {_32}, {_33}, {_34}) ({_41}, {_42}, {_43}, {_44})]</DisplayString>
+    <DisplayString>[({_11}, {_22}, {_33}, {_44}) ({_41}, {_42}, {_43}, {_44})]</DisplayString>
     <Expand>
-      <Item Name="11">_11</Item>
-      <Item Name="12">_12</Item>
-      <Item Name="13">_13</Item>
-      <Item Name="14">_14</Item>
-      <Item Name="21">_21</Item>
-      <Item Name="22">_22</Item>
-      <Item Name="23">_23</Item>
-      <Item Name="24">_24</Item>
-      <Item Name="31">_31</Item>
-      <Item Name="32">_32</Item>
-      <Item Name="33">_33</Item>
-      <Item Name="34">_34</Item>
-      <Item Name="41">_41</Item>
-      <Item Name="42">_42</Item>
-      <Item Name="43">_43</Item>
-      <Item Name="44">_44</Item>
+      <Item Name="#1">f[0]</Item>
+      <Item Name="#2">f[1]</Item>
+      <Item Name="#3">f[2]</Item>
+      <Item Name="#4">f[3]</Item>
     </Expand>
   </Type>
 
   <!-- rect -->
   <Type Name="QmRect">
-    <DisplayString>[({left}, {top})-({right}, {bottom})]</DisplayString>
+    <DisplayString>[({Left}, {Top})-({Right}, {Bottom})]</DisplayString>
     <Expand>
-      <Item Name="left">left</Item>
-      <Item Name="top">top</Item>
-      <Item Name="right">right</Item>
-      <Item Name="bottom">bottom</Item>
-      <Item Name="[width]">right-left</Item>
-      <Item Name="[height]">bottom-top</Item>
+      <Item Name="Left">Left</Item>
+      <Item Name="Top">Top</Item>
+      <Item Name="Right">Right</Item>
+      <Item Name="Bottom">Bottom</Item>
+      <Item Name="[Width]">Right-Left</Item>
+      <Item Name="[Height]">Bottom-Top</Item>
     </Expand>
   </Type>
 
   <!-- size -->
   <Type Name="QmSize">
-    <DisplayString>[({width}, {height})]</DisplayString>
+    <DisplayString>[({Width}, {Height})]</DisplayString>
     <Expand>
-      <Item Name="width">width</Item>
-      <Item Name="height">height</Item>
+      <Item Name="Width">Width</Item>
+      <Item Name="Height">Height</Item>
     </Expand>
   </Type>
 
@@ -217,60 +207,48 @@
 
   <!-- coordinate -->
   <Type Name="QmCoord">
-    <DisplayString>[({u}, {v})]</DisplayString>
+    <DisplayString>[({U}, {V})]</DisplayString>
     <Expand>
-      <Item Name="u">u</Item>
-      <Item Name="v">v</Item>
+      <Item Name="U">U</Item>
+      <Item Name="V">V</Item>
     </Expand>
   </Type>
 
   <!-- color -->
   <Type Name="QmColor">
     <AlternativeType Name="QmKolor"/>
-    <DisplayString>[({r}, {g}, {b}, {a})]</DisplayString>
+    <DisplayString>[({R}, {G}, {B}, {A})]</DisplayString>
     <Expand>
-      <Item Name="r">r</Item>
-      <Item Name="g">g</Item>
-      <Item Name="b">b</Item>
-      <Item Name="a">a</Item>
-    </Expand>
-  </Type>
-
-  <!-- unified color -->
-  <Type Name="QmKolorU">
-    <DisplayString>[{v,X}]</DisplayString>
-    <Expand>
-      <Item Name="r">k.r</Item>
-      <Item Name="g">k.g</Item>
-      <Item Name="b">k.b</Item>
-      <Item Name="a">k.a</Item>
-      <Item Name="[unified]">u</Item>
+      <Item Name="R">R</Item>
+      <Item Name="G">G</Item>
+      <Item Name="B">B</Item>
+      <Item Name="A">A</Item>
     </Expand>
   </Type>
 
   <!-- plane -->
   <Type Name="QmPlane">
-    <DisplayString>[({a}, {b}, {c}, {d})]</DisplayString>
+    <DisplayString>[({A}, {B}, {C}, {D})]</DisplayString>
     <Expand>
-      <Item Name="a">a</Item>
-      <Item Name="b">b</Item>
-      <Item Name="c">c</Item>
-      <Item Name="d">d</Item>
+      <Item Name="A">A</Item>
+      <Item Name="B">B</Item>
+      <Item Name="C">C</Item>
+      <Item Name="D">D</Item>
     </Expand>
   </Type>
 
   <!-- line -->
   <Type Name="QmLine3">
-    <DisplayString>[({begin.x},{begin.y},{begin.z})-({end.x},{end.y},{end.z})]</DisplayString>
+    <DisplayString>[({Begin.X},{Begin.Y},{Begin.Z})-({End.X},{End.Y},{End.Z})]</DisplayString>
   </Type>
 
   <!-- trfm -->
   <Type Name="QmTrfm">
-    <DisplayString>[({loc.x},{loc.y},{loc.z}) ({rot.x},{rot.y},{rot.z},{rot.w}) ({scl.x},{scl.y},{scl.z})]</DisplayString>
+    <DisplayString>[({Location.X},{Location.Y},{Location.Z}) ({Rotation.X},{Rotation.Y},{Rotation.Z},{Rotation.W}) ({Scale.X},{Scale.Y},{Scale.Z})]</DisplayString>
     <Expand>
-      <Item Name="location">loc</Item>
-      <Item Name="rotation">rot</Item>
-      <Item Name="scailing">scl</Item>
+      <Item Name="Location">Location</Item>
+      <Item Name="Rotation">Rotation</Item>
+      <Item Name="Scailing">Scale</Item>
     </Expand>
   </Type>
 
