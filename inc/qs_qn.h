@@ -1101,6 +1101,12 @@ QSAPI char* qn_u8ncpy(char* restrict dest, const char* restrict src, size_t len)
 /// @return 대상 문자열의 길이
 QSAPI size_t qn_u8lcpy(char* restrict dest, const char* restrict src, size_t len);
 
+/// @brief UCS-4 문자를 UTF-8 문자로 (UTF-16의 변환 가능한 범위만)
+/// @param[in] c ucs4 문자.
+/// @param[out] out	utf8 문자가 들어갈 배열. 최소 6개 항목의 배열이어야 한다
+/// @return utf8문자를 구성하는 문자열의 길이.
+QSAPI int qn_u32ucs(uchar4 c, char* out);
+
 /// @brief UCS-4 문자를 UTF-8 문자로
 /// @param[in] c ucs4 문자.
 /// @param[out] out	utf8 문자가 들어갈 배열. 최소 6개 항목의 배열이어야 한다

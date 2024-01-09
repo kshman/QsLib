@@ -185,8 +185,9 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 #pragma region 시스템 함수
 //
-bool stub_system_open(const char* title, const int display, const int width, const int height, QgFlag flags)
+bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags, QgFeature features)
 {
+	QN_DUMMY(features);	// 다른데서는 쓸 가능성이 있다. (웨이랜드라든가 웨이이놈이라던가)
 	qn_zero_1(&winStub);
 
 	//
@@ -432,7 +433,7 @@ bool stub_system_disable_acs(const bool enable)
 {
 	if (enable)
 	{
-		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_ACS) == false)
+		if (QN_TMASK(winStub.base.features, QGFEATURE_DISABLE_ACS) == false)
 		{
 			winStub.acs_sticky.cbSize = sizeof(STICKYKEYS);
 			winStub.acs_toggle.cbSize = sizeof(TOGGLEKEYS);
@@ -456,7 +457,7 @@ bool stub_system_disable_acs(const bool enable)
 	}
 	else
 	{
-		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_ACS))
+		if (QN_TMASK(winStub.base.features, QGFEATURE_DISABLE_ACS))
 		{
 			SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &winStub.acs_sticky, 0);
 			SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &winStub.acs_toggle, 0);
@@ -473,12 +474,12 @@ bool stub_system_disable_scr_save(const bool enable)
 {
 	if (enable)
 	{
-		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_SCRSAVE) == false)
+		if (QN_TMASK(winStub.base.features, QGFEATURE_DISABLE_SCRSAVE) == false)
 			SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
 	}
 	else
 	{
-		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_SCRSAVE))
+		if (QN_TMASK(winStub.base.features, QGFEATURE_DISABLE_SCRSAVE))
 			SetThreadExecutionState(ES_CONTINUOUS);
 	}
 	return enable;
@@ -489,12 +490,12 @@ bool stub_system_enable_drop(const bool enable)
 {
 	if (enable)
 	{
-		if (QN_TMASK(winStub.base.flags, QGFEATURE_ENABLE_DROP) == false)
+		if (QN_TMASK(winStub.base.features, QGFEATURE_ENABLE_DROP) == false)
 			DragAcceptFiles(winStub.hwnd, TRUE);
 	}
 	else
 	{
-		if (QN_TMASK(winStub.base.flags, QGFEATURE_ENABLE_DROP))
+		if (QN_TMASK(winStub.base.features, QGFEATURE_ENABLE_DROP))
 			DragAcceptFiles(winStub.hwnd, FALSE);
 	}
 	return enable;
@@ -885,7 +886,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 {
 	LRESULT result = -1;
 
-	if (QN_TMASK(winStub.base.flags, QGFEATURE_ENABLE_SYSWM))
+	if (QN_TMASK(winStub.base.features, QGFEATURE_ENABLE_SYSWM))
 	{
 		QgEvent e =
 		{
@@ -1137,7 +1138,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			{
 				// 윈도우10 UTF32
 				char u8[7];
-				if (qn_u32ucb((uchar4)wp, u8))
+				if (qn_u32ucb((uchar4)wp, u8) > 0)
 					stub_event_on_text(u8);
 			}
 			result = 0;
@@ -1162,7 +1163,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			ushort cmd = (ushort)(wp & 0xFFFF0);
 			if (cmd == SC_KEYMENU)
 				result = 0;
-			if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_SCRSAVE) && (cmd == SC_SCREENSAVE || cmd == SC_MONITORPOWER))
+			if (QN_TMASK(winStub.base.features, QGFEATURE_DISABLE_SCRSAVE) && (cmd == SC_SCREENSAVE || cmd == SC_MONITORPOWER))
 				result = 0;
 		} break;
 
@@ -1183,7 +1184,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			break;
 
 		case WM_DROPFILES:
-			if (QN_TMASK(winStub.base.flags, QGFEATURE_ENABLE_DROP))
+			if (QN_TMASK(winStub.base.features, QGFEATURE_ENABLE_DROP))
 			{
 				DragAcceptFiles(hwnd, false);
 				HDROP handle = (HDROP)wp;
@@ -1241,7 +1242,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			const float ydpi = LOWORD(wp) / 96.0f;
 			// TODO: 여기에 DPI 변경 알림 이벤트 날리면 좋겠네
 #endif
-			} break;
+		} break;
 
 		case WM_GETDPISCALEDSIZE:
 		{
@@ -1260,13 +1261,13 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		default:
 			break;
-		}
+	}
 
 poswindows_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-	}
+}
 #pragma endregion 윈도우 메시지
 
 #endif // _WIN32 && !USE_SDL2

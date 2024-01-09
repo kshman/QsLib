@@ -255,15 +255,18 @@ static const EsConfig* es_find_config(const EsConfig* wanted, EsConfig* configs,
 }
 #endif
 
-RdhBase* es_allocator(QgFlag flags)
+RdhBase* es_allocator(QgFlag flags, QgFeature features)
 {
+	if (QN_TMASK(features, QGRENDERER_ES3) == false)
+		return NULL;
+
 #if !defined STATIC_ES_LIBRARY && !defined USE_SDL2
 	if (es_init_egl() == false)
 		return NULL;
 #endif
 
 #ifdef _QN_EMSCRIPTEN_
-	flags &= ~(QGFLAG_MSAA|QGFLAG_DITHER|QGFLAG_DITHER_ALPHA_STENCIL);
+	flags &= ~(QGFLAG_MSAA | QGFLAG_DITHER | QGFLAG_DITHER_ALPHA_STENCIL);
 #endif
 
 	// 프로퍼티에 있으면 가져온다
@@ -345,7 +348,7 @@ RdhBase* es_allocator(QgFlag flags)
 	{
 		if (SDL_GL_SetSwapInterval(-1) < 0)
 			SDL_GL_SetSwapInterval(1);
-	}
+}
 #else
 	//----- EGL 초기화
 	self->native_window = (NativeWindowType)stub_system_get_window();
@@ -413,7 +416,7 @@ RdhBase* es_allocator(QgFlag flags)
 		config_entry_count++;
 	}
 
-	EsConfig want_config=
+	EsConfig want_config =
 	{
 		NULL,
 		size_red, size_green, size_blue, size_alpha,

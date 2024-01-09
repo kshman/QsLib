@@ -243,6 +243,7 @@ typedef enum QgClear
 /// @brief 스터브와 렌더러 만들 때 플래그
 typedef enum QgFlag
 {
+	QGFLAG_NONE = 0,
 	// 스터브 및 렌더러 플래그 (0~7)
 	QGFLAG_FULLSCREEN = QN_BIT(0),							/// @brief 전체 화면
 	QGFLAG_BORDERLESS = QN_BIT(1),							/// @brief 테두리 없는 윈도우
@@ -251,29 +252,37 @@ typedef enum QgFlag
 	QGFLAG_FOCUS = QN_BIT(4),								/// @brief 입력 포커스 받을 수 있음
 	QGFLAG_TEXT = QN_BIT(5),								/// @brief 텍스트 입력을 받을 수 있음
 	QGFLAG_DPISCALE = QN_BIT(6),							/// @brief DPI 스케일
-	// 렌더러 플래그 (8~15)
-	QGFLAG_VSYNC = QN_BIT(8),								/// @brief VSYNC 켜기
-	QGFLAG_MSAA = QN_BIT(9),								/// @brief 멀티 샘플링 사용
-	QGFLAG_DITHER = QN_BIT(10),								/// @brief 16비트 모드 사용
-	QGFLAG_DITHER_ALPHA_STENCIL = QN_BIT(11),				/// @brief 16비트 모드일 때 알파 1비트 추가하고 스텐실도 켬
-	// 렌더러 종류 (16~23)
-	QGRENDERER_ES3 = QN_BIT(21),
-	QGRENDERER_OPENGL = QN_BIT(22),
-	QGRENDERER_DIRECTX = QN_BIT(23),
-	// 스터브 사양 (24~31)
-	QGFEATURE_DISABLE_ACS = QN_BIT(24),						/// @brief 접근성 끄기
-	QGFEATURE_DISABLE_SCRSAVE = QN_BIT(25),					/// @brief 화면 보호기 끄기
-	QGFEATURE_ENABLE_DROP = QN_BIT(26),						/// @brief 드래그 드랍 사용
-	QGFEATURE_ENABLE_SYSWM = QN_BIT(27),					/// @brief 시스템 메시지 받기
-	QGFEATURE_ENABLE_IDLE = QN_BIT(28),						/// @brief 비활성 대기 상태 사용
-	QGFEATURE_ENABLE_GRAB_MOUSE = QN_BIT(29),				/// @brief 마우스 잡기
+	// 렌더러 플래그 (16~30)
+	QGFLAG_VSYNC = QN_BIT(16),								/// @brief VSYNC 켜기
+	QGFLAG_MSAA = QN_BIT(17),								/// @brief 멀티 샘플링 사용
+	QGFLAG_DITHER = QN_BIT(18),								/// @brief 16비트 모드 사용
+	QGFLAG_DITHER_ALPHA_STENCIL = QN_BIT(19),				/// @brief 16비트 모드일 때 알파 1비트 추가하고 스텐실도 켬
 	// 사용자가 설정할 수 없는 플래그
 	QGSPECIFIC_VIRTUAL = QN_BIT(31),						/// @brief 가상 스터브 사용
 } QgFlag;
 
+/// @brief 스터브 사양
+typedef enum QgFeature
+{
+	QGFEATURE_NONE = 0,
+	// 스터브 사양 (0~16)
+	QGFEATURE_DISABLE_ACS = QN_BIT(0),						/// @brief 접근성 끄기
+	QGFEATURE_DISABLE_SCRSAVE = QN_BIT(1),					/// @brief 화면 보호기 끄기
+	QGFEATURE_ENABLE_DROP = QN_BIT(2),						/// @brief 드래그 드랍 사용
+	QGFEATURE_ENABLE_SYSWM = QN_BIT(3),						/// @brief 시스템 메시지 받기
+	QGFEATURE_ENABLE_IDLE = QN_BIT(4),						/// @brief 비활성 대기 상태 사용
+	QGFEATURE_ENABLE_GRAB_MOUSE = QN_BIT(5),				/// @brief 마우스 잡기
+	QGFEATURE_REMOVE_EVENTS = QN_BIT(6),					/// @brief 루프 때 사용하지 않은 이벤트를 삭제한다
+	// 렌더러 종류 (24~31)
+	QGRENDERER_ES3 = QN_BIT(29),
+	QGRENDERER_OPENGL = QN_BIT(30),
+	QGRENDERER_DIRECTX = QN_BIT(31),
+} QgFeature;
+
 /// @brief 스터브 상태
 typedef enum QgStubStat
 {
+	QGSSTT_NONE = 0,
 	QGSSTT_EXIT = QN_BIT(0),								/// @brief 끝내기
 	QGSSTT_ACTIVE = QN_BIT(1),								/// @brief 스터브가 활성 상태
 	QGSSTT_LAYOUT = QN_BIT(2),								/// @brief 스터브 크기를 변경
@@ -600,9 +609,10 @@ typedef int (*QgEventCallback)(void* data, QgEventType event_type, const QgEvent
 /// @param width 윈도우 너비
 /// @param height 윈도우 높이
 /// @param flags 생성 플래그 (QgFlag)
+/// @param features 사양 (QgFeature)
 /// @return 스터브가 만들어지면 참
 /// @see QgFlag qg_close_Stub
-QSAPI bool qg_open_stub(const char* title, int display, int width, int height, int flags);
+QSAPI bool qg_open_stub(const char* title, int display, int width, int height, int flags, int features);
 
 /// @brief 스터브를 닫는다
 /// @see qg_open_Stub
@@ -767,7 +777,7 @@ typedef struct QgRender		QgRender;						/// @brief 렌더 파이프라인
 /// @return 만들어졌으면 참
 /// @note 내부에서 qg_open_stub 함수를 호출한다 (미리 만들어 놔도 된다)
 ///
-QSAPI bool qg_open_rdh(const char* driver, const char* title, int display, int width, int height, int flags);
+QSAPI bool qg_open_rdh(const char* driver, const char* title, int display, int width, int height, int flags, int features);
 
 /// @brief 렌더러를 닫는다
 QSAPI void qg_close_rdh(void);

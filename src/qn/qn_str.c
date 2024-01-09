@@ -1764,7 +1764,7 @@ int qn_wcsfnd(const wchar* src, const wchar* find, const size_t index)
 			return (int)(src + index - p);
 	}
 	return -1;
-	}
+}
 
 //
 bool qn_wcswcm(const wchar* string, const wchar* wild)
@@ -1881,7 +1881,7 @@ wchar* qn_wcsmid(wchar* restrict dest, const wchar* restrict src, const size_t p
 		*(dest + len) = L'\0';
 	}
 	return dest;
-		}
+}
 
 //
 wchar* qn_wcsltm(wchar* dest)
@@ -2352,6 +2352,42 @@ size_t qn_u8lcpy(char* restrict dest, const char* restrict src, size_t len)
 }
 
 //
+int qn_u32ucs(uchar4 c, char* out)
+{
+	if (c <= 0x7F)
+	{
+		out[0] = (char)c;
+		out[1] = '\0';
+		return 1;
+	}
+	else if (c <= 0x7FF)
+	{
+		out[0] = 0xC0 | (char)((c >> 6) & 0x1F);
+		out[1] = 0x80 | (char)(c & 0x3F);
+		out[2] = '\0';
+		return 2;
+	}
+	else if (c <= 0xFFFF)
+	{
+		out[0] = 0xE0 | (char)((c >> 12) & 0x0F);
+		out[1] = 0x80 | (char)((c >> 6) & 0x3F);
+		out[2] = 0x80 | (char)(c & 0x3F);
+		out[3] = '\0';
+		return 3;
+	}
+	else if (c <= 0x10FFFF)
+	{
+		out[0] = 0xF0 | (char)((c >> 18) & 0x0F);
+		out[1] = 0x80 | (char)((c >> 12) & 0x3F);
+		out[2] = 0x80 | (char)((c >> 6) & 0x3F);
+		out[3] = 0x80 | (char)(c & 0x3F);
+		out[4] = '\0';
+		return 4;
+	}
+	return 0;
+}
+
+//
 int qn_u32ucb(uchar4 c, char* out)
 {
 	uchar4 first;
@@ -2390,12 +2426,12 @@ int qn_u32ucb(uchar4 c, char* out)
 
 	if (out)
 	{
+		out[len] = '\0';
 		for (int i = len - 1; i > 0; --i)
 		{
 			out[i] = (char)((c & 0x3f) | 0x80);
 			c >>= 6;
 		}
-
 		out[0] = (char)(c | first);
 	}
 

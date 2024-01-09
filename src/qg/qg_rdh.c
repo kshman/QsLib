@@ -11,14 +11,14 @@
 RdhBase* qg_instance_rdh = NULL;
 
 //
-bool qg_open_rdh(const char* driver, const char* title, int display, int width, int height, int flags)
+bool qg_open_rdh(const char* driver, const char* title, int display, int width, int height, int flags, int features)
 {
 	struct rdh_renderer
 	{
 		const char* name;
 		const char* alias;
-		RdhBase* (*allocator)(QgFlag);
-		QgFlag renderer;
+		RdhBase* (*allocator)(QgFlag, QgFeature);
+		QgFeature feature;
 	};
 	static struct rdh_renderer renderers[] =
 	{
@@ -47,11 +47,12 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 		return false;
 	}
 
-	bool open_stub = qg_open_stub(title, display, width, height, flags | renderer->renderer);
+	features |= renderer->feature;
+	bool open_stub = qg_open_stub(title, display, width, height, flags, features);
 	qn_val_if_fail(qg_instance_stub, false);
 
 	// 개별 디바이스
-	RdhBase* self = renderer->allocator(flags);
+	RdhBase* self = renderer->allocator(flags, features);
 	if (self == NULL)
 	{
 		if (open_stub)

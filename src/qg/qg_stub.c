@@ -263,7 +263,7 @@ static void stub_atexit_callback(void* dummy)
 }
 
 //
-bool qg_open_stub(const char* title, const int display, const int width, const int height, const int flags)
+bool qg_open_stub(const char* title, int display, int width, int height, int flags, int features)
 {
 	qn_runtime();
 
@@ -276,14 +276,14 @@ bool qg_open_stub(const char* title, const int display, const int width, const i
 	shed_event_init();
 
 	// 진짜 만들기. 이 안에서 stub_initialize() 함수를 호출해서 기본 초기화
-	if (stub_system_open(title, display, width, height, flags) == false)
+	if (stub_system_open(title, display, width, height, flags, features) == false)
 	{
 		qg_close_stub();
 		return false;
 	}
 
 	// 사양 일괄 처리
-	qg_feature(flags, true);
+	qg_feature(features, true);
 
 	//
 	if (qg_stub_atexit == false)
@@ -296,13 +296,14 @@ bool qg_open_stub(const char* title, const int display, const int width, const i
 }
 
 //
-void stub_initialize(StubBase* stub, const int flags)
+void stub_initialize(StubBase* stub, QgFlag flags)
 {
 	qg_instance_stub = stub;
 
 	stub->mutex = qn_mutex_new();
 
-	stub->flags = flags & 0x00FFFFFF;						// 사양(24~31) 부분만 빼고 저장
+	stub->flags = flags;
+	stub->features = QGFEATURE_NONE;						// 나중에 설정해야 하므로 NONE
 	stub->stats = QGSSTT_ACTIVE | QGSSTT_CURSOR;			// 기본으로 활성 상태랑 커서는 켠다
 	stub->delay = 10;
 
@@ -315,7 +316,7 @@ void stub_initialize(StubBase* stub, const int flags)
 
 	qn_pctnr_init(&stub->monitors, 0);
 
-	qn_arr_init(StubArrEventCb, &stub->event_cbs, 10);
+	qn_list_init(StubListEventCb, &stub->callbacks);
 }
 
 //
@@ -331,7 +332,7 @@ void qg_close_stub(void)
 	qn_pctnr_foreach_1(&self->monitors, qn_memfre);
 	qn_pctnr_disp(&self->monitors);
 
-	qn_arr_disp(&self->event_cbs);
+	qn_list_disp(StubListEventCb, &self->callbacks);
 
 	qn_mutex_delete(self->mutex);
 
@@ -350,35 +351,40 @@ int qg_feature(int features, bool enable)
 	{
 		count++;
 		bool ret = stub_system_disable_acs(enable);
-		QN_SMASK(&self->flags, QGFEATURE_DISABLE_ACS, ret);
+		QN_SMASK(&self->features, QGFEATURE_DISABLE_ACS, ret);
 	}
 	if (QN_TMASK(features, QGFEATURE_DISABLE_SCRSAVE))
 	{
 		count++;
 		bool ret = stub_system_disable_scr_save(enable);
-		QN_SMASK(&self->flags, QGFEATURE_DISABLE_SCRSAVE, ret);
+		QN_SMASK(&self->features, QGFEATURE_DISABLE_SCRSAVE, ret);
 	}
 	if (QN_TMASK(features, QGFEATURE_ENABLE_DROP))
 	{
 		count++;
 		bool ret = stub_system_enable_drop(enable);
-		QN_SMASK(&self->flags, QGFEATURE_ENABLE_DROP, ret);
+		QN_SMASK(&self->features, QGFEATURE_ENABLE_DROP, ret);
 	}
 	if (QN_TMASK(features, QGFEATURE_ENABLE_SYSWM))
 	{
 		count++;
-		QN_SMASK(&self->flags, QGFEATURE_ENABLE_SYSWM, enable);
+		QN_SMASK(&self->features, QGFEATURE_ENABLE_SYSWM, enable);
 	}
 	if (QN_TMASK(features, QGFEATURE_ENABLE_IDLE))
 	{
 		count++;
-		QN_SMASK(&self->flags, QGFEATURE_ENABLE_IDLE, enable);
+		QN_SMASK(&self->features, QGFEATURE_ENABLE_IDLE, enable);
 	}
 	if (QN_TMASK(features, QGFEATURE_ENABLE_GRAB_MOUSE))
 	{
 		count++;
 		bool ret = stub_system_grab_mouse(enable);
-		QN_SMASK(&self->flags, QGFEATURE_ENABLE_GRAB_MOUSE, ret);
+		QN_SMASK(&self->features, QGFEATURE_ENABLE_GRAB_MOUSE, ret);
+	}
+	if (QN_TMASK(features, QGFEATURE_REMOVE_EVENTS))
+	{
+		count++;
+		QN_SMASK(&self->features, QGFEATURE_REMOVE_EVENTS, enable);
 	}
 
 	return count;
@@ -494,10 +500,12 @@ bool qg_loop(void)
 
 	shed_event.loop.reset = true;
 	shed_event.loop.count++;
+	shed_event_clear_reserved_mem();
 
 	if (QN_TMASK(stub->flags, QGSPECIFIC_VIRTUAL) == false)
 	{
-		shed_event_flush();	// 이전 루프의 메시지는 모두 지워버려
+		if (QN_TMASK(stub->features, QGFEATURE_REMOVE_EVENTS))
+			shed_event_flush();	// 이전 루프의 메시지는 모두 지워버려
 
 		if (!stub_system_poll() || QN_TMASK(stub->stats, QGSSTT_EXIT))
 			return false;
@@ -510,7 +518,7 @@ bool qg_loop(void)
 	stub->elapsed = adv;
 	stub->advance = QN_TMASK(stub->stats, QGSSTT_PAUSE) == false ? adv : 0.0f;
 
-	if (QN_TMASK(stub->flags, QGFEATURE_ENABLE_IDLE))
+	if (QN_TMASK(stub->features, QGFEATURE_ENABLE_IDLE))
 		qn_sleep(QN_TMASK(stub->stats, QGSSTT_ACTIVE) == false ? stub->delay : 1);
 
 	if (qg_instance_rdh)
@@ -526,7 +534,6 @@ static void qg_poll_check_shed(void)
 	{
 		shed_event.loop.reset = false;
 		shed_event.loop.poll++;
-		shed_event_clear_reserved_mem();
 	}
 	if (shed_event.loop.poll != shed_event.loop.count)
 	{
@@ -541,11 +548,10 @@ static void qg_dispatch_event(const QgEvent* ev)
 {
 	const StubBase* stub = qg_instance_stub;
 	QgEventType type = ev->ev;
-	size_t i;
-	qn_arr_foreach(&stub->event_cbs, i)
+	qn_ctn_name_node(StubListEventCb)* node;
+	qn_list_foreach(StubListEventCb, &stub->callbacks, node)
 	{
-		StubEventCallback* pair = &qn_arr_nth(&stub->event_cbs, i);
-		if (pair->func(pair->data, type, ev) > 0)
+		if (node->DATA.func(node->DATA.data, type, ev) > 0)
 			break;
 	}
 }
@@ -558,7 +564,7 @@ bool qg_poll(QgEvent* ev)
 	qg_poll_check_shed();
 	if (shed_event_transition(ev))
 	{
-		if (qn_arr_is_have(&stub->event_cbs))
+		if (qn_list_is_have(&stub->callbacks))
 		{
 			qn_mutex_enter(stub->mutex);
 			qg_dispatch_event(ev);
@@ -577,7 +583,7 @@ void qg_dispatch(void)
 	qg_poll_check_shed();
 
 	qn_mutex_enter(stub->mutex);
-	if (qn_arr_is_have(&stub->event_cbs))
+	if (qn_list_is_have(&stub->callbacks))
 	{
 		QgEvent ev;
 		while (shed_event_transition(&ev))
@@ -624,18 +630,18 @@ nint qg_register_event_callback(QgEventCallback func, void* data)
 {
 	qn_val_if_fail(func, 0);
 	StubBase* stub = qg_instance_stub;
+
+	StubEventCallback cb =
+	{
+		.func = func,
+		.data = data,
+		.key = qn_p_index()
+	};
 	qn_mutex_enter(stub->mutex);
-
-	size_t nth = qn_p_index();
-
-	qn_arr_expand(StubArrEventCb, &stub->event_cbs, 1);
-	StubEventCallback* cb = &qn_arr_inv(&stub->event_cbs, 0);
-	cb->func = func;
-	cb->data = data;
-	cb->key = nth;
-
+	qn_list_prepend(StubListEventCb, &stub->callbacks, cb);
 	qn_mutex_leave(stub->mutex);
-	return (nint)nth;
+
+	return (nint)cb.key;
 }
 
 //
@@ -646,18 +652,17 @@ bool qg_unregister_event_callback(nint key)
 	qn_mutex_enter(stub->mutex);
 
 	bool ret = false;
-	size_t i;
-	qn_arr_foreach(&stub->event_cbs, i)
+	qn_ctn_name_node(StubListEventCb)* node;
+	qn_list_foreach(StubListEventCb, &stub->callbacks, node)
 	{
-		StubEventCallback* cb = &qn_arr_nth(&stub->event_cbs, i);
-		if (cb->key != (size_t)key)
+		if (node->DATA.key != (size_t)key)
 			continue;
-		ret = true;
+		ret=true;
 		break;
 	}
 
 	if (ret)
-		qn_arr_remove_nth(StubArrEventCb, &stub->event_cbs, i);
+		qn_list_remove_node(StubListEventCb, &stub->callbacks, node);
 
 	qn_mutex_leave(stub->mutex);
 	return ret;
@@ -973,6 +978,7 @@ bool stub_event_on_text(const char* text)
 		if (add == 0)
 			break;
 		pos += add;
+		e.text.len = add;
 		ret = qg_add_event(&e, false) > 0;
 	}
 	return ret;

@@ -15,7 +15,6 @@ typedef struct StubEventCallback
 	void*				data;
 	size_t				key;
 } StubEventCallback;
-QN_DECL_ARR(StubArrEventCb, StubEventCallback);
 QN_DECL_LIST(StubListEventCb, StubEventCallback);
 
 // 스터브 베이스
@@ -26,6 +25,7 @@ typedef struct StubBase
 	QnTimer*			timer;
 
 	QgFlag				flags;
+	QgFeature			features;
 	QgStubStat			stats;								// 시스템 스터브 관리
 	uint				window_stats;
 	uint				display;
@@ -44,7 +44,7 @@ typedef struct StubBase
 	QgUimMouse			mouse;
 	StubMonitorCtnr		monitors;
 
-	StubArrEventCb		event_cbs;
+	StubListEventCb		callbacks;
 #ifdef _QN_EMSCRIPTEN_
 	funcparam_t			main_delegate;
 #endif
@@ -54,7 +54,7 @@ typedef struct StubBase
 extern StubBase* qg_instance_stub;
 
 // 시스템 스터브를 연다
-extern bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags);
+extern bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags, QgFeature features);
 // 시스템 스터브를 정리한다
 extern void stub_system_finalize(void);
 // 시스템 스터브 폴링 (프로그램이 종료되면 거짓)
@@ -106,7 +106,7 @@ extern bool stub_event_on_active(bool active, double delta);
 extern bool stub_event_on_drop(char* data, int len, bool finish);
 
 // 스터보 기본 사양을 초기화 stub_system_open() 함수가 호출해야 한다
-extern void stub_initialize(StubBase* stub, int flags);
+extern void stub_initialize(StubBase* stub, QgFlag flags);
 // 내부적으로 토글을 설정한다 (완전 언세이프)
 extern void stub_toggle_keys(QikMask keymask, bool on);
 
@@ -217,7 +217,7 @@ extern RdhBase* qg_instance_rdh;
 
 #ifdef USE_ES
 // OPENGL ES 할당
-extern RdhBase* es_allocator(QgFlag flags);
+extern RdhBase* es_allocator(QgFlag flags, QgFeature features);
 #endif
 
 // 렌더러 최종 제거
