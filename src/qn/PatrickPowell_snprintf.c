@@ -75,6 +75,8 @@
 
 #include "pch.h"
 #include "qs_qn.h"
+#include <ctype.h>
+#include <wctype.h>
 #include <locale.h>
 
 /*
@@ -161,8 +163,8 @@ typedef union sn_any
 } sn_any;
 
 // 숫자 변환 아스키/유니코드 공용
-extern byte qn_char_to_int_base(const uint n);
-extern char qn_int_base_to_char(const uint n, bool upper);
+extern const byte* qn_num_base_table(void);
+extern const char* qn_char_base_table(const bool upper);
 #define char_to_int(p)	(int)((p) - '0')
 
 //
@@ -236,10 +238,11 @@ QN_INLINE ullong pp_intpart(const double value)
 // 32비트 숫자를 문자열로
 static int pps_toi(uint value, char* restrict buf, int size, uint base, bool caps)
 {
+	const char* table = qn_char_base_table(caps);
 	int pos = 0;
 	do
 	{
-		buf[pos++] = qn_int_base_to_char(value % base, caps);
+		buf[pos++] = table[value % base];
 		value /= base;
 	} while (value && pos < size);
 	buf[pos] = '\0';
@@ -249,10 +252,11 @@ static int pps_toi(uint value, char* restrict buf, int size, uint base, bool cap
 // 64비트 숫자를 문자열로
 static int pps_toll(ullong value, char* restrict buf, int size, uint base, bool caps)
 {
+	const char* table = qn_char_base_table(caps);
 	int pos = 0;
 	do
 	{
-		buf[pos++] = qn_int_base_to_char(value % base, caps);
+		buf[pos++] = table[value % base];
 		value /= base;
 	} while (value && pos < size);
 	buf[pos] = '\0';
@@ -1335,10 +1339,11 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 // 32비트 숫자를 문자열로
 static int ppw_toi(uint value, wchar* restrict buf, int size, uint base, bool caps)
 {
+	const char* table = qn_char_base_table(caps);
 	int pos = 0;
 	do
 	{
-		buf[pos++] = qn_int_base_to_char(value % base, caps);
+		buf[pos++] = (wchar)table[value % base];
 		value /= base;
 	} while (value && pos < size);
 	buf[pos] = L'\0';
@@ -1348,10 +1353,11 @@ static int ppw_toi(uint value, wchar* restrict buf, int size, uint base, bool ca
 // 64비트 숫자를 문자열로
 static int ppw_toll(ullong value, wchar* restrict buf, int size, uint base, bool caps)
 {
+	const char* table = qn_char_base_table(caps);
 	int pos = 0;
 	do
 	{
-		buf[pos++] = qn_int_base_to_char(value % base, caps);
+		buf[pos++] = (wchar)table[value % base];
 		value /= base;
 	} while (value && pos < size);
 	buf[pos] = L'\0';

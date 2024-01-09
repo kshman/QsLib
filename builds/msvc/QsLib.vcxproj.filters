@@ -34,21 +34,18 @@
     <Filter Include="소스 파일\qg\stub">
       <UniqueIdentifier>{48e3acae-9940-48fe-a4b2-e3a592e2f7de}</UniqueIdentifier>
     </Filter>
-    <Filter Include="소스 파일\qg\gl">
-      <UniqueIdentifier>{15b5bc29-0129-420d-8fb8-00d15fee3f41}</UniqueIdentifier>
-    </Filter>
     <Filter Include="헤더 파일\qg\stub">
       <UniqueIdentifier>{ca19cfa2-72c5-4ba0-a9be-503b7f6ceffd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="헤더 파일\qg\gl">
-      <UniqueIdentifier>{170f8d93-add5-4173-8a91-f63c33ede8e4}</UniqueIdentifier>
+    <Filter Include="헤더 파일\qg\stub\gl">
+      <UniqueIdentifier>{307c7f28-4e79-4f81-89f5-e482e102dbaa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\inc">
+      <UniqueIdentifier>{2aad8de5-be3d-426a-880b-89547be4bffe}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\pch.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\inc\qs.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\qn\zlib\zutil.h">
@@ -90,62 +87,53 @@
     <ClInclude Include="..\..\src\qs_conf.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\qgstub_win_func.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\qgstub_wlx_func.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\qg_stub.h">
+      <Filter>헤더 파일\qg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\qgrdh_es.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\qgrdh_glbase.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\gl\egl.h">
+      <Filter>헤더 파일\qg\stub\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\gl\gl.h">
+      <Filter>헤더 파일\qg\stub\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\gl\glad_supp.h">
+      <Filter>헤더 파일\qg\stub\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\gl\gles2.h">
+      <Filter>헤더 파일\qg\stub\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\gl\wgl.h">
+      <Filter>헤더 파일\qg\stub\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\inc\qs.h">
+      <Filter>헤더 파일\inc</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\inc\qs_ctn.h">
-      <Filter>헤더 파일\qn</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\inc\qs_math.h">
-      <Filter>헤더 파일\qn</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\inc\qs_qn.h">
-      <Filter>헤더 파일\qn</Filter>
+      <Filter>헤더 파일\inc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\inc\qs_kmc.h">
-      <Filter>헤더 파일\qg</Filter>
+      <Filter>헤더 파일\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\inc\qs_math.h">
+      <Filter>헤더 파일\inc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\inc\qs_qg.h">
-      <Filter>헤더 파일\qg</Filter>
+      <Filter>헤더 파일\inc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\qg_stub.h">
-      <Filter>헤더 파일\qg\stub</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\qgwin_func.h">
-      <Filter>헤더 파일\qg\stub</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\wayland-wayland.h">
-      <Filter>헤더 파일\qg\stub</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\wayland-wayland-code.h">
-      <Filter>헤더 파일\qg\stub</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\wayland-xdg-shell-code.h">
-      <Filter>헤더 파일\qg\stub</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\wayland-xdg-shell.h">
-      <Filter>헤더 파일\qg\stub</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\qgwlx_func.h">
-      <Filter>헤더 파일\qg\stub</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\gl\gl.h">
-      <Filter>헤더 파일\qg\gl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\gl\gles2.h">
-      <Filter>헤더 파일\qg\gl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\gl\qggl_base.h">
-      <Filter>헤더 파일\qg\gl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\gl\qges_rdh.h">
-      <Filter>헤더 파일\qg\gl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\gl\qggl_code.h">
-      <Filter>헤더 파일\qg\gl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\gl\egl.h">
-      <Filter>헤더 파일\qg\gl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\gl\wgl.h">
-      <Filter>헤더 파일\qg\gl</Filter>
+    <ClInclude Include="..\..\inc\qs_qn.h">
+      <Filter>헤더 파일\inc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -155,7 +143,7 @@
     <ClCompile Include="..\..\src\qn\qn_time.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_debug.c">
+    <ClCompile Include="..\..\src\qn\qn_prf.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qn\qn_file.c">
@@ -164,19 +152,10 @@
     <ClCompile Include="..\..\src\qn\qs_gam.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_hash.c">
-      <Filter>소스 파일\qn</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\qn\qm_math.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_mem.c">
-      <Filter>소스 파일\qn</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\qn\qn_mlu.c">
-      <Filter>소스 파일\qn</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\qn_sort.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qn\qn_str.c">
@@ -239,26 +218,29 @@
     <ClCompile Include="..\..\src\pch.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\stub\qg_stub.c">
+    <ClCompile Include="..\..\src\qg\stub\qgstub_sdl.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\stub\qgsdl_stub.c">
-      <Filter>소스 파일\qg\stub</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qg\stub\qgwin_stub.c">
+    <ClCompile Include="..\..\src\qg\stub\qgstub_win.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
     <ClCompile Include="..\..\zconsole\zz.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\stub\qgwlx_stub.c">
+    <ClCompile Include="..\..\src\qg\stub\qgstub_wlx.c">
       <Filter>소스 파일\qg\stub</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qg\gl\qges_rdh.c">
-      <Filter>소스 파일\qg\gl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qg\qg_rdh.c">
       <Filter>소스 파일\qg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qg_stub.c">
+      <Filter>소스 파일\qg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\stub\qgrdh_es.c">
+      <Filter>소스 파일\qg\stub</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\stub\qgstub_emscripten.c">
+      <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

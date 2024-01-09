@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 #include "qs_qn.h"
+#include <stdio.h>
+#include <stdlib.h>
 #ifdef _QN_UNIX_
 #include <unistd.h>
 #endif

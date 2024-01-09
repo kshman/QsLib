@@ -8,13 +8,16 @@
 #include "pch.h"
 #include "qs_qg.h"
 #include "qg_stub.h"
+#ifdef _QN_EMSCRIPTEN_
+#include <emscripten.h>
+#endif
 
 #ifdef _MSC_VER
 //#pragma warning(default:4820)		// 패딩 확인용
 #endif
 
 // 인스턴스 포인터
-struct StubBase* qg_stub_instance = NULL;
+struct StubBase* qg_instance_stub = NULL;
 // atexit 지시자
 bool qg_stub_atexit = false;
 
@@ -233,7 +236,7 @@ bool qg_open_stub(const char* title, const int display, const int width, const i
 {
 	qn_runtime();
 
-	if (qg_stub_instance)
+	if (qg_instance_stub)
 	{
 		qn_debug_outputs(true, "STUB", "already opened.");
 		return false;
@@ -264,7 +267,7 @@ bool qg_open_stub(const char* title, const int display, const int width, const i
 //
 void stub_initialize(StubBase* stub, const int flags)
 {
-	qg_stub_instance = stub;
+	qg_instance_stub = stub;
 
 	//
 	stub->flags = flags & 0x00FFFFFF;						// 확장(24~31) 부분만 빼고 저장
@@ -277,27 +280,31 @@ void stub_initialize(StubBase* stub, const int flags)
 	stub->run = stub->timer->runtime;
 	stub->active = stub->timer->abstime;
 
-	stub->mouse.lim.move = 10 * 10 + 10 * 10;						// 제한 이동 거리(포인트)의 제곱
+	stub->mouse.lim.move = 10 * 10 + 10 * 10;				// 제한 이동 거리(포인트)의 제곱
 	stub->mouse.lim.tick = 500;								// 제한 클릭 시간(밀리초)
 
+#ifndef __EMSCRIPTEN__
 	qn_pctnr_init(&stub->monitors, 0);
+#endif
 }
 
 //
 void qg_close_stub(void)
 {
-	qn_ret_if_fail(qg_stub_instance);
+	qn_ret_if_fail(qg_instance_stub);
 
 	stub_system_finalize();
 
-	qn_timer_delete(qg_stub_instance->timer);
+	qn_timer_delete(qg_instance_stub->timer);
 
-	qn_pctnr_foreach_1(&qg_stub_instance->monitors, qn_memfre);
-	qn_pctnr_disp(&qg_stub_instance->monitors);
+#ifndef __EMSCRIPTEN__
+	qn_pctnr_foreach_1(&qg_instance_stub->monitors, qn_memfre);
+	qn_pctnr_disp(&qg_instance_stub->monitors);
+#endif
 
 	shed_event_dispose();
 
-	qg_stub_instance = NULL;
+	qg_instance_stub = NULL;
 }
 
 //
@@ -322,12 +329,12 @@ int qg_feature(int feature, bool enable)
 	}
 	if (QN_TMASK(feature, QGFEATURE_ENABLE_SYSWM))
 	{
-		QN_SMASK(&qg_stub_instance->flags, QGFEATURE_ENABLE_SYSWM, enable);
+		QN_SMASK(&qg_instance_stub->flags, QGFEATURE_ENABLE_SYSWM, enable);
 		count++;
 	}
 	if (QN_TMASK(feature, QGFEATURE_ENABLE_IDLE))
 	{
-		QN_SMASK(&qg_stub_instance->flags, QGFEATURE_ENABLE_IDLE, enable);
+		QN_SMASK(&qg_instance_stub->flags, QGFEATURE_ENABLE_IDLE, enable);
 		count++;
 	}
 
@@ -343,15 +350,15 @@ void qg_set_title(const char* title)
 //
 void qg_exit_loop(void)
 {
-	qn_ret_if_fail(qg_stub_instance);
-	QN_SMASK(&qg_stub_instance->stats, QGSSTT_EXIT, true);
+	qn_ret_if_fail(qg_instance_stub);
+	QN_SMASK(&qg_instance_stub->stats, QGSSTT_EXIT, true);
 	qg_add_signal_event(QGEV_EXIT, true);
 }
 
 //
 bool qg_loop(void)
 {
-	StubBase* stub = qg_stub_instance;
+	StubBase* stub = qg_instance_stub;
 	qn_val_if_fail(stub, false);
 
 	shed_event.loop.reset = true;
@@ -373,13 +380,16 @@ bool qg_loop(void)
 	if (QN_TMASK(stub->flags, QGFEATURE_ENABLE_IDLE))
 		qn_sleep(QN_TMASK(stub->stats, QGSSTT_ACTIVE) == false ? stub->delay : 1);
 
+	if (qg_instance_rdh)
+		rdh_internal_invoke_reset();
+
 	return true;
 }
 
 //
 bool qg_poll(QgEvent* ev)
 {
-	const StubBase* stub = qg_stub_instance;
+	const StubBase* stub = qg_instance_stub;
 	qn_val_if_fail(stub, false);
 
 	if (shed_event.loop.reset)
@@ -395,22 +405,54 @@ bool qg_poll(QgEvent* ev)
 	}
 
 	if (qg_pop_event(ev))
+	{
+		if (qg_instance_rdh && ev->ev == QGEV_LAYOUT)
+			rdh_internal_check_layout();
 		return true;
+	}
 
 	shed_event_clear_reserved_mem();
 	return false;
 }
 
+#ifdef _QN_EMSCRIPTEN_
+static void* qg_emscripten_main_data;
+static bool (*qg_emscripten_main_func)(void*);
+
+static void qg_emscripten_main_loop()
+{
+	if (!qg_loop() ||
+		!qg_emscripten_main_func(qg_emscripten_main_data))
+		emscripten_cancel_main_loop();
+}
+#endif
+
+//
+void qg_main_loop(bool (*func)(void*), void* data)
+{
+#ifndef _QN_EMSCRIPTEN_
+	while (qg_loop())
+	{
+		if (!func(data))
+			break;
+	}
+#else
+	qg_emscripten_main_func= func;
+	qg_emscripten_main_data = data;
+	emscripten_set_main_loop(qg_emscripten_main_loop, 0, true);
+#endif
+}
+
 //
 const QgUimKey* qg_get_key_info(void)
 {
-	return &qg_stub_instance->key;
+	return &qg_instance_stub->key;
 }
 
 //
 const QgUimMouse* qg_get_mouse_info(void)
 {
-	return &qg_stub_instance->mouse;
+	return &qg_instance_stub->mouse;
 }
 
 //
@@ -419,7 +461,7 @@ bool qg_set_double_click_prop(const uint density, const uint interval)
 	qn_val_if_fail(density < 50, false);
 	qn_val_if_fail(interval <= 5000, false);
 
-	QgUimMouse* m = &qg_stub_instance->mouse;
+	QgUimMouse* m = &qg_instance_stub->mouse;
 	m->lim.move = density * density;
 	m->lim.tick = interval;
 	return true;
@@ -429,50 +471,50 @@ bool qg_set_double_click_prop(const uint density, const uint interval)
 bool qg_test_key(const QikKey key)
 {
 	qn_val_if_fail((size_t)key < QIK_MAX_VALUE && key != QIK_NONE, false);
-	return qg_stub_instance->key.key[key];
+	return qg_instance_stub->key.key[key];
 }
 
 //
 void qg_set_key(const QikKey key, const bool down)
 {
 	qn_ret_if_fail((size_t)key < QIK_MAX_VALUE && key != QIK_NONE);
-	qg_stub_instance->key.key[key] = down;
+	qg_instance_stub->key.key[key] = down;
 }
 
 //
 float qg_get_fps(void)
 {
-	return qg_stub_instance->fps;
+	return qg_instance_stub->fps;
 }
 
 //
 double qg_get_run(void)
 {
-	return qg_stub_instance->run;
+	return qg_instance_stub->run;
 }
 
 //
 double qg_get_reference(void)
 {
-	return qg_stub_instance->reference;
+	return qg_instance_stub->reference;
 }
 
 //
 double qg_get_advance(void)
 {
-	return qg_stub_instance->advance;
+	return qg_instance_stub->advance;
 }
 
 //
 int qg_get_delay(void)
 {
-	return (int)qg_stub_instance->delay;
+	return (int)qg_instance_stub->delay;
 }
 
 //
 void qg_set_delay(const int delay)
 {
-	qg_stub_instance->delay = (uint)QN_CLAMP(delay, 1, 1000);
+	qg_instance_stub->delay = (uint)QN_CLAMP(delay, 1, 1000);
 }
 
 //
@@ -533,22 +575,20 @@ int qg_add_key_event(const QgEvent* ev, const size_t key)
 //
 void stub_toggle_keys(const QikMask keymask, const bool on)
 {
-	QgUimKey* uk = &qg_stub_instance->key;
+	QgUimKey* uk = &qg_instance_stub->key;
 	QN_SMASK(&uk->mask, keymask, on);
 }
 
 //
 bool stub_track_mouse_click(const QimButton button, const QimTrack track)
 {
-	QgUimMouse* m = &qg_stub_instance->mouse;
+	QgUimMouse* m = &qg_instance_stub->mouse;
 
 	if (track == QIMT_MOVE)
 	{
 		if (m->clk.tick > 0)
 		{
-			const int dx = m->clk.loc.x - m->pt.x;
-			const int dy = m->clk.loc.y - m->pt.y;
-			const uint d = (uint)(dx * dx) + (uint)(dy * dy);
+			const uint d = qm_len_sq(qm_sub(m->clk.loc, m->pt));
 			if (d > m->lim.move)
 			{
 				// 마우스가 move 만큼 움직이면 두번 누르기 취소
@@ -594,7 +634,10 @@ bool stub_track_mouse_click(const QimButton button, const QimTrack track)
 // monitor는 할당해서 와야한다!!!
 bool stub_event_on_monitor(QgUdevMonitor* monitor, const bool connected, const bool primary)
 {
-	StubBase* stub = qg_stub_instance;
+#ifdef __EMSCRIPTEN__
+	return false;
+#else
+	StubBase* stub = qg_instance_stub;
 	QgEvent e = { .monitor.ev = QGEV_MONITOR, .monitor.connectd = connected, };
 	if (connected)
 	{
@@ -630,12 +673,13 @@ bool stub_event_on_monitor(QgUdevMonitor* monitor, const bool connected, const b
 		stub_system_update_bound();		// 위치가 바꼈을 수도 있다! 보통은 윈도우 메시지가 먼저 옴
 	}
 	return ret;
+#endif
 }
 
 //
 bool stub_event_on_layout(const bool enter)
 {
-	StubBase* stub = qg_stub_instance;
+	StubBase* stub = qg_instance_stub;
 
 	if (enter != false)
 	{
@@ -647,7 +691,7 @@ bool stub_event_on_layout(const bool enter)
 
 	QmSize prev = stub->client_size;
 	stub_system_update_bound();
-	if (qm_eq(&prev, &stub->client_size) == false)
+	if (qm_eq(prev, stub->client_size) == false)
 	{
 		// 크기가 변하면 레이아웃
 		const QgEvent e =
@@ -665,7 +709,7 @@ bool stub_event_on_layout(const bool enter)
 //
 bool stub_event_on_window_event(const QgWindowEventType type, const int param1, const int param2)
 {
-	StubBase* stub = qg_stub_instance;
+	StubBase* stub = qg_instance_stub;
 
 	switch (type)  // NOLINT
 	{
@@ -712,16 +756,16 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 		case QGWEV_MOVED:
 			if (QN_TMASK(stub->flags, QGFLAG_FULLSCREEN))
 				return false;
-			if (stub->window_bound.left == param1 && stub->window_bound.top == param2)
+			if (stub->window_bound.Left == param1 && stub->window_bound.Top == param2)
 				return false;
-			qm_rect_move(&stub->window_bound, param1, param2);
+			stub->window_bound = qm_rect_move(stub->window_bound, param1, param2);
 			// SDL은 모니터 검사를 하고 다르면 모니터 이벤트를 추가한다
 			break;
 
 		case QGWEV_SIZED:
-			if (qm_rect_width(&stub->window_bound) == param1 && qm_rect_height(&stub->window_bound) == param2)
+			if (qm_rect_width(stub->window_bound) == param1 && qm_rect_height(stub->window_bound) == param2)
 				return 0;
-			qm_rect_resize(&stub->window_bound, param1, param2);
+			stub->window_bound = qm_rect_resize(stub->window_bound, param1, param2);
 			// 여기도 SDL은 모니터 검사를 하고 다르면 모니터 이벤트를 추가한다
 			break;
 
@@ -754,7 +798,7 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 //
 bool stub_event_on_text(const char* text)
 {
-	const StubBase* stub = qg_stub_instance;
+	const StubBase* stub = qg_instance_stub;
 	qn_val_if_fail(QN_TMASK(stub->flags, QGFLAG_TEXT), 0);
 
 	QgEvent e = { .text.ev = QGEV_TEXTINPUT, };
@@ -775,7 +819,7 @@ bool stub_event_on_text(const char* text)
 //
 bool stub_event_on_keyboard(const QikKey key, const bool down)
 {
-	QgUimKey* uk = &qg_stub_instance->key;
+	QgUimKey* uk = &qg_instance_stub->key;
 	QgEvent e;
 
 	QikMask mask;
@@ -841,7 +885,7 @@ bool stub_event_on_keyboard(const QikKey key, const bool down)
 bool stub_event_on_reset_keys(void)
 {
 	QgEvent e = { .key.ev = QGEV_KEYUP, .key.mask = 0, .key.repeat = false };
-	QgUimKey* uk = &qg_stub_instance->key;
+	QgUimKey* uk = &qg_instance_stub->key;
 
 	bool ret = false;
 	for (int i = 0; i < QIK_MAX_VALUE; i++)
@@ -860,24 +904,24 @@ bool stub_event_on_reset_keys(void)
 bool stub_event_on_mouse_move(int x, int y)
 {
 	// 이동 이외의 정보는 해와야함
-	QgUimMouse* um = &qg_stub_instance->mouse;
+	QgUimMouse* um = &qg_instance_stub->mouse;
 
 	um->last = um->pt;
-	um->delta.x = um->pt.x - x;
-	um->delta.y = um->pt.y - y;
-	qm_set2(&um->pt, x, y);
+	um->delta.X = um->pt.X - x;
+	um->delta.Y = um->pt.Y - y;
+	um->pt = qm_point(x, y);
 
-	if (um->delta.x == 0 && um->delta.y == 0)
+	if (um->delta.X == 0 && um->delta.Y == 0)
 		return false;
 
 	const QgEvent e =
 	{
 		.mmove.ev = QGEV_MOUSEMOVE,
 		.mmove.mask = um->mask,
-		.mmove.pt.x = x,
-		.mmove.pt.y = y,
-		.mmove.delta.x = um->last.x - x,
-		.mmove.delta.y = um->last.y - y,
+		.mmove.pt.X = x,
+		.mmove.pt.Y = y,
+		.mmove.delta.X = um->last.X - x,
+		.mmove.delta.Y = um->last.Y - y,
 	};
 	return qg_add_event(&e, false) > 0;
 }
@@ -885,7 +929,7 @@ bool stub_event_on_mouse_move(int x, int y)
 //
 bool stub_event_on_mouse_button(const QimButton button, const bool down)
 {
-	QgUimMouse* um = &qg_stub_instance->mouse;
+	QgUimMouse* um = &qg_instance_stub->mouse;
 	QN_SBIT(&um->mask, button, down);
 
 	const QgEvent e =
@@ -915,45 +959,45 @@ bool stub_event_on_mouse_button(const QimButton button, const bool down)
 //
 bool stub_event_on_mouse_wheel(const float x, const float y, const bool direction)
 {
-	QgUimMouse* um = &qg_stub_instance->mouse;
+	QgUimMouse* um = &qg_instance_stub->mouse;
 
 	if (qm_eqf(x, 0.0f) && qm_eqf(y, 0.0f))
 		return 0;
 
 	if (x > 0.0f)
 	{
-		if (um->wheel.accm.x < 0.0f)
-			um->wheel.accm.x = 0.0f;
+		if (um->wheel.accm.X < 0.0f)
+			um->wheel.accm.X = 0.0f;
 	}
 	else if (x < 0.0f)
 	{
-		if (um->wheel.accm.x > 0.0f)
-			um->wheel.accm.x = 0.0f;
+		if (um->wheel.accm.X > 0.0f)
+			um->wheel.accm.X = 0.0f;
 	}
-	um->wheel.accm.x += x;
+	um->wheel.accm.X += x;
 	const int ix =
-		(um->wheel.accm.x > 0.0f) ? (int)floorf(um->wheel.accm.x) :		// NOLINT
-		(um->wheel.accm.x < 0.0f) ? (int)ceilf(um->wheel.accm.x) : 0;	// NOLINT
-	um->wheel.accm.x -= (float)ix;
+		(um->wheel.accm.X > 0.0f) ? (int)floorf(um->wheel.accm.X) :		// NOLINT
+		(um->wheel.accm.X < 0.0f) ? (int)ceilf(um->wheel.accm.X) : 0;	// NOLINT
+	um->wheel.accm.X -= (float)ix;
 
 	if (y > 0.0f)
 	{
-		if (um->wheel.accm.y < 0.0f)
-			um->wheel.accm.y = 0.0f;
+		if (um->wheel.accm.Y < 0.0f)
+			um->wheel.accm.Y = 0.0f;
 	}
 	else if (y < 0.0f)
 	{
-		if (um->wheel.accm.y > 0.0f)
-			um->wheel.accm.y = 0.0f;
+		if (um->wheel.accm.Y > 0.0f)
+			um->wheel.accm.Y = 0.0f;
 	}
-	um->wheel.accm.y += y;
+	um->wheel.accm.Y += y;
 	const int iy =
-		(um->wheel.accm.y > 0.0f) ? (int)floorf(um->wheel.accm.y) :		// NOLINT
-		(um->wheel.accm.y < 0.0f) ? (int)ceilf(um->wheel.accm.y) : 0;	// NOLINT
-	um->wheel.accm.y -= (float)iy;
+		(um->wheel.accm.Y > 0.0f) ? (int)floorf(um->wheel.accm.Y) :		// NOLINT
+		(um->wheel.accm.Y < 0.0f) ? (int)ceilf(um->wheel.accm.Y) : 0;	// NOLINT
+	um->wheel.accm.Y -= (float)iy;
 
-	qm_point_set(&um->wheel.integral, ix, iy);
-	qm_vec2_set(&um->wheel.precise, x, y);
+	um->wheel.integral = qm_point(ix, iy);
+	um->wheel.precise = qm_vec2(x, y);
 
 	const QgEvent e =
 	{
@@ -990,7 +1034,7 @@ bool stub_event_on_drop(char* data, const int len, const bool finish)
 	if (s_enter == false)
 	{
 		s_enter = true;
-		QN_SMASK(&qg_stub_instance->stats, QGSSTT_DROP, true);
+		QN_SMASK(&qg_instance_stub->stats, QGSSTT_DROP, true);
 		const QgEvent eb = { .drop.ev = QGEV_DROPBEGIN, };
 		ret = qg_add_event(&eb, false) > 0;
 		if (ret == false)
@@ -1007,7 +1051,7 @@ bool stub_event_on_drop(char* data, const int len, const bool finish)
 
 	if (finish)
 	{
-		QN_SMASK(&qg_stub_instance->stats, QGSSTT_DROP, false);
+		QN_SMASK(&qg_instance_stub->stats, QGSSTT_DROP, false);
 		s_enter = false;
 	}
 	return ret;

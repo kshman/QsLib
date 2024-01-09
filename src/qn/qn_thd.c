@@ -5,9 +5,18 @@
 
 #include "pch.h"
 #include "qs_qn.h"
-#ifdef _QN_UNIX_
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
+#ifdef __GNUC__
+#include <errno.h>
+#include <signal.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <sys/time.h>
+#endif
+#ifdef _QN_EMSCRIPTEN_
+#include <emscripten/atomic.h>
 #endif
 
 #ifdef _QN_WINDOWS_
@@ -25,7 +34,7 @@ bool qn_spin_try(QnSpinLock* lock)
 #elif defined _MSC_VER && (defined _M_ARM || defined _M_ARM64 || defined _M_ARM64EC)
 	return _InterlockedExchange_acq(lock, 1) == 0;
 #elif defined __EMSCRIPTEN__
-	return emscripten_atomic_exchange_u32(lock, 1) == 0;
+	return emscripten_atomic_exchange_u32((void*)lock, 1) == 0;
 #elif defined __GNUC__
 	return __sync_lock_test_and_set(lock, 1) == 0;
 #elif defined _QN_OSX_
@@ -88,7 +97,7 @@ void qn_spin_leave(QnSpinLock* lock)
 #elif defined _MSC_VER && (defined _M_ARM || defined _M_ARM64)
 	_InterlockedExchange_rel((long volatile*)lock, 0);
 #elif defined __EMSCRIPTEN__
-	emscripten_atomic_store_u32(lock, 0);
+	emscripten_atomic_store_u32((void*)lock, 0);
 #elif defined __GNUC__
 	__sync_lock_release(lock);
 #else

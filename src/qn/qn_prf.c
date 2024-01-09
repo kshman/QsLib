@@ -1,151 +1,237 @@
 ﻿//
-// qn_mem.c - CRT에 없는 메모리 기능과 메모리 관리자
+// qn_prf.c - 디버그 출력 관리자 + 메모리 관리자
 // 2023-12-27 by kim
 //
 
 #include "pch.h"
 #include "qs_qn.h"
-#ifndef __EMSCRIPTEN__
-#include "zlib/zlib.h"
+#ifdef __GNUC__
+#include <signal.h>
+#include <stdio.h>
+#endif
+#ifdef _QN_EMSCRIPTEN_
+#include <emscripten/console.h>
 #endif
 
-//
-void* qn_memenc(void* restrict dest, const void* restrict src, const size_t size)
-{
-	const byte* ps = (const byte*)src;
-	byte* pd = (byte*)dest;
-
-	for (size_t i = size; i; --i, ++pd, ++ps)
-	{
-		const byte z = (byte)(255 - *ps);
-		*pd = (byte)(z >> 4 | (z & 0xF) << 4);
-	}
-
-	return dest;
-}
-
-//
-void* qn_memdec(void* restrict dest, const void* restrict src, const size_t size)
-{
-	const byte* ps = (const byte*)src;
-	byte* pd = (byte*)dest;
-
-	for (size_t i = size; i; --i, ++pd, ++ps)
-	{
-		const byte z = (byte)(255 - *ps);
-		*pd = (byte)(z << 4 | (z & 0xF0) >> 4);
-	}
-
-	return dest;
-}
-
-//
-void* qn_memzcpr(const void* src, const size_t srcsize, /*NULLABLE*/size_t* destsize)
-{
-#ifndef __EMSCRIPTEN__
-	qn_val_if_fail(src != NULL, NULL);
-	qn_val_if_fail(srcsize > 0, NULL);
-
-	uLong tmp = ((uLong)srcsize + 12) / 1000;
-	tmp += tmp == 0 ? (uLong)srcsize + 13 : (uLong)srcsize + 12;
-
-	byte* p = qn_alloc(tmp, byte);
-	if (compress((Bytef*)p, &tmp, (const Bytef*)src, (uLong)srcsize) != Z_OK)
-	{
-		qn_free(p);
-		return NULL;
-	}
-
-	if (destsize)
-		*destsize = tmp;
-
-	return p;
+#ifdef DEBUG_BREAK
+#error macro _DEBUG_BREAK already defined!
+#endif
+#ifdef _QN_WINDOWS_
+#define DEBUG_BREAK(x)			if (x) DebugBreak()
+#elif defined __EMSCRIPTEN__
+#define DEBUG_BREAK(x)
 #else
-	return NULL;
+#define DEBUG_BREAK(x)			if (x) raise(SIGTRAP)
 #endif
-}
 
 //
-void* qn_memzucp(const void* src, const size_t srcsize, const size_t bufsize, /*NULLABLE*/size_t* destsize)
+static struct DebugImpl
 {
-#ifndef __EMSCRIPTEN__
-	qn_val_if_fail(src != NULL, NULL);
-	qn_val_if_fail(srcsize > 0, NULL);
-
-	uLong size = bufsize == 0 ? (uLong)srcsize * 5 + 12 : (uLong)bufsize;
-	byte* p = qn_alloc(size, byte);
-	if (uncompress((Bytef*)p, &size, (const Bytef*)src, (uLong)srcsize) != Z_OK)
-	{
-		qn_free(p);
-		return NULL;
-	}
-
-	if (destsize)
-		*destsize = size;
-
-	return p;
+#ifdef _QN_WINDOWS_
+	HANDLE			handle;
 #else
-	return NULL;
+	FILE*			fp;
+#endif
+
+	char			tag[32];
+	char			out_buf[MAX_DEBUG_LENGTH];
+	int				out_pos;
+
+	bool			debugger;
+	bool			redirect;
+	bool			__dummy1;
+	bool			__dummy2;
+} debug_impl =
+{
+#ifdef _QN_WINDOWS_
+	.handle = NULL,
+#else
+	.fp = NULL,
+#endif
+	.tag = "QS",
+	.out_buf = "",
+	.out_pos = 0,
+	.debugger = false,
+	.redirect = false,
+};
+
+//
+void qn_debug_up(void)
+{
+#ifdef _QN_WINDOWS_
+	debug_impl.handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	debug_impl.debugger = IsDebuggerPresent();
+#else
+	debug_impl.fp = stdout;
 #endif
 }
 
 //
-size_t qn_memagn(const size_t size)
+void qn_debug_down(void)
 {
-	const size_t align = size % 16;
-	if (align == 0)
-		return 0;
-	const size_t advice = (size + 16 - 1) & (size_t)~(16 - 1);
-	return advice;
+#ifdef _QN_WINDOWS_
+	if (debug_impl.redirect && debug_impl.handle != NULL)
+		CloseHandle(debug_impl.handle);
+#else
+	if (debug_impl.redirect && debug_impl.fp != NULL)
+		fclose(debug_impl.fp);
+#endif
 }
 
 //
-char qn_memhrb(const size_t size, double* out)
+static void qn_dbg_buf_ch(const int ch)
 {
-	qn_val_if_fail(out != NULL, ' ');
-	if (size > 1024ULL * 1024ULL * 1024ULL)
-	{
-		*out = (double)size / (double)(1024ULL * 1024ULL * 1024ULL);
-		return 'g';
-	}
-	if (size > 1024ULL * 1024ULL)
-	{
-		*out = (double)size / (double)(1024ULL * 1024ULL);
-		return 'm';
-	}
-	if (size > 1024ULL)
-	{
-		*out = (double)size / (double)(1024ULL);
-		return 'k';
-	}
-	*out = (double)size;
-	return ' ';
+	if (1 + debug_impl.out_pos > MAX_DEBUG_LENGTH - 1)
+		return;
+	debug_impl.out_buf[debug_impl.out_pos++] = (char)ch;
 }
 
 //
-char* qn_memdmp(const void* restrict ptr, const size_t size, char* restrict outbuf, const size_t buflen)
+static void qn_dbg_buf_str(const char* restrict s)
 {
-	qn_val_if_fail(ptr != NULL, NULL);
-	qn_val_if_fail(outbuf != NULL, NULL);
+	int len = (int)strlen(s);
+	if (len + debug_impl.out_pos > MAX_DEBUG_LENGTH - 1)
+		len = MAX_DEBUG_LENGTH - debug_impl.out_pos - 1;
+	if (len <= 0)
+		return;
+	memcpy(debug_impl.out_buf + debug_impl.out_pos, s, (size_t)len);
+	debug_impl.out_pos += len;
+}
 
-	if (size == 0 || buflen == 0)
+//
+static void qn_dbg_buf_va(const char* restrict fmt, va_list va)
+{
+	const int len = qn_vsnprintf(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - (size_t)debug_impl.out_pos, fmt, va);
+	debug_impl.out_pos += len;
+}
+
+//
+static void qn_dbg_buf_int(const int value)
+{
+	const int len = qn_itoa(debug_impl.out_buf + debug_impl.out_pos, value, 10, true);
+	debug_impl.out_pos += len;
+}
+
+//
+static void qn_dbg_buf_head(const char* restrict head)
+{
+	if (head == NULL)
+		head = "(unknown)";
+	qn_dbg_buf_ch('[');
+	qn_dbg_buf_str(head);
+	qn_dbg_buf_str("] ");
+}
+
+//
+static int qn_dbg_buf_flush(void)
+{
+	qn_val_if_fail(debug_impl.out_pos > 0, 0);
+	debug_impl.out_buf[debug_impl.out_pos] = '\0';
+#ifdef _QN_WINDOWS_
+	if (debug_impl.handle != NULL)
 	{
-		*outbuf = '\0';
-		return outbuf;
+		DWORD wtn;
+		if (debug_impl.redirect || WriteConsoleA(debug_impl.handle, debug_impl.out_buf, debug_impl.out_pos, &wtn, NULL) == 0)
+			WriteFile(debug_impl.handle, debug_impl.out_buf, debug_impl.out_pos, &wtn, NULL);
 	}
+	if (debug_impl.debugger)
+		OutputDebugStringA(debug_impl.out_buf);
+#else
+	if (debug_impl.fp != NULL)
+		fputs(debug_impl.out_buf, debug_impl.fp);
+#ifdef __EMSCRIPTEN__
+	emscripten_console_log(debug_impl.out_buf);
+#endif
+#ifdef _QN_ANDROID_
+	__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, debug_impl.out_buf);
+#endif
+#endif
+	const int ret = debug_impl.out_pos;
+	debug_impl.out_pos = 0;
+	return ret;
+}
 
-	const byte* mem = (const byte*)ptr;
-	char* ind = outbuf;
-	for (size_t i = 0, cnt = 1; i < size && cnt < buflen; i++, cnt++)
-	{
-		const byte m = *mem;
-		*ind = (m < 0x20 || m>0x7F) ? '.' : (const char)m;  // NOLINT
-		mem++;
-		ind++;
-	}
-	*ind = '\0';
+//
+int qn_debug_assert(const char* restrict expr, const char* restrict filename, const int line)
+{
+	qn_val_if_fail(expr, -1);
+	qn_dbg_buf_str("ASSERT FAILED : ");
+	qn_dbg_buf_str(expr);
+	qn_dbg_buf_str(" (filename=\"");
+	qn_dbg_buf_str(filename);
+	qn_dbg_buf_str("\", line=");
+	qn_dbg_buf_int(line);
+	qn_dbg_buf_ch('\n');
+	qn_dbg_buf_flush();
 
-	return outbuf;
+	DEBUG_BREAK(debug_impl.debugger);
+	return 0;
+}
+
+//
+_Noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg)
+{
+	qn_dbg_buf_str("HALT ");
+	qn_dbg_buf_head(head);
+	qn_dbg_buf_str(mesg);
+	qn_dbg_buf_ch('\n');
+	qn_dbg_buf_flush();
+
+	DEBUG_BREAK(debug_impl.debugger);
+	abort();
+}
+
+//
+int qn_debug_outputs(const bool breakpoint, const char* restrict head, const char* restrict mesg)
+{
+	qn_dbg_buf_head(head);
+	qn_dbg_buf_str(mesg);
+	qn_dbg_buf_ch('\n');
+	const int len = qn_dbg_buf_flush();
+
+	DEBUG_BREAK(breakpoint && debug_impl.debugger);
+	return len;
+}
+
+//
+int qn_debug_outputf(const bool breakpoint, const char* restrict head, const char* restrict fmt, ...)
+{
+	qn_dbg_buf_head(head);
+	va_list va;
+	va_start(va, fmt);
+	qn_dbg_buf_va(fmt, va);
+	va_end(va);
+	qn_dbg_buf_ch('\n');
+	const int len = qn_dbg_buf_flush();
+
+	DEBUG_BREAK(breakpoint && debug_impl.debugger);
+	return len;
+}
+
+//
+int qn_debug_output_error(const bool breakpoint, const char* head)
+{
+	const char* err = qn_get_error();
+	return qn_debug_outputs(breakpoint, head, err);
+}
+
+//
+int qn_outputs(const char* mesg)
+{
+	qn_dbg_buf_str(mesg);
+	qn_dbg_buf_ch('\n');
+	return qn_dbg_buf_flush();
+}
+
+//
+int qn_outputf(const char* fmt, ...)
+{
+	va_list va;
+	va_start(va, fmt);
+	qn_dbg_buf_va(fmt, va);
+	va_end(va);
+	qn_dbg_buf_ch('\n');
+	return qn_dbg_buf_flush();
 }
 
 
@@ -168,6 +254,9 @@ typedef struct MemBlock
 	const char*			desc;
 
 	size_t				index;
+#ifdef _QN_64
+	size_t				align64;
+#endif
 
 	size_t				size;
 	size_t				block;
@@ -209,7 +298,9 @@ static struct MemImpl
 #ifdef _QN_WINDOWS_
 	.heap = NULL,
 #endif
+#ifndef USE_NO_LOCK
 	.lock = 0,
+#endif
 };
 
 void qn_mpf_up(void)
@@ -483,7 +574,7 @@ void* qn_mpfdup(const void* p, const size_t size_or_zero_if_psz, const char* des
 	}
 	const size_t len = strlen((const char*)p) + 1;
 	char* d = qn_mpfalc(len, false, desc, line);
-	qn_strcpy(d, len, (const char*)p);
+	qn_strcpy(d, (const char*)p);
 	return d;
 }
 
@@ -570,6 +661,6 @@ void* qn_memdup(const void* ptr, const size_t size_or_zero_if_psz)
 	}
 	const size_t len = strlen((const char*)ptr) + 1;
 	char* d = qn_alloc(len, char);
-	qn_strcpy(d, len, (const char*)ptr);
+	qn_strcpy(d, (const char*)ptr);
 	return d;
 }

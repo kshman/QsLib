@@ -4,6 +4,8 @@
 //
 
 #include "pch.h"
+#include <errno.h>
+#include <stdlib.h>
 #include "qs_qn.h"
 #include "qs_ctn.h"
 
@@ -189,6 +191,26 @@ const char* qn_get_prop(const char* name)
 	qn_mukum_get(QnPropMukum, &runtime_impl.props, name, &ret);
 	QN_UNLOCK(runtime_impl.lock);
 	return ret == NULL ? NULL : *ret;
+}
+
+//
+int qn_get_prop_int(const char* name, int default_value, int min_value, int max_value)
+{
+	const char* v = qn_get_prop(name);
+	if (v == NULL)
+		return default_value;
+	int i = qn_strtoi(v, 10);
+	return QN_CLAMP(i, min_value, max_value);
+}
+
+//
+float qn_get_prop_float(const char* name, float default_value, float min_value, float max_value)
+{
+	const char* v = qn_get_prop(name);
+	if (v == NULL)
+		return default_value;
+	float f = qn_strtof(v);
+	return QN_CLAMP(f, min_value, max_value);
 }
 
 //

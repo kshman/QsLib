@@ -1,5 +1,6 @@
 ﻿// printf 와 outputf
 #include <qs.h>
+#include <stdio.h>
 
 int main(void)
 {
@@ -15,7 +16,7 @@ int main(void)
 	printf("버전: %s\n", vs);
 	qn_outputf("버전: %s\n", vs);
 
-	QnDateTime dt = qn_timestamp_to_datetime(qn_now());
+	QnDateTime dt = { .stamp = qn_now() };
 	printf("시간: %02d:%02d:%02d.%03d\n", dt.hour, dt.minute, dt.second, dt.millisecond);
 	qn_outputf("시간: %02d:%02d:%02d.%03d\n", dt.hour, dt.minute, dt.second, dt.millisecond);
 

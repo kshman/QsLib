@@ -5,8 +5,8 @@
 // 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
 // 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
 //
-#pragma once
 
+#pragma once
 #define __QS_KMC__
 
 //////////////////////////////////////////////////////////////////////////
@@ -247,18 +247,22 @@ static_assert(sizeof(QicMask) == sizeof(int), "QicMask size not equal to int");
 //////////////////////////////////////////////////////////////////////////
 // function
 
+/// @brief 사용가능한 키인가
+/// @param key QikKey
+/// @return 사용가능하면 참
+QSAPI bool qg_qik_usable(const QikKey key);
+
 /// @brief QikKey를 문자열로
 /// @param key QikKey
 /// @return QikKey의 이름
-///
 QSAPI const char* qg_qik_str(QikKey key);
+
 /// @brief QimButton를 문자열로
 /// @param button QimButton
 /// @return QimButton의 이름
-///
 QSAPI const char* qg_qim_str(QimButton button);
+
 /// @brief QicButton를 문자열로
 /// @param button QicButton
 /// @return QicButton의 이름
-///
 QSAPI const char* qg_qic_str(QicButton button);

@@ -54,7 +54,6 @@
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <EnableASAN>true</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -76,7 +75,6 @@
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <EnableASAN>true</EnableASAN>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -130,7 +128,7 @@
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>USE_D12;USE_ES3;_STATIC;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_D12;USE_ES;_STATIC;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -150,7 +148,7 @@
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>USE_SDL2;USE_D12;USE_ES3;_STATIC;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_SDL2;USE_D12;USE_ES;_STATIC;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -173,7 +171,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>USE_D12;USE_ES3;_STATIC;WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_D12;USE_ES;_STATIC;WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -200,7 +198,7 @@
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>USE_D12;USE_ES3;_STATIC;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_D12;USE_ES;_STATIC;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -220,7 +218,7 @@
     <ClCompile>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>USE_SDL2;USE_D12;USE_ES3;_STATIC;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_SDL2;USE_D12;USE_ES;_STATIC;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -243,7 +241,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>USE_D12;USE_ES3;_STATIC;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_D12;USE_ES;_STATIC;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -273,20 +271,16 @@
     <ClInclude Include="..\..\inc\qs_ctn.h" />
     <ClInclude Include="..\..\inc\qs_math.h" />
     <ClInclude Include="..\..\src\pch.h" />
-    <ClInclude Include="..\..\src\qg\gl\egl.h" />
-    <ClInclude Include="..\..\src\qg\gl\gl.h" />
-    <ClInclude Include="..\..\src\qg\gl\gles2.h" />
-    <ClInclude Include="..\..\src\qg\gl\qges_rdh.h" />
-    <ClInclude Include="..\..\src\qg\gl\qggl_base.h" />
-    <ClInclude Include="..\..\src\qg\gl\qggl_code.h" />
-    <ClInclude Include="..\..\src\qg\gl\wgl.h" />
-    <ClInclude Include="..\..\src\qg\stub\qgwin_func.h" />
-    <ClInclude Include="..\..\src\qg\stub\qgwlx_func.h" />
-    <ClInclude Include="..\..\src\qg\stub\qg_stub.h" />
-    <ClInclude Include="..\..\src\qg\stub\wayland-wayland-code.h" />
-    <ClInclude Include="..\..\src\qg\stub\wayland-wayland.h" />
-    <ClInclude Include="..\..\src\qg\stub\wayland-xdg-shell-code.h" />
-    <ClInclude Include="..\..\src\qg\stub\wayland-xdg-shell.h" />
+    <ClInclude Include="..\..\src\qg\qg_stub.h" />
+    <ClInclude Include="..\..\src\qg\stub\gl\egl.h" />
+    <ClInclude Include="..\..\src\qg\stub\gl\gl.h" />
+    <ClInclude Include="..\..\src\qg\stub\gl\glad_supp.h" />
+    <ClInclude Include="..\..\src\qg\stub\gl\gles2.h" />
+    <ClInclude Include="..\..\src\qg\stub\gl\wgl.h" />
+    <ClInclude Include="..\..\src\qg\stub\qgrdh_es.h" />
+    <ClInclude Include="..\..\src\qg\stub\qgrdh_glbase.h" />
+    <ClInclude Include="..\..\src\qg\stub\qgstub_win_func.h" />
+    <ClInclude Include="..\..\src\qg\stub\qgstub_wlx_func.h" />
     <ClInclude Include="..\..\src\qn\zlib\crc32.h" />
     <ClInclude Include="..\..\src\qn\zlib\deflate.h" />
     <ClInclude Include="..\..\src\qn\zlib\gzguts.h" />
@@ -302,12 +296,13 @@
     <ClInclude Include="..\..\src\qs_conf.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\qg\gl\qges_rdh.c" />
     <ClCompile Include="..\..\src\qg\qg_rdh.c" />
-    <ClCompile Include="..\..\src\qg\stub\qgsdl_stub.c" />
-    <ClCompile Include="..\..\src\qg\stub\qgwin_stub.c" />
-    <ClCompile Include="..\..\src\qg\stub\qgwlx_stub.c" />
-    <ClCompile Include="..\..\src\qg\stub\qg_stub.c" />
+    <ClCompile Include="..\..\src\qg\qg_stub.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgrdh_es.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgstub_emscripten.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgstub_sdl.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgstub_win.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgstub_wlx.c" />
     <ClCompile Include="..\..\zconsole\zz.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='SDLDebug|Win32'">NotUsing</PrecompiledHeader>
@@ -329,14 +324,11 @@
     <ClCompile Include="..\..\src\qn\qn.c" />
     <ClCompile Include="..\..\src\qn\qn_thd.c" />
     <ClCompile Include="..\..\src\qn\qn_time.c" />
-    <ClCompile Include="..\..\src\qn\qn_debug.c" />
+    <ClCompile Include="..\..\src\qn\qn_prf.c" />
     <ClCompile Include="..\..\src\qn\qn_file.c" />
     <ClCompile Include="..\..\src\qn\qs_gam.c" />
-    <ClCompile Include="..\..\src\qn\qn_hash.c" />
     <ClCompile Include="..\..\src\qn\qm_math.c" />
-    <ClCompile Include="..\..\src\qn\qn_mem.c" />
     <ClCompile Include="..\..\src\qn\qn_mlu.c" />
-    <ClCompile Include="..\..\src\qn\qn_sort.c" />
     <ClCompile Include="..\..\src\qn\qn_str.c" />
     <ClCompile Include="..\..\src\qn\zlib\adler32.c" />
     <ClCompile Include="..\..\src\qn\zlib\compress.c" />

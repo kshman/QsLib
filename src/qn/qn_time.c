@@ -5,9 +5,10 @@
 
 #include "pch.h"
 #include "qs_qn.h"
-#ifdef _QN_UNIX_
+#ifdef __GNUC__
 #include <unistd.h>
 #include <errno.h>
+#include <sys/time.h>
 #endif
 
 //

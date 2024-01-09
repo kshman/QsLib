@@ -11,6 +11,32 @@
 //////////////////////////////////////////////////////////////////////////
 // qmkc supp
 
+static const bool qik_key_enables[] =
+{
+	/*00*/ false, false, false, false, false, false, false, false, true, true, false, false, false, true, false, false,
+	/*10*/ false, false, false, true, true, false, false, false, false, false, false, true, false, false, false, false,
+	/*20*/ true, true, true, true, true, true, true, true, true, false, false, false, true, true, true, false,
+	/*30*/ true, true, true, true, true, true, true, true, true, true, false, false, false, false, false, false,
+	/*40*/ false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+	/*50*/ true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, false,
+	/*60*/ true, true, true, true, true, true, true, true, true, true, true,  true,  false, true,  true,  true,
+	/*70*/ true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+	/*80*/ true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false,
+	/*90*/ true,  true, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+	/*A0*/ true,  true,  true, true, true, true, false, false, false, false, false, false, false, false, false, false,
+	/*B0*/ false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true,
+	/*C0*/ true, false,  false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+	/*D0*/ false,false, false, false, false, false, false, false, false, false, false, true, true,  true, true, false,
+	/*E0*/ false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+	/*F0*/ false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+};
+
+//
+bool qg_qik_usable(const QikKey key)
+{
+	return qik_key_enables[(byte)key];
+}
+
 //
 const char* qg_qik_str(const QikKey key)
 {
@@ -34,7 +60,6 @@ const char* qg_qik_str(const QikKey key)
 		/*E0*/ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 		/*F0*/ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	};
-
 	return s_key_names[(byte)key];
 #else
 	return NULL;
@@ -388,7 +413,7 @@ const char* qg_string_event(const QgEventType ev)
 			return p->str;
 	}
 	static char unknown_text[32];
-	qn_snprintf(unknown_text, 32-1, "UNKNOWN(%d)", ev);
+	qn_snprintf(unknown_text, 32 - 1, "UNKNOWN(%d)", ev);
 	return unknown_text;
 #else
 	return NULL;
@@ -433,4 +458,38 @@ const char* qg_string_window_event(const QgWindowEventType wev)
 #else
 	return NULL;
 #endif
+}
+
+//
+QgClrFmt qg_clrfmt_from_size(int red, int green, int blue, int alpha, bool is_float)
+{
+	if (red == 8)
+	{
+		if (green == 8 && blue == 8)
+			return alpha == 8 ? QGCF32_RGBA : QGCF32_RGB;
+		if (green == 0 && blue == 0)
+			return QGCF8_L;
+	}
+	else if (red == 5 && blue == 5)
+	{
+		if (green == 6)
+			return QGCF16_RGB;
+		if (green == 5)
+			return alpha == 1 ? QGCF16_RGBA : QGCF16_RGB;
+	}
+	else if (red == 16)
+	{
+		if (green == 16 && blue == 16)
+			return QGCF64F_BGRA;
+		if (green == 0 && blue == 0)
+			return is_float ? QGCF16F_R : QGCF16_L;
+	}
+	else if (red == 32)
+	{
+		if (green == 32 && blue == 32)
+			return QGCF128F_BGRA;
+		if (green == 0 && blue == 0)
+			return QGCF32F_R;
+	}
+	return QGCF_NONE;
 }

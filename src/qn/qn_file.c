@@ -7,11 +7,14 @@
 
 #include "pch.h"
 #include "qs_qn.h"
-#include <fcntl.h>
+#include <stdlib.h>
 #ifdef _QN_UNIX_
 #include <unistd.h>
+#include <stdio.h>
+#include <fcntl.h>
 #include <dirent.h>
 #include <dlfcn.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef _QN_BSD_
@@ -218,7 +221,7 @@ static void qn_file_access_parse(const char* mode, QnFileAccess* self, int* flag
 							if ((p - (mode + 1)) < 63)
 							{
 								char sz[64];
-								strncpy(sz, (mode + 1), (size_t)(p - (mode + 1)));
+								qn_strncpy(sz, (mode + 1), (size_t)(p - (mode + 1)));
 								self->access = qn_strtoi(sz, 8);
 							}
 
@@ -288,7 +291,7 @@ QnFile* qn_file_new_l(const wchar* restrict filename, const wchar* restrict mode
 #ifdef _QN_WINDOWS_
 	qn_u16to8(cmode, QN_COUNTOF(cmode), mode, 0);
 #else
-	qn_u32to8(cmode, QN_COUNTOF(cmode), mode, 0);
+	qn_u32to8(cmode, QN_COUNTOF(cmode), (const uchar4*)mode, 0);
 #endif
 
 	qn_file_access_parse(cmode, &self->acs, &self->flag);
@@ -813,7 +816,7 @@ const char* qn_dir_read(QnDir* self)
 			}
 		}
 
-		if (wcscmp(self->ffd.cFileName, L".") == 0 || wcscmp(self->ffd.cFileName, L"..") == 0)
+		if (qn_wcseqv(self->ffd.cFileName, L".") || qn_wcseqv(self->ffd.cFileName, L".."))
 			continue;
 
 		qn_u16to8(self->file, QN_COUNTOF(self->file) - 1, self->ffd.cFileName, 0);
@@ -822,7 +825,7 @@ const char* qn_dir_read(QnDir* self)
 #else
 	struct dirent* ent = readdir(self->pd);
 
-	while (ent && (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0))
+	while (ent && (qn_streqv(ent->d_name, ".") || qn_streqv(ent->d_name, "..")))
 		ent = readdir(self->pd);
 
 	return ent ? ent->d_name : NULL;
