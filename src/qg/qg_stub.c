@@ -8,6 +8,9 @@
 #include "pch.h"
 #include "qs_qg.h"
 #include "qg_stub.h"
+#ifdef _QN_EMSCRIPTEN_
+#include <emscripten.h>
+#endif
 
 #ifdef _MSC_VER
 //#pragma warning(default:4820)		// 패딩 확인용
@@ -410,6 +413,34 @@ bool qg_poll(QgEvent* ev)
 
 	shed_event_clear_reserved_mem();
 	return false;
+}
+
+#ifdef _QN_EMSCRIPTEN_
+static void* qg_emscripten_main_data;
+static bool (*qg_emscripten_main_func)(void*);
+
+static void qg_emscripten_main_loop()
+{
+	if (!qg_loop() ||
+		!qg_emscripten_main_func(qg_emscripten_main_data))
+		emscripten_cancel_main_loop();
+}
+#endif
+
+//
+void qg_main_loop(bool (*func)(void*), void* data)
+{
+#ifndef _QN_EMSCRIPTEN_
+	while (qg_loop())
+	{
+		if (!func(data))
+			break;
+	}
+#else
+	qg_emscripten_main_func= func;
+	qg_emscripten_main_data = data;
+	emscripten_set_main_loop(qg_emscripten_main_loop, 0, true);
+#endif
 }
 
 //

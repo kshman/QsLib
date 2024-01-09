@@ -1,13 +1,12 @@
 ﻿#include "pch.h"
 #ifdef USE_ES
-
-#ifndef STATIC_ES_LIBRARY
+#include "qs_qn.h"
 #ifndef USE_SDL2
 #define GLAD_EGL_IMPLEMENTATION		1
 #endif
 #define GLAD_GLES2_IMPLEMENTATION	1
-#endif
 #include "qgrdh_es.h"
+#include <limits.h>
 
 #define ES_MAX_LAYOUT_COUNT		16
 
@@ -349,8 +348,8 @@ RdhBase* es_allocator(QgFlag flags)
 	}
 #else
 	//----- EGL 초기화
-	self->native_window = stub_system_get_window();
-	self->native_display = stub_system_get_display();
+	self->native_window = (NativeWindowType)stub_system_get_window();
+	self->native_display = (NativeDisplayType)stub_system_get_display();
 
 	self->display = eglGetDisplay(self->native_display);
 	if (self->display == EGL_NO_DISPLAY)

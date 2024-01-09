@@ -1252,7 +1252,6 @@ struct QnDateTime
 	};
 };
 
-
 /// @brief 현재 시간 날짜를 포함하는 타임스탬프
 /// @returns 현재 타임스탬프. QnDateTime 으로 컨버전해서 사용할 수 있다
 QSAPI QnTimeStamp qn_now(void);

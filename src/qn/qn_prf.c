@@ -9,6 +9,9 @@
 #include <signal.h>
 #include <stdio.h>
 #endif
+#ifdef _QN_EMSCRIPTEN_
+#include <emscripten/console.h>
+#endif
 
 #ifdef DEBUG_BREAK
 #error macro _DEBUG_BREAK already defined!
@@ -295,7 +298,9 @@ static struct MemImpl
 #ifdef _QN_WINDOWS_
 	.heap = NULL,
 #endif
+#ifndef USE_NO_LOCK
 	.lock = 0,
+#endif
 };
 
 void qn_mpf_up(void)

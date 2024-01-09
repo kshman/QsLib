@@ -5,6 +5,10 @@
 #pragma warning(disable:4191)
 #endif
 
+#ifndef __QS_QN__
+#error include "qs_qn.h" first
+#endif
+
 #if defined _QN_EMSCRIPTEN_ || defined _QN_ANDROID_
 #define STATIC_ES_LIBRARY
 #endif
@@ -13,7 +17,6 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES3/gl3.h>
-#include <GLES3/gl3ext.h>
 #elif defined USE_SDL2
 #include <SDL2/SDL.h>
 #include "gl/glad_supp.h"

@@ -11,6 +11,9 @@
 #include "qg/qg_stub.h"
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#ifdef _QN_EMSCRIPTEN_
+#include <emscripten/html5.h>
+#endif
 
 //
 static void emscripten_register_event_handler(void);
@@ -44,20 +47,20 @@ bool stub_system_open(const char* title, const int display, const int width, con
 	QmSize size;
 	emscripten_get_screen_size(&size.Width, &size.Height);
 	emnStub.base.window_bound = qm_rect_set_pos_size(qm_point(0, 0), size);
-	emnStub.base.client_size = scrsize;
+	emnStub.base.client_size = size;
 
 	emnStub.canvas_name = qn_strdup("#canvas");
 	emscripten_set_canvas_element_size(emnStub.canvas_name, 1, 1);
 	double css_width, css_height;
-	emscripten_get_element_css_size(&css_width, &css_height);
+	emscripten_get_element_css_size(emnStub.canvas_name, &css_width, &css_height);
 	emnStub.external_sizing = (int)floor(css_width) != 1 || (int)floor(css_height) != 1;
 
 	if (QN_TMASK(flags, QGFLAG_RESIZABLE) && emnStub.external_sizing)
 	{
-		emnStub.client_size = qm_size((int)css_width, (int)css_height);
-		stub_event_on_window_event(QGWEV_SIZED, (int)emnStub.css_width, (int)emnStub.css_height);
+		emnStub.base.client_size = qm_size((int)css_width, (int)css_height);
+		stub_event_on_window_event(QGWEV_SIZED, (int)css_width, (int)css_height);
 	}
-	emscripten_set_canvas_element_size(emnStub.canvas_name, emnStub.client_size.Width, emnStub.client_size.Height);
+	emscripten_set_canvas_element_size(emnStub.canvas_name, emnStub.base.client_size.Width, emnStub.base.client_size.Height);
 
 	// 값설정
 	stub_system_set_title(title);
@@ -112,9 +115,9 @@ void stub_system_set_title(const char* title)
 void stub_system_update_bound(void)
 {
 	QmSize size;
-	emscripten_get_canvas_element_size(&size.Width, &size.Height);
+	emscripten_get_canvas_element_size(emnStub.canvas_name, &size.Width, &size.Height);
 	emnStub.base.window_bound = qm_rect_set_pos_size(qm_point(0, 0), size);
-	emnStub.base.client_size = scrsize;
+	emnStub.base.client_size = size;
 }
 
 //

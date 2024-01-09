@@ -622,6 +622,11 @@ QSAPI bool qg_loop(void);
 /// @return 처리할 이벤트가 더 이상 없으면 거짓
 QSAPI bool qg_poll(QgEvent* ev);
 
+/// @brief 메인 루프
+/// @param func 메인 루프 함수
+/// @param data 메인 루프에 전달할 포인터
+QSAPI void qg_main_loop(bool (*func)(void*), void* data);
+
 /// @brief 스터브 루프를 탈출한다
 /// @see qg_poll
 /// 

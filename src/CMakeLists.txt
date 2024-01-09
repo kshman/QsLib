@@ -74,7 +74,7 @@ if (QSBUILD_WAYLAND)
 endif()
 if (QSBUILD_EMSCRIPTEN)
 	target_sources(qs PRIVATE "qg/stub/qgstub_emscripten.c")
-	target_compile_definitions(qs PRIVATE USE_ES)
+	target_compile_definitions(qs PRIVATE USE_EMSCRIPTEN USE_ES)
 	target_link_options (qs PRIVATE "-sASYNCIFY")
 endif()
 

@@ -1214,7 +1214,7 @@ QN_INLINE void qm_vec4_set(QmVec4* v, const float x, const float y, const float 
 	QmVec4 t = { .neon = { x, y, z, w } };
 	v->neon = t.neon;
 #else
-	v->X = x, v->Y = y, v->Z = z, v->W = w
+	v->X = x, v->Y = y, v->Z = z, v->W = w;
 #endif
 }
 
@@ -2211,7 +2211,7 @@ QN_INLINE QmQuat qm_quat(const float x, const float y, const float z, const floa
 #elif defined QM_USE_NEON
 	{.neon = { x, y, z, w } };
 #else
-	{.x = x, .y = y, .z = z, .w = w };
+	{.X = x, .Y = y, .Z = z, .W = w };
 #endif
 	return r;
 }
@@ -2227,7 +2227,7 @@ QN_INLINE QmQuat qm_quatv4(const QmVec4 v)
 #elif defined QM_USE_NEON
 	{.neon = v.neon };
 #else
-	{.x = v.X, .y = v.Y, .z = v.Z, .w = v.W };
+	{.X = v.X, .Y = v.Y, .Z = v.Z, .W = v.W };
 #endif
 	return r;
 }
@@ -2259,7 +2259,7 @@ QN_INLINE void qm_quat_set(QmQuat* q, const float x, const float y, const float 
 	QmVec4 t = { .neon = { x, y, z, w } };
 	q->neon = t.neon;
 #else
-	q->X = x, q->Y = y, q->Z = z, q->W = w
+	q->X = x, q->Y = y, q->Z = z, q->W = w;
 #endif
 }
 
@@ -2429,10 +2429,10 @@ QN_INLINE QmQuat qm_quat_mul(const QmQuat left, const QmQuat right)
 #else
 	QmQuat r =
 	{
-		.X = left.X * right.W + left.Y * right.Z - left.Z * right.Y + left.W * right.X;
-		.Y = -left.X * right.Z + left.Y * right.W + left.Z * right.X + left.W * right.Y;
-		.Z = left.X * right.Y - left.Y * right.X + left.Z * right.W + left.W * right.Z;
-		.W = -left.X * right.X - left.Y * right.Y - left.Z * right.Z + left.W * right.W;
+		.X = left.X * right.W + left.Y * right.Z - left.Z * right.Y + left.W * right.X,
+		.Y = -left.X * right.Z + left.Y * right.W + left.Z * right.X + left.W * right.Y,
+		.Z = left.X * right.Y - left.Y * right.X + left.Z * right.W + left.W * right.Z,
+		.W = -left.X * right.X - left.Y * right.Y - left.Z * right.Z + left.W * right.W,
 	};
 #endif
 	return r;
@@ -2574,11 +2574,11 @@ QN_INLINE QmQuat qm_quat_blend(const QmQuat left, const float left_scale, const 
 #else
 	QmQuat r =
 	{
-		.X = left.X * left_scale + right.X * right_scale;
-		.Y = left.Y * left_scale + right.Y * right_scale;
-		.Z = left.Z * left_scale + right.Z * right_scale;
-		.W = left.W * left_scale + right.W * right_scale;
-	}
+		.X = left.X * left_scale + right.X * right_scale,
+		.Y = left.Y * left_scale + right.Y * right_scale,
+		.Z = left.Z * left_scale + right.Z * right_scale,
+		.W = left.W * left_scale + right.W * right_scale,
+	};
 #endif
 	return r;
 }
@@ -2970,21 +2970,21 @@ QN_INLINE QmMat4 qm_mat4_inv(const QmMat4 m)
 	qm_neon_mat4_inv(&r, &m);
 	return r;
 #else
-	QmVec3 c01 = qm_vec3_cross(m.rows[0].XYZ, &m.rows[1].XYZ);
-	QmVec3 c23 = qm_vec3_cross(m.rows[2].XYZ, &m.rows[3].XYZ);
+	QmVec3 c01 = qm_vec3_cross(m.rows[0].XYZ, m.rows[1].XYZ);
+	QmVec3 c23 = qm_vec3_cross(m.rows[2].XYZ, m.rows[3].XYZ);
 	QmVec3 s10 = qm_vec3_sub(qm_vec3_mag(m.rows[0].XYZ, m.rows[1].W), qm_vec3_mag(m.rows[1].XYZ, m.rows[0].W));
 	QmVec3 s32 = qm_vec3_sub(qm_vec3_mag(m.rows[2].XYZ, m.rows[3].W), qm_vec3_mag(m.rows[3].XYZ, m.rows[2].W));
-	float inv = 1.0f / (qm_vec3_dot(c01, &s32) + qm_vec3_dot(c23, &s10));
+	float inv = 1.0f / (qm_vec3_dot(c01, s32) + qm_vec3_dot(c23, s10));
 	c01 = qm_vec3_mag(c01, inv);
 	c23 = qm_vec3_mag(c23, inv);
 	s10 = qm_vec3_mag(s10, inv);
 	s32 = qm_vec3_mag(s32, inv);
 	QmMat4 r;
 	QmVec3 a1, a2, a3;
-	r.rows[0] = qm_vec4v(qm_vec3_add(qm_vec3_cross(m.rows[1].XYZ, &s32), qm_vec3_mag(c23, m.rows[1].W)), -qm_vec3_dot(m.rows[1].XYZ, &c23));
-	r.rows[1] = qm_vec4v(qm_vec3_sub(qm_vec3_cross(s32, &m.rows[0].XYZ), qm_vec3_mag(c23, m.rows[0].W)), +qm_vec3_dot(m.rows[0].XYZ, &c23));
-	r.rows[0] = qm_vec4v(qm_vec3_add(qm_vec3_cross(m.rows[3].XYZ, &s10), qm_vec3_mag(c01, m.rows[3].W)), -qm_vec3_dot(m.rows[3].XYZ, &c01));
-	r.rows[1] = qm_vec4v(qm_vec3_sub(qm_vec3_cross(s10, &m.rows[2].XYZ), qm_vec3_mag(c01, m.rows[2].W)), +qm_vec3_dot(m.rows[2].XYZ, &c01));
+	r.rows[0] = qm_vec4v(qm_vec3_add(qm_vec3_cross(m.rows[1].XYZ, s32), qm_vec3_mag(c23, m.rows[1].W)), -qm_vec3_dot(m.rows[1].XYZ, c23));
+	r.rows[1] = qm_vec4v(qm_vec3_sub(qm_vec3_cross(s32, m.rows[0].XYZ), qm_vec3_mag(c23, m.rows[0].W)), +qm_vec3_dot(m.rows[0].XYZ, c23));
+	r.rows[0] = qm_vec4v(qm_vec3_add(qm_vec3_cross(m.rows[3].XYZ, s10), qm_vec3_mag(c01, m.rows[3].W)), -qm_vec3_dot(m.rows[3].XYZ, c01));
+	r.rows[1] = qm_vec4v(qm_vec3_sub(qm_vec3_cross(s10, m.rows[2].XYZ), qm_vec3_mag(c01, m.rows[2].W)), +qm_vec3_dot(m.rows[2].XYZ, c01));
 	return qm_mat4_tran(r);
 #endif
 }
@@ -2999,11 +2999,11 @@ QN_INLINE float qm_mat4_det(const QmMat4 m)
 #elif defined QM_USE_NEON
 	return qm_neon_mat4_det(&m);
 #else
-	QmVec3 c01 = qm_vec3_cross(m.rows[0].XYZ, &m.rows[1].XYZ);
-	QmVec3 c23 = qm_vec3_cross(m.rows[2].XYZ, &m.rows[3].XYZ);
+	QmVec3 c01 = qm_vec3_cross(m.rows[0].XYZ, m.rows[1].XYZ);
+	QmVec3 c23 = qm_vec3_cross(m.rows[2].XYZ, m.rows[3].XYZ);
 	QmVec3 s10 = qm_vec3_sub(qm_vec3_mag(m.rows[0].XYZ, m.rows[1].W), qm_vec3_mag(m.rows[1].XYZ, m.rows[0].W));
 	QmVec3 s32 = qm_vec3_sub(qm_vec3_mag(m.rows[2].XYZ, m.rows[3].W), qm_vec3_mag(m.rows[3].XYZ, m.rows[2].W));
-	return qm_vec3_dot(c01, &s32) + qm_vec3_dot(c23, &s10);
+	return qm_vec3_dot(c01, s32) + qm_vec3_dot(c23, s10);
 #endif
 }
 
