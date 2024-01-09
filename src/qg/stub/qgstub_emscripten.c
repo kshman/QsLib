@@ -84,7 +84,7 @@ void stub_system_finalize(void)
 //
 bool stub_system_poll(void)
 {
-	return QN_TMASK(emnStub.base.stats, QGSSTT_EXIT) == false;
+	return true;
 }
 
 //

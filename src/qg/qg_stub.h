@@ -8,10 +8,21 @@
 // 모니터 타입
 QN_DECL_CTNR(StubMonitorCtnr, QgUdevMonitor*);
 
+// 이벤트 핸들러 페어
+typedef struct StubEventCallback
+{
+	QgEventCallback		func;
+	void*				data;
+	size_t				key;
+
+} StubEventCallback;
+QN_DECL_ARR(StubArrEventCb, StubEventCallback);
+
 // 스터브 베이스
 typedef struct StubBase
 {
 	void*				handle;								// 시스템 스터브 관리
+	QnMutex*			mutex;
 	QnTimer*			timer;
 
 	QgFlag				flags;
@@ -21,7 +32,7 @@ typedef struct StubBase
 
 	uint				delay;
 	float				fps;								/** @brief 프레임 당 시간 */
-	float				reference;							/** @brief 프레임 시간 */
+	float				elapsed;							/** @brief 프레임 시간 */
 	float				advance;							/** @brief 프레임 시간, 포즈 상태일 때는 0 */
 	double				run;								/** @brief 실행 시간 */
 	double				active;								/** @brief 활성화된 시간 */
@@ -29,11 +40,16 @@ typedef struct StubBase
 	QmRect				window_bound;						// 실제 윈도우의 위치와 크기 정보
 	QmSize				client_size;						// 시스템 스터브 관리, 그리기 영역 크기 (창 크기가 아님)
 
-#ifndef __EMSCRIPTEN__
+#ifndef _QN_EMSCRIPTEN_
 	StubMonitorCtnr		monitors;
 #endif
 	QgUimKey			key;
 	QgUimMouse			mouse;
+
+	StubArrEventCb		event_cbs;
+#ifdef _QN_EMSCRIPTEN_
+	funcparam_t			main_delegate;
+#endif
 } StubBase;
 
 // 스터브 인스턴스 
@@ -46,11 +62,13 @@ extern void stub_system_finalize(void);
 // 시스템 스터브 폴링 (프로그램이 종료되면 거짓)
 extern bool stub_system_poll(void);
 // 시스템 드래그 켜고 끄기
-extern void stub_system_enable_drop(bool enable);
+extern bool stub_system_enable_drop(bool enable);
 // 시스템 도움꾼 켜고 끄기
-extern void stub_system_disable_acs(bool enable);
+extern bool stub_system_disable_acs(bool enable);
 // 시스템 스크린 세이버 켜고 끄기
-extern void stub_system_disable_scr_save(bool enable);
+extern bool stub_system_disable_scr_save(bool enable);
+// 시스템 마우스 잡기
+extern bool stub_system_grab_mouse(bool enable);
 // 시스템 타이틀 설정
 extern void stub_system_set_title(const char* title);
 // 시스템 바운드 영역을 업데이트한다

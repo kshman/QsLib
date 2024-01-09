@@ -185,6 +185,29 @@ static bool shed_event_transition(QgEvent* e)
 	return ret;
 }
 
+// 큐에 있던거 얻고, 큐에서 지우지는 않음
+static bool shed_event_restore(QgEvent* e)
+{
+	bool ret = false;
+	qn_mutex_enter(shed_event.mutex);
+
+	if (qn_nodelist_is_have(&shed_event.prior))
+	{
+		EventNode* node = qn_nodelist_first(&shed_event.prior);
+		*e = node->event;
+		ret = true;
+	}
+	else if (qn_nodelist_is_have(&shed_event.queue))
+	{
+		EventNode* node = qn_nodelist_first(&shed_event.queue);
+		*e = node->event;
+		ret = true;
+	}
+
+	qn_mutex_leave(shed_event.mutex);
+	return ret;
+}
+
 // 큐 비울 때 캐시로 옮기기
 static void shed_event_flush_callback(EventNode* node)
 {
@@ -269,11 +292,10 @@ void stub_initialize(StubBase* stub, const int flags)
 {
 	qg_instance_stub = stub;
 
-	//
-	stub->flags = flags & 0x00FFFFFF;						// 확장(24~31) 부분만 빼고 저장
-	stub->stats = (QgStubStat)0;
+	stub->mutex = qn_mutex_new();
 
-	stub->stats = (QgStubStat)(QGSSTT_ACTIVE | QGSSTT_CURSOR);	// 기본으로 활성 상태랑 커서는 켠다
+	stub->flags = flags & 0x00FFFFFF;						// 사양(24~31) 부분만 빼고 저장
+	stub->stats = QGSSTT_ACTIVE | QGSSTT_CURSOR;			// 기본으로 활성 상태랑 커서는 켠다
 	stub->delay = 10;
 
 	stub->timer = qn_timer_new();
@@ -283,24 +305,30 @@ void stub_initialize(StubBase* stub, const int flags)
 	stub->mouse.lim.move = 10 * 10 + 10 * 10;				// 제한 이동 거리(포인트)의 제곱
 	stub->mouse.lim.tick = 500;								// 제한 클릭 시간(밀리초)
 
-#ifndef __EMSCRIPTEN__
+#ifndef _QN_EMSCRIPTEN_
 	qn_pctnr_init(&stub->monitors, 0);
 #endif
+	qn_arr_init(StubArrEventCb, &stub->event_cbs, 10);
 }
 
 //
 void qg_close_stub(void)
 {
-	qn_ret_if_fail(qg_instance_stub);
+	StubBase* self = qg_instance_stub;
+	qn_ret_if_fail(self);
 
 	stub_system_finalize();
 
-	qn_timer_delete(qg_instance_stub->timer);
+	qn_timer_delete(self->timer);
 
-#ifndef __EMSCRIPTEN__
-	qn_pctnr_foreach_1(&qg_instance_stub->monitors, qn_memfre);
-	qn_pctnr_disp(&qg_instance_stub->monitors);
+#ifndef _QN_EMSCRIPTEN_
+	qn_pctnr_foreach_1(&self->monitors, qn_memfre);
+	qn_pctnr_disp(&self->monitors);
 #endif
+
+	qn_arr_disp(&self->event_cbs);
+
+	qn_mutex_delete(self->mutex);
 
 	shed_event_dispose();
 
@@ -308,34 +336,44 @@ void qg_close_stub(void)
 }
 
 //
-int qg_feature(int feature, bool enable)
+int qg_feature(int features, bool enable)
 {
+	StubBase* self = qg_instance_stub;
 	int count = 0;
 
-	if (QN_TMASK(feature, QGFEATURE_DISABLE_ACS))
+	if (QN_TMASK(features, QGFEATURE_DISABLE_ACS))
 	{
 		count++;
-		stub_system_disable_acs(enable);
+		bool ret = stub_system_disable_acs(enable);
+		QN_SMASK(&self->flags, QGFEATURE_DISABLE_ACS, ret);
 	}
-	if (QN_TMASK(feature, QGFEATURE_DISABLE_SCRSAVE))
+	if (QN_TMASK(features, QGFEATURE_DISABLE_SCRSAVE))
 	{
 		count++;
-		stub_system_disable_scr_save(enable);
+		bool ret = stub_system_disable_scr_save(enable);
+		QN_SMASK(&self->flags, QGFEATURE_DISABLE_SCRSAVE, ret);
 	}
-	if (QN_TMASK(feature, QGFEATURE_ENABLE_DROP))
+	if (QN_TMASK(features, QGFEATURE_ENABLE_DROP))
 	{
 		count++;
-		stub_system_enable_drop(enable);
+		bool ret = stub_system_enable_drop(enable);
+		QN_SMASK(&self->flags, QGFEATURE_ENABLE_DROP, ret);
 	}
-	if (QN_TMASK(feature, QGFEATURE_ENABLE_SYSWM))
+	if (QN_TMASK(features, QGFEATURE_ENABLE_SYSWM))
 	{
-		QN_SMASK(&qg_instance_stub->flags, QGFEATURE_ENABLE_SYSWM, enable);
 		count++;
+		QN_SMASK(&self->flags, QGFEATURE_ENABLE_SYSWM, enable);
 	}
-	if (QN_TMASK(feature, QGFEATURE_ENABLE_IDLE))
+	if (QN_TMASK(features, QGFEATURE_ENABLE_IDLE))
 	{
-		QN_SMASK(&qg_instance_stub->flags, QGFEATURE_ENABLE_IDLE, enable);
 		count++;
+		QN_SMASK(&self->flags, QGFEATURE_ENABLE_IDLE, enable);
+	}
+	if (QN_TMASK(features, QGFEATURE_ENABLE_GRAB_MOUSE))
+	{
+		count++;
+		bool ret = stub_system_grab_mouse(enable);
+		QN_SMASK(&self->flags, QGFEATURE_ENABLE_GRAB_MOUSE, ret);
 	}
 
 	return count;
@@ -348,98 +386,14 @@ void qg_set_title(const char* title)
 }
 
 //
-void qg_exit_loop(void)
+const QgUdevMonitor* qg_get_monitor(int index)
 {
-	qn_ret_if_fail(qg_instance_stub);
-	QN_SMASK(&qg_instance_stub->stats, QGSSTT_EXIT, true);
-	qg_add_signal_event(QGEV_EXIT, true);
-}
-
-//
-bool qg_loop(void)
-{
-	StubBase* stub = qg_instance_stub;
-	qn_val_if_fail(stub, false);
-
-	shed_event.loop.reset = true;
-	shed_event.loop.count++;
-
-	if (QN_TMASK(stub->flags, QGSPECIFIC_VIRTUAL) == false)
-	{
-		if (!stub_system_poll() || QN_TMASK(stub->stats, QGSSTT_EXIT))
-			return false;
-	}
-
-	qn_timer_update(stub->timer, true);
-	const float adv = (float)stub->timer->advance;
-	stub->run = stub->timer->runtime;
-	stub->fps = (float)stub->timer->fps;
-	stub->reference = adv;
-	stub->advance = QN_TMASK(stub->stats, QGSSTT_PAUSE) == false ? adv : 0.0f;
-
-	if (QN_TMASK(stub->flags, QGFEATURE_ENABLE_IDLE))
-		qn_sleep(QN_TMASK(stub->stats, QGSSTT_ACTIVE) == false ? stub->delay : 1);
-
-	if (qg_instance_rdh)
-		rdh_internal_invoke_reset();
-
-	return true;
-}
-
-//
-bool qg_poll(QgEvent* ev)
-{
-	const StubBase* stub = qg_instance_stub;
-	qn_val_if_fail(stub, false);
-
-	if (shed_event.loop.reset)
-	{
-		shed_event.loop.reset = false;
-		shed_event.loop.poll++;
-	}
-	if (shed_event.loop.poll != shed_event.loop.count)
-	{
-		qn_debug_outputf(true, "STUB", "call qg_loop() before qg_poll()! [poll(%d) != loop(%d)]",
-			shed_event.loop.poll, shed_event.loop.count);
-		shed_event.loop.poll = shed_event.loop.count;
-	}
-
-	if (qg_pop_event(ev))
-	{
-		if (qg_instance_rdh && ev->ev == QGEV_LAYOUT)
-			rdh_internal_check_layout();
-		return true;
-	}
-
-	shed_event_clear_reserved_mem();
-	return false;
-}
-
 #ifdef _QN_EMSCRIPTEN_
-static void* qg_emscripten_main_data;
-static bool (*qg_emscripten_main_func)(void*);
-
-static void qg_emscripten_main_loop()
-{
-	if (!qg_loop() ||
-		!qg_emscripten_main_func(qg_emscripten_main_data))
-		emscripten_cancel_main_loop();
-}
-#endif
-
-//
-void qg_main_loop(bool (*func)(void*), void* data)
-{
-#ifndef _QN_EMSCRIPTEN_
-	while (qg_loop())
-	{
-		if (!func(data))
-			break;
-	}
+	return NULL;
 #else
-	qg_emscripten_main_func= func;
-	qg_emscripten_main_data = data;
-	emscripten_set_main_loop(qg_emscripten_main_loop, 0, true);
+	const StubBase* self = qg_instance_stub;
+	qn_val_if_fail((size_t)index < qn_pctnr_count(&self->monitors), NULL);
+	return qn_pctnr_nth(&self->monitors, index);
 #endif
 }
 
@@ -488,21 +442,21 @@ float qg_get_fps(void)
 }
 
 //
-double qg_get_run(void)
+float qg_get_elapsed(void)
 {
-	return qg_instance_stub->run;
+	return qg_instance_stub->elapsed;
 }
 
 //
-double qg_get_reference(void)
-{
-	return qg_instance_stub->reference;
-}
-
-//
-double qg_get_advance(void)
+float qg_get_advance(void)
 {
 	return qg_instance_stub->advance;
+}
+
+//
+double qg_get_run_time(void)
+{
+	return qg_instance_stub->run;
 }
 
 //
@@ -524,20 +478,209 @@ int qg_left_events(void)
 }
 
 //
+void qg_exit_loop(void)
+{
+	qn_ret_if_fail(qg_instance_stub);
+	QN_SMASK(&qg_instance_stub->stats, QGSSTT_EXIT, true);
+	qg_add_signal_event(QGEV_EXIT, true);
+}
+
+//
+bool qg_loop(void)
+{
+	StubBase* stub = qg_instance_stub;
+	qn_val_if_fail(stub, false);
+
+	shed_event.loop.reset = true;
+	shed_event.loop.count++;
+
+	if (QN_TMASK(stub->flags, QGSPECIFIC_VIRTUAL) == false)
+	{
+		if (!stub_system_poll() || QN_TMASK(stub->stats, QGSSTT_EXIT))
+			return false;
+	}
+
+	qn_timer_update(stub->timer, true);
+	const float adv = (float)stub->timer->advance;
+	stub->run = stub->timer->runtime;
+	stub->fps = (float)stub->timer->fps;
+	stub->elapsed = adv;
+	stub->advance = QN_TMASK(stub->stats, QGSSTT_PAUSE) == false ? adv : 0.0f;
+
+	if (QN_TMASK(stub->flags, QGFEATURE_ENABLE_IDLE))
+		qn_sleep(QN_TMASK(stub->stats, QGSSTT_ACTIVE) == false ? stub->delay : 1);
+
+	if (qg_instance_rdh)
+		rdh_internal_invoke_reset();
+
+	return true;
+}
+
+//
+static void qg_poll_check_shed(void)
+{
+	if (shed_event.loop.reset)
+	{
+		shed_event.loop.reset = false;
+		shed_event.loop.poll++;
+		shed_event_clear_reserved_mem();
+	}
+	if (shed_event.loop.poll != shed_event.loop.count)
+	{
+		qn_debug_outputf(true, "STUB", "call qg_loop() before qg_poll()! [poll(%d) != loop(%d)]",
+			shed_event.loop.poll, shed_event.loop.count);
+		shed_event.loop.poll = shed_event.loop.count;
+	}
+}
+
+//
+static void qg_dispatch_event(const QgEvent* ev)
+{
+	const StubBase* stub = qg_instance_stub;
+	QgEventType type = ev->ev;
+	size_t i;
+	qn_arr_foreach(&stub->event_cbs, i)
+	{
+		StubEventCallback* pair = &qn_arr_nth(&stub->event_cbs, i);
+		if (pair->func(pair->data, type, ev) > 0)
+			break;
+	}
+}
+
+//
+bool qg_poll(QgEvent* ev)
+{
+	const StubBase* stub = qg_instance_stub;
+	qn_val_if_fail(stub && ev, false);
+	qg_poll_check_shed();
+	if (shed_event_transition(ev))
+	{
+		if (qn_arr_is_have(&stub->event_cbs))
+		{
+			qn_mutex_enter(stub->mutex);
+			qg_dispatch_event(ev);
+			qn_mutex_leave(stub->mutex);
+		}
+		return true;
+	}
+	return false;
+}
+
+//
+void qg_dispatch(void)
+{
+	const StubBase* stub = qg_instance_stub;
+	qn_ret_if_fail(stub);
+	qg_poll_check_shed();
+
+	qn_mutex_enter(stub->mutex);
+	if (qn_arr_is_empty(&stub->event_cbs))
+	{
+		shed_event_flush();
+		qn_mutex_leave(stub->mutex);
+		return;
+	}
+
+	QgEvent ev;
+	while (shed_event_transition(&ev))
+		qg_dispatch_event(&ev);
+	qn_mutex_leave(stub->mutex);
+}
+
+#ifdef _QN_EMSCRIPTEN_
+// EMSCRIPTEN용 메인 루프
+static void qg_emscripten_main_loop()
+{
+	if (!qg_loop())
+	{
+		emscripten_cancel_main_loop();
+		return;
+	}
+	qg_dispatch();
+	funcparam_t* fp = &qg_instance_stub->main_delegate;
+	fp->func(fp->data);
+}
+#endif
+
+//
+void qg_main_loop(paramfunc_t func, void* data)
+{
+	qn_ret_if_fail(qg_instance_stub);
+#ifndef _QN_EMSCRIPTEN_
+	while (qg_loop())
+	{
+		qg_dispatch();
+		func(data);
+	}
+#else
+	StubBase* stub = qg_instance_stub;
+	stub->main_delegate.func = func;
+	stub->main_delegate.data = data;
+	emscripten_set_main_loop(qg_emscripten_main_loop, 0, true);
+#endif
+	}
+
+//
+nint qg_register_event_callback(QgEventCallback func, void* data)
+{
+	qn_val_if_fail(func, 0);
+	StubBase* stub = qg_instance_stub;
+	qn_mutex_enter(stub->mutex);
+
+	size_t nth = qn_p_index();
+
+	qn_arr_expand(StubArrEventCb, &stub->event_cbs, 1);
+	StubEventCallback* cb = &qn_arr_inv(&stub->event_cbs, 0);
+	cb->func = func;
+	cb->data = data;
+	cb->key = nth;
+
+	qn_mutex_leave(stub->mutex);
+	return (nint)nth;
+}
+
+//
+bool qg_unregister_event_callback(nint key)
+{
+	qn_val_if_fail(key != 0, false);
+	StubBase* stub = qg_instance_stub;
+	qn_mutex_enter(stub->mutex);
+
+	bool ret = false;
+	size_t i;
+	qn_arr_foreach(&stub->event_cbs, i)
+	{
+		StubEventCallback* cb = &qn_arr_nth(&stub->event_cbs, i);
+		if (cb->key != (size_t)key)
+			continue;
+		ret = true;
+		break;
+	}
+
+	if (ret)
+		qn_arr_remove_nth(StubArrEventCb, &stub->event_cbs, i);
+
+	qn_mutex_leave(stub->mutex);
+	return ret;
+}
+
+//
 void qg_flush_event(void)
 {
 	shed_event_flush();
 }
 
 //
-bool qg_pop_event(QgEvent* ev)
+bool qg_pop_event(QgEvent * ev, bool peek)
 {
 	qn_val_if_fail(ev, false);
+	if (peek)
+		return shed_event_restore(ev);
 	return shed_event_transition(ev);
 }
 
 //
-int qg_add_event(const QgEvent* ev, const bool prior)
+int qg_add_event(const QgEvent * ev, const bool prior)
 {
 	qn_val_if_fail(ev, -1);
 
@@ -564,7 +707,7 @@ int qg_add_signal_event(const QgEventType type, const bool prior)
 }
 
 //
-int qg_add_key_event(const QgEvent* ev, const size_t key)
+int qg_add_key_event(const QgEvent * ev, const size_t key)
 {
 	qn_val_if_fail(ev, -1);
 	qn_val_if_fail(key != 0, -3);
@@ -632,7 +775,7 @@ bool stub_track_mouse_click(const QimButton button, const QimTrack track)
 }
 
 // monitor는 할당해서 와야한다!!!
-bool stub_event_on_monitor(QgUdevMonitor* monitor, const bool connected, const bool primary)
+bool stub_event_on_monitor(QgUdevMonitor * monitor, const bool connected, const bool primary)
 {
 #ifdef __EMSCRIPTEN__
 	return false;
@@ -694,6 +837,8 @@ bool stub_event_on_layout(const bool enter)
 	if (qm_eq(prev, stub->client_size) == false)
 	{
 		// 크기가 변하면 레이아웃
+		if (qg_instance_rdh)
+			rdh_internal_check_layout();
 		const QgEvent e =
 		{
 			.layout.ev = QGEV_LAYOUT,

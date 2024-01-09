@@ -266,6 +266,7 @@ typedef enum QgFlag
 	QGFEATURE_ENABLE_DROP = QN_BIT(26),						/// @brief 드래그 드랍 사용
 	QGFEATURE_ENABLE_SYSWM = QN_BIT(27),					/// @brief 시스템 메시지 받기
 	QGFEATURE_ENABLE_IDLE = QN_BIT(28),						/// @brief 비활성 대기 상태 사용
+	QGFEATURE_ENABLE_GRAB_MOUSE = QN_BIT(29),				/// @brief 마우스 잡기
 	// 사용자가 설정할 수 없는 플래그
 	QGSPECIFIC_VIRTUAL = QN_BIT(31),						/// @brief 가상 스터브 사용
 } QgFlag;
@@ -454,14 +455,13 @@ typedef struct QgUimMouse
 		QmVec2				accm;							/// @brief 가속도
 		QmVec2				precise;						/// @brief 정밀 값
 		QmPoint				integral;						/// @brief 값
-		bool32				direction;						/// @brief 거짓=기본휠, 참=틸트휠
 	}					wheel;
 } QgUimMouse;
 
 /// @brief 컨트롤러 상태
 typedef struct QgUimCtrl
 {
-	QicButton			btn : 16;							/// @brief 컨트롤러 버튼 상태
+	QicButton			btn;								/// @brief 컨트롤러 버튼 상태
 	QmPoint				trg;
 	QmVec2				lthb;
 	QmVec2				rthb;
@@ -585,6 +585,9 @@ typedef union QgEvent
 	}					monitor;
 } QgEvent;
 
+/// @brief 이벤트 콜백, 반환값이 0이 아니면 다른 핸들러로 이벤트를 전달하지 않는다
+typedef int (*QgEventCallback)(void* data, QgEventType event_type, const QgEvent* event_param);
+
 
 //////////////////////////////////////////////////////////////////////////
 // stub
@@ -604,34 +607,19 @@ QSAPI bool qg_open_stub(const char* title, int display, int width, int height, i
 QSAPI void qg_close_stub(void);
 
 /// @brief 스터브 사양을 켜고 끈다
-/// @param feature 대상 스터브 사양 (QGFEATURE_)
+/// @param features 대상 스터브 사양 (QGFEATURE_)
 /// @param enable 켜려면 참, 끄려면 거짓
 /// @return 처리한 사양 갯수
-QSAPI int qg_feature(int feature, bool enable);
+QSAPI int qg_feature(int features, bool enable);
 
 /// @brief 스터브 윈도우 타이틀 설정
 /// @param title 타이틀 문자열(UTF-8)
 QSAPI void qg_set_title(const char* title);
 
-/// @brief 스터브 루프를 처리한다
-/// @return 거짓이면 프로그램을 종료한다
-QSAPI bool qg_loop(void);
-
-/// @brief 스터브 이벤트를 폴링한다
-/// @param[out] ev 폴링한 이벤트를 반환
-/// @return 처리할 이벤트가 더 이상 없으면 거짓
-QSAPI bool qg_poll(QgEvent* ev);
-
-/// @brief 메인 루프
-/// @param func 메인 루프 함수
-/// @param data 메인 루프에 전달할 포인터
-QSAPI void qg_main_loop(bool (*func)(void*), void* data);
-
-/// @brief 스터브 루프를 탈출한다
-/// @see qg_poll
-/// 
-/// 다만, 바로 프로그램을 종료하는 것은 아니며.실제로 이벤트를 처리하지 않도록 하는 역할을 한다
-QSAPI void qg_exit_loop(void);
+/// @brief 모니터 정보를 얻는다
+/// @param index 모니터 순번
+/// @return 모니터 정보를 반환하는데, 인덱스에 해당하는 모니터가 없으면 NULL이며 그 이상으로는 없음
+QSAPI const QgUdevMonitor* qg_get_monitor(int index);
 
 /// @brief 전체 키 정보를 얻는다
 /// @return 키 정보 포인터
@@ -663,19 +651,19 @@ QSAPI void qg_set_key(QikKey key, bool down);
 /// @return 초당 프레임 수
 QSAPI float qg_get_fps(void);
 
-/// @brief 실행 시간을 얻는다
-/// @return 실행 시간
-QSAPI double qg_get_run(void);
-
 /// @brief 프레임 당 시간을 얻는다
 /// @return 리퍼런스 시간
 /// @note 포즈 중에도 이 시간은 계산된다
-QSAPI double qg_get_reference(void);
+QSAPI float qg_get_elapsed(void);
 
 /// @brief 수행 시간을 얻는다. 포즈 중에는 0
 /// @return 수행 시간
 /// @note 포즈 중에는 계산되지 않으므로 0이다
-QSAPI double qg_get_advance(void);
+QSAPI float qg_get_advance(void);
+
+/// @brief 실행 시간을 얻는다
+/// @return 실행 시간
+QSAPI double qg_get_run_time(void);
 
 /// @brief 대기 상태(IDLE)일 때 대기할 밀리초
 /// @return 대기 상태에서의 대기 밀리초
@@ -684,6 +672,40 @@ QSAPI int qg_get_delay(void);
 /// @brief 대기 상태(IDLE)일 때 대기할 밀리초를 설정한다
 /// @param delay 대기 상태에서의 대기 밀리초
 QSAPI void qg_set_delay(int delay);
+
+/// @brief 스터브 루프를 처리한다
+/// @return 거짓이면 프로그램을 종료한다
+QSAPI bool qg_loop(void);
+
+/// @brief 스터브 이벤트를 폴링한다
+/// @param[out] ev 폴링한 이벤트를 반환
+/// @return 처리할 이벤트가 더 이상 없으면 거짓
+QSAPI bool qg_poll(QgEvent* ev);
+
+/// @brief 스터브 이벤트를 등록된 이벤트 핸들러로 전달한다
+QSAPI void qg_dispatch(void);
+
+/// @brief 메인 루프
+/// @param func 메인 루프 함수
+/// @param data 메인 루프에 전달할 포인터
+QSAPI void qg_main_loop(paramfunc_t func, void* data);
+
+/// @brief 스터브 루프를 탈출한다
+/// @see qg_poll
+/// 
+/// 다만, 바로 프로그램을 종료하는 것은 아니며.실제로 이벤트를 처리하지 않도록 하는 역할을 한다
+QSAPI void qg_exit_loop(void);
+
+/// @brief 스터브 이벤트 콜백을 등록한다
+/// @param func 콜백 함수
+/// @param data 콜백 함수 사용자 데이터
+/// @return 등록 키. 이 키로 qg_unregister_event_callback 로 등록을 해제할 수 있다 
+QSAPI nint qg_register_event_callback(QgEventCallback func, void* data);
+
+/// @brief 스터브 이벤트 콜백의 등록을 해제한다
+/// @param key 등록키
+/// @return 제거에 성공하면 참
+QSAPI bool qg_unregister_event_callback(nint key);
 
 /// @brief 남은 이벤트 갯수를 얻는다
 /// @return 남은 이벤트 갯수
@@ -712,8 +734,9 @@ QSAPI int qg_add_key_event(const QgEvent* ev, size_t key);
 
 /// @brief 맨 앞 이벤트를 꺼낸다. 꺼내면서 해당 이벤트는 큐에서 삭제
 /// @param[in] ev 얻은 이벤트 정보
+/// @param[in] peek 이 값이 참이면 큐에서 삭제는 안한다
 /// @return 이벤트가 있었다면 참. 없으면 거짓
-QSAPI bool qg_pop_event(QgEvent* ev);
+QSAPI bool qg_pop_event(QgEvent* ev, bool peek);
 
 /// @brief 이벤트를 문자열로
 /// @param ev 이벤트

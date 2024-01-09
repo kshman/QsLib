@@ -11,7 +11,7 @@ float dir = 1.0f;
 
 bool loop(void* loop_data)
 {
-	 struct LoopData* data = ( struct LoopData*)loop_data;
+	struct LoopData* data = (struct LoopData*)loop_data;
 
 	QgEvent ev;
 	while (qg_poll(&ev))
@@ -56,7 +56,7 @@ int main(void)
 	if (qg_open_rdh(NULL, "RDH", 0, 0, 0, flags) == false)
 		return -1;
 
-	static struct LoopData data = {.acc=0.0f, .dir=1.0f};
+	static struct LoopData data = { .acc = 0.0f, .dir = 1.0f };
 	qg_main_loop(loop, &data);
 
 	qg_close_rdh();

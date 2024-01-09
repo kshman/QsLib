@@ -531,7 +531,6 @@ void stub_system_update_bound(void)
 
 	GetClientRect(winStub.hwnd, &rect);
 	winStub.base.client_size = qm_size(rect.right - rect.left, rect.bottom - rect.top);
-
 }
 
 //
