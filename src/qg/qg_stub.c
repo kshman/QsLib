@@ -218,8 +218,16 @@ static void shed_event_flush_callback(EventNode* node)
 static void shed_event_flush(void)
 {
 	qn_mutex_enter(shed_event.mutex);
-	qn_nodelist_foreach_1(EventNodeList, &shed_event.prior, shed_event_flush_callback);
-	qn_nodelist_foreach_1(EventNodeList, &shed_event.queue, shed_event_flush_callback);
+	if (qn_nodelist_is_have(&shed_event.prior))
+	{
+		qn_nodelist_foreach_1(EventNodeList, &shed_event.prior, shed_event_flush_callback);
+		qn_nodelist_clear_nodes(&shed_event.prior);
+	}
+	if (qn_nodelist_is_have(&shed_event.queue))
+	{
+		qn_nodelist_foreach_1(EventNodeList, &shed_event.queue, shed_event_flush_callback);
+		qn_nodelist_clear_nodes(&shed_event.queue);
+	}
 	qn_mutex_leave(shed_event.mutex);
 }
 
@@ -305,9 +313,8 @@ void stub_initialize(StubBase* stub, const int flags)
 	stub->mouse.lim.move = 10 * 10 + 10 * 10;				// 제한 이동 거리(포인트)의 제곱
 	stub->mouse.lim.tick = 500;								// 제한 클릭 시간(밀리초)
 
-#ifndef _QN_EMSCRIPTEN_
 	qn_pctnr_init(&stub->monitors, 0);
-#endif
+
 	qn_arr_init(StubArrEventCb, &stub->event_cbs, 10);
 }
 
@@ -321,10 +328,8 @@ void qg_close_stub(void)
 
 	qn_timer_delete(self->timer);
 
-#ifndef _QN_EMSCRIPTEN_
 	qn_pctnr_foreach_1(&self->monitors, qn_memfre);
 	qn_pctnr_disp(&self->monitors);
-#endif
 
 	qn_arr_disp(&self->event_cbs);
 
@@ -388,13 +393,9 @@ void qg_set_title(const char* title)
 //
 const QgUdevMonitor* qg_get_monitor(int index)
 {
-#ifdef _QN_EMSCRIPTEN_
-	return NULL;
-#else
 	const StubBase* self = qg_instance_stub;
 	qn_val_if_fail((size_t)index < qn_pctnr_count(&self->monitors), NULL);
 	return qn_pctnr_nth(&self->monitors, index);
-#endif
 }
 
 //
@@ -496,6 +497,8 @@ bool qg_loop(void)
 
 	if (QN_TMASK(stub->flags, QGSPECIFIC_VIRTUAL) == false)
 	{
+		shed_event_flush();	// 이전 루프의 메시지는 모두 지워버려
+
 		if (!stub_system_poll() || QN_TMASK(stub->stats, QGSSTT_EXIT))
 			return false;
 	}
@@ -574,16 +577,12 @@ void qg_dispatch(void)
 	qg_poll_check_shed();
 
 	qn_mutex_enter(stub->mutex);
-	if (qn_arr_is_empty(&stub->event_cbs))
+	if (qn_arr_is_have(&stub->event_cbs))
 	{
-		shed_event_flush();
-		qn_mutex_leave(stub->mutex);
-		return;
+		QgEvent ev;
+		while (shed_event_transition(&ev))
+			qg_dispatch_event(&ev);
 	}
-
-	QgEvent ev;
-	while (shed_event_transition(&ev))
-		qg_dispatch_event(&ev);
 	qn_mutex_leave(stub->mutex);
 }
 
@@ -618,7 +617,7 @@ void qg_main_loop(paramfunc_t func, void* data)
 	stub->main_delegate.data = data;
 	emscripten_set_main_loop(qg_emscripten_main_loop, 0, true);
 #endif
-	}
+}
 
 //
 nint qg_register_event_callback(QgEventCallback func, void* data)
@@ -743,7 +742,7 @@ bool stub_track_mouse_click(const QimButton button, const QimTrack track)
 	{
 		if (m->clk.tick == 0)
 		{
-			m->clk.tick = (uint)qn_tick();
+			m->clk.tick = qn_tick32();
 			m->clk.loc = m->pt;
 			m->clk.btn = button;
 		}
@@ -751,7 +750,7 @@ bool stub_track_mouse_click(const QimButton button, const QimTrack track)
 		{
 			if (m->clk.btn == button)
 			{
-				const uint d = (uint)qn_tick() - m->clk.tick;
+				const uint d = qn_tick32() - m->clk.tick;
 				if (d < m->lim.tick)
 				{
 					// 더블 클릭으로 인정
@@ -775,13 +774,9 @@ bool stub_track_mouse_click(const QimButton button, const QimTrack track)
 }
 
 // monitor는 할당해서 와야한다!!!
-bool stub_event_on_monitor(QgUdevMonitor * monitor, const bool connected, const bool primary)
+bool stub_event_on_monitor(QgUdevMonitor * monitor, bool connected, bool primary, bool broadcast)
 {
-#ifdef __EMSCRIPTEN__
-	return false;
-#else
 	StubBase* stub = qg_instance_stub;
-	QgEvent e = { .monitor.ev = QGEV_MONITOR, .monitor.connectd = connected, };
 	if (connected)
 	{
 		if (primary)
@@ -803,11 +798,18 @@ bool stub_event_on_monitor(QgUdevMonitor * monitor, const bool connected, const 
 		qn_pctnr_nth(&stub->monitors, i)->no = (int)i;
 
 	// 이벤트
-	QgUdevMonitor* another = qn_memdup(monitor, sizeof(QgUdevMonitor));
-	e.monitor.monitor = another;
-
-	shed_event_reserved_mem(another);
-	bool ret = qg_add_event(&e, false) > 0;
+	bool ret = true;
+	if (broadcast)
+	{
+		QgUdevMonitor* another = qn_memdup(monitor, sizeof(QgUdevMonitor));
+		QgEvent e = {
+			.monitor.ev = QGEV_MONITOR,
+			.monitor.connectd = connected,
+			.monitor.monitor = another
+		};
+		shed_event_reserved_mem(another);
+		ret = qg_add_event(&e, false) > 0;
+	}
 
 	// 연결 끊긴 모니터는.. 뭐 그렇지
 	if (connected == false)
@@ -816,11 +818,10 @@ bool stub_event_on_monitor(QgUdevMonitor * monitor, const bool connected, const 
 		stub_system_update_bound();		// 위치가 바꼈을 수도 있다! 보통은 윈도우 메시지가 먼저 옴
 	}
 	return ret;
-#endif
 }
 
 //
-bool stub_event_on_layout(const bool enter)
+bool stub_event_on_layout(bool enter)
 {
 	StubBase* stub = qg_instance_stub;
 
@@ -846,6 +847,22 @@ bool stub_event_on_layout(const bool enter)
 			.layout.size = stub->client_size,
 		};
 		return qg_add_event(&e, true) > 0;
+	}
+
+	return false;
+}
+
+//
+bool stub_event_on_focus(bool enter)
+{
+	StubBase* stub = qg_instance_stub;
+	qn_val_if_fail(QN_TMASK(stub->flags, QGFLAG_FOCUS), 0);
+
+	bool prev = QN_TMASK(stub->stats, QGSSTT_FOCUS);
+	if (prev != enter)
+	{
+		QN_SMASK(&stub->stats, QGSSTT_FOCUS, enter);
+		return qg_add_signal_event(enter ? QGEV_ENTER : QGEV_LEAVE, false);
 	}
 
 	return false;

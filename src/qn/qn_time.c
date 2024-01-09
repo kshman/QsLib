@@ -174,6 +174,13 @@ ullong qn_tick(void)
 }
 
 //
+uint qn_tick32(void)
+{
+	ullong tick = qn_tick();
+	return (uint)(tick % UINT32_MAX);
+}
+
+//
 void qn_sleep(uint milliseconds)
 {
 #ifdef _QN_WINDOWS_

@@ -829,6 +829,56 @@ QSAPI int qn_itoa(char* p, const int n, const uint base, bool upper);
 /// @return 문자열 버퍼가 0이면 필요한 버퍼 크기, 그렇지 않으면 문자열 길이
 QSAPI int qn_lltoa(char* p, const llong n, const uint base, bool upper);
 
+/// @brief 가변 포맷 문자열
+/// @param[out] out 출력 문자열 버퍼. 문자열 길이만 얻으려면 NULL로 설정
+/// @param[in] len 출력 문자열 버퍼 크기
+/// @param[in] fmt 포맷 문자열
+/// @param[in] va 가변 인수
+/// @return 결과 문자열의 길이
+QSAPI int qn_vsnwprintf(wchar* restrict out, size_t len, const wchar* restrict fmt, va_list va);
+
+/// @brief 가변 포맷 문자열을 메모리 할당으로 만든다
+/// @param[out] out 출력 문자열의 버퍼 포인터. 이 값이 NULL이면 곤린하다
+/// @param[in] fmt 포맷 문자열
+/// @param[in] va 가변 인수
+/// @return 결과 문자열의 길이
+/// @note out 인수로 만든 문자열은 qn_free 함수로 해제해야 한다
+/// @see qn_free
+QSAPI int qn_vaswprintf(wchar** out, const wchar* fmt, va_list va);
+
+/// @brief 가변 포맷 문자열을 메모리 할당으로 만들어 반환한다
+/// @param[in] fmt 포맷 문자열
+/// @param[in] va 가변 인수
+/// @return 결과 문자열
+/// @note 반환 값은 qn_free 함수로 해제해야 한다
+/// @see qn_free
+QSAPI wchar* qn_vapswprintf(const wchar* fmt, va_list va);
+
+/// @brief 문자열을 포맷한다
+/// @param[out] out 출력 문자열의 버퍼 포인터. 문자열 길이만 얻으려면 NULL로 설정
+/// @param[in] len 출력 문자열의 버퍼 포인터의 크기
+/// @param[in] fmt 포맷 문자열
+/// @param ... 인수
+/// @return 결과 문자열의 길이
+QSAPI int qn_snwprintf(wchar* restrict out, const size_t len, const wchar* restrict fmt, ...);
+
+/// @brief 문자열을 포맷하고 메모리 할당으로 만든다
+/// @param[out] out 출력 문자열의 버퍼 포인터. 이 값이 NULL이면 곤린하다
+/// @param[in] fmt 포맷 문자열
+/// @param ... 인수
+/// @return 결과 문자열의 길이
+/// @note out 인수로 만든 문자열은 qn_free 함수로 해제해야 한다
+/// @see qn_free
+QSAPI int qn_aswprintf(wchar** out, const wchar* restrict fmt, ...);
+
+/// @brief 문자열을 포맷하고 메모리를 반환한다
+/// @param[in] fmt 포맷 문자열
+/// @param ... 인수
+/// @return 결과 문자열
+/// @note 반환 값은 qn_free 함수로 해제해야 한다
+/// @see qn_free
+QSAPI wchar* qn_apswprintf(const wchar* fmt, ...);
+
 /// @brief 문자열 복사
 /// @param p 대상
 /// @param src 원본
@@ -1209,6 +1259,10 @@ QSAPI ullong qn_cycle(void);
 /// @brief 프로그램 시작부터 시간 틱
 /// @return	현재의 틱
 QSAPI ullong qn_tick(void);
+
+/// @brief 프로그램 시작부터 시간 틱 (32비트 버전)
+/// @return	현재의 틱
+QSAPI uint qn_tick32(void);
 
 /// @brief 밀리초 슬립
 /// @param[in]	milliseconds	밀리초 단위로 처리되는 millisecond

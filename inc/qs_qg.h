@@ -292,6 +292,8 @@ typedef enum QgEventType
 	QGEV_SYSWM,												/// @brief 시스템 메시지
 	QGEV_ACTIVE,											/// @brief 스터브 활성 상태 이벤트
 	QGEV_LAYOUT,											/// @brief 화면 크기 이벤트
+	QGEV_ENTER,												/// @brief 포커스 들어옴 (마우스가)
+	QGEV_LEAVE,												/// @brief 포커스 들어옴 (마우스가)
 	QGEV_MOUSEMOVE,											/// @brief 마우스를 움직여요
 	QGEV_MOUSEDOWN,											/// @brief 마우스 버튼을 눌렀어요
 	QGEV_MOUSEUP,											/// @brief 마우스 버튼을 뗏어요

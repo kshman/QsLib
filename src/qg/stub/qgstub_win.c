@@ -145,8 +145,7 @@ typedef struct WindowsStub
 	HINSTANCE			instance;
 	HWND				hwnd;
 
-	wchar*				class_name;
-	wchar*				window_title;
+	wchar				class_name[64];
 	DWORD				window_style;
 
 	STICKYKEYS			acs_sticky;
@@ -169,7 +168,7 @@ typedef struct WindowsStub
 
 	bool				class_registered;
 	bool				clear_background;
-	bool				bool_padding1;
+	bool				mouse_tracked;
 	bool				bool_padding2;
 } WindowsStub;
 
@@ -217,9 +216,7 @@ bool stub_system_open(const char* title, const int display, const int width, con
 	// 윈도우 클래스
 	if (winStub.class_registered == false)
 	{
-		char class_name[64];
-		size_t class_len = qn_snprintf(class_name, QN_COUNTOF(class_name), "qs_stub_class_%llu", qn_now());
-		winStub.class_name = qn_u8to16_dup(class_name, class_len);
+		qn_snwprintf(winStub.class_name, QN_COUNTOF(winStub.class_name), L"qs_stub_%llu", qn_now());
 
 		WNDCLASSEX wc =
 		{
@@ -325,7 +322,6 @@ bool stub_system_open(const char* title, const int display, const int width, con
 	winStub.base.client_size = clientsize;
 
 	winStub.mouse_cursor = LoadCursor(NULL, IDC_ARROW);
-	winStub.window_title = qn_u8to16_dup(title ? title : "QS", 0);
 	winStub.deadzone_min = -CTRL_DEAD_ZONE;
 	winStub.deadzone_max = +CTRL_DEAD_ZONE;
 
@@ -339,9 +335,11 @@ bool stub_system_open(const char* title, const int display, const int width, con
 		QN_SMASK(&uk->mask, QIKM_NUM, true);
 
 	//윈도우 만들기
-	winStub.hwnd = CreateWindowEx(WS_EX_APPWINDOW, winStub.class_name, winStub.window_title,
+	wchar* wtitle = qn_u8to16_dup(title ? title : "QS", 0);
+	winStub.hwnd = CreateWindowEx(WS_EX_APPWINDOW, winStub.class_name, wtitle,
 		style, pos.X, pos.Y, size.Width, size.Height,
 		NULL, NULL, winStub.instance, NULL);
+	qn_free(wtitle);
 	if (winStub.hwnd == NULL)
 	{
 		qn_debug_outputs(true, "WINDOWS STUB", "cannot create window");
@@ -396,9 +394,6 @@ void stub_system_finalize(void)
 		if (GetClassInfoEx(winStub.instance, winStub.class_name, &wc))
 			UnregisterClass(winStub.class_name, winStub.instance);
 	}
-
-	qn_free(winStub.window_title);
-	qn_free(winStub.class_name);
 }
 
 //
@@ -433,92 +428,103 @@ bool stub_system_poll(void)
 }
 
 //
-void stub_system_disable_acs(const bool enable)
+bool stub_system_disable_acs(const bool enable)
 {
 	if (enable)
-	{
-		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_ACS))
-			return;
-		QN_SMASK(&winStub.base.flags, QGFEATURE_DISABLE_ACS, true);
-
-		winStub.acs_sticky.cbSize = sizeof(STICKYKEYS);
-		winStub.acs_toggle.cbSize = sizeof(TOGGLEKEYS);
-		winStub.acs_filter.cbSize = sizeof(FILTERKEYS);
-		SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &winStub.acs_sticky, 0);
-		SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &winStub.acs_toggle, 0);
-		SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &winStub.acs_filter, 0);
-
-		STICKYKEYS sticky = winStub.acs_sticky;
-		TOGGLEKEYS toggle = winStub.acs_toggle;
-		FILTERKEYS filter = winStub.acs_filter;
-		sticky.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
-		toggle.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
-		filter.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
-		SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &sticky, 0);
-		SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &toggle, 0);
-		SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &filter, 0);
-
-		windows_set_key_hook(winStub.instance);
-	}
-	else
 	{
 		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_ACS) == false)
-			return;
-		QN_SMASK(&winStub.base.flags, QGFEATURE_DISABLE_ACS, false);
+		{
+			winStub.acs_sticky.cbSize = sizeof(STICKYKEYS);
+			winStub.acs_toggle.cbSize = sizeof(TOGGLEKEYS);
+			winStub.acs_filter.cbSize = sizeof(FILTERKEYS);
+			SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &winStub.acs_sticky, 0);
+			SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &winStub.acs_toggle, 0);
+			SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &winStub.acs_filter, 0);
 
-		SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &winStub.acs_sticky, 0);
-		SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &winStub.acs_toggle, 0);
-		SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &winStub.acs_filter, 0);
+			STICKYKEYS sticky = winStub.acs_sticky;
+			TOGGLEKEYS toggle = winStub.acs_toggle;
+			FILTERKEYS filter = winStub.acs_filter;
+			sticky.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
+			toggle.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
+			filter.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
+			SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &sticky, 0);
+			SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &toggle, 0);
+			SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &filter, 0);
 
-		windows_set_key_hook(NULL);
+			windows_set_key_hook(winStub.instance);
+		}
 	}
+	else
+	{
+		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_ACS))
+		{
+			SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &winStub.acs_sticky, 0);
+			SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &winStub.acs_toggle, 0);
+			SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &winStub.acs_filter, 0);
+
+			windows_set_key_hook(NULL);
+		}
+	}
+	return enable;
 }
 
 //
-void stub_system_disable_scr_save(const bool enable)
+bool stub_system_disable_scr_save(const bool enable)
 {
 	if (enable)
-	{
-		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_SCRSAVE))
-			return;
-		QN_SMASK(&winStub.base.flags, QGFEATURE_DISABLE_SCRSAVE, true);
-		SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
-	}
-	else
 	{
 		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_SCRSAVE) == false)
-			return;
-		QN_SMASK(&winStub.base.flags, QGFEATURE_DISABLE_SCRSAVE, false);
-		SetThreadExecutionState(ES_CONTINUOUS);
-	}
-}
-
-//
-void stub_system_enable_drop(const bool enable)
-{
-	if (enable)
-	{
-		if (QN_TMASK(winStub.base.flags, QGFEATURE_ENABLE_DROP))
-			return;
-		QN_SMASK(&winStub.base.flags, QGFEATURE_ENABLE_DROP, true);
-		DragAcceptFiles(winStub.hwnd, TRUE);
+			SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
 	}
 	else
 	{
-		if (QN_TMASK(winStub.base.flags, QGFEATURE_ENABLE_DROP) == false)
-			return;
-		QN_SMASK(&winStub.base.flags, QGFEATURE_ENABLE_DROP, false);
-		DragAcceptFiles(winStub.hwnd, FALSE);
+		if (QN_TMASK(winStub.base.flags, QGFEATURE_DISABLE_SCRSAVE))
+			SetThreadExecutionState(ES_CONTINUOUS);
 	}
+	return enable;
+}
+
+//
+bool stub_system_enable_drop(const bool enable)
+{
+	if (enable)
+	{
+		if (QN_TMASK(winStub.base.flags, QGFEATURE_ENABLE_DROP) == false)
+			DragAcceptFiles(winStub.hwnd, TRUE);
+	}
+	else
+	{
+		if (QN_TMASK(winStub.base.flags, QGFEATURE_ENABLE_DROP))
+			DragAcceptFiles(winStub.hwnd, FALSE);
+	}
+	return enable;
+}
+
+//
+bool stub_system_grab_mouse(bool enable)
+{
+	if (enable)
+	{
+		RECT rt;
+		GetClientRect(winStub.hwnd, &rt);
+		ClientToScreen(winStub.hwnd, ((LPPOINT)&rt) + 0);
+		ClientToScreen(winStub.hwnd, ((LPPOINT)&rt) + 1);
+		ClipCursor(&rt);
+	}
+	else
+	{
+		ClipCursor(NULL);
+	}
+	return enable;
 }
 
 //
 void stub_system_set_title(const char* title)
 {
 	qn_ret_if_fail(title && *title);
-	qn_free(winStub.window_title);
-	winStub.window_title = qn_u8to16_dup(title, 0);
-	SetWindowText(winStub.hwnd, winStub.window_title);
+	wchar* wtitle = qn_u8to16_dup(title, 0);
+	SetWindowText(winStub.hwnd, wtitle);
+	qn_free(wtitle);
 }
 
 //
@@ -639,20 +645,18 @@ static BOOL CALLBACK windows_enum_display_callback(HMONITOR monitor, HDC dc, REC
 static WindowsMonitor* windows_get_monitor_info(DISPLAY_DEVICE* adapter_device, DISPLAY_DEVICE* display_device)
 {
 	WindowsMonitor* mon = qn_alloc_zero_1(WindowsMonitor);
-	qn_wcsncpy(mon->adapter, adapter_device->DeviceName, QN_COUNTOF(mon->adapter)-1);
+	qn_wcsncpy(mon->adapter, adapter_device->DeviceName, QN_COUNTOF(mon->adapter) - 1);
 	wchar* name;
 	if (display_device == NULL)
 		name = adapter_device->DeviceString;
 	else
 	{
 		name = display_device->DeviceString;
-		qn_wcsncpy(mon->display, display_device->DeviceName, QN_COUNTOF(mon->display)-1);
+		qn_wcsncpy(mon->display, display_device->DeviceName, QN_COUNTOF(mon->display) - 1);
 	}
 	qn_u16to8(mon->base.name, QN_COUNTOF(mon->base.name), name, 0);
 
-	DEVMODE dm;
-	ZeroMemory(&dm, sizeof(DEVMODE));
-	dm.dmSize = sizeof(DEVMODE);
+	DEVMODE dm = { .dmSize = sizeof(DEVMODE) };
 	EnumDisplaySettings(adapter_device->DeviceName, ENUM_CURRENT_SETTINGS, &dm);
 
 	const HDC hdc = CreateDC(L"DISPLAY", adapter_device->DeviceName, NULL, NULL);
@@ -699,7 +703,7 @@ static bool windows_detect_displays(void)
 			qn_pctnr_foreach(&keep, i)
 			{
 				const WindowsMonitor * mon = (WindowsMonitor*)qn_pctnr_nth(&keep, i);
-				if (mon == NULL || wcscmp(mon->display, display_device.DeviceName) != 0)
+				if (mon == NULL || qn_wcseqv(mon->display, display_device.DeviceName) == false)
 					continue;
 				qn_pctnr_set(&keep, i, NULL);
 				EnumDisplayMonitors(NULL, NULL, windows_enum_display_callback, (LPARAM)&qn_pctnr_nth(&winStub.base.monitors, i));
@@ -709,7 +713,8 @@ static bool windows_detect_displays(void)
 				continue;
 
 			WindowsMonitor* mon = windows_get_monitor_info(&adapter_device, &display_device);
-			stub_event_on_monitor((QgUdevMonitor*)mon, true, QN_TMASK(adapter_device.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE));
+			stub_event_on_monitor((QgUdevMonitor*)mon, true,
+				QN_TMASK(adapter_device.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE), false);
 		}
 
 		if (display == 0)
@@ -717,7 +722,7 @@ static bool windows_detect_displays(void)
 			qn_pctnr_foreach(&keep, i)
 			{
 				const WindowsMonitor* mon = (const WindowsMonitor*)qn_pctnr_nth(&keep, i);
-				if (mon == NULL || wcscmp(mon->adapter, adapter_device.DeviceName) != 0)
+				if (mon == NULL || qn_wcseqv(mon->adapter, adapter_device.DeviceName) == false)
 					continue;
 				qn_pctnr_set(&keep, i, NULL);
 				break;
@@ -726,7 +731,8 @@ static bool windows_detect_displays(void)
 				continue;
 
 			WindowsMonitor* mon = windows_get_monitor_info(&adapter_device, NULL);
-			stub_event_on_monitor((QgUdevMonitor*)mon, true, QN_TMASK(adapter_device.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE));
+			stub_event_on_monitor((QgUdevMonitor*)mon, true,
+				QN_TMASK(adapter_device.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE), false);
 		}
 	}
 
@@ -734,7 +740,7 @@ static bool windows_detect_displays(void)
 	{
 		QgUdevMonitor* mon = qn_pctnr_nth(&keep, i);
 		if (mon != NULL)
-			stub_event_on_monitor(mon, false, false);
+			stub_event_on_monitor(mon, false, false, false);
 	}
 	qn_pctnr_disp(&keep);
 
@@ -897,6 +903,21 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 	{
 		if (mesg == WM_MOUSEMOVE)
 		{
+			if (winStub.mouse_tracked == false)
+			{
+				TRACKMOUSEEVENT tme =
+				{
+					.cbSize = sizeof(TRACKMOUSEEVENT),
+					.dwFlags = TME_LEAVE,
+					.hwndTrack = hwnd
+				};
+				if (TrackMouseEvent(&tme))
+					winStub.mouse_tracked = true;
+
+				if (QN_TMASK(winStub.base.stats, QGSSTT_FOCUS) == false)
+					stub_event_on_focus(true);
+			}
+
 			QmPoint pt = qm_point(GET_X_LPARAM(lp), GET_Y_LPARAM(lp));
 			stub_event_on_mouse_move(pt.X, pt.Y);
 			stub_track_mouse_click(QIM_NONE, QIMT_MOVE);
@@ -1192,11 +1213,21 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			break;
 
 		case WM_MOUSELEAVE:
+			if (QN_TMASK(winStub.base.stats, QGSSTT_HOLD) == false)
+			{
+				POINT pos;
+				GetCursorPos(&pos);
+				ScreenToClient(hwnd, &pos);
+				stub_event_on_mouse_move(pos.x, pos.y);
+				stub_event_on_focus(false);
+			}
+			winStub.mouse_tracked = false;
 			result = 0;
 			break;
 
 		case WM_DPICHANGED:
 		{
+			// https://learn.microsoft.com/ko-kr/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
 			if (QN_TMASK(winStub.base.flags, QGFLAG_DPISCALE) ||
 				AdjustWindowRectExForDpi != NULL)
 			{
@@ -1210,7 +1241,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			const float ydpi = LOWORD(wp) / 96.0f;
 			// TODO: 여기에 DPI 변경 알림 이벤트 날리면 좋겠네
 #endif
-		} break;
+			} break;
 
 		case WM_GETDPISCALEDSIZE:
 		{
@@ -1229,13 +1260,13 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		default:
 			break;
-	}
+		}
 
 poswindows_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-}
+	}
 #pragma endregion 윈도우 메시지
 
 #endif // _WIN32 && !USE_SDL2

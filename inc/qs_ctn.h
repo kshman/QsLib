@@ -294,7 +294,7 @@ QN_DECL_ARR(QnAnyArr, any_t);								/// @brief any_t 배열
 		(p)->DATA=NULL;\
 		(p)->COUNT=0;\
 		(p)->CAPA=0;\
-		if ((capacity)>0) qn_inl_arr_expand((void*)(p), qn_ctn_sizeof_type(name), (capacity));\
+		if ((capacity)>0) qn_inl_arr_extend((void*)(p), qn_ctn_sizeof_type(name), (capacity));\
 	}QN_STMT_END
 #define qn_arr_init_copy(name,p,from)\
 	QN_STMT_BEGIN{\
@@ -345,8 +345,12 @@ QN_DECL_ARR(QnAnyArr, any_t);								/// @brief any_t 배열
 #define qn_arr_foreach_ptr_1(p,func1)	qn_ctnr_foreach_ptr_1(p,func1)
 #define qn_arr_foreach_ptr_2(p,f2,data)	qn_ctnr_foreach_ptr_2(p,f2,data)
 
-#define qn_arr_resize(name,p,count)		qn_inl_arr_expand((void*)(p), qn_ctn_sizeof_type(name),countt)
-#define qn_arr_expand(name,p,count)		qn_inl_arr_expand((void*)(p), qn_ctn_sizeof_type(name), (p)->COUNT+(count))
+#define qn_arr_resize(name,p,count)\
+	QN_STMT_BEGIN{\
+		qn_inl_arr_extend((void*)(p), qn_ctn_sizeof_type(name), count);\
+		(p)->COUNT=count;\
+	}QN_STMT_END
+#define qn_arr_expand(name,p,count)		qn_arr_resize(name,p,(p)->COUNT+count)
 
 #define qn_arr_add(name,p,item)\
 	QN_STMT_BEGIN{\
@@ -370,16 +374,15 @@ QN_DECL_ARR(QnAnyArr, any_t);								/// @brief any_t 배열
 		}\
 	}QN_STMT_END
 
-QN_INLINE void qn_inl_arr_expand(void* arr, size_t size, size_t count)
+QN_INLINE void qn_inl_arr_extend(void* arr, size_t size, size_t capa)
 {
 	QnByteArr* p = (QnByteArr*)arr;
-	if (p->CAPA < count)
+	if (p->CAPA < capa)
 	{
-		while (p->CAPA < count)
+		while (p->CAPA < capa)
 			p->CAPA = p->CAPA + p->CAPA / 2 + 1;
 		p->DATA = qn_realloc(p->DATA, p->CAPA * size, byte);
 	}
-	p->COUNT = count;
 }
 
 #define qn_parr_init(p, capacity)		qn_arr_init(QnPtrArr, p, capacity)
@@ -924,17 +927,20 @@ QN_INLINE bool qn_plist_find(const QnPtrList* p, bool (*func2)(void* data, void*
 		(p)->COUNT++;\
 	}QN_STMT_END
 
+#define qn_nodelist_clear_nodes(p)\
+	QN_STMT_BEGIN{\
+		(p)->FIRST=(p)->LAST=NULL;\
+		(p)->COUNT=0;\
+	}QN_STMT_END
 #define qn_nodelist_clear(name,p)\
 	QN_STMT_BEGIN{\
 		qn_nodelist_disp(name,p);\
-		(p)->FIRST=(p)->LAST=NULL;\
-		(p)->COUNT=0;\
+		qn_nodelist_clear_nodes(p);\
 	}QN_STMT_END
 #define qn_nodelist_clear_cb(name,p,func1)\
 	QN_STMT_BEGIN{\
 		qn_nodelist_disp_cb(name,p,func1);\
-		(p)->FIRST=(p)->LAST=NULL;\
-		(p)->COUNT=0;\
+		qn_nodelist_clear_nodes(p);\
 	}QN_STMT_END
 #define qn_nodelist_remove(name,p,item)\
 	QN_STMT_BEGIN{\
