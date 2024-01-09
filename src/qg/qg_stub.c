@@ -277,10 +277,12 @@ void stub_initialize(StubBase* stub, const int flags)
 	stub->run = stub->timer->runtime;
 	stub->active = stub->timer->abstime;
 
-	stub->mouse.lim.move = 10 * 10 + 10 * 10;						// 제한 이동 거리(포인트)의 제곱
+	stub->mouse.lim.move = 10 * 10 + 10 * 10;				// 제한 이동 거리(포인트)의 제곱
 	stub->mouse.lim.tick = 500;								// 제한 클릭 시간(밀리초)
 
+#ifndef __EMSCRIPTEN__
 	qn_pctnr_init(&stub->monitors, 0);
+#endif
 }
 
 //
@@ -292,8 +294,10 @@ void qg_close_stub(void)
 
 	qn_timer_delete(qg_instance_stub->timer);
 
+#ifndef __EMSCRIPTEN__
 	qn_pctnr_foreach_1(&qg_instance_stub->monitors, qn_memfre);
 	qn_pctnr_disp(&qg_instance_stub->monitors);
+#endif
 
 	shed_event_dispose();
 
@@ -599,6 +603,9 @@ bool stub_track_mouse_click(const QimButton button, const QimTrack track)
 // monitor는 할당해서 와야한다!!!
 bool stub_event_on_monitor(QgUdevMonitor* monitor, const bool connected, const bool primary)
 {
+#ifdef __EMSCRIPTEN__
+	return false;
+#else
 	StubBase* stub = qg_instance_stub;
 	QgEvent e = { .monitor.ev = QGEV_MONITOR, .monitor.connectd = connected, };
 	if (connected)
@@ -635,6 +642,7 @@ bool stub_event_on_monitor(QgUdevMonitor* monitor, const bool connected, const b
 		stub_system_update_bound();		// 위치가 바꼈을 수도 있다! 보통은 윈도우 메시지가 먼저 옴
 	}
 	return ret;
+#endif
 }
 
 //

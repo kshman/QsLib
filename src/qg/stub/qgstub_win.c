@@ -630,7 +630,7 @@ static BOOL CALLBACK windows_enum_display_callback(HMONITOR monitor, HDC dc, REC
 	if (GetMonitorInfo(monitor, (LPMONITORINFO)&mi))
 	{
 		WindowsMonitor* wm = (WindowsMonitor*)lp;
-		if (wcscmp(mi.szDevice, wm->adapter) == 0)
+		if (qn_wcseqv(mi.szDevice, wm->adapter))
 			wm->handle = monitor;
 	}
 	return TRUE;
@@ -640,14 +640,14 @@ static BOOL CALLBACK windows_enum_display_callback(HMONITOR monitor, HDC dc, REC
 static WindowsMonitor* windows_get_monitor_info(DISPLAY_DEVICE* adapter_device, DISPLAY_DEVICE* display_device)
 {
 	WindowsMonitor* mon = qn_alloc_zero_1(WindowsMonitor);
-	wcscpy_s(mon->adapter, QN_COUNTOF(mon->adapter), adapter_device->DeviceName);
+	qn_wcsncpy(mon->adapter, adapter_device->DeviceName, QN_COUNTOF(mon->adapter)-1);
 	wchar* name;
 	if (display_device == NULL)
 		name = adapter_device->DeviceString;
 	else
 	{
 		name = display_device->DeviceString;
-		wcscpy_s(mon->display, QN_COUNTOF(mon->display), display_device->DeviceName);
+		qn_wcsncpy(mon->display, display_device->DeviceName, QN_COUNTOF(mon->display)-1);
 	}
 	qn_u16to8(mon->base.name, QN_COUNTOF(mon->base.name), name, 0);
 

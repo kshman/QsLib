@@ -263,6 +263,10 @@ RdhBase* es_allocator(QgFlag flags)
 		return NULL;
 #endif
 
+#ifdef _QN_EMSCRIPTEN_
+	flags &= ~(QGFLAG_MSAA|QGFLAG_DITHER|QGFLAG_DITHER_ALPHA_STENCIL);
+#endif
+
 	// 프로퍼티에 있으면 가져온다
 	int size_red = 8, size_green = 8, size_blue = 8, size_alpha = 8;
 	const char* size_prop = qn_get_prop(QG_PROP_RGBA_SIZE);
@@ -659,6 +663,10 @@ static void es_flush(void)
 	SDL_GL_SwapWindow(self->window);
 #else
 	eglSwapBuffers(self->display, self->surface);
+#endif
+#ifdef _QN_EMSCRIPTEN_
+	if (emscripten_has_asyncify())
+		emscripten_sleep(0);
 #endif
 }
 

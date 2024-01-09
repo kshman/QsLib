@@ -247,18 +247,22 @@ static_assert(sizeof(QicMask) == sizeof(int), "QicMask size not equal to int");
 //////////////////////////////////////////////////////////////////////////
 // function
 
+/// @brief 사용가능한 키인가
+/// @param key QikKey
+/// @return 사용가능하면 참
+QSAPI bool qg_qik_usable(const QikKey key);
+
 /// @brief QikKey를 문자열로
 /// @param key QikKey
 /// @return QikKey의 이름
-///
 QSAPI const char* qg_qik_str(QikKey key);
+
 /// @brief QimButton를 문자열로
 /// @param button QimButton
 /// @return QimButton의 이름
-///
 QSAPI const char* qg_qim_str(QimButton button);
+
 /// @brief QicButton를 문자열로
 /// @param button QicButton
 /// @return QicButton의 이름
-///
 QSAPI const char* qg_qic_str(QicButton button);

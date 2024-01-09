@@ -11,6 +11,32 @@
 //////////////////////////////////////////////////////////////////////////
 // qmkc supp
 
+static const bool qik_key_enables[] =
+{
+	/*00*/ false, false, false, false, false, false, false, false, true, true, false, false, false, true, false, false,
+	/*10*/ false, false, false, true, true, false, false, false, false, false, false, true, false, false, false, false,
+	/*20*/ true, true, true, true, true, true, true, true, true, false, false, false, true, true, true, false,
+	/*30*/ true, true, true, true, true, true, true, true, true, true, false, false, false, false, false, false,
+	/*40*/ false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+	/*50*/ true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, false,
+	/*60*/ true, true, true, true, true, true, true, true, true, true, true,  true,  false, true,  true,  true,
+	/*70*/ true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+	/*80*/ true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false,
+	/*90*/ true,  true, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+	/*A0*/ true,  true,  true, true, true, true, false, false, false, false, false, false, false, false, false, false,
+	/*B0*/ false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true,
+	/*C0*/ true, false,  false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+	/*D0*/ false,false, false, false, false, false, false, false, false, false, false, true, true,  true, true, false,
+	/*E0*/ false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+	/*F0*/ false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+};
+
+//
+bool qg_qik_usable(const QikKey key)
+{
+	return qik_key_enables[(byte)key];
+}
+
 //
 const char* qg_qik_str(const QikKey key)
 {
@@ -34,7 +60,6 @@ const char* qg_qik_str(const QikKey key)
 		/*E0*/ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 		/*F0*/ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	};
-
 	return s_key_names[(byte)key];
 #else
 	return NULL;

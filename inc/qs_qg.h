@@ -281,6 +281,7 @@ typedef enum QgStubStat
 	QGSSTT_DROP = QN_BIT(5),								/// @brief 드래그 드랍 중
 	QGSSTT_CURSOR = QN_BIT(6),								/// @brief 커서의 표시
 	QGSSTT_HOLD = QN_BIT(7),								/// @brief 마우스 홀드
+	QGSSTT_FULLSCREEN = QN_BIT(31),							/// @brief 풀스크린
 } QgStubStat;
 
 /// @brief 이벤트 타입

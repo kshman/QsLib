@@ -239,6 +239,9 @@
     <ClCompile Include="..\..\src\qg\stub\qgrdh_es.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\qg\stub\qgstub_emscripten.c">
+      <Filter>소스 파일\qg\stub</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\..\QsLib.natvis" />

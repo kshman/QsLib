@@ -29,7 +29,9 @@ typedef struct StubBase
 	QmRect				window_bound;						// 실제 윈도우의 위치와 크기 정보
 	QmSize				client_size;						// 시스템 스터브 관리, 그리기 영역 크기 (창 크기가 아님)
 
+#ifndef __EMSCRIPTEN__
 	StubMonitorCtnr		monitors;
+#endif
 	QgUimKey			key;
 	QgUimMouse			mouse;
 } StubBase;
