@@ -102,6 +102,9 @@ static bool windows_dll_init(void)
 #define UnhookWindowsHookEx					Win32UnhookWindowsHookEx
 #define SetWindowsHookExW					Win32SetWindowsHookExW
 #define GetKeyboardState					Win32GetKeyboardState
+#define GetDisplayConfigBufferSizes			Win32GetDisplayConfigBufferSizes
+#define QueryDisplayConfig					Win32QueryDisplayConfig
+#define DisplayConfigGetDeviceInfo			Win32DisplayConfigGetDeviceInfo
 
 #define GetDpiForMonitor					Win32GetDpiForMonitor
 #define SetProcessDpiAwareness				Win32SetProcessDpiAwareness
@@ -677,11 +680,97 @@ static WindowsMonitor* windows_get_monitor_info(DISPLAY_DEVICE* adapter_device, 
 	return mon;
 }
 
+// 친숙한 모니터 이름 
+typedef struct WindowsFriendlyMonitor
+{
+	WCHAR				deviceName[32];
+	char				friendlyName[64];
+} WindowsFriendlyMonitor;
+
+// 모니터 이름 얻기
+static UINT32 windows_friendly_monitors(WindowsFriendlyMonitor** monitors)
+{
+	if (GetDisplayConfigBufferSizes == NULL ||
+		QueryDisplayConfig == NULL ||
+		DisplayConfigGetDeviceInfo == NULL)
+	{
+		*monitors = NULL;
+		return 0;
+	}
+
+	WindowsFriendlyMonitor* fms = NULL;
+	LONG result, tries = 0;
+	UINT32 path_count, mode_count;
+	DISPLAYCONFIG_PATH_INFO* path_infos = NULL;
+	DISPLAYCONFIG_MODE_INFO* mode_infos = NULL;
+
+	do
+	{
+		if (tries++ > 5)
+			goto pos_error;
+		result = GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &path_count, &mode_count);
+		if (result != ERROR_SUCCESS)
+			goto pos_error;
+		path_infos = qn_realloc(path_infos, path_count, DISPLAYCONFIG_PATH_INFO);
+		mode_infos = qn_realloc(mode_infos, mode_count, DISPLAYCONFIG_MODE_INFO);
+		result = QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &path_count, path_infos, &mode_count, mode_infos, NULL);
+	} while (result == ERROR_INSUFFICIENT_BUFFER);
+
+	if (result != ERROR_SUCCESS)
+		goto pos_error;
+
+	fms = qn_alloc_zero(path_count, WindowsFriendlyMonitor);
+
+	for (UINT32 i = 0; i < path_count; i++)
+	{
+		DISPLAYCONFIG_SOURCE_DEVICE_NAME sourceName =
+		{
+			.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME,
+			.header.size = sizeof(DISPLAYCONFIG_SOURCE_DEVICE_NAME),
+			.header.adapterId = path_infos[i].targetInfo.adapterId,
+			.header.id = path_infos[i].sourceInfo.id,
+		};
+		result = DisplayConfigGetDeviceInfo(&sourceName.header);
+		if (result != ERROR_SUCCESS)
+			continue;
+
+		DISPLAYCONFIG_TARGET_DEVICE_NAME targetName =
+		{
+			.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME,
+			.header.size = sizeof(DISPLAYCONFIG_TARGET_DEVICE_NAME),
+			.header.adapterId = path_infos[i].targetInfo.adapterId,
+			.header.id = path_infos[i].targetInfo.id,
+		};
+		result = DisplayConfigGetDeviceInfo(&targetName.header);
+		if (result != ERROR_SUCCESS)
+			continue;
+
+		qn_wcscpy(fms[i].deviceName, sourceName.viewGdiDeviceName);
+		qn_u16to8(fms[i].friendlyName, QN_COUNTOF(fms[i].friendlyName) - 1, targetName.monitorFriendlyDeviceName, 0);
+	}
+
+	*monitors = fms;
+	goto pos_success;
+
+pos_error:
+	qn_free(fms);
+	*monitors = NULL;
+	path_count = 0;
+
+pos_success:
+	qn_free(path_infos);
+	qn_free(mode_infos);
+	return path_count;
+}
+
 // 모니터 검사
 static bool windows_detect_displays(void)
 {
 	StubMonitorCtnr	keep;
 	qn_pctnr_init_copy(&keep, &winStub.base.monitors);
+
+	WindowsFriendlyMonitor* friendly_monitors;
+	UINT32 friendly_count = windows_friendly_monitors(&friendly_monitors);
 
 	size_t i;
 	for (DWORD adapter = 0; ; adapter++)
@@ -714,6 +803,15 @@ static bool windows_detect_displays(void)
 				continue;
 
 			WindowsMonitor* mon = windows_get_monitor_info(&adapter_device, &display_device);
+			for (UINT32 friendly = 0; friendly < friendly_count; friendly++)
+			{
+				const WindowsFriendlyMonitor* name = &friendly_monitors[friendly];
+				if (qn_wcseqv(name->deviceName, adapter_device.DeviceName) == false)
+					continue;
+				if (name->friendlyName[0])
+					qn_strcpy(mon->base.name, name->friendlyName);
+				break;
+			}
 			stub_event_on_monitor((QgUdevMonitor*)mon, true,
 				QN_TMASK(adapter_device.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE), false);
 		}
@@ -732,6 +830,15 @@ static bool windows_detect_displays(void)
 				continue;
 
 			WindowsMonitor* mon = windows_get_monitor_info(&adapter_device, NULL);
+			for (UINT32 friendly = 0; friendly < friendly_count; friendly++)
+			{
+				const WindowsFriendlyMonitor* name = &friendly_monitors[friendly];
+				if (qn_wcseqv(name->deviceName, adapter_device.DeviceName) == false)
+					continue;
+				if (name->friendlyName[0])
+					qn_strcpy(mon->base.name, name->friendlyName);
+				break;
+			}
 			stub_event_on_monitor((QgUdevMonitor*)mon, true,
 				QN_TMASK(adapter_device.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE), false);
 		}
@@ -744,6 +851,8 @@ static bool windows_detect_displays(void)
 			stub_event_on_monitor(mon, false, false, false);
 	}
 	qn_pctnr_disp(&keep);
+
+	qn_free(friendly_monitors);
 
 	return qn_pctnr_is_have(&winStub.base.monitors);
 }
@@ -1242,7 +1351,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			const float ydpi = LOWORD(wp) / 96.0f;
 			// TODO: 여기에 DPI 변경 알림 이벤트 날리면 좋겠네
 #endif
-		} break;
+			} break;
 
 		case WM_GETDPISCALEDSIZE:
 		{
@@ -1261,13 +1370,13 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		default:
 			break;
-	}
+		}
 
 poswindows_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-}
+		}
 #pragma endregion 윈도우 메시지
 
 #endif // _WIN32 && !USE_SDL2

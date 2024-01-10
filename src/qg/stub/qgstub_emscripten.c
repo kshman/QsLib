@@ -43,6 +43,12 @@ bool stub_system_open(const char* title, const int display, const int width, con
 	//
 	stub_initialize((StubBase*)&emnStub, flags);
 
+	QmSize scrsize;
+	emscripten_get_screen_size(&scrsize.Width, &scrsize.Height);
+	QgUdevMonitor* monitor = qn_alloc_zero_1(QgUdevMonitor);
+	monitor->width = scrsize.Width;
+	monitor->height = scrsize.Height;
+
 	//
 	QmSize size;
 	emscripten_get_screen_size(&size.Width, &size.Height);

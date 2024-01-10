@@ -88,6 +88,14 @@ int main(void)
 	if (qg_open_rdh(NULL, "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 
+	for (int i=0; ; i++)
+	{
+		const QgUdevMonitor* mon = qg_get_monitor(i);
+		if (mon==NULL)
+			break;
+		qn_outputf("모니터%d: %s (%d,%d):(%d,%d)", i, mon->name, mon->x, mon->y, mon->width, mon->height);
+	}
+
 	LoopData data = { .acc = 0.0f, .dir = 1.0f };
 	qg_register_event_callback(event_callback, &data);
 	qg_main_loop(loop, &data);

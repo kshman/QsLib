@@ -44,6 +44,9 @@ DEF_WIN_FUNC(BOOL, ChangeWindowMessageFilterEx, (HWND, UINT, DWORD, PCHANGEFILTE
 DEF_WIN_FUNC(BOOL, UnhookWindowsHookEx, (HHOOK hhk))
 DEF_WIN_FUNC(HHOOK, SetWindowsHookExW, (int idHook, HOOKPROC lpfn, HINSTANCE hmod, DWORD dwThreadId))
 DEF_WIN_FUNC(BOOL, GetKeyboardState, (PBYTE))
+DEF_WIN_FUNC(LONG, GetDisplayConfigBufferSizes, (UINT32 flags, UINT32* numPathArrayElements, UINT32* numModeInfoArrayElements))
+DEF_WIN_FUNC(LONG, QueryDisplayConfig, (UINT32 flags, UINT32* numPathArrayElements, DISPLAYCONFIG_PATH_INFO* pathArray, UINT32* numModeInfoArrayElements, DISPLAYCONFIG_MODE_INFO* modeInfoArray, DISPLAYCONFIG_TOPOLOGY_ID* currentTopologyId))
+DEF_WIN_FUNC(LONG, DisplayConfigGetDeviceInfo, (DISPLAYCONFIG_DEVICE_INFO_HEADER* requestPacket))
 DEF_WIN_DLL_END
 
 // SHCORE
