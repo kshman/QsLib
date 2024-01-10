@@ -44,7 +44,7 @@
     <ClCompile>
       <LanguageStandard>Default</LanguageStandard>
       <PrecompiledHeaderCompileAs>CompileAsC</PrecompiledHeaderCompileAs>
-      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_ES</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_ES;_DEBUG</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
       <PrecompiledHeader>
       </PrecompiledHeader>

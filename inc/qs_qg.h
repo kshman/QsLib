@@ -271,7 +271,7 @@ typedef enum QgFeature
 	QGFEATURE_ENABLE_DROP = QN_BIT(2),						/// @brief 드래그 드랍 사용
 	QGFEATURE_ENABLE_SYSWM = QN_BIT(3),						/// @brief 시스템 메시지 받기
 	QGFEATURE_ENABLE_IDLE = QN_BIT(4),						/// @brief 비활성 대기 상태 사용
-	QGFEATURE_ENABLE_GRAB_MOUSE = QN_BIT(5),				/// @brief 마우스 잡기
+	QGFEATURE_RELATIVE_MOUSE = QN_BIT(5),				/// @brief 마우스 잡기
 	QGFEATURE_REMOVE_EVENTS = QN_BIT(6),					/// @brief 루프 때 사용하지 않은 이벤트를 삭제한다
 	// 렌더러 종류 (24~31)
 	QGRENDERER_ES3 = QN_BIT(29),

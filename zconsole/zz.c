@@ -7,11 +7,11 @@ typedef struct LoopData
 	float dir;
 } LoopData;
 
-bool loop(void* loop_data)
+void loop(void* loop_data)
 {
 	LoopData* data = loop_data;
 
-	float f = qg_get_advance();
+	float f = qg_get_advance() / 5.0f;
 	data->acc += f * data->dir;
 	if (data->acc > 1.0f)
 	{
@@ -32,8 +32,6 @@ bool loop(void* loop_data)
 		qg_rdh_end();
 		qg_rdh_flush();
 	}
-
-	return true;
 }
 
 int event_callback(void* event_data, QgEventType event_type, const QgEvent* event_param)
@@ -43,6 +41,7 @@ int event_callback(void* event_data, QgEventType event_type, const QgEvent* even
 
 	if (event_type == QGEV_MOUSEMOVE)
 	{
+		//qn_outputf("마우스 이동 => %d, %d", event_param->mmove.pt.X, event_param->mmove.pt.Y);
 	}
 	else if (event_type == QGEV_WINDOW)
 	{
@@ -58,7 +57,9 @@ int event_callback(void* event_data, QgEventType event_type, const QgEvent* even
 			data->acc = 0.0f;
 			data->dir = 1.0f;
 		}
-		qn_outputf("STUB EVENT => %d:%s", event_type, evstr);
+		const char* key_name = qg_qik_str(event_param->key.key);
+		if (key_name)
+			qn_outputf("키 눌림 => <%s>(%X)", key_name, event_param->key.key);
 	}
 	else if (event_type == QGEV_TEXTINPUT && event_param->text.len > 0)
 	{
@@ -83,7 +84,7 @@ int main(void)
 {
 	qn_runtime();
 
-	int flags = /*QGFLAG_BORDERLESS |*/ QGFLAG_RESIZABLE | QGFLAG_VSYNC | QGFLAG_MSAA | QGFLAG_TEXT;
+	int flags = /*QGFLAG_BORDERLESS |*/ QGFLAG_RESIZABLE | QGFLAG_VSYNC | QGFLAG_MSAA /*| QGFLAG_TEXT*/;
 	int features = QGFEATURE_NONE;
 	if (qg_open_rdh(NULL, "RDH", 0, 0, 0, flags, features) == false)
 		return -1;

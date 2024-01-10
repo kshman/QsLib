@@ -21,8 +21,8 @@ static const bool qik_key_enables[] =
 	/*70*/ true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
 	/*80*/ true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false,
 	/*90*/ true,  true, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
-	/*A0*/ true,  true,  true, true, true, true, false, false, false, false, false, false, false, false, false, false,
-	/*B0*/ false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true,
+	/*A0*/ true,  true,  true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+	/*B0*/ true, true, true, true, false, false, false, false, false, false, true, true, true, true, true, true,
 	/*C0*/ true, false,  false, false, false, false, false, false, false, false, false, false, false, false, false, false,
 	/*D0*/ false,false, false, false, false, false, false, false, false, false, false, true, true,  true, true, false,
 	/*E0*/ false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
@@ -38,8 +38,7 @@ bool qg_qik_usable(const QikKey key)
 //
 const char* qg_qik_str(const QikKey key)
 {
-#ifndef __EMSCRIPTEN__
-	static const char* s_key_names[] =
+	static const char* key_names[] =
 	{
 		/*00*/ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "BACK", "TAB", NULL, NULL, NULL, "RETURN", NULL, NULL,
 		/*10*/ NULL, NULL, NULL, "PAUSE", "CAPSLOCK", NULL, NULL, NULL, NULL, NULL, NULL, "ESCAPE", NULL, NULL, NULL, NULL,
@@ -51,24 +50,20 @@ const char* qg_qik_str(const QikKey key)
 		/*70*/ "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "F13", "F14", "F15", "F16",
 		/*80*/ "F17", "F18", "F19", "F20", "F21", "F22", "F23", "F24", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 		/*90*/ "NUMLOCK", "SCRL", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-		/*A0*/ "LSHIFT", "RSHIFT", "LCTRL", "RCTRL", "LALT", "RALT", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-		/*B0*/ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "SEMI", "ADD", "COMMA", "SUB", "DOT", "SLASH",
+		/*A0*/ "LSHIFT", "RSHIFT", "LCTRL", "RCTRL", "LALT", "RALT", "NAVBACK", "NAVFWD", "NAVREL", "NAVSTOP", "NAVSRCH", "NAVFAV", "NAVHOM", "VOLMUT", "VOLDN", "VOLUP",
+		/*B0*/ "MDNEXT", "MDPREV", "MDSTOP", "MDPLAY", NULL, NULL, NULL, NULL, NULL, NULL, "SEMI", "ADD", "COMMA", "SUB", "DOT", "SLASH",
 		/*C0*/ "TILT", NULL,  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 		/*D0*/ NULL,NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "LBR", "BACKSLASH", "RBR", "QUOTE", NULL,
 		/*E0*/ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 		/*F0*/ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	};
-	return s_key_names[(byte)key];
-#else
-	return NULL;
-#endif
+	return key_names[(byte)key];
 }
 
 //
 const char* qg_qim_str(const QimButton button)
 {
-#ifndef __EMSCRIPTEN__
-	static const char* s_button_names[] =
+	static const char* mouse_button_names[] =
 	{
 		NULL,
 		"LEFT",
@@ -77,17 +72,14 @@ const char* qg_qim_str(const QimButton button)
 		"X1",
 		"X2"
 	};
-	return s_button_names[(size_t)button < QN_COUNTOF(s_button_names) ? button : 0];
-#else
-	return NULL;
-#endif
+	return mouse_button_names[(nuint)button < QN_COUNTOF(mouse_button_names) ? button : 0];
 }
 
 //
 const char* qg_qic_str(const QicButton button)
 {
 #ifndef __EMSCRIPTEN__
-	static const char* s_button_names[] =
+	static const char* controller_button_names[] =
 	{
 		NULL,
 		"UP",
@@ -105,7 +97,7 @@ const char* qg_qic_str(const QicButton button)
 		"X",
 		"Y"
 	};
-	return s_button_names[(size_t)button < QN_COUNTOF(s_button_names) ? button : 0];
+	return controller_button_names[(nuint)button < QN_COUNTOF(controller_button_names) ? button : 0];
 #else
 	return NULL;
 #endif
@@ -375,18 +367,20 @@ QikKey xkbsym_to_qik(uint32_t sym)
 //
 const char* qg_string_event(const QgEventType ev)
 {
-#ifndef __EMSCRIPTEN__
 	static struct EventMap
 	{
-		size_t			ev;
+		nuint			ev;
 		const char*		str;
 	}
-	s_map[] =
+	event_map[] =
 	{
 #define DEF_EVENT(ev) { QGEV_##ev, #ev }
 		DEF_EVENT(NONE),
+		DEF_EVENT(SYSWM),
 		DEF_EVENT(ACTIVE),
 		DEF_EVENT(LAYOUT),
+		DEF_EVENT(ENTER),
+		DEF_EVENT(LEAVE),
 		DEF_EVENT(MOUSEMOVE),
 		DEF_EVENT(MOUSEDOWN),
 		DEF_EVENT(MOUSEUP),
@@ -396,7 +390,6 @@ const char* qg_string_event(const QgEventType ev)
 		DEF_EVENT(KEYUP),
 		DEF_EVENT(TEXTINPUT),
 		DEF_EVENT(WINDOW),
-		DEF_EVENT(SYSWM),
 		DEF_EVENT(DROPBEGIN),
 		DEF_EVENT(DROPEND),
 		DEF_EVENT(DROPFILE),
@@ -405,29 +398,25 @@ const char* qg_string_event(const QgEventType ev)
 		{ 0, NULL },
 #undef DEF_EVENT
 	};
-	for (const struct EventMap* p = s_map; p->str != NULL; p++)
+	for (const struct EventMap* p = event_map; p->str != NULL; p++)
 	{
-		if (p->ev == (size_t)ev)
+		if (p->ev == (nuint)ev)
 			return p->str;
 	}
 	static char unknown_text[32];
 	qn_snprintf(unknown_text, 32 - 1, "UNKNOWN(%d)", ev);
 	return unknown_text;
-#else
-	return NULL;
-#endif
 }
 
 //
 const char* qg_string_window_event(const QgWindowEventType wev)
 {
-#ifndef __EMSCRIPTEN__
 	static struct WindowEventMap
 	{
-		size_t				wev;
+		nuint				wev;
 		const char*			str;
 	}
-	s_map[] =
+	window_event_map[] =
 	{
 #define DEF_WINDOW_EVENT(ev) { QGWEV_##ev, #ev }
 		DEF_WINDOW_EVENT(NONE),
@@ -445,17 +434,14 @@ const char* qg_string_window_event(const QgWindowEventType wev)
 		{ 0, NULL },
 #undef DEF_WINDOW_EVENT
 	};
-	for (const struct WindowEventMap* p = s_map; p->str != NULL; p++)
+	for (const struct WindowEventMap* p = window_event_map; p->str != NULL; p++)
 	{
-		if (p->wev == (size_t)wev)
+		if (p->wev == (nuint)wev)
 			return p->str;
 	}
 	static char unknown_text[32];
 	qn_snprintf(unknown_text, 32 - 1, "UNKNOWN(%d)", wev);
 	return unknown_text;
-#else
-	return NULL;
-#endif
 }
 
 //

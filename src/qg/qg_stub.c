@@ -375,11 +375,11 @@ int qg_feature(int features, bool enable)
 		count++;
 		QN_SMASK(&self->features, QGFEATURE_ENABLE_IDLE, enable);
 	}
-	if (QN_TMASK(features, QGFEATURE_ENABLE_GRAB_MOUSE))
+	if (QN_TMASK(features, QGFEATURE_RELATIVE_MOUSE))
 	{
 		count++;
 		const bool ret = stub_system_grab_mouse(enable);
-		QN_SMASK(&self->features, QGFEATURE_ENABLE_GRAB_MOUSE, ret);
+		QN_SMASK(&self->features, QGFEATURE_RELATIVE_MOUSE, ret);
 	}
 	if (QN_TMASK(features, QGFEATURE_REMOVE_EVENTS))
 	{

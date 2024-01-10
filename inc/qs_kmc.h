@@ -18,9 +18,16 @@ typedef enum QikKey
 	QIK_NONE = 0,
 	QIK_BS = 0x08,											// BACKSPACE
 	QIK_TAB = 0x09,
+	QIK_CLEAR = 0x0C,										// NUM5 without NUMLOCK
 	QIK_RETURN = 0x0D,
 	QIK_PAUSE = 0x13,
 	QIK_CAPSLOCK = 0x14,
+	QIK_HANGUL = 0x15,
+	QIK_KANA = 0x15,
+	QIK_JUNJA = 0x17,
+	QIK_FINAL = 0x18,
+	QIK_HANJA = 0x19,
+	QIK_KANJI = 0x19,
 	QIK_ESC = 0x1B,
 	QIK_SPACE = 0x20,
 	QIK_PGUP = 0x21,										// PRIOR PAGE
@@ -34,6 +41,7 @@ typedef enum QikKey
 	QIK_PRTSCR = 0x2C,										// SNAPSHOT
 	QIK_INS = 0x2D,											// INSERT
 	QIK_DEL = 0x2E,											// DELETE
+	QIK_HELP = 0x2F,
 	QIK_0 = 0x30,
 	QIK_1 = 0x31,
 	QIK_2 = 0x32,
@@ -73,6 +81,7 @@ typedef enum QikKey
 	QIK_LWIN = 0x5B,										// LEFT WIN / META / COMMAND
 	QIK_RWIN = 0x5C,										// RIGHT WIN / META / COMMAND
 	QIK_APPS = 0x5D,
+	QIK_SLEEP = 0x5F,
 	QIK_NUM_0 = 0x60,
 	QIK_NUM_1 = 0x61,
 	QIK_NUM_2 = 0x62,
@@ -118,9 +127,23 @@ typedef enum QikKey
 	QIK_LSHIFT = 0xA0,										// LEFT SHIFT
 	QIK_RSHIFT = 0xA1,										// RIGHT SHIFT
 	QIK_LCTRL = 0xA2,										// LEFT CONTROL
-	QIK_RCTRL = 0xA3,										// RIGHT CONTROL
+	QIK_RCTRL = 0xA3,										// RIGHT CONTROL / KAIOS KEYPAD HASH
 	QIK_LALT = 0xA4,										// LEFT ALT / MENU / OPTION
 	QIK_RALT = 0xA5,										// RIGHT ALT / MENU / OPTION
+	QIK_NAV_BACK = 0xA6,									// NAVIGATE BACK
+	QIK_NAV_FORWARD = 0xA7,									// NAVIGATE FORWARD
+	QIK_NAV_REFRESH = 0xA8,									// NAVIGATE REFRESH / RELOAD
+	QIK_NAV_STOP = 0xA9,									// NAVIGATE STOP
+	QIK_NAV_SEARCH = 0xAA,									// NAVIGATE SEARCH / KAIOS KEYPAD MULTIPLY
+	QIK_NAV_FAVORITES = 0xAB,								// NAVIGATE FAVORITES
+	QIK_NAV_HOME = 0xAC,									// NAVIGATE HOME
+	QIK_VOL_MUTE = 0xAD,									// VOLUME MUTE
+	QIK_VOL_DOWN = 0xAE,									// VOLUME DOWN
+	QIK_VOL_UP = 0xAF,										// VOLUME UP
+	QIK_MEDIA_NEXT = 0xB0,									// MEDIA NEXT
+	QIK_MEDIA_PREV = 0xB1,									// MEDIA PREVIOUS
+	QIK_MEDIA_STOP = 0xB2,									// MEDIA STOP
+	QIK_MEDIA_PLAY = 0xB3,									// MEDIA PLAY / PAUSE
 	QIK_SEMI = 0xBA,										// ;:
 	QIK_ADD = 0xBB,											// =+
 	QIK_COMMA = 0xBC,										// ,<
