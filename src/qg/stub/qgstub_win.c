@@ -630,56 +630,6 @@ static void windows_set_dpi_awareness(void)
 	SetProcessDPIAware();
 }
 
-// 모니터 핸들 얻기 콜백
-static BOOL CALLBACK windows_enum_display_callback(HMONITOR monitor, HDC dc, RECT* rect, LPARAM lp)
-{
-	QN_DUMMY(dc);
-	QN_DUMMY(rect);
-	MONITORINFOEX mi = { .cbSize = sizeof(mi) };	// NOLINT
-	if (GetMonitorInfo(monitor, (LPMONITORINFO)&mi))
-	{
-		WindowsMonitor* wm = (WindowsMonitor*)lp;
-		if (qn_wcseqv(mi.szDevice, wm->adapter))
-			wm->handle = monitor;
-	}
-	return TRUE;
-}
-
-// 모니터 검출
-static WindowsMonitor* windows_get_monitor_info(DISPLAY_DEVICE* adapter_device, DISPLAY_DEVICE* display_device)
-{
-	WindowsMonitor* mon = qn_alloc_zero_1(WindowsMonitor);
-	qn_wcsncpy(mon->adapter, adapter_device->DeviceName, QN_COUNTOF(mon->adapter) - 1);
-	wchar* name;
-	if (display_device == NULL)
-		name = adapter_device->DeviceString;
-	else
-	{
-		name = display_device->DeviceString;
-		qn_wcsncpy(mon->display, display_device->DeviceName, QN_COUNTOF(mon->display) - 1);
-	}
-	qn_u16to8(mon->base.name, QN_COUNTOF(mon->base.name), name, 0);
-
-	DEVMODE dm = { .dmSize = sizeof(DEVMODE) };
-	EnumDisplaySettings(adapter_device->DeviceName, ENUM_CURRENT_SETTINGS, &dm);
-
-	const HDC hdc = CreateDC(L"DISPLAY", adapter_device->DeviceName, NULL, NULL);
-	mon->base.mmwidth = (uint)GetDeviceCaps(hdc, HORZSIZE);
-	mon->base.mmheight = (uint)GetDeviceCaps(hdc, VERTSIZE);
-	DeleteDC(hdc);
-
-	mon->base.x = dm.dmPosition.x;
-	mon->base.y = dm.dmPosition.y;
-	mon->base.width = (uint)dm.dmPelsWidth;
-	mon->base.height = (uint)dm.dmPelsHeight;
-
-	RECT rect;
-	SetRect(&rect, dm.dmPosition.x, dm.dmPosition.y,
-		(int)dm.dmPosition.x + (int)dm.dmPelsWidth, (int)dm.dmPosition.y + (int)dm.dmPelsHeight);
-	EnumDisplayMonitors(NULL, &rect, windows_enum_display_callback, (LPARAM)mon);
-	return mon;
-}
-
 // 친숙한 모니터 이름 
 typedef struct WindowsFriendlyMonitor
 {
@@ -690,6 +640,8 @@ typedef struct WindowsFriendlyMonitor
 // 모니터 이름 얻기
 static UINT32 windows_friendly_monitors(WindowsFriendlyMonitor** monitors)
 {
+	// https://learn.microsoft.com/ko-kr/windows/win32/api/winuser/nf-winuser-querydisplayconfig
+	// 윈도우 7 이상만. 요즘 이게 안되면 이상하지
 	if (GetDisplayConfigBufferSizes == NULL ||
 		QueryDisplayConfig == NULL ||
 		DisplayConfigGetDeviceInfo == NULL)
@@ -763,6 +715,70 @@ pos_success:
 	return path_count;
 }
 
+// 모니터 핸들 얻기 콜백
+static BOOL CALLBACK windows_enum_display_callback(HMONITOR monitor, HDC dc, RECT* rect, LPARAM lp)
+{
+	QN_DUMMY(dc);
+	QN_DUMMY(rect);
+	MONITORINFOEX mi = { .cbSize = sizeof(mi) };	// NOLINT
+	if (GetMonitorInfo(monitor, (LPMONITORINFO)&mi))
+	{
+		WindowsMonitor* wm = (WindowsMonitor*)lp;
+		if (qn_wcseqv(mi.szDevice, wm->adapter))
+			wm->handle = monitor;
+	}
+	return TRUE;
+}
+
+// 모니터 검출
+static WindowsMonitor* windows_get_monitor_info(DISPLAY_DEVICE* adapter_device, DISPLAY_DEVICE* display_device,
+	WindowsFriendlyMonitor* friendly_monitors, UINT32 friendly_count)
+{
+	WindowsMonitor* mon = qn_alloc_zero_1(WindowsMonitor);
+	qn_wcsncpy(mon->adapter, adapter_device->DeviceName, QN_COUNTOF(mon->adapter) - 1);
+
+	for (UINT i = 0; i < friendly_count; i++)
+	{
+		const WindowsFriendlyMonitor* name = &friendly_monitors[i];
+		if (qn_wcseqv(name->deviceName, adapter_device->DeviceName) == false)
+			continue;
+		if (*name->friendlyName)
+			qn_strcpy(mon->base.name, name->friendlyName);
+		break;
+	}
+	if (*mon->base.name == '\0')
+	{
+		wchar* name;
+		if (display_device == NULL)
+			name = adapter_device->DeviceString;
+		else
+		{
+			name = display_device->DeviceString;
+			qn_wcsncpy(mon->display, display_device->DeviceName, QN_COUNTOF(mon->display) - 1);
+		}
+		qn_u16to8(mon->base.name, QN_COUNTOF(mon->base.name), name, 0);
+	}
+
+	DEVMODE dm = { .dmSize = sizeof(DEVMODE) };
+	EnumDisplaySettings(adapter_device->DeviceName, ENUM_CURRENT_SETTINGS, &dm);
+
+	const HDC hdc = CreateDC(L"DISPLAY", adapter_device->DeviceName, NULL, NULL);
+	mon->base.mmwidth = (uint)GetDeviceCaps(hdc, HORZSIZE);
+	mon->base.mmheight = (uint)GetDeviceCaps(hdc, VERTSIZE);
+	DeleteDC(hdc);
+
+	mon->base.x = dm.dmPosition.x;
+	mon->base.y = dm.dmPosition.y;
+	mon->base.width = (uint)dm.dmPelsWidth;
+	mon->base.height = (uint)dm.dmPelsHeight;
+
+	RECT rect;
+	SetRect(&rect, dm.dmPosition.x, dm.dmPosition.y,
+		(int)dm.dmPosition.x + (int)dm.dmPelsWidth, (int)dm.dmPosition.y + (int)dm.dmPelsHeight);
+	EnumDisplayMonitors(NULL, &rect, windows_enum_display_callback, (LPARAM)mon);
+	return mon;
+}
+
 // 모니터 검사
 static bool windows_detect_displays(void)
 {
@@ -802,16 +818,7 @@ static bool windows_detect_displays(void)
 			if (i < qn_pctnr_count(&keep))
 				continue;
 
-			WindowsMonitor* mon = windows_get_monitor_info(&adapter_device, &display_device);
-			for (UINT32 friendly = 0; friendly < friendly_count; friendly++)
-			{
-				const WindowsFriendlyMonitor* name = &friendly_monitors[friendly];
-				if (qn_wcseqv(name->deviceName, adapter_device.DeviceName) == false)
-					continue;
-				if (name->friendlyName[0])
-					qn_strcpy(mon->base.name, name->friendlyName);
-				break;
-			}
+			WindowsMonitor* mon = windows_get_monitor_info(&adapter_device, &display_device, friendly_monitors, friendly_count);
 			stub_event_on_monitor((QgUdevMonitor*)mon, true,
 				QN_TMASK(adapter_device.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE), false);
 		}
@@ -829,16 +836,7 @@ static bool windows_detect_displays(void)
 			if (i < qn_pctnr_count(&keep))
 				continue;
 
-			WindowsMonitor* mon = windows_get_monitor_info(&adapter_device, NULL);
-			for (UINT32 friendly = 0; friendly < friendly_count; friendly++)
-			{
-				const WindowsFriendlyMonitor* name = &friendly_monitors[friendly];
-				if (qn_wcseqv(name->deviceName, adapter_device.DeviceName) == false)
-					continue;
-				if (name->friendlyName[0])
-					qn_strcpy(mon->base.name, name->friendlyName);
-				break;
-			}
+			WindowsMonitor* mon = windows_get_monitor_info(&adapter_device, NULL, friendly_monitors, friendly_count);
 			stub_event_on_monitor((QgUdevMonitor*)mon, true,
 				QN_TMASK(adapter_device.StateFlags, DISPLAY_DEVICE_PRIMARY_DEVICE), false);
 		}
@@ -1351,7 +1349,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			const float ydpi = LOWORD(wp) / 96.0f;
 			// TODO: 여기에 DPI 변경 알림 이벤트 날리면 좋겠네
 #endif
-			} break;
+		} break;
 
 		case WM_GETDPISCALEDSIZE:
 		{
@@ -1370,13 +1368,13 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		default:
 			break;
-		}
+	}
 
 poswindows_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-		}
+}
 #pragma endregion 윈도우 메시지
 
 #endif // _WIN32 && !USE_SDL2
