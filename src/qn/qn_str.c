@@ -6,12 +6,8 @@
 // ReSharper disable CppParameterMayBeConst
 
 #include "pch.h"
-#include "qs_qn.h"
 #include <ctype.h>
 #include <wctype.h>
-#ifdef __GNUC__
-#include <strings.h>
-#endif
 #ifndef __EMSCRIPTEN__
 #include "zlib/zlib.h"
 #endif
@@ -1184,6 +1180,30 @@ const char* qn_strbrk(const char* p, const char* c)
 }
 
 //
+char* qn_strchr(const char* p, int ch)
+{
+#if defined _MSC_VER || defined __GNUC__
+	return strchr(p, ch);
+#else
+	while (*p && *p != (char)ch) p++;
+	return (*p == (char)ch) ? (char*)p : NULL;
+#endif
+}
+
+//
+char* qn_strrchr(const char* p, int ch)
+{
+#if defined _MSC_VER || defined __GNUC__
+	return strrchr(p, ch);
+#else
+	char* s = (char*)p;
+	while (*s++);
+	while (--s != p && *s != (char)ch);
+	return (*s == (char)ch) ? (char*)s : NULL;
+#endif
+}
+
+//
 char* qn_strmid(char* restrict dest, const char* restrict src, const size_t pos, const size_t len)
 {
 	const size_t size = strlen(src);
@@ -1866,6 +1886,30 @@ const wchar* qn_wcsbrk(const wchar* p, const wchar* c)
 		p++;
 	}
 	return NULL;
+#endif
+}
+
+//
+wchar* k_wcschr(const wchar* p, wchar ch)
+{
+#if defined _MSC_VER || defined __GNUC__
+	return wcschr(p, ch);
+#else
+	while (*p && *p != (wchar)ch) p++;
+	return (*p == (wchar)ch) ? (wchar*)p : NULL;
+#endif
+}
+
+//
+wchar* k_wcsrchr(const wchar* p, wchar ch)
+{
+#if defined _MSC_VER || defined __GNUC__
+	return wcsrchr(p, ch);
+#else
+	wchar* s = (wchar*)p;
+	while (*s++) {}
+	while (--s != p && *s != (wchar)ch) {}
+	return (*s == (wchar)ch) ? (wchar*)s : NULL;
 #endif
 }
 

@@ -6,11 +6,8 @@
 // ReSharper disable CppParameterMayBeConst
 
 #include "pch.h"
-#include "qs_qn.h"
-#include <stdlib.h>
 #ifdef _QN_UNIX_
 #include <unistd.h>
-#include <stdio.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <dlfcn.h>

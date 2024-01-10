@@ -754,6 +754,12 @@ QSAPI bool qn_strieqv(const char* p1, const char* p2);
 /// @retval NULL 못 찾았다
 QSAPI const char* qn_strbrk(const char* p, const char* c);
 
+/// @brief 문자열에서 문자의 위치를 찾는다
+QSAPI char* qn_strchr(const char* p, int ch);
+
+/// @brief 문자열에서 뒤에서부터 문자의 위치를 찾는다
+QSAPI char* qn_strrchr(const char* p, int ch);
+
 /// @brief 문자열을 특정 위치에서 얻는다
 /// @param[in,out] dest 얻은 문자열 버퍼
 /// @param[in] src 원본 문자열
@@ -996,6 +1002,12 @@ QSAPI bool qn_wcsieqv(const wchar* p1, const wchar* p2);
 /// @return 찾을 경우 대상 문자열의 위치 포인터
 /// @retval NULL 못 찾았다
 QSAPI const wchar* qn_wcsbrk(const wchar* p, const wchar* c);
+
+/// @brief 문자열에서 문자의 위치를 찾는다
+QSAPI wchar* qn_wcschr(const wchar* p, wchar ch);
+
+/// @brief 문자열에서 뒤에서부터 문자의 위치를 찾는다
+QSAPI wchar* qn_wcsrchr(const wchar* p, wchar ch);
 
 /// @brief 문자열을 특정 위치에서 얻는다
 /// @param[in,out] dest 얻은 문자열 버퍼

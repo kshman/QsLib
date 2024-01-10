@@ -4,8 +4,7 @@
 //
 
 #include "pch.h"
-#if defined __EMSCRIPTEN__ && !defined USE_SDL2
-#include "qs_qn.h"
+#if defined _QN_EMSCRIPTEN_ && !defined USE_SDL2
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include "qg/qg_stub.h"
@@ -36,18 +35,21 @@ typedef struct EmscriptenStub
 EmscriptenStub emnStub;
 
 //
-bool stub_system_open(const char* title, const int display, const int width, const int height, QgFlag flags)
+bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags, QgFeature features)
 {
 	qn_zero_1(&emnStub);
 
 	//
 	stub_initialize((StubBase*)&emnStub, flags);
 
+	// 가짜 모니터
 	QmSize scrsize;
 	emscripten_get_screen_size(&scrsize.Width, &scrsize.Height);
 	QgUdevMonitor* monitor = qn_alloc_zero_1(QgUdevMonitor);
+	qn_strcpy(monitor->name, "webbrowser canvas");
 	monitor->width = scrsize.Width;
 	monitor->height = scrsize.Height;
+	stub_event_on_monitor(monitor, true, true, false);
 
 	//
 	QmSize size;

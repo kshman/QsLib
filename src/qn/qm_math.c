@@ -4,8 +4,6 @@
 //
 
 #include "pch.h"
-#include "qs_qn.h"
-#include "qs_math.h"
 
 #if defined QM_USE_SSE
 #define _mm_ror_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((byte)((i)+3)%4,(byte)((i)+2)%4,(byte)((i)+1)%4,(byte)((i)+0)%4))) : (vec))
@@ -335,7 +333,7 @@ void qm_quat_mat_extend(QmQuat* pq, const QmMat4* rot)
 	if (diag > 0.0f)
 	{
 		// 진단값에서 안전치
-		const float scale = sqrtf(diag) * 2.0f;
+		const float scale = qm_sqrtf(diag) * 2.0f;
 		const float iscl = 1.0f / scale;
 
 		q.X = (rot->_23 - rot->_32) * iscl;
@@ -346,7 +344,7 @@ void qm_quat_mat_extend(QmQuat* pq, const QmMat4* rot)
 	else
 	{
 		// 필요한 스케일 만들기
-		const float scale = sqrtf(1.0f + rot->_11 - rot->_22 - rot->_33) * 2.0f;
+		const float scale = qm_sqrtf(1.0f + rot->_11 - rot->_22 - rot->_33) * 2.0f;
 		const float iscl = 1.0f / scale;
 
 		if (rot->_11 > rot->_22 && rot->_11 > rot->_33)
@@ -377,7 +375,7 @@ void qm_quat_mat_extend(QmQuat* pq, const QmMat4* rot)
 		*pq = q;
 	else
 	{
-		norm = 1.0f / sqrtf(norm);
+		norm = 1.0f / qm_sqrtf(norm);
 		pq->X = q.X * norm;
 		pq->Y = q.Y * norm;
 		pq->Z = q.Z * norm;

@@ -193,13 +193,13 @@ static bool shed_event_restore(QgEvent* e)
 
 	if (qn_nodelist_is_have(&shed_event.prior))
 	{
-		EventNode* node = qn_nodelist_first(&shed_event.prior);
+		const EventNode* node = qn_nodelist_first(&shed_event.prior);
 		*e = node->event;
 		ret = true;
 	}
 	else if (qn_nodelist_is_have(&shed_event.queue))
 	{
-		EventNode* node = qn_nodelist_first(&shed_event.queue);
+		const EventNode* node = qn_nodelist_first(&shed_event.queue);
 		*e = node->event;
 		ret = true;
 	}
@@ -322,7 +322,7 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 //
 void qg_close_stub(void)
 {
-	StubBase* self = qg_instance_stub;
+	const StubBase* self = qg_instance_stub;
 	qn_ret_if_fail(self);
 
 	stub_system_finalize();
@@ -350,19 +350,19 @@ int qg_feature(int features, bool enable)
 	if (QN_TMASK(features, QGFEATURE_DISABLE_ACS))
 	{
 		count++;
-		bool ret = stub_system_disable_acs(enable);
+		const bool ret = stub_system_disable_acs(enable);
 		QN_SMASK(&self->features, QGFEATURE_DISABLE_ACS, ret);
 	}
 	if (QN_TMASK(features, QGFEATURE_DISABLE_SCRSAVE))
 	{
 		count++;
-		bool ret = stub_system_disable_scr_save(enable);
+		const bool ret = stub_system_disable_scr_save(enable);
 		QN_SMASK(&self->features, QGFEATURE_DISABLE_SCRSAVE, ret);
 	}
 	if (QN_TMASK(features, QGFEATURE_ENABLE_DROP))
 	{
 		count++;
-		bool ret = stub_system_enable_drop(enable);
+		const bool ret = stub_system_enable_drop(enable);
 		QN_SMASK(&self->features, QGFEATURE_ENABLE_DROP, ret);
 	}
 	if (QN_TMASK(features, QGFEATURE_ENABLE_SYSWM))
@@ -378,7 +378,7 @@ int qg_feature(int features, bool enable)
 	if (QN_TMASK(features, QGFEATURE_ENABLE_GRAB_MOUSE))
 	{
 		count++;
-		bool ret = stub_system_grab_mouse(enable);
+		const bool ret = stub_system_grab_mouse(enable);
 		QN_SMASK(&self->features, QGFEATURE_ENABLE_GRAB_MOUSE, ret);
 	}
 	if (QN_TMASK(features, QGFEATURE_REMOVE_EVENTS))
@@ -547,7 +547,7 @@ static void qg_poll_check_shed(void)
 static void qg_dispatch_event(const QgEvent* ev)
 {
 	const StubBase* stub = qg_instance_stub;
-	QgEventType type = ev->ev;
+	const QgEventType type = ev->ev;
 	qn_ctn_name_node(StubListEventCb)* node;
 	qn_list_foreach(StubListEventCb, &stub->callbacks, node)
 	{
@@ -602,7 +602,7 @@ static void qg_emscripten_main_loop()
 		return;
 	}
 	qg_dispatch();
-	funcparam_t* fp = &qg_instance_stub->main_delegate;
+	const funcparam_t* fp = &qg_instance_stub->main_delegate;
 	fp->func(fp->data);
 }
 #endif
@@ -657,7 +657,7 @@ bool qg_unregister_event_callback(nint key)
 	{
 		if (node->DATA.key != (size_t)key)
 			continue;
-		ret=true;
+		ret = true;
 		break;
 	}
 
@@ -807,7 +807,7 @@ bool stub_event_on_monitor(QgUdevMonitor * monitor, bool connected, bool primary
 	if (broadcast)
 	{
 		QgUdevMonitor* another = qn_memdup(monitor, sizeof(QgUdevMonitor));
-		QgEvent e = {
+		const QgEvent e = {
 			.monitor.ev = QGEV_MONITOR,
 			.monitor.connectd = connected,
 			.monitor.monitor = another
@@ -863,7 +863,7 @@ bool stub_event_on_focus(bool enter)
 	StubBase* stub = qg_instance_stub;
 	qn_val_if_fail(QN_TMASK(stub->flags, QGFLAG_FOCUS), 0);
 
-	bool prev = QN_TMASK(stub->stats, QGSSTT_FOCUS);
+	const bool prev = QN_TMASK(stub->stats, QGSSTT_FOCUS);
 	if (prev != enter)
 	{
 		QN_SMASK(&stub->stats, QGSSTT_FOCUS, enter);
@@ -1144,8 +1144,8 @@ bool stub_event_on_mouse_wheel(const float x, const float y, const bool directio
 	}
 	um->wheel.accm.X += x;
 	const int ix =
-		(um->wheel.accm.X > 0.0f) ? (int)floorf(um->wheel.accm.X) :		// NOLINT
-		(um->wheel.accm.X < 0.0f) ? (int)ceilf(um->wheel.accm.X) : 0;	// NOLINT
+		(um->wheel.accm.X > 0.0f) ? (int)QM_FLOORF(um->wheel.accm.X) :		// NOLINT
+		(um->wheel.accm.X < 0.0f) ? (int)QM_CEILF(um->wheel.accm.X) : 0;	// NOLINT
 	um->wheel.accm.X -= (float)ix;
 
 	if (y > 0.0f)
@@ -1160,8 +1160,8 @@ bool stub_event_on_mouse_wheel(const float x, const float y, const bool directio
 	}
 	um->wheel.accm.Y += y;
 	const int iy =
-		(um->wheel.accm.Y > 0.0f) ? (int)floorf(um->wheel.accm.Y) :		// NOLINT
-		(um->wheel.accm.Y < 0.0f) ? (int)ceilf(um->wheel.accm.Y) : 0;	// NOLINT
+		(um->wheel.accm.Y > 0.0f) ? (int)QM_FLOORF(um->wheel.accm.Y) :		// NOLINT
+		(um->wheel.accm.Y < 0.0f) ? (int)QM_CEILF(um->wheel.accm.Y) : 0;	// NOLINT
 	um->wheel.accm.Y -= (float)iy;
 
 	um->wheel.integral = qm_point(ix, iy);
@@ -1198,14 +1198,12 @@ bool stub_event_on_drop(char* data, const int len, const bool finish)
 	if (data != NULL)
 		shed_event_reserved_mem(data);
 
-	bool ret = 0;
 	if (s_enter == false)
 	{
 		s_enter = true;
 		QN_SMASK(&qg_instance_stub->stats, QGSSTT_DROP, true);
 		const QgEvent eb = { .drop.ev = QGEV_DROPBEGIN, };
-		ret = qg_add_event(&eb, false) > 0;
-		if (ret == false)
+		if (qg_add_event(&eb, false) == 0)
 			return false;
 	}
 
@@ -1215,7 +1213,7 @@ bool stub_event_on_drop(char* data, const int len, const bool finish)
 		.drop.len = len,
 		.drop.data = data,
 	};
-	ret = qg_add_event(&e, false) > 0;
+	const bool ret = qg_add_event(&e, false) > 0;
 
 	if (finish)
 	{

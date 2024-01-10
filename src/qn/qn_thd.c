@@ -4,12 +4,7 @@
 //
 
 #include "pch.h"
-#include "qs_qn.h"
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
 #ifdef __GNUC__
-#include <errno.h>
 #include <signal.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -532,14 +527,14 @@ static void* _qn_thd_entry(void* data)
 	sigemptyset(&mask);
 	for (size_t i = 0; i < QN_COUNTOF(accept_signals); i++)
 		sigaddset(&mask, accept_signals[i]);
-	pthread_sigmask(SIG_BLOCK, &mask, 0);
+	pthread_sigmask(SIG_BLOCK, &mask, NULL);
 
 	pthread_setspecific(thread_impl.self_tls, self);
 #endif
 	_qn_thd_set_name(self);
 	self->base.cb_ret = self->base.cb_func(self->base.cb_data);
 	_qn_thd_exit(self, false);
-	return 0;
+	return NULL;
 }
 
 //

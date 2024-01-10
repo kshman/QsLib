@@ -4,7 +4,6 @@
 //
 
 #include "pch.h"
-#include "qs_qn.h"
 
 // 만들었슴
 QsGam* qs_sc_init(QsGam* restrict g, void* restrict vt)

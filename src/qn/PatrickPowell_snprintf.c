@@ -83,7 +83,7 @@
 * dopr(): poor man's version of doprintf
 */
 
-#ifndef _QN_MOBILE_			// 모바일에서 로캘 안됨
+#if !defined _QN_MOBILE_ && !defined _QN_EMSCRIPTEN_	// 모바일과 EMSCRIPTEN에서 로캘 안되는건 아닌데 안씀
 #define USE_LOCALE_INFO	1
 #else
 #define USE_LOCALE_INFO	0

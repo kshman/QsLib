@@ -10,10 +10,9 @@
 #define __QS_KMC__
 
 //////////////////////////////////////////////////////////////////////////
-// key board
+// 키보드
 
 /// @brief 키보드 입력 키 정의
-/// @todo VK키를 다른 종류로 바꾸는게 좋겟음. 예컨데 스캔코드
 typedef enum QikKey
 {
 	QIK_NONE = 0,
@@ -53,13 +52,13 @@ typedef enum QikKey
 	QIK_F = 0x46,
 	QIK_G = 0x47,
 	QIK_H = 0x48,
-	QIK_I = 0x49,											// Alphabet I
+	QIK_I = 0x49,											// Alphabet I / NOLINT
 	QIK_J = 0x4A,
 	QIK_K = 0x4B,
 	QIK_L = 0x4C,
 	QIK_M = 0x4D,
 	QIK_N = 0x4E,
-	QIK_O = 0x4F,											// Alphabet O
+	QIK_O = 0x4F,											// Alphabet O / NOLINT
 	QIK_P = 0x50,
 	QIK_Q = 0x51,
 	QIK_R = 0x52,
@@ -250,7 +249,7 @@ static_assert(sizeof(QicMask) == sizeof(int), "QicMask size not equal to int");
 /// @brief 사용가능한 키인가
 /// @param key QikKey
 /// @return 사용가능하면 참
-QSAPI bool qg_qik_usable(const QikKey key);
+QSAPI bool qg_qik_usable(QikKey key);
 
 /// @brief QikKey를 문자열로
 /// @param key QikKey

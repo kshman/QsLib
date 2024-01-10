@@ -4,10 +4,8 @@
 //
 
 #include "pch.h"
-#include "qs_qn.h"
 #ifdef __GNUC__
 #include <unistd.h>
-#include <errno.h>
 #include <sys/time.h>
 #endif
 

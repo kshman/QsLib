@@ -1,0 +1,129 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="헤더 파일">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="리소스 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="소스 파일\qn">
+      <UniqueIdentifier>{6409b2cc-78c2-4645-a953-8d322164ad91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\qn">
+      <UniqueIdentifier>{fa989a00-4fae-4984-a2bd-287244ac5b8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\qg">
+      <UniqueIdentifier>{4bcc6fad-7481-4b3c-8c10-df0245cee5ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\qg">
+      <UniqueIdentifier>{086e8b85-b328-4dc5-bc6b-05c6a063db2d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\qg\stub">
+      <UniqueIdentifier>{48e3acae-9940-48fe-a4b2-e3a592e2f7de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\qg\stub">
+      <UniqueIdentifier>{ca19cfa2-72c5-4ba0-a9be-503b7f6ceffd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\inc">
+      <UniqueIdentifier>{2aad8de5-be3d-426a-880b-89547be4bffe}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\pch.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qs_conf.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\qg_stub.h">
+      <Filter>헤더 파일\qg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\qgrdh_es.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\qgrdh_glbase.h">
+      <Filter>헤더 파일\qg\stub</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\inc\qs.h">
+      <Filter>헤더 파일\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\inc\qs_ctn.h">
+      <Filter>헤더 파일\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\inc\qs_kmc.h">
+      <Filter>헤더 파일\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\inc\qs_math.h">
+      <Filter>헤더 파일\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\inc\qs_qg.h">
+      <Filter>헤더 파일\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\inc\qs_qn.h">
+      <Filter>헤더 파일\inc</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\qn\qn.c">
+      <Filter>소스 파일\qn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qn\qn_time.c">
+      <Filter>소스 파일\qn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qn\qn_prf.c">
+      <Filter>소스 파일\qn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qn\qn_file.c">
+      <Filter>소스 파일\qn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qn\qs_gam.c">
+      <Filter>소스 파일\qn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qn\qm_math.c">
+      <Filter>소스 파일\qn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qn\qn_mlu.c">
+      <Filter>소스 파일\qn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qn\qn_str.c">
+      <Filter>소스 파일\qn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qg_kmc.c">
+      <Filter>소스 파일\qg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qn\qn_thd.c">
+      <Filter>소스 파일\qn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qn\PatrickPowell_snprintf.c">
+      <Filter>소스 파일\qn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\pch.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\zconsole\zz.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qg_rdh.c">
+      <Filter>소스 파일\qg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qg_stub.c">
+      <Filter>소스 파일\qg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\stub\qgrdh_es.c">
+      <Filter>소스 파일\qg\stub</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\stub\qgstub_emscripten.c">
+      <Filter>소스 파일\qg\stub</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\..\QsLib.natvis" />
+  </ItemGroup>
+</Project>

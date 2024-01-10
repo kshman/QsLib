@@ -4,10 +4,6 @@
 //
 
 #include "pch.h"
-#include <errno.h>
-#include <stdlib.h>
-#include "qs_qn.h"
-#include "qs_ctn.h"
 
 //
 extern void qn_cycle_up(void);

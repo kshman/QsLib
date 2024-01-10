@@ -4,10 +4,8 @@
 //
 
 #include "pch.h"
-#include "qs_qn.h"
 #ifdef __GNUC__
 #include <signal.h>
-#include <stdio.h>
 #endif
 #ifdef _QN_EMSCRIPTEN_
 #include <emscripten/console.h>
@@ -18,7 +16,7 @@
 #endif
 #ifdef _QN_WINDOWS_
 #define DEBUG_BREAK(x)			if (x) DebugBreak()
-#elif defined __EMSCRIPTEN__
+#elif defined _QN_EMSCRIPTEN_
 #define DEBUG_BREAK(x)
 #else
 #define DEBUG_BREAK(x)			if (x) raise(SIGTRAP)

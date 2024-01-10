@@ -9,6 +9,10 @@
 #pragma once
 #define __QS_MATH__
 
+#ifndef __QS_QN__
+#error include "qs_qn.h" first
+#endif
+
 #ifdef __GNUC__
 #pragma GCC diagnotics push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
@@ -16,11 +20,13 @@
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #endif
 
+#ifndef __EMSCRIPTEN__
 #if defined _M_AMD64 || defined _M_X64 || defined __amd64__ || defined __x86_64__ || (defined _M_IX86_FP && _M_IX86_FP >= 1) || defined __SSE__
 #define QM_USE_SSE		1
 #endif
 #if defined _M_ARM || defined __ARM_NEON
 #define QM_USE_NEON		1
+#endif
 #endif
 
 #include <math.h>
@@ -30,7 +36,6 @@
 #ifdef QM_USE_NEON
 #include <arm_neon.h>
 #endif
-#include "qs_qn.h"
 
 QN_EXTC_BEGIN
 
@@ -61,6 +66,9 @@ QN_EXTC_BEGIN
 
 #ifndef QM_FLOORF
 #define QM_FLOORF		floorf
+#endif
+#ifndef QM_CEILF
+#define QM_CEILF		ceilf
 #endif
 #ifndef QM_SINF
 #define QM_SINF			sinf
@@ -530,6 +538,7 @@ QN_INLINE QmVec2 qm_vec2v(const QmVecI2 iv)
 }
 
 /// @brief 벡터2 값 설정
+///	@param v 반환 벡터
 /// @param x,y 좌표
 QN_INLINE void qm_vec2_set(QmVec2* v, float x, float y)
 {
@@ -538,6 +547,7 @@ QN_INLINE void qm_vec2_set(QmVec2* v, float x, float y)
 }
 
 /// @brief 정수 벡터2 설정
+///	@param v 반환 벡터
 /// @param iv 정수 벡터
 QN_INLINE void qm_vec2_setv(QmVec2* v, const QmVecI2 iv)
 {
@@ -553,6 +563,7 @@ QN_INLINE void qm_vec2_rst(QmVec2* v)		// identify
 }
 
 /// @brief 벡터2 대각값 설정 (모두 같은값으로 설정)
+///	@param v 반환 벡터
 /// @param diag 대각 값
 QN_INLINE void qm_vec2_diag(QmVec2* v, const float diag)
 {
@@ -569,7 +580,6 @@ QN_INLINE QmVec2 qm_vec2_ivt(const QmVec2 v)  // invert
 }
 
 /// @brief 벡터2 네거티브 (1 - 벡터2)
-/// @param pv 네거티브를 담을 벡터2
 /// @param v 벡터2
 QN_INLINE QmVec2 qm_vec2_neg(const QmVec2 v)
 {
@@ -688,7 +698,7 @@ QN_INLINE QmVec2 qm_vec2_cross(const QmVec2 left, const QmVec2 right)
 }
 
 /// @brief 벡터2 길이의 제곱
-/// @param pv 벡터2
+/// @param v 벡터2
 /// @return 길이의 제곱
 QN_INLINE float qm_vec2_len_sq(const QmVec2 v)
 {
@@ -696,7 +706,7 @@ QN_INLINE float qm_vec2_len_sq(const QmVec2 v)
 }
 
 /// @brief 벡터2 길이
-/// @param pv 벡터2
+/// @param v 벡터2
 /// @return 길이
 QN_INLINE float qm_vec2_len(const QmVec2 v)
 {
@@ -758,6 +768,7 @@ QN_INLINE QmVec3 qm_vec3(const float x, const float y, const float z)
 }
 
 /// @brief 벡터3 값 설정
+///	@param v 반환 벡터
 /// @param x,y,z 좌표
 QN_INLINE void qm_vec3_set(QmVec3* v, const float x, const float y, const float z)
 {
@@ -767,6 +778,7 @@ QN_INLINE void qm_vec3_set(QmVec3* v, const float x, const float y, const float 
 }
 
 /// @brief 벡터3 초기화
+///	@param v 반환 벡터
 QN_INLINE void qm_vec3_rst(QmVec3* v)		// identify
 {
 	v->X = 0.0f;
@@ -775,6 +787,7 @@ QN_INLINE void qm_vec3_rst(QmVec3* v)		// identify
 }
 
 /// @brief 벡터3 대각값 설정 (모두 같은값으로 설정)
+///	@param v 반환 벡터
 /// @param diag 대각값
 QN_INLINE void qm_vec3_diag(QmVec3* v, const float diag)
 {
@@ -809,7 +822,6 @@ QN_INLINE QmVec3 qm_vec3_add(const QmVec3 left, const QmVec3 right)
 }
 
 /// @brief 벡터3 뺄셈
-/// @param pv 뺄셈 결과를 담을 벡터3
 /// @param left 왼쪽 벡터3
 /// @param right 오른쪽 벡터3
 QN_INLINE QmVec3 qm_vec3_sub(const QmVec3 left, const QmVec3 right)
@@ -819,7 +831,6 @@ QN_INLINE QmVec3 qm_vec3_sub(const QmVec3 left, const QmVec3 right)
 }
 
 /// @brief 벡터3 확대
-/// @param pv 확대 결과를 담을 벡터3
 /// @param left 원본 벡터3
 /// @param right 확대값
 QN_INLINE QmVec3 qm_vec3_mag(const QmVec3 left, const float right)
@@ -1102,9 +1113,9 @@ QN_INLINE float qm_vec3_yaw(const QmVec3 pv)
 }
 
 /// @brief 선에 가까운 점의 위치
-/// @param pv 반환되는 근처 점
-/// @param line 선
-/// @param loc 점
+///	@param loc 조사할 점
+/// @param begin 선의 시작 점
+/// @param end 선의 끝점
 QN_INLINE QmVec3 qm_vec3_closed(const QmVec3 loc, const QmVec3 begin, const QmVec3 end)
 {
 	QmVec3 norm = qm_vec3_sub(end, begin);
@@ -1130,7 +1141,6 @@ QN_INLINE QmVec3 qm_vec3_lerp_len(const QmVec3 left, const QmVec3 right, const f
 }
 
 /// @brief 세 벡터로 법선 벡터를 만든다
-/// @param pv 얻은 법선 벡터
 /// @param v1 벡터 1
 /// @param v2 벡터 2
 /// @param v3 벡터 3
@@ -1205,6 +1215,7 @@ QN_INLINE QmVec4 qm_vec4v(const QmVec3 v3, const float w)
 }
 
 /// @brief 벡터4 값 설정
+///	@param v 반환 벡터
 /// @param x,y,z,w 벡터4 요소
 QN_INLINE void qm_vec4_set(QmVec4* v, const float x, const float y, const float z, const float w)
 {
@@ -1219,6 +1230,7 @@ QN_INLINE void qm_vec4_set(QmVec4* v, const float x, const float y, const float 
 }
 
 /// @brief 벡터4 값 설정
+///	@param v 반환 벡터
 /// @param v3 입력 벡터3
 /// @param w w 요소
 /// @return 만든 벡터4
@@ -1248,6 +1260,7 @@ QN_INLINE void qm_vec4_rst(QmVec4* v)		// identify
 }
 
 /// @brief 벡터4 대각값 설정 (모든 요소를 같은 값을)
+///	@param v 반환 벡터
 /// @param diag 대각값
 QN_INLINE void qm_vec4_diag(QmVec4* v, const float diag)
 {
@@ -1308,7 +1321,6 @@ QN_INLINE QmVec4 qm_vec4_add(const QmVec4 left, const QmVec4 right)
 }
 
 /// @brief 벡터4 뺄셈
-/// @param pv 뺄셈 결과를 담을 벡터4
 /// @param left 왼쪽 벡터4
 /// @param right 오른쪽 벡터4
 QN_INLINE QmVec4 qm_vec4_sub(const QmVec4 left, const QmVec4 right)
@@ -1454,7 +1466,6 @@ QSAPI void qm_neon_vec4_cross(QmVec4* pv, const QmVec4* v1, const QmVec4* v2, co
 #endif
 
 /// @brief 벡터4 외적
-/// @param pv 외적 결과를 담을 벡터4
 /// @param v1 첫번째 벡터4
 /// @param v2 두번째 벡터4
 /// @param v3 세번째 벡터4
@@ -1578,6 +1589,7 @@ QN_INLINE QmVecI2 qm_veci2(int x, int y)
 	return r;
 }
 
+/// @brief 벡터2 설정
 QN_INLINE void qm_veci2_set(QmVecI2* v, int x, int y)
 {
 	v->X = x;
@@ -1592,7 +1604,8 @@ QN_INLINE void qm_veci2_rst(QmVecI2* v)		// identify
 }
 
 /// @brief 벡터2 대각값 설정 (모두 같은값으로 설정)
-/// @param v 대각 값
+/// @param v 반환 벡터
+/// @param diag 대각 값
 QN_INLINE void qm_veci2_diag(QmVecI2* v, const int diag)
 {
 	v->X = diag;
@@ -1739,7 +1752,7 @@ QN_INLINE float qm_veci2_len(const QmVecI2 pv)
 /// @return 두 벡터2 거리의 제곱값
 QN_INLINE int qm_veci2_dist_sq(const QmVecI2 left, const QmVecI2 right)
 {
-	QmVecI2 t = qm_veci2_sub(left, right);
+	const QmVecI2 t = qm_veci2_sub(left, right);
 	return qm_veci2_len_sq(t);
 }
 
@@ -1764,6 +1777,7 @@ QN_INLINE QmVecI3 qm_veci3(const int x, const int y, const int z)
 }
 
 /// @brief 벡터3 값 설정
+///	@param v 반환 벡터
 /// @param x,y,z 좌표
 QN_INLINE void qm_veci3_set(QmVecI3* v, const int x, const int y, const int z)
 {
@@ -1773,6 +1787,7 @@ QN_INLINE void qm_veci3_set(QmVecI3* v, const int x, const int y, const int z)
 }
 
 /// @brief 벡터3 초기화
+///	@param v 반환 벡터
 QN_INLINE void qm_veci3_rst(QmVecI3* v)		// identify
 {
 	v->X = 0;
@@ -1781,7 +1796,8 @@ QN_INLINE void qm_veci3_rst(QmVecI3* v)		// identify
 }
 
 /// @brief 벡터3 대각값 설정 (모두 같은값으로 설정)
-/// @param void 대각값
+///	@param v 반환 벡터
+/// @param diag 대각값
 QN_INLINE void qm_veci3_diag(QmVecI3* v, const int diag)
 {
 	v->X = diag;
@@ -1807,7 +1823,6 @@ QN_INLINE QmVecI3 qm_veci3_add(const QmVecI3 left, const QmVecI3 right)
 }
 
 /// @brief 벡터3 뺄셈
-/// @param pv 뺄셈 결과를 담을 벡터3
 /// @param left 왼쪽 벡터3
 /// @param right 오른쪽 벡터3
 QN_INLINE QmVecI3 qm_veci3_sub(const QmVecI3 left, const QmVecI3 right)
@@ -1817,7 +1832,6 @@ QN_INLINE QmVecI3 qm_veci3_sub(const QmVecI3 left, const QmVecI3 right)
 }
 
 /// @brief 벡터3 확대
-/// @param pv 확대 결과를 담을 벡터3
 /// @param left 원본 벡터3
 /// @param right 확대값
 QN_INLINE QmVecI3 qm_veci3_mag(const QmVecI3 left, const int right)
@@ -1934,7 +1948,7 @@ QN_INLINE float qm_veci3_len(const QmVecI3 pv)
 /// @return 두 벡터3 거리의 제곱값
 QN_INLINE int qm_veci3_dist_sq(const QmVecI3 left, const QmVecI3 right)
 {
-	QmVecI3 t = qm_veci3_sub(left, right);
+	const QmVecI3 t = qm_veci3_sub(left, right);
 	return qm_veci3_len_sq(t);
 }
 
@@ -1970,6 +1984,7 @@ QN_INLINE QmVecI4 qm_veci4v(const QmVecI3 v3, const int w)
 }
 
 /// @brief 벡터4 값 설정
+///	@param v 반환 벡터
 /// @param x,y,z,w 벡터4 요소
 QN_INLINE void qm_veci4_set(QmVecI4* v, const int x, const int y, const int z, const int w)
 {
@@ -1980,6 +1995,7 @@ QN_INLINE void qm_veci4_set(QmVecI4* v, const int x, const int y, const int z, c
 }
 
 /// @brief 벡터4 값 설정
+///	@param v 반환 벡터
 /// @param v3 입력 벡터3
 /// @param w w 요소
 QN_INLINE void qm_veci4_setv(QmVecI4* v, const QmVecI3 v3, const int w)
@@ -2000,6 +2016,7 @@ QN_INLINE void qm_veci4_rst(QmVecI4* v)		// identify
 }
 
 /// @brief 벡터4 대각값 설정 (모든 요소를 같은 값을)
+///	@param v 반환 벡터
 /// @param diag 대각값
 QN_INLINE void qm_veci4_diag(QmVecI4* v, const int diag)
 {
@@ -2032,7 +2049,6 @@ QN_INLINE QmVecI4 qm_veci4_add(const QmVecI4 left, const QmVecI4 right)
 }
 
 /// @brief 벡터4 뺄셈
-/// @param pv 뺄셈 결과를 담을 벡터4
 /// @param left 왼쪽 벡터4
 /// @param right 오른쪽 벡터4
 QN_INLINE QmVecI4 qm_veci4_sub(const QmVecI4 left, const QmVecI4 right)
@@ -2250,6 +2266,7 @@ QN_INLINE QmQuat qm_quatv3(const QmVec3 p, const float w)
 }
 
 /// @brief 사원수 값 설정
+///	@param q 반환 사원수
 /// @param x,y,z,w 사원수 요소
 QN_INLINE void qm_quat_set(QmQuat* q, const float x, const float y, const float z, const float w)
 {
@@ -2264,6 +2281,7 @@ QN_INLINE void qm_quat_set(QmQuat* q, const float x, const float y, const float 
 }
 
 /// @brief 사원수 값 설정
+///	@param q 반환 사원수
 /// @param v 벡타4
 QN_INLINE void qm_quat_setv4(QmQuat* q, const QmVec4 v)
 {
@@ -2277,6 +2295,7 @@ QN_INLINE void qm_quat_setv4(QmQuat* q, const QmVec4 v)
 }
 
 /// @brief 사원수 값 설정
+///	@param q 반환 사원수
 /// @param p 입력 벡터3
 /// @param w w 요소
 QN_INLINE void qm_quat_setv3(QmQuat* q, const QmVec3 p, const float w)
@@ -2291,6 +2310,7 @@ QN_INLINE void qm_quat_setv3(QmQuat* q, const QmVec3 p, const float w)
 }
 
 /// @brief 사원수 초기화
+///	@param q 반환 사원수
 QN_INLINE void qm_quat_rst(QmQuat* q)		// identify
 {
 #if defined QM_USE_SSE
@@ -2303,6 +2323,7 @@ QN_INLINE void qm_quat_rst(QmQuat* q)		// identify
 }
 
 /// @brief 사원수 대각값 설정 (모든 요소를 같은 값을)
+///	@param q 반환 사원수
 /// @param diag 대각값
 QN_INLINE void qm_quat_diag(QmQuat* q, const float diag)
 {
@@ -2331,7 +2352,6 @@ QN_INLINE QmQuat qm_quat_ivt(const QmQuat v)
 }
 
 /// @brief 사원수 네거티브
-/// @param pv 네거티브 결과를 담을 사원수
 /// @param v 원본 사원수
 QN_INLINE QmQuat qm_quat_neg(const QmQuat v)
 {
@@ -2788,7 +2808,7 @@ QN_INLINE QmVec3 qm_quat_ln(const QmQuat q)
 	if (n > 0.99999f)
 	{
 		const float nv = qm_vec3_len(q.XYZ);
-		const float t = atan2f(nv, q.W) / nv;
+		const float t = QM_ATAN2F(nv, q.W) / nv;
 		return qm_vec3(t * q.X, t * q.Y, t * q.Z);
 	}
 	// 법선이 1보다 작다. 이런일은 생기지 않는다!!!!
@@ -2957,7 +2977,6 @@ QN_INLINE QmMat4 qm_mat4_mul(const QmMat4 left, const QmMat4 right)
 }
 
 /// @brief 역행렬
-/// @param pm 반환 행렬
 /// @param m 입력 행렬
 QN_INLINE QmMat4 qm_mat4_inv(const QmMat4 m)
 {
@@ -2980,7 +2999,6 @@ QN_INLINE QmMat4 qm_mat4_inv(const QmMat4 m)
 	s10 = qm_vec3_mag(s10, inv);
 	s32 = qm_vec3_mag(s32, inv);
 	QmMat4 r;
-	QmVec3 a1, a2, a3;
 	r.rows[0] = qm_vec4v(qm_vec3_add(qm_vec3_cross(m.rows[1].XYZ, s32), qm_vec3_mag(c23, m.rows[1].W)), -qm_vec3_dot(m.rows[1].XYZ, c23));
 	r.rows[1] = qm_vec4v(qm_vec3_sub(qm_vec3_cross(s32, m.rows[0].XYZ), qm_vec3_mag(c23, m.rows[0].W)), +qm_vec3_dot(m.rows[0].XYZ, c23));
 	r.rows[0] = qm_vec4v(qm_vec3_add(qm_vec3_cross(m.rows[3].XYZ, s10), qm_vec3_mag(c01, m.rows[3].W)), -qm_vec3_dot(m.rows[3].XYZ, c01));
@@ -3081,7 +3099,7 @@ QN_INLINE QmMat4 qm_mat4_inv_lookat(const QmMat4 lm)
 /// @brief 투영 행렬을 만든다 (왼손 기준)
 /// @param fov 포브(Field Of View)값
 /// @param aspect 화면 종횡비(가로 나누기 세로)
-/// @param depth 뎁스 너비
+/// @param zn,zf 뎁스 너비
 QN_INLINE QmMat4 qm_mat4_perspective_lh(const float fov, const float aspect, const float zn, const float zf)
 {
 	const float f = 1.0f / QM_TANF(fov * 0.5f);
@@ -3111,7 +3129,7 @@ QN_INLINE QmMat4 qm_mat4_perspective_lh(const float fov, const float aspect, con
 /// @brief 투영 행렬을 만든다 (오른손 기준)
 /// @param fov 포브(Field Of View)값
 /// @param aspect 화면 종횡비(가로 나누기 세로)
-/// @param depth 뎁스 너비
+/// @param zn,zf 뎁스 너비
 QN_INLINE QmMat4 qm_mat4_perspective_rh(const float fov, const float aspect, const float zn, const float zf)
 {
 	const float f = 1.0f / QM_TANF(fov * 0.5f);
@@ -3139,10 +3157,10 @@ QN_INLINE QmMat4 qm_mat4_perspective_rh(const float fov, const float aspect, con
 }
 
 /// @brief 투영 행렬의 역행렬 (왼손)
-/// @param om 투영 행렬
+/// @param pm 투영 행렬
 QN_INLINE QmMat4 qm_mat4_inv_perspective_lh(const QmMat4 pm)
 {
-	float f = 1.0f / pm._43;
+	const float f = 1.0f / pm._43;
 	QmMat4 r =
 	{
 		._11 = 1.0f / pm._11,
@@ -3166,10 +3184,10 @@ QN_INLINE QmMat4 qm_mat4_inv_perspective_lh(const QmMat4 pm)
 }
 
 /// @brief 투영 행렬의 역행렬 (오른손)
-/// @param om 투영 행렬
+/// @param pm 투영 행렬
 QN_INLINE QmMat4 qm_mat4_inv_perspective_rh(const QmMat4 pm)
 {
-	float f = 1.0f / pm._43;
+	const float f = 1.0f / pm._43;
 	QmMat4 r =
 	{
 		._11 = 1.0f / pm._11,
@@ -3345,7 +3363,7 @@ QN_INLINE QmMat4 qm_mat4_viewport(const float x, const float y, const float widt
 /// @param om 정규 행렬
 QN_INLINE QmMat4 qm_mat4_inv_ortho(const QmMat4 om)
 {
-	QmVec3 diag = { .X = 1.0f / om._11, .Y = 1.0f / om._22, .Z = 1.0f / om._33 };
+	const QmVec3 diag = { .X = 1.0f / om._11, .Y = 1.0f / om._22, .Z = 1.0f / om._33 };
 	QmMat4 r =
 	{
 		._11 = diag.X,
@@ -3595,7 +3613,6 @@ QN_INLINE QmMat4 qm_mat4_z(const float rot)
 }
 
 /// @brief 그림자 행렬을 만든다
-/// @param pm 반환 행렬
 /// @param light 빛의 방향
 /// @param plane 투영될 면
 QN_INLINE QmMat4 qm_mat4_shadow(const QmVec4 light, const QmPlane plane)
@@ -3717,7 +3734,6 @@ QN_INLINE QmMat4 qm_mat4_trfm_loc_scl(QmMat4 m, const QmVec3 loc, const QmVec3* 
 }
 
 /// @brief 행렬 트랜스폼
-/// @param m 반환 행렬
 /// @param loc 위치
 /// @param rot 회전
 /// @param scl 스케일 (1일 경우 NULL)
@@ -3728,7 +3744,6 @@ QN_INLINE QmMat4 qm_mat4_trfm(const QmVec3 loc, const QmQuat rot, const QmVec3* 
 }
 
 /// @brief 행렬 트랜스폼. 단 벡터 회전
-/// @param m 반환 행렬
 /// @param loc 위치
 /// @param rot 회전
 /// @param scl 스케일 (1일 경우 NULL)
@@ -3783,6 +3798,7 @@ QN_INLINE QmPlane qm_planevvv(const QmVec3 v1, const QmVec3 v2, const QmVec3 v3)
 }
 
 /// @brief 면을 만든다
+///	@param p 반환 면
 /// @param a,b,c,d 면의 설정값
 QN_INLINE void qm_plane_set(QmPlane* p, const float a, const float b, const float c, const float d)
 {
@@ -3796,6 +3812,7 @@ QN_INLINE void qm_plane_set(QmPlane* p, const float a, const float b, const floa
 }
 
 /// @brief 벡터로 면을 만든다
+///	@param p 반환 면
 /// @param v 벡터
 /// @param d 면의 법선
 QN_INLINE void qm_plane_setv(QmPlane* p, const QmVec3 v, const float d)
@@ -3804,6 +3821,7 @@ QN_INLINE void qm_plane_setv(QmPlane* p, const QmVec3 v, const float d)
 }
 
 /// @brief 점과 점의 법선으로 면을 만든다
+///	@param p 반환 면
 /// @param pv 점
 /// @param pn 점의 법선
 QN_INLINE void qm_plane_setvv(QmPlane* p, const QmVec3 pv, const QmVec3 pn)
@@ -3812,6 +3830,7 @@ QN_INLINE void qm_plane_setvv(QmPlane* p, const QmVec3 pv, const QmVec3 pn)
 }
 
 /// @brief 점 세개로 평면을 만든다
+///	@param p 반환 면
 /// @param v1 점1
 /// @param v2 점2
 /// @param v3 점3
@@ -3822,6 +3841,7 @@ QN_INLINE void qm_plane_setvvv(QmPlane* p, const QmVec3 v1, const QmVec3 v2, con
 }
 
 /// @brief 면을 초기화한다
+///	@param p 반환 면
 QN_INLINE void qm_plane_rst(QmPlane* p)
 {
 	qm_plane_set(p, 0.0f, 0.0f, 0.0f, 1.0f);
@@ -3855,7 +3875,7 @@ QN_INLINE bool qm_plane_eq(const QmPlane left, const QmPlane right)
 }
 
 /// @brief 벡터가 0인지 비교
-/// @param pv 비교할 면
+/// @param p 비교할 면
 /// @return 면가 0이면 참
 QN_INLINE bool qm_plane_isi(const QmPlane p)
 {
@@ -3863,7 +3883,7 @@ QN_INLINE bool qm_plane_isi(const QmPlane p)
 }
 
 /// @brief 면과 점(벡터3)의 내적
-/// @param pp 대상 면
+/// @param p 대상 면
 /// @param v 대상 벡터3
 /// @return 면과 점의 내적
 QN_INLINE float qm_plane_dot_coord(const QmPlane p, const QmVec3 v)
@@ -4042,6 +4062,7 @@ QN_INLINE QmLine3 qm_line3vv(const QmVec3 begin, const QmVec3 end)
 }
 
 /// @brief 선분을 만든다
+///	@param l 반환 선분
 /// @param bx,by,bz 시작 점
 /// @param ex,ey,ez 끝 점
 QN_INLINE void qm_line3_set(QmLine3* l, const float bx, const float by, const float bz, const float ex, const float ey, const float ez)
@@ -4051,6 +4072,7 @@ QN_INLINE void qm_line3_set(QmLine3* l, const float bx, const float by, const fl
 }
 
 /// @brief 벡터3 두개로 선분을 만든다
+///	@param l 반환 선분
 /// @param begin 시작 벡터3
 /// @param end 끝 벡터3
 QN_INLINE void qm_line3_setvv(QmLine3* l, const QmVec3 begin, const QmVec3 end)
@@ -4117,7 +4139,7 @@ QN_INLINE bool qm_line3_in(const QmLine3 l, const QmVec3 v)
 }
 
 /// @brief 구와 충돌하는 선 판정
-/// @param p 처리할 선
+/// @param l 처리할 선
 /// @param org 구의 중점
 /// @param rad 구의 반지름
 /// @param dist 충돌 거리
@@ -4207,6 +4229,7 @@ QN_INLINE QmVecH2 qm_vec2h(const float x, const float y)
 }
 
 /// @brief 하프 벡터2를 설정한다
+///	@param v 반환 벡터
 /// @param x,y 좌표
 QN_INLINE void qm_vec2h_set(QmVecH2* v, const float x, const float y)
 {
@@ -4215,6 +4238,7 @@ QN_INLINE void qm_vec2h_set(QmVecH2* v, const float x, const float y)
 }
 
 /// @brief 하프 벡터3를 설정한다
+///	@param v 반환 벡터
 /// @param x,y,z 좌표
 QN_INLINE QmVecH3 qm_vec3h(const float x, const float y, const float z)
 {
@@ -4240,6 +4264,7 @@ QN_INLINE QmVecH4 qm_vec4h(const float x, const float y, const float z, const fl
 }
 
 /// @brief 하프 벡터4를 설정한다
+///	@param v 반환 벡터
 /// @param x,y,z,w 좌표
 QN_INLINE void qm_vec4h_set(QmVecH4* v, const float x, const float y, const float z, const float w)
 {
@@ -4250,7 +4275,7 @@ QN_INLINE void qm_vec4h_set(QmVecH4* v, const float x, const float y, const floa
 }
 
 
-// pointf
+// 실수형 점 
 
 #define qm_pointf				qm_vec2
 #define qm_pointf_set			qm_vec2_set
@@ -4271,7 +4296,7 @@ QN_INLINE void qm_vec4h_set(QmVecH4* v, const float x, const float y, const floa
 #define qm_pointf_lerp			qm_vec2_lerp
 
 
-// sizef
+// 실수형 크기
 
 #define qm_sizef				qm_vec2
 #define qm_sizef_set			qm_vec2_set
@@ -4320,19 +4345,19 @@ QN_INLINE float qm_sizef_diag_dpi(const QmSizeF pt, const float horizontal, cons
 }
 
 
-// depth
+// 깊이
 
 #define qm_depth				qm_vec2
 #define qm_depth_set			qm_vec2_set
 
 
-// mimax
+// 최소 최대
 
 #define qm_minmaxf				qm_vec2
 #define qm_minmaxf_set			qm_vec2_set
 
 
-// rectf
+// 실수형 사각형
 
 #define qm_rectf				qm_vec4
 #define qm_rectf_set			qm_vec4_set
@@ -4396,6 +4421,7 @@ QN_INLINE QmRectF qm_rectf_offset(const QmRectF rt, const float left, const floa
 }
 
 /// @brief 사각형을 움직인다
+/// @param rt 원본 사각형
 /// @param left 새 왼쪽
 /// @param top 새 오른쪽
 /// @return
@@ -4407,7 +4433,7 @@ QN_INLINE QmRectF qm_rectf_move(const QmRectF rt, const float left, const float 
 }
 
 /// @brief 사각형의 크기를 재설정한다
-/// @param rt 재설정할 사각형
+/// @param rt 원본 사각형
 /// @param width 너비
 /// @param height 높이
 QN_INLINE QmRectF qm_rectf_resize(const QmRectF rt, const float width, const float height)
@@ -4650,7 +4676,7 @@ QN_INLINE float qm_size_diag_dpi(const QmSize pt, const float horizontal, const 
 }
 
 
-// rectf
+// 사각형
 
 #define qm_rect					qm_veci4
 #define qm_rect_set				qm_veci4_set
@@ -4712,6 +4738,7 @@ QN_INLINE QmRect qm_rect_offset(const QmRect rt, const int left, const int top, 
 }
 
 /// @brief 사각형을 움직인다
+/// @param rt 원본 사각형
 /// @param left 새 왼쪽
 /// @param top 새 오른쪽
 /// @return
@@ -4816,7 +4843,6 @@ QN_INLINE QmKolor qm_koloru(const uint value)
 }
 
 /// @brief 색깔을 설정한다
-/// @param pc 설정한 색깔
 /// @param cr 실수형 색깔
 QN_INLINE QmKolor qm_kolorc(const QmColor cr)
 {
@@ -4831,6 +4857,7 @@ QN_INLINE QmKolor qm_kolorc(const QmColor cr)
 }
 
 /// @brief 색깔을 설정한다
+/// @param k 반환 색깔
 /// @param r 빨강
 /// @param g 녹색
 /// @param b 파랑
@@ -4841,6 +4868,7 @@ QN_INLINE void qm_kolor_set(QmKolor* k, const byte r, const byte g, const byte b
 }
 
 /// @brief 색깔을 설정한다
+/// @param k 반환 색깔
 /// @param r 빨강
 /// @param g 녹색
 /// @param b 파랑
@@ -4854,6 +4882,7 @@ QN_INLINE void qm_kolor_setf(QmKolor* k, const float r, const float g, const flo
 }
 
 /// @brief 색깔을 설정한다
+/// @param k 반환 색깔
 /// @param value 32비트 RGBA 정수
 QN_INLINE void qm_kolor_setu(QmKolor* k, const uint value)
 {
@@ -4861,7 +4890,7 @@ QN_INLINE void qm_kolor_setu(QmKolor* k, const uint value)
 }
 
 /// @brief 색깔을 설정한다
-/// @param pc 설정한 색깔
+/// @param k 반환 색깔
 /// @param cr 실수형 색깔
 QN_INLINE void qm_kolor_setc(QmKolor* k, const QmColor cr)
 {
@@ -4907,7 +4936,6 @@ QN_INLINE QmKolor qm_kolor_mag(const QmKolor left, const float scale)
 }
 
 /// @brief 네거티브 색깔을 만든다
-/// @param pc 네거티브 색깔을 담을 색깔
 /// @param c 원본 색깔
 QN_INLINE QmKolor qm_kolor_neg(const QmKolor c)
 {

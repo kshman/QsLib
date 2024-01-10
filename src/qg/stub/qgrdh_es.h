@@ -1,12 +1,12 @@
 ﻿#pragma once
 
+#ifndef __QS_QN__
+#error include "qs_qn.h" first
+#endif
+
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4191)
-#endif
-
-#ifndef __QS_QN__
-#error include "qs_qn.h" first
 #endif
 
 #if defined _QN_EMSCRIPTEN_ || defined _QN_ANDROID_

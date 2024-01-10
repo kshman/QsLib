@@ -9,7 +9,9 @@
 #pragma once
 #define __QS_CTN__
 
-#include <string.h>
+#ifndef __QS_QN__
+#error include "qs_qn.h" first
+#endif
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -350,7 +352,7 @@ QN_DECL_ARR(QnAnyArr, any_t);								/// @brief any_t 배열
 		qn_inl_arr_extend((void*)(p), qn_ctn_sizeof_type(name), count);\
 		(p)->COUNT=count;\
 	}QN_STMT_END
-#define qn_arr_expand(name,p,count)		qn_arr_resize(name,p,(p)->COUNT+count)
+#define qn_arr_expand(name,p,count)		qn_arr_resize(name,p,(p)->COUNT+(count))
 
 #define qn_arr_add(name,p,item)\
 	QN_STMT_BEGIN{\
@@ -1029,7 +1031,7 @@ QN_INLINE bool qn_plist_find(const QnPtrList* p, bool (*func2)(void* data, void*
 
 #define qn_nodelist_foreach(name,p,node)\
 	name##Type *QN_CONCAT(prev,__LINE__);\
-	for (node=(p)->LAST; node && (QN_CONCAT(prev,__LINE__) = node->PREV, true); node=QN_CONCAT(prev,__LINE__))
+	for ((node)=(p)->LAST; (node) && (QN_CONCAT(prev,__LINE__) = (node)->PREV, true); (node)=QN_CONCAT(prev,__LINE__))
 #define qn_nodelist_foreach_1(name,p,func1)\
 	QN_STMT_BEGIN{\
 		name##Type *__node, *__prev;\
@@ -1056,7 +1058,7 @@ QN_INLINE bool qn_plist_find(const QnPtrList* p, bool (*func2)(void* data, void*
 /// @param type 단일 리스트 요소 타입
 #define QN_DECL_SLIST(name,type)\
 	typedef type name##Type;\
-	typedef struct name { struct name* NEXT; type DATA; } name, name##Name
+	typedef struct name { struct name* NEXT; type DATA; } name, name##Name	// NOLINT
 QN_DECL_SLIST(QnPtrSlist, void*);
 
 #define qn_slist_last(p)				qn_inl_slist_last(p)
@@ -1180,7 +1182,7 @@ QN_DECL_SLIST(QnPtrSlist, void*);
 	}QN_STMT_END
 #define qn_slist_insert_nth(name, p, nth, item, ret_ptr)\
 	QN_STMT_BEGIN{\
-		size_t __h=(size_t)nth;\
+		size_t __h=(size_t)(nth);\
 		if (__h<0) {\
 			qn_slist_append(name, p, item, ret_ptr);\
 		} else if (__h==0) {\
@@ -1520,7 +1522,7 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t);
 #define qn_hash_foreach(name,p,keyptr,valueptr)\
 	name##Node* QN_CONCAT(n_,__LINE__);\
 	for (QN_CONCAT(n_,__LINE__)=(p)->LAST;\
-		QN_CONCAT(n_,__LINE__) && ((keyptr=&(QN_CONCAT(n_,__LINE__)->KEY), valueptr=&(QN_CONCAT(n_,__LINE__)->VALUE)), true);\
+		QN_CONCAT(n_,__LINE__) && (((keyptr)=&(QN_CONCAT(n_,__LINE__)->KEY), (valueptr)=&(QN_CONCAT(n_,__LINE__)->VALUE)), true);\
 		QN_CONCAT(n_,__LINE__)=QN_CONCAT(n_,__LINE__)->PREV)
 
 /// @brief 해시 for each
@@ -1753,7 +1755,7 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t);
 // 해시 리사이즈
 QN_INLINE void qn_inl_hash_resize(QnInlineHash* p)
 {
-	size_t newbucket = qn_prime_near((uint32_t)p->COUNT);
+	size_t newbucket = qn_prime_near((uint)p->COUNT);
 	newbucket = QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
 	QnInlineHashNode **newnodes = qn_alloc_zero(newbucket, QnInlineHashNode*);
 	if (!newnodes)
@@ -2052,7 +2054,7 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t);
 // 묶음 리사이즈
 QN_INLINE void qn_inl_mukum_resize(QnInlineMukum* p)
 {
-	size_t newbucket = qn_prime_near((uint32_t)p->COUNT);
+	size_t newbucket = qn_prime_near((uint)p->COUNT);
 	newbucket = QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
 	QnInlineMukumNode** newnodes = qn_alloc_zero(newbucket, QnInlineMukumNode*);
 	if (!newnodes)
@@ -2255,7 +2257,7 @@ QN_INLINE int qn_bstr_has_char(const void* p, const char* chars)
 
 QN_INLINE int qn_bstr_find_char(const void* p, size_t at, char ch)
 {
-	const char* s = strchr(((const QnBstr*)(p))->DATA + at, ch);
+	const char* s = qn_strchr(((const QnBstr*)(p))->DATA + at, ch);
 	return (s) ? (int)(s - ((const QnBstr*)(p))->DATA) : -1;
 }
 

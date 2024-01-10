@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "qs_qn.h"
-#include "qs_math.h"
 #include "qs_qg.h"
 #include "qg/qg_stub.h"
 
@@ -11,7 +9,7 @@ typedef struct QglRender	QglRender;
 typedef struct QglBuf		QglBuf;
 
 #ifndef GL_INVALID_HANDLE
-#define GL_INVALID_HANDLE	(GLuint)-1
+#define GL_INVALID_HANDLE	(GLuint)(-1)
 #endif
 
 #define QGL_RDH_INSTANCE	((QglRdh*)qg_instance_rdh)
@@ -167,8 +165,8 @@ QN_INLINE int qgl_get_version(GLenum name, const char* name1, const char* name2)
 	const float f =
 		qn_strnicmp(s, name1, strlen(name1)) == 0 ? strtof(s + strlen(name1), NULL) :
 		qn_strnicmp(s, name2, strlen(name2)) == 0 ? strtof(s + strlen(name2), NULL) :
-		(float)strtof(s, NULL);
-	return (int)(floorf(f) * 100.0f + (QM_FRACT(f) * 10.0));
+		qn_strtof(s);
+	return (int)(QM_FLOORF(f) * 100.0f + (QM_FRACT(f) * 10.0));
 }
 
 // 문자열 얻기

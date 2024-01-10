@@ -1,6 +1,4 @@
 ﻿#include "pch.h"
-#include "qs_qn.h"
-#include "qs_math.h"
 #include "qs_qg.h"
 #include "qg_stub.h"
 
@@ -48,7 +46,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	}
 
 	features |= renderer->feature;
-	bool open_stub = qg_open_stub(title, display, width, height, flags, features);
+	const bool open_stub = qg_open_stub(title, display, width, height, flags, features);
 	qn_val_if_fail(qg_instance_stub, false);
 
 	// 개별 디바이스
@@ -92,7 +90,7 @@ void qg_close_rdh(void)
 void rdh_internal_dispose(void)
 {
 	RdhBase* self = qg_instance_rdh;
-	bool open_stub = self->info.open_stub;
+	const bool open_stub = self->info.open_stub;
 
 	qg_instance_rdh = NULL;
 	qn_free(self);
@@ -453,6 +451,3 @@ bool qg_buf_data(QgBuffer* self, const void* data)
 	qn_val_if_fail(data, false);
 	return qv_cast(self, QgBuffer)->data(self, data);
 }
-
-
-

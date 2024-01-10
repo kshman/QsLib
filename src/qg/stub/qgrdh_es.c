@@ -1,10 +1,16 @@
-﻿#include "pch.h"
+﻿//
+// qgrdh_es.c - OPENGL ES 렌더 디바이스
+// 2024-01-10 by kim
+//
+
+#include "pch.h"
 #ifdef USE_ES
-#include "qs_qn.h"
+#ifndef _QN_EMSCRIPTEN_
 #ifndef USE_SDL2
 #define GLAD_EGL_IMPLEMENTATION		1
 #endif
 #define GLAD_GLES2_IMPLEMENTATION	1
+#endif
 #include "qgrdh_es.h"
 #include <limits.h>
 
@@ -193,7 +199,7 @@ static const char* es_egl_error_string(EGLint error)
 }
 
 //
-static EGLint es_get_config_attr(EsRdh* self, EGLConfig config, EGLenum name)
+static EGLint es_get_config_attr(const EsRdh* self, EGLConfig config, EGLenum name)
 {
 	EGLint v;
 	eglGetConfigAttrib(self->display, config, name, &v);
@@ -201,7 +207,7 @@ static EGLint es_get_config_attr(EsRdh* self, EGLConfig config, EGLenum name)
 }
 
 //
-static const EsConfig* es_find_config(const EsConfig* wanted, EsConfig* configs, int count)
+static const EsConfig* es_find_config(const EsConfig* wanted, const EsConfig* configs, int count)
 {
 	uint least_missing = UINT_MAX;
 	uint least_color = UINT_MAX;
@@ -416,7 +422,7 @@ RdhBase* es_allocator(QgFlag flags, QgFeature features)
 		config_entry_count++;
 	}
 
-	EsConfig want_config =
+	const EsConfig want_config =
 	{
 		NULL,
 		size_red, size_green, size_blue, size_alpha,
@@ -461,7 +467,7 @@ pos_context_ok:
 	eglGetConfigAttrib(self->display, self->config, EGL_NATIVE_VISUAL_ID, &android_visual_id);
 	ANativeWindow_setBuffersGeometry(self->native_window, 0, 0, android_visual_id);
 #endif
-	EGLint surface_attrs[] =
+	const EGLint surface_attrs[] =
 	{
 		EGL_NONE, EGL_NONE,
 	};
@@ -495,7 +501,7 @@ pos_context_ok:
 	infos->renderer_version = qgl_get_version(GL_VERSION, "OPENGLES", "OPENGL ES");
 	infos->shader_version = qgl_get_version(GL_SHADING_LANGUAGE_VERSION, "OPENGL ES GLSL ES ", "OPENGL ES GLSL ");
 
-	int max_layout_count = qgl_get_integer_v(GL_MAX_VERTEX_ATTRIBS);
+	const int max_layout_count = qgl_get_integer_v(GL_MAX_VERTEX_ATTRIBS);
 	infos->max_layout_count = QN_MIN(max_layout_count, ES_MAX_LAYOUT_COUNT);
 	infos->max_tex_dim = qgl_get_integer_v(GL_MAX_TEXTURE_SIZE);
 	infos->max_tex_count = qgl_get_integer_v(GL_MAX_TEXTURE_IMAGE_UNITS);
@@ -531,7 +537,7 @@ static void es_dispose(QsGam* g)
 	qn_ret_if_ok(self->base.disposed);
 
 	//----- 펜딩
-	QglPending* pd = &self->base.pd;
+	const QglPending* pd = &self->base.pd;
 	qs_unload(pd->draw.index_buffer);
 	for (int i = 0; i < QGLOS_MAX_VALUE; i++)
 		qs_unload(pd->draw.vertex_buffers[i]);

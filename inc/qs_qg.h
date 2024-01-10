@@ -35,9 +35,9 @@ typedef enum QgClrFmt
 	QGCF_NONE,
 	QGCF8_L,												/// @brief 8비트 루미넌스
 	QGCF16_L,												/// @brief 16비트 루미넌스
-	QGCF16_RGB,												/// @brief 16비트 RGBX
+	QGCF16_RGB,												/// @brief 16비트 RGB
 	QGCF16_RGBA,											/// @brief 16비트 RGBA
-	QGCF32_RGB,												/// @brief 32비트 RGBX
+	QGCF32_RGB,												/// @brief 32비트 RGB
 	QGCF32_RGBA,											/// @brief 32비트 RGBA
 	QGCF32_BGRA,											/// @brief 32비트 BGRA
 	QGCF16F_R,												/// @brief 16비트 실수 R
@@ -121,7 +121,7 @@ typedef enum QgLoType
 	QGLOT_HALF4,											/// @brief 4개의 하프 정수
 	QGLOT_BYTE2,											/// @brief 2개의 바이트
 	QGLOT_BYTE4,											/// @brief 4개의 바이트
-	QGLOT_BYTE4_N,											/// @brief 4개의 정규화된 바이트(Kolor)
+	QGLOT_BYTE4_N,											/// @brief 4개의 정규화된 바이트(QmKolor)
 	QGLOT_SHORT2,											/// @brief 2개의 16비트 정수
 	QGLOT_SHORT4,											/// @brief 4개의 16비트 정수
 	QGLOT_SHORT2_N,											/// @brief 2개의 정규화된 16비트 정수(Texture Coordinate)
@@ -518,7 +518,7 @@ typedef struct QgUdevMonitor
 typedef union QgEvent
 {
 	QgEventType			ev;									/// @brief 이벤트 타입
-#if _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
 	struct QgEventSysWindows
 	{
 		QgEventType			ev;
@@ -638,8 +638,7 @@ QSAPI const QgUdevMonitor* qg_get_monitor(int index);
 QSAPI const QgUimKey* qg_get_key_info(void);
 
 /// @brief 전체 마우스 정보를 얻는다
-/// @param  마우스 정보 포인터
-/// @return
+/// @return 마우스 정보 포인터
 QSAPI const QgUimMouse* qg_get_mouse_info(void);
 
 /// @brief 마우스 더블 클릭 정밀도를 설정한다
@@ -771,9 +770,11 @@ typedef struct QgRender		QgRender;						/// @brief 렌더 파이프라인
 /// @brief 렌더러를 연다
 /// @param driver 드라이버 이름 (NULL로 지정하여 기본값)
 /// @param title 윈도우 타이틀
+/// @param display 디스플레이 번호
 /// @param width 윈도우 너비
 /// @param height 윈도우 높이
 /// @param flags 스터브 및 렌더러 플래그
+/// @param features 스터브 및 렌더러 사양
 /// @return 만들어졌으면 참
 /// @note 내부에서 qg_open_stub 함수를 호출한다 (미리 만들어 놔도 된다)
 ///
@@ -988,7 +989,7 @@ struct QgDsm
 	QgGam				base;
 };
 
-// Rasterize
+// Rasterizer
 struct QgRsz
 {
 	QgGam				base;

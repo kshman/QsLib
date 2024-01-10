@@ -9,11 +9,21 @@
 #ifdef _MSC_VER
 #define no_init_all deprecated		// VS2022 알 수 없는 특성
 #endif
-#ifdef __GNUC__
+#if defined __GNUC__ && !defined _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <time.h>
+#include <math.h>
 
 // Windows
 #ifdef _WIN32
@@ -26,6 +36,7 @@
 #include <mmsystem.h>
 #include <commctrl.h>
 #include <shellapi.h>
+#include <intrin.h>
 #endif
 
 // ANDROID
@@ -38,10 +49,23 @@
 // EMSCRIPTEN
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+// VS 2022 IDE 오류가 귀찮다
+#ifndef bool
+#define bool	_Bool
+#endif
+#ifndef true
+#define true	1
+#endif
+#ifndef false
+#define false	0
+#endif
 #endif
 
 //
 #include "qs_conf.h"
+#include "qs_qn.h"
+#include "qs_ctn.h"
+#include "qs_math.h"
 
 //
 #ifdef _MSC_VER
