@@ -4,6 +4,7 @@
 //
 // 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
 // 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
+// SPDX-License-Identifier: UNLICENSE
 //
 
 #pragma once
@@ -15,6 +16,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 #ifdef _MSC_VER
@@ -41,6 +43,9 @@
 // platform
 #ifdef _WIN32
 #define _QN_WINDOWS_		1
+#if defined __XBOXONE__ || defined __XBOXSERIES__
+#define _QN_XBOX_			1
+#endif
 #endif
 #ifdef __unix__
 #define _QN_UNIX_			1
@@ -57,9 +62,6 @@
 #endif
 #ifdef __EMSCRIPTEN__
 #define _QN_EMSCRIPTEN_		1
-#endif
-#if defined __XBOXONE__ || defined __XBOXSERIES__
-#define _QN_XBOX_			1
 #endif
 #if defined _WIN64 || defined _M_AMD64 || defined _M_X64 || defined __LP64__ || defined __amd64__ || defined __x86_64__ || defined __aarch64__
 #define _QN_64_				1
@@ -79,6 +81,11 @@
 #define QN_WARN_POP			QN_PRAGMA(warning(pop))
 #define QN_WARN_SIGN
 #define QN_WARN_ASSIGN		QN_PRAGMA(warning(disable:4706))
+#if defined __STDC_VERSION__ && __STDC_VERSION__ >= 201112L
+#define QN_NORETURN			_Noreturn
+#else
+#define QN_NORETURN			__declspec(noreturn)
+#endif
 #elif defined __GNUC__
 #define QN_INLINE			static inline
 #define QN_FINLINE			static inline __attribute__ ((always_inline))
@@ -92,6 +99,7 @@
 #define QN_WARN_POP			QN_PRAGMA(GCC diagnostic pop)
 #define QN_WARN_SIGN		QN_PRAGMA(GCC diagnostic ignored "-Wsign-conversion")
 #define QN_WARN_ASSIGN
+#define QN_NORETURN			_Noreturn
 #endif
 
 #ifdef __cplusplus
@@ -252,7 +260,7 @@ typedef union any_t
 	double			dbl;
 
 	byte			data[8];
-} any_t;
+} any_t, vany;
 
 /// @brief 파라미터 함수 핸들러와 파라미터 값
 typedef struct funcparam_t
@@ -348,7 +356,7 @@ QSAPI int qn_debug_assert(const char* restrict expr, const char* restrict filena
 /// @brief HALT 메시지
 /// @param[in] head 머릿글
 /// @param[in] mesg 메시지
-QSAPI _Noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg);
+QSAPI QN_NORETURN void qn_debug_halt(const char* restrict head, const char* restrict mesg);
 
 /// @brief 디버그용 문자열 출력
 /// @param[in] breakpoint 참이면 디버거 연결시 중단점 표시
@@ -385,14 +393,22 @@ QSAPI int qn_outputf(const char* fmt, ...);
 
 //////////////////////////////////////////////////////////////////////////
 // memory
-#define qn_alloc(c,t)		(t*)qn_memalc((size_t)(c)*sizeof(t),false,QN_FNAME,__LINE__)			/// @brief 메모리 할당
-#define qn_alloc_1(t)		(t*)qn_memalc(sizeof(t),false,QN_FNAME,__LINE__)						/// @brief 메모리를 1개만 할당
-#define qn_alloc_zero(c,t)	(t*)qn_memalc((size_t)(c)*sizeof(t),true,QN_FNAME,__LINE__)				/// @brief 메모리를 할당하고 메모리를 0으로
-#define qn_alloc_zero_1(t)	(t*)qn_memalc(sizeof(t),true,QN_FNAME,__LINE__)							/// @brief 메모리를 1개만 할당하고 0으로
-#define qn_realloc(p,c,t)	(t*)qn_memrea((void*)(p),(size_t)(c)*sizeof(t),QN_FNAME,__LINE__)		/// @brief 메모리를 다시 할당
-
-#define qn_free(p)			qn_memfre((void*)(p))													/// @brief 메모리 해제
-#define qn_free_ptr(pp)		QN_STMT_BEGIN{ qn_memfre((void*)*(pp)); *(pp)=NULL; }QN_STMT_END		/// @brief 메모리를 해제하고 포인터를 NULL로 만든다
+#ifdef DISABLE_MEMORY_PROFILE	// EMSCRIPTEN은 언제나 참
+#define qn_alloc(c,t)		(t*)qn_mem_alloc((size_t)(c)*sizeof(t),false)							/// @brief 메모리 할당
+#define qn_alloc_1(t)		(t*)qn_mem_alloc(sizeof(t),false)										/// @brief 메모리를 1개만 할당
+#define qn_alloc_zero(c,t)	(t*)qn_mem_alloc((size_t)(c)*sizeof(t),true)							/// @brief 메모리를 할당하고 메모리를 0으로
+#define qn_alloc_zero_1(t)	(t*)qn_mem_alloc(sizeof(t),true)										/// @brief 메모리를 1개만 할당하고 0으로
+#define qn_realloc(p,c,t)	(t*)qn_mem_realoc((void*)(p),(size_t)(c)*sizeof(t))						/// @brief 메모리를 다시 할당
+#define qn_memdup(p,sz_or_z) qn_mem_dup(p, sz_or_z)
+#else
+#define qn_alloc(c,t)		(t*)qn_mem_alloc_info((size_t)(c)*sizeof(t),false,QN_FNAME,__LINE__)			/// @brief 메모리 할당
+#define qn_alloc_1(t)		(t*)qn_mem_alloc_info(sizeof(t),false,QN_FNAME,__LINE__)						/// @brief 메모리를 1개만 할당
+#define qn_alloc_zero(c,t)	(t*)qn_mem_alloc_info((size_t)(c)*sizeof(t),true,QN_FNAME,__LINE__)				/// @brief 메모리를 할당하고 메모리를 0으로
+#define qn_alloc_zero_1(t)	(t*)qn_mem_alloc_info(sizeof(t),true,QN_FNAME,__LINE__)							/// @brief 메모리를 1개만 할당하고 0으로
+#define qn_realloc(p,c,t)	(t*)qn_mem_realloc_info((void*)(p),(size_t)(c)*sizeof(t),QN_FNAME,__LINE__)		/// @brief 메모리를 다시 할당
+#define qn_memdup(p,sz_or_z) qn_mem_dup_info(p, sz_or_z, QN_FNAME, __LINE__)
+#endif
+#define qn_free(p)			qn_mem_free((void*)(p))													/// @brief 메모리 해제
 
 #define qn_zero(p,c,t)		memset((p), 0, sizeof(t)*(c))											/// @brief 메모리를 0으로 채운다
 #define qn_zero_1(p)		memset((p), 0, sizeof(*(p)))											/// @brief 메모리를 0으로 채운다 (주로 구조체)
@@ -401,8 +417,13 @@ QSAPI int qn_outputf(const char* fmt, ...);
 typedef struct QnAllocTable QnAllocTable;
 struct QnAllocTable
 {
+#ifdef DISABLE_MEMORY_PROFILE
+	void*(*_alloc)(size_t size, bool zero);
+	void*(*_realloc)(void* ptr, size_t size);
+#else
 	void*(*_alloc)(size_t size, bool zero, const char* desc, size_t line);
 	void*(*_realloc)(void* ptr, size_t size, const char* desc, size_t line);
+#endif
 	void(*_free)(void* ptr);
 };
 
@@ -430,15 +451,9 @@ QSAPI void* qn_memzcpr(const void* src, size_t srcsize, /*NULLABLE*/size_t* dest
 /// @brief 메모리를 해제한다. qn_free()로 해제해야 한다
 /// @param[in] src 압축된 메모리
 /// @param[in] srcsize 압축된 메모리의 크기
-/// @param[in] bufsize 버퍼 크기
 /// @param[out] destsize 해제된 크기
 /// @return 해제된 메모리
-QSAPI void* qn_memzucp(const void* src, size_t srcsize, size_t bufsize, /*NULLABLE*/size_t* destsize);
-
-/// @brief 입력한 크기를 메모리 정렬 기준에 맞춘 크기로 돌려준다
-/// @param[in] size 메모리 크기
-/// @return 정렬된 크기
-QSAPI size_t qn_memagn(size_t size);
+QSAPI void* qn_memzucp(const void* src, size_t srcsize, /*NULLABLE*/size_t* destsize);
 
 /// @brief 메모리 크기를 사람이 읽을 수 있는 포맷으로(human readable)
 /// @param[in] size 메모리 크기
@@ -463,32 +478,25 @@ QSAPI char* qn_memdmp(const void* restrict ptr, size_t size, char* restrict outb
 /// @warning qn_runtime() 호출 이전에 사용하지 않으면 이 기능은 사용할 수 없다
 QSAPI bool qn_memtbl(const QnAllocTable* table);
 
+#ifdef DISABLE_MEMORY_PROFILE
 /// @brief 메모리를 할당한다
 /// @param[in] size 할당할 메모리 크기
 /// @param[in] zero 할당한 메모리를 0으로 초기화 한다
-/// @param[in] desc 설명문
-/// @param[in] line 줄 번호
 /// @return 할당한 메모리
-QSAPI void* qn_memalc(size_t size, bool zero, const char* desc, size_t line);
+QSAPI void* qn_mem_alloc(size_t size, bool zero);
 
 /// @brief 메모리를 할당/재할당/해제한다
 /// @param[in] ptr 재할당할 메모리 (이 값이 NULL이면 새로 할당)
 /// @param[in] size 재할당할 메모리 크기 (이 값이 0이면 ptr을 해제)
-/// @param[in] desc 설명문
-/// @param[in] line 줄 번호
 /// @return 할당한 새로운 메모리 (메모리 주소가 안바뀔 수도 있음)
-QSAPI void* qn_memrea(void* ptr, size_t size, const char* desc, size_t line);
-
-/// @brief 메모리를 해제한다
-/// @param[in] ptr 해제할 메모리 (이 값이 NULL이면 아무것도 하지 않는다)
-QSAPI void qn_memfre(void* ptr);
+QSAPI void* qn_mem_realoc(void* ptr, size_t size);
 
 /// @brief 메모리를 복제한다
 /// @param ptr 복제할 메모리
 /// @param size_or_zero_if_psz 0이 아니면 그 값만금 복사, 0이면 문자열 취급
 /// @return 복사된 메모리
-QSAPI void* qn_memdup(const void* ptr, size_t size_or_zero_if_psz);
-
+QSAPI void* qn_mem_dup(const void* ptr, size_t size_or_zero_if_psz);
+#else
 /// @brief 내부 메모리 관리자의 메모리의 크기를 얻는다
 /// @return 관리하는 메모리의 크기
 QSAPI size_t qn_mpfsize(void);
@@ -497,36 +505,37 @@ QSAPI size_t qn_mpfsize(void);
 /// @return 관리하는 메모리의 총 할당 갯수
 QSAPI size_t qn_mpfcnt(void);
 
-/// @brief 내부 메모리 관리자로 메모리 할당
-/// @param size 할당할 메모리
-/// @param zero 할당할 메모리를 0으로 채움
-/// @param desc 설명문
-/// @param line 줄 번호
-/// @return 할당한 메모리 포인터
-QSAPI void* qn_mpfalc(size_t size, bool zero, const char* desc, size_t line);
+/// @brief 내부 메모리 관리자의 내용을 디버그로 출력한다
+QSAPI void qn_mpfdbgprint(void);
 
-/// @brief 내부 메모리 고나리자로 메모리 할당/재핼당/해제
+/// @brief 메모리를 할당한다
+/// @param[in] size 할당할 메모리 크기
+/// @param[in] zero 할당한 메모리를 0으로 초기화 한다
+/// @param[in] desc 설명문
+/// @param[in] line 줄 번호
+/// @return 할당한 메모리
+QSAPI void* qn_mem_alloc_info(size_t size, bool zero, const char* desc, size_t line);
+
+/// @brief 메모리를 할당/재할당/해제한다
 /// @param[in] ptr 재할당할 메모리 (이 값이 NULL이면 새로 할당)
 /// @param[in] size 재할당할 메모리 크기 (이 값이 0이면 ptr을 해제)
 /// @param[in] desc 설명문
 /// @param[in] line 줄 번호
 /// @return 할당한 새로운 메모리 (메모리 주소가 안바뀔 수도 있음)
-QSAPI void* qn_mpfrea(void* ptr, size_t size, const char* desc, size_t line);
+QSAPI void* qn_mem_realloc_info(void* ptr, size_t size, const char* desc, size_t line);
 
-/// @brief 내부 메모리 관리자의 메모리를 해제한다
-/// @param[in] ptr 해제할 메모리 (이 값이 NULL이면 아무것도 하지 않는다)
-QSAPI void qn_mpffre(void* ptr);
-
-/// @brief 내부 메모리 관리자로 할당하여 메모리를 복사한다
-/// @param p 복사할 메모리
-/// @param size_or_zero_if_psz 크기를 지정하면 크기만큼 복사. 0으로 지정하면 문자열 복사로 취급한다
+/// @brief 메모리를 복제한다
+/// @param[in] ptr 복제할 메모리
+/// @param[in] size_or_zero_if_psz 0이 아니면 그 값만금 복사, 0이면 문자열 취급
 /// @param[in] desc 설명문
 /// @param[in] line 줄 번호
-/// @return 복사한 관리 메모리
-void* qn_mpfdup(const void* p, size_t size_or_zero_if_psz, const char* desc, size_t line);
+/// @return 복사된 메모리
+QSAPI void* qn_mem_dup_info(const void* ptr, size_t size_or_zero_if_psz, const char* desc, size_t line);
+#endif
 
-/// @brief 디버그용 메모리 정보를 출력한다
-QSAPI void qn_mpfdbgprint(void);
+/// @brief 메모리를 해제한다
+/// @param[in] ptr 해제할 메모리 (이 값이 NULL이면 아무것도 하지 않는다)
+QSAPI void qn_mem_free(void* ptr);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -656,18 +665,43 @@ QSAPI char* qn_strncpy(char* restrict p, const char* restrict src, size_t len);
 /// @details strcpy(dest, src); dest = dest + strlen(src) 라고 보면 된다
 QSAPI char* qn_stpcpy(char* restrict dest, const char* restrict src);
 
+#ifdef DISABLE_MEMORY_PROFILE
 /// @brief 문자열을 복제한다
 /// @param p 복제할 문자열
 /// @return 복제한 새로운 문자열
 /// @retval NULL 인수 p 가 NULL
 /// @note qn_free 함수로 헤재해야 한다
-QSAPI char* qn_strdup(const char* p);
+#define qn_strdup(p)		qn_str_dup(p)
 
 /// @brief 여러 문자열을 이어서 붙인다
 /// @param[in] p 첫 문자열
 /// @param ... 인수
 /// @note qn_free 함수로 해제해야 한다
-QSAPI char* qn_strcat(const char* p, ...);
+#define qn_strcat(p,...)	qn_str_cat(p,__VA_ARGS__)
+
+// qn_strdup 안쪽
+QSAPI char* qn_str_dup(const char* p);
+// qn_strcat 안쪽
+QSAPI char* qn_str_cat(const char* p, ...);
+#else
+/// @brief 문자열을 복제한다
+/// @param p 복제할 문자열
+/// @return 복제한 새로운 문자열
+/// @retval NULL 인수 p 가 NULL
+/// @note qn_free 함수로 헤재해야 한다
+#define qn_strdup(p)		qn_str_dup(QN_FNAME, __LINE__, p)
+
+/// @brief 여러 문자열을 이어서 붙인다
+/// @param[in] p 첫 문자열
+/// @param ... 인수
+/// @note qn_free 함수로 해제해야 한다
+#define qn_strcat(p,...)	qn_str_cat(QN_FNAME, __LINE__, p,__VA_ARGS__)
+
+// qn_strdup 안쪽
+char* qn_str_dup(const char* desc, size_t line, const char* p);
+// qn_strcat 안쪽
+char* qn_str_cat(const char* desc, size_t line, const char* p, ...);
+#endif
 
 /// @brief 글자로 채우기
 /// @param[in,out] dest 채울 대상 버퍼
@@ -905,18 +939,43 @@ QSAPI wchar* qn_wcsncpy(wchar* restrict p, const wchar* restrict src, size_t len
 /// @details strcpy(dest, src); dest = dest + strlen(src) 라고 보면 된다
 QSAPI wchar* qn_wcpcpy(wchar* restrict dest, const wchar* restrict src);
 
+#ifdef DISABLE_MEMORY_PROFILE
 /// @brief 문자열을 복제한다
 /// @param p 복제할 문자열
 /// @return 복제한 새로운 문자열
 /// @retval NULL 인수 p 가 NULL
 /// @note qn_free 함수로 헤재해야 한다
-QSAPI wchar* qn_wcsdup(const wchar* p);
+#define qn_wcsdup(p)		qn_wcs_dup(p)
 
 /// @brief 여러 문자열을 이어서 붙인다
 /// @param[in] p 첫 문자열
 /// @param ... 인수
 /// @note qn_free 함수로 해제해야 한다
-QSAPI wchar* qn_wcscat(const wchar* p, ...);
+#define qn_wcscat(p,...)	qn_wcs_cat(p,__VA_ARGS__)
+
+// qn_wcsdup 안쪽
+QSAPI wchar* qn_wcs_dup(const wchar* p);
+// qn_wcscat 안쪽
+QSAPI wchar* qn_wcs_cat(const wchar* p, ...);
+#else
+/// @brief 문자열을 복제한다
+/// @param p 복제할 문자열
+/// @return 복제한 새로운 문자열
+/// @retval NULL 인수 p 가 NULL
+/// @note qn_free 함수로 헤재해야 한다
+#define qn_wcsdup(p)		qn_wcs_dup(QN_FNAME, __LINE__, p)
+
+/// @brief 여러 문자열을 이어서 붙인다
+/// @param[in] p 첫 문자열
+/// @param ... 인수
+/// @note qn_free 함수로 해제해야 한다
+#define qn_wcscat(p,...)	qn_wcs_cat(QN_FNAME, __LINE__, p,__VA_ARGS__)
+
+// qn_wcsdup 안쪽
+wchar* qn_wcs_dup(const char* desc, size_t line, const wchar* p);
+// qn_wcscat 안쪽
+wchar* qn_wcs_cat(const char* desc, size_t line, const wchar* p, ...);
+#endif
 
 /// @brief 글자로 채우기
 /// @param[in,out] dest 채울 대상 버퍼
@@ -1298,31 +1357,27 @@ QSAPI void qn_msleep(ullong microseconds);
 typedef ullong				QnTimeStamp;
 
 /// @brief date time
-typedef struct QnDateTime	QnDateTime;
-struct QnDateTime
+typedef union QnDateTime
 {
-	union
+	QnTimeStamp			stamp;				/// @brief 타임 스탬프
+	struct
 	{
-		QnTimeStamp	stamp;				/// @brief 타임 스탬프
-		struct
-		{
-			uint	date;				/// @brief 날짜 스탬프
-			uint	time;				/// @brief 시간 스탬프
-		};
-		struct
-		{
-			uint	year : 14;			/// @brief 년
-			uint	month : 6;			/// @brief 월
-			uint	day : 8;			/// @brief 일
-			uint	dow : 4;			/// @brief 한주의 일
-
-			uint	hour : 6;			/// @brief 시
-			uint	minute : 8;			/// @brief 분
-			uint	second : 8;			/// @brief 초
-			uint	millisecond : 10;	/// @brief 밀리초
-		};
+		uint			date;				/// @brief 날짜 스탬프
+		uint			time;				/// @brief 시간 스탬프
 	};
-};
+	struct
+	{
+		uint			year : 14;			/// @brief 년
+		uint			month : 6;			/// @brief 월
+		uint			day : 8;			/// @brief 일
+		uint			dow : 4;			/// @brief 한주의 일
+
+		uint			hour : 6;			/// @brief 시
+		uint			minute : 8;			/// @brief 분
+		uint			second : 8;			/// @brief 초
+		uint			millisecond : 10;	/// @brief 밀리초
+	};
+} QnDateTime;
 
 /// @brief 현재 시간 날짜를 포함하는 타임스탬프
 /// @returns 현재 타임스탬프. QnDateTime 으로 컨버전해서 사용할 수 있다
@@ -1343,14 +1398,13 @@ QSAPI QnTimeStamp qn_stod(double sec);
 QSAPI QnTimeStamp qn_mstod(uint msec);
 
 /// @brief timer
-typedef struct QnTimer QnTimer;
-struct QnTimer
+typedef struct QnTimer
 {
-	double			abstime;								/// @brief 타이머 절대 시간
-	double			runtime;								/// @brief 타이머 시작부터 수행 시간
-	double			advance;								/// @brief 타이머 갱신에 따른 시간 (프레임 당 시간)
-	double			fps;									/// @brief 초 당 프레임 수
-};
+	double				abstime;			/// @brief 타이머 절대 시간
+	double				runtime;			/// @brief 타이머 시작부터 수행 시간
+	double				advance;			/// @brief 타이머 갱신에 따른 시간 (프레임 당 시간)
+	double				fps;				/// @brief 초 당 프레임 수
+} QnTimer;
 
 /// @brief 타이머 만들기
 /// @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 타이머
@@ -1397,30 +1451,29 @@ QSAPI void qn_timer_set_cut(QnTimer* self, double cut);
 // disk i/o
 
 /// @brief 디렉토리
-typedef struct QnDir					QnDir;
+typedef struct QnDir QnDir;
 
 /// @brief 파일
-typedef struct QnFile					QnFile;
+typedef struct QnFile QnFile;
 
 /// @brief 모듈
-typedef struct QnModule					QnModule;
+typedef struct QnModule QnModule;
 
 /// @brief 파일 정보
-typedef struct QnFileInfo				QnFileInfo;
-struct QnFileInfo
+typedef struct QnFileInfo
 {
-	int				type;									/// @brief 파일 타입
-	uint			len;
-	llong			size;									/// @brief 파일 크기
-	llong			cmpr;									/// @brief 압축된 크기
+	ushort			type;									/// @brief 파일 타입
+	ushort			len;									/// @brief 파일 이름 길이
+	uint			extra;
+	uint			size;									/// @brief 파일 크기
+	uint			cmpr;									/// @brief 압축된 크기
 	ullong			stc;									/// @brief 만든 날짜 타임 스탬프
 	ullong			stw;									/// @brief 마지막 기록한 타임 스탬프
-	char			name[256];								/// @brief 파일 이름
-};
+	char			name[64];								/// @brief 파일 이름
+} QnFileInfo;
 
 /// @brief 파일 제어
-typedef struct QnFileAccess				QnFileAccess;
-struct QnFileAccess
+typedef struct QnFileAccess
 {
 #ifdef _MSC_VER
 	uint			mode;									/// @brief 제어 모드
@@ -1431,7 +1484,7 @@ struct QnFileAccess
 	int				mode;
 	uint			access;
 #endif
-};
+} QnFileAccess;
 
 /// @brief 파일에서 위치 찾기
 typedef enum QnSeek
@@ -1661,13 +1714,253 @@ QSAPI int qn_mod_ref(const QnModule* self);
 
 
 //////////////////////////////////////////////////////////////////////////
+// thread
+
+/// @brief 스핀락
+typedef int volatile QnSpinLock;
+
+/// @brief 스핀락을 걸어본다
+/// @param lock 스핀락
+/// @return 걸렸으면 참
+QSAPI bool qn_spin_try(QnSpinLock* lock);
+
+/// @brief 스핀락을 건다
+/// @param lock 스핀락
+/// @returns 스핀락이 들어갈 때까지 걸린 횟수
+/// @note 걸릴 때까지 대기한다
+QSAPI uint qn_spin_enter(QnSpinLock* lock);
+
+/// @brief 스핀락을 푼다
+/// @param lock 스핀락
+QSAPI void qn_spin_leave(QnSpinLock* lock);
+
+#ifndef DISABLE_SPINLOCK
+/// @brief 스핀락 들어간다
+#define QN_LOCK(sp)			qn_spin_enter(&sp)
+/// @brief 스핀락 나온다
+#define QN_UNLOCK(sp)		qn_spin_leave(&sp)
+#else
+#define QN_LOCK(sp)
+#define QN_UNLOCK(sp)
+#endif
+
+/// @brief 스레드 콜백
+typedef void* (*QnThreadCallback)(void*);
+
+/// @brief 스레드
+typedef struct QnThread
+{
+	char*				name;
+	bool32				canwait;
+	bool32				managed;
+
+	int					busy;
+	uint				stack_size;
+
+	QnThreadCallback	cb_func;
+	void*				cb_data;
+	void*				cb_ret;
+} QnThread;
+
+/// @brief 현재 스레드를 얻는다
+/// @return 현재 스레드 포인터
+QSAPI QnThread* qn_thread_self(void);
+
+/// @brief 스레드를 만든다
+/// @param name 스레드 이름
+/// @param func 스레드 콜백 함수
+/// @param data 콜백 데이터
+/// @param stack_size 스택 크기 (보통 0을 넣어도 무방)
+/// @param busy 우선순위
+/// @return 만들어진 스레드
+/// *
+/// * | busy | 우선순위  |
+/// * | ----:|:-------- |
+/// * | -2   | 아주 낮음 |
+/// * | -1   | 낮음     |
+/// * | 0    | 보통     |
+/// * | 1    | 높음     |
+/// * | 2    | 아주 높음 |
+QSAPI QnThread* qn_thread_new(const char* restrict name, QnThreadCallback func, void* data, uint stack_size, int busy);
+
+/// @brief 스레드를 제거한다. 실행 중이면 끝날 때 까지 대기한다
+/// @param self 스레드
+QSAPI void qn_thread_delete(QnThread* self);
+
+/// @brief 스레드를 바로 실행한다
+/// @param name 스레드 이름
+/// @param func 스레드 콜백 함수
+/// @param data 콜백 데이터
+/// @param stack_size 스택 크기 (보통 0을 넣어도 된다)
+/// @param busy 우선 순위
+/// @return 성공적으로 실행했으면 참
+/// @see qn_thread_new qn_thread_start
+QSAPI bool qn_thread_once(const char* restrict name, QnThreadCallback func, void* data, uint stack_size, int busy);
+
+/// @brief 스레드를 실행한다
+/// @param self 스레드
+/// @return 성공적으로 실행했으면 참
+/// @see qn_thread_new
+QSAPI bool qn_thread_start(QnThread* self);
+
+/// @brief 스레드가 끝날 때까지 대기한다
+/// @param self 스레드
+/// @return 스레드가 보내온 반환값
+QSAPI void* qn_thread_wait(QnThread* self);
+
+/// @brief 스레드를 끝낸다. 이 함수는 스레드 안에서 사용해야한다
+/// @param ret 스레드 반환 값
+/// @warning 메인 스레드에서 사용하면 안된다
+QSAPI void qn_thread_exit(void* ret);
+
+/// @brief 스레드 우선 순위를 얻는다
+/// @param self 스레드
+/// @return 우선 순위 (-2 ~ 2)
+QSAPI int qn_thread_get_busy(const QnThread* self);
+
+/// @brief 스레드 우선 순위를 설정한다
+/// @param self 스레드
+/// @param busy 우선 순위 (-2 ~ 2)
+/// @return 성공하면 참
+QSAPI bool qn_thread_set_busy(QnThread* self, int busy);
+
+// tls
+
+/// @brief TLS
+typedef int QnTls;
+
+/// @brief TLS를 만든다
+/// @param callback TLS가 제거될 때 필요한 콜백 (NULL 허용)
+/// @return TLS 값
+QSAPI QnTls qn_tls(paramfunc_t callback);
+
+/// @brief TLS에 값을 쓴다
+/// @param tls 대상 TLS
+/// @param data 넣을 값
+QSAPI void qn_tlsset(QnTls tls, void* restrict data);
+
+/// @brief TLS에서 값을 읽는다
+/// @param tls 대상 TLS
+/// @return 읽은 값
+QSAPI void* qn_tlsget(QnTls tls);
+
+// mutex
+
+/// @brief 뮤텍스
+typedef struct QnMutex QnMutex;
+
+/// @brief 뮤텍스를 만든다. 이 뮤텍스는 RECURSIVE 타입이다
+/// @return 만들어진 뮤텍스
+QSAPI QnMutex* qn_mutex_new(void);
+
+/// @brief 뮤텍스를 삭제한다
+/// @param self 뮤텍스
+QSAPI void qn_mutex_delete(QnMutex* self);
+
+/// @brief 뮤텍스를 잠궈 본다
+/// @param self 뮤텍스
+/// @return 잠금 상태
+/// @retval true 잠겼다
+/// @retval false 잠기지 않았다
+QSAPI bool qn_mutex_try(QnMutex* self);
+
+/// @brief 뮤텍스를 잠근다. 다른 스레드에서 잠겨있으면 잠글 수 있을 때까지 대기한다
+/// @param self 뮤텍스
+QSAPI void qn_mutex_enter(QnMutex* self);
+
+/// @brief 뮤텍스 잠김을 푼다
+/// @param self 뮤텍스
+QSAPI void qn_mutex_leave(QnMutex* self);
+
+// condition
+
+/// @brief 컨디션
+typedef struct QnCond QnCond;
+
+/// @brief 조건을 만든다
+/// @return 만들어진 조건
+QSAPI QnCond* qn_cond_new(void);
+
+/// @brief 조건을 삭제한다
+/// @param self 조건
+QSAPI void qn_cond_delete(QnCond* self);
+
+/// @brief 조건에 신호를 1번만 보낸다
+/// @param self 조건
+/// @note 가장 최근 수행한 스레드가 신호를 받는다
+QSAPI void qn_cond_signal(QnCond* self);
+
+/// @brief 모든 스레드에 신호를 보낸다.
+/// @param self 조건
+QSAPI void qn_cond_broadcast(QnCond* self);
+
+/// @brief 각자 스레드가 조건에 해당하는지 기다린다
+/// @param self 조건
+/// @param lock 조건을 잠글 뮤텍스
+/// @param milliseconds 기다릴 시간 (밀리초)
+/// @return 조건 대기 및 시간 제한을 반환
+/// @retval true 조건이 들어왔다
+/// @retval false 조건이 들어오지 않았고. 시간 제한이 됐다
+QSAPI bool qn_cond_wait_for(QnCond* self, QnMutex* lock, uint milliseconds);
+
+/// @brief 각자 스레드가 조건을 기다린다
+/// @param self 조건
+/// @param lock 조건을 잠글 뮤텍스
+QSAPI void qn_cond_wait(QnCond* self, QnMutex* lock);
+
+// semaphore
+
+/// @brief 세마포어
+typedef struct QnSem QnSem;
+
+/// @brief 세마포어를 만든다
+/// @param initial 초기값
+/// @return 만들어진 세마포어
+QSAPI QnSem* qn_sem_new(int initial);
+
+/// @brief 세마포어를 삭제한다
+/// @param self 세마포어
+QSAPI void qn_sem_delete(QnSem* self);
+
+/// @brief 세마포어를 지정한 시간 만큼 대기해 본다
+/// @param self 세마포어
+/// @param milliseconds 대기할 시간 (밀리초)
+/// @return 대기 결과
+/// @retval true 신호가 떴다
+/// @retval false 신호가 오지 않았고 시간 제한을 넘었다
+QSAPI bool qn_sem_wait_for(QnSem* self, uint milliseconds);
+
+/// @brief 세마포어를 대기한다
+/// @param self 세마포어
+/// @return 대기 결과. 다만 별로 신경 쓰지 않아도 좋다
+QSAPI bool qn_sem_wait(QnSem* self);
+
+/// @brief 세마포어가 기다릴 수 있는지 조시한다
+/// @param self 세마포어
+/// @return 기다릴 수 있는지 여부
+/// @retval true 기다릴 수 있다
+/// @retval false 기다릴 수 없다
+QSAPI bool qn_sem_try(QnSem* self);
+
+/// @brief 세마포어 갯수를 반환한다
+/// @param self 세마포어
+/// @return 세마포어 갯수
+QSAPI int qn_sem_count(QnSem* self);
+
+/// @brief 세마포어를 알린다
+/// @param self 세마포어
+/// @return 성공하면 참
+QSAPI bool qn_sem_post(QnSem* self);
+
+
+//////////////////////////////////////////////////////////////////////////
 // xml
 
-typedef struct QnMlu		QnMlu;
+/// @brief ML 유니트
+typedef struct QnMlu QnMlu;
 
-//
-typedef struct QnMlTag		QnMlTag;
-struct QnMlTag
+/// @brief ML 태그
+typedef struct QnMlTag
 {
 	char*			name;
 	char*			context;
@@ -1675,7 +1968,7 @@ struct QnMlTag
 	int				context_len;
 	int				line;
 	bool32			sibling;
-};
+} QnMlTag;
 
 // ml unit
 
@@ -2024,262 +2317,6 @@ QSAPI void qn_mltag_set_arg(QnMlTag* ptr, const char* restrict name, const char*
 /// @retval true 인수 제거의 성공
 /// @retval false 인수 제거의 실패
 QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* restrict name);
-
-
-//////////////////////////////////////////////////////////////////////////
-// thread
-
-#if defined _MSC_VER
-#define qn_barrier()		_ReadWriteBarrier()				/// @brief 메모리 바리어
-#if defined _M_IX86 || defined _M_X64
-#define qn_pause()			_mm_pause()						/// @brief CPU 포즈
-#elif defined _M_ARM || defined _M_ARM64
-#define qn_pause()			_yield()
-#endif
-#elif defined __GNUC__
-#if defined __i386__ || defined __x86_64__
-#define qn_barrier()		__asm__ __volatile__("" : : : "memory");
-#define qn_pause()			__asm__ __volatile__ ("pause\n")
-#elif defined __aarch64__
-#define qn_barrier()		__asm__ __volatile__("dsb sy" : : : "memory")
-#define qn_pause()			__asm__ __volatile__ ("yield" ::: "memory")
-#elif defined __EMSCRIPTEN__
-#define qn_barrier()
-#define qn_pause()
-#else
-#error unknown platform
-#endif
-#else
-#error unknown compiler
-#endif
-
-typedef int volatile		QnSpinLock;						/// @brief 스핀락
-typedef int					QnTls;							/// @brief TLS
-typedef struct QnMutex		QnMutex;						/// @brief 뮤텍스
-typedef struct QnCond		QnCond;							/// @brief 컨디션
-typedef struct QnSem		QnSem;							/// @brief 세마포어
-typedef struct QnThread		QnThread;						/// @brief 스레드
-typedef void* (*QnThreadCallback)(void*);					/// @brief 스레드 콜백
-
-
-/// @brief 스핀락을 걸어본다
-/// @param lock 스핀락
-/// @return 걸렸으면 참
-QSAPI bool qn_spin_try(QnSpinLock* lock);
-
-/// @brief 스핀락을 건다
-/// @param lock 스핀락
-/// @returns 스핀락이 들어갈 때까지 걸린 횟수
-/// @note 걸릴 때까지 대기한다
-QSAPI uint qn_spin_enter(QnSpinLock* lock);
-
-/// @brief 스핀락을 푼다
-/// @param lock 스핀락
-QSAPI void qn_spin_leave(QnSpinLock* lock);
-
-#ifndef USE_NO_LOCK
-/// @brief 스핀락 들어간다
-#define QN_LOCK(sp)			qn_spin_enter(&sp)
-/// @brief 스핀락 나온다
-#define QN_UNLOCK(sp)		qn_spin_leave(&sp)
-#else
-#define QN_LOCK(sp)
-#define QN_UNLOCK(sp)
-#endif
-
-
-/// @brief 스레드
-struct QnThread
-{
-	char*				name;
-	bool32				canwait;
-	bool32				managed;
-
-	int					busy;
-	uint				stack_size;
-
-	QnThreadCallback	cb_func;
-	void*				cb_data;
-	void*				cb_ret;
-};
-
-/// @brief 현재 스레드를 얻는다
-/// @return 현재 스레드 포인터
-QSAPI QnThread* qn_thread_self(void);
-
-/// @brief 스레드를 만든다
-/// @param name 스레드 이름
-/// @param func 스레드 콜백 함수
-/// @param data 콜백 데이터
-/// @param stack_size 스택 크기 (보통 0을 넣어도 무방)
-/// @param busy 우선순위
-/// @return 만들어진 스레드
-/// *
-/// * | busy | 우선순위  |
-/// * | ----:|:-------- |
-/// * | -2   | 아주 낮음 |
-/// * | -1   | 낮음     |
-/// * | 0    | 보통     |
-/// * | 1    | 높음     |
-/// * | 2    | 아주 높음 |
-QSAPI QnThread* qn_thread_new(const char* restrict name, QnThreadCallback func, void* data, uint stack_size, int busy);
-
-/// @brief 스레드를 제거한다. 실행 중이면 끝날 때 까지 대기한다
-/// @param self 스레드
-QSAPI void qn_thread_delete(QnThread* self);
-
-/// @brief 스레드를 바로 실행한다
-/// @param name 스레드 이름
-/// @param func 스레드 콜백 함수
-/// @param data 콜백 데이터
-/// @param stack_size 스택 크기 (보통 0을 넣어도 된다)
-/// @param busy 우선 순위
-/// @return 성공적으로 실행했으면 참
-/// @see qn_thread_new qn_thread_start
-QSAPI bool qn_thread_once(const char* restrict name, QnThreadCallback func, void* data, uint stack_size, int busy);
-
-/// @brief 스레드를 실행한다
-/// @param self 스레드
-/// @return 성공적으로 실행했으면 참
-/// @see qn_thread_new
-QSAPI bool qn_thread_start(QnThread* self);
-
-/// @brief 스레드가 끝날 때까지 대기한다
-/// @param self 스레드
-/// @return 스레드가 보내온 반환값
-QSAPI void* qn_thread_wait(QnThread* self);
-
-/// @brief 스레드를 끝낸다. 이 함수는 스레드 안에서 사용해야한다
-/// @param ret 스레드 반환 값
-/// @warning 메인 스레드에서 사용하면 안된다
-QSAPI void qn_thread_exit(void* ret);
-
-/// @brief 스레드 우선 순위를 얻는다
-/// @param self 스레드
-/// @return 우선 순위 (-2 ~ 2)
-QSAPI int qn_thread_get_busy(const QnThread* self);
-
-/// @brief 스레드 우선 순위를 설정한다
-/// @param self 스레드
-/// @param busy 우선 순위 (-2 ~ 2)
-/// @return 성공하면 참
-QSAPI bool qn_thread_set_busy(QnThread* self, int busy);
-
-// tls
-
-/// @brief TLS를 만든다
-/// @param callback TLS가 제거될 때 필요한 콜백 (NULL 허용)
-/// @return TLS 값
-QSAPI QnTls qn_tls(paramfunc_t callback);
-
-/// @brief TLS에 값을 쓴다
-/// @param tls 대상 TLS
-/// @param data 넣을 값
-QSAPI void qn_tlsset(QnTls tls, void* restrict data);
-
-/// @brief TLS에서 값을 읽는다
-/// @param tls 대상 TLS
-/// @return 읽은 값
-QSAPI void* qn_tlsget(QnTls tls);
-
-// mutex
-
-/// @brief 뮤텍스를 만든다. 이 뮤텍스는 RECURSIVE 타입이다
-/// @return 만들어진 뮤텍스
-QSAPI QnMutex* qn_mutex_new(void);
-
-/// @brief 뮤텍스를 삭제한다
-/// @param self 뮤텍스
-QSAPI void qn_mutex_delete(QnMutex* self);
-
-/// @brief 뮤텍스를 잠궈 본다
-/// @param self 뮤텍스
-/// @return 잠금 상태
-/// @retval true 잠겼다
-/// @retval false 잠기지 않았다
-QSAPI bool qn_mutex_try(QnMutex* self);
-
-/// @brief 뮤텍스를 잠근다. 다른 스레드에서 잠겨있으면 잠글 수 있을 때까지 대기한다
-/// @param self 뮤텍스
-QSAPI void qn_mutex_enter(QnMutex* self);
-
-/// @brief 뮤텍스 잠김을 푼다
-/// @param self 뮤텍스
-QSAPI void qn_mutex_leave(QnMutex* self);
-
-// condition
-
-/// @brief 조건을 만든다
-/// @return 만들어진 조건
-QSAPI QnCond* qn_cond_new(void);
-
-/// @brief 조건을 삭제한다
-/// @param self 조건
-QSAPI void qn_cond_delete(QnCond* self);
-
-/// @brief 조건에 신호를 1번만 보낸다
-/// @param self 조건
-/// @note 가장 최근 수행한 스레드가 신호를 받는다
-QSAPI void qn_cond_signal(QnCond* self);
-
-/// @brief 모든 스레드에 신호를 보낸다.
-/// @param self 조건
-QSAPI void qn_cond_broadcast(QnCond* self);
-
-/// @brief 각자 스레드가 조건에 해당하는지 기다린다
-/// @param self 조건
-/// @param lock 조건을 잠글 뮤텍스
-/// @param milliseconds 기다릴 시간 (밀리초)
-/// @return 조건 대기 및 시간 제한을 반환
-/// @retval true 조건이 들어왔다
-/// @retval false 조건이 들어오지 않았고. 시간 제한이 됐다
-QSAPI bool qn_cond_wait_for(QnCond* self, QnMutex* lock, uint milliseconds);
-
-/// @brief 각자 스레드가 조건을 기다린다
-/// @param self 조건
-/// @param lock 조건을 잠글 뮤텍스
-QSAPI void qn_cond_wait(QnCond* self, QnMutex* lock);
-
-// semaphore
-
-/// @brief 세마포어를 만든다
-/// @param initial 초기값
-/// @return 만들어진 세마포어
-QSAPI QnSem* qn_sem_new(int initial);
-
-/// @brief 세마포어를 삭제한다
-/// @param self 세마포어
-QSAPI void qn_sem_delete(QnSem* self);
-
-/// @brief 세마포어를 지정한 시간 만큼 대기해 본다
-/// @param self 세마포어
-/// @param milliseconds 대기할 시간 (밀리초)
-/// @return 대기 결과
-/// @retval true 신호가 떴다
-/// @retval false 신호가 오지 않았고 시간 제한을 넘었다
-QSAPI bool qn_sem_wait_for(QnSem* self, uint milliseconds);
-
-/// @brief 세마포어를 대기한다
-/// @param self 세마포어
-/// @return 대기 결과. 다만 별로 신경 쓰지 않아도 좋다
-QSAPI bool qn_sem_wait(QnSem* self);
-
-/// @brief 세마포어가 기다릴 수 있는지 조시한다
-/// @param self 세마포어
-/// @return 기다릴 수 있는지 여부
-/// @retval true 기다릴 수 있다
-/// @retval false 기다릴 수 없다
-QSAPI bool qn_sem_try(QnSem* self);
-
-/// @brief 세마포어 갯수를 반환한다
-/// @param self 세마포어
-/// @return 세마포어 갯수
-QSAPI int qn_sem_count(QnSem* self);
-
-/// @brief 세마포어를 알린다
-/// @param self 세마포어
-/// @return 성공하면 참
-QSAPI bool qn_sem_post(QnSem* self);
 
 
 //////////////////////////////////////////////////////////////////////////

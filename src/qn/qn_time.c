@@ -226,7 +226,13 @@ void qn_msleep(ullong microseconds)
 	do
 	{
 		if (SwitchToThread())
-			qn_pause();
+#if defined _M_IX86 || defined _M_X64
+			_mm_pause();
+#elif defined _M_ARM || defined _M_ARM64
+			_yield();
+#else
+#error unknown Windows platform! please place pause function on here!
+#endif
 		QueryPerformanceCounter(&t2);
 	} while (((double)(t2.QuadPart - t1.QuadPart) / (double)(cycle_impl.tick_count * 1000000)) < dms);
 #else

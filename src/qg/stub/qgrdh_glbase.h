@@ -208,7 +208,7 @@ QN_INLINE GLint qgl_get_shader_iv(GLuint handle, GLenum name)
 QN_INLINE QmMat4 qgl_mat4_irrcht_texture(float radius, float cx, float cy, float tx, float ty, float sx, float sy)
 {
 	float c, s;
-	qm_sincos(radius, &s, &c);
+	qm_sincosf(radius, &s, &c);
 	QmMat4 m =
 	{
 		._11 = c * sx,

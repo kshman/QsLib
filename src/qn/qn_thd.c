@@ -57,7 +57,7 @@ uint qn_spin_enter(QnSpinLock* lock)
 			for (uint count = current; count != 0; --count)
 			{
 				intrinsics++;
-				qn_pause();
+				_mm_pause();
 			}
 		}
 		current = current < backoff ? current << 1 : backoff;
@@ -68,7 +68,7 @@ uint qn_spin_enter(QnSpinLock* lock)
 		while (__iso_volatile_load32((int*)lock) != 0)
 		{
 			intrinsics++;
-			qn_pause();
+			_yield();
 		}
 	}
 #else
@@ -76,7 +76,15 @@ uint qn_spin_enter(QnSpinLock* lock)
 	{
 		const uint backoff = 64;
 		if (intrinsics < backoff)
-			qn_pause();
+		{
+#if defined __GNUC__ && (defined __i386__ || defined __amd64__ || defined __x86_64__)
+			__asm__ __volatile__("pause\n")
+#elif defined __GNUC__ && defined __aarch64__
+			__asm__ __volatile__("yield" ::: "memory")
+#else
+			qn_sleep(0);
+#endif
+		}
 		else
 			qn_sleep(0);
 	}
@@ -103,10 +111,6 @@ void qn_spin_leave(QnSpinLock* lock)
 
 //////////////////////////////////////////////////////////////////////////
 // 스레드
-
-#ifndef MAX_TLS
-#define MAX_TLS	64
-#endif
 
 // 실제 스레드
 typedef struct QnRealThread	QnRealThread;
@@ -142,7 +146,7 @@ static struct ThreadImpl
 	QnRealThread*		self;
 	QnRealThread*		threads;
 
-#ifndef USE_NO_LOCK
+#ifndef DISABLE_SPINLOCK
 	QnSpinLock			lock;
 #endif
 } thread_impl = { 0, };
@@ -534,7 +538,11 @@ static void* _qn_thd_entry(void* data)
 	_qn_thd_set_name(self);
 	self->base.cb_ret = self->base.cb_func(self->base.cb_data);
 	_qn_thd_exit(self, false);
+#ifdef _QN_WINDOWS_
+	return 0;
+#else
 	return NULL;
+#endif
 }
 
 //
@@ -747,8 +755,10 @@ struct QnCond
 //
 QnCond* qn_cond_new(void)
 {
+#ifdef _QN_WINDOWS_
+	QnCond* self = qn_alloc_zero_1(QnCond);
+#else
 	QnCond* self = qn_alloc_1(QnCond);
-#ifndef _QN_WINDOWS_
 	//static const pthread_condattr_t s_attr = PTHREAD_COND_INITIALIZER;
 	//pthread_cond_init(&self->cond, &s_attr);
 	pthread_cond_init(&self->cond, NULL);

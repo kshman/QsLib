@@ -19,12 +19,11 @@
 #include <GLES3/gl3.h>
 #elif defined USE_SDL2
 #include <SDL2/SDL.h>
-#include "gl/glad_supp.h"
-#include "gl/gles2.h"
+#include "glad/glad_supp.h"
+#include "glad/gles2.h"
 #else
-#include "gl/glad_supp.h"
-#include "gl/egl.h"
-#include "gl/gles2.h"
+#include "glad/egl.h"
+#include "glad/gles2.h"
 #endif
 #include "qgrdh_glbase.h"
 

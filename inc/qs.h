@@ -4,6 +4,7 @@
 //
 // 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
 // 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
+// SPDX-License-Identifier: UNLICENSE
 //
 #pragma once
 
@@ -11,6 +12,7 @@
 
 #ifdef _MSC_VER
 #pragma warning(push)
+#pragma warning(disable:4201)		// 비표준 확장이 사용됨: 구조체/공용 구조체의 이름이 없습니다.
 #pragma warning(disable:4820)		// 'bytes'바이트 채움 문자가 construct 'member_name' 뒤에 추가되었습니다. (패딩)
 #endif
 
@@ -37,6 +39,19 @@
 //////////////////////////////////////////////////////////////////////////
 // libraries
 
+// disable
+#ifdef __EMSCRIPTEN__
+#ifndef DISABLE_MEMORY_PROFILE
+#define DISABLE_MEMORY_PROFILE	1
+#endif
+#ifndef DISABLE_SPINLOCK
+#define DISABLE_SPINLOCK		1
+#endif
+#ifndef DISABLE_THREAD
+#define DISABLE_THREAD			1
+#endif
+#endif
+
 // include
 #include <qs_qn.h>
 #include <qs_ctn.h>
@@ -46,4 +61,5 @@
 
 #ifdef _MSC_VER
 #pragma warning(pop)
+#pragma comment(lib, "QsLib")
 #endif

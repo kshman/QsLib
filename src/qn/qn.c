@@ -33,7 +33,7 @@ struct Closure
 static struct RuntimeImpl
 {
 	bool32			inited;
-#ifndef USE_NO_LOCK
+#ifndef DISABLE_SPINLOCK
 	QnSpinLock		lock;
 #endif
 
@@ -96,7 +96,7 @@ static void qn_runtime_up(void)
 	qn_module_up();
 	qn_thread_up();
 
-	runtime_impl.error = qn_tls(qn_memfre);
+	runtime_impl.error = qn_tls(qn_mem_free);
 
 	qn_mukum_init(QnPropMukum, &runtime_impl.props);
 
@@ -267,9 +267,11 @@ bool qn_set_syserror(const int errcode)
 
 //
 #if !defined _LIB || !defined _STATIC
-#ifdef _QN_WINDOWS
+#ifdef _QN_WINDOWS_
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
+	QN_DUMMY(hModule);
+	QN_DUMMY(lpReserved);
 	switch (ul_reason_for_call)
 	{
 		case DLL_PROCESS_ATTACH:

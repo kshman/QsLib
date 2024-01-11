@@ -928,9 +928,9 @@ static void windows_check_mouse_release(void)
 
 #pragma region 윈도우 메시지
 // 키보드 메시지
-static bool windows_mesg_keyboard(const WPARAM wp, const bool down)
+static bool windows_mesg_keyboard(const WPARAM wp, const LPARAM lp, const bool down)
 {
-	const byte key = (byte)(wp & 0xFF);
+	byte key = (byte)(wp & 0xFF);
 
 #ifdef _DEBUG
 	if (down && key == VK_F12)
@@ -939,6 +939,19 @@ static bool windows_mesg_keyboard(const WPARAM wp, const bool down)
 		return true;
 	}
 #endif
+
+	switch (key)
+	{
+		case VK_SHIFT:
+			key = (byte)MapVirtualKey((lp & 0x00ff0000) >> 16, MAPVK_VSC_TO_VK_EX);
+			break;
+		case VK_CONTROL:
+			key = (lp & 0x01000000) != 0 ? VK_RCONTROL : VK_LCONTROL;
+			break;
+		case VK_MENU:
+			key = (lp & 0x01000000) != 0 ? VK_RMENU : VK_LMENU;
+			break;
+	}
 
 	return stub_event_on_keyboard((QikKey)key, down) == 0 ? false : key != VK_MENU;
 }
@@ -1066,12 +1079,12 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 	{
 		if (mesg == WM_KEYDOWN || mesg == WM_SYSKEYDOWN)
 		{
-			if (!windows_mesg_keyboard(wp, true))
+			if (!windows_mesg_keyboard(wp, lp, true))
 				result = 0;
 		}
 		else if (mesg == WM_KEYUP || mesg == WM_SYSKEYUP)
 		{
-			if (!windows_mesg_keyboard(wp, false))
+			if (!windows_mesg_keyboard(wp, lp, false))
 				result = 0;
 		}
 		else break;
@@ -1343,13 +1356,13 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				SetWindowPos(hwnd, HWND_TOP, suggested->left, suggested->top,
 					suggested->right - suggested->left, suggested->bottom - suggested->top,
 					SWP_NOACTIVATE | SWP_NOZORDER);
-			}
+		}
 #if false
 			const float xdpi = HIWORD(wp) / 96.0f;
 			const float ydpi = LOWORD(wp) / 96.0f;
 			// TODO: 여기에 DPI 변경 알림 이벤트 날리면 좋겠네
 #endif
-		} break;
+	} break;
 
 		case WM_GETDPISCALEDSIZE:
 		{
@@ -1368,7 +1381,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		default:
 			break;
-	}
+}
 
 poswindows_mesg_proc_exit:
 	if (result >= 0)

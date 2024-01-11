@@ -4,6 +4,7 @@
 //
 // 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
 // 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
+// SPDX-License-Identifier: UNLICENSE
 //
 
 #pragma once
@@ -15,7 +16,8 @@
 
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable: 4200)			// 비표준 확장이 사용됨: 구조체/공용 구조체의 배열 크기가 0입니다.
+#pragma warning(disable:4200)		// 비표준 확장이 사용됨: 구조체/공용 구조체의 배열 크기가 0입니다.
+#pragma warning(disable:5045)		// 컴파일러는 /Qspectre 스위치가 지정된 경우 메모리 로드를 위해 스펙터 완화를 삽입합니다.
 #endif
 
 QN_EXTC_BEGIN

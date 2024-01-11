@@ -8,9 +8,8 @@
 #include "pch.h"
 #include <ctype.h>
 #include <wctype.h>
-#ifndef __EMSCRIPTEN__
-#include "zlib/zlib.h"
-#endif
+#include "sdefl/sdefl.h"
+#include "sdefl/sinfl.h"
 
 //////////////////////////////////////////////////////////////////////////
 // 해시
@@ -295,6 +294,10 @@ uint qn_prime_shift(const uint value, const uint min, uint* shift)
 	return s_prime_shift_table[ts];
 }
 
+
+//////////////////////////////////////////////////////////////////////////
+// 메모리 조작
+
 //
 void* qn_memenc(void* restrict dest, const void* restrict src, const size_t size)
 {
@@ -328,61 +331,39 @@ void* qn_memdec(void* restrict dest, const void* restrict src, const size_t size
 //
 void* qn_memzcpr(const void* src, const size_t srcsize, /*NULLABLE*/size_t* destsize)
 {
-#ifndef __EMSCRIPTEN__
 	qn_val_if_fail(src != NULL, NULL);
 	qn_val_if_fail(srcsize > 0, NULL);
 
-	uLong tmp = ((uLong)srcsize + 12) / 1000;
-	tmp += tmp == 0 ? (uLong)srcsize + 13 : (uLong)srcsize + 12;
-
-	byte* p = qn_alloc(tmp, byte);
-	if (compress((Bytef*)p, &tmp, (const Bytef*)src, (uLong)srcsize) != Z_OK)
-	{
-		qn_free(p);
-		return NULL;
-	}
+	struct sdefl* s = qn_alloc_zero_1(struct sdefl);
+	int bound = sdefl_bound(srcsize);
+	byte* p = qn_alloc(bound, byte);
+	int ret = sdeflate(s, p, src, srcsize, 5);	// 압축 레벨은 5
+	qn_free(s);
 
 	if (destsize)
-		*destsize = tmp;
-
+		*destsize = (size_t)ret;
 	return p;
-#else
-	return NULL;
-#endif
 }
 
 //
-void* qn_memzucp(const void* src, const size_t srcsize, const size_t bufsize, /*NULLABLE*/size_t* destsize)
+void* qn_memzucp(const void* src, const size_t srcsize, /*NULLABLE*/size_t* destsize)
 {
-#ifndef __EMSCRIPTEN__
 	qn_val_if_fail(src != NULL, NULL);
 	qn_val_if_fail(srcsize > 0, NULL);
 
-	uLong size = bufsize == 0 ? (uLong)srcsize * 5 + 12 : (uLong)bufsize;
-	byte* p = qn_alloc(size, byte);
-	if (uncompress((Bytef*)p, &size, (const Bytef*)src, (uLong)srcsize) != Z_OK)
+	int size = srcsize * 3 + 12;
+	byte* p = NULL;
+	int ret;
+	do
 	{
-		qn_free(p);
-		return NULL;
-	}
+		size *= 2;
+		p = qn_realloc(p, size, byte);
+		ret = sinflate(p, size, src, srcsize);
+	} while (ret == size);
 
 	if (destsize)
-		*destsize = size;
-
+		*destsize = ret;
 	return p;
-#else
-	return NULL;
-#endif
-}
-
-//
-size_t qn_memagn(const size_t size)
-{
-	const size_t align = size % 16;
-	if (align == 0)
-		return 0;
-	const size_t advice = (size + 16 - 1) & (size_t)~(16 - 1);
-	return advice;
 }
 
 //
@@ -425,7 +406,7 @@ char* qn_memdmp(const void* restrict ptr, const size_t size, char* restrict outb
 	for (size_t i = 0, cnt = 1; i < size && cnt < buflen; i++, cnt++)
 	{
 		const byte m = *mem;
-		*ind = (m < 0x20 || m>0x7F) ? '.' : (const char)m;  // NOLINT
+		*ind = (m < 0x20 || m > 0x7F) ? '.' : (const char)m;  // NOLINT
 		mem++;
 		ind++;
 	}
@@ -433,6 +414,7 @@ char* qn_memdmp(const void* restrict ptr, const size_t size, char* restrict outb
 
 	return outbuf;
 }
+
 
 //////////////////////////////////////////////////////////////////////////
 // 퀵 소트
@@ -902,18 +884,19 @@ char* qn_stpcpy(char* restrict dest, const char* restrict src)
 	return dest - 1;
 }
 
+#ifdef DISABLE_MEMORY_PROFILE
 //
-char* qn_strdup(const char* p)
+char* qn_str_dup(const char* p)
 {
 	qn_val_if_fail(p != NULL, NULL);
 	const size_t len = strlen(p) + 1;
-	char* d = qn_alloc(len, char);
+	char* d = (char*)qn_mem_alloc(len, false);
 	qn_strcpy(d, p);
 	return d;
 }
 
 //
-char* qn_strcat(const char* p, ...)
+char* qn_str_cat(const char* p, ...)
 {
 	va_list va, vq;
 	va_start(va, p);
@@ -927,7 +910,7 @@ char* qn_strcat(const char* p, ...)
 		s = va_arg(va, char*);
 	}
 
-	char* str = qn_alloc(size, char);
+	char* str = (char*)qn_mem_alloc(size, false);
 	char* c = qn_stpcpy(str, p);
 	s = va_arg(vq, char*);
 	while (s)
@@ -940,6 +923,46 @@ char* qn_strcat(const char* p, ...)
 	va_end(va);
 	return str;
 }
+#else
+//
+char* qn_str_dup(const char* desc, size_t line, const char* p)
+{
+	qn_val_if_fail(p != NULL, NULL);
+	const size_t len = strlen(p) + 1;
+	char* d = (char*)qn_mem_alloc_info(len, false, desc, line);
+	qn_strcpy(d, p);
+	return d;
+}
+
+//
+char* qn_str_cat(const char* desc, size_t line, const char* p, ...)
+{
+	va_list va, vq;
+	va_start(va, p);
+	va_copy(vq, va);
+
+	size_t size = strlen(p) + 1;
+	const char* s = va_arg(va, char*);
+	while (s)
+	{
+		size += strlen(s);
+		s = va_arg(va, char*);
+	}
+
+	char* str = (char*)qn_mem_alloc_info(size, false, desc, line);
+	char* c = qn_stpcpy(str, p);
+	s = va_arg(vq, char*);
+	while (s)
+	{
+		c = qn_stpcpy(c, s);
+		s = va_arg(vq, char*);
+	}
+	va_end(vq);
+
+	va_end(va);
+	return str;
+}
+#endif
 
 //
 size_t qn_strfll(char* dest, const size_t pos, const size_t end, const int ch)
@@ -1347,9 +1370,17 @@ llong qn_strtoll(const char* p, const uint base)
 float qn_strtof(const char* p)
 {
 	float f = 0.0f;
+	int rsign = 1;
 	int e = 0;
 	int ch;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
+	if (*p == '+')
+		p++;
+	else if (*p == '-')
+	{
+		rsign = -1;
+		p++;
+	}
 	while ((ch = *p++) != '\0' && isdigit(ch))
 		f = f * 10.0f + (ch - '0');
 	if (ch == '.')
@@ -1389,16 +1420,24 @@ float qn_strtof(const char* p)
 		f *= 0.1f;
 		e++;
 	}
-	return f;
+	return rsign < 0 ? -f : f;
 }
 
 //
 double qn_strtod(const char* p)
 {
 	double d = 0.0;
+	int rsign = 1;
 	int e = 0;
 	int ch;
 	while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') ++p;
+	if (*p == '+')
+		p++;
+	else if (*p == '-')
+	{
+		rsign = -1;
+		p++;
+	}
 	while ((ch = *p++) != '\0' && isdigit(ch))
 		d = d * 10.0 + (ch - '0');
 	if (ch == '.')
@@ -1438,7 +1477,7 @@ double qn_strtod(const char* p)
 		d *= 0.1;
 		e++;
 	}
-	return d;
+	return rsign < 0 ? -d : d;
 }
 
 //
@@ -1619,18 +1658,19 @@ wchar* qn_wcpcpy(wchar* restrict dest, const wchar* restrict src)
 	return dest - 1;
 }
 
+#ifdef DISABLE_MEMORY_PROFILE
 //
-wchar* qn_wcsdup(const wchar* p)
+wchar* qn_wcs_dup(const wchar* p)
 {
 	qn_val_if_fail(p != NULL, NULL);
 	const size_t len = wcslen(p) + 1;
-	wchar* d = qn_alloc(len, wchar);
+	wchar* d = (wchar*)qn_mem_alloc(len * sizeof(wchar), false);
 	qn_wcscpy(d, p);
 	return d;
 }
 
 //
-wchar* qn_wcscat(const wchar* p, ...)
+wchar* qn_wcs_cat(const wchar* p, ...)
 {
 	va_list va, vq;
 	va_start(va, p);
@@ -1644,7 +1684,7 @@ wchar* qn_wcscat(const wchar* p, ...)
 		s = va_arg(va, wchar*);
 	}
 
-	wchar* str = qn_alloc(size, wchar);
+	wchar* str = (wchar*)qn_mem_alloc(size * sizeof(wchar), false);
 	wchar* c = qn_wcpcpy(str, p);
 	s = va_arg(vq, wchar*);
 	while (s)
@@ -1657,6 +1697,46 @@ wchar* qn_wcscat(const wchar* p, ...)
 	va_end(va);
 	return str;
 }
+#else
+//
+wchar* qn_wcs_dup(const char* desc, size_t line, const wchar* p)
+{
+	qn_val_if_fail(p != NULL, NULL);
+	const size_t len = wcslen(p) + 1;
+	wchar* d = (wchar*)qn_mem_alloc_info(len * sizeof(wchar), false, desc, line);
+	qn_wcscpy(d, p);
+	return d;
+}
+
+//
+wchar* qn_wcs_cat(const char* desc, size_t line, const wchar* p, ...)
+{
+	va_list va, vq;
+	va_start(va, p);
+	va_copy(vq, va);
+
+	size_t size = wcslen(p) + 1;
+	const wchar* s = va_arg(va, wchar*);
+	while (s)
+	{
+		size += wcslen(s);
+		s = va_arg(va, wchar*);
+	}
+
+	wchar* str = (wchar*)qn_mem_alloc_info(size * sizeof(wchar), false, desc, line);
+	wchar* c = qn_wcpcpy(str, p);
+	s = va_arg(vq, wchar*);
+	while (s)
+	{
+		c = qn_wcpcpy(c, s);
+		s = va_arg(vq, wchar*);
+	}
+	va_end(vq);
+
+	va_end(va);
+	return str;
+}
+#endif
 
 //
 size_t qn_wcsfll(wchar* dest, const size_t pos, const size_t end, const wint_t ch)
@@ -1890,7 +1970,7 @@ const wchar* qn_wcsbrk(const wchar* p, const wchar* c)
 }
 
 //
-wchar* k_wcschr(const wchar* p, wchar ch)
+wchar* qn_wcschr(const wchar* p, wchar ch)
 {
 #if defined _MSC_VER || defined __GNUC__
 	return wcschr(p, ch);
@@ -1901,7 +1981,7 @@ wchar* k_wcschr(const wchar* p, wchar ch)
 }
 
 //
-wchar* k_wcsrchr(const wchar* p, wchar ch)
+wchar* qn_wcsrchr(const wchar* p, wchar ch)
 {
 #if defined _MSC_VER || defined __GNUC__
 	return wcsrchr(p, ch);
@@ -2061,9 +2141,17 @@ llong qn_wcstoll(const wchar* p, const uint base)
 float qn_wcstof(const wchar* p)
 {
 	float f = 0.0f;
+	int rsign = 1;
 	int e = 0;
 	wint_t ch;
 	while (*p == L' ' || *p == L'\n' || *p == L'\r' || *p == L'\t') ++p;
+	if (*p == '+')
+		p++;
+	else if (*p == '-')
+	{
+		rsign = -1;
+		p++;
+	}
 	while ((ch = (wint_t)*p++) != L'\0' && iswdigit(ch))
 		f = f * 10.0f + (ch - L'0');
 	if (ch == L'.')
@@ -2103,16 +2191,24 @@ float qn_wcstof(const wchar* p)
 		f *= 0.1f;
 		e++;
 	}
-	return f;
+	return rsign < 0 ? -f : f;
 }
 
 //
 double qn_wcstod(const wchar* p)
 {
 	double d = 0.0;
+	int rsign = 1;
 	int e = 0;
 	wint_t ch;
 	while (*p == L' ' || *p == L'\n' || *p == L'\r' || *p == L'\t') ++p;
+	if (*p == '+')
+		p++;
+	else if (*p == '-')
+	{
+		rsign = -1;
+		p++;
+	}
 	while ((ch = (wint_t)*p++) != L'\0' && iswdigit(ch))
 		d = d * 10.0 + (ch - L'0');
 	if (ch == L'.')
@@ -2152,7 +2248,7 @@ double qn_wcstod(const wchar* p)
 		d *= 0.1;
 		e++;
 	}
-	return d;
+	return rsign < 0 ? -d : d;
 }
 
 //
@@ -2270,10 +2366,7 @@ uchar4 qn_u8cbn(const char* p)
 		for (int i = 1; i < len; i++)
 		{
 			if ((p[i] & 0xC0) != 0x80)
-			{
-				ret = (uchar4)-1;
-				break;
-			}
+				return 0;
 
 			ret <<= 6;
 			ret |= (p[i] & 0x3F);
@@ -2404,14 +2497,14 @@ int qn_u32ucs(uchar4 c, char* out)
 		out[1] = '\0';
 		return 1;
 	}
-	else if (c <= 0x7FF)
+	if (c <= 0x7FF)
 	{
 		out[0] = 0xC0 | (char)((c >> 6) & 0x1F);
 		out[1] = 0x80 | (char)(c & 0x3F);
 		out[2] = '\0';
 		return 2;
 	}
-	else if (c <= 0xFFFF)
+	if (c <= 0xFFFF)
 	{
 		out[0] = 0xE0 | (char)((c >> 12) & 0x0F);
 		out[1] = 0x80 | (char)((c >> 6) & 0x3F);
@@ -2419,7 +2512,7 @@ int qn_u32ucs(uchar4 c, char* out)
 		out[3] = '\0';
 		return 3;
 	}
-	else if (c <= 0x10FFFF)
+	if (c <= 0x10FFFF)
 	{
 		out[0] = 0xF0 | (char)((c >> 18) & 0x0F);
 		out[1] = 0x80 | (char)((c >> 12) & 0x3F);
@@ -2536,7 +2629,7 @@ size_t qn_u8to32(uchar4* restrict dest, const size_t destsize, const char* restr
 {
 	qn_val_if_fail(src, 0);
 
-	if (destsize == 0 || !dest)
+	if (dest == NULL || destsize == 0)
 	{
 		// utf-8 -> ucs-4의 길이는.... 그냥 utf-8의 길이.
 		return qn_u8len(src);
@@ -2565,10 +2658,11 @@ size_t qn_u8to16(uchar2* restrict dest, const size_t destsize, const char* restr
 {
 	qn_val_if_fail(src, 0);
 
-	if (destsize == 0 || !dest)
+	if (dest == NULL || destsize == 0)
 	{
 		// utf-8 -> ucs-4의 길이는.... 그냥 utf-8의 길이.
 		// 다만 서로게이트 문제는 어떻게 하나... 일단 이걸로 하고 나중에 고치자
+		// .... 서로게이트 문제 원래 발생 안한다 [2024-01-12 kim]
 		return qn_u8len(src);
 	}
 	else

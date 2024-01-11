@@ -84,14 +84,14 @@ static void shed_event_dispose(void)
 	qn_ret_if_fail(shed_event.mutex != NULL);
 
 	// 예약 메모리
-	qn_parr_foreach_1(&shed_event.reserved_mems, qn_memfre);
+	qn_parr_foreach_1(&shed_event.reserved_mems, qn_mem_free);
 	qn_parr_disp(&shed_event.reserved_mems);
 	// 우선 순위 큐
-	qn_nodelist_disp_cb(EventNodeList, &shed_event.prior, qn_memfre);
+	qn_nodelist_disp_cb(EventNodeList, &shed_event.prior, qn_mem_free);
 	// 큐
-	qn_nodelist_disp_cb(EventNodeList, &shed_event.queue, qn_memfre);
+	qn_nodelist_disp_cb(EventNodeList, &shed_event.queue, qn_mem_free);
 	// 캐시
-	qn_nodelist_disp_cb(EventNodeList, &shed_event.cache, qn_memfre);
+	qn_nodelist_disp_cb(EventNodeList, &shed_event.cache, qn_mem_free);
 
 	qn_mutex_delete(shed_event.mutex);
 }
@@ -329,7 +329,7 @@ void qg_close_stub(void)
 
 	qn_timer_delete(self->timer);
 
-	qn_pctnr_foreach_1(&self->monitors, qn_memfre);
+	qn_pctnr_foreach_1(&self->monitors, qn_mem_free);
 	qn_pctnr_disp(&self->monitors);
 
 	qn_list_disp(StubListEventCb, &self->callbacks);

@@ -4,6 +4,7 @@
 //
 // 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
 // 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
+// SPDX-License-Identifier: UNLICENSE
 //
 
 #pragma once
@@ -63,6 +64,18 @@ QN_EXTC_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
 // macro & inline
+
+#if defined _MSC_VER
+#define QM_BARRIER()	_ReadWriteBarrier()
+#elif defined __GNUC__
+#if defined __i386__ || defined __amd64__ || defined __x86_64__
+#define QM_BARRIER()	__asm__ __volatile__("" : : : "memory");
+#elif defined __aarch64__
+#define QM_BARRIER()	__asm__ __volatile__("dsb sy" : : : "memory")
+#else
+#define QM_BARRIER()
+#endif
+#endif
 
 #ifndef QM_FLOORF
 #define QM_FLOORF		floorf
@@ -159,7 +172,7 @@ QN_INLINE float qm_lerpf(const float left, const float right, const float scale)
 }
 
 /// @brief 사인과 코사인을 동시에 계산
-QN_INLINE void qm_sincos(const float f, float* s, float* c)
+QN_INLINE void qm_sincosf(const float f, float* s, float* c)
 {
 	*s = QM_SINF(f);
 	*c = QM_COSF(f);
@@ -184,7 +197,7 @@ QN_INLINE float qm_sqrtf(float f)
 /// @brief 1을 나눈 제곱근
 QN_INLINE float qm_inv_sqrtf(float f)
 {
-	return 1.0f / QM_SQRTF(f);
+	return 1.0f / qm_sqrtf(f);
 }
 
 
@@ -275,18 +288,13 @@ typedef union QN_ALIGN(16) QmVec4
 	struct
 	{
 		QmVec2 XY;
-		QmVec2 _ZW;
+		QmVec2 ZW;
 	};
 	struct
 	{
 		float _X;
 		QmVec2 YZ;
 		float _W;
-	};
-	struct
-	{
-		QmVec2 _XY;
-		QmVec2 ZW;
 	};
 	struct
 	{
@@ -320,18 +328,13 @@ typedef union QN_ALIGN(16) QmPlane
 	struct
 	{
 		QmVec2 AB;
-		QmVec2 _CD;
+		QmVec2 CD;
 	};
 	struct
 	{
 		float _A;
 		QmVec2 BC;
 		float _D;
-	};
-	struct
-	{
-		QmVec2 _AB;
-		QmVec2 CD;
 	};
 	float f[4];
 #if defined QM_USE_SSE
@@ -414,7 +417,7 @@ typedef union QmVecI3
 	};
 	struct
 	{
-		QmPoint XY;
+		QmVecI2 XY;
 		float _Z;
 	};
 	struct
@@ -432,7 +435,7 @@ typedef union QmVecI4
 	{
 		union
 		{
-			QmVec3 XYZ;
+			QmVecI3 XYZ;
 			struct
 			{
 				int X, Y, Z;
@@ -443,6 +446,11 @@ typedef union QmVecI4
 	struct
 	{
 		int Left, Top, Right, Bottom;
+	};
+	struct
+	{
+		QmVecI2 XY;
+		QmVecI2 ZW;
 	};
 	struct
 	{
@@ -475,8 +483,8 @@ typedef struct QmLine3
 typedef struct QmTrfm
 {
 	QmQuat Rotation;
-	QmVec3 Location;
-	QmVec3 Scale;
+	QmVec4 Location;	// 하지만 벡터3
+	QmVec4 Scale;		// 하지만 벡터3
 } QmTrfm;
 
 /// @brief 하프 벡터2
@@ -507,7 +515,20 @@ typedef union QmVecH4
 {
 	struct
 	{
-		halfint X, Y, Z, W;
+		union
+		{
+			QmVecH3 XYZ;
+			struct
+			{
+				halfint X, Y, Z;
+			};
+		};
+		halfint W;
+	};
+	struct
+	{
+		QmVecH2 XY;
+		QmVecH2 ZW;
 	};
 	struct
 	{
@@ -2265,6 +2286,21 @@ QN_INLINE QmQuat qm_quatv3(const QmVec3 p, const float w)
 	return r;
 }
 
+/// @brief 사원수 초기화
+///	@param q 반환 사원수
+QN_INLINE QmQuat qm_quat_identity(void)		// identify
+{
+	QmQuat r =
+#if defined QM_USE_SSE
+	{ .m128 = _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f) };
+#elif defined QM_USE_NEON
+	{.neon = { 0.0f, 0.0f, 0.0f, 1.0f } };
+#else
+	{.X = 0.0f, .Y = 0.0f, .Z = 0.0f, .W = 1.0f };
+#endif
+	return r;
+}
+
 /// @brief 사원수 값 설정
 ///	@param q 반환 사원수
 /// @param x,y,z,w 사원수 요소
@@ -2722,7 +2758,7 @@ QSAPI void qm_quat_mat_extend(QmQuat* pq, const QmMat4* rot);
 QN_INLINE QmQuat qm_quat_axis_vec(const QmVec3 v, const float angle)
 {
 	float s, c;
-	qm_sincos(angle * 0.5f, &s, &c);
+	qm_sincosf(angle * 0.5f, &s, &c);
 	return qm_quatv3(qm_vec3_mag(qm_vec3_norm(v), s), c);
 }
 
@@ -2732,9 +2768,9 @@ QN_INLINE QmQuat qm_quat_axis_vec(const QmVec3 v, const float angle)
 QN_INLINE QmQuat qm_quat_vec(const QmVec3 rot)
 {
 	float rs, rc, ps, pc, ys, yc;
-	qm_sincos(rot.X * 0.5f, &rs, &rc);
-	qm_sincos(rot.Y * 0.5f, &ps, &pc);
-	qm_sincos(rot.Z * 0.5f, &ys, &yc);
+	qm_sincosf(rot.X * 0.5f, &rs, &rc);
+	qm_sincosf(rot.Y * 0.5f, &ps, &pc);
+	qm_sincosf(rot.Z * 0.5f, &ys, &yc);
 	const float pcyc = pc * yc;
 	const float psyc = ps * yc;
 	const float pcys = pc * ys;
@@ -2756,7 +2792,7 @@ QN_INLINE QmQuat qm_quat_x(const float rot_x)
 {
 	QmQuat r;
 	r.Y = r.Z = 0.0f;
-	qm_sincos(rot_x * 0.5f, &r.X, &r.W);
+	qm_sincosf(rot_x * 0.5f, &r.X, &r.W);
 	return r;
 }
 
@@ -2767,7 +2803,7 @@ QN_INLINE QmQuat qm_quat_y(const float rot_y)
 {
 	QmQuat r;
 	r.X = r.Z = 0.0f;
-	qm_sincos(rot_y * 0.5f, &r.Y, &r.W);
+	qm_sincosf(rot_y * 0.5f, &r.Y, &r.W);
 	return r;
 }
 
@@ -2778,7 +2814,7 @@ QN_INLINE QmQuat qm_quat_z(const float rot_z)
 {
 	QmQuat r;
 	r.X = r.Y = 0.0f;
-	qm_sincos(rot_z * 0.5f, &r.Z, &r.W);
+	qm_sincosf(rot_z * 0.5f, &r.Z, &r.W);
 	return r;
 }
 
@@ -2793,7 +2829,7 @@ QN_INLINE QmQuat qm_quat_exp(const QmQuat q)
 		return t;
 	}
 	float sn, cn;
-	qm_sincos(n, &sn, &cn);
+	qm_sincosf(n, &sn, &cn);
 	n = 1.0f / n;
 	return qm_quat(sn * q.X * n, sn * q.Y * n, sn * q.Z * n, cn);
 }
@@ -2819,6 +2855,37 @@ QN_INLINE QmVec3 qm_quat_ln(const QmQuat q)
 
 
 // 행렬
+
+/// @brief 단위 행렬 (항등 행렬)
+QN_INLINE QmMat4 qm_mat4_identity(void)
+{
+	QmMat4 r =
+	{
+#if defined QM_USE_SSE
+		.m128 =
+		{
+			_mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f),
+			_mm_setr_ps(0.0f, 1.0f, 0.0f, 0.0f),
+			_mm_setr_ps(0.0f, 0.0f, 1.0f, 0.0f),
+			_mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f),
+		},
+#elif defined QM_USE_NEON
+		.neon =
+		{
+			{ 1.0f, 0.0f, 0.0f, 0.0f },
+			{ 0.0f, 1.0f, 0.0f, 0.0f },
+			{ 0.0f, 0.0f, 1.0f, 0.0f },
+			{ 0.0f, 0.0f, 0.0f, 1.0f },
+		},
+#else
+		_11 = 1.0f, _12 = 0.0f, _13 = 0.0f, _14 = 0.0f,
+		_21 = 0.0f, _22 = 1.0f, _23 = 0.0f, _24 = 0.0f,
+		_31 = 0.0f, _32 = 0.0f, _33 = 1.0f, _34 = 0.0f,
+		_41 = 0.0f, _42 = 0.0f, _43 = 0.0f, _44 = 1.0f,
+#endif
+	};
+	return r;
+}
 
 /// @brief 행렬을 0으로 초기화 한다
 /// @param pm 초기화할 대상 행렬
@@ -3428,7 +3495,7 @@ QN_INLINE QmMat4 qm_mat4_rot(const float angle, const QmVec3 axis)
 {
 	QmVec3 norm = qm_vec3_norm(axis);
 	float s, c;
-	qm_sincos(angle, &s, &c);
+	qm_sincosf(angle, &s, &c);
 	float nc = 1.0f - c;
 	QmMat4 r =
 	{
@@ -3500,9 +3567,9 @@ QN_INLINE QmMat4 qm_mat4_vec(const QmVec3 rot)
 {
 	float sr, sp, sy;
 	float cr, cp, cy;
-	qm_sincos(rot.X, &sr, &cr);
-	qm_sincos(rot.Y, &sp, &cp);
-	qm_sincos(rot.Z, &sy, &cy);
+	qm_sincosf(rot.X, &sr, &cr);
+	qm_sincosf(rot.Y, &sp, &cp);
+	qm_sincosf(rot.Z, &sy, &cy);
 	const float srsp = sr * sp;
 	const float crsp = cr * sp;
 	QmMat4 r =
@@ -3569,7 +3636,7 @@ QN_INLINE QmMat4 qm_mat4_quat(const QmQuat rot)
 QN_INLINE QmMat4 qm_mat4_x(const float rot)
 {
 	float vsin, vcos;
-	qm_sincos(rot, &vsin, &vcos);
+	qm_sincosf(rot, &vsin, &vcos);
 	QmMat4 r =
 	{
 		._11 = 1.0f, ._12 = 0.0f, ._13 = 0.0f, ._14 = 0.0f,
@@ -3585,7 +3652,7 @@ QN_INLINE QmMat4 qm_mat4_x(const float rot)
 QN_INLINE QmMat4 qm_mat4_y(const float rot)
 {
 	float vsin, vcos;
-	qm_sincos(rot, &vsin, &vcos);
+	qm_sincosf(rot, &vsin, &vcos);
 	QmMat4 r =
 	{
 		._11 = vcos, ._12 = 0.0f, ._13 = -vsin, ._14 = 0.0f,
@@ -3601,7 +3668,7 @@ QN_INLINE QmMat4 qm_mat4_y(const float rot)
 QN_INLINE QmMat4 qm_mat4_z(const float rot)
 {
 	float vsin, vcos;
-	qm_sincos(rot, &vsin, &vcos);
+	qm_sincosf(rot, &vsin, &vcos);
 	QmMat4 r =
 	{
 		._11 = vcos, ._12 = vsin, ._13 = 0.0f, ._14 = 0.0f,
@@ -3670,29 +3737,11 @@ QN_INLINE QmMat4 qm_mat4_shadow(const QmVec4 light, const QmPlane plane)
 /// @param loc 위치 (원점일 경우 NULL)
 QN_INLINE QmMat4 qm_mat4_affine(const QmVec3* scl, const QmVec3* rotcenter, const QmQuat* rot, const QmVec3* loc)
 {
-	QmMat4 m1, m2, m3, m4, m5;
-	if (scl)
-		qm_mat4_scl_vec(*scl);
-	else
-		qm_mat4_rst(&m1);
-	if (rotcenter)
-	{
-		m2 = qm_mat4_loc(-rotcenter->X, -rotcenter->Y, -rotcenter->Z);
-		m4 = qm_mat4_loc_vec(*rotcenter);
-	}
-	else
-	{
-		qm_mat4_rst(&m2);
-		qm_mat4_rst(&m4);
-	}
-	if (rot)
-		m3 = qm_mat4_quat(*rot);
-	else
-		qm_mat4_rst(&m3);
-	if (loc)
-		m5 = qm_mat4_loc_vec(*loc);
-	else
-		qm_mat4_rst(&m5);
+	QmMat4 m1 = scl ? qm_mat4_scl_vec(*scl) : qm_mat4_identity();
+	QmMat4 m2 = rotcenter ? qm_mat4_loc(-rotcenter->X, -rotcenter->Y, -rotcenter->Z) : qm_mat4_identity();
+	QmMat4 m4 = rotcenter ? qm_mat4_loc_vec(*rotcenter) : qm_mat4_identity();
+	QmMat4 m3 = rot ? qm_mat4_quat(*rot) : qm_mat4_identity();
+	QmMat4 m5 = loc ? qm_mat4_loc_vec(*loc) : qm_mat4_identity();
 	QmMat4 m = qm_mat4_mul(m1, m2);
 	m = qm_mat4_mul(m, m3);
 	m = qm_mat4_mul(m, m4);
@@ -4166,7 +4215,7 @@ QN_INLINE bool qm_line3_intersect_sphere(const QmLine3 l, const QmVec3 org, cons
 /// @return 변환한 16비트 실수
 QN_INLINE halfint qm_f2hf(const float v)
 {
-	qn_barrier();
+	QM_BARRIER();
 	uint u = *(const uint*)&v;
 	const uint s = (u & 0x80000000U) >> 16U;
 	u = u & 0x7FFFFFFFU;
@@ -4195,7 +4244,7 @@ QN_INLINE halfint qm_f2hf(const float v)
 /// @return 변환한 32비트 실수
 QN_INLINE float qm_hf2f(const halfint v)
 {
-	qn_barrier();
+	QM_BARRIER();
 	uint m = (uint)(v & 0x03FF);
 	uint e;
 

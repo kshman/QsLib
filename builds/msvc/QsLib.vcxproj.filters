@@ -19,12 +19,6 @@
     <Filter Include="헤더 파일\qn">
       <UniqueIdentifier>{fa989a00-4fae-4984-a2bd-287244ac5b8b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="헤더 파일\qn\zlib">
-      <UniqueIdentifier>{6cf5d7e3-25ee-4275-8f93-ef7a75c317a7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\qn\zlib">
-      <UniqueIdentifier>{9186560c-4ecf-4b83-86bc-8779a46f03c4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="소스 파일\qg">
       <UniqueIdentifier>{4bcc6fad-7481-4b3c-8c10-df0245cee5ea}</UniqueIdentifier>
     </Filter>
@@ -37,54 +31,27 @@
     <Filter Include="헤더 파일\qg\stub">
       <UniqueIdentifier>{ca19cfa2-72c5-4ba0-a9be-503b7f6ceffd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="헤더 파일\qg\stub\gl">
+    <Filter Include="헤더 파일\qg\stub\glad">
       <UniqueIdentifier>{307c7f28-4e79-4f81-89f5-e482e102dbaa}</UniqueIdentifier>
     </Filter>
     <Filter Include="헤더 파일\inc">
       <UniqueIdentifier>{2aad8de5-be3d-426a-880b-89547be4bffe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\qn\sdefl">
+      <UniqueIdentifier>{5b3b9ad7-4e0b-4b04-a35c-307beac8bea4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\qn\sdefl">
+      <UniqueIdentifier>{086126ea-f95e-4a0a-9419-47c89a65005d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\pch.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\zutil.h">
-      <Filter>헤더 파일\qn\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\zlib_proxy.h">
-      <Filter>헤더 파일\qn\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\zlib.h">
-      <Filter>헤더 파일\qn\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\zconf.h">
-      <Filter>헤더 파일\qn\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\trees.h">
-      <Filter>헤더 파일\qn\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\inftrees.h">
-      <Filter>헤더 파일\qn\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\inflate.h">
-      <Filter>헤더 파일\qn\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\inffixed.h">
-      <Filter>헤더 파일\qn\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\inffast.h">
-      <Filter>헤더 파일\qn\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\gzguts.h">
-      <Filter>헤더 파일\qn\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\deflate.h">
-      <Filter>헤더 파일\qn\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qn\zlib\crc32.h">
-      <Filter>헤더 파일\qn\zlib</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\qs_conf.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qs_proxy.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\qg\stub\qgstub_win_func.h">
@@ -102,20 +69,11 @@
     <ClInclude Include="..\..\src\qg\stub\qgrdh_glbase.h">
       <Filter>헤더 파일\qg\stub</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\gl\egl.h">
-      <Filter>헤더 파일\qg\stub\gl</Filter>
+    <ClInclude Include="..\..\src\qg\stub\glad\egl.h">
+      <Filter>헤더 파일\qg\stub\glad</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\gl\gl.h">
-      <Filter>헤더 파일\qg\stub\gl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\gl\glad_supp.h">
-      <Filter>헤더 파일\qg\stub\gl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\gl\gles2.h">
-      <Filter>헤더 파일\qg\stub\gl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\gl\wgl.h">
-      <Filter>헤더 파일\qg\stub\gl</Filter>
+    <ClInclude Include="..\..\src\qg\stub\glad\wgl.h">
+      <Filter>헤더 파일\qg\stub\glad</Filter>
     </ClInclude>
     <ClInclude Include="..\..\inc\qs.h">
       <Filter>헤더 파일\inc</Filter>
@@ -134,6 +92,18 @@
     </ClInclude>
     <ClInclude Include="..\..\inc\qs_qn.h">
       <Filter>헤더 파일\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\glad\gl.h">
+      <Filter>헤더 파일\qg\stub\glad</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\glad\gles2.h">
+      <Filter>헤더 파일\qg\stub\glad</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qn\sdefl\sdefl.h">
+      <Filter>헤더 파일\qn\sdefl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qn\sdefl\sinfl.h">
+      <Filter>헤더 파일\qn\sdefl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -161,51 +131,6 @@
     <ClCompile Include="..\..\src\qn\qn_str.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\adler32.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\compress.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\crc32.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\deflate.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\gzclose.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\gzlib.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\gzread.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\gzwrite.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\infback.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\inffast.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\inflate.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\inftrees.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\trees.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\uncompr.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\qn\zlib\zutil.c">
-      <Filter>소스 파일\qn\zlib</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\qg\qg_kmc.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
@@ -224,9 +149,6 @@
     <ClCompile Include="..\..\src\qg\stub\qgstub_win.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\zconsole\zz.c">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\qg\stub\qgstub_wlx.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
@@ -241,6 +163,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\qg\stub\qgstub_emscripten.c">
       <Filter>소스 파일\qg\stub</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qn\sdefl\sdefl.c">
+      <Filter>소스 파일\qn\sdefl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qn\sdefl\sinfl.c">
+      <Filter>소스 파일\qn\sdefl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
