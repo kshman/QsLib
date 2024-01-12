@@ -494,7 +494,7 @@ typedef uint64_t                khronos_uint64_t;
  * Ideally, we could just use (u)intptr_t everywhere, but this could result in
  * ABI breakage if khronos_uintptr_t is changed from unsigned long to
  * unsigned long long or similar (this results in different C++ name mangling).
- * To avoid changes for existing platforms, we restrict usage of intptr_t to
+ * To avoid changes for existing platforms, we RESTRICT usage of intptr_t to
  * platforms where the size of a pointer is larger than the size of long.
  */
 #if defined(__SIZEOF_LONG__) && defined(__SIZEOF_POINTER__)

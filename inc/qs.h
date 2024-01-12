@@ -39,19 +39,6 @@
 //////////////////////////////////////////////////////////////////////////
 // libraries
 
-// disable
-#ifdef __EMSCRIPTEN__
-#ifndef DISABLE_MEMORY_PROFILE
-#define DISABLE_MEMORY_PROFILE	1
-#endif
-#ifndef DISABLE_SPINLOCK
-#define DISABLE_SPINLOCK		1
-#endif
-#ifndef DISABLE_THREAD
-#define DISABLE_THREAD			1
-#endif
-#endif
-
 // include
 #include <qs_qn.h>
 #include <qs_ctn.h>

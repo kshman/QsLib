@@ -85,7 +85,7 @@ static void qn_dbg_buf_ch(const int ch)
 }
 
 //
-static void qn_dbg_buf_str(const char* restrict s)
+static void qn_dbg_buf_str(const char* RESTRICT s)
 {
 	int len = (int)strlen(s);
 	if (len + debug_impl.out_pos > MAX_DEBUG_LENGTH - 1)
@@ -97,7 +97,7 @@ static void qn_dbg_buf_str(const char* restrict s)
 }
 
 //
-static void qn_dbg_buf_va(const char* restrict fmt, va_list va)
+static void qn_dbg_buf_va(const char* RESTRICT fmt, va_list va)
 {
 	const int len = qn_vsnprintf(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - (size_t)debug_impl.out_pos, fmt, va);
 	debug_impl.out_pos += len;
@@ -111,7 +111,7 @@ static void qn_dbg_buf_int(const int value)
 }
 
 //
-static void qn_dbg_buf_head(const char* restrict head)
+static void qn_dbg_buf_head(const char* RESTRICT head)
 {
 	if (head == NULL)
 		head = "(unknown)";
@@ -150,7 +150,7 @@ static int qn_dbg_buf_flush(void)
 }
 
 //
-int qn_debug_assert(const char* restrict expr, const char* restrict filename, const int line)
+int qn_debug_assert(const char* RESTRICT expr, const char* RESTRICT filename, const int line)
 {
 	qn_val_if_fail(expr, -1);
 	qn_dbg_buf_str("ASSERT FAILED : ");
@@ -167,7 +167,7 @@ int qn_debug_assert(const char* restrict expr, const char* restrict filename, co
 }
 
 //
-_Noreturn void qn_debug_halt(const char* restrict head, const char* restrict mesg)
+_Noreturn void qn_debug_halt(const char* RESTRICT head, const char* RESTRICT mesg)
 {
 	qn_dbg_buf_str("HALT ");
 	qn_dbg_buf_head(head);
@@ -180,7 +180,7 @@ _Noreturn void qn_debug_halt(const char* restrict head, const char* restrict mes
 }
 
 //
-int qn_debug_outputs(const bool breakpoint, const char* restrict head, const char* restrict mesg)
+int qn_debug_outputs(const bool breakpoint, const char* RESTRICT head, const char* RESTRICT mesg)
 {
 	qn_dbg_buf_head(head);
 	qn_dbg_buf_str(mesg);
@@ -192,7 +192,7 @@ int qn_debug_outputs(const bool breakpoint, const char* restrict head, const cha
 }
 
 //
-int qn_debug_outputf(const bool breakpoint, const char* restrict head, const char* restrict fmt, ...)
+int qn_debug_outputf(const bool breakpoint, const char* RESTRICT head, const char* RESTRICT fmt, ...)
 {
 	qn_dbg_buf_head(head);
 	va_list va;
@@ -243,7 +243,7 @@ int qn_outputf(const char* fmt, ...)
 #define MEMORY_SIGN_HEAD		('Q' | 'M'<<8 | 'B'<<16 | '\0'<<24)
 #define MEMORY_SIGN_FREE		('B' | 'A'<<8 | 'D'<<16 | '\0'<<24)
 
-#ifdef DISABLE_MEMORY_PROFILE
+#ifdef QS_NO_MEMORY_PROFILE
 #define _memsize(size)			(((size)+MEMORY_GAP+MEMORY_BLOCK_SIZE-1)&(size_t)~(MEMORY_BLOCK_SIZE-1))
 
 static void* qn_internal_alloc(size_t size, bool zero);
@@ -295,21 +295,21 @@ static struct MemImpl
 	HANDLE			heap;
 #endif
 
-#ifndef DISABLE_MEMORY_PROFILE
+#ifndef QS_NO_MEMORY_PROFILE
 	MemBlock*		frst;
 	MemBlock*		last;
 	size_t			index;
 	size_t			count;
 	size_t			block_size;
 
-#ifndef DISABLE_SPINLOCK
+#ifndef QS_NO_SPINLOCK
 	QnSpinLock		lock;
 #endif
 #endif
 	char			dbg_buf[MAX_DEBUG_LENGTH];
 } mem_impl =
 {
-#ifdef DISABLE_MEMORY_PROFILE
+#ifdef QS_NO_MEMORY_PROFILE
 	.table = { qn_internal_alloc, qn_internal_realloc, qn_internal_free, },
 #else
 	.table = { qn_mpf_alloc, qn_mpf_realloc, qn_mpf_free, },
@@ -326,7 +326,7 @@ void qn_mpf_up(void)
 #endif
 }
 
-#ifndef DISABLE_MEMORY_PROFILE
+#ifndef QS_NO_MEMORY_PROFILE
 //
 static void qn_mpf_clear(void)
 {
@@ -367,7 +367,7 @@ static void qn_mpf_clear(void)
 //
 void qn_mpf_down(void)
 {
-#ifndef DISABLE_MEMORY_PROFILE
+#ifndef QS_NO_MEMORY_PROFILE
 	qn_mpf_clear();
 #endif
 
@@ -382,7 +382,7 @@ void qn_mpf_down(void)
 #endif
 }
 
-#ifdef DISABLE_MEMORY_PROFILE
+#ifdef QS_NO_MEMORY_PROFILE
 #ifdef _QN_WINDOWS_
 #pragma warning(disable: 4702)
 //
@@ -729,7 +729,7 @@ static void qn_mpf_free(void* ptr)
 bool qn_memtbl(const QnAllocTable* table)
 {
 	if (
-#ifndef DISABLE_MAX_PRIVILEGE
+#ifndef QS_NO_MEMORY_PROFILE
 		mem_impl.index != 0 ||
 #endif
 		table == NULL ||
@@ -747,59 +747,59 @@ void qn_mem_free(void* ptr)
 	mem_impl.table._free(ptr);
 }
 
-#ifdef DISABLE_MEMORY_PROFILE
+#ifdef QS_NO_MEMORY_PROFILE
 //
-void* qn_mem_alloc(const size_t size, const bool zero)
+void* qn_a_alloc(const size_t size, const bool zero)
 {
 	return mem_impl.table._alloc(size, zero);
 }
 
 //
-void* qn_mem_realoc(void* ptr, const size_t size)
+void* qn_a_realloc(void* ptr, const size_t size)
 {
 	return mem_impl.table._realloc(ptr, size);
 }
 
 //
-void* qn_mem_dup(const void* ptr, size_t size_or_zero_if_psz)
+void* qn_a_mem_dup(const void* ptr, size_t size_or_zero_if_psz)
 {
 	qn_val_if_fail(ptr != NULL, NULL);
 	if (size_or_zero_if_psz > 0)
 	{
-		byte* m = (byte*)qn_mem_alloc(size_or_zero_if_psz, false);
+		byte* m = (byte*)qn_a_alloc(size_or_zero_if_psz, false);
 		memcpy(m, ptr, size_or_zero_if_psz);
 		return m;
 	}
 	const size_t len = strlen((const char*)ptr) + 1;
-	char* d = (char*)qn_mem_alloc(len, false);
+	char* d = (char*)qn_a_alloc(len, false);
 	qn_strcpy(d, (const char*)ptr);
 	return d;
 }
 #else
 //
-void* qn_mem_alloc_info(const size_t size, const bool zero, const char* desc, const size_t line)
+void* qn_a_i_alloc(const size_t size, const bool zero, const char* desc, const size_t line)
 {
 	return mem_impl.table._alloc(size, zero, desc, line);
 }
 
 //
-void* qn_mem_realloc_info(void* ptr, const size_t size, const char* desc, const size_t line)
+void* qn_a_i_realloc(void* ptr, const size_t size, const char* desc, const size_t line)
 {
 	return mem_impl.table._realloc(ptr, size, desc, line);
 }
 
 //
-void* qn_mem_dup_info(const void* ptr, size_t size_or_zero_if_psz, const char* desc, size_t line)
+void* qn_a_i_mem_dup(const void* ptr, size_t size_or_zero_if_psz, const char* desc, size_t line)
 {
 	qn_val_if_fail(ptr != NULL, NULL);
 	if (size_or_zero_if_psz > 0)
 	{
-		byte* m = (byte*)qn_mem_alloc_info(size_or_zero_if_psz, false, desc, line);
+		byte* m = (byte*)qn_a_i_alloc(size_or_zero_if_psz, false, desc, line);
 		memcpy(m, ptr, size_or_zero_if_psz);
 		return m;
 	}
 	const size_t len = strlen((const char*)ptr) + 1;
-	char* d = (char*)qn_mem_alloc_info(len, false, desc, line);
+	char* d = (char*)qn_a_i_alloc(len, false, desc, line);
 	qn_strcpy(d, (const char*)ptr);
 	return d;
 }

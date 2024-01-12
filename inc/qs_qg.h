@@ -246,13 +246,14 @@ typedef enum QgFlag
 {
 	QGFLAG_NONE = 0,
 	// 스터브 및 렌더러 플래그 (0~7)
-	QGFLAG_FULLSCREEN = QN_BIT(0),							/// @brief 전체 화면
+	QGFLAG_FULLSCREEN = QN_BIT(0),							/// @brief 시작할 때 전체 화면
 	QGFLAG_BORDERLESS = QN_BIT(1),							/// @brief 테두리 없는 윈도우
-	QGFLAG_RESIZABLE = QN_BIT(2),							/// @brief 크기 변경할 수 있음
+	QGFLAG_RESIZE = QN_BIT(2),								/// @brief 크기 변경할 수 있음
 	QGFLAG_NOTITLE = QN_BIT(3),								/// @brief 타이틀 바가 없음
 	QGFLAG_FOCUS = QN_BIT(4),								/// @brief 입력 포커스 받을 수 있음
 	QGFLAG_TEXT = QN_BIT(5),								/// @brief 텍스트 입력을 받을 수 있음
 	QGFLAG_DPISCALE = QN_BIT(6),							/// @brief DPI 스케일
+	QGFLAG_MAXIMIZE = QN_BIT(7),							/// @brief 시작할 때 최대화
 	// 렌더러 플래그 (16~30)
 	QGFLAG_VSYNC = QN_BIT(16),								/// @brief VSYNC 켜기
 	QGFLAG_MSAA = QN_BIT(17),								/// @brief 멀티 샘플링 사용
@@ -272,8 +273,9 @@ typedef enum QgFeature
 	QGFEATURE_ENABLE_DROP = QN_BIT(2),						/// @brief 드래그 드랍 사용
 	QGFEATURE_ENABLE_SYSWM = QN_BIT(3),						/// @brief 시스템 메시지 받기
 	QGFEATURE_ENABLE_IDLE = QN_BIT(4),						/// @brief 비활성 대기 상태 사용
-	QGFEATURE_RELATIVE_MOUSE = QN_BIT(5),				/// @brief 마우스 잡기
+	QGFEATURE_RELATIVE_MOUSE = QN_BIT(5),					/// @brief 마우스 잡기
 	QGFEATURE_REMOVE_EVENTS = QN_BIT(6),					/// @brief 루프 때 사용하지 않은 이벤트를 삭제한다
+	QGFEATURE_ENABLE_ASPECT = QN_BIT(7),
 	// 렌더러 종류 (24~31)
 	QGRENDERER_ES3 = QN_BIT(29),
 	QGRENDERER_OPENGL = QN_BIT(30),
@@ -283,16 +285,20 @@ typedef enum QgFeature
 /// @brief 스터브 상태
 typedef enum QgStubStat
 {
-	QGSSTT_NONE = 0,
-	QGSSTT_EXIT = QN_BIT(0),								/// @brief 끝내기
-	QGSSTT_ACTIVE = QN_BIT(1),								/// @brief 스터브가 활성 상태
-	QGSSTT_LAYOUT = QN_BIT(2),								/// @brief 스터브 크기를 변경
-	QGSSTT_FOCUS = QN_BIT(3),								/// @brief 스터브가 포커스
-	QGSSTT_PAUSE = QN_BIT(4),								/// @brief 포즈 중
-	QGSSTT_DROP = QN_BIT(5),								/// @brief 드래그 드랍 중
-	QGSSTT_CURSOR = QN_BIT(6),								/// @brief 커서의 표시
-	QGSSTT_HOLD = QN_BIT(7),								/// @brief 마우스 홀드
-	QGSSTT_FULLSCREEN = QN_BIT(31),							/// @brief 풀스크린
+	QGSST_NONE = 0,
+	QGSST_EXIT = QN_BIT(0),									/// @brief 끝내기
+	QGSST_PAUSE = QN_BIT(1),								/// @brief 포즈 중
+	QGSST_ACTIVE = QN_BIT(2),								/// @brief 스터브가 활성 상태
+	QGSST_LAYOUT = QN_BIT(3),								/// @brief 스터브 크기를 변경
+	QGSST_FOCUS = QN_BIT(4),								/// @brief 스터브가 포커스
+	QGSST_DROP = QN_BIT(5),									/// @brief 드래그 드랍 중
+	QGSST_CURSOR = QN_BIT(6),								/// @brief 커서의 표시
+	QGSST_HOLD = QN_BIT(7),									/// @brief 마우스 홀드
+	QGSST_TEXT = QN_BIT(8),									/// @brief 텍스트 입력 받음
+	QGSST_SHOW = QN_BIT(9),									/// @brief 보임
+	QGSST_MAXIMIZE = QN_BIT(10),							/// @brief 최대화
+	QGSST_MINIMIZE = QN_BIT(11),							/// @brief 최소화
+	QGSST_FULLSCREEN = QN_BIT(31),							/// @brief 풀스크린
 } QgStubStat;
 
 /// @brief 이벤트 타입
@@ -323,7 +329,7 @@ typedef enum QgEventType
 
 typedef enum QgWindowEventType
 {
-	QGWEV_NONE,
+	QGWEV_NONE,												/// @brief 이벤트 없음
 	QGWEV_SHOW,												/// @brief 윈도우가 보인다
 	QGWEV_HIDE,												/// @brief 윈도우가 안보인다
 	QGWEV_PAINTED,											/// @brief 윈도우가 그려진다 (=EXPOSED)
@@ -439,13 +445,15 @@ typedef void(*QgVarShaderFunc)(void*, const QgVarShader*);
 typedef struct QgUimKey
 {
 	QikMask				mask;								/// @brief 특수 키 상태
-	byte				key[QIK_MAX_VALUE + 1];				/// @brief 전체 키 상태 배열
+	byte				key[QIK_MAX_VALUE];					/// @brief 전체 키 상태 배열
+	byte				prev[QIK_MAX_VALUE];
 } QgUimKey;
 
 /// @brief 마우스 상태
 typedef struct QgUimMouse
 {
 	QimMask				mask;								/// @brief 마우스 버튼 상태
+	QimMask				prev;								/// @brief 이전 마우스 버튼 상태
 	QmPoint				pt;									/// @brief 마우스 좌표
 	QmPoint				last;								/// @brief 마우스의 이전 좌표
 	QmPoint				delta;								/// @brief 이동 거리 차이
@@ -592,7 +600,7 @@ typedef union QgEvent
 	struct QgEventMonitor
 	{
 		QgEventType			ev;
-		bool32				connectd;						/// @brief 참이면 연결, 거짓이면 연결 끊김
+		int					state;							/// @brief 0=연결 끊김, 1=연결, 3=스터브의 활성 모니터가 바뀜
 		QgUdevMonitor*		monitor;						/// @brief 모니터 정보 포인터
 	}					monitor;
 } QgEvent;
@@ -649,15 +657,40 @@ QSAPI const QgUimMouse* qg_get_mouse_info(void);
 /// @see qg_get_mouse_info
 QSAPI bool qg_set_double_click_prop(uint density, uint interval);
 
-/// @brief 키가 눌렸나 테스트 한다
-/// @param key 테스트할 키
-/// @return 눌렸으면 참
-QSAPI bool qg_test_key(QikKey key);
-
 /// @brief 키의 눌림 상태를 설정한다
 /// @param key 설정할 키
 /// @param down 참이면 눌림, 거짓이면 안눌림
-QSAPI void qg_set_key(QikKey key, bool down);
+QSAPI void qg_set_key_state(QikKey key, bool down);
+
+/// @brief 키가 눌렸나 테스트 한다
+/// @param key 테스트할 키
+/// @return 눌렸으면 참
+QSAPI bool qg_get_key_state(QikKey key);
+
+/// @brief 키가 눌려졌는가 테스트 한다 (키 반복 X)
+/// @param key 
+/// @return 
+QSAPI bool qg_get_key_press(const QikKey key);
+
+/// @brief 키가 눌렸다 떼졌나 테스트 한다
+/// @param key 테스트할 키
+/// @return 눌렸다 떼졌으면 참
+QSAPI bool qg_get_key_release(const QikKey key);
+
+/// @brief 마우스 버튼이 눌렸다 테스트한다
+/// @param button 마우스 버튼
+/// @return 눌렸으면 참
+QSAPI bool qg_get_mouse_button_state(const QimButton button);
+
+/// @brief 마우스 버튼이 눌려졌는가 테스트 한다 (계속 눌림 X)
+/// @param button 마우스 버튼
+/// @return 눌렸으면 참
+QSAPI bool qg_get_mouse_button_press(const QimButton button);
+
+/// @brief 마우스 버튼이 눌렸다 떼졌나 테스트 한다
+/// @param button 마우스 버튼
+/// @return 눌렸다 떼졌으면 참
+QSAPI bool qg_get_mouse_button_release(const QimButton button);
 
 /// @brief 초당 프레임(FPS)를 얻는다
 /// @return 초당 프레임 수
@@ -677,13 +710,14 @@ QSAPI float qg_get_advance(void);
 /// @return 실행 시간
 QSAPI double qg_get_run_time(void);
 
-/// @brief 대기 상태(IDLE)일 때 대기할 밀리초
-/// @return 대기 상태에서의 대기 밀리초
-QSAPI int qg_get_delay(void);
+/// @brief 화면 비율을 얻는다
+/// @return 화면 비율
+QSAPI float qg_get_aspect(void);
 
-/// @brief 대기 상태(IDLE)일 때 대기할 밀리초를 설정한다
-/// @param delay 대기 상태에서의 대기 밀리초
-QSAPI void qg_set_delay(int delay);
+/// @brief 화면 비율을 설정한다
+/// @param width 너비
+/// @param height 높이
+QSAPI void qg_set_aspect(const int width, const int height);
 
 /// @brief 스터브 루프를 처리한다
 /// @return 거짓이면 프로그램을 종료한다

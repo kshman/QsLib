@@ -36,7 +36,7 @@
     <ClCompile>
       <LanguageStandard>Default</LanguageStandard>
       <PrecompiledHeaderCompileAs>CompileAsC</PrecompiledHeaderCompileAs>
-      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_ES;_DEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_ES;DISABLE_MEMORY_PROFILE;_DEBUG</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -48,7 +48,7 @@
     <ClCompile>
       <LanguageStandard>Default</LanguageStandard>
       <PrecompiledHeaderCompileAs>CompileAsC</PrecompiledHeaderCompileAs>
-      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_ES</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_ES;DISABLE_MEMORY_PROFILE</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -58,24 +58,36 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\inc\qs.h" />
-    <ClInclude Include="..\..\inc\qs_kmc.h" />
-    <ClInclude Include="..\..\inc\qs_qg.h" />
     <ClInclude Include="..\..\inc\qs_qn.h" />
     <ClInclude Include="..\..\inc\qs_ctn.h" />
     <ClInclude Include="..\..\inc\qs_math.h" />
+    <ClInclude Include="..\..\inc\qs_kmc.h" />
+    <ClInclude Include="..\..\inc\qs_qg.h" />
     <ClInclude Include="..\..\src\pch.h" />
+    <ClInclude Include="..\..\src\qn\sdefl\sdefl.h" />
+    <ClInclude Include="..\..\src\qn\sdefl\sinfl.h" />
+    <ClInclude Include="..\..\src\qs_conf.h" />
+    <ClInclude Include="..\..\src\qs_proxy.h" />
     <ClInclude Include="..\..\src\qg\qg_stub.h" />
+    <ClInclude Include="..\..\src\qg\stub\glad\egl.h" />
+    <ClInclude Include="..\..\src\qg\stub\glad\gl.h" />
+    <ClInclude Include="..\..\src\qg\stub\glad\gles2.h" />
+    <ClInclude Include="..\..\src\qg\stub\glad\wgl.h" />
     <ClInclude Include="..\..\src\qg\stub\qgrdh_es.h" />
     <ClInclude Include="..\..\src\qg\stub\qgrdh_glbase.h" />
-    <ClInclude Include="..\..\src\qs_conf.h" />
+    <ClInclude Include="..\..\src\qg\stub\qgstub_win_func.h" />
+    <ClInclude Include="..\..\src\qg\stub\qgstub_wlx_func.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\zconsole\zz.c" />
+    <ClCompile Include="..\..\src\pch.c" />
     <ClCompile Include="..\..\src\qg\qg_rdh.c" />
     <ClCompile Include="..\..\src\qg\qg_stub.c" />
     <ClCompile Include="..\..\src\qg\stub\qgrdh_es.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgstub_win.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgstub_wlx.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgstub_sdl.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_emscripten.c" />
-    <ClCompile Include="..\..\zconsole\zz.c" />
-    <ClCompile Include="..\..\src\pch.c" />
     <ClCompile Include="..\..\src\qg\qg_kmc.c" />
     <ClCompile Include="..\..\src\qn\PatrickPowell_snprintf.c" />
     <ClCompile Include="..\..\src\qn\qn.c" />
@@ -87,11 +99,12 @@
     <ClCompile Include="..\..\src\qn\qm_math.c" />
     <ClCompile Include="..\..\src\qn\qn_mlu.c" />
     <ClCompile Include="..\..\src\qn\qn_str.c" />
+    <ClCompile Include="..\..\src\qn\sdefl\sdefl.c" />
+    <ClCompile Include="..\..\src\qn\sdefl\sinfl.c" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\..\QsLib.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>

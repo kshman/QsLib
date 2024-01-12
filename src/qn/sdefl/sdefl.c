@@ -519,6 +519,7 @@ static void sdefl_fnd(
 		if (!(--chain_len)) break;
 		i = s->prv[i & SDEFL_WIN_MSK];
 	}
+	QN_DUMMY(e);
 }
 
 static int sdefl_compr(struct sdefl *s, unsigned char *out, const unsigned char *in, int in_len, int lvl)

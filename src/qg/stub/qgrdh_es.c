@@ -478,6 +478,10 @@ pos_context_ok:
 		goto pos_fail_exit;
 	}
 
+	// 서피스를 만들었으니 여기서 윈도우 표시
+	stub_system_show();
+
+	// 커런트 만들고
 	if (eglMakeCurrent(self->display, self->surface, self->surface, self->context) == false)
 	{
 		qn_debug_outputf(true, "ESRDH", "failed to make current: %s", es_egl_error_string(eglGetError()));

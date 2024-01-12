@@ -246,7 +246,7 @@ static void qn_file_access_parse(const char* mode, QnFileAccess* self, int* flag
 }
 
 //
-QnFile* qn_file_new(const char* restrict filename, const char* restrict mode)
+QnFile* qn_file_new(const char* RESTRICT filename, const char* RESTRICT mode)
 {
 	qn_val_if_fail(filename, NULL);
 
@@ -277,7 +277,7 @@ QnFile* qn_file_new(const char* restrict filename, const char* restrict mode)
 }
 
 //
-QnFile* qn_file_new_l(const wchar* restrict filename, const wchar* restrict mode)
+QnFile* qn_file_new_l(const wchar* RESTRICT filename, const wchar* RESTRICT mode)
 {
 	qn_val_if_fail(filename, NULL);
 
@@ -377,7 +377,7 @@ const char* qn_file_get_name(const QnFile* self)
 }
 
 //
-int qn_file_read(QnFile* self, void* restrict buffer, const int offset, const int size)
+int qn_file_read(QnFile* self, void* RESTRICT buffer, const int offset, const int size)
 {
 	qn_val_if_fail(buffer != NULL, -1);
 	qn_val_if_fail(size >= 0, 0);
@@ -392,7 +392,7 @@ int qn_file_read(QnFile* self, void* restrict buffer, const int offset, const in
 }
 
 //
-int qn_file_write(QnFile* self, const void* restrict buffer, const int offset, const int size)
+int qn_file_write(QnFile* self, const void* RESTRICT buffer, const int offset, const int size)
 {
 	qn_val_if_fail(buffer != NULL, -1);
 	qn_val_if_fail(size >= 0, 0);
@@ -465,7 +465,7 @@ bool qn_file_flush(const QnFile* self)
 }
 
 //
-int qn_file_printf(QnFile* self, const char* restrict fmt, ...)
+int qn_file_printf(QnFile* self, const char* RESTRICT fmt, ...)
 {
 	va_list va, vq;
 
@@ -484,7 +484,7 @@ int qn_file_printf(QnFile* self, const char* restrict fmt, ...)
 }
 
 //
-int qn_file_vprintf(QnFile* self, const char* restrict fmt, va_list va)
+int qn_file_vprintf(QnFile* self, const char* RESTRICT fmt, va_list va)
 {
 	int len = qn_vsnprintf(NULL, 0, fmt, va);
 	char* buf = qn_alloc(len + 1, char);
@@ -496,7 +496,7 @@ int qn_file_vprintf(QnFile* self, const char* restrict fmt, va_list va)
 }
 
 //
-bool qn_file_exist(const char* restrict filename, /*RET-NULLABLE*/bool* is_dir)
+bool qn_file_exist(const char* RESTRICT filename, /*RET-NULLABLE*/bool* is_dir)
 {
 	qn_val_if_fail(filename, false);
 
@@ -534,7 +534,7 @@ bool qn_file_exist(const char* restrict filename, /*RET-NULLABLE*/bool* is_dir)
 }
 
 //
-bool qn_file_exist_l(const wchar* restrict filename, /*RET-NULLABLE*/bool* is_dir)
+bool qn_file_exist_l(const wchar* RESTRICT filename, /*RET-NULLABLE*/bool* is_dir)
 {
 	qn_val_if_fail(filename, false);
 
@@ -584,7 +584,7 @@ void qn_file_set_max_alloc_size(const size_t n)
 }
 
 //
-void* qn_file_alloc(const char* restrict filename, int* size)
+void* qn_file_alloc(const char* RESTRICT filename, int* size)
 {
 	qn_val_if_fail(filename != NULL, NULL);
 
@@ -610,7 +610,7 @@ void* qn_file_alloc(const char* restrict filename, int* size)
 }
 
 //
-void* qn_file_alloc_l(const wchar* restrict filename, int* size)
+void* qn_file_alloc_l(const wchar* RESTRICT filename, int* size)
 {
 	qn_val_if_fail(filename, NULL);
 
@@ -1276,7 +1276,7 @@ bool qn_mod_unload(QnModule* self)
 }
 
 //
-void* qn_mod_func(QnModule* self, const char* restrict name)
+void* qn_mod_func(QnModule* self, const char* RESTRICT name)
 {
 	qn_val_if_fail(name != NULL && *name != '\0', NULL);
 #ifdef _QN_WINDOWS_

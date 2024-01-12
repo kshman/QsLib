@@ -168,7 +168,7 @@ extern const char* qn_char_base_table(const bool upper);
 #define char_to_int(p)	(int)((p) - '0')
 
 //
-QN_INLINE double pp_pow10(int exp)
+INLINE double pp_pow10(int exp)
 {
 	double result = 1;
 	while (exp > 0)
@@ -185,7 +185,7 @@ QN_INLINE double pp_pow10(int exp)
 }
 
 //
-QN_INLINE double pp_round(double value)
+INLINE double pp_round(double value)
 {
 	const ullong intpart = (ullong)value;
 	value = value - (double)intpart;
@@ -193,20 +193,20 @@ QN_INLINE double pp_round(double value)
 }
 
 //
-QN_INLINE bool pp_is_nan(const double value)
+INLINE bool pp_is_nan(const double value)
 {
 	// ReSharper disable once CppIdenticalOperandsInBinaryExpression
 	return value != value;
 }
 
 //
-QN_INLINE bool pp_is_inf(const double value)
+INLINE bool pp_is_inf(const double value)
 {
 	return value != 0.0 && value + value == value;  // NOLINT
 }
 
 //
-QN_INLINE int pp_exponent(const double value)
+INLINE int pp_exponent(const double value)
 {
 	double d = value < 0.0 ? -value : value;
 	int exp = 0;
@@ -216,7 +216,7 @@ QN_INLINE int pp_exponent(const double value)
 }
 
 //
-QN_INLINE ullong pp_intpart(const double value)
+INLINE ullong pp_intpart(const double value)
 {
 	if (value >= (double)UINT64_MAX)
 		return UINT64_MAX;
@@ -236,7 +236,7 @@ QN_INLINE ullong pp_intpart(const double value)
 #endif
 
 // 32비트 숫자를 문자열로
-static int pps_toi(uint value, char* restrict buf, int size, uint base, bool caps)
+static int pps_toi(uint value, char* RESTRICT buf, int size, uint base, bool caps)
 {
 	const char* table = qn_char_base_table(caps);
 	int pos = 0;
@@ -250,7 +250,7 @@ static int pps_toi(uint value, char* restrict buf, int size, uint base, bool cap
 }
 
 // 64비트 숫자를 문자열로
-static int pps_toll(ullong value, char* restrict buf, int size, uint base, bool caps)
+static int pps_toll(ullong value, char* RESTRICT buf, int size, uint base, bool caps)
 {
 	const char* table = qn_char_base_table(caps);
 	int pos = 0;
@@ -292,7 +292,7 @@ static int pps_quote(int value, int flags,
 }
 
 // 글자 넣기
-static void pps_outch(char* restrict buffer, size_t* restrict currlen, size_t maxlen, char ch)
+static void pps_outch(char* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen, char ch)
 {
 	if (*currlen < maxlen)
 		buffer[(*currlen)] = ch;
@@ -300,8 +300,8 @@ static void pps_outch(char* restrict buffer, size_t* restrict currlen, size_t ma
 }
 
 // 문자열 널기
-static void pps_outs(char* restrict buffer, size_t* restrict currlen, size_t maxlen,
-	const char* restrict value, int len, int flags, int vmin, int vmax)
+static void pps_outs(char* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen,
+	const char* RESTRICT value, int len, int flags, int vmin, int vmax)
 {
 	int padlen = vmin - len;
 
@@ -331,7 +331,7 @@ static void pps_outs(char* restrict buffer, size_t* restrict currlen, size_t max
 }
 
 // 글자 변환
-static void pps_fchar(char* restrict buffer, size_t* restrict currlen, size_t maxlen, int ch, int flags)
+static void pps_fchar(char* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen, int ch, int flags)
 {
 	if ((flags & DP_F_UNICODE) == 0)
 		pps_outch(buffer, currlen, maxlen, (char)ch);
@@ -346,8 +346,8 @@ static void pps_fchar(char* restrict buffer, size_t* restrict currlen, size_t ma
 }
 
 // 문자열 변환
-static void pps_fstr(char* restrict buffer, size_t* restrict currlen, size_t maxlen,
-	const /*char*/void* restrict value, int flags, int vmin, int vmax)
+static void pps_fstr(char* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen,
+	const /*char*/void* RESTRICT value, int flags, int vmin, int vmax)
 {
 	if (!value)
 	{
@@ -397,7 +397,7 @@ static void pps_fstr(char* restrict buffer, size_t* restrict currlen, size_t max
 }
 
 // 32비트 정수
-static void pps_fint(char* restrict buffer, size_t* restrict currlen, size_t maxlen,
+static void pps_fint(char* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen,
 	const sn_any* value, uint base, int vmin, int vmax, int flags,
 #if USE_LOCALE_INFO
 	const struct lconv* lc
@@ -534,7 +534,7 @@ static void pps_fint(char* restrict buffer, size_t* restrict currlen, size_t max
 }
 
 // 64비트 정수
-static void pps_fllong(char* restrict buffer, size_t* restrict currlen, size_t maxlen,
+static void pps_fllong(char* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen,
 	const sn_any* value, uint base, int vmin, int vmax, int flags,
 #if USE_LOCALE_INFO
 	const struct lconv* lc
@@ -675,7 +675,7 @@ static void pps_fllong(char* restrict buffer, size_t* restrict currlen, size_t m
 
 // 64비트 실수(double)
 // 여기서는, 오직 16자리 정수만 지원. 원래는 9, 19, 38 자리수에 따라 각각 32, 64, 128비트용이 있어야함
-static void pps_ffp(char* restrict buffer, size_t* restrict currlen, size_t maxlen,
+static void pps_ffp(char* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen,
 	sn_any* value, int vmin, int vmax, int flags,
 #if USE_LOCALE_INFO
 	const struct lconv* lc
@@ -953,7 +953,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 }
 
 //
-size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, va_list args)
+size_t dopr(char* RESTRICT buffer, size_t maxlen, const char* RESTRICT format, va_list args)
 {
 	int vmin = 0;
 	int vmax = -1;
@@ -1161,7 +1161,7 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 						}
 						break;
 					case 'X':       // 대문자 부호없는 16진수
-						flags |= DP_F_UP; QN_FALL_THROUGH;
+						flags |= DP_F_UP; FALL_THROUGH;
 					case 'x':       // 소문자 부호없는 16진수 / NOLINT
 					case 'o':       // 부호없는 8진수
 					case 'b':       // 부호없는 2진수
@@ -1207,7 +1207,7 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 						break;
 					case 'A':       // 실수의 대문자 16진수 표시 (미구현 '%F'로)
 					case 'F':       // 실수 대문자
-						flags |= DP_F_UP; QN_FALL_THROUGH;
+						flags |= DP_F_UP; FALL_THROUGH;
 					case 'a':       // 실수의 소문자 16진수 표시 (미구현 '%f'로) / NOLINT
 					case 'f':       // 실수
 						// long double은 지원 안함...
@@ -1218,7 +1218,7 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 						pps_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags, lc);
 						break;
 					case 'E':       // 지수 표시 (대문자)
-						flags |= DP_F_UP; QN_FALL_THROUGH;
+						flags |= DP_F_UP; FALL_THROUGH;
 					case 'e':       // 지수 표시 / NOLINT
 						flags |= DP_F_E;
 						// long double은 지원 안함...
@@ -1229,7 +1229,7 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 						pps_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags, lc);
 						break;
 					case 'G':       // 지수 표시 (대문자)
-						flags |= DP_F_UP; QN_FALL_THROUGH;
+						flags |= DP_F_UP; FALL_THROUGH;
 					case 'g':       // 지수 표시 / NOLINT
 						flags |= DP_F_G;
 						if (vmax == 0) // C99
@@ -1337,7 +1337,7 @@ size_t dopr(char* restrict buffer, size_t maxlen, const char* restrict format, v
 #endif
 
 // 32비트 숫자를 문자열로
-static int ppw_toi(uint value, wchar* restrict buf, int size, uint base, bool caps)
+static int ppw_toi(uint value, wchar* RESTRICT buf, int size, uint base, bool caps)
 {
 	const char* table = qn_char_base_table(caps);
 	int pos = 0;
@@ -1351,7 +1351,7 @@ static int ppw_toi(uint value, wchar* restrict buf, int size, uint base, bool ca
 }
 
 // 64비트 숫자를 문자열로
-static int ppw_toll(ullong value, wchar* restrict buf, int size, uint base, bool caps)
+static int ppw_toll(ullong value, wchar* RESTRICT buf, int size, uint base, bool caps)
 {
 	const char* table = qn_char_base_table(caps);
 	int pos = 0;
@@ -1393,7 +1393,7 @@ static int ppw_quote(int value, int flags,
 }
 
 // 글자 넣기
-static void ppw_outch(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, wchar ch)
+static void ppw_outch(wchar* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen, wchar ch)
 {
 	if (*currlen < maxlen)
 		buffer[(*currlen)] = ch;
@@ -1401,8 +1401,8 @@ static void ppw_outch(wchar* restrict buffer, size_t* restrict currlen, size_t m
 }
 
 // 문자열 널기
-static void ppw_outs(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen,
-	const wchar* restrict value, int len, int flags, int vmin, int vmax)
+static void ppw_outs(wchar* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen,
+	const wchar* RESTRICT value, int len, int flags, int vmin, int vmax)
 {
 	int padlen = vmin - len;
 
@@ -1432,7 +1432,7 @@ static void ppw_outs(wchar* restrict buffer, size_t* restrict currlen, size_t ma
 }
 
 // 글자 변환
-static void ppw_fchar(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen, int ch, int flags)
+static void ppw_fchar(wchar* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen, int ch, int flags)
 {
 	if ((flags & DP_F_UNICODE) == 0)
 		ppw_outch(buffer, currlen, maxlen, (wchar)ch);
@@ -1447,8 +1447,8 @@ static void ppw_fchar(wchar* restrict buffer, size_t* restrict currlen, size_t m
 }
 
 // 문자열 변환
-static void ppw_fstr(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen,
-	const wchar* restrict value, int flags, int vmin, int vmax)
+static void ppw_fstr(wchar* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen,
+	const wchar* RESTRICT value, int flags, int vmin, int vmax)
 {
 	if (!value)
 	{
@@ -1498,7 +1498,7 @@ static void ppw_fstr(wchar* restrict buffer, size_t* restrict currlen, size_t ma
 }
 
 // 32비트 정수
-static void ppw_fint(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen,
+static void ppw_fint(wchar* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen,
 	const sn_any* value, uint base, int vmin, int vmax, int flags,
 #if USE_WIDE_LOCALE
 	const struct lconv* lc
@@ -1635,7 +1635,7 @@ static void ppw_fint(wchar* restrict buffer, size_t* restrict currlen, size_t ma
 }
 
 // 64비트 정수
-static void ppw_fllong(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen,
+static void ppw_fllong(wchar* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen,
 	const sn_any* value, uint base, int vmin, int vmax, int flags,
 #if USE_WIDE_LOCALE
 	const struct lconv* lc
@@ -1776,7 +1776,7 @@ static void ppw_fllong(wchar* restrict buffer, size_t* restrict currlen, size_t 
 
 // 64비트 실수(double)
 // 여기서는, 오직 16자리 정수만 지원. 원래는 9, 19, 38 자리수에 따라 각각 32, 64, 128비트용이 있어야함
-static void ppw_ffp(wchar* restrict buffer, size_t* restrict currlen, size_t maxlen,
+static void ppw_ffp(wchar* RESTRICT buffer, size_t* RESTRICT currlen, size_t maxlen,
 	sn_any* value, int vmin, int vmax, int flags,
 #if USE_WIDE_LOCALE
 	const struct lconv* lc
@@ -2054,7 +2054,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 }
 
 //
-size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format, va_list args)
+size_t doprw(wchar* RESTRICT buffer, size_t maxlen, const wchar* RESTRICT format, va_list args)
 {
 	int vmin = 0;
 	int vmax = -1;
@@ -2262,7 +2262,7 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 						}
 						break;
 					case L'X':       // 대문자 부호없는 16진수
-						flags |= DP_F_UP; QN_FALL_THROUGH;
+						flags |= DP_F_UP; FALL_THROUGH;
 					case L'x':       // 소문자 부호없는 16진수 / NOLINT
 					case L'o':       // 부호없는 8진수
 					case L'b':       // 부호없는 2진수
@@ -2308,7 +2308,7 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 						break;
 					case L'A':       // 실수의 대문자 16진수 표시 (미구현 '%F'로)
 					case L'F':       // 실수 대문자
-						flags |= DP_F_UP; QN_FALL_THROUGH;
+						flags |= DP_F_UP; FALL_THROUGH;
 					case L'a':       // 실수의 소문자 16진수 표시 (미구현 '%f'로) / NOLINT
 					case L'f':       // 실수
 						// long double은 지원 안함...
@@ -2319,7 +2319,7 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 						ppw_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags, lc);
 						break;
 					case L'E':      // 지수 표시 (대문자)
-						flags |= DP_F_UP; QN_FALL_THROUGH;
+						flags |= DP_F_UP; FALL_THROUGH;
 					case L'e':      // 지수 표시 / NOLINT
 						flags |= DP_F_E;
 						// long double은 지원 안함...
@@ -2330,7 +2330,7 @@ size_t doprw(wchar* restrict buffer, size_t maxlen, const wchar* restrict format
 						ppw_ffp(buffer, &currlen, maxlen, &value, vmin, vmax, flags, lc);
 						break;
 					case L'G':      // 지수 표시 (대문자)
-						flags |= DP_F_UP; QN_FALL_THROUGH;
+						flags |= DP_F_UP; FALL_THROUGH;
 					case L'g':      // 지수 표시 / NOLINT
 						flags |= DP_F_G;
 						if (vmax == 0) // C99

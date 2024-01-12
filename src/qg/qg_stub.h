@@ -24,21 +24,23 @@ typedef struct StubBase
 	QnMutex*			mutex;
 	QnTimer*			timer;
 
-	QgFlag				flags;
-	QgFeature			features;
+	QgFlag				flags;								// 플래그
+	QgFeature			features;							// 사양
 	QgStubStat			stats;								// 시스템 스터브 관리
-	uint				window_stats;
+
 	uint				display;
+	float				aspect;
 
-	uint				delay;
-	float				fps;								/** @brief 프레임 당 시간 */
-	float				elapsed;							/** @brief 프레임 시간 */
-	float				advance;							/** @brief 프레임 시간, 포즈 상태일 때는 0 */
-	double				run;								/** @brief 실행 시간 */
-	double				active;								/** @brief 활성화된 시간 */
+	float				fps;								// 프레임 당 시간
+	float				elapsed;							// 프레임 시간
+	float				advance;							// 프레임 시간, 포즈 상태일 때는 0
+	double				run;								// 실행 시간
+	double				active;								// 활성화된 시간
+	double				frames;								// 목표 프레임
 
-	QmRect				window_bound;						// 실제 윈도우의 위치와 크기 정보
+	QmSize				window_size;						// 풀스크린이 아닐 때 크기
 	QmSize				client_size;						// 시스템 스터브 관리, 그리기 영역 크기 (창 크기가 아님)
+	QmRect				bound;								// 현재 윈도우의 위치와 크기 정보
 
 	QgUimKey			key;
 	QgUimMouse			mouse;
@@ -46,7 +48,7 @@ typedef struct StubBase
 
 	StubListEventCb		callbacks;
 #ifdef _QN_EMSCRIPTEN_
-	funcparam_t			main_delegate;
+	funcparam_t			main_loop_callback;
 #endif
 } StubBase;
 
@@ -66,13 +68,17 @@ extern bool stub_system_disable_acs(bool enable);
 // 시스템 스크린 세이버 켜고 끄기
 extern bool stub_system_disable_scr_save(bool enable);
 // 시스템 마우스 잡기
-extern bool stub_system_grab_mouse(bool enable);
+extern bool stub_system_relative_mouse(bool enable);
 // 시스템 타이틀 설정
 extern void stub_system_set_title(const char* title);
 // 시스템 바운드 영역을 업데이트한다
 extern void stub_system_update_bound(void);
+// 시스템 스터브를 보이게
+extern void stub_system_show(void);
 // 시스템 스터브를 포커스로 만든다
 extern void stub_system_focus(void);
+// 시스템 비율을 맞춘다
+extern void stub_system_aspect(void);
 // 시스템 핸들을 얻는다
 extern void* stub_system_get_window(void);
 // 시스템 디스플레이 핸들을 얻는다 (윈도우에서는 HDC)

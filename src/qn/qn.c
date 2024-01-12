@@ -33,7 +33,7 @@ struct Closure
 static struct RuntimeImpl
 {
 	bool32			inited;
-#ifndef DISABLE_SPINLOCK
+#ifndef QS_NO_SPINLOCK
 	QnSpinLock		lock;
 #endif
 
@@ -165,7 +165,7 @@ size_t qn_p_index(void)
 }
 
 //
-void qn_set_prop(const char* restrict name, const char* restrict value)
+void qn_set_prop(const char* RESTRICT name, const char* RESTRICT value)
 {
 	qn_ret_if_fail(runtime_impl.inited);
 	qn_ret_if_fail(name != NULL);

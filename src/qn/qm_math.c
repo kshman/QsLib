@@ -101,7 +101,7 @@ float qm_sse_mat4_det(const QmMat4* m)
 // SSE 역행렬
 void qm_sse_mat4_inv(QmMat4* pm, const QmMat4* m)
 {
-	static const QN_ALIGN(16) uint PNNP[] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };		// NOLINT
+	static const ALIGNOF(16) uint PNNP[] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };		// NOLINT
 
 	__m128 a, b, c, d;
 	__m128 ia, ib, ic, id;

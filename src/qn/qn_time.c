@@ -211,9 +211,9 @@ void qn_sleep(uint milliseconds)
 }
 
 //
-void qn_ssleep(uint seconds)
+void qn_ssleep(double seconds)
 {
-	qn_sleep(seconds * 1000);
+	qn_sleep((uint)(seconds * 1000));
 }
 
 //
@@ -233,7 +233,7 @@ void qn_msleep(ullong microseconds)
 #else
 #error unknown Windows platform! please place pause function on here!
 #endif
-		QueryPerformanceCounter(&t2);
+			QueryPerformanceCounter(&t2);
 	} while (((double)(t2.QuadPart - t1.QuadPart) / (double)(cycle_impl.tick_count * 1000000)) < dms);
 #else
 #if defined __EMSCRIPTEN__
@@ -270,8 +270,14 @@ typedef struct QnRealTimer
 	QnTimer				base;
 
 	bool32				stop;
-	int					past;
+	uint				past;		// 왜 이걸 만들었는지 기억이 안난다
+
+	uint				fps_count;
+	int					fps_frame;
+	double				fps_abs;
+
 	double              cut;
+	double				prevtime;
 
 	vint64_t			basetime;
 	vint64_t			stoptime;
@@ -281,11 +287,6 @@ typedef struct QnRealTimer
 
 	double				tick;
 	vint64_t			frame;
-
-	double				fps_abs;
-	int					fps_frame;
-
-	uint			count;
 } QnRealTimer;
 
 //
@@ -301,6 +302,7 @@ QnTimer* qn_timer_new(void)
 	self->basetime.q = self->curtime.q;
 	self->lasttime.q = self->curtime.q;
 
+	self->base.abstime = (double)self->curtime.q * self->tick;
 	self->cut = 9999999.0;  //10.0;
 
 	return (QnTimer*)self;
@@ -321,7 +323,7 @@ void qn_timer_reset(QnTimer* self)
 	impl->basetime.q = impl->curtime.q;
 	impl->lasttime.q = impl->curtime.q;
 	impl->stoptime.q = 0;
-	impl->count = impl->curtime.dw.l;
+	impl->fps_count = impl->curtime.dw.l;
 
 	impl->stop = false;
 }
@@ -338,7 +340,7 @@ void qn_timer_start(QnTimer* self)
 
 	impl->lasttime.q = impl->curtime.q;
 	impl->stoptime.q = 0;
-	impl->count = impl->curtime.dw.l;
+	impl->fps_count = impl->curtime.dw.l;
 
 	impl->stop = false;
 }
@@ -351,7 +353,7 @@ void qn_timer_stop(QnTimer* self)
 	impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
 	impl->lasttime.q = impl->curtime.q;
 	impl->stoptime.q = impl->curtime.q;
-	impl->count = impl->curtime.dw.l;
+	impl->fps_count = impl->curtime.dw.l;
 
 	impl->stop = true;
 }
@@ -367,7 +369,7 @@ bool qn_timer_update(QnTimer* self, bool manual)
 	impl->base.runtime = (double)(impl->curtime.q - impl->basetime.q) * impl->tick;
 
 	if (manual == false)
-		impl->base.fps = (double)impl->frame.dw.l / (double)(impl->curtime.dw.l - impl->count);
+		impl->base.fps = (double)impl->frame.dw.l / (double)(impl->curtime.dw.l - impl->fps_count);
 	else
 	{
 		impl->fps_frame++;
@@ -380,7 +382,7 @@ bool qn_timer_update(QnTimer* self, bool manual)
 		}
 	}
 
-	impl->count = impl->curtime.dw.l;
+	impl->fps_count = impl->curtime.dw.l;
 
 	if (impl->base.fps < impl->cut)
 	{
@@ -395,6 +397,32 @@ bool qn_timer_update(QnTimer* self, bool manual)
 
 	impl->lasttime.q = impl->curtime.q;
 	impl->past = (int)(impl->base.advance * 1000.0);
+	return ret;
+}
+
+//
+bool qn_timer_update_fps(QnTimer* self, bool manual, double target_fps)
+{
+	QnRealTimer* impl = (QnRealTimer*)self;
+	impl->prevtime = impl->base.runtime;
+
+	bool ret = qn_timer_update(self, manual);
+	double delta = impl->base.runtime - impl->prevtime;
+
+	if (delta < target_fps)
+	{
+		qn_ssleep(target_fps - delta);
+
+		impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
+		impl->base.abstime = (double)impl->curtime.q * impl->tick;
+		impl->base.runtime = (double)(impl->curtime.q - impl->basetime.q) * impl->tick;
+
+		double wait = impl->base.runtime - impl->prevtime;
+		impl->prevtime = impl->base.runtime;
+
+		impl->base.advance += wait;
+	}
+
 	return ret;
 }
 

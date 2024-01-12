@@ -73,7 +73,7 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 			width = (int)((float)browser_width * 0.95f);
 		height = (int)((float)width * 0.56f);
 	}
-	if (QN_TMASK(flags, QGFLAG_RESIZABLE) && emnStub.external_sizing)
+	if (QN_TMASK(flags, QGFLAG_RESIZE) && emnStub.external_sizing)
 	{
 		width = (int)css_width;
 		height = (int)css_height;
@@ -146,7 +146,7 @@ bool stub_system_enable_drop(const bool enable)
 }
 
 //
-bool stub_system_grab_mouse(bool enable)
+bool stub_system_relative_mouse(bool enable)
 {
 	return enable;
 }
@@ -217,7 +217,7 @@ static EM_BOOL handler_fullscreen_change(int eventType, const EmscriptenFullscre
 // 크기 변경
 static EM_BOOL handler_resize(int eventType, const EmscriptenUiEvent *uiEvent, void *userData)
 {
-	if (QN_TMASK(emnStub.base.stats, QGSSTT_FULLSCREEN | QGFLAG_RESIZABLE) == false)
+	if (QN_TMASK(emnStub.base.stats, QGSST_FULLSCREEN | QGFLAG_RESIZE) == false)
 		return EM_FALSE;
 
 	double width = emnStub.base.client_size.Width;

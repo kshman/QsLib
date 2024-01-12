@@ -17,6 +17,7 @@
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4200)		// 비표준 확장이 사용됨: 구조체/공용 구조체의 배열 크기가 0입니다.
+#pragma warning(disable:4710)		// 'function': 함수가 인라인되지 않음
 #pragma warning(disable:5045)		// 컴파일러는 /Qspectre 스위치가 지정된 경우 메모리 로드를 위해 스펙터 완화를 삽입합니다.
 #endif
 
@@ -378,7 +379,7 @@ QN_DECL_ARR(QnAnyArr, any_t);								/// @brief any_t 배열
 		}\
 	}QN_STMT_END
 
-QN_INLINE void qn_inl_arr_extend(void* arr, size_t size, size_t capa)
+INLINE void qn_inl_arr_extend(void* arr, size_t size, size_t capa)
 {
 	QnByteArr* p = (QnByteArr*)arr;
 	if (p->CAPA < capa)
@@ -849,14 +850,14 @@ QN_DECL_LIST(QnPtrList, void*);
 #define qn_plist_foreach_2(p,func1,data)\
 										qn_list_foreach_2(QnPtrList, p, func1, data)
 
-QN_INLINE bool qn_plist_contains(const QnPtrList* p, const void* item)
+INLINE bool qn_plist_contains(const QnPtrList* p, const void* item)
 {
 	const QnPtrListNode* node = NULL;
 	qn_list_contains(QnPtrList, p, item, &node);
 	return node != NULL;
 }
 
-QN_INLINE bool qn_plist_find(const QnPtrList* p, bool (*func2)(void* data, void* node), void* data)
+INLINE bool qn_plist_find(const QnPtrList* p, bool (*func2)(void* data, void* node), void* data)
 {
 	const QnPtrListNode* node = NULL;
 	qn_list_find(QnPtrList, p, func2, data, &node);
@@ -1184,7 +1185,7 @@ QN_DECL_SLIST(QnPtrSlist, void*);
 	}QN_STMT_END
 #define qn_slist_insert_nth(name, p, nth, item, ret_ptr)\
 	QN_STMT_BEGIN{\
-		size_t __h=(size_t)(nth);\
+		nint __h=(nint)(nth);\
 		if (__h<0) {\
 			qn_slist_append(name, p, item, ret_ptr);\
 		} else if (__h==0) {\
@@ -1315,7 +1316,7 @@ QN_DECL_SLIST(QnPtrSlist, void*);
 		}\
 	}QN_STMT_END
 
-QN_INLINE void* qn_inl_slist_last(void* ptr)
+INLINE void* qn_inl_slist_last(void* ptr)
 {
 	QnPtrSlist* p = (QnPtrSlist*)ptr;
 	while (p->NEXT)
@@ -1323,7 +1324,7 @@ QN_INLINE void* qn_inl_slist_last(void* ptr)
 	return p;
 }
 
-QN_INLINE void* qn_inl_slist_nth(void* ptr, size_t nth)
+INLINE void* qn_inl_slist_nth(void* ptr, size_t nth)
 {
 	QnPtrSlist* p = (QnPtrSlist*)ptr;
 	while (nth-- > 0 && p)
@@ -1331,7 +1332,7 @@ QN_INLINE void* qn_inl_slist_nth(void* ptr, size_t nth)
 	return (void*)p;
 }
 
-QN_INLINE size_t qn_inl_slist_count(void* ptr)
+INLINE size_t qn_inl_slist_count(void* ptr)
 {
 	const QnPtrSlist* p = (QnPtrSlist*)ptr;
 	size_t n = 0;
@@ -1347,13 +1348,13 @@ QN_INLINE size_t qn_inl_slist_count(void* ptr)
 #define qn_pslist_data(p, nth)			qn_slist_data(p, nth)
 #define qn_pslist_count(p)				qn_slist_count(p)
 
-QN_INLINE QnPtrSlist* qn_pslist_delete(QnPtrSlist* p)
+INLINE QnPtrSlist* qn_pslist_delete(QnPtrSlist* p)
 {
 	qn_slist_delete(QnPtrSlist, p, &p);
 	return p;
 }
 
-QN_INLINE void qn_pslist_disp(QnPtrSlist* p, void (*func1)(void*))
+INLINE void qn_pslist_disp(QnPtrSlist* p, void (*func1)(void*))
 {
 	if (!func1) {
 		qn_slist_disp(QnPtrSlist, p);
@@ -1368,56 +1369,56 @@ QN_INLINE void qn_pslist_disp(QnPtrSlist* p, void (*func1)(void*))
 	}
 }
 
-QN_INLINE QnPtrSlist* qn_pslist_concat(QnPtrSlist* p1, QnPtrSlist* p2)
+INLINE QnPtrSlist* qn_pslist_concat(QnPtrSlist* p1, QnPtrSlist* p2)
 {
 	qn_slist_concat(QnPtrSlist, p1, p2, &p1);
 	return p1;
 }
 
-QN_INLINE QnPtrSlist* qn_pslist_append(QnPtrSlist* p, void* item)
+INLINE QnPtrSlist* qn_pslist_append(QnPtrSlist* p, void* item)
 {
 	qn_slist_append(QnPtrSlist, p, item, &p);
 	return p;
 }
 
-QN_INLINE QnPtrSlist* qn_pslist_prepend(QnPtrSlist* p, void* item)
+INLINE QnPtrSlist* qn_pslist_prepend(QnPtrSlist* p, void* item)
 {
 	qn_slist_prepend(QnPtrSlist, p, item, &p);
 	return p;
 }
 
-QN_INLINE QnPtrSlist* qn_pslist_insert(QnPtrSlist* p, const QnPtrSlist* sib, void* item)
+INLINE QnPtrSlist* qn_pslist_insert(QnPtrSlist* p, const QnPtrSlist* sib, void* item)
 {
 	qn_slist_insert(QnPtrSlist, p, sib, item, &p);
 	return p;
 }
 
-QN_INLINE QnPtrSlist* qn_pslist_insert_nth(QnPtrSlist* p, int nth, void* item)
+INLINE QnPtrSlist* qn_pslist_insert_nth(QnPtrSlist* p, int nth, void* item)
 {
 	qn_slist_insert_nth(QnPtrSlist, p, nth, item, &p);
 	return p;
 }
 
-QN_INLINE QnPtrSlist* qn_pslist_remove(QnPtrSlist* p, const void* item)
+INLINE QnPtrSlist* qn_pslist_remove(QnPtrSlist* p, const void* item)
 {
 	qn_slist_remove(QnPtrSlist, p, item, &p);
 	return p;
 }
 
-QN_INLINE QnPtrSlist* qn_pslist_remove_link(QnPtrSlist* p, QnPtrSlist* link)
+INLINE QnPtrSlist* qn_pslist_remove_link(QnPtrSlist* p, QnPtrSlist* link)
 {
 	qn_slist_remove_link(QnPtrSlist, p, link, &p);
 	return p;
 }
 
-QN_INLINE QnPtrSlist* qn_pslist_copy(const QnPtrSlist* p)
+INLINE QnPtrSlist* qn_pslist_copy(const QnPtrSlist* p)
 {
 	QnPtrSlist* n = NULL;
 	qn_slist_copy(QnPtrSlist, p, &n);
 	return n;
 }
 
-QN_INLINE QnPtrSlist* qn_pslist_contains(QnPtrSlist* p, const void* item)
+INLINE QnPtrSlist* qn_pslist_contains(QnPtrSlist* p, const void* item)
 {
 	qn_slist_contains(QnPtrSlist, p, item, &p);
 	return p;
@@ -1445,32 +1446,32 @@ QN_INLINE QnPtrSlist* qn_pslist_contains(QnPtrSlist* p, const void* item)
 QN_DECL_HASH(QnInlineHash, size_t, size_t);
 
 /// @brief 키 해시
-#define QN_HASH_HASH(name,fn1)			QN_INLINE size_t name##_Hash(name##ConstKey* key) { return fn1(*key); }
+#define QN_HASH_HASH(name,fn1)			INLINE size_t name##_Hash(name##ConstKey* key) { return fn1(*key); }
 /// @brief 키 비교
-#define QN_HASH_EQ(name,fn2)			QN_INLINE bool name##_Equal(name##ConstKey* l, name##ConstKey const* r) { return fn2(*l, *r); }
+#define QN_HASH_EQ(name,fn2)			INLINE bool name##_Equal(name##ConstKey* l, name##ConstKey const* r) { return fn2(*l, *r); }
 /// @brief 키 지우기
-#define QN_HASH_KEY(name,fn1)			QN_INLINE void name##_Key(name##Key* key) { fn1(*key); }
-#define QN_HASH_KEY_FREE(name)			QN_INLINE void name##_Key(name##Key* key) { qn_free(*key); }
-#define QN_HASH_KEY_NONE(name)			QN_INLINE void name##_Key(name##Key* key) { QN_DUMMY(key); }
+#define QN_HASH_KEY(name,fn1)			INLINE void name##_Key(name##Key* key) { fn1(*key); }
+#define QN_HASH_KEY_FREE(name)			INLINE void name##_Key(name##Key* key) { qn_free(*key); }
+#define QN_HASH_KEY_NONE(name)			INLINE void name##_Key(name##Key* key) { QN_DUMMY(key); }
 /// @brief 값 지우기
-#define QN_HASH_VALUE(name,fn1)			QN_INLINE void name##_Value(name##Value* value) { fn1(*value); }
-#define QN_HASH_VALUE_FREE(name)		QN_INLINE void name##_Value(name##Value* value) { qn_free(*value); }
-#define QN_HASH_VALUE_NONE(name)		QN_INLINE void name##_Value(name##Value* value) { QN_DUMMY(value); }
+#define QN_HASH_VALUE(name,fn1)			INLINE void name##_Value(name##Value* value) { fn1(*value); }
+#define QN_HASH_VALUE_FREE(name)		INLINE void name##_Value(name##Value* value) { qn_free(*value); }
+#define QN_HASH_VALUE_NONE(name)		INLINE void name##_Value(name##Value* value) { QN_DUMMY(value); }
 /// @brief 정수 키의 해시/비교
-#define QN_HASH_INT_KEY(name)			QN_INLINE size_t name##_Hash(name##ConstKey* key) { return (size_t)(*key); }\
-										QN_INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return (*k1)==(*k2); }
+#define QN_HASH_INT_KEY(name)			INLINE size_t name##_Hash(name##ConstKey* key) { return (size_t)(*key); }\
+										INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return (*k1)==(*k2); }
 /// @brief 부호없는 정수 키의 해시/비교
-#define QN_HASH_UINT_KEY(name)			QN_INLINE size_t name##_Hash(name##ConstKey* key) { return (size_t)(*key); }\
-										QN_INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return *k1==*k2; }
+#define QN_HASH_UINT_KEY(name)			INLINE size_t name##_Hash(name##ConstKey* key) { return (size_t)(*key); }\
+										INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return *k1==*k2; }
 /// @brief size_t 키의 해시/비교
-#define QN_HASH_SIZE_T_KEY(name)		QN_INLINE size_t name##_Hash(name##ConstKey* key) { return *key; }\
-										QN_INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return (*k1)==(*k2); }
+#define QN_HASH_SIZE_T_KEY(name)		INLINE size_t name##_Hash(name##ConstKey* key) { return *key; }\
+										INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return (*k1)==(*k2); }
 /// @brief char* 키의 해시/비교
-#define QN_HASH_CHAR_PTR_KEY(name)		QN_INLINE size_t name##_Hash(name##ConstKey* key) { return qn_strhash(*key); }\
-										QN_INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return qn_streqv(*k1, *k2); }
+#define QN_HASH_CHAR_PTR_KEY(name)		INLINE size_t name##_Hash(name##ConstKey* key) { return qn_strhash(*key); }\
+										INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return qn_streqv(*k1, *k2); }
 /// @brief wchar* 키의 해시/비교
-#define QN_HASH_WCHAR_PTR_KEY(name)		QN_INLINE size_t name##_Hash(name##ConstKey* key) { return qn_wcshash(*key); }\
-										QN_INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return qn_wcseqv(*k1, *k2); }
+#define QN_HASH_WCHAR_PTR_KEY(name)		INLINE size_t name##_Hash(name##ConstKey* key) { return qn_wcshash(*key); }\
+										INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return qn_wcseqv(*k1, *k2); }
 
 /// @brief 아이템 갯수
 #define qn_hash_count(p)				((p)->COUNT)
@@ -1755,7 +1756,7 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t);
 	}QN_STMT_END
 
 // 해시 리사이즈
-QN_INLINE void qn_inl_hash_resize(QnInlineHash* p)
+INLINE void qn_inl_hash_resize(QnInlineHash* p)
 {
 	size_t newbucket = qn_prime_near((uint)p->COUNT);
 	newbucket = QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
@@ -2054,7 +2055,7 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t);
 	}QN_STMT_END
 
 // 묶음 리사이즈
-QN_INLINE void qn_inl_mukum_resize(QnInlineMukum* p)
+INLINE void qn_inl_mukum_resize(QnInlineMukum* p)
 {
 	size_t newbucket = qn_prime_near((uint)p->COUNT);
 	newbucket = QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
@@ -2199,7 +2200,7 @@ QN_DECL_BSTR(4k, 4096);
 
 #define qn_bstr_format(p, fmt, ...)\
 	qn_inl_bstr_format(((QnBstr*)(p)), QN_COUNTOF((p)->DATA)-1, fmt, __VA_ARGS__)
-QN_INLINE void qn_inl_bstr_format(QnBstr* p, size_t size, const char* fmt, ...)
+INLINE void qn_inl_bstr_format(QnBstr* p, size_t size, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -2214,7 +2215,7 @@ QN_INLINE void qn_inl_bstr_format(QnBstr* p, size_t size, const char* fmt, ...)
 
 #define qn_bstr_append_format(p, fmt, ...)\
 	qn_inl_bstr_append_format(((QnBstr*)(p)), QN_COUNTOF((p)->DATA)-1, fmt, __VA_ARGS__)
-QN_INLINE void qn_inl_bstr_append_format(QnBstr* p, size_t size, const char* fmt, ...)
+INLINE void qn_inl_bstr_append_format(QnBstr* p, size_t size, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -2251,13 +2252,13 @@ QN_INLINE void qn_inl_bstr_append_format(QnBstr* p, size_t size, const char* fmt
 		(p)->LENGTH=strlen(qn_strrem((p)->DATA, rmlist));\
 	}QN_STMT_END
 
-QN_INLINE int qn_bstr_has_char(const void* p, const char* chars)
+INLINE int qn_bstr_has_char(const void* p, const char* chars)
 {
 	const char* s = qn_strbrk(((const QnBstr*)(p))->DATA, chars);
 	return (s) ? (int)(s - ((const QnBstr*)(p))->DATA) : -1;
 }
 
-QN_INLINE int qn_bstr_find_char(const void* p, size_t at, char ch)
+INLINE int qn_bstr_find_char(const void* p, size_t at, char ch)
 {
 	const char* s = qn_strchr(((const QnBstr*)(p))->DATA + at, ch);
 	return (s) ? (int)(s - ((const QnBstr*)(p))->DATA) : -1;
@@ -2265,7 +2266,7 @@ QN_INLINE int qn_bstr_find_char(const void* p, size_t at, char ch)
 
 #define qn_bstr_sub_bstr(p, s, pos, len)\
 	qn_inl_bstr_sub_bstr(((QnBstr*)(p)), (const QnBstr*)(s), pos, len)
-QN_INLINE bool qn_inl_bstr_sub_bstr(QnBstr* p, const QnBstr* s, size_t pos, int len)
+INLINE bool qn_inl_bstr_sub_bstr(QnBstr* p, const QnBstr* s, size_t pos, int len)
 {
 	qn_val_if_fail(s->LENGTH >= pos, false);
 

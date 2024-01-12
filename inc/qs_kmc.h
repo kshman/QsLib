@@ -156,7 +156,7 @@ typedef enum QikKey
 	QIK_BACKSLASH = 0xDC,									// \|
 	QIK_RBR = 0xDD,											// ]}
 	QIK_QUOTE = 0xDE,										// '"
-	QIK_MAX_VALUE = 0xFF,
+	QIK_MAX_VALUE = 0xFF + 1,
 } QikKey;
 
 /// @brief 상태키 마스크
@@ -187,6 +187,7 @@ typedef enum QimButton
 	QIM_MIDDLE = 3,
 	QIM_X1 = 4,
 	QIM_X2 = 5,
+	QIM_MAX_VALUE,
 } QimButton;
 
 /// @brief 마스 버튼 마스크

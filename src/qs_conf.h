@@ -1,5 +1,9 @@
 ﻿#pragma once
 
+#if !defined __STDC_VERSION__ || __STDC_VERSION__ < 201112L
+#error unknown c version! need at least c11
+#endif
+
 #ifndef QSAPI
 #	if defined(_LIB) || defined(_STATIC)
 #		define QSAPI					extern
@@ -10,18 +14,6 @@
 #			define QSAPI				__attribute__((__visibility__("default")))
 #		endif
 #	endif
-#endif
-
-#ifdef __EMSCRIPTEN__
-#ifndef DISABLE_MEMORY_PROFILE
-#define DISABLE_MEMORY_PROFILE	1
-#endif
-#ifndef DISABLE_SPINLOCK
-#define DISABLE_SPINLOCK		1
-#endif
-#ifndef DISABLE_THREAD
-#define DISABLE_THREAD			1
-#endif
 #endif
 
 // 디버그 출력 버퍼 길이
@@ -43,4 +35,9 @@ static_assert(MAX_DEBUG_LENGTH >= 256 && MAX_DEBUG_LENGTH <= 4096, "256 <= MAX_D
 // Poll 당 메시지 처리 개수
 #ifndef MAX_POLL_LENGTH
 #define MAX_POLL_LENGTH		3
+#endif
+
+// 컴파일러 전용
+#ifndef PRAGMA
+#define PRAGMA(x)			_Pragma(#x)
 #endif

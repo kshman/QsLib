@@ -61,6 +61,12 @@ int event_callback(void* event_data, QgEventType event_type, const QgEvent* even
 		if (key_name)
 			qn_outputf("키 눌림 => <%s>(%X)", key_name, event_param->key.key);
 	}
+	else if (event_type == QGEV_KEYUP)
+	{
+		const char* key_name = qg_qik_str(event_param->key.key);
+		if (key_name)
+			qn_outputf("키 떼임 => <%s>(%X)", key_name, event_param->key.key);
+	}
 	else if (event_type == QGEV_TEXTINPUT && event_param->text.len > 0)
 	{
 #ifdef _QN_WINDOWS_
@@ -84,8 +90,8 @@ int main(void)
 {
 	qn_runtime();
 
-	int flags = /*QGFLAG_BORDERLESS |*/ QGFLAG_RESIZABLE | QGFLAG_VSYNC | QGFLAG_MSAA /*| QGFLAG_TEXT*/;
-	int features = QGFEATURE_NONE;
+	int flags = /*QGFLAG_BORDERLESS |*/ QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA /*| QGFLAG_TEXT*/;
+	int features = QGFEATURE_NONE | QGFEATURE_DISABLE_ACS;
 	if (qg_open_rdh(NULL, "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 

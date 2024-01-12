@@ -146,7 +146,7 @@ static struct ThreadImpl
 	QnRealThread*		self;
 	QnRealThread*		threads;
 
-#ifndef DISABLE_SPINLOCK
+#ifndef QS_NO_SPINLOCK
 	QnSpinLock			lock;
 #endif
 } thread_impl = { 0, };
@@ -250,7 +250,7 @@ static int _qn_thd_conv_busy(const QnRealThread* self)
 	switch (n)
 	{
 		case THREAD_PRIORITY_IDLE:			return -2;
-		case THREAD_PRIORITY_LOWEST:		QN_FALL_THROUGH;
+		case THREAD_PRIORITY_LOWEST:		FALL_THROUGH;
 		case THREAD_PRIORITY_BELOW_NORMAL:	return -1;
 		case THREAD_PRIORITY_ABOVE_NORMAL:	return 1;
 		case THREAD_PRIORITY_HIGHEST:		return 2;
@@ -428,7 +428,7 @@ QnThread* qn_thread_self(void)
 }
 
 //
-QnThread* qn_thread_new(const char* restrict name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
+QnThread* qn_thread_new(const char* RESTRICT name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
 {
 	QnRealThread* self = qn_alloc_zero_1(QnRealThread);
 
@@ -486,7 +486,7 @@ void qn_thread_delete(QnThread* self)
 }
 
 //
-bool qn_thread_once(const char* restrict name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
+bool qn_thread_once(const char* RESTRICT name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
 {
 	QnRealThread* self = qn_alloc_zero_1(QnRealThread);
 
@@ -656,7 +656,7 @@ QnTls qn_tls(const paramfunc_t callback)
 }
 
 //
-void qn_tlsset(const QnTls tls, void* restrict data)
+void qn_tlsset(const QnTls tls, void* RESTRICT data)
 {
 	const uint nth = (uint)tls;
 	qn_ret_if_fail(nth < (uint)QN_COUNTOF(thread_impl.tls_callback));
