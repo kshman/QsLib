@@ -294,8 +294,10 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 			client_size = qm_size(720, 405);
 	}
 
-	// 여기서는 윈도우용 스타일만 만듦. 풀스크린은 하는 곳에서 윈도우 스탈 변경하는 걸로 (토글용)
+	// 여기서는 윈도우용 스타일만 만듦. 풀스크린은 아래서 값 다시 설정
 	DWORD style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_SYSMENU;
+	if (QN_TMASK(flags, QGFLAG_MAXIMIZE))
+		style |= WS_MAXIMIZE;
 	if (QN_TMASK(winStub.base.flags, QGFLAG_NOTITLE))
 	{
 		style |= WS_POPUP;
@@ -322,13 +324,24 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 		(int)mon->base.x + (mon->base.width - size.Width) / 2,
 		(int)mon->base.y + (mon->base.height - size.Height) / 2);
 
-	// 값설정
+	// 값설정 (바운드는 stub_system_update_bound()에서 하므로 여기서 안해도 됨)
 	winStub.base.client_size = client_size;
-	winStub.base.bound = qm_rect_pos_size(pos, size);
-
 	winStub.mouse_cursor = LoadCursor(NULL, IDC_ARROW);
 	winStub.deadzone_min = -CTRL_DEAD_ZONE;
 	winStub.deadzone_max = +CTRL_DEAD_ZONE;
+
+	// 풀스크린으로 변신!
+	winStub.window_style = style;
+	SetRect(&winStub.window_bound, pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y);
+
+	if (QN_TMASK(flags, QGFLAG_FULLSCREEN))
+	{
+		QN_SMASK(&winStub.base.stats, QGSST_FULLSCREEN, true);
+		style &= ~WS_OVERLAPPEDWINDOW;
+		style |= WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP;
+		pos = qm_point(mon->rcMonitor.left, mon->rcMonitor.top);
+		size = qm_size(mon->rcMonitor.right - mon->rcMonitor.left, mon->rcMonitor.bottom - mon->rcMonitor.top);
+	}
 
 	// 토글키 상태 저장 (윈도우가 만들어지고 나면 메시지로 키가 들어 올텐데 혼란하기 땜에 먼저 해둠)
 	QgUimKey* uk = &winStub.base.key;
@@ -352,31 +365,34 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	}
 
 	// 최종 스타일 변경
-	SetRect(&rect, 0, 0, client_size.Width, client_size.Height);
-	if (AdjustWindowRectExForDpi)
-		AdjustWindowRectExForDpi(&rect, style, FALSE, QGSTUB_WIN_EXSTYLE, GetDpiForWindow(winStub.hwnd));
-	else
-		AdjustWindowRectEx(&rect, style, FALSE, QGSTUB_WIN_EXSTYLE);
-
-	WINDOWPLACEMENT wp = { .length = sizeof(WINDOWPLACEMENT) };
-	GetWindowPlacement(winStub.hwnd, &wp);
-	OffsetRect(&rect, wp.rcNormalPosition.left - rect.left, wp.rcNormalPosition.top - rect.top);
-	wp.rcNormalPosition = rect;
-	wp.showCmd = SW_HIDE;
-	SetWindowPlacement(winStub.hwnd, &wp);
-
-	if (QN_TMASK(flags, QGFLAG_MAXIMIZE) && QN_TMASK(flags, QGFLAG_NOTITLE))
+	if (QN_TMASK(flags, QGFLAG_FULLSCREEN) == false)
 	{
-		SetWindowPos(winStub.hwnd, HWND_TOP, mon->rcWork.left, mon->rcWork.top,
-			mon->rcWork.right - mon->rcWork.left, mon->rcWork.bottom - mon->rcWork.top,
-			SWP_NOACTIVATE | SWP_NOZORDER);
+		SetRect(&rect, 0, 0, client_size.Width, client_size.Height);
+		if (AdjustWindowRectExForDpi)
+			AdjustWindowRectExForDpi(&rect, style, FALSE, QGSTUB_WIN_EXSTYLE, GetDpiForWindow(winStub.hwnd));
+		else
+			AdjustWindowRectEx(&rect, style, FALSE, QGSTUB_WIN_EXSTYLE);
+
+		WINDOWPLACEMENT wp = { .length = sizeof(WINDOWPLACEMENT) };
+		GetWindowPlacement(winStub.hwnd, &wp);
+		OffsetRect(&rect, wp.rcNormalPosition.left - rect.left, wp.rcNormalPosition.top - rect.top);
+		wp.rcNormalPosition = rect;
+		wp.showCmd = SW_HIDE;
+		SetWindowPlacement(winStub.hwnd, &wp);
+
+		if (QN_TMASK(flags, QGFLAG_MAXIMIZE) && QN_TMASK(flags, QGFLAG_NOTITLE))
+		{
+			SetWindowPos(winStub.hwnd, HWND_TOP, mon->rcWork.left, mon->rcWork.top,
+				mon->rcWork.right - mon->rcWork.left, mon->rcWork.bottom - mon->rcWork.top,
+				SWP_NOACTIVATE | SWP_NOZORDER);
+		}
+
+		winStub.window_style = (DWORD)GetWindowLong(winStub.hwnd, GWL_STYLE);
 	}
 
-	winStub.window_style = (DWORD)GetWindowLong(winStub.hwnd, GWL_STYLE);
-
-	// 렌더러가 없다면 표시하고, 있으면 렌더러 만들고 stub_system_show_stub()를 호출할 것
+	// 렌더러가 없다면 표시하고, 있으면 렌더러 만들고 stub_system_actuate()를 호출할 것
 	if (QN_TMASK(features, 0xFF000000) == false)
-		stub_system_show_stub();
+		stub_system_actuate();
 
 	// ㅇㅋ
 	stub_system_update_bound();
@@ -418,12 +434,12 @@ void stub_system_finalize(void)
 }
 
 //
-void stub_system_show_stub(void)
+void stub_system_actuate(void)
 {
 	ShowWindow(winStub.hwnd, SW_SHOWNORMAL);
 	stub_system_focus();
 
-	if (QN_TMASK(winStub.base.flags, QGFLAG_FULLSCREEN))
+	if (QN_TMASK(winStub.base.flags, QGFLAG_FULLSCREEN) && QN_TMASK(winStub.base.stats, QGSST_FULLSCREEN) == false)
 	{
 		QN_SMASK(&winStub.base.stats, QGSST_FULLSCREEN, true);
 		stub_system_fullscreen(true);
@@ -462,7 +478,7 @@ bool stub_system_poll(void)
 #endif
 
 	return QN_TMASK(winStub.base.stats, QGSST_EXIT) == false;
-}
+	}
 
 //
 bool stub_system_disable_acs(const bool enable)
@@ -1485,7 +1501,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				const float ydpi = LOWORD(wp) / 96.0f;
 				// TODO: 여기에 DPI 변경 알림 이벤트 날리면 좋겠네
 #endif
-			}
+				}
 			break;
 
 		case WM_GETDPISCALEDSIZE:
@@ -1506,13 +1522,13 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		default:
 			break;
-		}
+			}
 
 pos_windows_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-	}
+		}
 #pragma endregion 윈도우 메시지
 
 #endif // _WIN32 && !USE_SDL2

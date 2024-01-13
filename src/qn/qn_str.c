@@ -335,9 +335,9 @@ void* qn_memzcpr(const void* src, const size_t srcsize, /*NULLABLE*/size_t* dest
 	qn_val_if_fail(srcsize > 0, NULL);
 
 	struct sdefl* s = qn_alloc_zero_1(struct sdefl);
-	int bound = sdefl_bound(srcsize);
+	int bound = sdefl_bound((int)srcsize);
 	byte* p = qn_alloc(bound, byte);
-	int ret = sdeflate(s, p, src, srcsize, 5);	// 압축 레벨은 5
+	int ret = sdeflate(s, p, src, (int)srcsize, 5);	// 압축 레벨은 5
 	qn_free(s);
 
 	if (destsize)
@@ -351,14 +351,14 @@ void* qn_memzucp(const void* src, const size_t srcsize, /*NULLABLE*/size_t* dest
 	qn_val_if_fail(src != NULL, NULL);
 	qn_val_if_fail(srcsize > 0, NULL);
 
-	int size = srcsize * 3 + 12;
+	int size = (int)(srcsize * 3 + 12);
 	byte* p = NULL;
 	int ret;
 	do
 	{
 		size *= 2;
 		p = qn_realloc(p, size, byte);
-		ret = sinflate(p, size, src, srcsize);
+		ret = sinflate(p, size, src, (int)srcsize);
 	} while (ret == size);
 
 	if (destsize)

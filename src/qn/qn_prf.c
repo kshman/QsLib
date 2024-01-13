@@ -267,7 +267,7 @@ typedef struct MemBlock
 	const char*			desc;
 
 	size_t				index;
-#ifdef _QN_64
+#ifdef _QN_64_
 	size_t				align64;
 #endif
 

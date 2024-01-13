@@ -42,8 +42,9 @@ struct ShedEvent
 	QnMutex*			mutex;
 	struct {
 		bool32				reset;				// loop()에서 리셋
-		ushort				count;				// loop() 횟수
-		ushort				poll;				// poll() 횟수
+		bool32				__pad;
+		nuint				count;				// loop() 횟수
+		nuint				poll;				// poll() 횟수
 	}					loop;
 	size_t				max_queue;				// 큐 갯수의 최대값
 	EventNodeList		queue;					// 현재 메시지 큐
@@ -269,7 +270,7 @@ bool qg_open_stub(const char* title, int display, int width, int height, int fla
 
 	if (qg_instance_stub)
 	{
-		qn_debug_outputs(true, "STUB", "already opened.");
+		qn_debug_outputs(true, "STUB", "already opened");
 		return false;
 	}
 
@@ -430,7 +431,7 @@ void qg_toggle_fullscreen(bool fullscreen)
 }
 
 //
-bool qg_query_fullscreen(void)
+bool qg_get_fullscreen_state(void)
 {
 	return QN_TMASK(qg_instance_stub->stats, QGSST_FULLSCREEN);
 }
@@ -703,7 +704,7 @@ static void qg_emscripten_main_loop()
 	qg_dispatch();
 	const funcparam_t* fp = &qg_instance_stub->main_loop_callback;
 	fp->func(fp->data);
-	}
+}
 #endif
 
 //
@@ -1109,7 +1110,7 @@ bool stub_event_on_text(const char* text)
 		if (add == 0)
 			break;
 		pos += add;
-		e.text.len = add;
+		e.text.len = (int)add;
 		ret = qg_add_event(&e, false) > 0;
 	}
 	return ret;

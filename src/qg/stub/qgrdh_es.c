@@ -479,7 +479,7 @@ pos_context_ok:
 	}
 
 	// 서피스를 만들었으니 여기서 윈도우 표시
-	stub_system_show_stub();
+	stub_system_actuate();
 
 	// 커런트 만들고
 	if (eglMakeCurrent(self->display, self->surface, self->surface, self->context) == false)

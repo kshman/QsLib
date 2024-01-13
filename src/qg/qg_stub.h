@@ -58,8 +58,8 @@ extern StubBase* qg_instance_stub;
 extern bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags, QgFeature features);
 // 시스템 스터브를 정리한다
 extern void stub_system_finalize(void);
-// 시스템 디바이스가 만들어진 담에 스터브를 보이게
-extern void stub_system_show_stub(void);
+// 시스템 디바이스가 만들어진 담에 최초 가동
+extern void stub_system_actuate(void);
 // 시스템 스터브 폴링 (프로그램이 종료되면 거짓)
 extern bool stub_system_poll(void);
 // 시스템 드래그 켜고 끄기
@@ -76,7 +76,7 @@ extern void stub_system_set_title(const char* title);
 extern void stub_system_update_bound(void);
 // 시스템 스터브를 포커스로 만든다
 extern void stub_system_focus(void);
-// 시스템 비율을 맞춘다
+// 시스템 종횡비를 맞춘다
 extern void stub_system_aspect(void);
 // 시스템 풀스크린을 전환한다
 extern void stub_system_fullscreen(bool fullscreen);

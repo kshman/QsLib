@@ -643,7 +643,7 @@ QSAPI void qg_toggle_fullscreen(bool fullscreen);
 
 /// @brief 풀스크린인지 확인한다
 /// @return 풀스크린이면 참
-QSAPI bool qg_query_fullscreen(void);
+QSAPI bool qg_get_fullscreen_state(void);
 
 /// @brief 스터브 윈도우 타이틀 설정
 /// @param title 타이틀 문자열(UTF-8)

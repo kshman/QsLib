@@ -60,7 +60,7 @@ int event_callback(void* event_data, QgEventType event_type, const QgEvent* even
 		}
 		else if (key == QIK_F1)
 		{
-			bool fullscreen = qg_query_fullscreen();
+			bool fullscreen = qg_get_fullscreen_state();
 			qg_toggle_fullscreen(!fullscreen);
 		}
 		const char* key_name = qg_qik_str(key);
