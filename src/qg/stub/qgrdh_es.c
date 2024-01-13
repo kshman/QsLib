@@ -583,7 +583,7 @@ static void es_reset(void)
 	ss->stencil = QGSTENCIL_OFF;
 
 	//----- 트랜스폼
-	tm->ortho = qm_mat4_ortho_lh(tm->size.X, tm->size.Y, -1.0f, 1.0f);
+	tm->ortho = qm_mat4_ortho_lh(tm->size.Width, tm->size.Height, -1.0f, 1.0f);
 	//qm_mat4_loc(&tm->ortho, -1.0f, 1.0f, 0.0f, false);
 	tm->frm = qgl_mat4_irrcht_texture(0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -1.0f);
 

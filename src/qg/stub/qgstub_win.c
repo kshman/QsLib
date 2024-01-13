@@ -332,7 +332,7 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 
 	// 풀스크린으로 변신!
 	wStub.window_style = style;
-	SetRect(&wStub.window_bound, pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y);
+	SetRect(&wStub.window_bound, pos.X, pos.Y, pos.X + size.Width, pos.Y + size.Height);
 
 	if (QN_TMASK(flags, QGFLAG_FULLSCREEN))
 	{

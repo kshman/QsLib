@@ -1054,7 +1054,7 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 				{
 					const QgUdevMonitor* mon = qn_pctnr_nth(&stub->monitors, i);
 					QmRect bound = qm_rect_size(mon->x, mon->y, mon->width, mon->height);
-					if (qm_rect_in_rect(bound, stub->bound))
+					if (qm_rect_include(bound, stub->bound))
 						break;
 				}
 				if (i < qn_pctnr_count(&stub->monitors))

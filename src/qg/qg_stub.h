@@ -161,7 +161,7 @@ typedef struct RENDERINVOKE
 // 렌더 트랜스포메이션
 typedef struct RENDERTRANSFORM
 {
-	QmVec2				size;
+	QmSizeF				size;
 	QmDepth				depth;
 	QmMat4				world;
 	QmMat4				view;
