@@ -964,7 +964,7 @@ size_t dopr(char* RESTRICT buffer, size_t maxlen, const char* RESTRICT format, v
 	size_t currlen = 0;
 	sn_any value = { .ff = 0 };
 #if USE_LOCALE_INFO
-	const struct lconv* lc = localeconv();
+	const struct lconv* lc = localeconv();	// NOLINT
 #else
 	const void* lc = NULL;
 #endif

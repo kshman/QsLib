@@ -879,7 +879,7 @@ QnSem* qn_sem_new(int initial)
 
 	QnSem* self = qn_alloc_1(QnSem);
 	self->handle = handle;
-	self->count = (nint)initial;
+	self->count = (int)initial;
 #else
 	sem_t sem;
 	if (sem_init(&sem, 0, (uint)initial) < 0)
@@ -909,7 +909,7 @@ void qn_sem_delete(QnSem* self)
 bool qn_sem_wait_for(QnSem* self, uint milliseconds)
 {
 #ifdef _QN_WINDOWS_
-	DWORD dw = WaitForSingleObjectEx(self->handle, milliseconds, FALSE);
+	const DWORD dw = WaitForSingleObjectEx(self->handle, milliseconds, FALSE);
 	if (dw == WAIT_OBJECT_0)
 	{
 		static_assert(sizeof(long) == sizeof(self->count), "Semaphore size not equal to OS interlock");

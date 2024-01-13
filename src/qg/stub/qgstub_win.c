@@ -30,7 +30,7 @@ static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 #pragma region DLL 처리
 // DLL 정의
 #define DEF_WIN_FUNC(ret,name,args)\
-	ret (WINAPI* QN_CONCAT(Win32, name)) args;
+	ret (WINAPI* QN_CONCAT(Win32, name)) args;	// NOLINT
 #include "qgstub_win_func.h"
 
 // DLL 함수
@@ -76,11 +76,11 @@ static bool windows_dll_init(void)
 		return false;
 	}
 #define DEF_WIN_DLL_BEGIN(name)\
-	module = qn_mod_load(dll_name = name, 1); if (module == NULL)\
+	module = qn_mod_load(dll_name = (name), 1); if (module == NULL)\
 	{ qn_debug_outputf(true, "WINDOWS STUB", "DLL load filed: %s", dll_name); return false; } else {
 #define DEF_WIN_DLL_END }
 #define DEF_WIN_FUNC(ret,name,args)\
-	QN_CONCAT(Win32, name) = (ret(WINAPI*)args)windows_dll_func(module, QN_STRING(name), dll_name);
+	QN_CONCAT(Win32, name) = (ret(WINAPI*)args)windows_dll_func(module, QN_STRING(name), dll_name);	// NOLINT
 #include "qgstub_win_func.h"
 	return loaded = true;
 }
@@ -88,18 +88,18 @@ static bool windows_dll_init(void)
 // 별명
 #define SetProcessDPIAware					Win32SetProcessDPIAware
 #define SetProcessDpiAwarenessContext		Win32SetProcessDpiAwarenessContext
-#define SetThreadDpiAwarenessContext		Win32SetThreadDpiAwarenessContext
-#define GetThreadDpiAwarenessContext		Win32GetThreadDpiAwarenessContext
-#define GetAwarenessFromDpiAwarenessContext	Win32GetAwarenessFromDpiAwarenessContext
-#define EnableNonClientDpiScaling			Win32EnableNonClientDpiScaling
+//#define SetThreadDpiAwarenessContext		Win32SetThreadDpiAwarenessContext
+//#define GetThreadDpiAwarenessContext		Win32GetThreadDpiAwarenessContext
+//#define GetAwarenessFromDpiAwarenessContext	Win32GetAwarenessFromDpiAwarenessContext
+//#define EnableNonClientDpiScaling			Win32EnableNonClientDpiScaling
 #define AdjustWindowRectExForDpi			Win32AdjustWindowRectExForDpi
 #define GetDpiForWindow						Win32GetDpiForWindow
-#define AreDpiAwarenessContextsEqual		Win32AreDpiAwarenessContextsEqual
-#define IsValidDpiAwarenessContext			Win32IsValidDpiAwarenessContext
+//#define AreDpiAwarenessContextsEqual		Win32AreDpiAwarenessContextsEqual
+//#define IsValidDpiAwarenessContext			Win32IsValidDpiAwarenessContext
 #define EnableNonClientDpiScaling			Win32EnableNonClientDpiScaling
 #define CallNextHookEx						Win32CallNextHookEx
-#define GetSystemMetricsForDpi				Win32GetSystemMetricsForDpi
-#define ChangeWindowMessageFilterEx			Win32ChangeWindowMessageFilterEx
+//#define GetSystemMetricsForDpi				Win32GetSystemMetricsForDpi
+//#define ChangeWindowMessageFilterEx			Win32ChangeWindowMessageFilterEx
 #define UnhookWindowsHookEx					Win32UnhookWindowsHookEx
 #define SetWindowsHookExW					Win32SetWindowsHookExW
 #define GetKeyboardState					Win32GetKeyboardState
@@ -107,7 +107,7 @@ static bool windows_dll_init(void)
 #define QueryDisplayConfig					Win32QueryDisplayConfig
 #define DisplayConfigGetDeviceInfo			Win32DisplayConfigGetDeviceInfo
 
-#define GetDpiForMonitor					Win32GetDpiForMonitor
+//#define GetDpiForMonitor					Win32GetDpiForMonitor
 #define SetProcessDpiAwareness				Win32SetProcessDpiAwareness
 
 #define ImmAssociateContextEx				Win32ImmAssociateContextEx
@@ -321,8 +321,8 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 
 	QmSize size = qm_size(rect.right - rect.left, rect.bottom - rect.top);
 	QmPoint pos = qm_point(
-		(int)mon->base.x + (mon->base.width - size.Width) / 2,
-		(int)mon->base.y + (mon->base.height - size.Height) / 2);
+		(int)(mon->base.x + (mon->base.width - size.Width) / 2),
+		(int)(mon->base.y + (mon->base.height - size.Height) / 2));
 
 	// 값설정 (바운드는 stub_system_update_bound()에서 하므로 여기서 안해도 됨)
 	wStub.base.client_size = client_size;
@@ -602,7 +602,7 @@ void stub_system_fullscreen(bool fullscreen)
 
 		style &= ~WS_OVERLAPPEDWINDOW;
 		style |= WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP;
-		SetWindowLong(wStub.hwnd, GWL_STYLE, style);
+		SetWindowLong(wStub.hwnd, GWL_STYLE, (LONG)style);
 
 		UINT uflags = SWP_SHOWWINDOW | SWP_NOACTIVATE | SWP_NOCOPYBITS;
 		if (QN_TMASK(wStub.base.flags, QGFLAG_NOTITLE) == false)
@@ -616,13 +616,13 @@ void stub_system_fullscreen(bool fullscreen)
 	{
 		style &= ~WS_POPUP;
 		style |= wStub.window_style;
-		SetWindowLong(wStub.hwnd, GWL_STYLE, style);
+		SetWindowLong(wStub.hwnd, GWL_STYLE, (LONG)style);
 
 		UINT uflags = SWP_NOACTIVATE | SWP_NOCOPYBITS;
 		if (QN_TMASK(wStub.base.features, QGFLAG_NOTITLE) == false)
 			uflags |= SWP_FRAMECHANGED;
 
-		RECT rect = wStub.window_bound;
+		const RECT rect = wStub.window_bound;
 		SetWindowPos(wStub.hwnd, HWND_NOTOPMOST, rect.left, rect.top,
 			rect.right - rect.left, rect.bottom - rect.top, uflags);
 	}
@@ -649,7 +649,7 @@ void* stub_system_get_display(void)
 static void windows_rect_adjust(QmSize* size, int width, int height, UINT dpi)
 {
 	RECT rect;
-	SetRect(&rect, 0, 0, width, height);
+	SetRect(&rect, 0, 0, width, height);	// NOLINT
 	if (AdjustWindowRectExForDpi)
 		AdjustWindowRectExForDpi(&rect, wStub.window_style, FALSE, QGSTUB_WIN_EXSTYLE, dpi);
 	else
@@ -665,11 +665,11 @@ static void windows_rect_aspect(RECT* rect, int edge)
 	windows_rect_adjust(&offset, 0, 0,
 		GetDpiForWindow ? GetDpiForWindow(wStub.hwnd) : USER_DEFAULT_SCREEN_DPI);
 	if (edge == WMSZ_LEFT || edge == WMSZ_BOTTOMLEFT || edge == WMSZ_RIGHT || edge == WMSZ_BOTTOMRIGHT)
-		rect->bottom = rect->top + offset.Height + (int)((rect->right - rect->left - offset.Width) * wStub.base.aspect);
+		rect->bottom = rect->top + offset.Height + (int)((float)(rect->right - rect->left - offset.Width) * wStub.base.aspect);
 	else if (edge == WMSZ_TOPLEFT || edge == WMSZ_TOPRIGHT)
-		rect->top = rect->bottom - offset.Height - (int)((rect->right - rect->left - offset.Width) * wStub.base.aspect);
+		rect->top = rect->bottom - offset.Height - (int)((float)(rect->right - rect->left - offset.Width) * wStub.base.aspect);
 	else if (edge == WMSZ_TOP || edge == WMSZ_BOTTOM)
-		rect->right = rect->left + offset.Height + (int)((rect->bottom - rect->top - offset.Width) / wStub.base.aspect);
+		rect->right = rect->left + offset.Height + (int)((float)(rect->bottom - rect->top - offset.Width) / wStub.base.aspect);
 }
 
 // 키 후킹 콜백
@@ -824,15 +824,17 @@ static BOOL CALLBACK windows_enum_display_callback(HMONITOR monitor, HDC dc, REC
 {
 	QN_DUMMY(dc);
 	QN_DUMMY(rect);
-	MONITORINFOEX mi = { .cbSize = sizeof(mi) };	// NOLINT
+	MONITORINFOEX mi;
+	qn_zero_1(&mi);
+	((MONITORINFO*)&mi)->cbSize = sizeof(MONITORINFOEX);
 	if (GetMonitorInfo(monitor, (LPMONITORINFO)&mi))
 	{
 		WindowsMonitor* wm = (WindowsMonitor*)lp;
 		if (qn_wcseqv(mi.szDevice, wm->adapter))
 		{
 			wm->handle = monitor;
-			wm->rcMonitor = mi.rcMonitor;
-			wm->rcWork = mi.rcWork;
+			wm->rcMonitor = ((MONITORINFO*)&mi)->rcMonitor;
+			wm->rcWork = ((MONITORINFO*)&mi)->rcWork;
 		}
 	}
 	return TRUE;
@@ -894,7 +896,7 @@ static bool windows_detect_displays(void)
 	qn_pctnr_init_copy(&keep, &wStub.base.monitors);
 
 	WindowsFriendlyMonitor* friendly_monitors;
-	UINT32 friendly_count = windows_friendly_monitors(&friendly_monitors);
+	const UINT32 friendly_count = windows_friendly_monitors(&friendly_monitors);
 
 	size_t i;
 	for (DWORD adapter = 0; ; adapter++)
@@ -1059,6 +1061,8 @@ static bool windows_mesg_keyboard(const WPARAM wp, const LPARAM lp, const bool d
 		case VK_MENU:
 			key = (HIWORD(lp) & KF_EXTENDED) ? VK_RMENU : VK_LMENU;
 			break;
+		default:
+			break;
 	}
 
 	return stub_event_on_keyboard((QikKey)key, down) == 0 ? false : key != VK_MENU;
@@ -1116,7 +1120,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 	if (QN_TMASK(wStub.base.features, QGFEATURE_ENABLE_SYSWM))
 	{
-		QgEvent e =
+		const QgEvent e =
 		{
 			.windows.ev = QGEV_SYSWM,
 			.windows.hwnd = hwnd,
@@ -1147,7 +1151,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 					stub_event_on_focus(true);
 			}
 
-			QmPoint pt = qm_point(GET_X_LPARAM(lp), GET_Y_LPARAM(lp));
+			const QmPoint pt = qm_point(GET_X_LPARAM(lp), GET_Y_LPARAM(lp));
 			stub_event_on_mouse_move(pt.X, pt.Y);
 			stub_track_mouse_click(QIM_NONE, QIMT_MOVE);
 		}
@@ -1158,7 +1162,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				if (wStub.mouse_wparam != wp)
 				{
 					wStub.mouse_wparam = wp;
-					QimMask mask = wStub.base.mouse.mask;
+					const QimMask mask = wStub.base.mouse.mask;
 					windows_check_mouse_button(QN_TMASK(wp, MK_LBUTTON), mask, QIM_LEFT);
 					windows_check_mouse_button(QN_TMASK(wp, MK_RBUTTON), mask, QIM_RIGHT);
 					windows_check_mouse_button(QN_TMASK(wp, MK_MBUTTON), mask, QIM_MIDDLE);
@@ -1171,8 +1175,8 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 		}
 		else if (mesg == WM_MOUSEWHEEL || mesg == WM_MOUSEHWHEEL)
 		{
-			int wheel = GET_WHEEL_DELTA_WPARAM(wp);
-			float delta = (float)wheel / WHEEL_DELTA;
+			const int wheel = GET_WHEEL_DELTA_WPARAM(wp);
+			const float delta = (float)wheel / WHEEL_DELTA;
 			if (mesg == WM_MOUSEWHEEL)
 				stub_event_on_mouse_wheel(0.0f, delta, false);
 			else
@@ -1270,7 +1274,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				wStub.clear_background = true;
 				RECT rect;
 				GetClientRect(hwnd, &rect);
-				HBRUSH brush = CreateSolidBrush(0);
+				const HBRUSH brush = CreateSolidBrush(0);
 				FillRect(GetDC(hwnd), &rect, brush);
 				DeleteObject(brush);
 			}
@@ -1289,7 +1293,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		case WM_SETCURSOR:
 		{
-			WORD hittest = LOWORD(lp);
+			const WORD hittest = LOWORD(lp);
 			if (hittest == HTCLIENT && QN_TMASK(wStub.base.stats, QGSST_CURSOR))
 			{
 				SetCursor(wStub.mouse_cursor);
@@ -1313,7 +1317,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				mmi->ptMinTrackSize.y = 256 + offset.Height;
 				if (QN_TMASK(wStub.base.flags, QGFLAG_NOTITLE))
 				{
-					HMONITOR mh = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+					const HMONITOR mh = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
 					MONITORINFO mi = { .cbSize = sizeof(MONITORINFO) };
 					GetMonitorInfo(mh, &mi);
 					mmi->ptMaxPosition.x = mi.rcWork.left - mi.rcMonitor.left;
@@ -1413,7 +1417,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		case WM_SYSCOMMAND:
 		{
-			ushort cmd = (ushort)(wp & 0xFFFF0);
+			const ushort cmd = (ushort)(wp & 0xFFFF0);
 			if (cmd == SC_KEYMENU)
 				result = 0;
 			if (QN_TMASK(wStub.base.features, QGFEATURE_DISABLE_SCRSAVE) && (cmd == SC_SCREENSAVE || cmd == SC_MONITORPOWER))
@@ -1446,12 +1450,12 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			if (QN_TMASK(wStub.base.features, QGFEATURE_ENABLE_DROP))
 			{
 				DragAcceptFiles(hwnd, false);
-				HDROP handle = (HDROP)wp;
-				UINT cnt = DragQueryFile(handle, 0xFFFFFFFF, NULL, 0);
+				const HDROP handle = (HDROP)wp;
+				const UINT cnt = DragQueryFile(handle, 0xFFFFFFFF, NULL, 0);
 				for (UINT i = 0; i < cnt; i++)
 				{
-					UINT len = DragQueryFile(handle, i, NULL, 0) + 1;
-					LPWSTR buf = qn_alloc(len, WCHAR);
+					const UINT len = DragQueryFile(handle, i, NULL, 0) + 1;
+					const LPWSTR buf = qn_alloc(len, WCHAR);
 					if (DragQueryFile(handle, i, buf, len))
 					{
 						char *filename = qn_u16to8_dup(buf, 0);
@@ -1491,7 +1495,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				// https://learn.microsoft.com/ko-kr/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
 				if (QN_TMASK(wStub.base.flags, QGFLAG_DPISCALE))
 				{
-					RECT* const suggested = (RECT*)lp;
+					const RECT* const suggested = (RECT*)lp;
 					SetWindowPos(hwnd, HWND_TOP, suggested->left, suggested->top,
 						suggested->right - suggested->left, suggested->bottom - suggested->top,
 						SWP_NOACTIVATE | SWP_NOZORDER);

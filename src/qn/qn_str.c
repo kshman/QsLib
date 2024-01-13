@@ -335,9 +335,9 @@ void* qn_memzcpr(const void* src, const size_t srcsize, /*NULLABLE*/size_t* dest
 	qn_val_if_fail(srcsize > 0, NULL);
 
 	struct sdefl* s = qn_alloc_zero_1(struct sdefl);
-	int bound = sdefl_bound((int)srcsize);
+	const int bound = sdefl_bound((int)srcsize);
 	byte* p = qn_alloc(bound, byte);
-	int ret = sdeflate(s, p, src, (int)srcsize, 5);	// 압축 레벨은 5
+	const int ret = sdeflate(s, p, src, (int)srcsize, 5);	// 압축 레벨은 5
 	qn_free(s);
 
 	if (destsize)
@@ -986,7 +986,7 @@ char* qn_strcpy(char* RESTRICT p, const char* RESTRICT src)
 	return strcpy(p, src);
 #else
 	char* o = p;
-	while ((*p++ = *src++));
+	while ((*p++ = *src++)) {}
 	return o;
 #endif
 }
@@ -998,7 +998,7 @@ char* qn_strncpy(char* RESTRICT p, const char* RESTRICT src, size_t len)
 	return strncpy(p, src, len);
 #else
 	char* o = p;
-	while (len && (*p++ = *src++))
+	while (len && ((*p++ = *src++)))
 		--len;
 	*p = '\0';
 	if (len)
@@ -1386,11 +1386,11 @@ int qn_strtoi(const char* p, const uint base)
 		sign = -1;
 		p++;
 	}
-	uint ch = table[*p++];
+	uint ch = table[(byte)*p++];
 	while (ch < base)
 	{
 		v = v * base + ch;
-		ch = table[*p++];
+		ch = table[(byte)*p++];
 	}
 	return sign * (int)v;
 }
@@ -1411,11 +1411,11 @@ llong qn_strtoll(const char* p, const uint base)
 		sign = -1LL;
 		p++;
 	}
-	uint ch = table[*p++];
+	uint ch = table[(byte)*p++];
 	while (ch < base)
 	{
 		v = v * base + ch;
-		ch = table[*p++];
+		ch = table[(byte)*p++];
 	}
 	return sign * (llong)v;
 }
@@ -1435,13 +1435,13 @@ float qn_strtof(const char* p)
 		rsign = -1;
 		p++;
 	}
-	while ((ch = *p++) != '\0' && isdigit(ch))
-		f = f * 10.0f + (ch - '0');
+	while ((ch = (int)*p++) != '\0' && isdigit(ch))
+		f = f * 10.0f + (float)(ch - '0');
 	if (ch == '.')
 	{
-		while ((ch = *p++) != '\0' && isdigit(ch))
+		while ((ch = (int)*p++) != '\0' && isdigit(ch))
 		{
-			f = f * 10.0f + (ch - '0');
+			f = f * 10.0f + (float)(ch - '0');
 			e--;
 		}
 	}
@@ -1449,18 +1449,18 @@ float qn_strtof(const char* p)
 	{
 		int sign = 1;
 		int n = 0;
-		ch = *p++;
+		ch = (int)*p++;
 		if (ch == '+')
-			ch = *p++;
+			ch = (int)*p++;
 		else if (ch == '-')
 		{
-			ch = *p++;
+			ch = (int)*p++;
 			sign = -1;
 		}
 		while (isdigit(ch))
 		{
 			n = n * 10 + (ch - '0');
-			ch = *p++;
+			ch = (int)*p++;
 		}
 		e += n * sign;
 	}
@@ -1492,11 +1492,11 @@ double qn_strtod(const char* p)
 		rsign = -1;
 		p++;
 	}
-	while ((ch = *p++) != '\0' && isdigit(ch))
+	while ((ch = (int)*p++) != '\0' && isdigit(ch))
 		d = d * 10.0 + (ch - '0');
 	if (ch == '.')
 	{
-		while ((ch = *p++) != '\0' && isdigit(ch))
+		while ((ch = (int)*p++) != '\0' && isdigit(ch))
 		{
 			d = d * 10.0 + (ch - '0');
 			e--;
@@ -1506,18 +1506,18 @@ double qn_strtod(const char* p)
 	{
 		int sign = 1;
 		int n = 0;
-		ch = *p++;
+		ch = (int)*p++;
 		if (ch == '+')
-			ch = *p++;
+			ch = (int)*p++;
 		else if (ch == '-')
 		{
-			ch = *p++;
+			ch = (int)*p++;
 			sign = -1;
 		}
 		while (isdigit(ch))
 		{
 			n = n * 10 + (ch - '0');
-			ch = *p++;
+			ch = (int)*p++;
 		}
 		e += n * sign;
 	}
@@ -1808,7 +1808,7 @@ wchar* qn_wcscpy(wchar* RESTRICT p, const wchar* RESTRICT src)
 	return wcscpy(p, src);
 #else
 	wchar* o = p;
-	while ((*p++ = *src++));
+	while ((*p++ = *src++)) {}
 	return o;
 #endif
 }
@@ -1820,7 +1820,7 @@ wchar* qn_wcsncpy(wchar* RESTRICT p, const wchar* RESTRICT src, size_t len)
 	return wcsncpy(p, src, len);
 #else
 	wchar* o = p;
-	while (len && (*p++ = *src++))
+	while (len && ((*p++ = *src++)))
 		--len;
 	*p = '\0';
 	if (len)
@@ -2255,12 +2255,12 @@ float qn_wcstof(const wchar* p)
 		p++;
 	}
 	while ((ch = (wint_t)*p++) != L'\0' && iswdigit(ch))
-		f = f * 10.0f + (ch - L'0');
+		f = f * 10.0f + (float)(ch - L'0');
 	if (ch == L'.')
 	{
 		while ((ch = (wint_t)*p++) != L'\0' && iswdigit(ch))
 		{
-			f = f * 10.0f + (ch - L'0');
+			f = f * 10.0f + (float)(ch - L'0');
 			e--;
 		}
 	}
@@ -2588,42 +2588,6 @@ size_t qn_u8lcpy(char* RESTRICT dest, const char* RESTRICT src, size_t len)
 	dest[len] = '\0';
 
 	return len;
-}
-
-//
-int qn_u32ucs(uchar4 c, char* out)
-{
-	if (c <= 0x7F)
-	{
-		out[0] = (char)c;
-		out[1] = '\0';
-		return 1;
-	}
-	if (c <= 0x7FF)
-	{
-		out[0] = 0xC0 | (char)((c >> 6) & 0x1F);
-		out[1] = 0x80 | (char)(c & 0x3F);
-		out[2] = '\0';
-		return 2;
-	}
-	if (c <= 0xFFFF)
-	{
-		out[0] = 0xE0 | (char)((c >> 12) & 0x0F);
-		out[1] = 0x80 | (char)((c >> 6) & 0x3F);
-		out[2] = 0x80 | (char)(c & 0x3F);
-		out[3] = '\0';
-		return 3;
-	}
-	if (c <= 0x10FFFF)
-	{
-		out[0] = 0xF0 | (char)((c >> 18) & 0x0F);
-		out[1] = 0x80 | (char)((c >> 12) & 0x3F);
-		out[2] = 0x80 | (char)((c >> 6) & 0x3F);
-		out[3] = 0x80 | (char)(c & 0x3F);
-		out[4] = '\0';
-		return 4;
-	}
-	return 0;
 }
 
 //

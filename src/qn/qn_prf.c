@@ -591,12 +591,12 @@ static DWORD qn_mpf_windows_exception(const DWORD ex, const char* desc, const si
 	if (ex == STATUS_NO_MEMORY)
 	{
 		qn_mpf_out_of_memory(desc, line, size, block);
-		return EXCEPTION_EXECUTE_HANDLER;
+		//return EXCEPTION_EXECUTE_HANDLER;
 	}
 	if (ex == STATUS_ACCESS_VIOLATION)
 	{
 		qn_mpf_access_violation(desc, line, size, block);
-		return EXCEPTION_EXECUTE_HANDLER;
+		//return EXCEPTION_EXECUTE_HANDLER;
 	}
 	return EXCEPTION_CONTINUE_SEARCH;
 }

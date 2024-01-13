@@ -305,7 +305,7 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 
 	stub->flags = flags;
 	stub->features = QGFEATURE_NONE;						// 나중에 설정해야 하므로 NONE
-	stub->stats = QGSST_ACTIVE | QGSST_CURSOR;				// 기본으로 활성 상태랑 커서는 켠다
+	stub->stats = (QgStubStat)(QGSST_ACTIVE | QGSST_CURSOR);	// 기본으로 활성 상태랑 커서는 켠다
 
 	stub->aspect = 9.0f / 16.0f;
 
@@ -455,7 +455,7 @@ const QgUdevMonitor* qg_get_current_monitor(void)
 {
 	const StubBase* stub = qg_instance_stub;
 	qn_assert(qn_pctnr_is_have(&stub->monitors), "아니 왜 모니터가 없어");
-	int index = stub->display < qn_pctnr_count(&stub->monitors) ? stub->display : 0;
+	const uint index = stub->display < qn_pctnr_count(&stub->monitors) ? stub->display : 0;
 	return qn_pctnr_nth(&stub->monitors, index);
 }
 
@@ -609,7 +609,7 @@ bool qg_loop(void)
 		qn_timer_update(stub->timer, true);
 	else
 	{
-		double frames =
+		const double frames =
 			QN_TMASK(stub->stats, QGSST_ACTIVE) == false &&
 			QN_TMASK(stub->features, QGFEATURE_ENABLE_IDLE) ? 0.1 : stub->frames;
 
@@ -731,7 +731,7 @@ nint qg_register_event_callback(QgEventCallback func, void* data)
 	qn_val_if_fail(func, 0);
 	StubBase* stub = qg_instance_stub;
 
-	StubEventCallback cb =
+	const StubEventCallback cb =
 	{
 		.func = func,
 		.data = data,
@@ -1053,7 +1053,7 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 				qn_pctnr_foreach(&stub->monitors, i)
 				{
 					const QgUdevMonitor* mon = qn_pctnr_nth(&stub->monitors, i);
-					QmRect bound = qm_rect_size(mon->x, mon->y, mon->width, mon->height);
+					const QmRect bound = qm_rect_size((int)mon->x, (int)mon->y, (int)mon->width, (int)mon->height);
 					if (qm_rect_include(bound, stub->bound))
 						break;
 				}
