@@ -125,7 +125,7 @@ QnTimeStamp qn_mstod(const uint msec)
 }
 
 //
-static struct CycleImpl
+static struct CYCLEIMPL
 {
 	ullong				tick_count;		// 초 당 틱
 	ullong				start_count;	// 시작 카운트
@@ -265,7 +265,7 @@ void qn_msleep(ullong microseconds)
 
 //////////////////////////////////////////////////////////////////////////
 // 타이머
-typedef struct QnRealTimer
+typedef struct QNREALTIMER
 {
 	QnTimer				base;
 

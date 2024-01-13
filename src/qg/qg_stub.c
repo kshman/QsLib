@@ -17,7 +17,7 @@
 #endif
 
 // 인스턴스 포인터
-struct StubBase* qg_instance_stub = NULL;
+StubBase* qg_instance_stub = NULL;
 // atexit 지시자
 bool qg_stub_atexit = false;
 

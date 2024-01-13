@@ -26,7 +26,7 @@ static bool es_begin(bool clear);
 static void es_end(void);
 static void es_flush(void);
 
-qv_name(RdhBase) vt_es_rdh =
+qv_name(RDHBASE) vt_es_rdh =
 {
 	.base.name = "ESRDH",
 	.base.dispose = es_dispose,

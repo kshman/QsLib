@@ -23,22 +23,22 @@ QN_MUKUM_KEY_FREE(QnPropMukum)
 QN_MUKUM_VALUE_FREE(QnPropMukum)
 
 // 닫아라
-struct Closure
+typedef struct CLOSURE
 {
-	struct Closure* prev;
+	struct CLOSURE* prev;
 	funcparam_t		fp;
-};
+} Closure;
 
 // 구현
-static struct RuntimeImpl
+static struct RUNTIMEIMPL
 {
 	bool32			inited;
 #ifndef QS_NO_SPINLOCK
 	QnSpinLock		lock;
 #endif
 
-	struct Closure* closures;
-	struct Closure* preclosures;
+	Closure*		closures;
+	Closure*		preclosures;
 
 	QnTls			error;
 
@@ -62,14 +62,14 @@ static void qn_runtime_down(void)
 	runtime_impl.inited = false;
 
 	QN_LOCK(runtime_impl.lock);
-	for (struct Closure *prev, *node = runtime_impl.closures; node; node = prev)
+	for (Closure *prev, *node = runtime_impl.closures; node; node = prev)
 	{
 		prev = node->prev;
 		node->fp.func(node->fp.data);
 		qn_free(node);
 	}
 
-	for (struct Closure *prev, *node = runtime_impl.preclosures; node; node = prev)
+	for (Closure *prev, *node = runtime_impl.preclosures; node; node = prev)
 	{
 		prev = node->prev;
 		node->fp.func(node->fp.data);
@@ -127,7 +127,7 @@ void qn_atexit(paramfunc_t func, void* data)
 	qn_ret_if_fail(runtime_impl.inited);
 	qn_ret_if_fail(func);
 
-	struct Closure* node = qn_alloc_1(struct Closure);
+	Closure* node = qn_alloc_1(Closure);
 	qn_ret_if_fail(node);
 
 	node->fp.func = func;
@@ -145,7 +145,7 @@ void qn_p_atexit(paramfunc_t func, void* data)
 	qn_ret_if_fail(runtime_impl.inited);
 	qn_ret_if_fail(func);
 
-	struct Closure* node = qn_alloc_1(struct Closure);
+	Closure* node = qn_alloc_1(Closure);
 	qn_ret_if_fail(node);
 
 	node->fp.func = func;

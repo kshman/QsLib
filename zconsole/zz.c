@@ -1,7 +1,7 @@
 ﻿// rdh 테스트
 #include <qs.h>
 
-typedef struct LoopData
+typedef struct LOOPDATA
 {
 	float acc;
 	float dir;

@@ -23,7 +23,7 @@
 #endif
 
 //
-static struct DebugImpl
+static struct DEBUGIMPL
 {
 #ifdef _QN_WINDOWS_
 	HANDLE			handle;
@@ -259,7 +259,7 @@ static void qn_internal_free(void* ptr);
 #endif
 #else
 //
-typedef struct MemBlock
+typedef struct MEMBLOCK
 {
 	uint				sign;
 
@@ -274,8 +274,8 @@ typedef struct MemBlock
 	size_t				block;
 	size_t				size;
 
-	struct MemBlock*	next;
-	struct MemBlock*	prev;
+	struct MEMBLOCK*	next;
+	struct MEMBLOCK*	prev;
 } MemBlock;
 
 static_assert(sizeof(MemBlock) % MEMORY_BLOCK_SIZE == 0, "MemBlock size is not aligned!");
@@ -290,7 +290,7 @@ static void qn_mpf_free(void* ptr);
 #endif
 
 // 메모리 프르프
-static struct MemImpl
+static struct MEMIMPL
 {
 	QnAllocTable	table;
 

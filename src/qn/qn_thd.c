@@ -113,8 +113,7 @@ void qn_spin_leave(QnSpinLock* lock)
 // 스레드
 
 // 실제 스레드
-typedef struct QnRealThread	QnRealThread;
-struct QnRealThread
+typedef struct QNREALTHREAD
 {
 	QnThread			base;
 
@@ -126,11 +125,11 @@ struct QnRealThread
 #endif
 	void*				tls[MAX_TLS];
 
-	QnRealThread*		next;
-};
+	struct QNREALTHREAD*	next;
+} QnRealThread;
 
 //
-static struct ThreadImpl
+static struct THREADIMPL
 {
 	uint				tls_index;
 	paramfunc_t			tls_callback[MAX_TLS];
@@ -679,7 +678,7 @@ void* qn_tlsget(const QnTls tls)
 //////////////////////////////////////////////////////////////////////////
 // 뮤텍스
 
-struct QnMutex
+struct QNMUTEX
 {
 #ifdef _QN_WINDOWS_
 	CRITICAL_SECTION	cs;
@@ -743,7 +742,7 @@ void qn_mutex_leave(QnMutex* self)
 //////////////////////////////////////////////////////////////////////////
 // 컨디션
 
-struct QnCond
+struct QNCOND
 {
 #ifdef _QN_WINDOWS_
 	CONDITION_VARIABLE	cond;
@@ -860,7 +859,7 @@ void qn_cond_wait(QnCond* self, QnMutex* lock)
 //////////////////////////////////////////////////////////////////////////
 // 세마포어
 
-struct QnSem
+struct QNSEM
 {
 #ifdef _QN_WINDOWS_
 	HANDLE				handle;

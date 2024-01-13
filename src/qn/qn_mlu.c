@@ -5,7 +5,7 @@
 
 #include "pch.h"
 
-typedef struct QnRealTag QnRealTag;
+typedef struct QNREALTAG QnRealTag;
 
 QN_DECL_ARR(ErrorArray, char*);
 QN_DECL_ARR(SubArray, QnRealTag*);
@@ -29,7 +29,7 @@ static const char* ml_header_desc = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\
 
 //////////////////////////////////////////////////////////////////////////
 // 실제 노드
-struct QnRealTag
+struct QNREALTAG
 {
 	QnMlTag				base;
 
@@ -49,7 +49,7 @@ static bool _qn_realtag_write_file(const QnRealTag* self, QnFile* file, int iden
 
 //////////////////////////////////////////////////////////////////////////
 // RML
-struct QnMlu
+struct QNMLU
 {
 	SubArray			tags;
 	ErrorArray			errs;
@@ -1295,7 +1295,7 @@ bool qn_mltag_next_arg(QnMlTag* ptr, void** RESTRICT index, const char** RESTRIC
 		return false;
 
 	const QnRealTag* self = (QnRealTag*)ptr;
-	const struct ArgHashNode* node = !*index ? self->args.FIRST : (struct ArgHashNode*)*index;
+	const ArgHashNode* node = !*index ? self->args.FIRST : (ArgHashNode*)*index;
 
 	if (name) *name = node->KEY;
 	if (data) *data = node->VALUE;

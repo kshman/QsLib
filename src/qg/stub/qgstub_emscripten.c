@@ -10,9 +10,7 @@
 #include "qg/qg_stub.h"
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#ifdef _QN_EMSCRIPTEN_
 #include <emscripten/html5.h>
-#endif
 
 //
 static EM_BOOL callback_fullscreen_resize(int eventType, const void *reserved, void *userData);
@@ -33,15 +31,15 @@ typedef struct EmscriptenStub
 } EmscriptenStub;
 
 //
-EmscriptenStub emnStub;
+static EmscriptenStub emStub;
 
 //
 bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags, QgFeature features)
 {
-	qn_zero_1(&emnStub);
+	qn_zero_1(&emStub);
 
 	//
-	stub_initialize((StubBase*)&emnStub, flags);
+	stub_initialize((StubBase*)&emStub, flags);
 
 	// 가짜 모니터
 	QmSize scrsize;
@@ -53,36 +51,37 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	stub_event_on_monitor(monitor, true, true, false);
 
 	// 웹브라우저는 윈도우 생성이 없다. 바로 크기 검사
-	emnStub.canvas = qn_strdup("#canvas");
-	emscripten_set_canvas_element_size(emnStub.canvas, 1, 1);
+	emStub.canvas = qn_strdup("#canvas");
+	emscripten_set_canvas_element_size(emStub.canvas, 1, 1);
 	double css_width, css_height;
-	emscripten_get_element_css_size(emnStub.canvas, &css_width, &css_height);
-	emnStub.external_sizing = (int)QM_FLOORF(css_width) != 1 || (int)QM_FLOORF(css_height) != 1;
+	emscripten_get_element_css_size(emStub.canvas, &css_width, &css_height);
+	emStub.external_sizing = (int)QM_FLOORF(css_width) != 1 || (int)QM_FLOORF(css_height) != 1;
 
 	if (width < 256 || height < 256)
 	{
 		int browser_width = MAIN_THREAD_EM_ASM_INT({ return window.innerWidth; });
-		qn_outputf("브라우저 너비: %d", browser_width);
 		if (browser_width > 1300)
 			width = 1280;
-		else if (browser_width > 1100)
-			width = 1024;
+		else if (browser_width > 1000)
+			width = 960;
 		else if (browser_width > 800)
 			width = 720;
 		else
 			width = (int)((float)browser_width * 0.95f);
-		height = (int)((float)width * 0.56f);
+		height = (int)((float)width * 0.5625f);
+
+		qn_debug_outputf(false, "EMSCRIPTE", "선택한 크기: %d,%d", width, height);
 	}
-	if (QN_TMASK(flags, QGFLAG_RESIZE) && emnStub.external_sizing)
+	if (QN_TMASK(flags, QGFLAG_RESIZE) && emStub.external_sizing)
 	{
 		width = (int)css_width;
 		height = (int)css_height;
 	}
 
 	stub_event_on_window_event(QGWEV_SIZED, width, height);
-	emscripten_set_canvas_element_size(emnStub.canvas, width, height);
-	/*if (emnStub.external_sizing == false)
-		emscripten_set_element_css_size((emnStub.canvas, width, height);*/
+	emscripten_set_canvas_element_size(emStub.canvas, width, height);
+	/*if (emStub.external_sizing == false)
+		emscripten_set_element_css_size((emStub.canvas, width, height);*/
 
 	if (QN_TMASK(flags, QGFLAG_FULLSCREEN))
 	{
@@ -94,11 +93,11 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 			.canvasResizedCallback = callback_fullscreen_resize,
 			.canvasResizedCallbackUserData = NULL,
 		};
-		int result = emscripten_request_fullscreen_strategy(emnStub.canvas, 1, &efs);
+		int result = emscripten_request_fullscreen_strategy(emStub.canvas, 1, &efs);
 		if (result != EMSCRIPTEN_RESULT_SUCCESS && result != EMSCRIPTEN_RESULT_DEFERRED)
 		{
 			// 풀스크린 안된다
-			QN_SMASK(&emnStub.base.flags, QGFLAG_FULLSCREEN, false);
+			QN_SMASK(&emStub.base.flags, QGFLAG_FULLSCREEN, false);
 		}
 	}
 
@@ -117,8 +116,8 @@ void stub_system_finalize(void)
 {
 	emscripten_unregister_event_handler();
 
-	emscripten_set_canvas_element_size(emnStub.canvas, 0, 0);
-	qn_free(emnStub.canvas);
+	emscripten_set_canvas_element_size(emStub.canvas, 0, 0);
+	qn_free(emStub.canvas);
 }
 
 //
@@ -161,9 +160,9 @@ void stub_system_set_title(const char* title)
 void stub_system_update_bound(void)
 {
 	QmSize size;
-	emscripten_get_canvas_element_size(emnStub.canvas, &size.Width, &size.Height);
-	emnStub.base.window_bound = qm_rect_set_pos_size(qm_point(0, 0), size);
-	emnStub.base.client_size = size;
+	emscripten_get_canvas_element_size(emStub.canvas, &size.Width, &size.Height);
+	emStub.base.window_bound = qm_rect_set_pos_size(qm_point(0, 0), size);
+	emStub.base.client_size = size;
 }
 
 //
@@ -187,7 +186,7 @@ void* stub_system_get_display(void)
 static EM_BOOL callback_fullscreen_resize(int eventType, const void *reserved, void *userData)
 {
 	double width, height;
-	emscripten_get_element_css_size(emnStub.canvas, &width, &height);
+	emscripten_get_element_css_size(emStub.canvas, &width, &height);
 	stub_event_on_window_event(QGWEV_SIZED, (int)width, (int)height);
 	return EM_FALSE;
 }
@@ -217,15 +216,15 @@ static EM_BOOL handler_fullscreen_change(int eventType, const EmscriptenFullscre
 // 크기 변경
 static EM_BOOL handler_resize(int eventType, const EmscriptenUiEvent *uiEvent, void *userData)
 {
-	if (QN_TMASK(emnStub.base.stats, QGSST_FULLSCREEN | QGFLAG_RESIZE) == false)
+	if (QN_TMASK(emStub.base.stats, QGSST_FULLSCREEN | QGFLAG_RESIZE) == false)
 		return EM_FALSE;
 
-	double width = emnStub.base.client_size.Width;
-	double height = emnStub.base.client_size.Height;
+	double width = emStub.base.client_size.Width;
+	double height = emStub.base.client_size.Height;
 	qn_outputf("리사이즈: %.2f, %.2f", width, height);
-	if (emnStub.external_sizing)
-		emscripten_get_element_css_size(emnStub.canvas, &width, &height);
-	emscripten_set_canvas_element_size(emnStub.canvas, (int)width, (int)height);
+	if (emStub.external_sizing)
+		emscripten_get_element_css_size(emStub.canvas, &width, &height);
+	emscripten_set_canvas_element_size(emStub.canvas, (int)width, (int)height);
 	stub_event_on_window_event(QGWEV_SIZED, (int)width, (int)height);
 
 	return EM_FALSE;
@@ -241,23 +240,23 @@ static EM_BOOL handler_visibility_change(int eventType, const EmscriptenVisibili
 // 마우스 홀드 변경
 static EM_BOOL handler_pointer_lock_change(int eventType, const EmscriptenPointerlockChangeEvent* pointerlockChangeEvent, void* userdata)
 {
-	emnStub.lock_pointer = pointerlockChangeEvent->isActive;
+	emStub.lock_pointer = pointerlockChangeEvent->isActive;
 	return EM_FALSE;
 }
 
 // 마우스 들어왓다 나갓다
 static EM_BOOL handler_mouse_enter_leave(int eventType, const EmscriptenMouseEvent* mouseEvent, void* userData)
 {
-	if (emnStub.lock_pointer == false)
+	if (emStub.lock_pointer == false)
 	{
 		double width, height;
-		emscripten_get_element_css_size(emnStub.canvas, &width, &height);
-		double x = mouseEvent->targetX * (emnStub.base.client_size.Width / width);
-		double y = mouseEvent->targetY * (emnStub.base.client_size.Height / height);
+		emscripten_get_element_css_size(emStub.canvas, &width, &height);
+		double x = mouseEvent->targetX * (emStub.base.client_size.Width / width);
+		double y = mouseEvent->targetY * (emStub.base.client_size.Height / height);
 		stub_event_on_mouse_move((int)x, (int)y);
 	}
 
-	if (QN_TMASK(emnStub.base.flags, QGFLAG_FOCUS))
+	if (QN_TMASK(emStub.base.flags, QGFLAG_FOCUS))
 		stub_event_on_focus(eventType == EMSCRIPTEN_EVENT_MOUSEENTER);
 
 	return EM_TRUE;
@@ -267,14 +266,14 @@ static EM_BOOL handler_mouse_enter_leave(int eventType, const EmscriptenMouseEve
 static EM_BOOL handler_mouse_move(int eventType, const EmscriptenMouseEvent* mouseEvent, void* userData)
 {
 	QmPoint pt;
-	if (emnStub.lock_pointer == false)
+	if (emStub.lock_pointer == false)
 		pt = qm_point(mouseEvent->targetX, mouseEvent->targetY);
 	else
 	{
-		emnStub.mouse_residual.X += mouseEvent->movementX;
-		emnStub.mouse_residual.Y += mouseEvent->movementY;
-		pt = emnStub.mouse_residual;
-		emnStub.mouse_residual = qm_sub(emnStub.mouse_residual, pt);
+		emStub.mouse_residual.X += mouseEvent->movementX;
+		emStub.mouse_residual.Y += mouseEvent->movementY;
+		pt = emStub.mouse_residual;
+		emStub.mouse_residual = qm_sub(emStub.mouse_residual, pt);
 	}
 	stub_event_on_mouse_move(pt.X, pt.Y);
 	return EM_FALSE;
@@ -293,8 +292,8 @@ static EM_BOOL handler_mouse_button(int eventType, const EmscriptenMouseEvent* m
 	EM_BOOL prevent_event;
 	if (eventType == EMSCRIPTEN_EVENT_MOUSEDOWN)
 	{
-		if (QN_TMASK(emnStub.base.features, QGFEATURE_RELATIVE_MOUSE) && emnStub.lock_pointer == false)
-			emscripten_request_pointerlock(emnStub.canvas, 0);
+		if (QN_TMASK(emStub.base.features, QGFEATURE_RELATIVE_MOUSE) && emStub.lock_pointer == false)
+			emscripten_request_pointerlock(emStub.canvas, 0);
 		down = true;
 		prevent_event = EM_FALSE;
 	}
@@ -306,7 +305,7 @@ static EM_BOOL handler_mouse_button(int eventType, const EmscriptenMouseEvent* m
 	stub_event_on_mouse_button(button, down);
 
 	double width, height;
-	emscripten_get_element_css_size(emnStub.canvas, &width, &height);
+	emscripten_get_element_css_size(emStub.canvas, &width, &height);
 	if (mouseEvent->targetX < 0 || mouseEvent->targetX >= (int)width ||
 		mouseEvent->targetY < 0 || mouseEvent->targetY >= (int)height)
 		return EM_FALSE;
@@ -410,7 +409,7 @@ static EM_BOOL handler_keyboard(int eventType, const EmscriptenKeyboardEvent *ke
 // 키보드 텍스트
 static EM_BOOL handler_key_press(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData)
 {
-	if (QN_TMASK(emnStub.base.flags, QGFLAG_TEXT) == false)
+	if (QN_TMASK(emStub.base.flags, QGFLAG_TEXT) == false)
 		return EM_FALSE;
 
 	char u8[7];
@@ -422,7 +421,7 @@ static EM_BOOL handler_key_press(int eventType, const EmscriptenKeyboardEvent *k
 // 이벤트 등록
 static void emscripten_register_event_handler(void)
 {
-	const char* name = emnStub.canvas;
+	const char* name = emStub.canvas;
 
 	emscripten_set_beforeunload_callback(NULL, handler_before_unload);
 
@@ -448,7 +447,7 @@ static void emscripten_register_event_handler(void)
 // 이벤트 끝냄
 static void emscripten_unregister_event_handler(void)
 {
-	const char* name = emnStub.canvas;
+	const char* name = emStub.canvas;
 
 	emscripten_set_beforeunload_callback(NULL, NULL);
 

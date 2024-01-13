@@ -14,7 +14,7 @@
 // 키보드
 
 /// @brief 키보드 입력 키 정의
-typedef enum QikKey
+typedef enum QIKKEY
 {
 	QIK_NONE = 0,
 	QIK_BS = 0x08,											// BACKSPACE
@@ -160,7 +160,7 @@ typedef enum QikKey
 } QikKey;
 
 /// @brief 상태키 마스크
-typedef enum QikMask
+typedef enum QIKMASK
 {
 	QIKM_NONE = 0,
 	QIKM_SHIFT = QN_BIT(0),
@@ -179,7 +179,7 @@ static_assert(sizeof(QikMask) == sizeof(int), "QikMask size not equal to int");
 // mouse button
 
 /// @brief 마우스 버튼
-typedef enum QimButton
+typedef enum QIMBUTTON
 {
 	QIM_NONE = 0,
 	QIM_LEFT = 1,
@@ -191,7 +191,7 @@ typedef enum QimButton
 } QimButton;
 
 /// @brief 마스 버튼 마스크
-typedef enum QimMask
+typedef enum QIMMASK
 {
 	QIMM_LEFT = QN_BIT(QIM_LEFT),
 	QIMM_RIGHT = QN_BIT(QIM_RIGHT),
@@ -205,7 +205,7 @@ typedef enum QimMask
 } QimMask;
 
 /// @brief 마우스 눌림 상태 추적
-typedef enum QimTrack
+typedef enum QIMTRACK
 {
 	QIMT_MOVE = 0,
 	QIMT_DOWN = 1,
@@ -213,7 +213,7 @@ typedef enum QimTrack
 } QimTrack;
 
 /// @brief 터치 상태 추적
-typedef enum QimTouch
+typedef enum QIMTOUCH
 {
 	QITT_BEGIN = 1,
 	QITT_MOVE = 2,
@@ -227,7 +227,7 @@ static_assert(sizeof(QimMask) == sizeof(int), "QimMask size not equal to int");
 // controller key
 
 /// @brief 컨트롤러 버튼
-typedef enum QicButton
+typedef enum QICBUTTON
 {
 	QIC_NONE = 0,
 	QIC_UP = 1,
@@ -247,7 +247,7 @@ typedef enum QicButton
 } QicButton;
 
 /// @brief 컨트롤러 마스크
-typedef enum QicMask
+typedef enum QICMASK
 {
 	QICM_UP = QN_BIT(QIC_UP),
 	QICM_DOWN = QN_BIT(QIC_DOWN),

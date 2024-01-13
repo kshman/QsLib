@@ -23,7 +23,7 @@
 // 파일
 
 // 파일 구조체
-struct QnFile
+struct QNFILE
 {
 #ifdef _QN_WINDOWS_
 	HANDLE			fd;
@@ -641,7 +641,7 @@ void* qn_file_alloc_l(const wchar* RESTRICT filename, int* size)
 // 디렉토리
 
 // 디렉토리 구조체.
-struct QnDir
+struct QNDIR
 {
 #ifdef _QN_WINDOWS_
 	HANDLE			handle;
@@ -1053,7 +1053,7 @@ typedef enum QnModFlag
 } QnModFlag;
 
 // 단위 모듈 내용
-struct QnModule
+struct QNMODULE
 {
 	char*				filename;
 	size_t				hash;
@@ -1070,7 +1070,7 @@ struct QnModule
 };
 
 // 모듈 관리 구현
-static struct ModuleImpl
+static struct MODULEIMPL
 {
 	QnSpinLock			lock;
 	QnModule*			self;

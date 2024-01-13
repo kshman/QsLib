@@ -129,7 +129,7 @@
 #define DP_C_CHAR		8
 
 //
-typedef union sn_any
+typedef union SN_ANY
 {
 	short				h;
 	int					i;

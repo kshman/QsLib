@@ -205,7 +205,7 @@ INLINE float qm_inv_sqrtf(float f)
 // types
 
 /// @brief 벡터2
-typedef union QmVec2
+typedef union QMVEC2
 {
 	struct
 	{
@@ -235,7 +235,7 @@ typedef union QmVec2
 } QmVec2, QmCoord, QmPointF, QmSizeF, QmDepth, QmMinMaxF;
 
 /// @brief 벡터3
-typedef union QmVec3
+typedef union QMVEC3
 {
 	struct
 	{
@@ -259,7 +259,7 @@ typedef union QmVec3
 } QmVec3, QmRgb;
 
 /// @brief 벡터4
-typedef union ALIGNOF(16) QmVec4
+typedef union ALIGNOF(16) QMVEC4
 {
 	struct
 	{
@@ -315,7 +315,7 @@ typedef union ALIGNOF(16) QmVec4
 } QmVec4, QmRectF, QmColor;
 
 /// @brief 벡터4
-typedef union ALIGNOF(16) QmPlane
+typedef union ALIGNOF(16) QMPLANE
 {
 	struct
 	{
@@ -350,7 +350,7 @@ typedef union ALIGNOF(16) QmPlane
 } QmPlane;
 
 /// @brief 행렬4x4
-typedef union ALIGNOF(16) QmMat4
+typedef union ALIGNOF(16) QMMAT4
 {
 	struct
 	{
@@ -371,7 +371,7 @@ typedef union ALIGNOF(16) QmMat4
 } QmMat4;
 
 /// @brief 사원수
-typedef union ALIGNOF(16) QmQuat
+typedef union ALIGNOF(16) QMQUAT
 {
 	struct
 	{
@@ -395,7 +395,7 @@ typedef union ALIGNOF(16) QmQuat
 } QmQuat;
 
 /// @brief 정수형 벡터2
-typedef union QmVecI2
+typedef union QMVECI2
 {
 	struct
 	{
@@ -409,7 +409,7 @@ typedef union QmVecI2
 } QmVecI2, QmPoint, QmSize;
 
 /// @brief 정수형 벡터3
-typedef union QmVecI3
+typedef union QMVECI3
 {
 	struct
 	{
@@ -433,7 +433,7 @@ typedef union QmVecI3
 } QmVecI3, QmRgbI;
 
 /// @brief 정수형 벡터4
-typedef union QmVecI4
+typedef union QMVECI4
 {
 	struct
 	{
@@ -468,7 +468,7 @@ typedef union QmVecI4
 } QmVecI4, QmRect;
 
 /// @brief 정수형 색깔
-typedef union QmKolor
+typedef union QMKOLOR
 {
 	struct
 	{
@@ -478,13 +478,13 @@ typedef union QmKolor
 } QmKolor;
 
 /// @brief 선분
-typedef struct QmLine3
+typedef struct QMLINE3
 {
 	QmVec3 Begin, End;
 } QmLine3;
 
 /// @brief 트랜스폼
-typedef struct QmTrfm
+typedef struct QMTRFM
 {
 	QmQuat Rotation;
 	QmVec4 Location;	// 하지만 벡터3
@@ -492,7 +492,7 @@ typedef struct QmTrfm
 } QmTrfm;
 
 /// @brief 하프 벡터2
-typedef union QmVecH2
+typedef union QMVECH2
 {
 	struct
 	{
@@ -509,13 +509,13 @@ typedef union QmVecH2
 } QmVecH2, QmCoordH, QmPointH, QmSizeH;
 
 /// @brief 하프 벡터3
-typedef struct QmVecH3
+typedef struct QMVECH3
 {
 	halfint X, Y, Z;
 } QmVecH3;
 
 /// @brief 하프 벡터4
-typedef union QmVecH4
+typedef union QMVECH4
 {
 	struct
 	{

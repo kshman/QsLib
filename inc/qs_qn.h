@@ -130,7 +130,7 @@
 #if defined (_MSC_VER)
 #define NORETURN			__declspec(noreturn)
 #elif defined __GNUC__
-#define ALIGNOF(x)			__attribute__((noreturn))
+#define NORETURN			__attribute__((noreturn))
 #elif defined __STDC_VERSION__ && __STDC_VERSION__ >= 201112L
 #define NORETURN			_Noreturn
 #else
@@ -282,9 +282,9 @@ typedef int16_t				bool16;							/// @brief 16비트 참거짓
 typedef int32_t				bool32;							/// @brief 32비트 참거짓
 
 /// @brief 하위 변형 있는 16비트 정수
-typedef union vint16_t
+typedef union VINT16_T
 {
-	struct vint16_t_byte
+	struct VINT16_T_BYTE
 	{
 		byte			l, h;								/// @brief 바이트 (h=msb)
 	}				b;										/// @brief 바이트 집합
@@ -292,13 +292,13 @@ typedef union vint16_t
 } vint16_t, vshort;
 
 /// @brief 하위 변형 있는 32비트 정수
-typedef union vint32_t
+typedef union VINT32_T
 {
-	struct vint32_t_byte
+	struct VINT32_T_BYTE
 	{
 		byte			a, b, c, d;							/// @brief 바이트 (d=msb)
 	}				b;										/// @brief 바이트 집합
-	struct vint32_t_word
+	struct VINT32_T_WORD
 	{
 		ushort			l, h;								/// @brief 워드
 	}				w;										/// @brief 워드 집합
@@ -306,18 +306,18 @@ typedef union vint32_t
 } vint32_t, vint;
 
 /// @brief 하위 변형 있는 64비트 정수
-typedef union vint64_t
+typedef union VINT64_T
 {
-	struct vint64_t_byte
+	struct VINT64_T_BYTE
 	{
 		byte			la, lb, lc, ld;						/// @brief 하위 바이트
 		byte			ha, hb, hc, hd;						/// @brief 상위 바이트 (hd=msb)
 	}				b;										/// @brief 바이트 집합
-	struct vint64_t_word
+	struct VINT64_T_WORD
 	{
 		ushort			a, b, c, d;							/// @brief 워드
 	}				w;										/// @brief 워드 집합
-	struct vint64_t_double_word
+	struct VINT64_T_DOUBLE_WORD
 	{
 		ushort			l, h;								/// @brief 더블 워드
 	}				dw;										/// @brief 더블 워드 집합
@@ -325,7 +325,7 @@ typedef union vint64_t
 } vint64_t, vllong;
 
 /// @brief 아무값이나 넣기 위한 타입 (long double이 있으면 16, 없으면 8바이트)
-typedef union any_t
+typedef union ANY_T
 {
 	bool			b;
 	int				i;
@@ -346,7 +346,7 @@ typedef union any_t
 } any_t, vany;
 
 /// @brief 파라미터 함수 핸들러와 파라미터 값
-typedef struct funcparam_t
+typedef struct FUNCPARAM_T
 {
 	paramfunc_t		func;
 	void*			data;
@@ -497,7 +497,7 @@ QSAPI int qn_outputf(const char* fmt, ...);
 #define qn_zero_1(p)		memset((p), 0, sizeof(*(p)))											/// @brief 메모리를 0으로 채운다 (주로 구조체)
 
 /// @brief 메모리 할당 구조체
-typedef struct QnAllocTable
+typedef struct QNALLOCTABLE
 {
 #ifdef QS_NO_MEMORY_PROFILE
 	void*(*_alloc)(size_t size, bool zero);
@@ -1615,7 +1615,7 @@ QSAPI void qn_msleep(ullong microseconds);
 typedef ullong				QnTimeStamp;
 
 /// @brief date time
-typedef union QnDateTime
+typedef union QNDATETIME
 {
 	QnTimeStamp			stamp;				/// @brief 타임 스탬프
 	struct
@@ -1656,7 +1656,7 @@ QSAPI QnTimeStamp qn_stod(double sec);
 QSAPI QnTimeStamp qn_mstod(uint msec);
 
 /// @brief timer
-typedef struct QnTimer
+typedef struct QNTIMER
 {
 	double				abstime;			/// @brief 타이머 절대 시간
 	double				runtime;			/// @brief 타이머 시작부터 수행 시간
@@ -1716,16 +1716,16 @@ QSAPI void qn_timer_set_cut(QnTimer* self, double cut);
 // disk i/o
 
 /// @brief 디렉토리
-typedef struct QnDir QnDir;
+typedef struct QNDIR QnDir;
 
 /// @brief 파일
-typedef struct QnFile QnFile;
+typedef struct QNFILE QnFile;
 
 /// @brief 모듈
-typedef struct QnModule QnModule;
+typedef struct QNMODULE QnModule;
 
 /// @brief 파일 정보
-typedef struct QnFileInfo
+typedef struct QNFILEINFO
 {
 	ushort			type;									/// @brief 파일 타입
 	ushort			len;									/// @brief 파일 이름 길이
@@ -1738,7 +1738,7 @@ typedef struct QnFileInfo
 } QnFileInfo;
 
 /// @brief 파일 제어
-typedef struct QnFileAccess
+typedef struct QNFILEACCESS
 {
 #ifdef _MSC_VER
 	uint			mode;									/// @brief 제어 모드
@@ -1752,7 +1752,7 @@ typedef struct QnFileAccess
 } QnFileAccess;
 
 /// @brief 파일에서 위치 찾기
-typedef enum QnSeek
+typedef enum QNSEEK
 {
 	QNSEEK_BEGIN = 0,										/// @brief 처음부터
 	QNSEEK_CUR = 1,											/// @brief 현 위치부터
@@ -1760,7 +1760,7 @@ typedef enum QnSeek
 } QnSeek;
 
 /// @brief 파일 플래그
-typedef enum QnFileFlag
+typedef enum QNFILEFLAG
 {
 	QNFF_READ = 0x1,										/// @brief 읽기
 	QNFF_WRITE = 0x2,										/// @brief 쓰기
@@ -2013,7 +2013,7 @@ QSAPI void qn_spin_leave(QnSpinLock* lock);
 typedef void* (*QnThreadCallback)(void*);
 
 /// @brief 스레드
-typedef struct QnThread
+typedef struct QNTHREAD
 {
 	char*				name;
 	bool32				canwait;
@@ -2112,7 +2112,7 @@ QSAPI void* qn_tlsget(QnTls tls);
 // mutex
 
 /// @brief 뮤텍스
-typedef struct QnMutex QnMutex;
+typedef struct QNMUTEX QnMutex;
 
 /// @brief 뮤텍스를 만든다. 이 뮤텍스는 RECURSIVE 타입이다
 /// @return 만들어진 뮤텍스
@@ -2140,7 +2140,7 @@ QSAPI void qn_mutex_leave(QnMutex* self);
 // condition
 
 /// @brief 컨디션
-typedef struct QnCond QnCond;
+typedef struct QNCOND QnCond;
 
 /// @brief 조건을 만든다
 /// @return 만들어진 조건
@@ -2176,7 +2176,7 @@ QSAPI void qn_cond_wait(QnCond* self, QnMutex* lock);
 // semaphore
 
 /// @brief 세마포어
-typedef struct QnSem QnSem;
+typedef struct QNSEM QnSem;
 
 /// @brief 세마포어를 만든다
 /// @param initial 초기값
@@ -2222,10 +2222,10 @@ QSAPI bool qn_sem_post(QnSem* self);
 // xml
 
 /// @brief ML 유니트
-typedef struct QnMlu QnMlu;
+typedef struct QNMLU QnMlu;
 
 /// @brief ML 태그
-typedef struct QnMlTag
+typedef struct QNMLTAG
 {
 	char*			name;
 	char*			context;
@@ -2588,25 +2588,25 @@ QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* RESTRICT name);
 // gam 
 
 /// @brief GAM 할거리를 의미. 영어로 OBJECT
-typedef struct QsGam		QsGam;
+typedef struct QSGAM		QsGam;
 
 /// @brief GAM 가상 테이블 이름을 얻는다
-#define qv_name(type)		struct _vt_##type
+#define qv_name(type)		struct _VT_##type
 /// @brief GAM 가상 테이블로 GAM 포인터를 캐스팅한다
-#define qv_cast(g,type)		((struct _vt_##type*)((QsGam*)(g))->vt)
+#define qv_cast(g,type)		((struct _VT_##type*)((QsGam*)(g))->vt)
 
 /// @brief GAM 포인터를 다른 타입으로 캐스팅한다
 #define qs_cast(g,type)		((type*)(g))
 
-qv_name(QsGam)
+qv_name(QSGAM)
 {
 	const char* name;
 	void (*dispose)(QsGam*);
 };
 
-struct QsGam
+struct QSGAM
 {
-	qv_name(QsGam)*	vt;
+	qv_name(QSGAM)*	vt;
 	volatile nint	ref;
 	nuint			desc;
 };

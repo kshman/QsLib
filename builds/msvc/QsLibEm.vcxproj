@@ -13,7 +13,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{5c5f7770-a092-4907-a45a-43d2a27cbb4b}</ProjectGuid>
-    <RootNamespace>QsLibEm</RootNamespace>
+    <RootNamespace>QS</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Emscripten'">
@@ -67,6 +67,7 @@
     <ClInclude Include="..\..\src\qn\sdefl\sdefl.h" />
     <ClInclude Include="..\..\src\qn\sdefl\sinfl.h" />
     <ClInclude Include="..\..\src\qs_conf.h" />
+    <ClInclude Include="..\..\src\qs_intellisense.h" />
     <ClInclude Include="..\..\src\qs_proxy.h" />
     <ClInclude Include="..\..\src\qg\qg_stub.h" />
     <ClInclude Include="..\..\src\qg\stub\glad\egl.h" />

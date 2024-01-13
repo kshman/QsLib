@@ -9,7 +9,7 @@
 QN_DECL_CTNR(StubMonitorCtnr, QgUdevMonitor*);
 
 // 이벤트 핸들러 페어
-typedef struct StubEventCallback
+typedef struct STUBEVENTCALLBACK
 {
 	QgEventCallback		func;
 	void*				data;
@@ -18,7 +18,7 @@ typedef struct StubEventCallback
 QN_DECL_LIST(StubListEventCb, StubEventCallback);
 
 // 스터브 베이스
-typedef struct StubBase
+typedef struct STUBBASE
 {
 	void*				handle;								// 시스템 스터브 관리
 	QnMutex*			mutex;
@@ -122,7 +122,7 @@ extern void stub_initialize(StubBase* stub, QgFlag flags);
 // 렌더 디바이스
 
 // 렌더러 정보
-typedef struct RendererInfo
+typedef struct RENDERERINFO
 {
 	char				name[64];
 	char				renderer[64];						// 렌더러 이름
@@ -140,7 +140,7 @@ typedef struct RendererInfo
 } RendererInfo;
 
 // 렌더 추적 정보
-typedef struct RenderInvoke
+typedef struct RENDERINVOKE
 {
 	uint				frames;
 	uint				creations;
@@ -159,7 +159,7 @@ typedef struct RenderInvoke
 } RenderInvoke;
 
 // 렌더 트랜스포메이션
-typedef struct RenderTransform
+typedef struct RENDERTRANSFORM
 {
 	QmVec2				size;
 	QmDepth				depth;
@@ -175,7 +175,7 @@ typedef struct RenderTransform
 } RenderTransform;
 
 // 렌더 인수
-typedef struct RenderParam
+typedef struct RENDERPARAM
 {
 	QmVec4				v[4];
 	QmMat4				m[4];
@@ -185,7 +185,7 @@ typedef struct RenderParam
 } RenderParam;
 
 // 렌더러 디바이스
-typedef struct RdhBase
+typedef struct RDHBASE
 {
 	QsGam				base;
 
@@ -196,9 +196,9 @@ typedef struct RdhBase
 	RenderInvoke		invokes;
 } RdhBase;
 
-qv_name(RdhBase)
+qv_name(RDHBASE)
 {
-	qv_name(QsGam)	base;
+	qv_name(QSGAM)	base;
 	void (*reset)(void);
 	void (*clear)(int, const QmColor*, int, float);
 

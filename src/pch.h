@@ -9,8 +9,14 @@
 #ifdef _MSC_VER
 #define no_init_all deprecated		// VS2022 알 수 없는 특성
 #endif
-#if defined __GNUC__ && !defined _GNU_SOURCE
+#ifdef __GNUC__
+#ifndef _GNU_SOURCE					// gnu extension 쓰기 위해서
 #define _GNU_SOURCE
+#endif
+#if _POSIX_C_SOURCE < 199309L		// 이것도 gnu extension 쓰기 위해서
+#undef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 199309L
+#endif
 #endif
 
 #include <assert.h>
@@ -50,15 +56,7 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 // VS 2022 IDE 오류가 귀찮다
-#ifndef bool
-#define bool	_Bool
-#endif
-#ifndef true
-#define true	1
-#endif
-#ifndef false
-#define false	0
-#endif
+#include "qs_intellisense.h"
 #endif
 
 //
