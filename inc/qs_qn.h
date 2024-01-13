@@ -359,9 +359,9 @@ typedef struct funcparam_t
 #define qn_val_if_ok(x,r)	QN_STMT_BEGIN{ if ((x)) return (r); }QN_STMT_END						/// @brief 값이 참이면 반환
 
 #ifdef _DEBUG
-#define qn_assert(expr)		QN_STMT_BEGIN{ if (!(expr)) qn_debug_assert(#expr, __FUNCTION__, __LINE__); }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
+#define qn_assert(expr,msg)	QN_STMT_BEGIN{ if (!(expr)) qn_debug_assert(#expr, msg, __FUNCTION__, __LINE__); }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
 #else
-#define qn_assert(expr)
+#define qn_assert(expr,msg)
 #endif
 
 
@@ -434,7 +434,7 @@ QSAPI bool qn_set_syserror(int errcode);
 /// @param[in] filename 파일 이름이나 함수 이름
 /// @param[in] line 줄 번호
 /// @return 출력한 문자열 길이
-QSAPI int qn_debug_assert(const char* RESTRICT expr, const char* RESTRICT filename, int line);
+QSAPI int qn_debug_assert(const char* RESTRICT expr, const char* RESTRICT mesg, const char* RESTRICT filename, int line);
 
 /// @brief HALT 메시지
 /// @param[in] head 머릿글

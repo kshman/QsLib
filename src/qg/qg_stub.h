@@ -38,9 +38,8 @@ typedef struct StubBase
 	double				active;								// 활성화된 시간
 	double				frames;								// 목표 프레임
 
-	QmSize				window_size;						// 풀스크린이 아닐 때 크기
-	QmSize				client_size;						// 시스템 스터브 관리, 그리기 영역 크기 (창 크기가 아님)
 	QmRect				bound;								// 현재 윈도우의 위치와 크기 정보
+	QmSize				client_size;						// 시스템 스터브 관리, 그리기 영역 크기 (창 크기가 아님)
 
 	QgUimKey			key;
 	QgUimMouse			mouse;
@@ -59,6 +58,8 @@ extern StubBase* qg_instance_stub;
 extern bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags, QgFeature features);
 // 시스템 스터브를 정리한다
 extern void stub_system_finalize(void);
+// 시스템 디바이스가 만들어진 담에 스터브를 보이게
+extern void stub_system_show_stub(void);
 // 시스템 스터브 폴링 (프로그램이 종료되면 거짓)
 extern bool stub_system_poll(void);
 // 시스템 드래그 켜고 끄기
@@ -73,12 +74,12 @@ extern bool stub_system_relative_mouse(bool enable);
 extern void stub_system_set_title(const char* title);
 // 시스템 바운드 영역을 업데이트한다
 extern void stub_system_update_bound(void);
-// 시스템 스터브를 보이게
-extern void stub_system_show(void);
 // 시스템 스터브를 포커스로 만든다
 extern void stub_system_focus(void);
 // 시스템 비율을 맞춘다
 extern void stub_system_aspect(void);
+// 시스템 풀스크린을 전환한다
+extern void stub_system_fullscreen(bool fullscreen);
 // 시스템 핸들을 얻는다
 extern void* stub_system_get_window(void);
 // 시스템 디스플레이 핸들을 얻는다 (윈도우에서는 HDC)
@@ -86,6 +87,8 @@ extern void* stub_system_get_display(void);
 
 // 내부적으로 마우스 눌림을 연산한다
 extern bool stub_track_mouse_click(QimButton button, QimTrack track);
+// 내부적으로 토글을 설정한다 (완전 언세이프)
+extern void stub_toggle_keys(QikMask keymask, bool on);
 // 모니터 이벤트 추가
 extern bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary, bool broadcast);
 // 레이아웃 이벤트 추가
@@ -113,8 +116,6 @@ extern bool stub_event_on_drop(char* data, int len, bool finish);
 
 // 스터보 기본 사양을 초기화 stub_system_open() 함수가 호출해야 한다
 extern void stub_initialize(StubBase* stub, QgFlag flags);
-// 내부적으로 토글을 설정한다 (완전 언세이프)
-extern void stub_toggle_keys(QikMask keymask, bool on);
 
 
 //////////////////////////////////////////////////////////////////////////

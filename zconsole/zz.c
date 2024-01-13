@@ -50,16 +50,22 @@ int event_callback(void* event_data, QgEventType event_type, const QgEvent* even
 	}
 	else if (event_type == QGEV_KEYDOWN)
 	{
-		if (event_param->key.key == QIK_ESC)
+		QikKey key = event_param->key.key;
+		if (key == QIK_ESC)
 			qg_exit_loop();
-		if (event_param->key.key == QIK_SPACE)
+		else if (key == QIK_SPACE)
 		{
 			data->acc = 0.0f;
 			data->dir = 1.0f;
 		}
-		const char* key_name = qg_qik_str(event_param->key.key);
+		else if (key == QIK_F1)
+		{
+			bool fullscreen = qg_query_fullscreen();
+			qg_toggle_fullscreen(!fullscreen);
+		}
+		const char* key_name = qg_qik_str(key);
 		if (key_name)
-			qn_outputf("키 눌림 => <%s>(%X)", key_name, event_param->key.key);
+			qn_outputf("키 눌림 => <%s>(%X)", key_name, key);
 	}
 	else if (event_type == QGEV_KEYUP)
 	{
@@ -90,15 +96,15 @@ int main(void)
 {
 	qn_runtime();
 
-	int flags = /*QGFLAG_BORDERLESS |*/ QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA /*| QGFLAG_TEXT*/;
-	int features = QGFEATURE_NONE | QGFEATURE_DISABLE_ACS;
+	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA /*| QGFLAG_TEXT*/;
+	int features = QGFEATURE_NONE;
 	if (qg_open_rdh(NULL, "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 
-	for (int i=0; ; i++)
+	for (int i = 0; ; i++)
 	{
 		const QgUdevMonitor* mon = qg_get_monitor(i);
-		if (mon==NULL)
+		if (mon == NULL)
 			break;
 		qn_outputf("모니터%d: %s (%d,%d):(%d,%d)", i, mon->name, mon->x, mon->y, mon->width, mon->height);
 	}

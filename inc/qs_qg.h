@@ -633,6 +633,18 @@ QSAPI void qg_close_stub(void);
 /// @return 처리한 사양 갯수
 QSAPI int qg_feature(int features, bool enable);
 
+/// @brief 스터브 사양을 묻는다
+/// @return 스터브 사양
+QSAPI QgFeature qg_query_features(void);
+
+/// @brief 풀스크린을 전환한다
+/// @param fullscreen 풀스크린으로 가려면 참, 아니면 거짓
+QSAPI void qg_toggle_fullscreen(bool fullscreen);
+
+/// @brief 풀스크린인지 확인한다
+/// @return 풀스크린이면 참
+QSAPI bool qg_query_fullscreen(void);
+
 /// @brief 스터브 윈도우 타이틀 설정
 /// @param title 타이틀 문자열(UTF-8)
 QSAPI void qg_set_title(const char* title);
@@ -641,6 +653,10 @@ QSAPI void qg_set_title(const char* title);
 /// @param index 모니터 순번
 /// @return 모니터 정보를 반환하는데, 인덱스에 해당하는 모니터가 없으면 NULL이며 그 이상으로는 없음
 QSAPI const QgUdevMonitor* qg_get_monitor(int index);
+
+/// @brief 현재 스터브 윈도우가 있는 곳의 모니터 정보를 얻는다
+/// @return 모니터 정보를 반환하는데, 모니터가 없거나 오류일 경우 NULL
+QSAPI const QgUdevMonitor* qg_get_current_monitor(void);
 
 /// @brief 전체 키 정보를 얻는다
 /// @return 키 정보 포인터

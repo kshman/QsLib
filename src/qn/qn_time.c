@@ -413,6 +413,7 @@ bool qn_timer_update_fps(QnTimer* self, bool manual, double target_fps)
 	{
 		qn_ssleep(target_fps - delta);
 
+		/*
 		impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
 		impl->base.abstime = (double)impl->curtime.q * impl->tick;
 		impl->base.runtime = (double)(impl->curtime.q - impl->basetime.q) * impl->tick;
@@ -421,6 +422,7 @@ bool qn_timer_update_fps(QnTimer* self, bool manual, double target_fps)
 		impl->prevtime = impl->base.runtime;
 
 		impl->base.advance += wait;
+		*/
 	}
 
 	return ret;

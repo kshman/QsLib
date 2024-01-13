@@ -150,16 +150,19 @@ static int qn_dbg_buf_flush(void)
 }
 
 //
-int qn_debug_assert(const char* RESTRICT expr, const char* RESTRICT filename, const int line)
+int qn_debug_assert(const char* RESTRICT expr, const char* RESTRICT mesg, const char* RESTRICT filename, const int line)
 {
 	qn_val_if_fail(expr, -1);
 	qn_dbg_buf_str("ASSERT FAILED : ");
-	qn_dbg_buf_str(expr);
 	qn_dbg_buf_str(" (filename=\"");
 	qn_dbg_buf_str(filename);
 	qn_dbg_buf_str("\", line=");
 	qn_dbg_buf_int(line);
-	qn_dbg_buf_ch('\n');
+	qn_dbg_buf_str(")\n\t: ");
+	qn_dbg_buf_str(expr);
+	qn_dbg_buf_str(">\n\t: [");
+	qn_dbg_buf_str(mesg);
+	qn_dbg_buf_str("]\n");
 	qn_dbg_buf_flush();
 
 	DEBUG_BREAK(debug_impl.debugger);

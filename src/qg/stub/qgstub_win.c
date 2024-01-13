@@ -12,7 +12,6 @@
 
 #include "pch.h"
 #if defined _WIN32 && !defined USE_SDL2
-#include "qs_qn.h"
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include "qg/qg_stub.h"
@@ -25,6 +24,8 @@ static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 #ifdef _DEBUG
 //#define DEBUG_WIN_DLL_TRACE
 #endif
+
+#define QGSTUB_WIN_EXSTYLE	(WS_EX_LEFT | WS_EX_APPWINDOW)
 
 #pragma region DLL 처리
 // DLL 정의
@@ -125,6 +126,9 @@ typedef struct WindowsMonitor
 	HMONITOR			handle;
 	wchar				adapter[32];
 	wchar				display[32];
+
+	RECT				rcMonitor;
+	RECT				rcWork;
 } WindowsMonitor;
 
 // 마우스 이벤트 소스 (https://learn.microsoft.com/ko-kr/windows/win32/tablet/system-events-and-mouse-messages)
@@ -151,9 +155,7 @@ typedef struct WindowsStub
 	wchar				class_name[64];
 	DWORD				window_style;
 
-	float				display_aspect;
-	int					acquire_display;
-	UINT				acquire_mouse_trail;
+	RECT				window_bound;
 
 	STICKYKEYS			acs_sticky;
 	TOGGLEKEYS			acs_toggle;
@@ -183,11 +185,8 @@ typedef struct WindowsStub
 WindowsStub winStub;
 
 //
-static DWORD windows_conv_style(QgFlag flags);
-static void windows_calc_size(QmSize* size, DWORD style, int width, int height, UINT dpi);
-static void windows_calc_aspect(RECT* rect, int edge);
-static void windows_full_screen(void);
-static void windows_acquire_display(bool acquire);
+static void windows_rect_adjust(QmSize* size, int width, int height, UINT dpi);
+static void windows_rect_aspect(RECT* rect, int edge);
 static void windows_set_key_hook(HINSTANCE instance);
 static void windows_set_dpi_awareness(void);
 static bool windows_detect_displays(void);
@@ -275,9 +274,9 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 		winStub.class_registered = true;
 	}
 
-	// 사용할 모니터
+	// 사용할 모니터 (모니터 번호는 정렬되어 있어서 그냥 순번 ㅇㅋ)
 	const WindowsMonitor* mon = (const WindowsMonitor*)qn_pctnr_nth(&winStub.base.monitors,
-		(size_t)display < qn_pctnr_count(&winStub.base.monitors) ? display : 0);	// 모니터 번호는 정렬되어 있어서 그냥 순번 ㅇㅋ
+		(size_t)display < qn_pctnr_count(&winStub.base.monitors) ? display : 0);
 	winStub.base.display = mon->base.no;
 
 	// 크기와 위치 (윈도우 크기, 화면 크기)
@@ -286,7 +285,7 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 		client_size = qm_size(width, height);
 	else
 	{
-		// 가로/세로 = 1.777777777777778
+		// 세로 ÷ 가로 = 0.5625
 		if (mon->base.height > 800)
 			client_size = qm_size(1280, 720);
 		else if (mon->base.height > 600)
@@ -295,11 +294,28 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 			client_size = qm_size(720, 405);
 	}
 
-	DWORD style = windows_conv_style(flags);
-	DWORD ex_style = WS_EX_LEFT | WS_EX_APPWINDOW;
+	// 여기서는 윈도우용 스타일만 만듦. 풀스크린은 하는 곳에서 윈도우 스탈 변경하는 걸로 (토글용)
+	DWORD style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_SYSMENU;
+	if (QN_TMASK(winStub.base.flags, QGFLAG_NOTITLE))
+	{
+		style |= WS_POPUP;
+		if (QN_TMASK(winStub.base.flags, QGFLAG_RESIZE))
+			style |= WS_SIZEBOX;
+		if (QN_TMASK(winStub.base.flags, QGFLAG_BORDERLESS) == false)
+			style |= WS_BORDER;
+	}
+	else
+	{
+		style |= WS_SYSMENU | WS_TILED | WS_CAPTION | WS_MINIMIZEBOX;
+		if (QN_TMASK(winStub.base.flags, QGFLAG_BORDERLESS))
+			style |= WS_POPUP;
+		if (QN_TMASK(winStub.base.flags, QGFLAG_RESIZE))
+			style |= WS_SIZEBOX | WS_MAXIMIZEBOX;
+	}
+
 	RECT rect;
 	SetRect(&rect, 0, 0, client_size.Width, client_size.Height);
-	AdjustWindowRectEx(&rect, style, FALSE, ex_style);
+	AdjustWindowRectEx(&rect, style, FALSE, QGSTUB_WIN_EXSTYLE);
 
 	QmSize size = qm_size(rect.right - rect.left, rect.bottom - rect.top);
 	QmPoint pos = qm_point(
@@ -307,7 +323,6 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 		(int)mon->base.y + (mon->base.height - size.Height) / 2);
 
 	// 값설정
-	winStub.base.window_size = size;
 	winStub.base.client_size = client_size;
 	winStub.base.bound = qm_rect_pos_size(pos, size);
 
@@ -337,44 +352,31 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	}
 
 	// 최종 스타일 변경
-	if (QN_TMASK(flags, QGFLAG_FULLSCREEN))
-	{
-		SetWindowLong(winStub.hwnd, GWL_STYLE, WS_POPUP | WS_SYSMENU | WS_VISIBLE);
-		winStub.window_style = WS_POPUP | WS_SYSMENU | WS_VISIBLE;
-	}
+	SetRect(&rect, 0, 0, client_size.Width, client_size.Height);
+	if (AdjustWindowRectExForDpi)
+		AdjustWindowRectExForDpi(&rect, style, FALSE, QGSTUB_WIN_EXSTYLE, GetDpiForWindow(winStub.hwnd));
 	else
+		AdjustWindowRectEx(&rect, style, FALSE, QGSTUB_WIN_EXSTYLE);
+
+	WINDOWPLACEMENT wp = { .length = sizeof(WINDOWPLACEMENT) };
+	GetWindowPlacement(winStub.hwnd, &wp);
+	OffsetRect(&rect, wp.rcNormalPosition.left - rect.left, wp.rcNormalPosition.top - rect.top);
+	wp.rcNormalPosition = rect;
+	wp.showCmd = SW_HIDE;
+	SetWindowPlacement(winStub.hwnd, &wp);
+
+	if (QN_TMASK(flags, QGFLAG_MAXIMIZE) && QN_TMASK(flags, QGFLAG_NOTITLE))
 	{
-		SetRect(&rect, 0, 0, client_size.Width, client_size.Height);
-		if (AdjustWindowRectExForDpi)
-			AdjustWindowRectExForDpi(&rect, style, FALSE, ex_style, GetDpiForWindow(winStub.hwnd));
-		else
-			AdjustWindowRectEx(&rect, style, FALSE, ex_style);
-
-		WINDOWPLACEMENT wp = { .length = sizeof(WINDOWPLACEMENT) };
-		GetWindowPlacement(winStub.hwnd, &wp);
-		OffsetRect(&rect, wp.rcNormalPosition.left - rect.left, wp.rcNormalPosition.top - rect.top);
-		wp.rcNormalPosition = rect;
-		wp.showCmd = SW_HIDE;
-		SetWindowPlacement(winStub.hwnd, &wp);
-
-		if (QN_TMASK(flags, QGFLAG_MAXIMIZE | QGFLAG_BORDERLESS))
-		{
-			MONITORINFO mi = { .cbSize = sizeof(MONITORINFO) };
-			GetMonitorInfo(mon->handle, &mi);
-			SetWindowPos(winStub.hwnd, HWND_TOP, mi.rcWork.left, mi.rcWork.top,
-				mi.rcWork.right - mi.rcWork.left, mi.rcWork.bottom - mi.rcWork.top,
-				SWP_NOACTIVATE | SWP_NOZORDER);
-		}
-
-		winStub.window_style = (DWORD)GetWindowLong(winStub.hwnd, GWL_STYLE);
+		SetWindowPos(winStub.hwnd, HWND_TOP, mon->rcWork.left, mon->rcWork.top,
+			mon->rcWork.right - mon->rcWork.left, mon->rcWork.bottom - mon->rcWork.top,
+			SWP_NOACTIVATE | SWP_NOZORDER);
 	}
 
-	// 렌더러가 없다면 표시하고, 있으면 렌더러 만들고 stub_system_show()를 호출할 것
+	winStub.window_style = (DWORD)GetWindowLong(winStub.hwnd, GWL_STYLE);
+
+	// 렌더러가 없다면 표시하고, 있으면 렌더러 만들고 stub_system_show_stub()를 호출할 것
 	if (QN_TMASK(features, 0xFF000000) == false)
-	{
-		ShowWindow(winStub.hwnd, SW_SHOWNORMAL);
-		UpdateWindow(winStub.hwnd);
-	}
+		stub_system_show_stub();
 
 	// ㅇㅋ
 	stub_system_update_bound();
@@ -385,10 +387,12 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 //
 void stub_system_finalize(void)
 {
-	windows_acquire_display(false);
-	stub_system_relative_mouse(false);
-	stub_system_disable_scr_save(false);
-	stub_system_disable_acs(false);
+	if (QN_TMASK(winStub.base.features, QGFEATURE_RELATIVE_MOUSE))
+		stub_system_relative_mouse(false);
+	if (QN_TMASK(winStub.base.features, QGFEATURE_DISABLE_SCRSAVE))
+		stub_system_disable_scr_save(false);
+	if (QN_TMASK(winStub.base.features, QGFEATURE_DISABLE_ACS))
+		stub_system_disable_acs(false);
 
 	if (winStub.hwnd != NULL)
 	{
@@ -410,6 +414,19 @@ void stub_system_finalize(void)
 		WNDCLASSEX wc;
 		if (GetClassInfoEx(winStub.instance, winStub.class_name, &wc))
 			UnregisterClass(winStub.class_name, winStub.instance);
+	}
+}
+
+//
+void stub_system_show_stub(void)
+{
+	ShowWindow(winStub.hwnd, SW_SHOWNORMAL);
+	stub_system_focus();
+
+	if (QN_TMASK(winStub.base.flags, QGFLAG_FULLSCREEN))
+	{
+		QN_SMASK(&winStub.base.stats, QGSST_FULLSCREEN, true);
+		stub_system_fullscreen(true);
 	}
 }
 
@@ -452,72 +469,54 @@ bool stub_system_disable_acs(const bool enable)
 {
 	if (enable)
 	{
-		if (QN_TMASK(winStub.base.features, QGFEATURE_DISABLE_ACS) == false)
-		{
-			winStub.acs_sticky.cbSize = sizeof(STICKYKEYS);
-			winStub.acs_toggle.cbSize = sizeof(TOGGLEKEYS);
-			winStub.acs_filter.cbSize = sizeof(FILTERKEYS);
-			SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &winStub.acs_sticky, 0);
-			SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &winStub.acs_toggle, 0);
-			SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &winStub.acs_filter, 0);
+		winStub.acs_sticky.cbSize = sizeof(STICKYKEYS);
+		winStub.acs_toggle.cbSize = sizeof(TOGGLEKEYS);
+		winStub.acs_filter.cbSize = sizeof(FILTERKEYS);
+		SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &winStub.acs_sticky, 0);
+		SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &winStub.acs_toggle, 0);
+		SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &winStub.acs_filter, 0);
 
-			STICKYKEYS sticky = winStub.acs_sticky;
-			TOGGLEKEYS toggle = winStub.acs_toggle;
-			FILTERKEYS filter = winStub.acs_filter;
-			sticky.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
-			toggle.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
-			filter.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
-			SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &sticky, 0);
-			SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &toggle, 0);
-			SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &filter, 0);
+		STICKYKEYS sticky = winStub.acs_sticky;
+		TOGGLEKEYS toggle = winStub.acs_toggle;
+		FILTERKEYS filter = winStub.acs_filter;
+		sticky.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
+		toggle.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
+		filter.dwFlags &= ~(SKF_HOTKEYACTIVE | SKF_CONFIRMHOTKEY);
+		SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &sticky, 0);
+		SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &toggle, 0);
+		SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &filter, 0);
 
-			windows_set_key_hook(winStub.instance);
-		}
+		windows_set_key_hook(winStub.instance);
 	}
 	else
 	{
-		if (QN_TMASK(winStub.base.features, QGFEATURE_DISABLE_ACS))
-		{
-			SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &winStub.acs_sticky, 0);
-			SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &winStub.acs_toggle, 0);
-			SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &winStub.acs_filter, 0);
+		SystemParametersInfo(SPI_SETSTICKYKEYS, sizeof(STICKYKEYS), &winStub.acs_sticky, 0);
+		SystemParametersInfo(SPI_SETTOGGLEKEYS, sizeof(TOGGLEKEYS), &winStub.acs_toggle, 0);
+		SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &winStub.acs_filter, 0);
 
-			windows_set_key_hook(NULL);
-		}
+		windows_set_key_hook(NULL);
 	}
-	return enable;
+	return true;
 }
 
 //
 bool stub_system_disable_scr_save(const bool enable)
 {
 	if (enable)
-	{
-		if (QN_TMASK(winStub.base.features, QGFEATURE_DISABLE_SCRSAVE) == false)
-			SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
-	}
+		SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
 	else
-	{
-		if (QN_TMASK(winStub.base.features, QGFEATURE_DISABLE_SCRSAVE))
-			SetThreadExecutionState(ES_CONTINUOUS);
-	}
-	return enable;
+		SetThreadExecutionState(ES_CONTINUOUS);
+	return true;
 }
 
 //
 bool stub_system_enable_drop(const bool enable)
 {
 	if (enable)
-	{
-		if (QN_TMASK(winStub.base.features, QGFEATURE_ENABLE_DROP) == false)
-			DragAcceptFiles(winStub.hwnd, TRUE);
-	}
+		DragAcceptFiles(winStub.hwnd, TRUE);
 	else
-	{
-		if (QN_TMASK(winStub.base.features, QGFEATURE_ENABLE_DROP))
-			DragAcceptFiles(winStub.hwnd, FALSE);
-	}
-	return enable;
+		DragAcceptFiles(winStub.hwnd, FALSE);
+	return true;
 }
 
 //
@@ -525,21 +524,17 @@ bool stub_system_relative_mouse(bool enable)
 {
 	if (enable)
 	{
-		if (QN_TMASK(winStub.base.features, QGFEATURE_RELATIVE_MOUSE) == false)
-		{
-			RECT rt;
-			GetClientRect(winStub.hwnd, &rt);
-			ClientToScreen(winStub.hwnd, ((LPPOINT)&rt) + 0);
-			ClientToScreen(winStub.hwnd, ((LPPOINT)&rt) + 1);
-			ClipCursor(&rt);
-		}
+		RECT rt;
+		GetClientRect(winStub.hwnd, &rt);
+		ClientToScreen(winStub.hwnd, ((LPPOINT)&rt) + 0);
+		ClientToScreen(winStub.hwnd, ((LPPOINT)&rt) + 1);
+		ClipCursor(&rt);
 	}
 	else
 	{
-		if (QN_TMASK(winStub.base.features, QGFEATURE_RELATIVE_MOUSE))
-			ClipCursor(NULL);
+		ClipCursor(NULL);
 	}
-	return enable;
+	return true;
 }
 
 //
@@ -564,19 +559,6 @@ void stub_system_update_bound(void)
 }
 
 //
-void stub_system_show(void)
-{
-	ShowWindow(winStub.hwnd, SW_SHOWNORMAL);
-	stub_system_focus();
-
-	if (QN_TMASK(winStub.base.flags, QGFLAG_FULLSCREEN))
-	{
-		windows_acquire_display(true);
-		windows_full_screen();
-	}
-}
-
-//
 void stub_system_focus(void)
 {
 	BringWindowToTop(winStub.hwnd);
@@ -587,12 +569,47 @@ void stub_system_focus(void)
 //
 void stub_system_aspect(void)
 {
-	if (QN_TMASK(winStub.base.features, QGFEATURE_ENABLE_ASPECT) == false)
-		return;
 	RECT rect;
 	GetWindowRect(winStub.hwnd, &rect);
-	windows_calc_aspect(&rect, WMSZ_BOTTOMRIGHT);
+	windows_rect_aspect(&rect, WMSZ_BOTTOMRIGHT);
 	MoveWindow(winStub.hwnd, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, TRUE);
+}
+
+//
+void stub_system_fullscreen(bool fullscreen)
+{
+	DWORD style = GetWindowLong(winStub.hwnd, GWL_STYLE);
+
+	if (fullscreen)
+	{
+		memcpy(&winStub.window_bound, &winStub.base.bound, sizeof(RECT));
+
+		style &= ~WS_OVERLAPPEDWINDOW;
+		style |= WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP;
+		SetWindowLong(winStub.hwnd, GWL_STYLE, style);
+
+		UINT uflags = SWP_SHOWWINDOW | SWP_NOACTIVATE | SWP_NOCOPYBITS;
+		if (QN_TMASK(winStub.base.flags, QGFLAG_NOTITLE) == false)
+			uflags |= SWP_FRAMECHANGED;
+
+		const WindowsMonitor* mon = (const WindowsMonitor*)qg_get_current_monitor();
+		SetWindowPos(winStub.hwnd, HWND_TOP, mon->rcMonitor.left, mon->rcMonitor.top,
+			mon->rcMonitor.right - mon->rcMonitor.left, mon->rcMonitor.bottom - mon->rcMonitor.top, uflags);
+	}
+	else
+	{
+		style &= ~WS_POPUP;
+		style |= winStub.window_style;
+		SetWindowLong(winStub.hwnd, GWL_STYLE, style);
+
+		UINT uflags = SWP_NOACTIVATE | SWP_NOCOPYBITS;
+		if (QN_TMASK(winStub.base.features, QGFLAG_NOTITLE) == false)
+			uflags |= SWP_FRAMECHANGED;
+
+		RECT rect = winStub.window_bound;
+		SetWindowPos(winStub.hwnd, HWND_NOTOPMOST, rect.left, rect.top,
+			rect.right - rect.left, rect.bottom - rect.top, uflags);
+	}
 }
 
 //
@@ -612,45 +629,24 @@ void* stub_system_get_display(void)
 //////////////////////////////////////////////////////////////////////////
 
 #pragma region 내부 정적 함수
-//
-static DWORD windows_conv_style(QgFlag flags)
-{
-	DWORD style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-	if (QN_TMASK(flags, QGFLAG_FULLSCREEN))
-		style |= WS_POPUP;
-	else
-	{
-		style |= WS_SYSMENU;
-		if (QN_TMASK(flags, QGFLAG_BORDERLESS))
-			style |= WS_POPUP;
-		else
-		{
-			style |= WS_SYSMENU | WS_CAPTION;
-			if (QN_TMASK(flags, QGFLAG_RESIZE))
-				style |= WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME;
-		}
-	}
-	return style;
-}
-
-// 윈도우 크기 계산
-static void windows_calc_size(QmSize* size, DWORD style, int width, int height, UINT dpi)
+// 크기 조정
+static void windows_rect_adjust(QmSize* size, int width, int height, UINT dpi)
 {
 	RECT rect;
 	SetRect(&rect, 0, 0, width, height);
 	if (AdjustWindowRectExForDpi)
-		AdjustWindowRectExForDpi(&rect, style, FALSE, WS_EX_LEFT | WS_EX_APPWINDOW, dpi);
+		AdjustWindowRectExForDpi(&rect, winStub.window_style, FALSE, QGSTUB_WIN_EXSTYLE, dpi);
 	else
-		AdjustWindowRectEx(&rect, style, FALSE, WS_EX_LEFT | WS_EX_APPWINDOW);
+		AdjustWindowRectEx(&rect, winStub.window_style, FALSE, QGSTUB_WIN_EXSTYLE);
 	size->Width = rect.right - rect.left;
 	size->Height = rect.bottom - rect.top;
 }
 
-// 비율 계산
-static void windows_calc_aspect(RECT* rect, int edge)
+// 종횡비 조정
+static void windows_rect_aspect(RECT* rect, int edge)
 {
 	QmSize offset;
-	windows_calc_size(&offset, windows_conv_style(winStub.base.flags), 0, 0,
+	windows_rect_adjust(&offset, 0, 0,
 		GetDpiForWindow ? GetDpiForWindow(winStub.hwnd) : USER_DEFAULT_SCREEN_DPI);
 	if (edge == WMSZ_LEFT || edge == WMSZ_BOTTOMLEFT || edge == WMSZ_RIGHT || edge == WMSZ_BOTTOMRIGHT)
 		rect->bottom = rect->top + offset.Height + (int)((rect->right - rect->left - offset.Width) * winStub.base.aspect);
@@ -658,45 +654,6 @@ static void windows_calc_aspect(RECT* rect, int edge)
 		rect->top = rect->bottom - offset.Height - (int)((rect->right - rect->left - offset.Width) * winStub.base.aspect);
 	else if (edge == WMSZ_TOP || edge == WMSZ_BOTTOM)
 		rect->right = rect->left + offset.Height + (int)((rect->bottom - rect->top - offset.Width) / winStub.base.aspect);
-}
-
-// 풀스크린으로
-static void windows_full_screen(void)
-{
-	const WindowsMonitor* mon = (const WindowsMonitor*)qn_pctnr_nth(&winStub.base.monitors,
-		(size_t)winStub.base.display < qn_pctnr_count(&winStub.base.monitors) ? winStub.base.display : 0);
-	MONITORINFO mi = { .cbSize = sizeof(MONITORINFO) };
-	GetMonitorInfo(mon->handle, &mi);
-	SetWindowPos(winStub.hwnd, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top,
-		mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top,
-		SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
-}
-
-// 모니터 잡기
-static void windows_acquire_display(bool acquire)
-{
-	if (acquire)
-	{
-		if (winStub.acquire_display == 0)
-		{
-			if (QN_TMASK(winStub.base.features, QGFEATURE_DISABLE_SCRSAVE) == false)
-				SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
-			SystemParametersInfo(SPI_GETMOUSETRAILS, 0, &winStub.acquire_mouse_trail, 0);
-			SystemParametersInfo(SPI_SETMOUSETRAILS, 0, 0, 0);
-		}
-
-		winStub.acquire_display++;
-	}
-	else if (winStub.acquire_display > 0)
-	{
-		winStub.acquire_display--;
-		if (winStub.acquire_display == 0)
-		{
-			if (QN_TMASK(winStub.base.features, QGFEATURE_DISABLE_SCRSAVE) == false)
-				SetThreadExecutionState(ES_CONTINUOUS);
-			SystemParametersInfo(SPI_SETMOUSETRAILS, winStub.acquire_mouse_trail, 0, 0);
-		}
-	}
 }
 
 // 키 후킹 콜백
@@ -856,7 +813,11 @@ static BOOL CALLBACK windows_enum_display_callback(HMONITOR monitor, HDC dc, REC
 	{
 		WindowsMonitor* wm = (WindowsMonitor*)lp;
 		if (qn_wcseqv(mi.szDevice, wm->adapter))
+		{
 			wm->handle = monitor;
+			wm->rcMonitor = mi.rcMonitor;
+			wm->rcWork = mi.rcWork;
+		}
 	}
 	return TRUE;
 }
@@ -1077,10 +1038,10 @@ static bool windows_mesg_keyboard(const WPARAM wp, const LPARAM lp, const bool d
 			key = (byte)MapVirtualKey((lp & 0x00ff0000) >> 16, MAPVK_VSC_TO_VK_EX);
 			break;
 		case VK_CONTROL:
-			key = (lp & 0x01000000) != 0 ? VK_RCONTROL : VK_LCONTROL;
+			key = (HIWORD(lp) & KF_EXTENDED) ? VK_RCONTROL : VK_LCONTROL;
 			break;
 		case VK_MENU:
-			key = (lp & 0x01000000) != 0 ? VK_RMENU : VK_LMENU;
+			key = (HIWORD(lp) & KF_EXTENDED) ? VK_RMENU : VK_LMENU;
 			break;
 	}
 
@@ -1202,7 +1163,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				stub_event_on_mouse_wheel(delta, 0.0f, false);
 		}
 		else break;
-		goto poswindows_mesg_proc_exit;
+		goto pos_windows_mesg_proc_exit;
 	}
 
 	// 키보드
@@ -1219,7 +1180,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				result = 0;
 		}
 		else break;
-		goto poswindows_mesg_proc_exit;
+		goto pos_windows_mesg_proc_exit;
 	}
 
 	// 기타 메시지
@@ -1246,6 +1207,13 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 					break;
 				default:
 					break;
+			}
+			if (QN_TMASK(winStub.base.stats, QGSST_FULLSCREEN) && wp != SIZE_MINIMIZED)
+			{
+				const WindowsMonitor* mon = (const WindowsMonitor*)qg_get_current_monitor();
+				SetWindowPos(hwnd, HWND_TOP, mon->rcMonitor.left, mon->rcMonitor.top,
+					mon->rcMonitor.right - mon->rcMonitor.left, mon->rcMonitor.bottom - mon->rcMonitor.top,
+					SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOCOPYBITS);
 			}
 		} break;
 
@@ -1319,27 +1287,27 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 		}break;
 
 		case WM_GETMINMAXINFO:
-		{
-			// 창의 크기 또는 위치가 변경될 때
-			// 여기서 기본 기본 최대 크기와 위치, 기본 최소 또는 최대 추적 크기 재정의
-			MINMAXINFO* mmi = (MINMAXINFO*)lp;
-			QmSize offset;
-			windows_calc_size(&offset, windows_conv_style(winStub.base.flags), 0, 0,
-				GetDpiForWindow ? GetDpiForWindow(hwnd) : USER_DEFAULT_SCREEN_DPI);
-			mmi->ptMinTrackSize.x = 256 + offset.Width;
-			mmi->ptMinTrackSize.y = 256 + offset.Height;
-			if (QN_TMASK(winStub.base.flags, QGFLAG_BORDERLESS))
+			if (winStub.window_style != 0)
 			{
-				HMONITOR mh = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-				MONITORINFO mi = { .cbSize = sizeof(MONITORINFO) };
-				GetMonitorInfo(mh, &mi);
-				mmi->ptMaxPosition.x = mi.rcWork.left - mi.rcMonitor.left;
-				mmi->ptMaxPosition.y = mi.rcWork.top - mi.rcMonitor.top;
-				mmi->ptMaxSize.x = mi.rcWork.right - mi.rcWork.left;
-				mmi->ptMaxSize.y = mi.rcWork.bottom - mi.rcWork.top;
+				// 창의 크기 또는 위치가 변경될 때, 최소/최대 크기와 위치 및 최소/최대 추적 크기 재정의
+				MINMAXINFO* mmi = (MINMAXINFO*)lp;
+				QmSize offset;
+				windows_rect_adjust(&offset, 0, 0, GetDpiForWindow ? GetDpiForWindow(hwnd) : USER_DEFAULT_SCREEN_DPI);
+				mmi->ptMinTrackSize.x = 256 + offset.Width;
+				mmi->ptMinTrackSize.y = 256 + offset.Height;
+				if (QN_TMASK(winStub.base.flags, QGFLAG_NOTITLE))
+				{
+					HMONITOR mh = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+					MONITORINFO mi = { .cbSize = sizeof(MONITORINFO) };
+					GetMonitorInfo(mh, &mi);
+					mmi->ptMaxPosition.x = mi.rcWork.left - mi.rcMonitor.left;
+					mmi->ptMaxPosition.y = mi.rcWork.top - mi.rcMonitor.top;
+					mmi->ptMaxSize.x = mi.rcWork.right - mi.rcWork.left;
+					mmi->ptMaxSize.y = mi.rcWork.bottom - mi.rcWork.top;
+				}
+				result = 0;
 			}
-			result = 0;
-		}break;
+			break;
 
 		case WM_WINDOWPOSCHANGING:
 			if (QN_TMASK(winStub.base.stats, QGSST_LAYOUT))
@@ -1357,6 +1325,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 			stub_event_on_window_event(QGWEV_MOVED, rect.left, rect.top);
 			stub_event_on_window_event(QGWEV_SIZED, rect.right - rect.left, rect.bottom - rect.top);
+			stub_event_on_layout(false);
 
 			InvalidateRect(hwnd, NULL, FALSE);
 		}break;
@@ -1375,7 +1344,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			break;
 
 		case WM_NCHITTEST:
-			if (QN_TMASK(winStub.base.flags, QGFLAG_FULLSCREEN))
+			if (QN_TMASK(winStub.base.stats, QGSST_FULLSCREEN))
 				return HTCLIENT;
 			break;
 
@@ -1417,7 +1386,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				result = 1;
 			else
 			{
-				// 여기서 키보드 데이터를 처리
+				// 여기서 키보드 데이터를 처리, 유니코드가 아닌 윈도우에서 유니코드를 처리할 때 사용
 				// https://learn.microsoft.com/ko-kr/windows/win32/inputdev/wm-unichar
 				char u8[7];
 				if (qn_u32ucb((uchar4)wp, u8))
@@ -1440,8 +1409,8 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			break;
 
 		case WM_SIZING:
-			if (QN_TMASK(winStub.base.features, QGFEATURE_ENABLE_ASPECT))
-				windows_calc_aspect((RECT*)lp, (int)wp);
+			if (winStub.window_style != 0 && QN_TMASK(winStub.base.features, QGFEATURE_ENABLE_ASPECT))
+				windows_rect_aspect((RECT*)lp, (int)wp);
 			result = 1;
 			break;
 
@@ -1501,47 +1470,49 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			break;
 
 		case WM_DPICHANGED:
-		{
-			// https://learn.microsoft.com/ko-kr/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
-			if (QN_TMASK(winStub.base.flags, QGFLAG_DPISCALE) ||
-				AdjustWindowRectExForDpi != NULL)
+			if (winStub.window_style != 0)
 			{
-				RECT* const suggested = (RECT*)lp;
-				SetWindowPos(hwnd, HWND_TOP, suggested->left, suggested->top,
-					suggested->right - suggested->left, suggested->bottom - suggested->top,
-					SWP_NOACTIVATE | SWP_NOZORDER);
-		}
+				// https://learn.microsoft.com/ko-kr/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
+				if (QN_TMASK(winStub.base.flags, QGFLAG_DPISCALE))
+				{
+					RECT* const suggested = (RECT*)lp;
+					SetWindowPos(hwnd, HWND_TOP, suggested->left, suggested->top,
+						suggested->right - suggested->left, suggested->bottom - suggested->top,
+						SWP_NOACTIVATE | SWP_NOZORDER);
+				}
 #if false
-			const float xdpi = HIWORD(wp) / 96.0f;
-			const float ydpi = LOWORD(wp) / 96.0f;
-			// TODO: 여기에 DPI 변경 알림 이벤트 날리면 좋겠네
+				const float xdpi = HIWORD(wp) / 96.0f;
+				const float ydpi = LOWORD(wp) / 96.0f;
+				// TODO: 여기에 DPI 변경 알림 이벤트 날리면 좋겠네
 #endif
-	} break;
+			}
+			break;
 
 		case WM_GETDPISCALEDSIZE:
-		{
-			if (QN_TMASK(winStub.base.flags, QGFLAG_DPISCALE) ||
-				AdjustWindowRectExForDpi == NULL)
-				break;
-			RECT src = { 0, 0, 0, 0 };
-			RECT dst = { 0, 0, 0, 0 };
-			AdjustWindowRectExForDpi(&src, winStub.window_style, FALSE, WS_EX_APPWINDOW, GetDpiForWindow(hwnd));
-			AdjustWindowRectExForDpi(&dst, winStub.window_style, FALSE, WS_EX_APPWINDOW, LOWORD(wp));
-			SIZE* size = (SIZE*)lp;
-			size->cx += (dst.right - dst.left) - (src.right - src.left);
-			size->cy += (dst.bottom - dst.top) - (src.bottom - src.top);
-			result = 1;
-		} break;
+			if (winStub.window_style != 0)
+			{
+				if (AdjustWindowRectExForDpi == NULL || QN_TMASK(winStub.base.flags, QGFLAG_DPISCALE) == false)
+					break;
+				RECT src = { 0, 0, 0, 0 };
+				RECT dst = { 0, 0, 0, 0 };
+				AdjustWindowRectExForDpi(&src, winStub.window_style, FALSE, QGSTUB_WIN_EXSTYLE, GetDpiForWindow(hwnd));
+				AdjustWindowRectExForDpi(&dst, winStub.window_style, FALSE, QGSTUB_WIN_EXSTYLE, LOWORD(wp));
+				SIZE* size = (SIZE*)lp;
+				size->cx += (dst.right - dst.left) - (src.right - src.left);
+				size->cy += (dst.bottom - dst.top) - (src.bottom - src.top);
+				result = 1;
+			}
+			break;
 
 		default:
 			break;
-}
+		}
 
-poswindows_mesg_proc_exit:
+pos_windows_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-}
+	}
 #pragma endregion 윈도우 메시지
 
 #endif // _WIN32 && !USE_SDL2

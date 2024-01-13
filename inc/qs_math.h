@@ -2852,7 +2852,7 @@ INLINE QmVec3 qm_quat_ln(const QmQuat q)
 		return qm_vec3(t * q.X, t * q.Y, t * q.Z);
 	}
 	// 법선이 1보다 작다. 이런일은 생기지 않는다!!!!
-	qn_assert(true && "법선이 1보다 작은데? 어째서???");
+	qn_assert(false, "법선이 1보다 작은데? 어째서???");
 	QmVec3 v; qm_vec3_rst(&v);
 	return v;
 }

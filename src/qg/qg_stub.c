@@ -304,7 +304,7 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 
 	stub->flags = flags;
 	stub->features = QGFEATURE_NONE;						// 나중에 설정해야 하므로 NONE
-	stub->stats = QGSST_ACTIVE | QGSST_CURSOR;			// 기본으로 활성 상태랑 커서는 켠다
+	stub->stats = QGSST_ACTIVE | QGSST_CURSOR;				// 기본으로 활성 상태랑 커서는 켠다
 
 	stub->aspect = 9.0f / 16.0f;
 
@@ -352,20 +352,23 @@ int qg_feature(int features, bool enable)
 	if (QN_TMASK(features, QGFEATURE_DISABLE_ACS))
 	{
 		count++;
-		const bool ret = stub_system_disable_acs(enable);
-		QN_SMASK(&self->features, QGFEATURE_DISABLE_ACS, ret);
+		if (QN_TMASK(self->features, QGFEATURE_DISABLE_ACS) != enable)
+			if (stub_system_disable_acs(enable))
+				QN_SMASK(&self->features, QGFEATURE_DISABLE_ACS, enable);
 	}
 	if (QN_TMASK(features, QGFEATURE_DISABLE_SCRSAVE))
 	{
 		count++;
-		const bool ret = stub_system_disable_scr_save(enable);
-		QN_SMASK(&self->features, QGFEATURE_DISABLE_SCRSAVE, ret);
+		if (QN_TMASK(self->features, QGFEATURE_DISABLE_SCRSAVE) != enable)
+			if (stub_system_disable_scr_save(enable))
+				QN_SMASK(&self->features, QGFEATURE_DISABLE_SCRSAVE, enable);
 	}
 	if (QN_TMASK(features, QGFEATURE_ENABLE_DROP))
 	{
 		count++;
-		const bool ret = stub_system_enable_drop(enable);
-		QN_SMASK(&self->features, QGFEATURE_ENABLE_DROP, ret);
+		if (QN_TMASK(self->features, QGFEATURE_ENABLE_DROP) != enable)
+			if (stub_system_enable_drop(enable))
+				QN_SMASK(&self->features, QGFEATURE_ENABLE_DROP, enable);
 	}
 	if (QN_TMASK(features, QGFEATURE_ENABLE_SYSWM))
 	{
@@ -380,8 +383,9 @@ int qg_feature(int features, bool enable)
 	if (QN_TMASK(features, QGFEATURE_RELATIVE_MOUSE))
 	{
 		count++;
-		const bool ret = stub_system_relative_mouse(enable);
-		QN_SMASK(&self->features, QGFEATURE_RELATIVE_MOUSE, ret);
+		if (QN_TMASK(self->features, QGFEATURE_RELATIVE_MOUSE) != enable)
+			if (stub_system_relative_mouse(enable))
+				QN_SMASK(&self->features, QGFEATURE_RELATIVE_MOUSE, enable);
 	}
 	if (QN_TMASK(features, QGFEATURE_REMOVE_EVENTS))
 	{
@@ -391,10 +395,44 @@ int qg_feature(int features, bool enable)
 	if (QN_TMASK(features, QGFEATURE_ENABLE_ASPECT))
 	{
 		count++;
+		if (enable)
+			stub_system_aspect();
 		QN_SMASK(&self->features, QGFEATURE_ENABLE_ASPECT, enable);
 	}
 
 	return count;
+}
+
+//
+QgFeature qg_query_features(void)
+{
+	return qg_instance_stub->features;
+}
+
+//
+void qg_toggle_fullscreen(bool fullscreen)
+{
+	StubBase* stub = qg_instance_stub;
+	if (fullscreen)
+	{
+		if (QN_TMASK(stub->stats, QGSST_FULLSCREEN))
+			return;
+		QN_SMASK(&stub->stats, QGSST_FULLSCREEN, true);
+		stub_system_fullscreen(true);
+	}
+	else
+	{
+		if (QN_TMASK(stub->stats, QGSST_FULLSCREEN) == false)
+			return;
+		QN_SMASK(&stub->stats, QGSST_FULLSCREEN, false);
+		stub_system_fullscreen(false);
+	}
+}
+
+//
+bool qg_query_fullscreen(void)
+{
+	return QN_TMASK(qg_instance_stub->stats, QGSST_FULLSCREEN);
 }
 
 //
@@ -406,9 +444,18 @@ void qg_set_title(const char* title)
 //
 const QgUdevMonitor* qg_get_monitor(int index)
 {
-	const StubBase* self = qg_instance_stub;
-	qn_val_if_fail((size_t)index < qn_pctnr_count(&self->monitors), NULL);
-	return qn_pctnr_nth(&self->monitors, index);
+	const StubBase* stub = qg_instance_stub;
+	qn_val_if_fail((size_t)index < qn_pctnr_count(&stub->monitors), NULL);
+	return qn_pctnr_nth(&stub->monitors, index);
+}
+
+//
+const QgUdevMonitor* qg_get_current_monitor(void)
+{
+	const StubBase* stub = qg_instance_stub;
+	qn_assert(qn_pctnr_is_have(&stub->monitors), "아니 왜 모니터가 없어");
+	int index = stub->display < qn_pctnr_count(&stub->monitors) ? stub->display : 0;
+	return qn_pctnr_nth(&stub->monitors, index);
 }
 
 //
@@ -518,7 +565,8 @@ float qg_get_aspect(void)
 void qg_set_aspect(const int width, const int height)
 {
 	qg_instance_stub->aspect = (float)height / (float)width;
-	stub_system_aspect();
+	if (QN_TMASK(qg_instance_stub->features, QGFEATURE_ENABLE_ASPECT))
+		stub_system_aspect();
 }
 
 //
@@ -827,6 +875,9 @@ bool stub_track_mouse_click(const QimButton button, const QimTrack track)
 //
 bool stub_event_on_active_monitor(QgUdevMonitor* monitor)
 {
+	if (qg_instance_stub->display == (uint)monitor->no)
+		return false;
+	qg_instance_stub->display = monitor->no;
 	QgUdevMonitor* another = qn_memdup(monitor, sizeof(QgUdevMonitor));
 	const QgEvent e = {
 		.monitor.ev = QGEV_MONITOR,
@@ -834,7 +885,7 @@ bool stub_event_on_active_monitor(QgUdevMonitor* monitor)
 		.monitor.monitor = another
 	};
 	shed_event_reserved_mem(another);
-	return qg_add_event(&e, false) > 0;
+	return qg_add_event(&e, true) > 0;
 }
 
 // monitor는 할당해서 와야한다!!!
@@ -964,7 +1015,7 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 			break;
 
 		case QGWEV_RESTORED:
-			if (QN_TMASK(stub->stats, QGSST_SHOW | QGSST_MAXIMIZE) == false)
+			if (QN_TMASK(stub->stats, QGSST_SHOW) && QN_TMASK(stub->stats, QGSST_MAXIMIZE | QGSST_MINIMIZE) == false)
 				return false;
 			QN_SMASK(&stub->stats, QGSST_MINIMIZE, false);
 			QN_SMASK(&stub->stats, QGSST_MAXIMIZE, false);
@@ -998,10 +1049,7 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 					const QgUdevMonitor* mon = qn_pctnr_nth(&stub->monitors, i);
 					QmRect bound = qm_rect_size(mon->x, mon->y, mon->width, mon->height);
 					if (qm_rect_in_rect(bound, stub->bound))
-					{
-						stub->display = mon->no;
 						break;
-					}
 				}
 				if (i < qn_pctnr_count(&stub->monitors))
 					stub_event_on_active_monitor(qn_pctnr_nth(&stub->monitors, i));
