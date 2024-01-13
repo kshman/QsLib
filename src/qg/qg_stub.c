@@ -604,11 +604,16 @@ bool qg_loop(void)
 			return false;
 	}
 
-	double frames =
-		QN_TMASK(stub->stats, QGSST_ACTIVE) == false &&
-		QN_TMASK(stub->features, QGFEATURE_ENABLE_IDLE) ? 0.1 : stub->frames;
+	if (QN_TMASK(stub->flags, QGFLAG_VSYNC) == false)
+		qn_timer_update(stub->timer, true);
+	else
+	{
+		double frames =
+			QN_TMASK(stub->stats, QGSST_ACTIVE) == false &&
+			QN_TMASK(stub->features, QGFEATURE_ENABLE_IDLE) ? 0.1 : stub->frames;
 
-	qn_timer_update_fps(stub->timer, true, frames);
+		qn_timer_update_fps(stub->timer, true, frames);
+	}
 	const float adv = (float)stub->timer->advance;
 	stub->run = stub->timer->runtime;
 	stub->fps = (float)stub->timer->fps;
@@ -698,7 +703,7 @@ static void qg_emscripten_main_loop()
 	qg_dispatch();
 	const funcparam_t* fp = &qg_instance_stub->main_loop_callback;
 	fp->func(fp->data);
-}
+	}
 #endif
 
 //
@@ -717,7 +722,7 @@ void qg_main_loop(paramfunc_t func, void* data)
 	stub->main_loop_callback.data = data;
 	emscripten_set_main_loop(qg_emscripten_main_loop, 0, true);
 #endif
-	}
+}
 
 //
 nint qg_register_event_callback(QgEventCallback func, void* data)
