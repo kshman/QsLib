@@ -75,7 +75,8 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 		qm_rst(&param->m[i]);
 
 	//
-	qv_cast(self, RDHBASE)->reset();
+	qv_cast(self, RDHBASE)->reset();		// 장치 리셋
+	qn_timer_reset(qg_instance_stub->timer);	// 타이머도 리셋해둔다
 	return true;
 }
 
