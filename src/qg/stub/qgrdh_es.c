@@ -25,6 +25,11 @@ static void es_clear(int flags, const QmColor* color, int stencil, float depth);
 static bool es_begin(bool clear);
 static void es_end(void);
 static void es_flush(void);
+static QgBuffer* es_create_buffer(QgBufType type, uint count, uint stride, const void* initial_data);
+static bool es_set_index(QgBuffer* buffer);
+static bool es_set_vertex(QgLoStage stage, QgBuffer* buffer);
+
+static QglBuffer* esbuffer_new(QgBufType type, uint count, uint stride, const void* initial_data);
 
 qs_name_vt(RDHBASE) vt_es_rdh =
 {
@@ -37,6 +42,11 @@ qs_name_vt(RDHBASE) vt_es_rdh =
 	.begin = es_begin,
 	.end = es_end,
 	.flush = es_flush,
+
+	.create_buffer = es_create_buffer,
+
+	.set_index = es_set_index,
+	.set_vertex = es_set_vertex,
 };
 
 #if !defined STATIC_ES_LIBRARY && !defined USE_SDL2
@@ -354,7 +364,7 @@ RdhBase* es_allocator(QgFlag flags, QgFeature features)
 	{
 		if (SDL_GL_SetSwapInterval(-1) < 0)
 			SDL_GL_SetSwapInterval(1);
-}
+	}
 #else
 	//----- EGL 초기화
 	self->native_window = (NativeWindowType)stub_system_get_window();
@@ -582,6 +592,14 @@ static void es_reset(void)
 
 	//----- 세션
 	QglSession* ss = &self->base.ss;
+	ss->shader.program = 0;
+	ss->shader.lmask = 0;
+	ss->draw.array = GL_INVALID_HANDLE;
+	ss->draw.element_array = GL_INVALID_HANDLE;
+	ss->draw.pixel_pack = GL_INVALID_HANDLE;
+	ss->draw.pixel_unpack = GL_INVALID_HANDLE;
+	ss->draw.transform_feedback = GL_INVALID_HANDLE;
+	ss->draw.uniform = GL_INVALID_HANDLE;
 	ss->depth = QGDEPTH_LE;
 	ss->stencil = QGSTENCIL_OFF;
 
@@ -679,6 +697,242 @@ static void es_flush(void)
 #else
 	eglSwapBuffers(self->display, self->surface);
 #endif
+}
+
+// 버퍼 만들기
+static QgBuffer* es_create_buffer(QgBufType type, uint count, uint stride, const void* initial_data)
+{
+	QglBuffer* buf = esbuffer_new(type, count, stride, initial_data);
+	// 관리할게 있다면 하고
+	return qs_cast_type(buf, QgBuffer);
+}
+
+// 버퍼 바인딩
+static void es_bind_buffer(GLenum gl_type, GLuint gl_id)
+{
+	EsRdh* self = ES_RDH_INSTANCE;
+	switch (gl_type)
+	{
+		case GL_ARRAY_BUFFER:				// 정점 버퍼
+			if (self->base.ss.draw.array != gl_id)
+			{
+				glBindBuffer(gl_type, gl_id);
+				self->base.ss.draw.array = gl_id;
+			}
+			break;
+		case GL_ELEMENT_ARRAY_BUFFER:		// 인덱스 버퍼
+			if (self->base.ss.draw.element_array != gl_id)
+			{
+				glBindBuffer(gl_type, gl_id);
+				self->base.ss.draw.element_array = gl_id;
+			}
+			break;
+		case GL_PIXEL_PACK_BUFFER:			// 픽셀 읽기 버퍼
+			if (self->base.ss.draw.pixel_pack != gl_id)
+			{
+				glBindBuffer(gl_type, gl_id);
+				self->base.ss.draw.pixel_pack = gl_id;
+			}
+			break;
+		case GL_PIXEL_UNPACK_BUFFER:		// 픽셀 쓰기 버퍼
+			if (self->base.ss.draw.pixel_unpack != gl_id)
+			{
+				glBindBuffer(gl_type, gl_id);
+				self->base.ss.draw.pixel_unpack = gl_id;
+			}
+		case GL_TRANSFORM_FEEDBACK_BUFFER:	// 트랜스폼 피드백 버퍼(머지?)
+			if (self->base.ss.draw.transform_feedback != gl_id)
+			{
+				glBindBuffer(gl_type, gl_id);
+				self->base.ss.draw.transform_feedback = gl_id;
+			}
+			break;
+		case GL_UNIFORM_BUFFER:				// 유니폼 버퍼
+			if (self->base.ss.draw.uniform != gl_id)
+			{
+				glBindBuffer(gl_type, gl_id);
+				self->base.ss.draw.uniform = gl_id;
+			}
+			break;
+		default:
+			break;
+	}
+}
+
+// 인덱스 버퍼 설정
+static bool es_set_index(QgBuffer* buffer)
+{
+	EsRdh* self = ES_RDH_INSTANCE;
+	QglBuffer* buf = qs_cast_type(buffer, QglBuffer);
+	QglPending* pd = &self->base.pd;
+	if (buf == NULL)
+	{
+		if (pd->draw.index_buffer != NULL)
+		{
+			qs_unload(pd->draw.index_buffer);
+			pd->draw.index_buffer = NULL;
+		}
+	}
+	else
+	{
+		qn_val_if_fail(buf->base.type == QGBUFFER_INDEX, false);
+
+		if (pd->draw.index_buffer != buf)
+		{
+			qs_unload(pd->draw.index_buffer);
+			pd->draw.index_buffer = qs_loadc(buf, QglBuffer);
+		}
+	}
+	return true;
+}
+
+// 정점 버퍼 설정, stage에 대한 오류 설정은 rdh에서 하고 왔을 거임
+static bool es_set_vertex(QgLoStage stage, QgBuffer* buffer)
+{
+	EsRdh* self = ES_RDH_INSTANCE;
+	QglBuffer* buf = qs_cast_type(buffer, QglBuffer);
+	QglPending* pd = &self->base.pd;
+	if (buf == NULL)
+	{
+		if (pd->draw.vertex_buffers[stage] != NULL)
+		{
+			qs_unload(pd->draw.vertex_buffers[stage]);
+			pd->draw.vertex_buffers[stage] = NULL;
+		}
+	}
+	else
+	{
+		qn_val_if_fail(buf->base.type == QGBUFFER_VERTEX, false);
+
+		if (pd->draw.vertex_buffers[stage] != buf)
+		{
+			qs_unload(pd->draw.vertex_buffers[stage]);
+			pd->draw.vertex_buffers[stage] = qs_loadc(buf, QglBuffer);
+		}
+	}
+	return true;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// ES 버퍼
+
+//
+static void esbuffer_dispose(QsGam* g)
+{
+	QglBuffer* self = qs_cast_type(g, QglBuffer);
+	if (self->base.mapped)
+	{
+		if (rdh_info()->renderer_version >= 300)
+			glUnmapBuffer(self->gl_type);
+		else
+			qn_free(self->lock_pointer);
+	}
+
+	GLuint gl_handle = qs_get_desc(self, GLuint);
+	glDeleteBuffers(1, &gl_handle);
+
+	qn_free(self);
+}
+
+//
+static void* esbuffer_map(QgBuffer* g)
+{
+	QglBuffer* self = qs_cast_type(g, QglBuffer);
+	qn_val_if_fail(self->gl_usage == GL_DYNAMIC_DRAW, NULL);
+	qn_assert(self->lock_pointer == NULL, "버퍼가 잠겨있는데요!");
+
+	if (rdh_info()->renderer_version < 300)
+	{
+		// ES2
+		self->lock_pointer = qn_alloc(self->base.size, byte);
+	}
+	else
+	{
+		// ES3
+		es_bind_buffer(self->gl_type, qs_get_desc(self, GLuint));
+		self->lock_pointer = glMapBufferRange(self->gl_type, 0, self->base.size,
+			GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+		return self->lock_pointer;
+	}
+
+	self->base.mapped = true;
+	return self->lock_pointer;
+}
+
+//
+static bool esbuffer_unmap(QgBuffer* g)
+{
+	QglBuffer* self = qs_cast_type(g, QglBuffer);
+	qn_assert(self->lock_pointer != NULL, "버퍼가 안 잠겼는데요!");
+
+	es_bind_buffer(self->gl_type, qs_get_desc(self, GLuint));
+
+	if (rdh_info()->renderer_version >= 300)
+		glUnmapBuffer(self->gl_type);
+	else
+	{
+		glBufferSubData(self->gl_type, 0, self->base.size, self->lock_pointer);
+		qn_free(self->lock_pointer);
+	}
+
+	self->lock_pointer = NULL;
+	self->base.mapped = false;
+	return true;
+}
+
+static bool esbuffer_data(QgBuffer* g, const void* data)
+{
+	QglBuffer* self = qs_cast_type(g, QglBuffer);
+	qn_val_if_fail(self->gl_usage == GL_DYNAMIC_DRAW, false);
+
+	es_bind_buffer(self->gl_type, qs_get_desc(self, GLuint));
+	glBufferSubData(self->gl_type, 0, self->base.size, data);
+
+	return true;
+}
+
+static QglBuffer* esbuffer_new(QgBufType type, uint count, uint stride, const void* initial_data)
+{
+	// 우선 만들자
+	GLenum gl_type;
+	if (type == QGBUFFER_INDEX)
+		gl_type = GL_ELEMENT_ARRAY_BUFFER;
+	else if (type == QGBUFFER_VERTEX)
+		gl_type = GL_ARRAY_BUFFER;
+	else
+		return NULL;
+
+	GLuint gl_id;
+	glGenBuffers(1, &gl_id);
+	qn_val_if_fail(gl_id != 0, NULL);
+	es_bind_buffer(gl_type, gl_id);		// 여기까지 만들고 바인드
+
+	GLsizeiptr gl_size = (GLsizeiptr)count * stride;
+	GLenum gl_usage = initial_data != NULL ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
+	glBufferData(gl_type, gl_size, initial_data, gl_usage);		// 여기까지 초기 메모리 설정 또는 데이터 넣기(STATIC)
+
+	// 진짜 만듦
+	QglBuffer* self = qn_alloc_zero_1(QglBuffer);
+	qs_set_desc(self, gl_id);
+	self->base.type = type;
+	self->base.size = (uint)gl_size;
+	self->base.count = count;
+	self->base.stride = (ushort)stride;
+	self->gl_type = gl_type;
+	self->gl_usage = gl_usage;
+
+	// VT 여기서 설정
+	static qs_name_vt(QGBUFFER) vt_es_buffer =
+	{
+		.base.name = "ESBUFFER",
+		.base.dispose = esbuffer_dispose,
+
+		.map = esbuffer_map,
+		.unmap = esbuffer_unmap,
+		.data = esbuffer_data,
+	};
+	return qs_init(self, QglBuffer, &vt_es_buffer);
 }
 
 #endif // USE_ES

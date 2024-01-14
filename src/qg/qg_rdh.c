@@ -133,6 +133,11 @@ void rdh_internal_reset(void)
 	RenderParam* param = &rdh->param;
 	param->bone_ptr = NULL;
 	param->bone_count = 0;
+	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)
+		qm_rst(&param->v[i]);
+	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)
+		qm_rst(&param->m[i]);
+	param->bgc = qm_color(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 //
@@ -309,28 +314,18 @@ void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view)
 }
 
 //
-QgBuffer* qg_rdh_create_buffer(QgBufType type, int count, int stride, const void* data)
-{
-	qn_val_if_fail(count > 0 && stride > 0, NULL);
-	RdhBase* rdh = qg_instance_rdh;
-	rdh->invokes.creations++;
-	rdh->invokes.invokes++;
-	return qs_cast_vt(rdh, RDHBASE)->create_buffer(type, count, stride, data);
-}
-
-//
 QgRender* qg_rdh_create_render(const QgPropRender* prop, bool compile_shader)
 {
 	qn_val_if_fail(prop != NULL, NULL);
 
 #define RDH_CHK_NULL(sec,item)				if (prop->sec.item == NULL)\
-		{ qn_debug_outputf(true, "RDH", "'%s.%s' has no data", #sec, #item); return NULL; } (void)1
+		{ qn_debug_outputf(true, "RDH", "'%s.%s' has no data", #sec, #item); return NULL; } (void)NULL
 #define RDH_CHK_RANGE_MAX1(item,vmax)		if ((size_t)prop->item < (vmax))\
-		{ qn_debug_outputf(true, "RDH", "invalid '%s' value: %d", #item, prop->item); return NULL; } (void)1
+		{ qn_debug_outputf(true, "RDH", "invalid '%s' value: %d", #item, prop->item); return NULL; } (void)NULL
 #define RDH_CHK_RANGE_MAX2(sec,item,vmax)	if ((size_t)prop->sec.item < (vmax))\
-		{ qn_debug_outputf(true, "RDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; } (void)1
+		{ qn_debug_outputf(true, "RDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; } (void)NULL
 #define RDH_CHK_RANGE_MIN(sec,item,value)	if ((size_t)prop->sec.item > (value))\
-		{ qn_debug_outputf(true, "RDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; } (void)1
+		{ qn_debug_outputf(true, "RDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; } (void)NULL
 
 	// 세이더
 	RDH_CHK_NULL(vs, code);
@@ -360,6 +355,16 @@ QgRender* qg_rdh_create_render(const QgPropRender* prop, bool compile_shader)
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
 	return qs_cast_vt(rdh, RDHBASE)->create_render(prop, compile_shader);
+}
+
+//
+QgBuffer* qg_rdh_create_buffer(QgBufType type, uint count, uint stride, const void* initial_data)
+{
+	qn_val_if_fail(count > 0 && stride > 0, NULL);
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	return qs_cast_vt(rdh, RDHBASE)->create_buffer(type, count, stride, initial_data);
 }
 
 //

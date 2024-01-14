@@ -87,7 +87,7 @@ typedef enum QGCULL
 	QGCULL_MAX_VALUE
 } QgCull;
 
-/// @brief 레이아웃 스테이지
+/// @brief 레이아웃 스테이지 → 정점 버퍼 인덱스
 typedef enum QGLOSTAGE
 {
 	QGLOS_1,												/// @brief 레이아웃 1
@@ -100,14 +100,20 @@ typedef enum QGLOSTAGE
 /// @brief 레아아웃 사용 방법
 typedef enum QGLOUSAGE
 {
-	QGLOU_POSITION,											/// @brief position
-	QGLOU_COLOR,											/// @brief diffuse & specular
-	QGLOU_TEXTURE,											/// @brief texture coordinate
-	QGLOU_WEIGHT,											/// @brief blend weights
-	QGLOU_INDEX,											/// @brief blend indices
-	QGLOU_NORMAL,											/// @brief normal vector
-	QGLOU_TANGENT,											/// @brief tangent vector
-	QGLOU_BINORMAL,											/// @brief bi-normal vector
+	QGLOU_POSITION,											/// @brief 위치
+	QGLOU_TEXTURE1,											/// @brief 텍스쳐 좌표 1	
+	QGLOU_TEXTURE2,											/// @brief 텍스쳐 좌표 2
+	QGLOU_NORMAL1,											/// @brief 법선 1 (별명: 정점 법선)
+	QGLOU_NORMAL2,											/// @brief 법선 2 (별명: 바이노말 법선)
+	QGLOU_NORMAL3,											/// @brief 법선 3 (별명: 탄젠트 법선)
+	QGLOU_NORMAL4,											/// @brief 법선 4 (별명: 추가 탄젠트 법선)
+	QGLOU_COLOR1,											/// @brief 색깔 1 (별명: 확산광)
+	QGLOU_COLOR2,											/// @brief 색깔 2 (별명: 주변광)
+	QGLOU_COLOR3,											/// @brief 색깔 3 (별명: 반사광)
+	QGLOU_COLOR4,											/// @brief 색깔 4 (별명: 방사광)
+	QGLOU_BLEND_WEIGHT,										/// @brief 블렌드 세기
+	QGLOU_BLEND_INDEX,										/// @brief 블렌드 영향 정점 인덱스
+	QGLOU_BLEND_EXTRA,										/// @brief 블렌드 영향 정점 인덱스 추가
 	QGLOU_MAX_VALUE
 } QgLoUsage;
 
@@ -904,20 +910,20 @@ QSAPI void qg_rdh_set_project(const QmMat4* proj);
 /// @param view 뷰 행렬
 QSAPI void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view);
 
-/// @brief 버퍼를 만든다
-/// @param type 버퍼 타입
-/// @param count 요소 개수
-/// @param stride 요소의 너비
-/// @param data 초기화할 요소 데이터로 이 값이 NULL이면 동적 버퍼, 값이 있으면 정적 버퍼로 만들어진다
-/// @return 만들어진 버퍼
-/// @details data 파라미터의 설명에도 있지만, 정적 버퍼로 만들고 나중에 데이터를 넣으면 문제가 생길 수도 있다
-QSAPI QgBuffer* qg_rdh_create_buffer(QgBufType type, int count, int stride, const void* data);
-
 /// @brief 렌더 파이프라인을 만든다
 /// @param prop 렌더 파이프라인 속성
 /// @param compile_shader 속성에 있는 세이더의 값이 소스임을 지정, 내부에서 컴파일을 지시
 /// @return 만들어진 렌더 파이프라인
 QSAPI QgRender* qg_rdh_create_render(const QgPropRender* prop, bool compile_shader);
+
+/// @brief 버퍼를 만든다
+/// @param type 버퍼 타입
+/// @param count 요소 개수
+/// @param stride 요소의 너비
+/// @param initial_data 초기화할 요소 데이터로 이 값이 NULL이면 동적 버퍼, 값이 있으면 정적 버퍼로 만들어진다
+/// @return 만들어진 버퍼
+/// @details data 파라미터의 설명에도 있지만, 정적 버퍼로 만들고 나중에 데이터를 넣으면 문제가 생길 수도 있다
+QSAPI QgBuffer* qg_rdh_create_buffer(QgBufType type, uint count, uint stride, const void* initial_data);
 
 /// @brief 인덱스 버퍼를 설정한다
 /// @param buffer 설정할 버퍼
@@ -993,7 +999,8 @@ struct QGBUFFER
 	uint				size;
 	uint				count;
 	ushort				stride;
-	ushort				mapped;
+
+	bool16				mapped;
 };
 
 qs_name_vt(QGBUFFER)

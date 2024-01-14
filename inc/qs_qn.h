@@ -2643,12 +2643,16 @@ QSAPI nuint qs_sc_set_desc(QsGam* RESTRICT g, nuint ptr);
 
 /// @brief GAM 가상 테이블을 초기화하고 GAM 포인터 반환
 #define qs_init(g,type,pvt)	((type*)qs_sc_init((QsGam*)(g), pvt))
+/// @brief 참조를 얻는다
+#define qs_get_ref(g)		qs_sc_get_ref((QsGam*)(g))
 /// @brief 참조를 추가한다
 #define qs_load(g)			((g) ? qs_sc_load((QsGam*)(g)) : NULL)
 /// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
 #define qs_unload(g)		((g) ? qs_sc_unload((QsGam*)(g)) : NULL)
-/// @brief 참조를 얻는다
-#define qs_get_ref(g)		qs_sc_get_ref((QsGam*)(g))
+/// @brief 참조를 추가한다
+#define qs_loadc(g,type)	((g) ? (type*)qs_sc_load((QsGam*)(g)) : NULL)
+/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
+#define qs_unloadc(g,type)	((g) ? (type*)qs_sc_unload((QsGam*)(g)) : NULL)
 /// @brief 표현자(디스크립터)를 얻는다
 #define qs_get_desc(g,type)	(type)qs_sc_get_desc((QsGam*)(g))
 /// @brief 표현자(디스크립터)를 쓴다

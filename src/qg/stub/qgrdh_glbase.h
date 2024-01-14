@@ -4,9 +4,9 @@
 #include "qg/qg_stub.h"
 
 //
-typedef struct QglRdh		QglRdh;
-typedef struct QglRender	QglRender;
-typedef struct QglBuf		QglBuf;
+typedef struct QGLRDH		QglRdh;
+typedef struct QGLRENDER	QglRender;
+typedef struct QGLBUFFER	QglBuffer;
 
 #ifndef GL_INVALID_HANDLE
 #define GL_INVALID_HANDLE	(GLuint)(-1)
@@ -15,19 +15,18 @@ typedef struct QglBuf		QglBuf;
 #define QGL_RDH_INSTANCE	((QglRdh*)qg_instance_rdh)
 
 // 참조 핸들
-typedef struct QglRefHandle
+typedef struct QGLREFHANDLE
 {
 	volatile nint		ref;
 	GLuint				handle;
 } QglRefHandle;
 
 // 레이아웃 요소
-typedef struct QglLayoutElement
+typedef struct QGLLAYOUTELEMENT
 {
-	QgLoStage			stage : 8;
-	QgLoUsage			usage : 8;
-	uint				index : 8;
-	GLuint				attr : 8;
+	QgLoStage			stage : 16;
+	QgLoUsage			usage : 16;
+	GLuint				attr;
 	GLuint				size;
 	GLenum				format;
 	GLuint				offset;
@@ -36,7 +35,7 @@ typedef struct QglLayoutElement
 } QglLayoutElement;
 
 // 레이아웃 프로퍼티
-typedef struct QglLayoutProperty
+typedef struct QGLLAYOUTPROPERTY
 {
 	const void*			pointer;
 	GLuint				buffer;
@@ -51,7 +50,7 @@ QN_DECL_CTNR(QglCtnLayoutProp, QglLayoutProperty);
 typedef void (*QglShadeAutoFunc)(QglRdh*, GLint, const QgVarShader*);
 
 // 세이더 유니폼
-typedef struct QglUniform
+typedef struct QGLUNIFORM
 {
 	QgVarShader			base;
 	size_t				hash;
@@ -60,7 +59,7 @@ typedef struct QglUniform
 QN_DECL_CTNR(QglCtnUniform, QglUniform);
 
 // 세이더 어트리뷰트
-typedef struct QglAttrib
+typedef struct QGLATTRIB
 {
 	char				name[32];
 	GLint				attrib : 8;
@@ -72,13 +71,13 @@ typedef struct QglAttrib
 QN_DECL_CTNR(QglCtnAttrib, QglAttrib);
 
 // GL 캐파
-typedef struct QglCaps
+typedef struct QGLCAPS
 {
 	int					tmp;
 } QglCaps;
 
 // 세션 데이터
-typedef struct QglSession
+typedef struct QGLSESSION
 {
 	struct  
 	{
@@ -90,7 +89,10 @@ typedef struct QglSession
 	{
 		GLuint				array;
 		GLuint				element_array;
+		GLuint				pixel_pack;	
 		GLuint				pixel_unpack;
+		GLuint				transform_feedback;
+		GLuint				uniform;
 	}					draw;
 
 	QgDepth				depth;
@@ -98,7 +100,7 @@ typedef struct QglSession
 } QglSession;
 
 // 펜딩 데이터
-typedef struct QglPending
+typedef struct QGLPENDING
 {
 	struct
 	{
@@ -106,8 +108,8 @@ typedef struct QglPending
 	}					render;
 	struct  
 	{
-		QglBuf*				index_buffer;
-		QglBuf*				vertex_buffers[QGLOS_MAX_VALUE];
+		QglBuffer*			index_buffer;
+		QglBuffer*			vertex_buffers[QGLOS_MAX_VALUE];
 		uint				topology;
 		uint				index_stride;
 		uint				index_size;
@@ -120,7 +122,7 @@ typedef struct QglPending
 } QglPending;
 
 // GL 렌더 디바이스
-struct QglRdh
+struct QGLRDH
 {
 	RdhBase				base;
 
@@ -131,7 +133,7 @@ struct QglRdh
 };
 
 // 렌더 파이프라인
-struct QglRender
+struct QGLRENDER
 {
 	QgRender			base;
 
@@ -147,14 +149,14 @@ struct QglRender
 };
 
 // 버퍼
-struct QglBuffer
+struct QGLBUFFER
 {
 	QgBuffer			base;
 
 	GLenum				gl_type;
 	GLenum				gl_usage;
 
-	void*				lock_buf;
+	void*				lock_pointer;
 };
 
 // 문자열 버전에서 숫자만 mnn 방식으로
