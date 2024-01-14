@@ -26,7 +26,7 @@ static bool es_begin(bool clear);
 static void es_end(void);
 static void es_flush(void);
 
-qv_name(RDHBASE) vt_es_rdh =
+qs_name_vt(RDHBASE) vt_es_rdh =
 {
 	.base.name = "ESRDH",
 	.base.dispose = es_dispose,
@@ -516,6 +516,9 @@ pos_context_ok:
 	// 여기서 세이더 유니폼 함수 등록
 
 	//
+	qn_debug_outputf(false, "ESRDH", "OPENGLES %d/%d [%s by %s]",
+		infos->renderer_version, infos->shader_version,
+		infos->renderer, infos->vendor);
 	return qs_init(self, RdhBase, &vt_es_rdh);
 
 pos_fail_exit:
@@ -537,7 +540,7 @@ pos_fail_exit:
 //
 static void es_dispose(QsGam* g)
 {
-	EsRdh* self = qs_cast(g, EsRdh);
+	EsRdh* self = qs_cast_type(g, EsRdh);
 	qn_ret_if_ok(self->base.disposed);
 
 	//----- 펜딩
@@ -572,8 +575,8 @@ static void es_reset(void)
 	rdh_internal_reset();
 
 	EsRdh* self = ES_RDH_INSTANCE;
-	const RendererInfo* info = &rdh_info();
-	RenderTransform* tm = &rdh_transform();
+	const RendererInfo* info = rdh_info();
+	RenderTransform* tm = rdh_transform();
 
 	//----- 펜딩
 
@@ -643,7 +646,7 @@ static void es_clear(int flags, const QmColor* color, int stencil, float depth)
 	if (QN_TMASK(flags, QGCLEAR_RENDER))
 	{
 		if (color == NULL)
-			color = &rdh_param().bgc;
+			color = &(rdh_param()->bgc);
 		glClearColor(color->R, color->G, color->B, color->A);
 		cf |= GL_COLOR_BUFFER_BIT;
 	}
@@ -675,10 +678,6 @@ static void es_flush(void)
 	SDL_GL_SwapWindow(self->window);
 #else
 	eglSwapBuffers(self->display, self->surface);
-#endif
-#ifdef _QN_EMSCRIPTEN_
-	if (emscripten_has_asyncify())
-		emscripten_sleep(0);
 #endif
 }
 

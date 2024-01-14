@@ -2584,25 +2584,29 @@ QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* RESTRICT name);
 /// @brief GAM 할거리를 의미. 영어로 OBJECT
 typedef struct QSGAM		QsGam;
 
+/// @brief GAM 타입 이름
+#define qs_name_type(TYPE)		struct TYPE
 /// @brief GAM 가상 테이블 이름을 얻는다
-#define qv_name(type)		struct _VT_##type
-/// @brief GAM 가상 테이블로 GAM 포인터를 캐스팅한다
-#define qv_cast(g,type)		((struct _VT_##type*)((QsGam*)(g))->vt)
+#define qs_name_vt(TYPE)		struct _VT_##TYPE
 
 /// @brief GAM 포인터를 다른 타입으로 캐스팅한다
-#define qs_cast(g,type)		((type*)(g))
+#define qs_cast_type(g,type)	((type*)(g))
+/// @brief GAM 가상 테이블로 GAM 포인터를 캐스팅한다
+#define qs_cast_vt(g,TYPE)		((struct _VT_##TYPE*)((QsGam*)(g))->vt)
 
-qv_name(QSGAM)
+//
+qs_name_vt(QSGAM)
 {
 	const char* name;
 	void (*dispose)(QsGam*);
 };
 
+//
 struct QSGAM
 {
-	qv_name(QSGAM)*	vt;
-	volatile nint	ref;
-	nuint			desc;
+	qs_name_vt(QSGAM)*	vt;
+	volatile nint		ref;
+	nuint				desc;
 };
 
 /// @brief GAM 가상 테이블을 초기화하고 GAM 포인터 반환

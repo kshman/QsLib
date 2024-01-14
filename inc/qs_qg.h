@@ -254,12 +254,13 @@ typedef enum QGFLAG
 	QGFLAG_TEXT = QN_BIT(5),								/// @brief 텍스트 입력을 받을 수 있음
 	QGFLAG_DPISCALE = QN_BIT(6),							/// @brief DPI 스케일
 	QGFLAG_MAXIMIZE = QN_BIT(7),							/// @brief 시작할 때 최대화
-	// 렌더러 플래그 (16~30)
+	// 렌더러 플래그 (16~29)
 	QGFLAG_VSYNC = QN_BIT(16),								/// @brief VSYNC 켜기
 	QGFLAG_MSAA = QN_BIT(17),								/// @brief 멀티 샘플링 사용
 	QGFLAG_DITHER = QN_BIT(18),								/// @brief 16비트 모드 사용
 	QGFLAG_DITHER_ALPHA_STENCIL = QN_BIT(19),				/// @brief 16비트 모드일 때 알파 1비트 추가하고 스텐실도 켬
 	// 사용자가 설정할 수 없는 플래그
+	QGSPECIFIC_RDHSTUB = QN_BIT(30),						/// @brief 스터브 만들었음
 	QGSPECIFIC_VIRTUAL = QN_BIT(31),						/// @brief 가상 스터브 사용
 } QgFlag;
 
@@ -995,9 +996,9 @@ struct QGBUFFER
 	ushort				mapped;
 };
 
-qv_name(QGBUFFER)
+qs_name_vt(QGBUFFER)
 {
-	qv_name(QSGAM)		base;
+	qs_name_vt(QSGAM)		base;
 	void*(*map)(QgBuffer*);
 	bool (*unmap)(QgBuffer*);
 	bool (*data)(QgBuffer*, const void*);

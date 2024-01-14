@@ -136,7 +136,6 @@ typedef struct RENDERERINFO
 	int					max_tex_count;						// 최대 텍스쳐 갯수
 	int					max_off_count;						// 최대 오프 텍스쳐(=렌더타겟/프레임버퍼) 갯수
 	QgClrFmt			clr_fmt;							// 색깔 포맷
-	bool				open_stub;
 } RendererInfo;
 
 // 렌더 추적 정보
@@ -196,9 +195,9 @@ typedef struct RDHBASE
 	RenderInvoke		invokes;
 } RdhBase;
 
-qv_name(RDHBASE)
+qs_name_vt(RDHBASE)
 {
-	qv_name(QSGAM)	base;
+	qs_name_vt(QSGAM)	base;
 	void (*reset)(void);
 	void (*clear)(int, const QmColor*, int, float);
 
@@ -236,13 +235,13 @@ extern void rdh_internal_invoke_reset(void);
 // 레이아웃 검사
 extern void rdh_internal_check_layout(void);
 
-#define rdh_info()			(qs_cast(qg_instance_rdh, RdhBase)->info)
-#define rdh_transform()		(qs_cast(qg_instance_rdh, RdhBase)->tm)
-#define rdh_param()			(qs_cast(qg_instance_rdh, RdhBase)->param)
-#define rdh_invokes()		(qs_cast(qg_instance_rdh, RdhBase)->invokes)
+#define rdh_info()			(&qs_cast_type(qg_instance_rdh, RdhBase)->info)
+#define rdh_transform()		(&qs_cast_type(qg_instance_rdh, RdhBase)->tm)
+#define rdh_param()			(&qs_cast_type(qg_instance_rdh, RdhBase)->param)
+#define rdh_invokes()		(&qs_cast_type(qg_instance_rdh, RdhBase)->invokes)
 
-#define rdh_set_flush(v)	(qs_cast(qg_instance_rdh, RdhBase)->invokes.flush=(v))
-#define rdh_inc_ends()		(qs_cast(qg_instance_rdh, RdhBase)->invokes.ends++)
+#define rdh_set_flush(v)	(qs_cast_type(qg_instance_rdh, RdhBase)->invokes.flush=(v))
+#define rdh_inc_ends()		(qs_cast_type(qg_instance_rdh, RdhBase)->invokes.ends++)
 
 // 색깔 변환
 extern QgClrFmt qg_clrfmt_from_size(int red, int green, int blue, int alpha, bool is_float);

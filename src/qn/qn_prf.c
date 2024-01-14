@@ -138,7 +138,8 @@ static int qn_dbg_buf_flush(void)
 	if (debug_impl.fp != NULL)
 		fputs(debug_impl.out_buf, debug_impl.fp);
 #ifdef __EMSCRIPTEN__
-	emscripten_console_log(debug_impl.out_buf);
+	// 콘솔에 두번 나오니깐 한번만 출력하자
+	//emscripten_console_log(debug_impl.out_buf);
 #endif
 #ifdef _QN_ANDROID_
 	__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, debug_impl.out_buf);
