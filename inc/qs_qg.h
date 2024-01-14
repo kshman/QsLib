@@ -298,7 +298,7 @@ typedef enum QGSTUBSTAT
 	QGSST_SHOW = QN_BIT(9),									/// @brief 보임
 	QGSST_MAXIMIZE = QN_BIT(10),							/// @brief 최대화
 	QGSST_MINIMIZE = QN_BIT(11),							/// @brief 최소화
-	QGSST_FULLSCREEN = QN_BIT(31),							/// @brief 풀스크린
+	QGSST_FULLSCREEN = QN_BIT(15),							/// @brief 풀스크린
 } QgStubStat;
 
 /// @brief 이벤트 타입

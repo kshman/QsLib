@@ -27,13 +27,13 @@
 #endif
 #include "qgrdh_glbase.h"
 
-typedef struct EsRdh					EsRdh;
+typedef struct ESRDH					EsRdh;
 
 #define ES_RDH_INSTANCE					((EsRdh*)qg_instance_rdh)
 
 #ifndef USE_SDL2
 // ES 컨피그
-typedef struct EsConfig
+typedef struct ESCONFIG
 {
 	void*				handle;
 	EGLint				red, green, blue, alpha;
@@ -43,7 +43,7 @@ typedef struct EsConfig
 #endif
 
 // ES 렌더 디바이스
-struct EsRdh
+struct ESRDH
 {
 	QglRdh				base;
 

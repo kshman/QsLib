@@ -13,7 +13,6 @@
 #include <emscripten/html5.h>
 
 //
-static EM_BOOL callback_fullscreen_resize(int eventType, const void *reserved, void *userData);
 static void emscripten_register_event_handler(void);
 static void emscripten_unregister_event_handler(void);
 
@@ -22,8 +21,7 @@ typedef struct EmscriptenStub
 {
 	StubBase			base;
 
-	char*				canvas;
-
+	QmSize				window_size;		// 전체화면이 아닐때 크기. 기억할 필요 있나. 자바스크립트가 기억하는데
 	QmPoint				mouse_residual;
 
 	bool				external_sizing;
@@ -31,6 +29,7 @@ typedef struct EmscriptenStub
 } EmscriptenStub;
 
 //
+static const char* emCanvas = "#canvas";
 static EmscriptenStub emStub;
 
 //
@@ -51,15 +50,21 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	stub_event_on_monitor(monitor, true, true, false);
 
 	// 웹브라우저는 윈도우 생성이 없다. 바로 크기 검사
-	emStub.canvas = qn_strdup("#canvas");
-	emscripten_set_canvas_element_size(emStub.canvas, 1, 1);
+	emscripten_set_canvas_element_size(emCanvas, 1, 1);
 	double css_width, css_height;
-	emscripten_get_element_css_size(emStub.canvas, &css_width, &css_height);
+	emscripten_get_element_css_size(emCanvas, &css_width, &css_height);
 	emStub.external_sizing = (int)QM_FLOORF(css_width) != 1 || (int)QM_FLOORF(css_height) != 1;
 
-	if (width < 256 || height < 256)
+	if (QN_TMASK(flags, QGFLAG_RESIZE) && emStub.external_sizing)
 	{
-		int browser_width = MAIN_THREAD_EM_ASM_INT({ return window.innerWidth; });
+		// 반드시 캔바스 CSS로 "aspect-ratio: 16 / 9"와 같이 종횡비 지정할 것!
+		// 안하면 auto값으로 width == height 가 되버려서 난리남
+		width = (int)css_width;
+		height = (int)css_height;
+	}
+	else if (width < 128 || height < 128)
+	{
+		const int browser_width = MAIN_THREAD_EM_ASM_INT({ return window.innerWidth; });
 		if (browser_width > 1300)
 			width = 1280;
 		else if (browser_width > 1000)
@@ -69,44 +74,29 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 		else
 			width = (int)((float)browser_width * 0.95f);
 		height = (int)((float)width * 0.5625f);
-
-		qn_debug_outputf(false, "EMSCRIPTE", "선택한 크기: %d,%d", width, height);
-	}
-	if (QN_TMASK(flags, QGFLAG_RESIZE) && emStub.external_sizing)
-	{
-		width = (int)css_width;
-		height = (int)css_height;
 	}
 
+	emscripten_set_canvas_element_size(emCanvas, width, height);
 	stub_event_on_window_event(QGWEV_SIZED, width, height);
-	emscripten_set_canvas_element_size(emStub.canvas, width, height);
-	/*if (emStub.external_sizing == false)
-		emscripten_set_element_css_size((emStub.canvas, width, height);*/
+	stub_event_on_layout(false);
+	emStub.window_size = qm_size(width, height);
 
 	if (QN_TMASK(flags, QGFLAG_FULLSCREEN))
 	{
-		EmscriptenFullscreenStrategy efs =
-		{
-			.scaleMode = EMSCRIPTEN_FULLSCREEN_SCALE_STRETCH,
-			.canvasResolutionScaleMode = EMSCRIPTEN_FULLSCREEN_CANVAS_SCALE_STDDEF,
-			.filteringMode = EMSCRIPTEN_FULLSCREEN_FILTERING_DEFAULT,
-			.canvasResizedCallback = callback_fullscreen_resize,
-			.canvasResizedCallbackUserData = NULL,
-		};
-		int result = emscripten_request_fullscreen_strategy(emStub.canvas, 1, &efs);
-		if (result != EMSCRIPTEN_RESULT_SUCCESS && result != EMSCRIPTEN_RESULT_DEFERRED)
-		{
-			// 풀스크린 안된다
-			QN_SMASK(&emStub.base.flags, QGFLAG_FULLSCREEN, false);
-		}
+		stub_system_fullscreen(true);
+		QN_SMASK(&emStub.base.stats, QGSST_FULLSCREEN, true);
 	}
+
+	// 핸들러
+	emscripten_register_event_handler();
 
 	// 값설정
 	stub_system_set_title(title);
 	stub_system_update_bound();
 
-	// 핸들러
-	emscripten_register_event_handler();
+	// 렌더러가 없다면 표시하고, 있으면 렌더러 만들고 stub_system_actuate()를 호출할 것
+	if (QN_TMASK(features, 0xFF000000) == false)
+		stub_system_actuate();
 
 	return true;
 }
@@ -116,8 +106,18 @@ void stub_system_finalize(void)
 {
 	emscripten_unregister_event_handler();
 
-	emscripten_set_canvas_element_size(emStub.canvas, 0, 0);
-	qn_free(emStub.canvas);
+	emscripten_set_canvas_element_size(emCanvas, 0, 0);
+}
+
+//
+void stub_system_actuate(void)
+{
+	if (QN_TMASK(emStub.base.flags, QGFLAG_FULLSCREEN) && QN_TMASK(emStub.base.stats, QGSST_FULLSCREEN) == false)
+	{
+		// 풀스크린
+		QN_SMASK(&emStub.base.stats, QGSST_FULLSCREEN, true);
+		stub_system_fullscreen(true);
+	}
 }
 
 //
@@ -160,14 +160,42 @@ void stub_system_set_title(const char* title)
 void stub_system_update_bound(void)
 {
 	QmSize size;
-	emscripten_get_canvas_element_size(emStub.canvas, &size.Width, &size.Height);
-	emStub.base.window_bound = qm_rect_set_pos_size(qm_point(0, 0), size);
+	emscripten_get_canvas_element_size(emCanvas, &size.Width, &size.Height);
+	emStub.base.bound = qm_rect_size(0, 0, size.Width, size.Height);
 	emStub.base.client_size = size;
 }
 
 //
 void stub_system_focus(void)
 {
+}
+
+//
+void stub_system_aspect(void)
+{
+}
+
+//
+void stub_system_fullscreen(bool fullscreen)
+{
+	const bool now = EM_ASM_INT({ if (document.fullscreenElement) return 1; }, 0);
+	const bool need = now ?
+		fullscreen ? false : true :
+		fullscreen ? true : false;
+
+	if (fullscreen)
+	{
+		// Module.requestFullscreen 인수 (lockPointer, resizeCanvas, vrDevice)
+		EM_ASM(setTimeout(function()
+		{
+			Module.requestFullscreen(false, true);	
+		}, 100); );
+	}
+	else
+	{
+		// 아 짧다
+		EM_ASM(document.exitFullscreen(););
+	}
 }
 
 //
@@ -180,15 +208,6 @@ void* stub_system_get_window(void)
 void* stub_system_get_display(void)
 {
 	return EGL_DEFAULT_DISPLAY;
-}
-
-// 풀스크린 핸들러
-static EM_BOOL callback_fullscreen_resize(int eventType, const void *reserved, void *userData)
-{
-	double width, height;
-	emscripten_get_element_css_size(emStub.canvas, &width, &height);
-	stub_event_on_window_event(QGWEV_SIZED, (int)width, (int)height);
-	return EM_FALSE;
 }
 
 // 언로드 이벤트
@@ -210,7 +229,8 @@ static EM_BOOL handler_focus_blur(int eventType, const EmscriptenFocusEvent* foc
 // 풀스크린
 static EM_BOOL handler_fullscreen_change(int eventType, const EmscriptenFullscreenChangeEvent *fullscreenChangeEvent, void *userData)
 {
-	return EM_FALSE;
+	QN_SMASK(&emStub.base.stats, QGSST_FULLSCREEN, fullscreenChangeEvent->isFullscreen);
+	return EM_TRUE;
 }
 
 // 크기 변경
@@ -221,11 +241,12 @@ static EM_BOOL handler_resize(int eventType, const EmscriptenUiEvent *uiEvent, v
 
 	double width = emStub.base.client_size.Width;
 	double height = emStub.base.client_size.Height;
-	qn_outputf("리사이즈: %.2f, %.2f", width, height);
 	if (emStub.external_sizing)
-		emscripten_get_element_css_size(emStub.canvas, &width, &height);
-	emscripten_set_canvas_element_size(emStub.canvas, (int)width, (int)height);
+		emscripten_get_element_css_size(emCanvas, &width, &height);
+	emscripten_set_canvas_element_size(emCanvas, (int)width, (int)height);
+
 	stub_event_on_window_event(QGWEV_SIZED, (int)width, (int)height);
+	stub_event_on_layout(false);
 
 	return EM_FALSE;
 }
@@ -250,7 +271,7 @@ static EM_BOOL handler_mouse_enter_leave(int eventType, const EmscriptenMouseEve
 	if (emStub.lock_pointer == false)
 	{
 		double width, height;
-		emscripten_get_element_css_size(emStub.canvas, &width, &height);
+		emscripten_get_element_css_size(emCanvas, &width, &height);
 		double x = mouseEvent->targetX * (emStub.base.client_size.Width / width);
 		double y = mouseEvent->targetY * (emStub.base.client_size.Height / height);
 		stub_event_on_mouse_move((int)x, (int)y);
@@ -293,7 +314,7 @@ static EM_BOOL handler_mouse_button(int eventType, const EmscriptenMouseEvent* m
 	if (eventType == EMSCRIPTEN_EVENT_MOUSEDOWN)
 	{
 		if (QN_TMASK(emStub.base.features, QGFEATURE_RELATIVE_MOUSE) && emStub.lock_pointer == false)
-			emscripten_request_pointerlock(emStub.canvas, 0);
+			emscripten_request_pointerlock(emCanvas, 0);
 		down = true;
 		prevent_event = EM_FALSE;
 	}
@@ -305,7 +326,7 @@ static EM_BOOL handler_mouse_button(int eventType, const EmscriptenMouseEvent* m
 	stub_event_on_mouse_button(button, down);
 
 	double width, height;
-	emscripten_get_element_css_size(emStub.canvas, &width, &height);
+	emscripten_get_element_css_size(emCanvas, &width, &height);
 	if (mouseEvent->targetX < 0 || mouseEvent->targetX >= (int)width ||
 		mouseEvent->targetY < 0 || mouseEvent->targetY >= (int)height)
 		return EM_FALSE;
@@ -421,7 +442,7 @@ static EM_BOOL handler_key_press(int eventType, const EmscriptenKeyboardEvent *k
 // 이벤트 등록
 static void emscripten_register_event_handler(void)
 {
-	const char* name = emStub.canvas;
+	const char* name = emCanvas;
 
 	emscripten_set_beforeunload_callback(NULL, handler_before_unload);
 
@@ -447,7 +468,7 @@ static void emscripten_register_event_handler(void)
 // 이벤트 끝냄
 static void emscripten_unregister_event_handler(void)
 {
-	const char* name = emStub.canvas;
+	const char* name = emCanvas;
 
 	emscripten_set_beforeunload_callback(NULL, NULL);
 

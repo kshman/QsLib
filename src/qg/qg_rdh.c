@@ -118,7 +118,7 @@ void rdh_internal_reset(void)
 	qm_rst(&tm->frm);
 	for (size_t i = 0; i < QN_COUNTOF(tm->tex); i++)
 		qm_rst(&tm->tex[i]);
-	tm->scissor = qm_rect_pos_size(qm_point(0, 0), client_size);
+	tm->scissor = qm_rect_size(0, 0, client_size.Width, client_size.Height);
 
 	// param
 	RenderParam* param = &self->param;

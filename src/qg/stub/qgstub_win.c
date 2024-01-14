@@ -281,7 +281,7 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 
 	// 크기와 위치 (윈도우 크기, 화면 크기)
 	QmSize client_size;
-	if (width > 256 && height > 256)
+	if (width > 128 && height > 128)
 		client_size = qm_size(width, height);
 	else
 	{
@@ -1313,8 +1313,8 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				MINMAXINFO* mmi = (MINMAXINFO*)lp;
 				QmSize offset;
 				windows_rect_adjust(&offset, 0, 0, GetDpiForWindow ? GetDpiForWindow(hwnd) : USER_DEFAULT_SCREEN_DPI);
-				mmi->ptMinTrackSize.x = 256 + offset.Width;
-				mmi->ptMinTrackSize.y = 256 + offset.Height;
+				mmi->ptMinTrackSize.x = 128 + offset.Width;
+				mmi->ptMinTrackSize.y = 128 + offset.Height;
 				if (QN_TMASK(wStub.base.flags, QGFLAG_NOTITLE))
 				{
 					const HMONITOR mh = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);

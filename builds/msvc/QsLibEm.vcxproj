@@ -32,29 +32,57 @@
   <ImportGroup Label="Shared">
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Emscripten'">
+    <OutDir>$(SolutionDir)Build\$(Platform)$(Configuration)\</OutDir>
+    <IntDir>Build\$(Platform)$(Configuration)$(RootNamespace)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Emscripten'">
+    <OutDir>$(SolutionDir)Build\$(Platform)$(Configuration)\</OutDir>
+    <IntDir>Build\$(Platform)$(Configuration)$(RootNamespace)\</IntDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Emscripten'">
     <ClCompile>
-      <LanguageStandard>Default</LanguageStandard>
+      <LanguageStandard>gnuc17</LanguageStandard>
       <PrecompiledHeaderCompileAs>CompileAsC</PrecompiledHeaderCompileAs>
-      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_ES;DISABLE_MEMORY_PROFILE;_DEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_ES;_DEBUG</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
+    <Link>
+      <GenerateDebugInformation>MoreDebugInformation</GenerateDebugInformation>
+      <HtmlShellFile>$(ProjectDir)QsLibEm.html;%(HtmlShellFile)</HtmlShellFile>
+      <AdditionalOptions>-sASSERTIONS -sASYNCIFY -sEXPORTED_RUNTIME_METHODS=ccall %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <PostBuildEvent>
+      <Command>emdwp -e $(OutDir)$(ProjectName).wasm -o $(OutDir)$(ProjectName).wasm.dwp
+</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Emscripten'">
     <ClCompile>
-      <LanguageStandard>Default</LanguageStandard>
+      <LanguageStandard>gnuc17</LanguageStandard>
       <PrecompiledHeaderCompileAs>CompileAsC</PrecompiledHeaderCompileAs>
-      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_ES;DISABLE_MEMORY_PROFILE</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_ES</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <CompileAs>CompileAsC</CompileAs>
+      <OmitFramePointers>true</OmitFramePointers>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
     </ClCompile>
+    <Link>
+      <AdditionalOptions>-sASYNCIFY -sEXPORTED_RUNTIME_METHODS=ccall %(AdditionalOptions)</AdditionalOptions>
+      <HtmlShellFile>$(ProjectDir)QsLibEm.html;%(HtmlShellFile)</HtmlShellFile>
+      <RunJavaScriptOptimization>JavaScriptOptimization</RunJavaScriptOptimization>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\inc\qs.h" />
@@ -67,7 +95,6 @@
     <ClInclude Include="..\..\src\qn\sdefl\sdefl.h" />
     <ClInclude Include="..\..\src\qn\sdefl\sinfl.h" />
     <ClInclude Include="..\..\src\qs_conf.h" />
-    <ClInclude Include="..\..\src\qs_intellisense.h" />
     <ClInclude Include="..\..\src\qs_proxy.h" />
     <ClInclude Include="..\..\src\qg\qg_stub.h" />
     <ClInclude Include="..\..\src\qg\stub\glad\egl.h" />
@@ -105,6 +132,9 @@
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\..\QsLib.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="QsLibEm.html" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
