@@ -27,6 +27,7 @@
   
   <!-- 리스트 -->
   <Type Name="QnPtrList">
+    <AlternativeType Name="StubListEventCb"/>
     <DisplayString>[갯수: {COUNT}]</DisplayString>
     <Expand>
       <Item Name="[갯수]">COUNT</Item>
@@ -128,7 +129,7 @@
 
   <!-- vec2 -->
   <Type Name="QmVec2">
-    <AlternativeType Name="QmVecI2"/>
+    <AlternativeType Name="QmPoint"/>
     <AlternativeType Name="QmVecH2"/>
     <DisplayString>[({X}, {Y})]</DisplayString>
     <Expand>
@@ -139,7 +140,6 @@
 
   <!-- vec3 -->
   <Type Name="QmVec3">
-    <AlternativeType Name="QmVecI3"/>
     <AlternativeType Name="QmVecH3"/>
     <DisplayString>[({X}, {Y}, {Z})]</DisplayString>
     <Expand>
@@ -151,9 +151,8 @@
 
   <!-- vec4 -->
   <Type Name="QmVec4">
-    <AlternativeType Name="QmVecI4"/>
-    <AlternativeType Name="QmVecH4"/>
     <AlternativeType Name="QmQuat"/>
+    <AlternativeType Name="QmVecH4"/>
     <DisplayString>[({X}, {Y}, {Z}, {W})]</DisplayString>
     <Expand>
       <Item Name="X">X</Item>
@@ -176,6 +175,7 @@
 
   <!-- rect -->
   <Type Name="QmRect">
+    <AlternativeType Name="QmRectF"/>
     <DisplayString>[({Left}, {Top})-({Right}, {Bottom})]</DisplayString>
     <Expand>
       <Item Name="Left">Left</Item>
@@ -189,28 +189,11 @@
 
   <!-- size -->
   <Type Name="QmSize">
+    <AlternativeType Name="QmSizeF"/>
     <DisplayString>[({Width}, {Height})]</DisplayString>
     <Expand>
       <Item Name="Width">Width</Item>
       <Item Name="Height">Height</Item>
-    </Expand>
-  </Type>
-
-  <!-- depth -->
-  <Type Name="QmDepth">
-    <DisplayString>[({Near}, {Far})]</DisplayString>
-    <Expand>
-      <Item Name="Near">Near</Item>
-      <Item Name="Far">Far</Item>
-    </Expand>
-  </Type>
-
-  <!-- coordinate -->
-  <Type Name="QmCoord">
-    <DisplayString>[({U}, {V})]</DisplayString>
-    <Expand>
-      <Item Name="U">U</Item>
-      <Item Name="V">V</Item>
     </Expand>
   </Type>
 
@@ -265,6 +248,11 @@
   <!-- ShedEvent -->
   <Type Name="ShedEvent">
     <DisplayString>[q={queue.COUNT} / p={prior.COUNT} / c={cache.COUNT} / m={reserved_mems.COUNT} ({loop.count})</DisplayString>
+  </Type>
+  
+  <!-- StubEventCallback -->
+  <Type Name="StubEventCallback">
+    <DisplayString>[키: {key} ({func} / {data}]</DisplayString>
   </Type>
 
 </AutoVisualizer>

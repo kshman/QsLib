@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "qs_qn.h"
-#include "qs_math.h"
 #include "qs_qg.h"
 #include "qg/qg_stub.h"
 
@@ -11,7 +9,7 @@ typedef struct QglRender	QglRender;
 typedef struct QglBuf		QglBuf;
 
 #ifndef GL_INVALID_HANDLE
-#define GL_INVALID_HANDLE	(GLuint)-1
+#define GL_INVALID_HANDLE	(GLuint)(-1)
 #endif
 
 #define QGL_RDH_INSTANCE	((QglRdh*)qg_instance_rdh)
@@ -160,19 +158,19 @@ struct QglBuffer
 };
 
 // 문자열 버전에서 숫자만 mnn 방식으로
-QN_INLINE int qgl_get_version(GLenum name, const char* name1, const char* name2)
+INLINE int qgl_get_version(GLenum name, const char* name1, const char* name2)
 {
 	const char* s = (const char*)glGetString(name);
 	qn_val_if_fail(s, 0);
 	const float f =
 		qn_strnicmp(s, name1, strlen(name1)) == 0 ? strtof(s + strlen(name1), NULL) :
 		qn_strnicmp(s, name2, strlen(name2)) == 0 ? strtof(s + strlen(name2), NULL) :
-		(float)strtof(s, NULL);
-	return (int)(floorf(f) * 100.0f + (QM_FRACT(f) * 10.0));
+		qn_strtof(s);
+	return (int)(QM_FLOORF(f) * 100.0f + (QM_FRACT(f) * 10.0));
 }
 
 // 문자열 얻기
-QN_INLINE char* qgl_copy_string(char* buf, size_t size, GLenum name)
+INLINE char* qgl_copy_string(char* buf, size_t size, GLenum name)
 {
 	const char* s = (const char*)glGetString(name);
 	if (s == NULL)
@@ -183,7 +181,7 @@ QN_INLINE char* qgl_copy_string(char* buf, size_t size, GLenum name)
 }
 
 // 정수 얻기
-QN_INLINE GLint qgl_get_integer_v(GLenum name)
+INLINE GLint qgl_get_integer_v(GLenum name)
 {
 	GLint n;
 	glGetIntegerv(name, &n);
@@ -191,7 +189,7 @@ QN_INLINE GLint qgl_get_integer_v(GLenum name)
 }
 
 // 프로그램 상태값 얻기
-QN_INLINE GLint qgl_get_program_iv(GLuint program, GLenum name)
+INLINE GLint qgl_get_program_iv(GLuint program, GLenum name)
 {
 	GLint n;
 	glGetProgramiv(program, name, &n);
@@ -199,7 +197,7 @@ QN_INLINE GLint qgl_get_program_iv(GLuint program, GLenum name)
 }
 
 // 세이더 상태값 얻기
-QN_INLINE GLint qgl_get_shader_iv(GLuint handle, GLenum name)
+INLINE GLint qgl_get_shader_iv(GLuint handle, GLenum name)
 {
 	GLint n;
 	glGetShaderiv(handle, name, &n);
@@ -207,10 +205,10 @@ QN_INLINE GLint qgl_get_shader_iv(GLuint handle, GLenum name)
 }
 
 // irrcht 엔젠에서 가져온 텍스쳐 행렬
-QN_INLINE QmMat4 qgl_mat4_irrcht_texture(float radius, float cx, float cy, float tx, float ty, float sx, float sy)
+INLINE QmMat4 qgl_mat4_irrcht_texture(float radius, float cx, float cy, float tx, float ty, float sx, float sy)
 {
 	float c, s;
-	qm_sincos(radius, &s, &c);
+	qm_sincosf(radius, &s, &c);
 	QmMat4 m =
 	{
 		._11 = c * sx,
@@ -234,7 +232,7 @@ QN_INLINE QmMat4 qgl_mat4_irrcht_texture(float radius, float cx, float cy, float
 }
 
 // 참조 핸들 만들기
-QN_INLINE QglRefHandle* qgl_ref_handle_new(GLuint handle)
+INLINE QglRefHandle* qgl_ref_handle_new(GLuint handle)
 {
 	QglRefHandle* ptr = qn_alloc_1(QglRefHandle);
 	ptr->ref = 1;
@@ -243,7 +241,7 @@ QN_INLINE QglRefHandle* qgl_ref_handle_new(GLuint handle)
 }
 
 // 참조 핸들을 해제한다 (세이더용)
-QN_INLINE void qgl_ref_handle_unload_shader(QglRefHandle* ptr, GLuint handle)
+INLINE void qgl_ref_handle_unload_shader(QglRefHandle* ptr, GLuint handle)
 {
 	qn_ret_if_fail(ptr);
 	if (handle > 0)

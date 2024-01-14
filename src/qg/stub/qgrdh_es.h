@@ -1,12 +1,12 @@
 ﻿#pragma once
 
+#ifndef __QS_QN__
+#error include "qs_qn.h" first
+#endif
+
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4191)
-#endif
-
-#ifndef __QS_QN__
-#error include "qs_qn.h" first
 #endif
 
 #if defined _QN_EMSCRIPTEN_ || defined _QN_ANDROID_
@@ -19,22 +19,21 @@
 #include <GLES3/gl3.h>
 #elif defined USE_SDL2
 #include <SDL2/SDL.h>
-#include "gl/glad_supp.h"
-#include "gl/gles2.h"
+#include "glad/glad_supp.h"
+#include "glad/gles2.h"
 #else
-#include "gl/glad_supp.h"
-#include "gl/egl.h"
-#include "gl/gles2.h"
+#include "glad/egl.h"
+#include "glad/gles2.h"
 #endif
 #include "qgrdh_glbase.h"
 
-typedef struct EsRdh					EsRdh;
+typedef struct ESRDH					EsRdh;
 
 #define ES_RDH_INSTANCE					((EsRdh*)qg_instance_rdh)
 
 #ifndef USE_SDL2
 // ES 컨피그
-typedef struct EsConfig
+typedef struct ESCONFIG
 {
 	void*				handle;
 	EGLint				red, green, blue, alpha;
@@ -44,7 +43,7 @@ typedef struct EsConfig
 #endif
 
 // ES 렌더 디바이스
-struct EsRdh
+struct ESRDH
 {
 	QglRdh				base;
 

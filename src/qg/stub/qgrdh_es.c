@@ -1,10 +1,16 @@
-﻿#include "pch.h"
+﻿//
+// qgrdh_es.c - OPENGL ES 렌더 디바이스
+// 2024-01-10 by kim
+//
+
+#include "pch.h"
 #ifdef USE_ES
-#include "qs_qn.h"
+#ifndef _QN_EMSCRIPTEN_
 #ifndef USE_SDL2
 #define GLAD_EGL_IMPLEMENTATION		1
 #endif
 #define GLAD_GLES2_IMPLEMENTATION	1
+#endif
 #include "qgrdh_es.h"
 #include <limits.h>
 
@@ -20,7 +26,7 @@ static bool es_begin(bool clear);
 static void es_end(void);
 static void es_flush(void);
 
-qv_name(RdhBase) vt_es_rdh =
+qv_name(RDHBASE) vt_es_rdh =
 {
 	.base.name = "ESRDH",
 	.base.dispose = es_dispose,
@@ -193,7 +199,7 @@ static const char* es_egl_error_string(EGLint error)
 }
 
 //
-static EGLint es_get_config_attr(EsRdh* self, EGLConfig config, EGLenum name)
+static EGLint es_get_config_attr(const EsRdh* self, EGLConfig config, EGLenum name)
 {
 	EGLint v;
 	eglGetConfigAttrib(self->display, config, name, &v);
@@ -201,7 +207,7 @@ static EGLint es_get_config_attr(EsRdh* self, EGLConfig config, EGLenum name)
 }
 
 //
-static const EsConfig* es_find_config(const EsConfig* wanted, EsConfig* configs, int count)
+static const EsConfig* es_find_config(const EsConfig* wanted, const EsConfig* configs, int count)
 {
 	uint least_missing = UINT_MAX;
 	uint least_color = UINT_MAX;
@@ -255,15 +261,18 @@ static const EsConfig* es_find_config(const EsConfig* wanted, EsConfig* configs,
 }
 #endif
 
-RdhBase* es_allocator(QgFlag flags)
+RdhBase* es_allocator(QgFlag flags, QgFeature features)
 {
+	if (QN_TMASK(features, QGRENDERER_ES3) == false)
+		return NULL;
+
 #if !defined STATIC_ES_LIBRARY && !defined USE_SDL2
 	if (es_init_egl() == false)
 		return NULL;
 #endif
 
 #ifdef _QN_EMSCRIPTEN_
-	flags &= ~(QGFLAG_MSAA|QGFLAG_DITHER|QGFLAG_DITHER_ALPHA_STENCIL);
+	flags &= ~(QGFLAG_MSAA | QGFLAG_DITHER | QGFLAG_DITHER_ALPHA_STENCIL);
 #endif
 
 	// 프로퍼티에 있으면 가져온다
@@ -345,7 +354,7 @@ RdhBase* es_allocator(QgFlag flags)
 	{
 		if (SDL_GL_SetSwapInterval(-1) < 0)
 			SDL_GL_SetSwapInterval(1);
-	}
+}
 #else
 	//----- EGL 초기화
 	self->native_window = (NativeWindowType)stub_system_get_window();
@@ -413,7 +422,7 @@ RdhBase* es_allocator(QgFlag flags)
 		config_entry_count++;
 	}
 
-	EsConfig want_config=
+	const EsConfig want_config =
 	{
 		NULL,
 		size_red, size_green, size_blue, size_alpha,
@@ -458,7 +467,7 @@ pos_context_ok:
 	eglGetConfigAttrib(self->display, self->config, EGL_NATIVE_VISUAL_ID, &android_visual_id);
 	ANativeWindow_setBuffersGeometry(self->native_window, 0, 0, android_visual_id);
 #endif
-	EGLint surface_attrs[] =
+	const EGLint surface_attrs[] =
 	{
 		EGL_NONE, EGL_NONE,
 	};
@@ -469,6 +478,10 @@ pos_context_ok:
 		goto pos_fail_exit;
 	}
 
+	// 서피스를 만들었으니 여기서 윈도우 표시
+	stub_system_actuate();
+
+	// 커런트 만들고
 	if (eglMakeCurrent(self->display, self->surface, self->surface, self->context) == false)
 	{
 		qn_debug_outputf(true, "ESRDH", "failed to make current: %s", es_egl_error_string(eglGetError()));
@@ -492,7 +505,7 @@ pos_context_ok:
 	infos->renderer_version = qgl_get_version(GL_VERSION, "OPENGLES", "OPENGL ES");
 	infos->shader_version = qgl_get_version(GL_SHADING_LANGUAGE_VERSION, "OPENGL ES GLSL ES ", "OPENGL ES GLSL ");
 
-	int max_layout_count = qgl_get_integer_v(GL_MAX_VERTEX_ATTRIBS);
+	const int max_layout_count = qgl_get_integer_v(GL_MAX_VERTEX_ATTRIBS);
 	infos->max_layout_count = QN_MIN(max_layout_count, ES_MAX_LAYOUT_COUNT);
 	infos->max_tex_dim = qgl_get_integer_v(GL_MAX_TEXTURE_SIZE);
 	infos->max_tex_count = qgl_get_integer_v(GL_MAX_TEXTURE_IMAGE_UNITS);
@@ -528,7 +541,7 @@ static void es_dispose(QsGam* g)
 	qn_ret_if_ok(self->base.disposed);
 
 	//----- 펜딩
-	QglPending* pd = &self->base.pd;
+	const QglPending* pd = &self->base.pd;
 	qs_unload(pd->draw.index_buffer);
 	for (int i = 0; i < QGLOS_MAX_VALUE; i++)
 		qs_unload(pd->draw.vertex_buffers[i]);
@@ -570,7 +583,7 @@ static void es_reset(void)
 	ss->stencil = QGSTENCIL_OFF;
 
 	//----- 트랜스폼
-	tm->ortho = qm_mat4_ortho_lh(tm->size.X, tm->size.Y, -1.0f, 1.0f);
+	tm->ortho = qm_mat4_ortho_lh(tm->size.Width, tm->size.Height, -1.0f, 1.0f);
 	//qm_mat4_loc(&tm->ortho, -1.0f, 1.0f, 0.0f, false);
 	tm->frm = qgl_mat4_irrcht_texture(0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -1.0f);
 

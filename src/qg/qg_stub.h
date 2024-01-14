@@ -8,55 +8,78 @@
 // 모니터 타입
 QN_DECL_CTNR(StubMonitorCtnr, QgUdevMonitor*);
 
+// 이벤트 핸들러 페어
+typedef struct STUBEVENTCALLBACK
+{
+	QgEventCallback		func;
+	void*				data;
+	size_t				key;
+} StubEventCallback;
+QN_DECL_LIST(StubListEventCb, StubEventCallback);
+
 // 스터브 베이스
-typedef struct StubBase
+typedef struct STUBBASE
 {
 	void*				handle;								// 시스템 스터브 관리
+	QnMutex*			mutex;
 	QnTimer*			timer;
 
-	QgFlag				flags;
+	QgFlag				flags;								// 플래그
+	QgFeature			features;							// 사양
 	QgStubStat			stats;								// 시스템 스터브 관리
-	uint				window_stats;
+
 	uint				display;
+	float				aspect;
 
-	uint				delay;
-	float				fps;								/** @brief 프레임 당 시간 */
-	float				reference;							/** @brief 프레임 시간 */
-	float				advance;							/** @brief 프레임 시간, 포즈 상태일 때는 0 */
-	double				run;								/** @brief 실행 시간 */
-	double				active;								/** @brief 활성화된 시간 */
+	float				fps;								// 프레임 당 시간
+	float				elapsed;							// 프레임 시간
+	float				advance;							// 프레임 시간, 포즈 상태일 때는 0
+	double				run;								// 실행 시간
+	double				active;								// 활성화된 시간
+	double				frames;								// 목표 프레임
 
-	QmRect				window_bound;						// 실제 윈도우의 위치와 크기 정보
+	QmRect				bound;								// 현재 윈도우의 위치와 크기 정보
 	QmSize				client_size;						// 시스템 스터브 관리, 그리기 영역 크기 (창 크기가 아님)
 
-#ifndef __EMSCRIPTEN__
-	StubMonitorCtnr		monitors;
-#endif
 	QgUimKey			key;
 	QgUimMouse			mouse;
+	StubMonitorCtnr		monitors;
+
+	StubListEventCb		callbacks;
+#ifdef _QN_EMSCRIPTEN_
+	funcparam_t			main_loop_callback;
+#endif
 } StubBase;
 
 // 스터브 인스턴스 
 extern StubBase* qg_instance_stub;
 
 // 시스템 스터브를 연다
-extern bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags);
+extern bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags, QgFeature features);
 // 시스템 스터브를 정리한다
 extern void stub_system_finalize(void);
+// 시스템 디바이스가 만들어진 담에 최초 가동
+extern void stub_system_actuate(void);
 // 시스템 스터브 폴링 (프로그램이 종료되면 거짓)
 extern bool stub_system_poll(void);
 // 시스템 드래그 켜고 끄기
-extern void stub_system_enable_drop(bool enable);
+extern bool stub_system_enable_drop(bool enable);
 // 시스템 도움꾼 켜고 끄기
-extern void stub_system_disable_acs(bool enable);
+extern bool stub_system_disable_acs(bool enable);
 // 시스템 스크린 세이버 켜고 끄기
-extern void stub_system_disable_scr_save(bool enable);
+extern bool stub_system_disable_scr_save(bool enable);
+// 시스템 마우스 잡기
+extern bool stub_system_relative_mouse(bool enable);
 // 시스템 타이틀 설정
 extern void stub_system_set_title(const char* title);
 // 시스템 바운드 영역을 업데이트한다
 extern void stub_system_update_bound(void);
 // 시스템 스터브를 포커스로 만든다
 extern void stub_system_focus(void);
+// 시스템 종횡비를 맞춘다
+extern void stub_system_aspect(void);
+// 시스템 풀스크린을 전환한다
+extern void stub_system_fullscreen(bool fullscreen);
 // 시스템 핸들을 얻는다
 extern void* stub_system_get_window(void);
 // 시스템 디스플레이 핸들을 얻는다 (윈도우에서는 HDC)
@@ -64,10 +87,14 @@ extern void* stub_system_get_display(void);
 
 // 내부적으로 마우스 눌림을 연산한다
 extern bool stub_track_mouse_click(QimButton button, QimTrack track);
+// 내부적으로 토글을 설정한다 (완전 언세이프)
+extern void stub_toggle_keys(QikMask keymask, bool on);
 // 모니터 이벤트 추가
-extern bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary);
+extern bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary, bool broadcast);
 // 레이아웃 이벤트 추가
 extern bool stub_event_on_layout(bool enter);
+// 포커스 이벤트 추가
+extern bool stub_event_on_focus(bool enter);
 // 윈도우 이벤트 추가
 extern bool stub_event_on_window_event(QgWindowEventType type, int param1, int param2);
 // 텍스트 이벤트 추가
@@ -88,16 +115,14 @@ extern bool stub_event_on_active(bool active, double delta);
 extern bool stub_event_on_drop(char* data, int len, bool finish);
 
 // 스터보 기본 사양을 초기화 stub_system_open() 함수가 호출해야 한다
-extern void stub_initialize(StubBase* stub, int flags);
-// 내부적으로 토글을 설정한다 (완전 언세이프)
-extern void stub_toggle_keys(QikMask keymask, bool on);
+extern void stub_initialize(StubBase* stub, QgFlag flags);
 
 
 //////////////////////////////////////////////////////////////////////////
 // 렌더 디바이스
 
 // 렌더러 정보
-typedef struct RendererInfo
+typedef struct RENDERERINFO
 {
 	char				name[64];
 	char				renderer[64];						// 렌더러 이름
@@ -115,7 +140,7 @@ typedef struct RendererInfo
 } RendererInfo;
 
 // 렌더 추적 정보
-typedef struct RenderInvoke
+typedef struct RENDERINVOKE
 {
 	uint				frames;
 	uint				creations;
@@ -134,9 +159,9 @@ typedef struct RenderInvoke
 } RenderInvoke;
 
 // 렌더 트랜스포메이션
-typedef struct RenderTransform
+typedef struct RENDERTRANSFORM
 {
-	QmVec2				size;
+	QmSizeF				size;
 	QmDepth				depth;
 	QmMat4				world;
 	QmMat4				view;
@@ -150,7 +175,7 @@ typedef struct RenderTransform
 } RenderTransform;
 
 // 렌더 인수
-typedef struct RenderParam
+typedef struct RENDERPARAM
 {
 	QmVec4				v[4];
 	QmMat4				m[4];
@@ -160,7 +185,7 @@ typedef struct RenderParam
 } RenderParam;
 
 // 렌더러 디바이스
-typedef struct RdhBase
+typedef struct RDHBASE
 {
 	QsGam				base;
 
@@ -171,9 +196,9 @@ typedef struct RdhBase
 	RenderInvoke		invokes;
 } RdhBase;
 
-qv_name(RdhBase)
+qv_name(RDHBASE)
 {
-	qv_name(QsGam)	base;
+	qv_name(QSGAM)	base;
 	void (*reset)(void);
 	void (*clear)(int, const QmColor*, int, float);
 
@@ -199,7 +224,7 @@ extern RdhBase* qg_instance_rdh;
 
 #ifdef USE_ES
 // OPENGL ES 할당
-extern RdhBase* es_allocator(QgFlag flags);
+extern RdhBase* es_allocator(QgFlag flags, QgFeature features);
 #endif
 
 // 렌더러 최종 제거

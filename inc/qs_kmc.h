@@ -4,24 +4,31 @@
 //
 // 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
 // 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
+// SPDX-License-Identifier: UNLICENSE
 //
 
 #pragma once
 #define __QS_KMC__
 
 //////////////////////////////////////////////////////////////////////////
-// key board
+// 키보드
 
 /// @brief 키보드 입력 키 정의
-/// @todo VK키를 다른 종류로 바꾸는게 좋겟음. 예컨데 스캔코드
-typedef enum QikKey
+typedef enum QIKKEY
 {
 	QIK_NONE = 0,
 	QIK_BS = 0x08,											// BACKSPACE
 	QIK_TAB = 0x09,
+	QIK_CLEAR = 0x0C,										// NUM5 without NUMLOCK
 	QIK_RETURN = 0x0D,
 	QIK_PAUSE = 0x13,
 	QIK_CAPSLOCK = 0x14,
+	QIK_HANGUL = 0x15,
+	QIK_KANA = 0x15,
+	QIK_JUNJA = 0x17,
+	QIK_FINAL = 0x18,
+	QIK_HANJA = 0x19,
+	QIK_KANJI = 0x19,
 	QIK_ESC = 0x1B,
 	QIK_SPACE = 0x20,
 	QIK_PGUP = 0x21,										// PRIOR PAGE
@@ -35,6 +42,7 @@ typedef enum QikKey
 	QIK_PRTSCR = 0x2C,										// SNAPSHOT
 	QIK_INS = 0x2D,											// INSERT
 	QIK_DEL = 0x2E,											// DELETE
+	QIK_HELP = 0x2F,
 	QIK_0 = 0x30,
 	QIK_1 = 0x31,
 	QIK_2 = 0x32,
@@ -53,13 +61,13 @@ typedef enum QikKey
 	QIK_F = 0x46,
 	QIK_G = 0x47,
 	QIK_H = 0x48,
-	QIK_I = 0x49,											// Alphabet I
+	QIK_I = 0x49,											// Alphabet I / NOLINT
 	QIK_J = 0x4A,
 	QIK_K = 0x4B,
 	QIK_L = 0x4C,
 	QIK_M = 0x4D,
 	QIK_N = 0x4E,
-	QIK_O = 0x4F,											// Alphabet O
+	QIK_O = 0x4F,											// Alphabet O / NOLINT
 	QIK_P = 0x50,
 	QIK_Q = 0x51,
 	QIK_R = 0x52,
@@ -74,6 +82,7 @@ typedef enum QikKey
 	QIK_LWIN = 0x5B,										// LEFT WIN / META / COMMAND
 	QIK_RWIN = 0x5C,										// RIGHT WIN / META / COMMAND
 	QIK_APPS = 0x5D,
+	QIK_SLEEP = 0x5F,
 	QIK_NUM_0 = 0x60,
 	QIK_NUM_1 = 0x61,
 	QIK_NUM_2 = 0x62,
@@ -119,9 +128,23 @@ typedef enum QikKey
 	QIK_LSHIFT = 0xA0,										// LEFT SHIFT
 	QIK_RSHIFT = 0xA1,										// RIGHT SHIFT
 	QIK_LCTRL = 0xA2,										// LEFT CONTROL
-	QIK_RCTRL = 0xA3,										// RIGHT CONTROL
+	QIK_RCTRL = 0xA3,										// RIGHT CONTROL / KAIOS KEYPAD HASH
 	QIK_LALT = 0xA4,										// LEFT ALT / MENU / OPTION
 	QIK_RALT = 0xA5,										// RIGHT ALT / MENU / OPTION
+	QIK_NAV_BACK = 0xA6,									// NAVIGATE BACK
+	QIK_NAV_FORWARD = 0xA7,									// NAVIGATE FORWARD
+	QIK_NAV_REFRESH = 0xA8,									// NAVIGATE REFRESH / RELOAD
+	QIK_NAV_STOP = 0xA9,									// NAVIGATE STOP
+	QIK_NAV_SEARCH = 0xAA,									// NAVIGATE SEARCH / KAIOS KEYPAD MULTIPLY
+	QIK_NAV_FAVORITES = 0xAB,								// NAVIGATE FAVORITES
+	QIK_NAV_HOME = 0xAC,									// NAVIGATE HOME
+	QIK_VOL_MUTE = 0xAD,									// VOLUME MUTE
+	QIK_VOL_DOWN = 0xAE,									// VOLUME DOWN
+	QIK_VOL_UP = 0xAF,										// VOLUME UP
+	QIK_MEDIA_NEXT = 0xB0,									// MEDIA NEXT
+	QIK_MEDIA_PREV = 0xB1,									// MEDIA PREVIOUS
+	QIK_MEDIA_STOP = 0xB2,									// MEDIA STOP
+	QIK_MEDIA_PLAY = 0xB3,									// MEDIA PLAY / PAUSE
 	QIK_SEMI = 0xBA,										// ;:
 	QIK_ADD = 0xBB,											// =+
 	QIK_COMMA = 0xBC,										// ,<
@@ -133,11 +156,11 @@ typedef enum QikKey
 	QIK_BACKSLASH = 0xDC,									// \|
 	QIK_RBR = 0xDD,											// ]}
 	QIK_QUOTE = 0xDE,										// '"
-	QIK_MAX_VALUE = 0xFF,
+	QIK_MAX_VALUE = 0xFF + 1,
 } QikKey;
 
 /// @brief 상태키 마스크
-typedef enum QikMask
+typedef enum QIKMASK
 {
 	QIKM_NONE = 0,
 	QIKM_SHIFT = QN_BIT(0),
@@ -156,7 +179,7 @@ static_assert(sizeof(QikMask) == sizeof(int), "QikMask size not equal to int");
 // mouse button
 
 /// @brief 마우스 버튼
-typedef enum QimButton
+typedef enum QIMBUTTON
 {
 	QIM_NONE = 0,
 	QIM_LEFT = 1,
@@ -164,10 +187,11 @@ typedef enum QimButton
 	QIM_MIDDLE = 3,
 	QIM_X1 = 4,
 	QIM_X2 = 5,
+	QIM_MAX_VALUE,
 } QimButton;
 
 /// @brief 마스 버튼 마스크
-typedef enum QimMask
+typedef enum QIMMASK
 {
 	QIMM_LEFT = QN_BIT(QIM_LEFT),
 	QIMM_RIGHT = QN_BIT(QIM_RIGHT),
@@ -181,7 +205,7 @@ typedef enum QimMask
 } QimMask;
 
 /// @brief 마우스 눌림 상태 추적
-typedef enum QimTrack
+typedef enum QIMTRACK
 {
 	QIMT_MOVE = 0,
 	QIMT_DOWN = 1,
@@ -189,7 +213,7 @@ typedef enum QimTrack
 } QimTrack;
 
 /// @brief 터치 상태 추적
-typedef enum QimTouch
+typedef enum QIMTOUCH
 {
 	QITT_BEGIN = 1,
 	QITT_MOVE = 2,
@@ -203,7 +227,7 @@ static_assert(sizeof(QimMask) == sizeof(int), "QimMask size not equal to int");
 // controller key
 
 /// @brief 컨트롤러 버튼
-typedef enum QicButton
+typedef enum QICBUTTON
 {
 	QIC_NONE = 0,
 	QIC_UP = 1,
@@ -223,7 +247,7 @@ typedef enum QicButton
 } QicButton;
 
 /// @brief 컨트롤러 마스크
-typedef enum QicMask
+typedef enum QICMASK
 {
 	QICM_UP = QN_BIT(QIC_UP),
 	QICM_DOWN = QN_BIT(QIC_DOWN),
@@ -250,7 +274,7 @@ static_assert(sizeof(QicMask) == sizeof(int), "QicMask size not equal to int");
 /// @brief 사용가능한 키인가
 /// @param key QikKey
 /// @return 사용가능하면 참
-QSAPI bool qg_qik_usable(const QikKey key);
+QSAPI bool qg_qik_usable(QikKey key);
 
 /// @brief QikKey를 문자열로
 /// @param key QikKey

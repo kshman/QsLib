@@ -170,8 +170,14 @@
     <ClCompile Include="..\..\src\qn\sdefl\sinfl.c">
       <Filter>소스 파일\qn\sdefl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\zconsole\zz.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\..\QsLib.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="QsLibEm.html" />
   </ItemGroup>
 </Project>

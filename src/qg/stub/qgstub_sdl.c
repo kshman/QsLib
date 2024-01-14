@@ -102,7 +102,7 @@ bool stub_system_open(const char* title, const int display, const int width, con
 		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	if (QN_TMASK(flags, QGFLAG_BORDERLESS))
 		window_flags |= SDL_WINDOW_BORDERLESS;
-	if (QN_TMASK(flags, QGFLAG_RESIZABLE))
+	if (QN_TMASK(flags, QGFLAG_RESIZE))
 		window_flags |= SDL_WINDOW_RESIZABLE;
 	if (QN_TMASK(flags, QGRENDERER_OPENGL | QGRENDERER_ES3))
 	{
@@ -169,7 +169,7 @@ bool stub_system_poll(void)
 {
 	if (_sdl_mesg_proc() == false)
 		return false;
-	return QN_TMASK(sdlStub.base.stats, QGSSTT_EXIT) == false;
+	return QN_TMASK(sdlStub.base.stats, QGSST_EXIT) == false;
 }
 
 //
@@ -252,7 +252,7 @@ static void _sdl_mesg_active(const bool focus)
 
 	if (focus)
 	{
-		QN_SMASK(&sdlStub.base.stats, QGSSTT_ACTIVE, true);
+		QN_SMASK(&sdlStub.base.stats, QGSST_ACTIVE, true);
 
 		SDL_Keymod mod = SDL_GetModState();
 		sdlStub.base.key.mask = kmod_to_qikm(mod);
@@ -262,7 +262,7 @@ static void _sdl_mesg_active(const bool focus)
 	}
 	else
 	{
-		QN_SMASK(&sdlStub.base.stats, QGSSTT_ACTIVE, false);
+		QN_SMASK(&sdlStub.base.stats, QGSST_ACTIVE, false);
 
 		stub_event_on_reset_keys();
 		stub_event_on_window_event(QGWEV_LOSTFOCUS, 0, 0);
@@ -407,7 +407,7 @@ static bool _sdl_mesg_proc(void)
 
 			case SDL_QUIT:
 				stub_event_on_window_event(QGWEV_CLOSE, 0, 0);
-				QN_SMASK(&sdlStub.base.stats, QGSSTT_EXIT, true);
+				QN_SMASK(&sdlStub.base.stats, QGSST_EXIT, true);
 				return false;
 		}
 	}

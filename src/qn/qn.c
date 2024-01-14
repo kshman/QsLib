@@ -4,10 +4,6 @@
 //
 
 #include "pch.h"
-#include <errno.h>
-#include <stdlib.h>
-#include "qs_qn.h"
-#include "qs_ctn.h"
 
 //
 extern void qn_cycle_up(void);
@@ -27,22 +23,22 @@ QN_MUKUM_KEY_FREE(QnPropMukum)
 QN_MUKUM_VALUE_FREE(QnPropMukum)
 
 // 닫아라
-struct Closure
+typedef struct CLOSURE
 {
-	struct Closure* prev;
+	struct CLOSURE* prev;
 	funcparam_t		fp;
-};
+} Closure;
 
 // 구현
-static struct RuntimeImpl
+static struct RUNTIMEIMPL
 {
 	bool32			inited;
-#ifndef USE_NO_LOCK
+#ifndef QS_NO_SPINLOCK
 	QnSpinLock		lock;
 #endif
 
-	struct Closure* closures;
-	struct Closure* preclosures;
+	Closure*		closures;
+	Closure*		preclosures;
 
 	QnTls			error;
 
@@ -66,14 +62,14 @@ static void qn_runtime_down(void)
 	runtime_impl.inited = false;
 
 	QN_LOCK(runtime_impl.lock);
-	for (struct Closure *prev, *node = runtime_impl.closures; node; node = prev)
+	for (Closure *prev, *node = runtime_impl.closures; node; node = prev)
 	{
 		prev = node->prev;
 		node->fp.func(node->fp.data);
 		qn_free(node);
 	}
 
-	for (struct Closure *prev, *node = runtime_impl.preclosures; node; node = prev)
+	for (Closure *prev, *node = runtime_impl.preclosures; node; node = prev)
 	{
 		prev = node->prev;
 		node->fp.func(node->fp.data);
@@ -100,7 +96,7 @@ static void qn_runtime_up(void)
 	qn_module_up();
 	qn_thread_up();
 
-	runtime_impl.error = qn_tls(qn_memfre);
+	runtime_impl.error = qn_tls(qn_mem_free);
 
 	qn_mukum_init(QnPropMukum, &runtime_impl.props);
 
@@ -131,7 +127,7 @@ void qn_atexit(paramfunc_t func, void* data)
 	qn_ret_if_fail(runtime_impl.inited);
 	qn_ret_if_fail(func);
 
-	struct Closure* node = qn_alloc_1(struct Closure);
+	Closure* node = qn_alloc_1(Closure);
 	qn_ret_if_fail(node);
 
 	node->fp.func = func;
@@ -149,7 +145,7 @@ void qn_p_atexit(paramfunc_t func, void* data)
 	qn_ret_if_fail(runtime_impl.inited);
 	qn_ret_if_fail(func);
 
-	struct Closure* node = qn_alloc_1(struct Closure);
+	Closure* node = qn_alloc_1(Closure);
 	qn_ret_if_fail(node);
 
 	node->fp.func = func;
@@ -169,7 +165,7 @@ size_t qn_p_index(void)
 }
 
 //
-void qn_set_prop(const char* restrict name, const char* restrict value)
+void qn_set_prop(const char* RESTRICT name, const char* RESTRICT value)
 {
 	qn_ret_if_fail(runtime_impl.inited);
 	qn_ret_if_fail(name != NULL);
@@ -271,9 +267,11 @@ bool qn_set_syserror(const int errcode)
 
 //
 #if !defined _LIB || !defined _STATIC
-#ifdef _QN_WINDOWS
+#ifdef _QN_WINDOWS_
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
+	QN_DUMMY(hModule);
+	QN_DUMMY(lpReserved);
 	switch (ul_reason_for_call)
 	{
 		case DLL_PROCESS_ATTACH:
@@ -284,6 +282,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 			break;
 		case DLL_PROCESS_DETACH:
 			qn_runtime_down();
+			break;
+		default:
 			break;
 	}
 	return true;

@@ -409,7 +409,7 @@ static void configure_geometry(void)
 		qm_set2(&min, 0, 0);
 		qm_set2(&max, 0, 0);
 	}
-	else if (QN_TMASK(wlxStub.base.flags, QGFLAG_RESIZABLE))
+	else if (QN_TMASK(wlxStub.base.flags, QGFLAG_RESIZE))
 	{
 		QgUdevMonitor* mon = qn_pctnr_nth(&wlxStub.base.monitors, wlxStub.base.display);
 		qm_set2(&min, 256, 256);
@@ -449,8 +449,8 @@ static void xdg_surface_configure(void *data, struct xdg_surface *surface, uint3
 
 	/*
 	nkk_window* win = &wlxStub.win;
-	if (QN_TMASK(wlxStub.base.stats, QGSSTT_ACTIVE) != win->pending.active)
-		QN_SMASK(&wlxStub.base.stats, QGSSTT_ACTIVE, win->pending.active);
+	if (QN_TMASK(wlxStub.base.stats, QGSST_ACTIVE) != win->pending.active)
+		QN_SMASK(&wlxStub.base.stats, QGSST_ACTIVE, win->pending.active);
 
 	if (QN_TBIT(wlxStub.base.window_stats, QGWEV_MAXIMIZED) != win->pending.maximized)
 		stub_event_on_window_event(QGWEV_MAXIMIZED, 0, 0);
@@ -826,7 +826,7 @@ static void keyboard_enter(void *data, wl_keyboard *kb, uint32_t serial, wl_surf
 	const double now = wlxStub.base.timer->abstime;
 	const double delta = now - wlxStub.base.active;
 	wlxStub.base.active = now;
-	QN_SMASK(&wlxStub.base.stats, QGSSTT_ACTIVE, true);
+	QN_SMASK(&wlxStub.base.stats, QGSST_ACTIVE, true);
 	stub_event_on_window_event(QGWEV_FOCUS, 0, 0);
 	stub_event_on_active(true, delta);
 }
@@ -843,7 +843,7 @@ static void keyboard_leave(void* data, wl_keyboard* wl_keyboard, uint32_t serial
 	const double now = wlxStub.base.timer->abstime;
 	const double delta = now - wlxStub.base.active;
 	wlxStub.base.active = now;
-	QN_SMASK(&wlxStub.base.stats, QGSSTT_ACTIVE, false);
+	QN_SMASK(&wlxStub.base.stats, QGSST_ACTIVE, false);
 	stub_event_on_window_event(QGWEV_LOSTFOCUS, 0, 0);
 	stub_event_on_active(false, delta);
 }

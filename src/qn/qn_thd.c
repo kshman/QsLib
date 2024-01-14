@@ -4,12 +4,7 @@
 //
 
 #include "pch.h"
-#include "qs_qn.h"
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
 #ifdef __GNUC__
-#include <errno.h>
 #include <signal.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -62,7 +57,7 @@ uint qn_spin_enter(QnSpinLock* lock)
 			for (uint count = current; count != 0; --count)
 			{
 				intrinsics++;
-				qn_pause();
+				_mm_pause();
 			}
 		}
 		current = current < backoff ? current << 1 : backoff;
@@ -73,7 +68,7 @@ uint qn_spin_enter(QnSpinLock* lock)
 		while (__iso_volatile_load32((int*)lock) != 0)
 		{
 			intrinsics++;
-			qn_pause();
+			_yield();
 		}
 	}
 #else
@@ -81,7 +76,15 @@ uint qn_spin_enter(QnSpinLock* lock)
 	{
 		const uint backoff = 64;
 		if (intrinsics < backoff)
-			qn_pause();
+		{
+#if defined __GNUC__ && (defined __i386__ || defined __amd64__ || defined __x86_64__)
+			__asm__ __volatile__("pause\n")
+#elif defined __GNUC__ && defined __aarch64__
+			__asm__ __volatile__("yield" ::: "memory")
+#else
+			qn_sleep(0);
+#endif
+		}
 		else
 			qn_sleep(0);
 	}
@@ -109,13 +112,8 @@ void qn_spin_leave(QnSpinLock* lock)
 //////////////////////////////////////////////////////////////////////////
 // 스레드
 
-#ifndef MAX_TLS
-#define MAX_TLS	64
-#endif
-
 // 실제 스레드
-typedef struct QnRealThread	QnRealThread;
-struct QnRealThread
+typedef struct QNREALTHREAD
 {
 	QnThread			base;
 
@@ -127,11 +125,11 @@ struct QnRealThread
 #endif
 	void*				tls[MAX_TLS];
 
-	QnRealThread*		next;
-};
+	struct QNREALTHREAD*	next;
+} QnRealThread;
 
 //
-static struct ThreadImpl
+static struct THREADIMPL
 {
 	uint				tls_index;
 	paramfunc_t			tls_callback[MAX_TLS];
@@ -147,7 +145,7 @@ static struct ThreadImpl
 	QnRealThread*		self;
 	QnRealThread*		threads;
 
-#ifndef USE_NO_LOCK
+#ifndef QS_NO_SPINLOCK
 	QnSpinLock			lock;
 #endif
 } thread_impl = { 0, };
@@ -251,7 +249,7 @@ static int _qn_thd_conv_busy(const QnRealThread* self)
 	switch (n)
 	{
 		case THREAD_PRIORITY_IDLE:			return -2;
-		case THREAD_PRIORITY_LOWEST:		QN_FALL_THROUGH;
+		case THREAD_PRIORITY_LOWEST:		FALL_THROUGH;
 		case THREAD_PRIORITY_BELOW_NORMAL:	return -1;
 		case THREAD_PRIORITY_ABOVE_NORMAL:	return 1;
 		case THREAD_PRIORITY_HIGHEST:		return 2;
@@ -429,7 +427,7 @@ QnThread* qn_thread_self(void)
 }
 
 //
-QnThread* qn_thread_new(const char* restrict name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
+QnThread* qn_thread_new(const char* RESTRICT name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
 {
 	QnRealThread* self = qn_alloc_zero_1(QnRealThread);
 
@@ -487,7 +485,7 @@ void qn_thread_delete(QnThread* self)
 }
 
 //
-bool qn_thread_once(const char* restrict name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
+bool qn_thread_once(const char* RESTRICT name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
 {
 	QnRealThread* self = qn_alloc_zero_1(QnRealThread);
 
@@ -532,14 +530,18 @@ static void* _qn_thd_entry(void* data)
 	sigemptyset(&mask);
 	for (size_t i = 0; i < QN_COUNTOF(accept_signals); i++)
 		sigaddset(&mask, accept_signals[i]);
-	pthread_sigmask(SIG_BLOCK, &mask, 0);
+	pthread_sigmask(SIG_BLOCK, &mask, NULL);
 
 	pthread_setspecific(thread_impl.self_tls, self);
 #endif
 	_qn_thd_set_name(self);
 	self->base.cb_ret = self->base.cb_func(self->base.cb_data);
 	_qn_thd_exit(self, false);
+#ifdef _QN_WINDOWS_
 	return 0;
+#else
+	return NULL;
+#endif
 }
 
 //
@@ -653,7 +655,7 @@ QnTls qn_tls(const paramfunc_t callback)
 }
 
 //
-void qn_tlsset(const QnTls tls, void* restrict data)
+void qn_tlsset(const QnTls tls, void* RESTRICT data)
 {
 	const uint nth = (uint)tls;
 	qn_ret_if_fail(nth < (uint)QN_COUNTOF(thread_impl.tls_callback));
@@ -676,7 +678,7 @@ void* qn_tlsget(const QnTls tls)
 //////////////////////////////////////////////////////////////////////////
 // 뮤텍스
 
-struct QnMutex
+struct QNMUTEX
 {
 #ifdef _QN_WINDOWS_
 	CRITICAL_SECTION	cs;
@@ -740,7 +742,7 @@ void qn_mutex_leave(QnMutex* self)
 //////////////////////////////////////////////////////////////////////////
 // 컨디션
 
-struct QnCond
+struct QNCOND
 {
 #ifdef _QN_WINDOWS_
 	CONDITION_VARIABLE	cond;
@@ -752,8 +754,10 @@ struct QnCond
 //
 QnCond* qn_cond_new(void)
 {
+#ifdef _QN_WINDOWS_
+	QnCond* self = qn_alloc_zero_1(QnCond);
+#else
 	QnCond* self = qn_alloc_1(QnCond);
-#ifndef _QN_WINDOWS_
 	//static const pthread_condattr_t s_attr = PTHREAD_COND_INITIALIZER;
 	//pthread_cond_init(&self->cond, &s_attr);
 	pthread_cond_init(&self->cond, NULL);
@@ -855,7 +859,7 @@ void qn_cond_wait(QnCond* self, QnMutex* lock)
 //////////////////////////////////////////////////////////////////////////
 // 세마포어
 
-struct QnSem
+struct QNSEM
 {
 #ifdef _QN_WINDOWS_
 	HANDLE				handle;
@@ -875,7 +879,7 @@ QnSem* qn_sem_new(int initial)
 
 	QnSem* self = qn_alloc_1(QnSem);
 	self->handle = handle;
-	self->count = (nint)initial;
+	self->count = (int)initial;
 #else
 	sem_t sem;
 	if (sem_init(&sem, 0, (uint)initial) < 0)
@@ -905,7 +909,7 @@ void qn_sem_delete(QnSem* self)
 bool qn_sem_wait_for(QnSem* self, uint milliseconds)
 {
 #ifdef _QN_WINDOWS_
-	DWORD dw = WaitForSingleObjectEx(self->handle, milliseconds, FALSE);
+	const DWORD dw = WaitForSingleObjectEx(self->handle, milliseconds, FALSE);
 	if (dw == WAIT_OBJECT_0)
 	{
 		static_assert(sizeof(long) == sizeof(self->count), "Semaphore size not equal to OS interlock");
