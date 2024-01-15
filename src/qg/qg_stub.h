@@ -206,6 +206,7 @@ qs_name_vt(RDHBASE)
 	void (*flush)(void);
 
 	QgBuffer* (*create_buffer)(QgBufType, uint, uint, const void*);
+	QgShader* (*create_shader)(const char*);
 	QgRender* (*create_render)(const QgPropRender*, bool);
 
 	bool (*set_index)(QgBuffer*);

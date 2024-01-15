@@ -636,6 +636,33 @@ void* qn_file_alloc_l(const wchar* RESTRICT filename, int* size)
 	return buf;
 }
 
+//
+size_t qn_get_file_path(const char* filename, char* dest, size_t destsize)
+{
+	qn_val_if_fail(filename != NULL, 0);
+
+	const char* p = filename + strlen(filename) - 1;
+	while (p >= filename && *p != '/' && *p != '\\')
+		p--;
+
+	if (p < filename)
+	{
+		if (dest)
+			dest[0] = '\0';
+		return 0;
+	}
+
+	const size_t len = (p - filename + 1);
+	if (dest)
+	{
+		size_t maxlen = QN_MIN(len, destsize - 1);
+		memcpy(dest, filename, maxlen);
+		dest[maxlen] = '\0';
+		return maxlen;
+	}
+	return len;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // 디렉토리
@@ -827,7 +854,7 @@ const char* qn_dir_read(QnDir* self)
 
 	return ent ? ent->d_name : NULL;
 #endif
-}
+	}
 
 //
 const wchar* qn_dir_read_l(QnDir* self)
@@ -934,7 +961,7 @@ void qn_dir_seek(QnDir* self, const int pos)
 #else
 	seekdir(self->pd, pos);
 #endif
-}
+	}
 
 //
 #if !defined _QN_WINDOWS_ && !defined __EMSCRIPTEN__
@@ -962,7 +989,7 @@ static char* _qn_read_sym_link(const char* path)
 #endif
 
 //
-char* qn_dir_base_path(void)
+char* qn_get_base_path(void)
 {
 	char* path = NULL;
 #ifdef _QN_WINDOWS_
@@ -1023,7 +1050,7 @@ char* qn_dir_base_path(void)
 	}
 	if (path != NULL)
 	{
-		char* p = strrchr(path, '/');
+		char* p = qn_strrchr(path, '/');
 		if (p != NULL)
 			*(p + 1) = '\0';
 		else

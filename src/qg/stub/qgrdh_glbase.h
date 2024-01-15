@@ -5,14 +5,17 @@
 
 //
 typedef struct QGLRDH		QglRdh;
-typedef struct QGLRENDER	QglRender;
 typedef struct QGLBUFFER	QglBuffer;
+typedef struct QGLSHADER	QglShader;
+typedef struct QGLRENDER	QglRender;
 
 #ifndef GL_INVALID_HANDLE
 #define GL_INVALID_HANDLE	(GLuint)(-1)
 #endif
 
 #define QGL_RDH_INSTANCE	((QglRdh*)qg_instance_rdh)
+#define QGL_PENDING()		(&QGL_RDH_INSTANCE->pd)
+#define QGL_SESSION()		(&QGL_RDH_INSTANCE->ss)
 
 // 참조 핸들
 typedef struct QGLREFHANDLE
@@ -79,7 +82,7 @@ typedef struct QGLCAPS
 // 세션 데이터
 typedef struct QGLSESSION
 {
-	struct  
+	struct
 	{
 		GLuint				program;
 		uint				lmask;
@@ -89,9 +92,6 @@ typedef struct QGLSESSION
 	{
 		GLuint				array;
 		GLuint				element_array;
-		GLuint				pixel_pack;	
-		GLuint				pixel_unpack;
-		GLuint				transform_feedback;
 		GLuint				uniform;
 	}					draw;
 
@@ -106,7 +106,7 @@ typedef struct QGLPENDING
 	{
 		QglRender*			pipeline;
 	}					render;
-	struct  
+	struct
 	{
 		QglBuffer*			index_buffer;
 		QglBuffer*			vertex_buffers[QGLOS_MAX_VALUE];
@@ -132,6 +132,32 @@ struct QGLRDH
 	nint				disposed;
 };
 
+// 버퍼
+struct QGLBUFFER
+{
+	QgBuffer			base;
+
+	GLenum				gl_type;
+	GLenum				gl_usage;
+
+	void*				lock_pointer;
+};
+
+// 세이더
+struct QGLSHADER
+{
+	QgShader			base;
+
+	QglRefHandle*		vertex;
+	QglRefHandle*		fragment;
+
+	QglCtnUniform		uniforms;
+	QglCtnAttrib		attrs;
+	uint				attr_mask;
+
+	bool				linked;
+};
+
 // 렌더 파이프라인
 struct QGLRENDER
 {
@@ -146,17 +172,6 @@ struct QGLRENDER
 		uint				attr_mask;
 		bool				lined;
 	}					shader;
-};
-
-// 버퍼
-struct QGLBUFFER
-{
-	QgBuffer			base;
-
-	GLenum				gl_type;
-	GLenum				gl_usage;
-
-	void*				lock_pointer;
 };
 
 // 문자열 버전에서 숫자만 mnn 방식으로
@@ -254,4 +269,12 @@ INLINE void qgl_ref_handle_unload_shader(QglRefHandle* ptr, GLuint handle)
 		glDeleteShader(ptr->handle);
 		qn_free(ptr);
 	}
+}
+
+// 참조 핸들을 복제한다 (세이더용)
+INLINE QglRefHandle* qgl_ref_handle_load_shader(QglRefHandle* ptr, GLuint handle)
+{
+	glAttachShader(handle, ptr->handle);
+	++ptr->ref;
+	return ptr;
 }

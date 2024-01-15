@@ -1892,6 +1892,13 @@ QSAPI size_t qn_file_get_max_alloc_size(void);
 /// @param[in]	n	할당할 크기
 QSAPI void qn_file_set_max_alloc_size(size_t n);
 
+/// @brief 파일 이름에서 경로를 뽑느다
+/// @param filename 대상 파일 이름
+/// @param dest 경로를 넣을 버퍼 (길이를 얻고 싶으면 이 값을 널로 지정)
+/// @param destsize 버퍼의 크기
+/// @return 경로의 길이. 버퍼의 크기보다 길더라도 버퍼의 크기-1 만큼만 반환한다
+QSAPI size_t qn_get_file_path(const char* filename, char* dest, size_t destsize);
+
 // directory
 
 /// @brief 디렉토리를 새로 만든다
@@ -1938,7 +1945,7 @@ QSAPI const wchar_t* qn_dir_read_l(QnDir* self);
 /// @brief 프로그램 기본 패스를 얻는다
 /// @return 기본 패스
 /// @warning 반환 값은 qn_free 함수로 해제해야한다
-QSAPI char* qn_dir_base_path(void);
+QSAPI char* qn_get_base_path(void);
 
 // module
 

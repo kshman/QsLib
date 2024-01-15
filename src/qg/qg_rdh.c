@@ -314,6 +314,25 @@ void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view)
 }
 
 //
+QgBuffer* qg_rdh_create_buffer(QgBufType type, uint count, uint stride, const void* initial_data)
+{
+	qn_val_if_fail(count > 0 && stride > 0, NULL);
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	return qs_cast_vt(rdh, RDHBASE)->create_buffer(type, count, stride, initial_data);
+}
+
+//
+QgShader* qg_rdh_create_shader(const char* name)
+{
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	return qs_cast_vt(rdh, RDHBASE)->create_shader(name);
+}
+
+//
 QgRender* qg_rdh_create_render(const QgPropRender* prop, bool compile_shader)
 {
 	qn_val_if_fail(prop != NULL, NULL);
@@ -355,16 +374,6 @@ QgRender* qg_rdh_create_render(const QgPropRender* prop, bool compile_shader)
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
 	return qs_cast_vt(rdh, RDHBASE)->create_render(prop, compile_shader);
-}
-
-//
-QgBuffer* qg_rdh_create_buffer(QgBufType type, uint count, uint stride, const void* initial_data)
-{
-	qn_val_if_fail(count > 0 && stride > 0, NULL);
-	RdhBase* rdh = qg_instance_rdh;
-	rdh->invokes.creations++;
-	rdh->invokes.invokes++;
-	return qs_cast_vt(rdh, RDHBASE)->create_buffer(type, count, stride, initial_data);
 }
 
 //
@@ -444,26 +453,59 @@ bool qg_rdh_ptr_draw_indexed(QgTopology tpg,
 
 
 //////////////////////////////////////////////////////////////////////////
-// 버퍼
+// 오브젝트
 
 //
-void* qg_buf_map(QgBuffer* self)
+void* qg_buffer_map(QgBuffer* self)
 {
 	qn_val_if_fail(self->mapped == false, NULL);
 	return qs_cast_vt(self, QGBUFFER)->map(self);
 }
 
 //
-bool qg_buf_unmap(QgBuffer* self)
+bool qg_buffer_unmap(QgBuffer* self)
 {
 	qn_val_if_fail(self->mapped != false, false);
 	return qs_cast_vt(self, QGBUFFER)->unmap(self);
 }
 
 //
-bool qg_buf_data(QgBuffer* self, const void* data)
+bool qg_buffer_data(QgBuffer* self, const void* data)
 {
 	qn_val_if_fail(self->mapped == false, false);
 	qn_val_if_fail(data, false);
 	return qs_cast_vt(self, QGBUFFER)->data(self, data);
+}
+
+//
+bool qg_shader_bind(QgShader* self, QgShader* shader)
+{
+	qn_val_if_fail(shader != NULL, false);
+	return qs_cast_vt(self, QGSHADER)->bind_shader(self, shader);
+}
+
+//
+bool qg_shader_bind_buffer(QgShader* self, QgShdType type, const char* basepath, const void* data, uint size, int flags)
+{
+	qn_val_if_fail(QN_TMASK(type, QGSHADER_ALL), false);
+	qn_val_if_fail(data != NULL && size > 0, false);
+	return qs_cast_vt(self, QGSHADER)->bind_buffer(self, type, basepath, data, size, flags);
+}
+
+//
+bool qg_shader_bind_file(QgShader* self, QgShdType type, const char* filename, int flags)
+{
+	qn_val_if_fail(QN_TMASK(type, QGSHADER_ALL), false);
+	qn_val_if_fail(filename != NULL, false);
+
+	int size;
+	void* data = qn_file_alloc(filename, &size);
+	qn_val_if_fail(data != NULL, false);
+
+	char path[QN_MAX_PATH];
+	qn_get_file_path(filename, path, QN_MAX_PATH);
+	bool ret = qs_cast_vt(self, QGSHADER)->bind_buffer(self, type, path, data, (uint)size, flags);
+
+	qn_free(data);
+	return ret;
 }

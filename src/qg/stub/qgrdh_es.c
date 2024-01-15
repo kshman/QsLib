@@ -28,8 +28,11 @@ static void es_flush(void);
 static QgBuffer* es_create_buffer(QgBufType type, uint count, uint stride, const void* initial_data);
 static bool es_set_index(QgBuffer* buffer);
 static bool es_set_vertex(QgLoStage stage, QgBuffer* buffer);
+static QgShader* es_create_shader(const char* name);
+static QgRender* es_create_render(const QgPropRender* prop, bool compile_shader);
 
 static QglBuffer* esbuffer_new(QgBufType type, uint count, uint stride, const void* initial_data);
+static QglShader* esshader_new(const char* name);
 
 qs_name_vt(RDHBASE) vt_es_rdh =
 {
@@ -44,6 +47,8 @@ qs_name_vt(RDHBASE) vt_es_rdh =
 	.flush = es_flush,
 
 	.create_buffer = es_create_buffer,
+	.create_shader = es_create_shader,
+	.create_render = es_create_render,
 
 	.set_index = es_set_index,
 	.set_vertex = es_set_vertex,
@@ -596,9 +601,6 @@ static void es_reset(void)
 	ss->shader.lmask = 0;
 	ss->draw.array = GL_INVALID_HANDLE;
 	ss->draw.element_array = GL_INVALID_HANDLE;
-	ss->draw.pixel_pack = GL_INVALID_HANDLE;
-	ss->draw.pixel_unpack = GL_INVALID_HANDLE;
-	ss->draw.transform_feedback = GL_INVALID_HANDLE;
 	ss->draw.uniform = GL_INVALID_HANDLE;
 	ss->depth = QGDEPTH_LE;
 	ss->stencil = QGSTENCIL_OFF;
@@ -708,52 +710,31 @@ static QgBuffer* es_create_buffer(QgBufType type, uint count, uint stride, const
 }
 
 // 버퍼 바인딩
-static void es_bind_buffer(GLenum gl_type, GLuint gl_id)
+static void es_bind_buffer(QgBufType type, GLuint gl_id)
 {
 	EsRdh* self = ES_RDH_INSTANCE;
-	switch (gl_type)
+	switch (type)
 	{
-		case GL_ARRAY_BUFFER:				// 정점 버퍼
+		case QGBUFFER_VERTEX:				// 정점 버퍼
 			if (self->base.ss.draw.array != gl_id)
 			{
-				glBindBuffer(gl_type, gl_id);
+				glBindBuffer(GL_ARRAY_BUFFER, gl_id);
 				self->base.ss.draw.array = gl_id;
 			}
 			break;
-		case GL_ELEMENT_ARRAY_BUFFER:		// 인덱스 버퍼
+		case QGBUFFER_INDEX:				// 인덱스 버퍼
 			if (self->base.ss.draw.element_array != gl_id)
 			{
-				glBindBuffer(gl_type, gl_id);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_id);
 				self->base.ss.draw.element_array = gl_id;
 			}
 			break;
-		case GL_PIXEL_PACK_BUFFER:			// 픽셀 읽기 버퍼
-			if (self->base.ss.draw.pixel_pack != gl_id)
-			{
-				glBindBuffer(gl_type, gl_id);
-				self->base.ss.draw.pixel_pack = gl_id;
-			}
-			break;
-		case GL_PIXEL_UNPACK_BUFFER:		// 픽셀 쓰기 버퍼
-			if (self->base.ss.draw.pixel_unpack != gl_id)
-			{
-				glBindBuffer(gl_type, gl_id);
-				self->base.ss.draw.pixel_unpack = gl_id;
-			}
-		case GL_TRANSFORM_FEEDBACK_BUFFER:	// 트랜스폼 피드백 버퍼(머지?)
-			if (self->base.ss.draw.transform_feedback != gl_id)
-			{
-				glBindBuffer(gl_type, gl_id);
-				self->base.ss.draw.transform_feedback = gl_id;
-			}
-			break;
-		case GL_UNIFORM_BUFFER:				// 유니폼 버퍼
+		case QGBUFFER_CONSTANT:				// 유니폼(상수) 버퍼
 			if (self->base.ss.draw.uniform != gl_id)
 			{
-				glBindBuffer(gl_type, gl_id);
+				glBindBuffer(GL_UNIFORM_BUFFER, gl_id);
 				self->base.ss.draw.uniform = gl_id;
 			}
-			break;
 		default:
 			break;
 	}
@@ -813,6 +794,22 @@ static bool es_set_vertex(QgLoStage stage, QgBuffer* buffer)
 	return true;
 }
 
+// 세이더 만들기
+static QgShader* es_create_shader(const char* name)
+{
+	QglShader* shader = esshader_new(name);
+	// 관리할게 있다면 하고
+	return qs_cast_type(shader, QgShader);
+}
+
+// 렌더 만들기
+static QgRender* es_create_render(const QgPropRender* prop, bool compile_shader)
+{
+	QN_DUMMY(prop);
+	QN_DUMMY(compile_shader);
+	return NULL;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // ES 버퍼
@@ -850,7 +847,7 @@ static void* esbuffer_map(QgBuffer* g)
 	else
 	{
 		// ES3
-		es_bind_buffer(self->gl_type, qs_get_desc(self, GLuint));
+		es_bind_buffer(self->base.type, qs_get_desc(self, GLuint));
 		self->lock_pointer = glMapBufferRange(self->gl_type, 0, self->base.size,
 			GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 		return self->lock_pointer;
@@ -866,7 +863,7 @@ static bool esbuffer_unmap(QgBuffer* g)
 	QglBuffer* self = qs_cast_type(g, QglBuffer);
 	qn_assert(self->lock_pointer != NULL, "버퍼가 안 잠겼는데요!");
 
-	es_bind_buffer(self->gl_type, qs_get_desc(self, GLuint));
+	es_bind_buffer(self->base.type, qs_get_desc(self, GLuint));
 
 	if (rdh_info()->renderer_version >= 300)
 		glUnmapBuffer(self->gl_type);
@@ -886,7 +883,7 @@ static bool esbuffer_data(QgBuffer* g, const void* data)
 	QglBuffer* self = qs_cast_type(g, QglBuffer);
 	qn_val_if_fail(self->gl_usage == GL_DYNAMIC_DRAW, false);
 
-	es_bind_buffer(self->gl_type, qs_get_desc(self, GLuint));
+	es_bind_buffer(self->base.type, qs_get_desc(self, GLuint));
 	glBufferSubData(self->gl_type, 0, self->base.size, data);
 
 	return true;
@@ -906,7 +903,7 @@ static QglBuffer* esbuffer_new(QgBufType type, uint count, uint stride, const vo
 	GLuint gl_id;
 	glGenBuffers(1, &gl_id);
 	qn_val_if_fail(gl_id != 0, NULL);
-	es_bind_buffer(gl_type, gl_id);		// 여기까지 만들고 바인드
+	es_bind_buffer(type, gl_id);		// 여기까지 만들고 바인드
 
 	GLsizeiptr gl_size = (GLsizeiptr)count * stride;
 	GLenum gl_usage = initial_data != NULL ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
@@ -934,5 +931,145 @@ static QglBuffer* esbuffer_new(QgBufType type, uint count, uint stride, const vo
 	};
 	return qs_init(self, QglBuffer, &vt_es_buffer);
 }
+
+
+//////////////////////////////////////////////////////////////////////////
+// 세이더
+
+//
+static void esshader_dispose(QsGam* g)
+{
+	QglShader* self = qs_cast_type(g, QglShader);
+	GLuint handle = qs_get_desc(self, GLuint);
+
+	qgl_ref_handle_unload_shader(self->vertex, handle);
+	qgl_ref_handle_unload_shader(self->fragment, handle);
+	glDeleteProgram(handle);
+
+	qn_ctnr_disp(&self->uniforms);
+	qn_ctnr_disp(&self->attrs);
+
+	qn_free(self);
+}
+
+//
+static QglRefHandle* esshader_compile(GLenum gl_type, const char* src, GLint gl_len)
+{
+	// http://msdn.microsoft.com/ko-kr/library/windows/apps/dn166905.aspx
+	GLuint gl_shader = glCreateShader(gl_type);
+	qn_val_if_fail(gl_shader != 0, NULL);
+
+	glShaderSource(gl_shader, 1, &src, gl_len == 0 ? NULL : &gl_len);
+	glCompileShader(gl_shader);
+
+	if (qgl_get_shader_iv(gl_shader, GL_COMPILE_STATUS) == GL_FALSE)
+	{
+		const char* type = gl_type == GL_VERTEX_SHADER ? "vertex" : gl_type == GL_FRAGMENT_SHADER ? "fragment" : "unknown";
+		GLint gl_log_len = qgl_get_shader_iv(gl_shader, GL_INFO_LOG_LENGTH);
+		if (gl_log_len <= 0)
+			qn_debug_outputf(true, "ESSHADER", "failed to compile %s shader", type);
+		else
+		{
+			GLchar* gl_log = qn_alloc(gl_log_len, GLchar);
+			glGetShaderInfoLog(gl_shader, gl_log_len, NULL, gl_log);
+			qn_debug_outputf(true, "ESSHADER", "failed to compile %s shader: %s", type, gl_log);
+			qn_free(gl_log);
+		}
+		return NULL;
+	}
+
+	return qgl_ref_handle_new(gl_shader);
+}
+
+//
+static bool esshader_bind_shader(QgShader* g, QgShader* shaderptr)
+{
+	QglShader* shader = qs_cast_type(shaderptr, QglShader);
+	qn_val_if_fail(shader->vertex != NULL && shader->fragment != NULL, false);
+
+	QglShader* self = qs_cast_type(g, QglShader);
+	GLuint handle = qs_get_desc(self, GLuint);
+
+	qgl_ref_handle_unload_shader(self->vertex, handle);
+	self->vertex = qgl_ref_handle_load_shader(shader->vertex, handle);
+
+	qgl_ref_handle_unload_shader(self->fragment, handle);
+	self->fragment = qgl_ref_handle_load_shader(shader->fragment, handle);
+
+	self->linked = false;
+	return true;
+}
+
+//
+static bool esshader_bind_buffer(QgShader* g, QgShdType type, const char* basepath, const void* data, uint size, int flags)
+{
+	QN_DUMMY(basepath);
+	QN_DUMMY(flags);
+	// TODO: 매크로
+	// TODO: 포함
+	// TODO: 플래그
+	// TODO: 보관 (이건 바인드가 아니고 전체)
+	QglShader* self = qs_cast_type(g, QglShader);
+	GLuint handle = qs_get_desc(self, GLuint);
+
+	if (type == QGSHADER_VS)
+	{
+		qgl_ref_handle_unload_shader(self->vertex, handle);
+		self->vertex = esshader_compile(GL_VERTEX_SHADER, (const char*)data, (GLint)size);
+		if (self->vertex == NULL)
+			return false;
+		glAttachShader(handle, self->vertex->handle);
+	}
+	else if (type == QGSHADER_PS)
+	{
+		qgl_ref_handle_unload_shader(self->fragment, handle);
+		self->fragment = esshader_compile(GL_FRAGMENT_SHADER, (const char*)data, (GLint)size);
+		if (self->fragment == NULL)
+			return false;
+		glAttachShader(handle, self->fragment->handle);
+	}
+	else
+	{
+		// 뭥미
+		return false;
+	}
+
+	self->linked = false;
+	return true;
+}
+
+//
+static QglShader* esshader_new(const char* name)
+{
+	QglShader* self = qn_alloc_zero_1(QglShader);
+	qs_set_desc(self, glCreateProgram());
+
+	if (name != NULL)
+		qn_strncpy(self->base.name, name, QN_COUNTOF(self->base.name)-1);
+	else
+	{
+		size_t n = qn_p_index();
+		qn_snprintf(self->base.name, QN_COUNTOF(self->base.name), "SHADER%zu", n);
+	}
+
+	static qs_name_vt(QGSHADER) vt_es_shader =
+	{
+		.base.name = "ESSHADER",
+		.base.dispose = esshader_dispose,
+
+		.bind_shader = esshader_bind_shader,
+		.bind_buffer = esshader_bind_buffer,
+	};
+	return qs_init(self, QglShader, &vt_es_shader);
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// 렌더러
+
+//static QglRender* esrender_new(const QgPropRender* prop, bool compile_shader)
+//{
+//	return NULL;
+//}
 
 #endif // USE_ES
