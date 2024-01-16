@@ -103,6 +103,90 @@ const char* qg_qic_str(const QicButton button)
 #endif
 }
 
+//
+const char* qg_event_str(const QgEventType ev)
+{
+	static struct EventMap
+	{
+		nuint			ev;
+		const char*		str;
+	}
+	event_map[] =
+	{
+#define DEF_EVENT(ev) { QGEV_##ev, #ev }
+		DEF_EVENT(NONE),
+		DEF_EVENT(SYSWM),
+		DEF_EVENT(ACTIVE),
+		DEF_EVENT(LAYOUT),
+		DEF_EVENT(ENTER),
+		DEF_EVENT(LEAVE),
+		DEF_EVENT(MOUSEMOVE),
+		DEF_EVENT(MOUSEDOWN),
+		DEF_EVENT(MOUSEUP),
+		DEF_EVENT(MOUSEWHEEL),
+		DEF_EVENT(MOUSEDOUBLE),
+		DEF_EVENT(KEYDOWN),
+		DEF_EVENT(KEYUP),
+		DEF_EVENT(TEXTINPUT),
+		DEF_EVENT(WINDOW),
+		DEF_EVENT(DROPBEGIN),
+		DEF_EVENT(DROPEND),
+		DEF_EVENT(DROPFILE),
+		DEF_EVENT(MONITOR),
+		DEF_EVENT(EXIT),
+		{ 0, NULL },
+#undef DEF_EVENT
+	};
+	for (const struct EventMap* p = event_map; p->str != NULL; p++)
+	{
+		if (p->ev == (nuint)ev)
+			return p->str;
+	}
+	static char unknown_text[32];
+	qn_snprintf(unknown_text, 32 - 1, "UNKNOWN(%d)", ev);
+	return unknown_text;
+}
+
+//
+const char* qg_window_event_str(const QgWindowEventType wev)
+{
+	static struct WindowEventMap
+	{
+		nuint				wev;
+		const char*			str;
+	}
+	window_event_map[] =
+	{
+#define DEF_WINDOW_EVENT(ev) { QGWEV_##ev, #ev }
+		DEF_WINDOW_EVENT(NONE),
+		DEF_WINDOW_EVENT(SHOW),
+		DEF_WINDOW_EVENT(HIDE),
+		DEF_WINDOW_EVENT(PAINTED),
+		DEF_WINDOW_EVENT(RESTORED),
+		DEF_WINDOW_EVENT(MAXIMIZED),
+		DEF_WINDOW_EVENT(MINIMIZED),
+		DEF_WINDOW_EVENT(MOVED),
+		DEF_WINDOW_EVENT(SIZED),
+		DEF_WINDOW_EVENT(FOCUS),
+		DEF_WINDOW_EVENT(LOSTFOCUS),
+		DEF_WINDOW_EVENT(CLOSE),
+		{ 0, NULL },
+#undef DEF_WINDOW_EVENT
+	};
+	for (const struct WindowEventMap* p = window_event_map; p->str != NULL; p++)
+	{
+		if (p->wev == (nuint)wev)
+			return p->str;
+	}
+	static char unknown_text[32];
+	qn_snprintf(unknown_text, 32 - 1, "UNKNOWN(%d)", wev);
+	return unknown_text;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// 내부 사용 용도
+
 #ifdef USE_SDL2
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_mouse.h>
@@ -360,92 +444,8 @@ QikKey xkbsym_to_qik(uint32_t sym)
 }
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////
-// stub
-
 //
-const char* qg_string_event(const QgEventType ev)
-{
-	static struct EventMap
-	{
-		nuint			ev;
-		const char*		str;
-	}
-	event_map[] =
-	{
-#define DEF_EVENT(ev) { QGEV_##ev, #ev }
-		DEF_EVENT(NONE),
-		DEF_EVENT(SYSWM),
-		DEF_EVENT(ACTIVE),
-		DEF_EVENT(LAYOUT),
-		DEF_EVENT(ENTER),
-		DEF_EVENT(LEAVE),
-		DEF_EVENT(MOUSEMOVE),
-		DEF_EVENT(MOUSEDOWN),
-		DEF_EVENT(MOUSEUP),
-		DEF_EVENT(MOUSEWHEEL),
-		DEF_EVENT(MOUSEDOUBLE),
-		DEF_EVENT(KEYDOWN),
-		DEF_EVENT(KEYUP),
-		DEF_EVENT(TEXTINPUT),
-		DEF_EVENT(WINDOW),
-		DEF_EVENT(DROPBEGIN),
-		DEF_EVENT(DROPEND),
-		DEF_EVENT(DROPFILE),
-		DEF_EVENT(MONITOR),
-		DEF_EVENT(EXIT),
-		{ 0, NULL },
-#undef DEF_EVENT
-	};
-	for (const struct EventMap* p = event_map; p->str != NULL; p++)
-	{
-		if (p->ev == (nuint)ev)
-			return p->str;
-	}
-	static char unknown_text[32];
-	qn_snprintf(unknown_text, 32 - 1, "UNKNOWN(%d)", ev);
-	return unknown_text;
-}
-
-//
-const char* qg_string_window_event(const QgWindowEventType wev)
-{
-	static struct WindowEventMap
-	{
-		nuint				wev;
-		const char*			str;
-	}
-	window_event_map[] =
-	{
-#define DEF_WINDOW_EVENT(ev) { QGWEV_##ev, #ev }
-		DEF_WINDOW_EVENT(NONE),
-		DEF_WINDOW_EVENT(SHOW),
-		DEF_WINDOW_EVENT(HIDE),
-		DEF_WINDOW_EVENT(PAINTED),
-		DEF_WINDOW_EVENT(RESTORED),
-		DEF_WINDOW_EVENT(MAXIMIZED),
-		DEF_WINDOW_EVENT(MINIMIZED),
-		DEF_WINDOW_EVENT(MOVED),
-		DEF_WINDOW_EVENT(SIZED),
-		DEF_WINDOW_EVENT(FOCUS),
-		DEF_WINDOW_EVENT(LOSTFOCUS),
-		DEF_WINDOW_EVENT(CLOSE),
-		{ 0, NULL },
-#undef DEF_WINDOW_EVENT
-	};
-	for (const struct WindowEventMap* p = window_event_map; p->str != NULL; p++)
-	{
-		if (p->wev == (nuint)wev)
-			return p->str;
-	}
-	static char unknown_text[32];
-	qn_snprintf(unknown_text, 32 - 1, "UNKNOWN(%d)", wev);
-	return unknown_text;
-}
-
-//
-QgClrFmt qg_clrfmt_from_size(int red, int green, int blue, int alpha, bool is_float)
+QgClrFmt qg_rgba_to_clrfmt(int red, int green, int blue, int alpha, bool is_float)
 {
 	if (red == 8)
 	{
@@ -476,4 +476,121 @@ QgClrFmt qg_clrfmt_from_size(int red, int green, int blue, int alpha, bool is_fl
 			return QGCF32F_R;
 	}
 	return QGCF_NONE;
+}
+
+//
+static struct QGLOUSAGEMAP
+{
+	QgLoUsage		usage;
+	const char*		name;
+	size_t			hash;
+} QgLoUsageMap[] =
+{
+	{ QGLOU_POSITION,	"aposition",	0 },
+	{ QGLOU_COORD1,		"atexcoord",	0 },
+	{ QGLOU_COORD1,		"atexcoord1",	0 },
+	{ QGLOU_COORD2,		"atexcoord2",	0 },
+	{ QGLOU_COORD3,		"atexcoord3",	0 },
+	{ QGLOU_COORD4,		"atexcoord4",	0 },
+	{ QGLOU_NORMAL1,	"anormal",		0 },
+	{ QGLOU_NORMAL1,	"anormal1",		0 },
+	{ QGLOU_NORMAL2,	"anormal2",		0 },
+	{ QGLOU_NORMAL3,	"anormal3",		0 },
+	{ QGLOU_NORMAL4,	"anormal4",		0 },
+	{ QGLOU_BINORMAL1,	"abinormal",	0 },
+	{ QGLOU_BINORMAL1,	"abinormal1",	0 },
+	{ QGLOU_BINORMAL2,	"abinormal2",	0 },
+	{ QGLOU_TANGENT1,	"atangent",		0 },
+	{ QGLOU_TANGENT1,	"atangent1",	0 },
+	{ QGLOU_TANGENT2,	"atangent2",	0 },
+	{ QGLOU_COLOR1,		"acolor",		0 },
+	{ QGLOU_COLOR1,		"acolor1",		0 },
+	{ QGLOU_COLOR2,		"acolor2",		0 },
+	{ QGLOU_COLOR3,		"acolor3",		0 },
+	{ QGLOU_COLOR4,		"acolor4",		0 },
+	{ QGLOU_COLOR5,		"acolor5",		0 },
+	{ QGLOU_COLOR6,		"acolor6",		0 },
+	{ QGLOU_BLEND_WEIGHT,"aweight",		0 },
+	{ QGLOU_BLEND_INDEX, "aindex",		0 },
+	{ QGLOU_BLEND_EXTRA, "aextra",		0 },
+	{ QGLOU_BLEND_EXTRA, "aindexextra",	0 },
+	{ QGLOU_INVALID,	NULL,			0 },
+};
+
+//
+static struct QGSHADERCONSTAUTOMAP
+{
+	QgScAuto		value;
+	const char*		name;
+	size_t			hash;
+} QgScAutoMap[] =
+{
+	{ QGSCA_ORTHO_PROJ,		"orthoproj",	0 },
+	{ QGSCA_WORLD,			"world",		0 },
+	{ QGSCA_VIEW,			"view",			0 },
+	{ QGSCA_PROJ,			"proj",			0 },
+	{ QGSCA_VIEW_PROJ,		"viewproj",		0 },
+	{ QGSCA_INV_VIEW,		"invview",		0 },
+	{ QGSCA_WORLD_VIEW_PROJ,"worldviewproj", 0 },
+	{ QGSCA_TEX1,			"texture",		0 },
+	{ QGSCA_TEX1,			"texture1",		0 },
+	{ QGSCA_TEX2,			"texture2",		0 },
+	{ QGSCA_TEX3,			"texture3",		0 },
+	{ QGSCA_TEX4,			"texture4",		0 },
+	{ QGSCA_TEX5,			"texture5",		0 },
+	{ QGSCA_TEX6,			"texture6",		0 },
+	{ QGSCA_TEX7,			"texture7",		0 },
+	{ QGSCA_TEX8,			"texture8",		0 },
+	{ QGSCA_PROP_VEC1,		"propvec",		0 },
+	{ QGSCA_PROP_VEC1,		"propvec1",		0 },
+	{ QGSCA_PROP_VEC2,		"propvec2",		0 },
+	{ QGSCA_PROP_VEC3,		"propvec3",		0 },
+	{ QGSCA_PROP_VEC4,		"propvec4",		0 },
+	{ QGSCA_PROP_MAT1,		"propmat",		0 },
+	{ QGSCA_PROP_MAT1,		"propmat1",		0 },
+	{ QGSCA_PROP_MAT2,		"propmat2",		0 },
+	{ QGSCA_PROP_MAT3,		"propmat3",		0 },
+	{ QGSCA_PROP_MAT4,		"propmat4",		0 },
+	{ QGSCA_MAT_PALETTE,	"matpalette",	0 },
+	// 별명
+	{ QGSCA_TEX1,			"tex",			0 },
+	{ QGSCA_TEX1,			"tex1",			0 },
+	{ QGSCA_TEX2,			"tex2",			0 },
+	{ QGSCA_TEX3,			"tex3",			0 },
+	{ QGSCA_TEX4,			"tex4",			0 },
+	{ QGSCA_TEX5,			"tex5",			0 },
+	{ QGSCA_TEX6,			"tex6",			0 },
+	{ QGSCA_TEX7,			"tex7",			0 },
+	{ QGSCA_TEX8,			"tex8",			0 },
+};
+
+//
+void qg_init_enum_convs(void)
+{
+	for (size_t i = 0; i < QN_COUNTOF(QgLoUsageMap); i++)
+		QgLoUsageMap[i].hash = qn_strhash(QgLoUsageMap[i].name);
+	for (size_t i = 0; i < QN_COUNTOF(QgScAutoMap); i++)
+		QgScAutoMap[i].hash = qn_strhash(QgScAutoMap[i].name);
+}
+
+//
+QgLoUsage qg_str_to_layout_usage(size_t hash, const char* name)
+{
+	for (size_t i = 0; i < QN_COUNTOF(QgLoUsageMap); i++)
+	{
+		if (hash == QgLoUsageMap[i].hash && qn_stricmp(name, QgLoUsageMap[i].name))
+			return QgLoUsageMap[i].usage;
+	}
+	return QGLOU_INVALID;
+}
+
+//
+QgScAuto qg_str_to_shader_const_auto(size_t hash, const char* name)
+{
+	for (size_t i = 0; i < QN_COUNTOF(QgScAutoMap); i++)
+	{
+		if (hash == QgScAutoMap[i].hash && qn_stricmp(name, QgScAutoMap[i].name))
+			return QgScAutoMap[i].value;
+	}
+	return QGSCA_INVALID;
 }

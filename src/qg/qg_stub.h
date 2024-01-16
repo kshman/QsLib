@@ -129,12 +129,12 @@ typedef struct RENDERERINFO
 	char				vendor[64];							// 디바이스 제조사
 	int					renderer_version;					// 렌더러 버전
 	int					shader_version;						// 세이더 버전
-	int					max_layout_count;					// 최대 레이아웃(=정점 속성) 갯수
-	int					max_indices;						// 최대 인덱스 갯수
-	int					max_vertices;						// 최대 정점 갯수
-	int					max_tex_dim;						// 최대 텍스쳐 크기
-	int					max_tex_count;						// 최대 텍스쳐 갯수
-	int					max_off_count;						// 최대 오프 텍스쳐(=렌더타겟/프레임버퍼) 갯수
+	uint				max_layout_count;					// 최대 레이아웃(=정점 속성) 갯수
+	uint				max_indices;						// 최대 인덱스 갯수
+	uint				max_vertices;						// 최대 정점 갯수
+	uint				max_tex_dim;						// 최대 텍스쳐 크기
+	uint				max_tex_count;						// 최대 텍스쳐 갯수
+	uint				max_off_count;						// 최대 오프 텍스쳐(=렌더타겟/프레임버퍼) 갯수
 	QgClrFmt			clr_fmt;							// 색깔 포맷
 } RendererInfo;
 
@@ -205,18 +205,16 @@ qs_name_vt(RDHBASE)
 	void (*end)(void);
 	void (*flush)(void);
 
-	QgBuffer* (*create_buffer)(QgBufType, uint, uint, const void*);
+	QgBuffer* (*create_buffer)(QgBufferType, uint, uint, const void*);
 	QgShader* (*create_shader)(const char*);
-	QgRender* (*create_render)(const QgPropRender*, bool);
+	QgRender* (*create_render)(const QgPropRender*);
 
 	bool (*set_index)(QgBuffer*);
 	bool (*set_vertex)(QgLoStage, QgBuffer*);
-	void (*set_render)(QgRender*);
+	bool (*set_render)(QgRender*);
 
 	bool (*draw)(QgTopology, int);
 	bool (*draw_indexed)(QgTopology, int);
-	bool (*ptr_draw)(QgTopology, int, int, const void*);
-	bool (*ptr_draw_indexed)(QgTopology, int, int, const void*, int, int, const void*);
 };
 
 // 렌더 디바이스
@@ -236,13 +234,20 @@ extern void rdh_internal_invoke_reset(void);
 // 레이아웃 검사
 extern void rdh_internal_check_layout(void);
 
-#define rdh_info()			(&qs_cast_type(qg_instance_rdh, RdhBase)->info)
-#define rdh_transform()		(&qs_cast_type(qg_instance_rdh, RdhBase)->tm)
-#define rdh_param()			(&qs_cast_type(qg_instance_rdh, RdhBase)->param)
-#define rdh_invokes()		(&qs_cast_type(qg_instance_rdh, RdhBase)->invokes)
+#define RDH_INFO			(&qg_instance_rdh->info)
+#define RDH_TRANSFORM		(&qg_instance_rdh->tm)
+#define RDH_PARAM			(&qg_instance_rdh->param)
+#define RDH_INVOKES			(&qg_instance_rdh->invokes)
 
-#define rdh_set_flush(v)	(qs_cast_type(qg_instance_rdh, RdhBase)->invokes.flush=(v))
-#define rdh_inc_ends()		(qs_cast_type(qg_instance_rdh, RdhBase)->invokes.ends++)
+#define rdh_set_flush(v)	(qg_instance_rdh->invokes.flush=(v))
+#define rdh_inc_ends()		(qg_instance_rdh->invokes.ends++)
+
 
 // 색깔 변환
-extern QgClrFmt qg_clrfmt_from_size(int red, int green, int blue, int alpha, bool is_float);
+extern QgClrFmt qg_rgba_to_clrfmt(int red, int green, int blue, int alpha, bool is_float);
+// 열거자 컨버터 초기화
+extern void qg_init_enum_convs(void);
+// LAYOUT USAGE 변환
+extern QgLoUsage qg_str_to_layout_usage(size_t hash, const char* name);
+// 세이더 자동 상수 변환
+QgScAuto qg_str_to_shader_const_auto(size_t hash, const char* name);
