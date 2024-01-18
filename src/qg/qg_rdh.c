@@ -55,7 +55,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	else
 	{
 		qg_open_stub(title, display, width, height, flags | QGSPECIFIC_RDHSTUB, features);
-		qn_val_if_fail(qg_instance_stub, false);
+		qn_val_if_fail(qg_instance_stub != NULL, false);
 		stub_created = true;
 	}
 
@@ -197,7 +197,7 @@ void qg_rdh_flush(void)
 	RdhBase* rdh = qg_instance_rdh;
 	if (!rdh->invokes.flush)
 	{
-		qn_debug_outputs(true, "RDH", "use end before flush");
+		qn_debug_outputs(true, "RDH", "call end() before flush");
 		qg_rdh_end();
 	}
 	qs_cast_vt(rdh, RDHBASE)->flush();
@@ -318,7 +318,32 @@ void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view)
 //
 QgBuffer* qg_rdh_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data)
 {
-	qn_val_if_fail(count > 0 && stride > 0, NULL);
+	if (count == 0)
+	{
+		qn_debug_outputf(true, "RDH", "invalid buffer count: %d", count);
+		return NULL;
+	}
+	if (type == QGBUFFER_INDEX)
+	{
+		if (stride != 2 && stride != 4)
+		{
+			qn_debug_outputf(true, "RDH", "invalid index buffer stride: %d, require 2 or 4", stride);
+			return NULL;
+		}
+	}
+	else if (type == QGBUFFER_VERTEX)
+	{
+		if (stride < 4)
+		{
+			qn_debug_outputf(true, "RDH", "invalid vertex buffer stride: %d, require 4 or more", stride);
+			return NULL;
+		}
+	}
+	else
+	{
+		qn_debug_outputf(true, "RDH", "invalid buffer type: %d", type);
+		return NULL;
+	}
 	RdhBase* rdh = qg_instance_rdh;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
@@ -335,10 +360,46 @@ QgShader* qg_rdh_create_shader(const char* name)
 }
 
 //
+QgShader* qg_rdh_create_shader_buffer(const char* name, const QgShaderCode* vs, const QgShaderCode* ps, QgScFlag flags)
+{
+	if (vs == NULL || ps == NULL)
+	{
+		qn_debug_outputf(true, "RDH", "shader source is null");
+		return NULL;
+	}
+	if (vs->size == 0 || ps->size == 0)
+	{
+		qn_debug_outputf(true, "RDH", "shader code size is zero");
+		return NULL;
+	}
+	if (vs->code == NULL || ps->code == NULL)
+	{
+		qn_debug_outputf(true, "RDH", "shader code is empty");
+		return NULL;
+	}
+	QgShader* shader = qg_rdh_create_shader(name);
+	if (qs_cast_vt(shader, QGSHADER)->bind_buffer(shader, QGSHADER_VS, vs->code, vs->size, flags) == false ||
+		qs_cast_vt(shader, QGSHADER)->bind_buffer(shader, QGSHADER_VS, ps->code, ps->size, flags) == false)
+	{
+		qs_unload(shader);
+		return NULL;
+	}
+	return shader;
+}
+
+//
 QgRender* qg_rdh_create_render(const QgPropRender* prop, QgShader* shader)
 {
-	qn_val_if_fail(prop != NULL, NULL);
-	qn_val_if_fail(shader != NULL, NULL);
+	if (prop == NULL)
+	{
+		qn_debug_outputf(true, "RDH", "pipeline property is empty");
+		return NULL;
+	}
+	if (shader == NULL)
+	{
+		qn_debug_outputf(true, "RDH", "pipeline shader is empty");
+		return NULL;
+	}
 
 #define RDH_CHK_NULL(sec,item)				if (prop->sec.item == NULL)\
 		{ qn_debug_outputf(true, "RDH", "'%s.%s' has no data", #sec, #item); return NULL; } (void)NULL
@@ -373,12 +434,22 @@ QgRender* qg_rdh_create_render(const QgPropRender* prop, QgShader* shader)
 	RdhBase* rdh = qg_instance_rdh;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qs_cast_vt(rdh, RDHBASE)->create_render(prop);
+	return qs_cast_vt(rdh, RDHBASE)->create_render(prop, shader);
 }
 
 //
 bool qg_rdh_set_index(QgBuffer* buffer)
 {
+	if (buffer == NULL)
+	{
+		qn_debug_outputs(true, "RDH", "cannot set empty index buffer");
+		return false;
+	}
+	if (buffer->type != QGBUFFER_INDEX)
+	{
+		qn_debug_outputs(true, "RDH", "cannot set non-index buffer as index buffer");
+		return false;
+	}
 	RdhBase* rdh = qg_instance_rdh;
 	rdh->invokes.invokes++;
 	return qs_cast_vt(rdh, RDHBASE)->set_index(buffer);
@@ -387,7 +458,21 @@ bool qg_rdh_set_index(QgBuffer* buffer)
 //
 bool qg_rdh_set_vertex(QgLoStage stage, QgBuffer* buffer)
 {
-	qn_val_if_fail((size_t)stage < QGLOS_MAX_VALUE, false);
+	if (buffer == NULL)
+	{
+		qn_debug_outputs(true, "RDH", "cannot set empty vertex buffer");
+		return false;
+	}
+	if (buffer->type != QGBUFFER_VERTEX)
+	{
+		qn_debug_outputs(true, "RDH", "cannot set non-vertex buffer as vertex buffer");
+		return false;
+	}
+	if ((size_t)stage >= QGLOS_MAX_VALUE)
+	{
+		qn_debug_outputf(true, "RDH", "invalid vertex layout stage: %d (max: %d)", stage, QGLOS_MAX_VALUE - 1);
+		return false;
+	}
 	RdhBase* rdh = qg_instance_rdh;
 	rdh->invokes.invokes++;
 	return qs_cast_vt(rdh, RDHBASE)->set_vertex(stage, buffer);
@@ -396,6 +481,11 @@ bool qg_rdh_set_vertex(QgLoStage stage, QgBuffer* buffer)
 //
 bool qg_rdh_set_render(QgRender* render)
 {
+	if (render == NULL)
+	{
+		qn_debug_outputs(true, "RDH", "cannot set empty render");
+		return false;
+	}
 	RdhBase* rdh = qg_instance_rdh;
 	rdh->invokes.invokes++;
 	return qs_cast_vt(rdh, RDHBASE)->set_render(render);
@@ -404,8 +494,16 @@ bool qg_rdh_set_render(QgRender* render)
 //
 bool qg_rdh_draw(QgTopology tpg, int vertices)
 {
-	qn_val_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_val_if_fail(vertices > 0, false);
+	if ((size_t)tpg >= QGTPG_MAX_VALUE)
+	{
+		qn_debug_outputf(true, "RDH", "invalid topology: %d", tpg);
+		return false;
+	}
+	if (vertices <= 0)
+	{
+		qn_debug_outputf(true, "RDH", "invalid vertices: %d", vertices);
+		return false;
+	}
 	RdhBase* rdh = qg_instance_rdh;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
@@ -415,8 +513,16 @@ bool qg_rdh_draw(QgTopology tpg, int vertices)
 //
 bool qg_rdh_draw_indexed(QgTopology tpg, int indices)
 {
-	qn_val_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_val_if_fail(indices > 0, false);
+	if ((size_t)tpg >= QGTPG_MAX_VALUE)
+	{
+		qn_debug_outputf(true, "RDH", "invalid topology: %d", tpg);
+		return false;
+	}
+	if (indices <= 0)
+	{
+		qn_debug_outputf(true, "RDH", "invalid indices: %d", indices);
+		return false;
+	}
 	RdhBase* rdh = qg_instance_rdh;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
@@ -457,11 +563,11 @@ bool qg_shader_bind(QgShader* self, QgShader* shader)
 }
 
 //
-bool qg_shader_bind_buffer(QgShader* self, QgShaderType type, const void* data, uint size, int flags)
+bool qg_shader_bind_buffer(QgShader* self, QgShaderType type, const QgShaderCode* code, QgScFlag flags)
 {
 	qn_val_if_fail(QN_TMASK(type, QGSHADER_ALL), false);
-	qn_val_if_fail(data != NULL && size > 0, false);
-	return qs_cast_vt(self, QGSHADER)->bind_buffer(self, type, data, size, flags);
+	qn_val_if_fail(code != NULL && code->code != NULL && code->size > 0, false);
+	return qs_cast_vt(self, QGSHADER)->bind_buffer(self, type, code->code, code->size, flags);
 }
 
 //

@@ -207,7 +207,7 @@ qs_name_vt(RDHBASE)
 
 	QgBuffer* (*create_buffer)(QgBufferType, uint, uint, const void*);
 	QgShader* (*create_shader)(const char*);
-	QgRender* (*create_render)(const QgPropRender*);
+	QgRender* (*create_render)(const QgPropRender*, QgShader*);
 
 	bool (*set_index)(QgBuffer*);
 	bool (*set_vertex)(QgLoStage, QgBuffer*);

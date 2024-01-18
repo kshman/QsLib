@@ -36,7 +36,7 @@ bool qg_qik_usable(const QikKey key)
 }
 
 //
-const char* qg_qik_str(const QikKey key)
+const char* qg_qik_to_str(const QikKey key)
 {
 	static const char* key_names[] =
 	{
@@ -61,7 +61,7 @@ const char* qg_qik_str(const QikKey key)
 }
 
 //
-const char* qg_qim_str(const QimButton button)
+const char* qg_qim_to_str(const QimButton button)
 {
 	static const char* mouse_button_names[] =
 	{
@@ -76,7 +76,7 @@ const char* qg_qim_str(const QimButton button)
 }
 
 //
-const char* qg_qic_str(const QicButton button)
+const char* qg_qic_to_str(const QicButton button)
 {
 #ifndef __EMSCRIPTEN__
 	static const char* controller_button_names[] =
@@ -104,7 +104,7 @@ const char* qg_qic_str(const QicButton button)
 }
 
 //
-const char* qg_event_str(const QgEventType ev)
+const char* qg_event_to_str(const QgEventType ev)
 {
 	static struct EventMap
 	{
@@ -148,7 +148,7 @@ const char* qg_event_str(const QgEventType ev)
 }
 
 //
-const char* qg_window_event_str(const QgWindowEventType wev)
+const char* qg_window_event_to_str(const QgWindowEventType wev)
 {
 	static struct WindowEventMap
 	{
@@ -514,7 +514,12 @@ static struct QGLOUSAGEMAP
 	{ QGLOU_BLEND_INDEX, "aindex",		0 },
 	{ QGLOU_BLEND_EXTRA, "aextra",		0 },
 	{ QGLOU_BLEND_EXTRA, "aindexextra",	0 },
-	{ QGLOU_INVALID,	NULL,			0 },
+	// 별명
+	{ QGLOU_COORD1,		"acoord",		0 },
+	{ QGLOU_COORD1,		"acoord1",		0 },
+	{ QGLOU_COORD2,		"acoord2",		0 },
+	{ QGLOU_COORD3,		"acoord3",		0 },
+	{ QGLOU_COORD4,		"acoord4",		0 },
 };
 
 //

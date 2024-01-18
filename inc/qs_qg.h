@@ -189,6 +189,12 @@ typedef enum QGSHADERTYPE
 	QGSHADER_ALL = QGSHADER_VS | QGSHADER_PS,				/// @brief 모든 세이더 대리
 } QgShaderType;
 
+typedef enum QGSHADERFLAG
+{
+	QGSCF_TEXT = QN_BIT(0),									/// @brief 텍스트 세이더
+	QGSCF_BINARY = QN_BIT(1),								/// @brief 바이너리 세이더
+} QgScFlag;
+
 /// @brief 세이더 전역 변수 타입
 typedef enum QGSHADERCONSTTYPE
 {
@@ -403,6 +409,13 @@ typedef struct QGPROPLAYOUT
 	size_t				count;								/// @brief 요소 갯수
 	QgLayoutInput*		elements;							/// @brief 요소 데이터 포인트
 } QgPropLayout;
+
+/// @brief 세이더 코드
+typedef struct QGSHADERCODE
+{
+	size_t				size;								/// @brief 코드 크기
+	void*				code;								/// @brief 코드 데이터
+} QgShaderCode;
 
 /// @brief 블렌드
 typedef struct QGPROPBLEND
@@ -819,12 +832,12 @@ QSAPI bool qg_pop_event(QgEvent* ev, bool peek);
 /// @brief 이벤트를 문자열로
 /// @param ev 이벤트
 /// @return 이벤트 문자열
-QSAPI const char* qg_event_str(QgEventType ev);
+QSAPI const char* qg_event_to_str(QgEventType ev);
 
 /// @brief 윈도우 이벤트를 문자열로
 /// @param wev 윈도우 이벤트
 /// @return 윈도우 이벤트 문자열
-QSAPI const char* qg_window_event_str(QgWindowEventType wev);
+QSAPI const char* qg_window_event_to_str(QgWindowEventType wev);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -933,6 +946,14 @@ QSAPI QgBuffer* qg_rdh_create_buffer(QgBufferType type, uint count, uint stride,
 /// @return 만들어진 세이더
 QSAPI QgShader* qg_rdh_create_shader(const char* name);
 
+/// @brief 세이더를 만든다. 인수로 세이더 코드를 받는다
+/// @param name 세이더 이름
+/// @param vs 정점 세이더	코드
+/// @param ps 픽셀 세이더 코드
+/// @param flags 플래그 (QgScFlag 참조)
+/// @return 만들어진 세이더
+QSAPI QgShader* qg_rdh_create_shader_buffer(const char* name, const QgShaderCode* vs, const QgShaderCode* ps, QgScFlag flags);
+
 /// @brief 렌더 파이프라인을 만든다
 /// @param prop 렌더 파이프라인 속성
 /// @param shader 세이더
@@ -1026,7 +1047,7 @@ qs_name_vt(QGSHADER)
 {
 	qs_name_vt(QSGAM)	base;
 	bool(*bind_shader)(QgShader*, QgShader*);
-	bool(*bind_buffer)(QgShader*, QgShaderType, const void*, uint, int);
+	bool(*bind_buffer)(QgShader*, QgShaderType, const void*, size_t, QgScFlag);
 };
 
 /// @brief 세이더 개체를 바인드
@@ -1038,11 +1059,10 @@ QSAPI bool qg_shader_bind(QgShader* g, QgShader* shader);
 /// @brief 세이더 개체를 버퍼에서 읽어와 바인드
 /// @param g 세이더 개체
 /// @param type 세이더 타입
-/// @param data 버퍼 데이터
-/// @param size 버퍼의 크기
-/// @param flags 바인드 플래그 (현재는 0으로 설정)
+/// @param code 세이더 코드
+/// @param flags 세이더 플래그 (QgScFlag 참조
 /// @return 문제가 없었으면 참
-QSAPI bool qg_shader_bind_buffer(QgShader* g, QgShaderType type, const void* data, uint size, int flags);
+QSAPI bool qg_shader_bind_buffer(QgShader* g, QgShaderType type, const QgShaderCode* code, QgScFlag flags);
 
 /// @brief 세이더 개체를 파일에서 읽어서 바인드
 /// @param g 세이더 개체
