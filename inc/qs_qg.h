@@ -126,7 +126,7 @@ typedef enum QGLAYOUTUSAGE
 	QGLOU_MAX_VALUE
 } QgLoUsage;
 #define QGLOU_INVALID		QGLOU_MAX_VALUE
-#define QGLOU_MAX_SIZE		((size_t)(QGLOU_MAX_VALUE+8-1))&((size_t)~(8-1))
+#define QGLOU_MAX_SIZE		((size_t)(QGLOU_MAX_VALUE+sizeof(size_t)-1))&((size_t)~(sizeof(size_t)-1))
 
 /// @brief 레아아웃 타입
 typedef enum QGLAYOUTCONSTTYPE
@@ -257,8 +257,8 @@ typedef enum QGSHADERCONSTAUTO
 /// @brief 버퍼 타입
 typedef enum QGBUFFERTYPE
 {
-	QGBUFFER_INDEX,											/// @brief 인덱스 버퍼
 	QGBUFFER_VERTEX,										/// @brief 정점 버퍼
+	QGBUFFER_INDEX,											/// @brief 인덱스 버퍼
 	QGBUFFER_CONSTANT,										/// @brief 상수 버퍼			
 } QgBufferType;
 
@@ -395,6 +395,13 @@ typedef struct QGPROPPIXEL
 	byte				ar, al;								/// @brief 알파
 } QgPropPixel;
 
+/// @brief 세이더 코드
+typedef struct QGSHADERCODE
+{
+	size_t				size;								/// @brief 코드 크기
+	const void*			code;								/// @brief 코드 데이터
+} QgShaderCode;
+
 /// @brief 레이아웃 요소
 typedef struct QGLAYOUTINPUT
 {
@@ -407,15 +414,8 @@ typedef struct QGLAYOUTINPUT
 typedef struct QGPROPLAYOUT
 {
 	size_t				count;								/// @brief 요소 갯수
-	QgLayoutInput*		elements;							/// @brief 요소 데이터 포인트
+	QgLayoutInput*		inputs;								/// @brief 요소 데이터 포인트
 } QgPropLayout;
-
-/// @brief 세이더 코드
-typedef struct QGSHADERCODE
-{
-	size_t				size;								/// @brief 코드 크기
-	void*				code;								/// @brief 코드 데이터
-} QgShaderCode;
 
 /// @brief 블렌드
 typedef struct QGPROPBLEND
@@ -466,9 +466,6 @@ typedef struct QGVARSHADER
 	QgScType			sctype;								/// @brief 변수 타입
 	QgScAuto			scauto;								/// @brief 자동 타입
 } QgVarShader;
-
-/// @brief 세이더 변수 콜백 함수
-typedef void(*QgVarShaderFunc)(void*, const QgVarShader*);
 
 /// @brief 키 상태
 typedef struct QGUIMKEY
@@ -848,6 +845,8 @@ typedef struct QGBUFFER		QgBuffer;						/// @brief 버퍼
 typedef struct QGSHADER		QgShader;						/// @brief 세이더
 typedef struct QGRENDER		QgRender;						/// @brief 렌더 파이프라인
 
+typedef void(*QgVarShaderFunc)(void*, QgShader*, size_t, const QgVarShader*);	/// @brief 세이더 변수 콜백 함수
+
 /// @brief 렌더러를 연다
 /// @param driver 드라이버 이름 (NULL로 지정하여 기본값)
 /// @param title 윈도우 타이틀
@@ -864,6 +863,11 @@ QSAPI bool qg_open_rdh(const char* driver, const char* title, int display, int w
 /// @brief 렌더러를 닫는다
 QSAPI void qg_close_rdh(void);
 
+/// @brief 세이더 변수 콜백을 등록한다
+/// @param func 세이더 콜백 함수
+/// @param data 세이더 콜백 함수의 인수
+QSAPI void qg_rdh_set_shader_var_callback(QgVarShaderFunc func, void* data);
+
 /// @brief 렌더러를 준비한다
 /// @param clear 배경, 스텐실, 뎁스를 초기화 하려면 true 로 한다
 /// @return 렌더러가 준비됐으면 참
@@ -872,7 +876,8 @@ QSAPI void qg_close_rdh(void);
 QSAPI bool qg_rdh_begin(bool clear);
 
 /// @brief 렌더러를 끝낸다
-QSAPI void qg_rdh_end(void);
+/// @param flush 화면 갱신을 하려면 참으로
+QSAPI void qg_rdh_end(bool flush);
 
 /// @brief 렌더러 결과를 화면으로 출력한다
 QSAPI void qg_rdh_flush(void);
@@ -1080,5 +1085,28 @@ struct QGRENDER
 	size_t				hash;
 	nuint				ref;
 };
+
+
+//////////////////////////////////////////////////////////////////////////
+// 인라인
+
+// 기본 렌더 프로퍼티
+INLINE QgPropRender qg_default_prop_render(QgLayoutInput* inputs, size_t icount)
+{
+	QgPropRender prop =
+	{
+		.rasterizer.fill = QGFILL_SOLID,
+		.rasterizer.cull = QGCULL_BACK,
+		.depth = QGDEPTH_LE,
+		.stencil = QGSTENCIL_OFF,
+		.layout.count = icount,
+		.layout.inputs = inputs,
+		.format.count = 1,
+		.format.rtv[0] = QGCF32_RGBA,
+		.format.dsv = QGCF8_L,
+		.topology = QGTPG_TRI,
+	};
+	return prop;
+}
 
 QN_EXTC_END

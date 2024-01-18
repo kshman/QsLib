@@ -583,7 +583,7 @@ QgLoUsage qg_str_to_layout_usage(size_t hash, const char* name)
 {
 	for (size_t i = 0; i < QN_COUNTOF(QgLoUsageMap); i++)
 	{
-		if (hash == QgLoUsageMap[i].hash && qn_stricmp(name, QgLoUsageMap[i].name))
+		if (hash == QgLoUsageMap[i].hash && qn_stricmp(name, QgLoUsageMap[i].name) == 0)
 			return QgLoUsageMap[i].usage;
 	}
 	return QGLOU_INVALID;
@@ -594,7 +594,7 @@ QgScAuto qg_str_to_shader_const_auto(size_t hash, const char* name)
 {
 	for (size_t i = 0; i < QN_COUNTOF(QgScAutoMap); i++)
 	{
-		if (hash == QgScAutoMap[i].hash && qn_stricmp(name, QgScAutoMap[i].name))
+		if (hash == QgScAutoMap[i].hash && qn_stricmp(name, QgScAutoMap[i].name) == 0)
 			return QgScAutoMap[i].value;
 	}
 	return QGSCA_INVALID;

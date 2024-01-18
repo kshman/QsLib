@@ -25,7 +25,7 @@ typedef struct QGLREFHANDLE
 } QglRefHandle;
 
 // 레이아웃 요소
-typedef struct QGLLAYOUTELEMENT
+typedef struct QGLLAYOUTINPUT
 {
 	QgLoStage			stage : 16;
 	QgLoUsage			usage : 16;
@@ -34,7 +34,7 @@ typedef struct QGLLAYOUTELEMENT
 	GLuint				offset;
 	GLboolean			normalized;
 	GLboolean			converted;
-} QglLayoutElement;
+} QglLayoutInput;
 
 // 레이아웃 프로퍼티
 typedef struct QGLLAYOUTPROPERTY
@@ -67,16 +67,16 @@ QN_DECL_CTNR(QglCtnAttr, QglVarAttr);
 // 세션 데이터
 typedef struct QGLSESSION
 {
-	struct
+	struct QGLSESSION_SHADER
 	{
 		GLuint				program;
 		uint				amask;						// 어트리뷰트 마스크
 		QglLayoutProperty	lprops[QGLOU_MAX_SIZE];		// 레이아웃 상태 저장
 	}					shader;
-	struct
+	struct QGLSESSION_BUFFER
 	{
-		GLuint				array;
-		GLuint				element_array;
+		GLuint				vertex;		// array
+		GLuint				index;		// element array
 		GLuint				uniform;
 	}					buffer;
 
@@ -87,13 +87,13 @@ typedef struct QGLSESSION
 // 펜딩 데이터
 typedef struct QGLPENDING
 {
-	struct
+	struct QGLPENDING_RENDER
 	{
 		QglBuffer*			index_buffer;
 		QglBuffer*			vertex_buffers[QGLOS_MAX_VALUE];
 		QglRender*			render;
 	}					render;
-	struct
+	struct QGLPENDING_DRAW
 	{
 		uint				topology;
 		uint				index_stride;
@@ -150,11 +150,12 @@ struct QGLRENDER
 
 	QglShader*			shader;
 
-	struct
+	struct QGLRENDER_LAYOUTELEMENT
 	{
-		byte				count[QGLOS_MAX_VALUE];
-		QglLayoutElement*	elms[QGLOS_MAX_VALUE];
+		ushort				count[QGLOS_MAX_VALUE];
 		ushort				stride[QGLOS_MAX_VALUE];
+		QglLayoutInput*		stages[QGLOS_MAX_VALUE];
+		QglLayoutInput*		inputs;
 	}					layout;
 };
 

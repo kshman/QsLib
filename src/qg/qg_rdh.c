@@ -90,8 +90,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 //
 void qg_close_rdh(void)
 {
-	RdhBase* rdh = qg_instance_rdh;
-	qs_unload(rdh);
+	qg_instance_rdh = qs_unloadc(qg_instance_rdh, RdhBase);
 }
 
 //
@@ -122,9 +121,9 @@ void rdh_internal_reset(void)
 	tm->size = qm_sizef_size(client_size);
 	qm_rst(&tm->world);
 	qm_rst(&tm->view);
-	tm->project = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->depth.Near, tm->depth.Far);
-	tm->view_project = qm_mul(tm->view, tm->project);
-	qm_rst(&tm->inv);
+	tm->proj = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->depth.Near, tm->depth.Far);
+	tm->view_proj = qm_mul(tm->view, tm->proj);
+	qm_rst(&tm->invv);
 	qm_rst(&tm->ortho);
 	qm_rst(&tm->frm);
 	for (size_t i = 0; i < QN_COUNTOF(tm->tex); i++)
@@ -172,6 +171,14 @@ void rdh_internal_check_layout(void)
 }
 
 //
+void qg_rdh_set_shader_var_callback(QgVarShaderFunc func, void* data)
+{
+	RenderParam* param = RDH_PARAM;
+	param->callback_func = func;
+	param->callback_data = data;
+}
+
+//
 bool qg_rdh_begin(bool clear)
 {
 	RdhBase* rdh = qg_instance_rdh;
@@ -182,13 +189,15 @@ bool qg_rdh_begin(bool clear)
 }
 
 //
-void qg_rdh_end(void)
+void qg_rdh_end(bool flush)
 {
 	RdhBase* rdh = qg_instance_rdh;
 	rdh->invokes.invokes++;
 	rdh->invokes.ends++;
 	rdh->invokes.flush = true;
 	qs_cast_vt(rdh, RDHBASE)->end();
+	if (flush)
+		qs_cast_vt(rdh, RDHBASE)->flush();
 }
 
 //
@@ -198,7 +207,7 @@ void qg_rdh_flush(void)
 	if (!rdh->invokes.flush)
 	{
 		qn_debug_outputs(true, "RDH", "call end() before flush");
-		qg_rdh_end();
+		qg_rdh_end(false);
 	}
 	qs_cast_vt(rdh, RDHBASE)->flush();
 	rdh->invokes.invokes++;
@@ -285,8 +294,8 @@ void qg_rdh_set_view(const QmMat4* view)
 	qn_ret_if_fail(view);
 	RdhBase* rdh = qg_instance_rdh;
 	rdh->tm.view = *view;
-	rdh->tm.inv = qm_inv(*view);
-	rdh->tm.view_project = qm_mul(*view, rdh->tm.project);
+	rdh->tm.invv = qm_inv(*view);
+	rdh->tm.view_proj = qm_mul(*view, rdh->tm.proj);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
@@ -296,8 +305,8 @@ void qg_rdh_set_project(const QmMat4* proj)
 {
 	qn_ret_if_fail(proj);
 	RdhBase* rdh = qg_instance_rdh;
-	rdh->tm.project = *proj;
-	rdh->tm.view_project = qm_mul(rdh->tm.view, *proj);
+	rdh->tm.proj = *proj;
+	rdh->tm.view_proj = qm_mul(rdh->tm.view, *proj);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
@@ -307,10 +316,10 @@ void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view)
 {
 	qn_ret_if_fail(proj && view);
 	RdhBase* rdh = qg_instance_rdh;
-	rdh->tm.project = *proj;
+	rdh->tm.proj = *proj;
 	rdh->tm.view = *view;
-	rdh->tm.inv = qm_inv(*view);
-	rdh->tm.view_project = qm_mul(*proj, *view);
+	rdh->tm.invv = qm_inv(*view);
+	rdh->tm.view_proj = qm_mul(*proj, *view);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
@@ -323,19 +332,19 @@ QgBuffer* qg_rdh_create_buffer(QgBufferType type, uint count, uint stride, const
 		qn_debug_outputf(true, "RDH", "invalid buffer count: %d", count);
 		return NULL;
 	}
-	if (type == QGBUFFER_INDEX)
+	if (type == QGBUFFER_VERTEX)
+	{
+		if (stride < 2)	// 2는 halffloat을 말함. byte지원은 아직 모르겟음
+		{
+			qn_debug_outputf(true, "RDH", "invalid vertex buffer stride: %d, require 4 or more", stride);
+			return NULL;
+		}
+	}
+	else if (type == QGBUFFER_INDEX)
 	{
 		if (stride != 2 && stride != 4)
 		{
 			qn_debug_outputf(true, "RDH", "invalid index buffer stride: %d, require 2 or 4", stride);
-			return NULL;
-		}
-	}
-	else if (type == QGBUFFER_VERTEX)
-	{
-		if (stride < 4)
-		{
-			qn_debug_outputf(true, "RDH", "invalid vertex buffer stride: %d, require 4 or more", stride);
 			return NULL;
 		}
 	}
@@ -367,7 +376,7 @@ QgShader* qg_rdh_create_shader_buffer(const char* name, const QgShaderCode* vs, 
 		qn_debug_outputf(true, "RDH", "shader source is null");
 		return NULL;
 	}
-	if (vs->size == 0 || ps->size == 0)
+	if (flags != QGSCF_TEXT && (vs->size == 0 || ps->size == 0))
 	{
 		qn_debug_outputf(true, "RDH", "shader code size is zero");
 		return NULL;
@@ -379,7 +388,7 @@ QgShader* qg_rdh_create_shader_buffer(const char* name, const QgShaderCode* vs, 
 	}
 	QgShader* shader = qg_rdh_create_shader(name);
 	if (qs_cast_vt(shader, QGSHADER)->bind_buffer(shader, QGSHADER_VS, vs->code, vs->size, flags) == false ||
-		qs_cast_vt(shader, QGSHADER)->bind_buffer(shader, QGSHADER_VS, ps->code, ps->size, flags) == false)
+		qs_cast_vt(shader, QGSHADER)->bind_buffer(shader, QGSHADER_PS, ps->code, ps->size, flags) == false)
 	{
 		qs_unload(shader);
 		return NULL;
@@ -403,11 +412,11 @@ QgRender* qg_rdh_create_render(const QgPropRender* prop, QgShader* shader)
 
 #define RDH_CHK_NULL(sec,item)				if (prop->sec.item == NULL)\
 		{ qn_debug_outputf(true, "RDH", "'%s.%s' has no data", #sec, #item); return NULL; } (void)NULL
-#define RDH_CHK_RANGE_MAX1(item,vmax)		if ((size_t)prop->item < (vmax))\
+#define RDH_CHK_RANGE_MAX1(item,vmax)		if ((size_t)prop->item >= (vmax))\
 		{ qn_debug_outputf(true, "RDH", "invalid '%s' value: %d", #item, prop->item); return NULL; } (void)NULL
-#define RDH_CHK_RANGE_MAX2(sec,item,vmax)	if ((size_t)prop->sec.item < (vmax))\
+#define RDH_CHK_RANGE_MAX2(sec,item,vmax)	if ((size_t)prop->sec.item >= (vmax))\
 		{ qn_debug_outputf(true, "RDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; } (void)NULL
-#define RDH_CHK_RANGE_MIN(sec,item,value)	if ((size_t)prop->sec.item > (value))\
+#define RDH_CHK_RANGE_MIN(sec,item,value)	if ((size_t)prop->sec.item <= (value))\
 		{ qn_debug_outputf(true, "RDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; } (void)NULL
 
 	// 래스터라이저
@@ -419,7 +428,7 @@ QgRender* qg_rdh_create_render(const QgPropRender* prop, QgShader* shader)
 	RDH_CHK_RANGE_MAX1(stencil, QGSTENCIL_MAX_VALUE);
 	// 레이아웃
 	RDH_CHK_RANGE_MIN(layout, count, 0);
-	RDH_CHK_NULL(layout, elements);
+	RDH_CHK_NULL(layout, inputs);
 	// 렌더 뎁스 포맷
 	RDH_CHK_RANGE_MIN(format, count, 0);
 	RDH_CHK_RANGE_MAX2(format, count, QGRVS_MAX_VALUE);

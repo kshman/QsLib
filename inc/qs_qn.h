@@ -360,8 +360,10 @@ typedef struct FUNCPARAM_T
 
 #ifdef _DEBUG
 #define qn_assert(expr,msg)	QN_STMT_BEGIN{ if (!(expr)) qn_debug_assert(#expr, msg, __FUNCTION__, __LINE__); }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
+#define qn_verify(expr)		QN_STMT_BEGIN{ if (!(expr)) qn_debug_assert(#expr, NULL, __FUNCTION__, __LINE__); }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
 #else
 #define qn_assert(expr,msg)
+#define qn_verify(expr)
 #endif
 
 

@@ -260,6 +260,7 @@ static void shed_event_clear_reserved_mem(void)
 static void stub_atexit_callback(void* dummy)
 {
 	QN_DUMMY(dummy);
+	qg_close_rdh();
 	qg_close_stub();
 }
 

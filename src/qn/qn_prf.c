@@ -161,9 +161,14 @@ int qn_debug_assert(const char* RESTRICT expr, const char* RESTRICT mesg, const 
 	qn_dbg_buf_int(line);
 	qn_dbg_buf_str(")\n\t: ");
 	qn_dbg_buf_str(expr);
-	qn_dbg_buf_str(">\n\t: [");
-	qn_dbg_buf_str(mesg);
-	qn_dbg_buf_str("]\n");
+	if (mesg == NULL)
+		qn_dbg_buf_str(">\n");
+	else
+	{
+		qn_dbg_buf_str(">\n\t: [");
+		qn_dbg_buf_str(mesg);
+		qn_dbg_buf_str("]\n");
+	}
 	qn_dbg_buf_flush();
 
 	DEBUG_BREAK(debug_impl.debugger);
@@ -636,7 +641,7 @@ static void* qn_mpf_alloc(size_t size, bool zero, const char* desc, size_t line)
 		qn_mpf_node_link(node);
 	}
 	return _memptr(node);
-}
+	}
 
 //
 static void* qn_mpf_realloc(void* ptr, size_t size, const char* desc, size_t line)
@@ -694,7 +699,7 @@ static void* qn_mpf_realloc(void* ptr, size_t size, const char* desc, size_t lin
 		qn_mpf_node_link(node);
 	}
 	return _memptr(node);
-}
+	}
 
 //
 static void qn_mpf_free(void* ptr)

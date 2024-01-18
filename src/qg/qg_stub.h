@@ -54,6 +54,8 @@ typedef struct STUBBASE
 // 스터브 인스턴스 
 extern StubBase* qg_instance_stub;
 
+#define STUB				(qg_instance_stub)		
+
 // 시스템 스터브를 연다
 extern bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags, QgFeature features);
 // 시스템 스터브를 정리한다
@@ -162,12 +164,12 @@ typedef struct RENDERTRANSFORM
 {
 	QmSizeF				size;
 	QmDepth				depth;
+	QmMat4				ortho;								// ortho transform
 	QmMat4				world;
 	QmMat4				view;
-	QmMat4				project;
-	QmMat4				view_project;
-	QmMat4				inv;								// inverse view
-	QmMat4				ortho;								// ortho transform
+	QmMat4				proj;
+	QmMat4				view_proj;
+	QmMat4				invv;								// inverse view
 	QmMat4				frm;								// tex formation
 	QmMat4				tex[4];
 	QmRect				scissor;
@@ -181,6 +183,9 @@ typedef struct RENDERPARAM
 	QmMat4*				bone_ptr;
 	int					bone_count;
 	QmColor				bgc;
+
+	QgVarShaderFunc		callback_func;
+	void*				callback_data;
 } RenderParam;
 
 // 렌더러 디바이스
@@ -220,6 +225,15 @@ qs_name_vt(RDHBASE)
 // 렌더 디바이스
 extern RdhBase* qg_instance_rdh;
 
+#define RDH					(qg_instance_rdh)		
+#define RDH_INFO			(&qg_instance_rdh->info)
+#define RDH_TRANSFORM		(&qg_instance_rdh->tm)
+#define RDH_PARAM			(&qg_instance_rdh->param)
+#define RDH_INVOKES			(&qg_instance_rdh->invokes)
+
+#define rdh_set_flush(v)	(qg_instance_rdh->invokes.flush=(v))
+#define rdh_inc_ends()		(qg_instance_rdh->invokes.ends++)
+
 #ifdef USE_ES
 // OPENGL ES 할당
 extern RdhBase* es_allocator(QgFlag flags, QgFeature features);
@@ -233,14 +247,6 @@ extern void rdh_internal_reset(void);
 extern void rdh_internal_invoke_reset(void);
 // 레이아웃 검사
 extern void rdh_internal_check_layout(void);
-
-#define RDH_INFO			(&qg_instance_rdh->info)
-#define RDH_TRANSFORM		(&qg_instance_rdh->tm)
-#define RDH_PARAM			(&qg_instance_rdh->param)
-#define RDH_INVOKES			(&qg_instance_rdh->invokes)
-
-#define rdh_set_flush(v)	(qg_instance_rdh->invokes.flush=(v))
-#define rdh_inc_ends()		(qg_instance_rdh->invokes.ends++)
 
 
 // 색깔 변환
