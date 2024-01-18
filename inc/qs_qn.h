@@ -360,8 +360,10 @@ typedef struct FUNCPARAM_T
 
 #ifdef _DEBUG
 #define qn_assert(expr,msg)	QN_STMT_BEGIN{ if (!(expr)) qn_debug_assert(#expr, msg, __FUNCTION__, __LINE__); }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
+#define qn_verify(expr)		QN_STMT_BEGIN{ if (!(expr)) qn_debug_assert(#expr, NULL, __FUNCTION__, __LINE__); }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
 #else
 #define qn_assert(expr,msg)
+#define qn_verify(expr)
 #endif
 
 
@@ -1892,6 +1894,13 @@ QSAPI size_t qn_file_get_max_alloc_size(void);
 /// @param[in]	n	할당할 크기
 QSAPI void qn_file_set_max_alloc_size(size_t n);
 
+/// @brief 파일 이름에서 경로를 뽑느다
+/// @param filename 대상 파일 이름
+/// @param dest 경로를 넣을 버퍼 (길이를 얻고 싶으면 이 값을 널로 지정)
+/// @param destsize 버퍼의 크기
+/// @return 경로의 길이. 버퍼의 크기보다 길더라도 버퍼의 크기-1 만큼만 반환한다
+QSAPI size_t qn_get_file_path(const char* filename, char* dest, size_t destsize);
+
 // directory
 
 /// @brief 디렉토리를 새로 만든다
@@ -1938,7 +1947,7 @@ QSAPI const wchar_t* qn_dir_read_l(QnDir* self);
 /// @brief 프로그램 기본 패스를 얻는다
 /// @return 기본 패스
 /// @warning 반환 값은 qn_free 함수로 해제해야한다
-QSAPI char* qn_dir_base_path(void);
+QSAPI char* qn_get_base_path(void);
 
 // module
 
@@ -2584,25 +2593,29 @@ QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* RESTRICT name);
 /// @brief GAM 할거리를 의미. 영어로 OBJECT
 typedef struct QSGAM		QsGam;
 
+/// @brief GAM 타입 이름
+#define qs_name_type(TYPE)		struct TYPE
 /// @brief GAM 가상 테이블 이름을 얻는다
-#define qv_name(type)		struct _VT_##type
-/// @brief GAM 가상 테이블로 GAM 포인터를 캐스팅한다
-#define qv_cast(g,type)		((struct _VT_##type*)((QsGam*)(g))->vt)
+#define qs_name_vt(TYPE)		struct _VT_##TYPE
 
 /// @brief GAM 포인터를 다른 타입으로 캐스팅한다
-#define qs_cast(g,type)		((type*)(g))
+#define qs_cast_type(g,type)	((type*)(g))
+/// @brief GAM 가상 테이블로 GAM 포인터를 캐스팅한다
+#define qs_cast_vt(g,TYPE)		((struct _VT_##TYPE*)((QsGam*)(g))->vt)
 
-qv_name(QSGAM)
+//
+qs_name_vt(QSGAM)
 {
 	const char* name;
 	void (*dispose)(QsGam*);
 };
 
+//
 struct QSGAM
 {
-	qv_name(QSGAM)*	vt;
-	volatile nint	ref;
-	nuint			desc;
+	qs_name_vt(QSGAM)*	vt;
+	volatile nint		ref;
+	nuint				desc;
 };
 
 /// @brief GAM 가상 테이블을 초기화하고 GAM 포인터 반환
@@ -2639,12 +2652,16 @@ QSAPI nuint qs_sc_set_desc(QsGam* RESTRICT g, nuint ptr);
 
 /// @brief GAM 가상 테이블을 초기화하고 GAM 포인터 반환
 #define qs_init(g,type,pvt)	((type*)qs_sc_init((QsGam*)(g), pvt))
+/// @brief 참조를 얻는다
+#define qs_get_ref(g)		qs_sc_get_ref((QsGam*)(g))
 /// @brief 참조를 추가한다
 #define qs_load(g)			((g) ? qs_sc_load((QsGam*)(g)) : NULL)
 /// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
 #define qs_unload(g)		((g) ? qs_sc_unload((QsGam*)(g)) : NULL)
-/// @brief 참조를 얻는다
-#define qs_get_ref(g)		qs_sc_get_ref((QsGam*)(g))
+/// @brief 참조를 추가한다
+#define qs_loadc(g,type)	((g) ? (type*)qs_sc_load((QsGam*)(g)) : NULL)
+/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
+#define qs_unloadc(g,type)	((g) ? (type*)qs_sc_unload((QsGam*)(g)) : NULL)
 /// @brief 표현자(디스크립터)를 얻는다
 #define qs_get_desc(g,type)	(type)qs_sc_get_desc((QsGam*)(g))
 /// @brief 표현자(디스크립터)를 쓴다

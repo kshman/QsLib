@@ -11,6 +11,8 @@ RdhBase* qg_instance_rdh = NULL;
 //
 bool qg_open_rdh(const char* driver, const char* title, int display, int width, int height, int flags, int features)
 {
+	qg_init_enum_convs();
+
 	struct rdh_renderer
 	{
 		const char* name;
@@ -39,81 +41,89 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 				break;
 			}
 	}
+
+	features |= renderer->feature;
 	if (renderer->allocator == NULL)
 	{
 		qn_debug_outputs(true, "RDH", "cannot found valid renderer");
 		return false;
 	}
 
-	features |= renderer->feature;
-	const bool open_stub = qg_open_stub(title, display, width, height, flags, features);
-	qn_val_if_fail(qg_instance_stub, false);
+	bool stub_created;
+	if (qg_instance_stub != NULL)
+		stub_created = false;
+	else
+	{
+		qg_open_stub(title, display, width, height, flags | QGSPECIFIC_RDHSTUB, features);
+		qn_val_if_fail(qg_instance_stub != NULL, false);
+		stub_created = true;
+	}
 
 	// 개별 디바이스
-	RdhBase* self = renderer->allocator(flags, features);
-	if (self == NULL)
+	RdhBase* rdh = renderer->allocator(flags, features);
+	if (rdh == NULL)
 	{
-		if (open_stub)
+		if (stub_created)
 			qg_close_stub();
 		return false;
 	}
-
-	// 뒤에서 쓸지도 모르니 미리 설정
-	qg_instance_rdh = self;
-	self->info.open_stub = open_stub;
+	qg_instance_rdh = rdh;
 
 	// 공통 설정
-	RenderTransform* tm = &self->tm;
+	RenderTransform* tm = &rdh->tm;
 	tm->depth.Near = 1.0f;
 	tm->depth.Far = 100000.0f;
 
-	RenderParam* param = &self->param;
+	RenderParam* param = &rdh->param;
 	param->bgc = qm_color(0.1f, 0.1f, 0.1f, 1.0f);
 	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)
 		qm_rst(&param->v[i]);
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)
 		qm_rst(&param->m[i]);
 
-	//
-	qv_cast(self, RDHBASE)->reset();
+	// 
+	qs_cast_vt(rdh, RDHBASE)->reset();			// 장치 리셋
+	qn_timer_reset(qg_instance_stub->timer);	// 타이머도 리셋해둔다
 	return true;
 }
 
 //
 void qg_close_rdh(void)
 {
-	RdhBase* self = qg_instance_rdh;
-	qs_unload(self);
+	qg_instance_rdh = qs_unloadc(qg_instance_rdh, RdhBase);
 }
 
 //
 void rdh_internal_dispose(void)
 {
-	RdhBase* self = qg_instance_rdh;
-	const bool open_stub = self->info.open_stub;
+	qn_assert(qg_instance_stub != NULL, "스터브가 없어요");
+	qn_assert(qg_instance_rdh != NULL, "렌더러가 없어요");
+
+	RdhBase* rdh = qg_instance_rdh;
+	const bool stub_created = QN_TMASK(qg_instance_stub->flags, QGSPECIFIC_RDHSTUB);
 
 	qg_instance_rdh = NULL;
-	qn_free(self);
+	qn_free(rdh);
 
-	if (open_stub)
+	if (stub_created)
 		qg_close_stub();
 }
 
 //
 void rdh_internal_reset(void)
 {
-	RdhBase* self = qg_instance_rdh;
+	RdhBase* rdh = qg_instance_rdh;
 	const QmSize client_size = qg_instance_stub->client_size;
 	const float aspect = qm_size_aspect(client_size);
 
 	// tm
-	RenderTransform* tm = &self->tm;
+	RenderTransform* tm = &rdh->tm;
 	tm->size = qm_sizef_size(client_size);
 	qm_rst(&tm->world);
 	qm_rst(&tm->view);
-	tm->project = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->depth.Near, tm->depth.Far);
-	tm->view_project = qm_mul(tm->view, tm->project);
-	qm_rst(&tm->inv);
+	tm->proj = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->depth.Near, tm->depth.Far);
+	tm->view_proj = qm_mul(tm->view, tm->proj);
+	qm_rst(&tm->invv);
 	qm_rst(&tm->ortho);
 	qm_rst(&tm->frm);
 	for (size_t i = 0; i < QN_COUNTOF(tm->tex); i++)
@@ -121,16 +131,21 @@ void rdh_internal_reset(void)
 	tm->scissor = qm_rect_size(0, 0, client_size.Width, client_size.Height);
 
 	// param
-	RenderParam* param = &self->param;
+	RenderParam* param = &rdh->param;
 	param->bone_ptr = NULL;
 	param->bone_count = 0;
+	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)
+		qm_rst(&param->v[i]);
+	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)
+		qm_rst(&param->m[i]);
+	param->bgc = qm_color(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 //
 void rdh_internal_invoke_reset(void)
 {
-	RdhBase* self = qg_instance_rdh;
-	RenderInvoke* ivk = &self->invokes;
+	RdhBase* rdh = qg_instance_rdh;
+	RenderInvoke* ivk = &rdh->invokes;
 	ivk->invokes = 0;
 	ivk->begins = 0;
 	ivk->ends = 0;
@@ -146,186 +161,264 @@ void rdh_internal_invoke_reset(void)
 //
 void rdh_internal_check_layout(void)
 {
-	RdhBase* self = qg_instance_rdh;
+	RdhBase* rdh = qg_instance_rdh;
 	const QmSize size = qg_instance_stub->client_size;
-	const int width = (int)self->tm.size.Width;
-	const int height = (int)self->tm.size.Height;
+	const int width = (int)rdh->tm.size.Width;
+	const int height = (int)rdh->tm.size.Height;
 	if (size.Width == width && size.Height == height)
 		return;
-	qv_cast(self, RDHBASE)->reset();
+	qs_cast_vt(rdh, RDHBASE)->reset();
+}
+
+//
+void qg_rdh_set_shader_var_callback(QgVarShaderFunc func, void* data)
+{
+	RenderParam* param = RDH_PARAM;
+	param->callback_func = func;
+	param->callback_data = data;
 }
 
 //
 bool qg_rdh_begin(bool clear)
 {
-	RdhBase* self = qg_instance_rdh;
-	self->invokes.invokes++;
-	self->invokes.begins++;
-	self->invokes.flush = false;
-	return qv_cast(self, RDHBASE)->begin(clear);
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.invokes++;
+	rdh->invokes.begins++;
+	rdh->invokes.flush = false;
+	return qs_cast_vt(rdh, RDHBASE)->begin(clear);
 }
 
 //
-void qg_rdh_end(void)
+void qg_rdh_end(bool flush)
 {
-	RdhBase* self = qg_instance_rdh;
-	self->invokes.invokes++;
-	self->invokes.ends++;
-	self->invokes.flush = true;
-	qv_cast(self, RDHBASE)->end();
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.invokes++;
+	rdh->invokes.ends++;
+	rdh->invokes.flush = true;
+	qs_cast_vt(rdh, RDHBASE)->end();
+	if (flush)
+		qs_cast_vt(rdh, RDHBASE)->flush();
 }
 
 //
 void qg_rdh_flush(void)
 {
-	RdhBase* self = qg_instance_rdh;
-	if (!self->invokes.flush)
+	RdhBase* rdh = qg_instance_rdh;
+	if (!rdh->invokes.flush)
 	{
-		qn_debug_outputs(true, "RDH", "use end before flush");
-		qg_rdh_end();
+		qn_debug_outputs(true, "RDH", "call end() before flush");
+		qg_rdh_end(false);
 	}
-	qv_cast(self, RDHBASE)->flush();
-	self->invokes.invokes++;
-	self->invokes.frames++;
+	qs_cast_vt(rdh, RDHBASE)->flush();
+	rdh->invokes.invokes++;
+	rdh->invokes.frames++;
 }
 
 //
 void qg_rdh_reset(void)
 {
-	RdhBase* self = qg_instance_rdh;
-	self->invokes.invokes++;
-	qv_cast(self, RDHBASE)->reset();
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.invokes++;
+	qs_cast_vt(rdh, RDHBASE)->reset();
 }
 
 //
 void qg_rdh_clear(QgClear clear, const QmColor* color, int stencil, float depth)
 {
-	RdhBase* self = qg_instance_rdh;
-	self->invokes.invokes++;
-	qv_cast(self, RDHBASE)->clear(clear, color, stencil, depth);
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.invokes++;
+	qs_cast_vt(rdh, RDHBASE)->clear(clear, color, stencil, depth);
 }
 
 //
 void qg_rdh_set_param_vec3(int at, const QmVec3* v)
 {
-	RdhBase* self = qg_instance_rdh;
-	qn_ret_if_fail(v && (size_t)at < QN_COUNTOF(self->param.v));
-	self->param.v[at] = qm_vec4v(*v, 0.0f);
-	self->invokes.invokes++;
+	RdhBase* rdh = qg_instance_rdh;
+	qn_ret_if_fail(v && (size_t)at < QN_COUNTOF(rdh->param.v));
+	rdh->param.v[at] = qm_vec4v(*v, 0.0f);
+	rdh->invokes.invokes++;
 }
 
 //
 void qg_rdh_set_param_vec4(int at, const QmVec4* v)
 {
-	RdhBase* self = qg_instance_rdh;
-	qn_ret_if_fail(v && (size_t)at < QN_COUNTOF(self->param.v));
-	self->param.v[at] = *v;
-	self->invokes.invokes++;
+	RdhBase* rdh = qg_instance_rdh;
+	qn_ret_if_fail(v && (size_t)at < QN_COUNTOF(rdh->param.v));
+	rdh->param.v[at] = *v;
+	rdh->invokes.invokes++;
 }
 
 //
 void qg_rdh_set_param_mat4(int at, const QmMat4* m)
 {
-	RdhBase* self = qg_instance_rdh;
-	qn_ret_if_fail(m && (size_t)at < QN_COUNTOF(self->param.m));
-	self->param.m[at] = *m;
-	self->invokes.invokes++;
+	RdhBase* rdh = qg_instance_rdh;
+	qn_ret_if_fail(m && (size_t)at < QN_COUNTOF(rdh->param.m));
+	rdh->param.m[at] = *m;
+	rdh->invokes.invokes++;
 }
 
 //
 void qg_rdh_set_param_weight(int count, QmMat4* weight)
 {
 	qn_ret_if_fail(weight && count > 0);
-	RdhBase* self = qg_instance_rdh;
-	self->param.bone_count = count;
-	self->param.bone_ptr = weight;
-	self->invokes.invokes++;
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->param.bone_count = count;
+	rdh->param.bone_ptr = weight;
+	rdh->invokes.invokes++;
 }
 
 //
 void qg_rdh_set_background(const QmColor* color)
 {
-	RdhBase* self = qg_instance_rdh;
+	RdhBase* rdh = qg_instance_rdh;
 	if (color)
-		self->param.bgc = *color;
+		rdh->param.bgc = *color;
 	else
-		self->param.bgc = qm_color(0.0f, 0.0f, 0.0f, 1.0f);
-	self->invokes.invokes++;
+		rdh->param.bgc = qm_color(0.0f, 0.0f, 0.0f, 1.0f);
+	rdh->invokes.invokes++;
 }
 
 //
 void qg_rdh_set_world(const QmMat4* world)
 {
 	qn_ret_if_fail(world);
-	RdhBase* self = qg_instance_rdh;
-	self->tm.world = *world;
-	self->invokes.invokes++;
-	self->invokes.transforms++;
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->tm.world = *world;
+	rdh->invokes.invokes++;
+	rdh->invokes.transforms++;
 }
 
 //
 void qg_rdh_set_view(const QmMat4* view)
 {
 	qn_ret_if_fail(view);
-	RdhBase* self = qg_instance_rdh;
-	self->tm.view = *view;
-	self->tm.inv = qm_inv(*view);
-	self->tm.view_project = qm_mul(*view, self->tm.project);
-	self->invokes.invokes++;
-	self->invokes.transforms++;
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->tm.view = *view;
+	rdh->tm.invv = qm_inv(*view);
+	rdh->tm.view_proj = qm_mul(*view, rdh->tm.proj);
+	rdh->invokes.invokes++;
+	rdh->invokes.transforms++;
 }
 
 //
 void qg_rdh_set_project(const QmMat4* proj)
 {
 	qn_ret_if_fail(proj);
-	RdhBase* self = qg_instance_rdh;
-	self->tm.project = *proj;
-	self->tm.view_project = qm_mul(self->tm.view, *proj);
-	self->invokes.invokes++;
-	self->invokes.transforms++;
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->tm.proj = *proj;
+	rdh->tm.view_proj = qm_mul(rdh->tm.view, *proj);
+	rdh->invokes.invokes++;
+	rdh->invokes.transforms++;
 }
 
 //
 void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view)
 {
 	qn_ret_if_fail(proj && view);
-	RdhBase* self = qg_instance_rdh;
-	self->tm.project = *proj;
-	self->tm.view = *view;
-	self->tm.inv = qm_inv(*view);
-	self->tm.view_project = qm_mul(*proj, *view);
-	self->invokes.invokes++;
-	self->invokes.transforms++;
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->tm.proj = *proj;
+	rdh->tm.view = *view;
+	rdh->tm.invv = qm_inv(*view);
+	rdh->tm.view_proj = qm_mul(*proj, *view);
+	rdh->invokes.invokes++;
+	rdh->invokes.transforms++;
 }
 
 //
-QgBuffer* qg_rdh_create_buffer(QgBufType type, int count, int stride, const void* data)
+QgBuffer* qg_rdh_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data)
 {
-	qn_val_if_fail(count > 0 && stride > 0, NULL);
-	RdhBase* self = qg_instance_rdh;
-	self->invokes.creations++;
-	self->invokes.invokes++;
-	return qv_cast(self, RDHBASE)->create_buffer(type, count, stride, data);
+	if (count == 0)
+	{
+		qn_debug_outputf(true, "RDH", "invalid buffer count: %d", count);
+		return NULL;
+	}
+	if (type == QGBUFFER_VERTEX)
+	{
+		if (stride < 2)	// 2는 halffloat을 말함. byte지원은 아직 모르겟음
+		{
+			qn_debug_outputf(true, "RDH", "invalid vertex buffer stride: %d, require 4 or more", stride);
+			return NULL;
+		}
+	}
+	else if (type == QGBUFFER_INDEX)
+	{
+		if (stride != 2 && stride != 4)
+		{
+			qn_debug_outputf(true, "RDH", "invalid index buffer stride: %d, require 2 or 4", stride);
+			return NULL;
+		}
+	}
+	else
+	{
+		qn_debug_outputf(true, "RDH", "invalid buffer type: %d", type);
+		return NULL;
+	}
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	return qs_cast_vt(rdh, RDHBASE)->create_buffer(type, count, stride, initial_data);
 }
 
 //
-QgRender* qg_rdh_create_render(const QgPropRender* prop, bool compile_shader)
+QgShader* qg_rdh_create_shader(const char* name)
 {
-	qn_val_if_fail(prop != NULL, NULL);
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	return qs_cast_vt(rdh, RDHBASE)->create_shader(name);
+}
+
+//
+QgShader* qg_rdh_create_shader_buffer(const char* name, const QgShaderCode* vs, const QgShaderCode* ps, QgScFlag flags)
+{
+	if (vs == NULL || ps == NULL)
+	{
+		qn_debug_outputf(true, "RDH", "shader source is null");
+		return NULL;
+	}
+	if (flags != QGSCF_TEXT && (vs->size == 0 || ps->size == 0))
+	{
+		qn_debug_outputf(true, "RDH", "shader code size is zero");
+		return NULL;
+	}
+	if (vs->code == NULL || ps->code == NULL)
+	{
+		qn_debug_outputf(true, "RDH", "shader code is empty");
+		return NULL;
+	}
+	QgShader* shader = qg_rdh_create_shader(name);
+	if (qs_cast_vt(shader, QGSHADER)->bind_buffer(shader, QGSHADER_VS, vs->code, vs->size, flags) == false ||
+		qs_cast_vt(shader, QGSHADER)->bind_buffer(shader, QGSHADER_PS, ps->code, ps->size, flags) == false)
+	{
+		qs_unload(shader);
+		return NULL;
+	}
+	return shader;
+}
+
+//
+QgRender* qg_rdh_create_render(const QgPropRender* prop, QgShader* shader)
+{
+	if (prop == NULL)
+	{
+		qn_debug_outputf(true, "RDH", "pipeline property is empty");
+		return NULL;
+	}
+	if (shader == NULL)
+	{
+		qn_debug_outputf(true, "RDH", "pipeline shader is empty");
+		return NULL;
+	}
 
 #define RDH_CHK_NULL(sec,item)				if (prop->sec.item == NULL)\
-		{ qn_debug_outputf(true, "RDH", "'%s.%s' has no data", #sec, #item); return NULL; } (void)1
-#define RDH_CHK_RANGE_MAX1(item,vmax)		if ((size_t)prop->item < (vmax))\
-		{ qn_debug_outputf(true, "RDH", "invalid '%s' value: %d", #item, prop->item); return NULL; } (void)1
-#define RDH_CHK_RANGE_MAX2(sec,item,vmax)	if ((size_t)prop->sec.item < (vmax))\
-		{ qn_debug_outputf(true, "RDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; } (void)1
-#define RDH_CHK_RANGE_MIN(sec,item,value)	if ((size_t)prop->sec.item > (value))\
-		{ qn_debug_outputf(true, "RDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; } (void)1
+		{ qn_debug_outputf(true, "RDH", "'%s.%s' has no data", #sec, #item); return NULL; } (void)NULL
+#define RDH_CHK_RANGE_MAX1(item,vmax)		if ((size_t)prop->item >= (vmax))\
+		{ qn_debug_outputf(true, "RDH", "invalid '%s' value: %d", #item, prop->item); return NULL; } (void)NULL
+#define RDH_CHK_RANGE_MAX2(sec,item,vmax)	if ((size_t)prop->sec.item >= (vmax))\
+		{ qn_debug_outputf(true, "RDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; } (void)NULL
+#define RDH_CHK_RANGE_MIN(sec,item,value)	if ((size_t)prop->sec.item <= (value))\
+		{ qn_debug_outputf(true, "RDH", "invalid '%s.%s' value: %d", #sec, #item, prop->sec.item); return NULL; } (void)NULL
 
-	// 세이더
-	RDH_CHK_NULL(vs, code);
-	RDH_CHK_NULL(ps, code);
 	// 래스터라이저
 	RDH_CHK_RANGE_MAX2(rasterizer, fill, QGFILL_MAX_VALUE);
 	RDH_CHK_RANGE_MAX2(rasterizer, cull, QGCULL_MAX_VALUE);
@@ -335,7 +428,7 @@ QgRender* qg_rdh_create_render(const QgPropRender* prop, bool compile_shader)
 	RDH_CHK_RANGE_MAX1(stencil, QGSTENCIL_MAX_VALUE);
 	// 레이아웃
 	RDH_CHK_RANGE_MIN(layout, count, 0);
-	RDH_CHK_NULL(layout, elements);
+	RDH_CHK_NULL(layout, inputs);
 	// 렌더 뎁스 포맷
 	RDH_CHK_RANGE_MIN(format, count, 0);
 	RDH_CHK_RANGE_MAX2(format, count, QGRVS_MAX_VALUE);
@@ -347,107 +440,156 @@ QgRender* qg_rdh_create_render(const QgPropRender* prop, bool compile_shader)
 #undef RDH_CHK_RANGE_MAX1
 #undef RDH_CHK_NULL
 
-	RdhBase* self = qg_instance_rdh;
-	self->invokes.creations++;
-	self->invokes.invokes++;
-	return qv_cast(self, RDHBASE)->create_render(prop, compile_shader);
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	return qs_cast_vt(rdh, RDHBASE)->create_render(prop, shader);
 }
 
 //
 bool qg_rdh_set_index(QgBuffer* buffer)
 {
-	RdhBase* self = qg_instance_rdh;
-	self->invokes.invokes++;
-	return qv_cast(self, RDHBASE)->set_index(buffer);
+	if (buffer == NULL)
+	{
+		qn_debug_outputs(true, "RDH", "cannot set empty index buffer");
+		return false;
+	}
+	if (buffer->type != QGBUFFER_INDEX)
+	{
+		qn_debug_outputs(true, "RDH", "cannot set non-index buffer as index buffer");
+		return false;
+	}
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.invokes++;
+	return qs_cast_vt(rdh, RDHBASE)->set_index(buffer);
 }
 
 //
 bool qg_rdh_set_vertex(QgLoStage stage, QgBuffer* buffer)
 {
-	qn_val_if_fail((size_t)stage < QGLOS_MAX_VALUE, false);
-	RdhBase* self = qg_instance_rdh;
-	self->invokes.invokes++;
-	return qv_cast(self, RDHBASE)->set_vertex(stage, buffer);
+	if (buffer == NULL)
+	{
+		qn_debug_outputs(true, "RDH", "cannot set empty vertex buffer");
+		return false;
+	}
+	if (buffer->type != QGBUFFER_VERTEX)
+	{
+		qn_debug_outputs(true, "RDH", "cannot set non-vertex buffer as vertex buffer");
+		return false;
+	}
+	if ((size_t)stage >= QGLOS_MAX_VALUE)
+	{
+		qn_debug_outputf(true, "RDH", "invalid vertex layout stage: %d (max: %d)", stage, QGLOS_MAX_VALUE - 1);
+		return false;
+	}
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.invokes++;
+	return qs_cast_vt(rdh, RDHBASE)->set_vertex(stage, buffer);
 }
 
 //
-void qg_rdh_set_render(QgRender* render)
+bool qg_rdh_set_render(QgRender* render)
 {
-	RdhBase* self = qg_instance_rdh;
-	self->invokes.invokes++;
-	qv_cast(self, RDHBASE)->set_render(render);
+	if (render == NULL)
+	{
+		qn_debug_outputs(true, "RDH", "cannot set empty render");
+		return false;
+	}
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.invokes++;
+	return qs_cast_vt(rdh, RDHBASE)->set_render(render);
 }
 
 //
 bool qg_rdh_draw(QgTopology tpg, int vertices)
 {
-	qn_val_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_val_if_fail(vertices > 0, false);
-	RdhBase* self = qg_instance_rdh;
-	self->invokes.invokes++;
-	self->invokes.draws++;
-	return qv_cast(self, RDHBASE)->draw(tpg, vertices);
+	if ((size_t)tpg >= QGTPG_MAX_VALUE)
+	{
+		qn_debug_outputf(true, "RDH", "invalid topology: %d", tpg);
+		return false;
+	}
+	if (vertices <= 0)
+	{
+		qn_debug_outputf(true, "RDH", "invalid vertices: %d", vertices);
+		return false;
+	}
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.invokes++;
+	rdh->invokes.draws++;
+	return qs_cast_vt(rdh, RDHBASE)->draw(tpg, vertices);
 }
 
 //
 bool qg_rdh_draw_indexed(QgTopology tpg, int indices)
 {
-	qn_val_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_val_if_fail(indices > 0, false);
-	RdhBase* self = qg_instance_rdh;
-	self->invokes.invokes++;
-	self->invokes.draws++;
-	return qv_cast(self, RDHBASE)->draw_indexed(tpg, indices);
-}
-
-//
-bool qg_rdh_ptr_draw(QgTopology tpg, int vertices, int stride, const void* vertex_data)
-{
-	qn_val_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_val_if_fail(vertices > 0 && stride >= 0 && vertex_data, false);
-
-	RdhBase* self = qg_instance_rdh;
-	self->invokes.invokes++;
-	self->invokes.draws++;
-	return qv_cast(self, RDHBASE)->ptr_draw(tpg, vertices, stride, vertex_data);
-
-}
-
-//
-bool qg_rdh_ptr_draw_indexed(QgTopology tpg,
-	int vertices, int vertex_stride, const void* vertex_data,
-	int indices, int index_stride, const void* index_data)
-{
-	qn_val_if_fail((size_t)tpg < QGTPG_MAX_VALUE, false);
-	qn_val_if_fail(vertices > 0 && vertex_stride >= 0 && vertex_data, false);
-	qn_val_if_fail(indices > 0 && index_data, false);
-
-	RdhBase* self = qg_instance_rdh;
-	self->invokes.invokes++;
-	self->invokes.draws++;
-	return qv_cast(self, RDHBASE)->ptr_draw_indexed(tpg, vertices, vertex_stride, vertex_data, indices, index_stride, index_data);
+	if ((size_t)tpg >= QGTPG_MAX_VALUE)
+	{
+		qn_debug_outputf(true, "RDH", "invalid topology: %d", tpg);
+		return false;
+	}
+	if (indices <= 0)
+	{
+		qn_debug_outputf(true, "RDH", "invalid indices: %d", indices);
+		return false;
+	}
+	RdhBase* rdh = qg_instance_rdh;
+	rdh->invokes.invokes++;
+	rdh->invokes.draws++;
+	return qs_cast_vt(rdh, RDHBASE)->draw_indexed(tpg, indices);
 }
 
 
 //////////////////////////////////////////////////////////////////////////
-// 버퍼
+// 오브젝트
 
 //
-void* qg_buf_map(QgBuffer* self)
+void* qg_buffer_map(QgBuffer* self)
 {
 	qn_val_if_fail(self->mapped == false, NULL);
-	return qv_cast(self, QGBUFFER)->map(self);
+	return qs_cast_vt(self, QGBUFFER)->map(self);
 }
 
-bool qg_buf_unmap(QgBuffer* self)
+//
+bool qg_buffer_unmap(QgBuffer* self)
 {
 	qn_val_if_fail(self->mapped != false, false);
-	return qv_cast(self, QGBUFFER)->unmap(self);
+	return qs_cast_vt(self, QGBUFFER)->unmap(self);
 }
 
-bool qg_buf_data(QgBuffer* self, const void* data)
+//
+bool qg_buffer_data(QgBuffer* self, const void* data)
 {
 	qn_val_if_fail(self->mapped == false, false);
 	qn_val_if_fail(data, false);
-	return qv_cast(self, QGBUFFER)->data(self, data);
+	return qs_cast_vt(self, QGBUFFER)->data(self, data);
+}
+
+//
+bool qg_shader_bind(QgShader* self, QgShader* shader)
+{
+	qn_val_if_fail(shader != NULL, false);
+	return qs_cast_vt(self, QGSHADER)->bind_shader(self, shader);
+}
+
+//
+bool qg_shader_bind_buffer(QgShader* self, QgShaderType type, const QgShaderCode* code, QgScFlag flags)
+{
+	qn_val_if_fail(QN_TMASK(type, QGSHADER_ALL), false);
+	qn_val_if_fail(code != NULL && code->code != NULL && code->size > 0, false);
+	return qs_cast_vt(self, QGSHADER)->bind_buffer(self, type, code->code, code->size, flags);
+}
+
+//
+bool qg_shader_bind_file(QgShader* self, QgShaderType type, const char* filename, int flags)
+{
+	qn_val_if_fail(QN_TMASK(type, QGSHADER_ALL), false);
+	qn_val_if_fail(filename != NULL, false);
+
+	int size;
+	void* data = qn_file_alloc(filename, &size);
+	qn_val_if_fail(data != NULL, false);
+	bool ret = qs_cast_vt(self, QGSHADER)->bind_buffer(self, type, data, (uint)size, flags);
+
+	qn_free(data);
+	return ret;
 }

@@ -1,118 +1,82 @@
 ﻿// rdh 테스트
 #include <qs.h>
 
-typedef struct LOOPDATA
+static const char* vs =
+"attribute vec4 aposition;\n"
+"attribute vec4 acolor;\n"
+"varying vec4 vcolor;\n"
+"void main()\n"
+"{\n"
+"   gl_Position = vec4(aposition.xyz, 1.0);\n"
+"   vcolor = acolor;\n"
+"}\n";
+static const char* ps =
+"precision mediump float;\n"
+"varying vec4 vcolor;\n"
+"void main()\n"
+"{\n"
+"  //gl_FragColor = vec4 (1.0, 1.0, 1.0, 1.0 );\n"
+"  gl_FragColor = vcolor;\n"
+"}\n";
+static QgLayoutInput layouts[] =
 {
-	float acc;
-	float dir;
-} LoopData;
-
-void loop(void* loop_data)
+	{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT2 },
+	{ QGLOS_2, QGLOU_COLOR1, QGLOT_FLOAT4 },
+};
+static float vertices[] =
 {
-	LoopData* data = loop_data;
-
-	float f = qg_get_advance() / 5.0f;
-	data->acc += f * data->dir;
-	if (data->acc > 1.0f)
-	{
-		data->acc = 1.0f;
-		data->dir = -1.0f;
-	}
-	if (data->acc < 0.0f)
-	{
-		data->acc = 0.0f;
-		data->dir = 1.0f;
-	}
-
-	QmColor cc = qm_color(data->acc, data->acc, data->acc, 1.0f);
-	qg_rdh_set_background(&cc);
-
-	if (qg_rdh_begin(true))
-	{
-		qg_rdh_end();
-		qg_rdh_flush();
-	}
-}
-
-int event_callback(void* event_data, QgEventType event_type, const QgEvent* event_param)
+	0.0f, 0.5f,
+	0.5f, -0.5f,
+	-0.5f, -0.5f,
+};
+static float colors[] =
 {
-	LoopData* data = event_data;
-	const char* evstr = qg_string_event(event_type);
-
-	if (event_type == QGEV_MOUSEMOVE)
-	{
-		//qn_outputf("마우스 이동 => %d, %d", event_param->mmove.pt.X, event_param->mmove.pt.Y);
-	}
-	else if (event_type == QGEV_WINDOW)
-	{
-		const char* wevstr = qg_string_window_event(event_param->wevent.mesg);
-		qn_outputf("\tWINDOW EVENT => %d:%s", event_param->wevent.mesg, wevstr);
-	}
-	else if (event_type == QGEV_KEYDOWN)
-	{
-		QikKey key = event_param->key.key;
-		if (key == QIK_ESC)
-			qg_exit_loop();
-		else if (key == QIK_SPACE)
-		{
-			data->acc = 0.0f;
-			data->dir = 1.0f;
-		}
-		else if (key == QIK_F1)
-		{
-			bool fullscreen = qg_get_fullscreen_state();
-			qg_toggle_fullscreen(!fullscreen);
-		}
-		const char* key_name = qg_qik_str(key);
-		if (key_name)
-			qn_outputf("키 눌림 => <%s>(%X)", key_name, key);
-	}
-	else if (event_type == QGEV_KEYUP)
-	{
-		const char* key_name = qg_qik_str(event_param->key.key);
-		if (key_name)
-			qn_outputf("키 떼임 => <%s>(%X)", key_name, event_param->key.key);
-	}
-	else if (event_type == QGEV_TEXTINPUT && event_param->text.len > 0)
-	{
-#ifdef _QN_WINDOWS_
-		wchar wz[32];
-		qn_u8to16(wz, QN_COUNTOF(wz), event_param->text.data, event_param->text.len);
-		qn_outputf("\t텍스트 입력: <%ls>(%d)", wz, event_param->text.len);
-#else
-		char sz[32];
-		qn_strncpy(sz, event_param->text.data, (size_t)event_param->text.len);
-		qn_outputf("\t텍스트 입력: <%s>(%d)", sz, event_param->text.len);
-#endif
-	}
-	else
-	{
-		qn_outputf("STUB EVENT => %d:%s", event_type, evstr);
-	}
-	return 0;
-}
+	1.0f, 0.0f, 0.0f, 1.0f,
+	0.0f, 1.0f, 0.0f, 1.0f,
+	0.0f, 0.0f, 1.0f, 1.0f
+};
 
 int main(void)
 {
 	qn_runtime();
 
-	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA /*| QGFLAG_TEXT*/;
+	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC;
 	int features = QGFEATURE_NONE;
 	if (qg_open_rdh(NULL, "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 
-	for (int i = 0; ; i++)
+	QgShaderCode svc = { 0, vs };
+	QgShaderCode spc = { 0, ps };
+	QgPropRender pr = qg_default_prop_render(layouts, QN_COUNTOF(layouts));
+	QgShader* shader = qg_rdh_create_shader_buffer(NULL, &svc, &spc, QGSCF_TEXT);
+	QgRender* render = qg_rdh_create_render(&pr, shader);
+	QgBuffer* vertexbuf = qg_rdh_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(vertices), sizeof(float), vertices);
+	QgBuffer* colorbuf = qg_rdh_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(colors), sizeof(float), colors);
+
+	while (qg_loop())
 	{
-		const QgUdevMonitor* mon = qg_get_monitor(i);
-		if (mon == NULL)
-			break;
-		qn_outputf("모니터%d: %s (%d,%d):(%d,%d)", i, mon->name, mon->x, mon->y, mon->width, mon->height);
+		QgEvent ev;
+		while (qg_poll(&ev))
+		{
+			if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_ESC)
+				qg_exit_loop();
+		}
+
+		if (qg_rdh_begin(true))
+		{
+			qg_rdh_set_render(render);
+			qg_rdh_set_vertex(QGLOS_1, vertexbuf);
+			qg_rdh_set_vertex(QGLOS_2, colorbuf);
+			qg_rdh_draw(QGTPG_TRI, 3);
+
+			qg_rdh_end(true);
+		}
 	}
 
-	LoopData data = { .acc = 0.0f, .dir = 1.0f };
-	qg_register_event_callback(event_callback, &data);
-	qg_main_loop(loop, &data);
-
+	qs_unload(vertexbuf);
+	qs_unload(colorbuf);
+	qs_unload(render);
+	qs_unload(shader);
 	qg_close_rdh();
 
 	return 0;

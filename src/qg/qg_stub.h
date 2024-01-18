@@ -54,6 +54,8 @@ typedef struct STUBBASE
 // 스터브 인스턴스 
 extern StubBase* qg_instance_stub;
 
+#define STUB				(qg_instance_stub)		
+
 // 시스템 스터브를 연다
 extern bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags, QgFeature features);
 // 시스템 스터브를 정리한다
@@ -129,14 +131,13 @@ typedef struct RENDERERINFO
 	char				vendor[64];							// 디바이스 제조사
 	int					renderer_version;					// 렌더러 버전
 	int					shader_version;						// 세이더 버전
-	int					max_layout_count;					// 최대 레이아웃(=정점 속성) 갯수
-	int					max_indices;						// 최대 인덱스 갯수
-	int					max_vertices;						// 최대 정점 갯수
-	int					max_tex_dim;						// 최대 텍스쳐 크기
-	int					max_tex_count;						// 최대 텍스쳐 갯수
-	int					max_off_count;						// 최대 오프 텍스쳐(=렌더타겟/프레임버퍼) 갯수
+	uint				max_layout_count;					// 최대 레이아웃(=정점 속성) 갯수
+	uint				max_indices;						// 최대 인덱스 갯수
+	uint				max_vertices;						// 최대 정점 갯수
+	uint				max_tex_dim;						// 최대 텍스쳐 크기
+	uint				max_tex_count;						// 최대 텍스쳐 갯수
+	uint				max_off_count;						// 최대 오프 텍스쳐(=렌더타겟/프레임버퍼) 갯수
 	QgClrFmt			clr_fmt;							// 색깔 포맷
-	bool				open_stub;
 } RendererInfo;
 
 // 렌더 추적 정보
@@ -163,12 +164,12 @@ typedef struct RENDERTRANSFORM
 {
 	QmSizeF				size;
 	QmDepth				depth;
+	QmMat4				ortho;								// ortho transform
 	QmMat4				world;
 	QmMat4				view;
-	QmMat4				project;
-	QmMat4				view_project;
-	QmMat4				inv;								// inverse view
-	QmMat4				ortho;								// ortho transform
+	QmMat4				proj;
+	QmMat4				view_proj;
+	QmMat4				invv;								// inverse view
 	QmMat4				frm;								// tex formation
 	QmMat4				tex[4];
 	QmRect				scissor;
@@ -182,6 +183,9 @@ typedef struct RENDERPARAM
 	QmMat4*				bone_ptr;
 	int					bone_count;
 	QmColor				bgc;
+
+	QgVarShaderFunc		callback_func;
+	void*				callback_data;
 } RenderParam;
 
 // 렌더러 디바이스
@@ -196,9 +200,9 @@ typedef struct RDHBASE
 	RenderInvoke		invokes;
 } RdhBase;
 
-qv_name(RDHBASE)
+qs_name_vt(RDHBASE)
 {
-	qv_name(QSGAM)	base;
+	qs_name_vt(QSGAM)	base;
 	void (*reset)(void);
 	void (*clear)(int, const QmColor*, int, float);
 
@@ -206,21 +210,29 @@ qv_name(RDHBASE)
 	void (*end)(void);
 	void (*flush)(void);
 
-	QgBuffer* (*create_buffer)(QgBufType, int, int, const void*);
-	QgRender* (*create_render)(const QgPropRender*, bool);
+	QgBuffer* (*create_buffer)(QgBufferType, uint, uint, const void*);
+	QgShader* (*create_shader)(const char*);
+	QgRender* (*create_render)(const QgPropRender*, QgShader*);
 
 	bool (*set_index)(QgBuffer*);
 	bool (*set_vertex)(QgLoStage, QgBuffer*);
-	void (*set_render)(QgRender*);
+	bool (*set_render)(QgRender*);
 
 	bool (*draw)(QgTopology, int);
 	bool (*draw_indexed)(QgTopology, int);
-	bool (*ptr_draw)(QgTopology, int, int, const void*);
-	bool (*ptr_draw_indexed)(QgTopology, int, int, const void*, int, int, const void*);
 };
 
 // 렌더 디바이스
 extern RdhBase* qg_instance_rdh;
+
+#define RDH					(qg_instance_rdh)		
+#define RDH_INFO			(&qg_instance_rdh->info)
+#define RDH_TRANSFORM		(&qg_instance_rdh->tm)
+#define RDH_PARAM			(&qg_instance_rdh->param)
+#define RDH_INVOKES			(&qg_instance_rdh->invokes)
+
+#define rdh_set_flush(v)	(qg_instance_rdh->invokes.flush=(v))
+#define rdh_inc_ends()		(qg_instance_rdh->invokes.ends++)
 
 #ifdef USE_ES
 // OPENGL ES 할당
@@ -236,13 +248,12 @@ extern void rdh_internal_invoke_reset(void);
 // 레이아웃 검사
 extern void rdh_internal_check_layout(void);
 
-#define rdh_info()			(qs_cast(qg_instance_rdh, RdhBase)->info)
-#define rdh_transform()		(qs_cast(qg_instance_rdh, RdhBase)->tm)
-#define rdh_param()			(qs_cast(qg_instance_rdh, RdhBase)->param)
-#define rdh_invokes()		(qs_cast(qg_instance_rdh, RdhBase)->invokes)
-
-#define rdh_set_flush(v)	(qs_cast(qg_instance_rdh, RdhBase)->invokes.flush=(v))
-#define rdh_inc_ends()		(qs_cast(qg_instance_rdh, RdhBase)->invokes.ends++)
 
 // 색깔 변환
-extern QgClrFmt qg_clrfmt_from_size(int red, int green, int blue, int alpha, bool is_float);
+extern QgClrFmt qg_rgba_to_clrfmt(int red, int green, int blue, int alpha, bool is_float);
+// 열거자 컨버터 초기화
+extern void qg_init_enum_convs(void);
+// LAYOUT USAGE 변환
+extern QgLoUsage qg_str_to_layout_usage(size_t hash, const char* name);
+// 세이더 자동 상수 변환
+QgScAuto qg_str_to_shader_const_auto(size_t hash, const char* name);

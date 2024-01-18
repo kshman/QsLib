@@ -133,6 +133,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ImageHasSafeExceptionHandlers />
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -214,8 +215,8 @@
     <ClCompile Include="..\..\src\qg\qg_rdh.c" />
     <ClCompile Include="..\..\src\qg\qg_stub.c" />
     <ClCompile Include="..\..\src\qg\stub\qgrdh_es.c" />
-    <ClCompile Include="..\..\src\qg\stub\qgstub_win.c" />
-    <ClCompile Include="..\..\src\qg\stub\qgstub_wlx.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgstub_windows.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgstub_wayland.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_sdl.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_emscripten.c" />
     <ClCompile Include="..\..\src\qg\qg_kmc.c" />

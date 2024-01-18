@@ -478,7 +478,7 @@ bool stub_system_poll(void)
 #endif
 
 	return QN_TMASK(wStub.base.stats, QGSST_EXIT) == false;
-	}
+}
 
 //
 bool stub_system_disable_acs(const bool enable)
@@ -1505,7 +1505,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				const float ydpi = LOWORD(wp) / 96.0f;
 				// TODO: 여기에 DPI 변경 알림 이벤트 날리면 좋겠네
 #endif
-				}
+			}
 			break;
 
 		case WM_GETDPISCALEDSIZE:
@@ -1526,13 +1526,13 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		default:
 			break;
-			}
+	}
 
 pos_windows_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-		}
+}
 #pragma endregion 윈도우 메시지
 
 #endif // _WIN32 && !USE_SDL2

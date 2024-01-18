@@ -138,7 +138,8 @@ static int qn_dbg_buf_flush(void)
 	if (debug_impl.fp != NULL)
 		fputs(debug_impl.out_buf, debug_impl.fp);
 #ifdef __EMSCRIPTEN__
-	emscripten_console_log(debug_impl.out_buf);
+	// 콘솔에 두번 나오니깐 한번만 출력하자
+	//emscripten_console_log(debug_impl.out_buf);
 #endif
 #ifdef _QN_ANDROID_
 	__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, debug_impl.out_buf);
@@ -160,9 +161,14 @@ int qn_debug_assert(const char* RESTRICT expr, const char* RESTRICT mesg, const 
 	qn_dbg_buf_int(line);
 	qn_dbg_buf_str(")\n\t: ");
 	qn_dbg_buf_str(expr);
-	qn_dbg_buf_str(">\n\t: [");
-	qn_dbg_buf_str(mesg);
-	qn_dbg_buf_str("]\n");
+	if (mesg == NULL)
+		qn_dbg_buf_str(">\n");
+	else
+	{
+		qn_dbg_buf_str(">\n\t: [");
+		qn_dbg_buf_str(mesg);
+		qn_dbg_buf_str("]\n");
+	}
 	qn_dbg_buf_flush();
 
 	DEBUG_BREAK(debug_impl.debugger);
@@ -635,7 +641,7 @@ static void* qn_mpf_alloc(size_t size, bool zero, const char* desc, size_t line)
 		qn_mpf_node_link(node);
 	}
 	return _memptr(node);
-}
+	}
 
 //
 static void* qn_mpf_realloc(void* ptr, size_t size, const char* desc, size_t line)
@@ -693,7 +699,7 @@ static void* qn_mpf_realloc(void* ptr, size_t size, const char* desc, size_t lin
 		qn_mpf_node_link(node);
 	}
 	return _memptr(node);
-}
+	}
 
 //
 static void qn_mpf_free(void* ptr)

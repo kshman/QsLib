@@ -1047,13 +1047,13 @@ size_t qn_strhash(const char* p)
 size_t qn_strihash(const char* p)
 {
 	const char* sz = p;
-	size_t h = (size_t)toupper(*sz);
+	size_t h = (size_t)tolower(*sz);
 	if (!h)
 		return 0;
 	size_t c;
 	sz++;
 	for (c = 0; *sz && c < 256; sz++, c++)
-		h = (h << 5) - h + (size_t)toupper(*sz);
+		h = (h << 5) - h + (size_t)tolower(*sz);
 	h = (h << 5) - h + c;
 	return h;
 }
@@ -1869,13 +1869,13 @@ size_t qn_wcshash(const wchar* p)
 size_t qn_wcsihash(const wchar* p)
 {
 	const wchar* sz = p;
-	size_t h = (size_t)towupper(*sz);
+	size_t h = (size_t)towlower(*sz);
 	if (!h)
 		return 0;
 	size_t c;
 	sz++;
 	for (c = 0; *sz && c < 256; sz++, c++)
-		h = (h << 5) - h + (size_t)towupper(*sz);
+		h = (h << 5) - h + (size_t)towlower(*sz);
 	h = (h << 5) - h + c;
 	return h;
 }

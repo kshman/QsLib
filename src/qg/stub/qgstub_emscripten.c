@@ -123,6 +123,8 @@ void stub_system_actuate(void)
 //
 bool stub_system_poll(void)
 {
+	if (emscripten_has_asyncify())
+		emscripten_sleep(10);
 	return true;
 }
 
