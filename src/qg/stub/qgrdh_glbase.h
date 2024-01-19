@@ -27,23 +27,23 @@ typedef struct QGLREFHANDLE
 // 레이아웃 요소
 typedef struct QGLLAYOUTINPUT
 {
-	QgLoStage			stage : 16;
-	QgLoUsage			usage : 16;
-	GLuint				count;
-	GLenum				format;
+	QgLayoutStage		stage : 16;
+	QgLayoutUsage		usage : 16;
 	GLuint				offset;
+	GLenum				format;
+	GLuint				count : 16;
 	GLboolean			normalized;
-	GLboolean			converted;
 } QglLayoutInput;
+QN_DECL_CTNR(QglCtnLayoutInput, QglLayoutInput);
 
 // 레이아웃 프로퍼티
 typedef struct QGLLAYOUTPROPERTY
 {
-	const void*			pointer;
 	GLuint				buffer;
-	GLsizei				stride;
-	GLuint				count;
+	GLuint				offset;
 	GLenum				format;
+	GLsizei				stride;
+	GLuint				count : 16;
 	GLboolean			normalized;
 } QglLayoutProperty;
 
@@ -53,14 +53,18 @@ QN_DECL_CTNR(QglCtnUniform, QgVarShader);
 // 세이더 어트리뷰트
 typedef struct QGLVARATTR
 {
+#ifdef _QN_64_
+	char				name[32 + 4];
+#else
 	char				name[32];
+#endif
 	size_t				hash;
 
-	GLint				attrib : 8;
-	GLint				size : 8;
+	GLint				attrib : 8;			// 최대 16이므로 괜춘
+	GLint				size : 8;			// 고민해야함
 
-	QgLoUsage			usage : 8;
-	QgScType			sctype : 8;
+	QgLayoutUsage		usage : 8;			// 최대 24(2024-01-20 시점)으로 괜춘
+	QgScType			sctype : 8;			// 최대 22(2032-01-20 시점)으로 괜춘		
 } QglVarAttr;
 QN_DECL_CTNR(QglCtnAttr, QglVarAttr);
 
@@ -140,6 +144,9 @@ struct QGLSHADER
 	QglCtnAttr			attrs;
 	byte				attr_index[QGLOU_MAX_SIZE];
 
+	QglCtnLayoutInput	inputs;
+	QglLayoutInput*		stages[QGLOS_MAX_VALUE];
+
 	bool				linked;
 };
 
@@ -149,14 +156,6 @@ struct QGLRENDER
 	QgRender			base;
 
 	QglShader*			shader;
-
-	struct QGLRENDER_LAYOUTELEMENT
-	{
-		ushort				count[QGLOS_MAX_VALUE];
-		ushort				stride[QGLOS_MAX_VALUE];
-		QglLayoutInput*		stages[QGLOS_MAX_VALUE];
-		QglLayoutInput*		inputs;
-	}					layout;
 };
 
 // 참조 핸들 만들기
@@ -191,10 +190,8 @@ INLINE QglRefHandle* qgl_ref_handle_load_shader(QglRefHandle* ptr, GLuint handle
 }
 
 // 문자열 버전에서 숫자만 mnn 방식으로
-INLINE int qgl_get_version(GLenum name, const char* name1, const char* name2)
+INLINE int qgl_get_version(const char* s, const char* name1, const char* name2)
 {
-	const char* s = (const char*)glGetString(name);
-	qn_val_if_fail(s, 0);
 	const float f =
 		qn_strnicmp(s, name1, strlen(name1)) == 0 ? strtof(s + strlen(name1), NULL) :
 		qn_strnicmp(s, name2, strlen(name2)) == 0 ? strtof(s + strlen(name2), NULL) :

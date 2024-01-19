@@ -20,8 +20,8 @@ static const char* ps =
 "}\n";
 static QgLayoutInput layouts[] =
 {
-	{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT2 },
-	{ QGLOS_2, QGLOU_COLOR1, QGLOT_FLOAT4 },
+	{ QGLOS_1, QGLOU_POSITION, QGCF_R32G32F, true },
+	{ QGLOS_2, QGLOU_COLOR1, QGCF_R32G32B32A32F, false },
 };
 static float vertices[] =
 {
@@ -45,10 +45,11 @@ int main(void)
 	if (qg_open_rdh(NULL, "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 
-	QgShaderCode svc = { 0, vs };
-	QgShaderCode spc = { 0, ps };
-	QgPropRender pr = qg_default_prop_render(layouts, QN_COUNTOF(layouts));
-	QgShader* shader = qg_rdh_create_shader_buffer(NULL, &svc, &spc, QGSCF_TEXT);
+	QgLayoutData ld = { QN_COUNTOF(layouts), layouts };
+	QgCodeData svc = { 0, vs };
+	QgCodeData spc = { 0, ps };
+	QgShader* shader = qg_rdh_create_shader_buffer(NULL, &ld, &svc, &spc, QGSCF_TEXT);
+	QgPropRender pr = qg_default_prop_render();
 	QgRender* render = qg_rdh_create_render(&pr, shader);
 	QgBuffer* vertexbuf = qg_rdh_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(vertices), sizeof(float), vertices);
 	QgBuffer* colorbuf = qg_rdh_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(colors), sizeof(float), colors);

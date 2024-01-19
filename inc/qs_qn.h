@@ -278,6 +278,7 @@ typedef uint16_t			uchar2;
 #endif
 
 typedef uint16_t			halfint;						/// @brief 16비트 부호 없는 정수(half int)
+typedef uint16_t			halffloat;						/// @brief 16비트 실수(half float)
 typedef int16_t				bool16;							/// @brief 16비트 참거짓
 typedef int32_t				bool32;							/// @brief 32비트 참거짓
 

@@ -211,11 +211,11 @@ qs_name_vt(RDHBASE)
 	void (*flush)(void);
 
 	QgBuffer* (*create_buffer)(QgBufferType, uint, uint, const void*);
-	QgShader* (*create_shader)(const char*);
+	QgShader* (*create_shader)(const char*, size_t, const QgLayoutInput*);
 	QgRender* (*create_render)(const QgPropRender*, QgShader*);
 
 	bool (*set_index)(QgBuffer*);
-	bool (*set_vertex)(QgLoStage, QgBuffer*);
+	bool (*set_vertex)(QgLayoutStage, QgBuffer*);
 	bool (*set_render)(QgRender*);
 
 	bool (*draw)(QgTopology, int);
@@ -249,11 +249,17 @@ extern void rdh_internal_invoke_reset(void);
 extern void rdh_internal_check_layout(void);
 
 
-// 색깔 변환
-extern QgClrFmt qg_rgba_to_clrfmt(int red, int green, int blue, int alpha, bool is_float);
 // 열거자 컨버터 초기화
 extern void qg_init_enum_convs(void);
+// 색깔 변환
+extern QgClrFmt qg_rgba_to_clrfmt(int red, int green, int blue, int alpha, bool is_float);
 // LAYOUT USAGE 변환
-extern QgLoUsage qg_str_to_layout_usage(size_t hash, const char* name);
+extern QgLayoutUsage qg_str_to_layout_usage(size_t hash, const char* name);
 // 세이더 자동 상수 변환
-QgScAuto qg_str_to_shader_const_auto(size_t hash, const char* name);
+extern QgScAuto qg_str_to_shader_const_auto(size_t hash, const char* name);
+// 색깔 포맷 문자열로 변환
+extern const char* qg_clrfmt_to_str(QgClrFmt fmt);
+// LAYOTU USAGE 문자열로 변환
+extern const char* qg_layout_usage_to_str(const QgLayoutUsage usage);
+// 세이더 자동 상수 문자열로 변환
+extern const char* qg_shader_const_auto_to_str(const QgScAuto sca);

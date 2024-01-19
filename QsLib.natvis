@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
+  <!-- ==================== QNCTN & QG ==================== -->
+  
   <!-- 배열 / 컨테이너 / 슬라이스 -->
   <Type Name="QnPtrArr">
     <AlternativeType Name="QnByteArr"/>
@@ -13,6 +15,7 @@
     <AlternativeType Name="ErrorArray"/>
     <AlternativeType Name="SubArray"/>
     <AlternativeType Name="StubMonitorCtnr"/>
+    <AlternativeType Name="QglCtnLayoutInput"/>
     <AlternativeType Name="QglCtnUniform"/>
     <AlternativeType Name="QglCtnAttr"/>
     <DisplayString>[갯수: {COUNT}]</DisplayString>
@@ -68,6 +71,8 @@
     </Expand>
   </Type>
 
+  <!-- ==================== QN ==================== -->
+
   <!-- 데이트 타임 -->
   <Type Name="QnDateTime">
     <DisplayString>[{year}-{month}-{day} {hour}:{minute}:{second}.{millisecond}]</DisplayString>
@@ -107,15 +112,6 @@
         <NextPointer>next</NextPointer>
         <ValueNode>this</ValueNode>
       </LinkedListItems>
-    </Expand>
-  </Type>
-
-  <!-- 오브젝트 -->
-  <Type Name="QSGAM">
-    <DisplayString>[&lt;{((QsGam*)this)-&gt;vt-&gt;name,s}&gt; (ref:{((QsGam*)this)-&gt;ref})]</DisplayString>
-    <Expand>
-      <Item Name="[타입]">((QsGam*)this)-&gt;vt-&gt;name</Item>
-      <Item Name="[참조]">((QsGam*)this)-&gt;ref</Item>
     </Expand>
   </Type>
 
@@ -226,6 +222,19 @@
       <Item Name="Scailing">Scale</Item>
     </Expand>
   </Type>
+  
+  <!-- ==================== QS ==================== -->
+
+  <!-- 오브젝트 -->
+  <Type Name="QSGAM">
+    <DisplayString>[&lt;{((QsGam*)this)-&gt;vt-&gt;name,s}&gt; (ref:{((QsGam*)this)-&gt;ref})]</DisplayString>
+    <Expand>
+      <Item Name="[타입]">((QsGam*)this)-&gt;vt-&gt;name</Item>
+      <Item Name="[참조]">((QsGam*)this)-&gt;ref</Item>
+    </Expand>
+  </Type>
+  
+  <!-- ==================== QG ==================== -->
 
   <!-- 이벤트 노드 -->
   <Type Name="EventNode">
@@ -268,22 +277,35 @@
     <DisplayString Condition="((QGBUFFER*)this)-&gt;mapped != 0">[매핑중 {((QGBUFFER*)this)-&gt;type} (count:{((QGBUFFER*)this)-&gt;count}, stride:{((QGBUFFER*)this)-&gt;stride})]</DisplayString>
   </Type>
   
+  <!-- QGSHADER -->
+  <Type Name="QGSHADER">
+    <DisplayString>[{name,s}, {type} ({layout.counts[0]},{layout.counts[1]},{layout.counts[2]},{layout.counts[3]})]</DisplayString>
+  </Type>
+  
+  <!-- QGRENDER -->
+  <Type Name="QGRENDER">
+    <DisplayString>[RENDER (hash:{hash})]</DisplayString>
+  </Type>
+  
+  <!-- ==================== ES 또는 GL ==================== -->
+  
+  <!-- QGLREFHANDLE -->
+  <Type Name="QGLREFHANDLE">
+    <DisplayString>[handle: {handle} (ref:{ref})]</DisplayString>
+  </Type>
+  
   <!-- QGLSHADER-->
   <Type Name="QGLSHADER">
-    <DisplayString>[{base.name,s} (u:{uniforms.COUNT}, a:{attrs.COUNT}, ref:{base.base.ref})]</DisplayString>
+    <DisplayString>[{base.name,s} ({uniforms.COUNT}/{attrs.COUNT}/{inputs.COUNT} ref:{base.base.ref})]</DisplayString>
   </Type>
   
   <!-- QGLRENDER -->
   <Type Name="QGLRENDER">
-    <DisplayString>[{shader-&gt;base.name,s} (input:{{{layout.count[0]},{layout.count[1]},{layout.count[2]}}},{layout.count[3]}, stride:{{{layout.stride[0]},{layout.stride[1]},{layout.stride[2]},{layout.stride[3]}}}]</DisplayString>  
+    <DisplayString>[{shader-&gt;base.name,s}]</DisplayString>  
     <Expand>
       <Item Name="[GAM]">(QsGam*)this</Item>
       <Item Name="[해시]">base.hash</Item>
       <Item Name="[세이더]">shader</Item>
-      <ArrayItems>
-        <Size>layout.count[0]+layout.count[1]+layout.count[2]+layout.count[3]</Size>
-        <ValuePointer>layout.inputs</ValuePointer>
-      </ArrayItems>
     </Expand>
   </Type>
 
