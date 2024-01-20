@@ -419,6 +419,16 @@ QSAPI int qn_get_prop_int(const char* name, int default_value, int min_value, in
 /// @return 얻은 실수값
 QSAPI float qn_get_prop_float(const char* name, float default_value, float min_value, float max_value);
 
+/// @brief 키를 설정한다
+/// @param name 키 이름
+/// @param value 키 값
+QSAPI void qn_set_key(const char* RESTRICT name, const nint value);
+
+/// @brief 키를 얻는다
+/// @param name 키 이름
+/// @return 키 값. 키가 없어도 0을 반환
+QSAPI const nint qn_get_key(const char* name);
+
 /// @brief 에러 메시지를 얻는다
 /// @return 에러 메시지 문자열. 없다면 NULL
 QSAPI const char* qn_get_error(void);

@@ -233,10 +233,10 @@ typedef enum QGSHADERCONSTTYPE
 	QGSCT_BYTE2,											/// @brief 2개의 바이트
 	QGSCT_BYTE3,											/// @brief 3개의 바이트
 	QGSCT_BYTE4,											/// @brief 4개의 바이트
-	QGSCT_SPLR_1D,											/// @brief 1D 텍스쳐 샘플러
-	QGSCT_SPLR_2D,											/// @brief 2D 텍스쳐 샘플러
-	QGSCT_SPLR_3D,											/// @brief 3D 텍스쳐 샘플러
-	QGSCT_SPLR_CUBE,										/// @brief 큐브 텍스쳐 샘플러
+	QGSCT_SAMPLER1D,										/// @brief 1D 텍스쳐 샘플러
+	QGSCT_SAMPLER2D,										/// @brief 2D 텍스쳐 샘플러
+	QGSCT_SAMPLER3D,										/// @brief 3D 텍스쳐 샘플러
+	QGSCT_SAMPLERCUBE,										/// @brief 큐브 텍스쳐 샘플러
 	QGSCT_MAX_VALUE
 } QgScType;
 
@@ -488,6 +488,7 @@ typedef struct QGVARSHADER
 {
 	char				name[64];							/// @brief 변수 이름
 	size_t				hash;								/// @brief 변수 이름 해시
+	int					key;								/// @brief 키
 
 	ushort				offset;								/// @brief 변수 옵셋
 	ushort				size;								/// @brief 변수의 크기
@@ -872,10 +873,13 @@ QSAPI const char* qg_window_event_to_str(QgWindowEventType wev);
 typedef struct QGGAM		QgGam;							/// @brief 런더 감
 typedef struct QGNODE		QgNode;							/// @brief 노드
 typedef struct QGBUFFER		QgBuffer;						/// @brief 버퍼
-typedef struct QGSHADER		QgShader;						/// @brief 세이더
 typedef struct QGRENDER		QgRender;						/// @brief 렌더 파이프라인
 
-typedef void(*QgVarShaderFunc)(void*, size_t, const QgVarShader*);	/// @brief 세이더 변수 콜백 함수
+/// @brief 세이더 콜백
+/// @details 두번째 인수(int)는 qn_get_key로 얻어진 키 값을 전달하므로 자동 변수가 아닐 경우
+/// 미리 qn_set_key로 키 값을 등록해야 한다. 키 값이 없다면 0으로 전달하므로,
+/// 그 경우 세이더 변수의 name으로 변수를 특정해야 한다
+typedef void(*QgVarShaderFunc)(void*, int, const QgVarShader*);
 
 /// @brief 렌더러를 연다
 /// @param driver 드라이버 이름 (NULL로 지정하여 기본값)
@@ -887,7 +891,6 @@ typedef void(*QgVarShaderFunc)(void*, size_t, const QgVarShader*);	/// @brief �
 /// @param features 스터브 및 렌더러 사양
 /// @return 만들어졌으면 참
 /// @note 내부에서 qg_open_stub 함수를 호출한다 (미리 만들어 놔도 된다)
-///
 QSAPI bool qg_open_rdh(const char* driver, const char* title, int display, int width, int height, int flags, int features);
 
 /// @brief 렌더러를 닫는다
@@ -916,12 +919,9 @@ QSAPI void qg_rdh_flush(void);
 /// @note 이 함수는 직접 호출하지 않아도 좋다. 외부 스터브 사용할 때 화면 크기가 바뀔 때 사용하면 좋음
 QSAPI void qg_rdh_reset(void);
 
-/// @brief 렌더러를 지운다
+/// @brief 렌더러를 지운다 (배경은 지정간 배경색으로, 뎁스는 1로, 스텐실은 0으로)
 /// @param clear 지우기 플래그
-/// @param color 배경색 (널값이면 기본값으로 지움)
-/// @param stencil 스텐실 값
-/// @param depth 뎁스 값
-QSAPI void qg_rdh_clear(QgClear clear, const QmColor* color, int stencil, float depth);
+QSAPI void qg_rdh_clear(QgClear clear);
 
 /// @brief 세이더 vec3 타입 파라미터 설정
 /// @param at 0부터 3까지 총 4가지
@@ -977,18 +977,11 @@ QSAPI void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view);
 QSAPI QgBuffer* qg_rdh_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data);
 
 /// @brief 렌더 파이프라인을 만든다
-/// @param name 렌더 이름
+/// @param name 렌더 이름 (이름을 지정하면 캐시한다)
 /// @param pipe 렌더 파이프라인 속성
 /// @param shader 세이더 속성
 /// @return 만들어진 렌더 파이프라인
 QSAPI QgRender* qg_rdh_create_render(const char* name, const QgPropRender* pipe, const QgPropShader* shader);
-
-/// @brief 인덱스 버퍼를 설정한다
-/// @param buffer 설정할 버퍼
-/// @return 실패하면 거짓을 반환
-/// @retval true 문제 없이 인덱스 버퍼를 설정했다
-/// @retval false buffer 인수에 문제가 있거나 인덱스 버퍼가 아니다
-QSAPI bool qg_rdh_set_index(QgBuffer* buffer);
 
 /// @brief 정점 버퍼를 설정한다
 /// @param stage 버퍼를 지정할 스테이지
@@ -997,6 +990,13 @@ QSAPI bool qg_rdh_set_index(QgBuffer* buffer);
 /// @retval true 문제 없이 정점 버퍼를 설정했다
 /// @retval false buffer 인수에 문제가 있거나 정점 버퍼가 아니다
 QSAPI bool qg_rdh_set_vertex(QgLayoutStage stage, QgBuffer* buffer);
+
+/// @brief 인덱스 버퍼를 설정한다
+/// @param buffer 설정할 버퍼
+/// @return 실패하면 거짓을 반환
+/// @retval true 문제 없이 인덱스 버퍼를 설정했다
+/// @retval false buffer 인수에 문제가 있거나 인덱스 버퍼가 아니다
+QSAPI bool qg_rdh_set_index(QgBuffer* buffer);
 
 /// @brief 렌더 파이프라인을 설정한다
 /// @param render 렌더 파이프라인

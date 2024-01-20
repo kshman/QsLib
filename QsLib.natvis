@@ -302,11 +302,6 @@
     <DisplayString Condition="((QGBUFFER*)this)-&gt;mapped != 0">[매핑중 {((QGBUFFER*)this)-&gt;type} (count:{((QGBUFFER*)this)-&gt;count}, stride:{((QGBUFFER*)this)-&gt;stride})]</DisplayString>
   </Type>
   
-  <!-- QGSHADER -->
-  <Type Name="QGSHADER">
-    <DisplayString>[{name,s}, {type} ({layout.counts[0]},{layout.counts[1]},{layout.counts[2]},{layout.counts[3]})]</DisplayString>
-  </Type>
-  
   <!-- QGRENDER -->
   <Type Name="QGRENDER">
     <DisplayString>[RENDER]</DisplayString>
@@ -317,11 +312,6 @@
   <!-- QGLREFHANDLE -->
   <Type Name="QGLREFHANDLE">
     <DisplayString>[handle: {handle} (ref:{ref})]</DisplayString>
-  </Type>
-  
-  <!-- QGLSHADER-->
-  <Type Name="QGLSHADER">
-    <DisplayString>[{base.name,s} ({uniforms.COUNT}/{attrs.COUNT}/{inputs.COUNT} ref:{base.base.ref})]</DisplayString>
   </Type>
   
   <!-- QGLRENDER -->

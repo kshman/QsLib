@@ -222,18 +222,17 @@ qs_name_vt(RDHBASE)
 	qs_name_vt(QSGAM)	base;
 	void (*layout)(void);
 	void (*reset)(void);
-	void (*clear)(int, const QmColor*, int, float);
+	void (*clear)(QgClear);
 
 	bool (*begin)(bool);
 	void (*end)(void);
 	void (*flush)(void);
 
 	QgBuffer* (*create_buffer)(QgBufferType, uint, uint, const void*);
-	QgShader* (*create_shader)(const char*, size_t, const QgLayoutInput*);
-	QgRender* (*create_render)(const char*, const QgPropRender*, QgShader*);
+	QgRender* (*create_render)(const char*, const QgPropRender*, const QgPropShader*);
 
-	bool (*set_index)(QgBuffer*);
 	bool (*set_vertex)(QgLayoutStage, QgBuffer*);
+	bool (*set_index)(QgBuffer*);
 	bool (*set_render)(QgRender*);
 
 	bool (*draw)(QgTopology, int);
@@ -290,3 +289,18 @@ extern const char* qg_layout_usage_to_str(const QgLayoutUsage usage);
 extern const char* qg_shader_const_auto_to_str(const QgScAuto sca);
 // 알수 없음을 문자열로
 extern const char* qg_unknown_str(int value);
+
+// 인수 검사 매크로
+#define RDH_ACK_COND(cond,mesg,ret)			QN_STMT_BEGIN{if ((cond)) { qn_debug_outputf(true, "RDH", "%s: %s", __FUNCTION__, mesg); return ret; }}QN_STMT_END
+#define RDH_ACK_NULL(item,ret)				QN_STMT_BEGIN{if ((item)==NULL) { qn_debug_outputf(true, "RDH", "%s: '%s' is null", __FUNCTION__, #item); return ret; }}QN_STMT_END
+#define RDH_ACK_ZERO(item,ret)				QN_STMT_BEGIN{if ((size_t)(item)==0) { qn_debug_outputf(true, "RDH", "%s: '%s' is zero", #item); return ret; }}QN_STMT_END
+#define RDH_ACK_MAX(item,vmax,ret)			QN_STMT_BEGIN{if ((size_t)(item) >= (vmax)) { qn_debug_outputf(true, "RDH", "%s: invalid '%s' value: %d", __FUNCTION__, #item, item); return ret; }}QN_STMT_END
+#define RDH_ACK_MIN(item,vmin,ret)			QN_STMT_BEGIN{if ((item) <= (vmin)) { qn_debug_outputf(true, "RDH", "%s: invalid '%s' value: %d", __FUNCTION__, #item, item); return ret; }}QN_STMT_END
+#define RDH_ACK_NULL2(ctn,item,ret)			QN_STMT_BEGIN{if ((ctn)->item == NULL) { qn_debug_outputf(true, "RDH", "'%s: %s.%s' is null", __FUNCTION__, #ctn, #item); return ret; }}QN_STMT_END
+#define RDH_ACK_ZERO2(ctn,item,ret)			QN_STMT_BEGIN{if (((size_t)(ctn)->item) == 0) { qn_debug_outputf(true, "RDH", "'%s: %s.%s' is zero", __FUNCTION__, #ctn, #item); return ret; }}QN_STMT_END
+#define RDH_ACK_MAX2(ctn,item,vmax,ret)		QN_STMT_BEGIN{if ((size_t)(ctn)->item >= (vmax)) { qn_debug_outputf(true, "RDH", "%s: invalid '%s.%s' value: %d", __FUNCTION__, #ctn, #item, (ctn)->item); return ret; }}QN_STMT_END
+#define RDH_ACK_MIN2(ctn,item,vmin,ret)		QN_STMT_BEGIN{if ((ctn)->item <= (vmin)) { qn_debug_outputf(true, "RDH", "%s: invalid '%s.%s' value: %d", __FUNCTION__, #ctn, #item, (ctn)->item); return ret; }}QN_STMT_END
+#define RDH_ACK_NULL3(ctn,sec,item,ret)		QN_STMT_BEGIN{if ((ctn)->sec.item == NULL) { qn_debug_outputf(true, "RDH", "'%s: %s.%s.%s' is null", __FUNCTION__, #ctn, #sec, #item); return ret; }}QN_STMT_END
+#define RDH_ACK_ZERO3(ctn,sec,item,ret)		QN_STMT_BEGIN{if ((size_t)((ctn)->sec.item) == 0) { qn_debug_outputf(true, "RDH", "'%s: %s.%s.%s' is zero", __FUNCTION__, #ctn, #sec, #item); return ret; }}QN_STMT_END
+#define RDH_ACK_MAX3(ctn,sec,item,vmax,ret)	QN_STMT_BEGIN{if ((size_t)(ctn)->sec.item >= (vmax)) { qn_debug_outputf(true, "RDH", "%s: invalid '%s.%s.%s' value: %d", __FUNCTION__, #ctn, #sec, #item, (ctn)->sec.item); return ret; }}QN_STMT_END
+#define RDH_ACK_MIN3(ctn,sec,item,vmin,ret)	QN_STMT_BEGIN{if ((ctn)->sec.item <= (vmin)) { qn_debug_outputf(true, "RDH", "%s: invalid '%s.%s.%s' value: %d", __FUNCTION__, #ctn, #sec, #item, (ctn)->sec.item); return ret; }}QN_STMT_END

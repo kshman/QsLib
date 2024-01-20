@@ -22,6 +22,12 @@ QN_MUKUM_CHAR_PTR_KEY(QnPropMukum)
 QN_MUKUM_KEY_FREE(QnPropMukum)
 QN_MUKUM_VALUE_FREE(QnPropMukum)
 
+// 키워드
+QN_DECL_MUKUM(QnKeyMukum, char*, nint);
+QN_MUKUM_CHAR_PTR_KEY(QnKeyMukum);
+QN_MUKUM_KEY_FREE(QnKeyMukum);
+QN_MUKUM_VALUE_NONE(QnKeyMukum);
+
 // 닫아라
 typedef struct CLOSURE
 {
@@ -43,6 +49,7 @@ static struct RUNTIMEIMPL
 	QnTls			error;
 
 	QnPropMukum		props;
+	QnKeyMukum		keys;
 } runtime_impl =
 {
 	.inited = false,
@@ -78,6 +85,7 @@ static void qn_runtime_down(void)
 	QN_UNLOCK(runtime_impl.lock);
 
 	qn_mukum_disp(QnPropMukum, &runtime_impl.props);
+	qn_mukum_disp(QnKeyMukum, &runtime_impl.keys);
 
 	qn_thread_down();
 	qn_module_down();
@@ -207,6 +215,28 @@ float qn_get_prop_float(const char* name, float default_value, float min_value, 
 		return default_value;
 	float f = qn_strtof(v);
 	return QN_CLAMP(f, min_value, max_value);
+}
+
+//
+void qn_set_key(const char* RESTRICT name, const nint value)
+{
+	qn_ret_if_fail(runtime_impl.inited);
+	qn_ret_if_fail(name != NULL);
+	QN_LOCK(runtime_impl.lock);
+	qn_mukum_set(QnKeyMukum, &runtime_impl.keys, qn_strdup(name), value);
+	QN_UNLOCK(runtime_impl.lock);
+}
+
+//
+const nint qn_get_key(const char* name)
+{
+	qn_val_if_fail(runtime_impl.inited, 0);
+	qn_val_if_fail(name != NULL, 0);
+	nint* ret;
+	QN_LOCK(runtime_impl.lock);
+	qn_mukum_get(QnKeyMukum, &runtime_impl.keys, name, &ret);
+	QN_UNLOCK(runtime_impl.lock);
+	return ret == NULL ? 0 : *ret;
 }
 
 //

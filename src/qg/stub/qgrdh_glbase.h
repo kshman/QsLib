@@ -5,7 +5,6 @@
 //
 typedef struct QGLRDH		QglRdh;
 typedef struct QGLBUFFER	QglBuffer;
-typedef struct QGLSHADER	QglShader;
 typedef struct QGLRENDER	QglRender;
 
 #ifndef GL_INVALID_HANDLE
@@ -16,13 +15,6 @@ typedef struct QGLRENDER	QglRender;
 #define QGL_PENDING			(&QGL_RDH->pd)
 #define QGL_SESSION			(&QGL_RDH->ss)
 #define QGL_RESOURCE		(&QGL_RDH->res)
-
-// 참조 핸들
-typedef struct QGLREFHANDLE
-{
-	volatile nint		ref;
-	GLuint				handle;
-} QglRefHandle;
 
 // 레이아웃 요소
 typedef struct QGLLAYOUTINPUT
@@ -39,7 +31,6 @@ QN_DECL_CTNR(QglCtnLayoutInput, QglLayoutInput);
 // 레이아웃 프로퍼티
 typedef struct QGLLAYOUTPROPERTY
 {
-	GLuint				buffer;
 	GLuint				offset;
 	GLenum				format;
 	GLsizei				stride;
@@ -54,14 +45,14 @@ QN_DECL_CTNR(QglCtnUniform, QgVarShader);
 typedef struct QGLVARATTR
 {
 #ifdef _QN_64_
-	char				name[32 + 4];
+	char				name[32 + 8];
 #else
 	char				name[32];
 #endif
 	size_t				hash;
 
-	GLint				attrib : 8;			// 최대 16이므로 괜춘
-	GLint				size : 8;			// 고민해야함
+	GLint				attrib;
+	GLint				size;
 
 	QgLayoutUsage		usage : 8;			// 최대 24(2024-01-20 시점)으로 괜춘
 	QgScType			sctype : 8;			// 최대 22(2032-01-20 시점)으로 괜춘		
@@ -100,13 +91,6 @@ typedef struct QGLPENDING
 	struct QGLPENDING_DRAW
 	{
 		uint				topology;
-		uint				index_stride;
-		uint				index_size;
-		uint				vertex_count;
-		uint				vertex_stride;
-		uint				vertext_size;
-		void*				index_data;
-		void*				vertex_data;
 	}					draw;
 } QglPending;
 
@@ -140,62 +124,30 @@ struct QGLBUFFER
 	void*				lock_pointer;
 };
 
-// 세이더
-struct QGLSHADER
-{
-	QgShader			base;
-
-	QglRefHandle*		vertex;
-	QglRefHandle*		fragment;
-
-	QglCtnUniform		uniforms;
-	QglCtnAttr			attrs;
-	byte				attr_index[QGLOU_MAX_SIZE];
-
-	QglCtnLayoutInput	inputs;
-	QglLayoutInput*		stages[QGLOS_MAX_VALUE];
-
-	bool				linked;
-};
-
 // 렌더 파이프라인
 struct QGLRENDER
 {
 	QgRender			base;
 
-	QglShader*			shader;
-};
-
-// 참조 핸들 만들기
-INLINE QglRefHandle* qgl_ref_handle_new(GLuint handle)
-{
-	QglRefHandle* ptr = qn_alloc_1(QglRefHandle);
-	ptr->ref = 1;
-	ptr->handle = handle;
-	return ptr;
-}
-
-// 참조 핸들을 해제한다 (세이더용)
-INLINE void qgl_ref_handle_unload_shader(QglRefHandle* ptr, GLuint handle)
-{
-	qn_ret_if_fail(ptr);
-	if (handle > 0)
-		glDetachShader(handle, ptr->handle);
-	const nint ref = --ptr->ref;
-	if (ref == 0)
+	struct QGLRENDER_SHADER
 	{
-		glDeleteShader(ptr->handle);
-		qn_free(ptr);
-	}
-}
+		GLuint				program;
+		GLuint				vertex;
+		GLuint				fragment;
 
-// 참조 핸들을 복제한다 (세이더용)
-INLINE QglRefHandle* qgl_ref_handle_load_shader(QglRefHandle* ptr, GLuint handle)
-{
-	glAttachShader(handle, ptr->handle);
-	++ptr->ref;
-	return ptr;
-}
+		QglCtnUniform		uniforms;
+		QglCtnAttr			attrs;
+		byte				usages[QGLOU_MAX_SIZE];
+	}					shader;
+
+	struct QGLRENDER_LAYOUT
+	{
+		QglCtnLayoutInput	inputs;
+		QglLayoutInput*		stages[QGLOS_MAX_VALUE];
+		ushort				counts[QGLOS_MAX_VALUE];
+		ushort				strides[QGLOS_MAX_VALUE];
+	}					layout;
+};
 
 // 문자열 버전에서 숫자만 mnn 방식으로
 INLINE int qgl_get_version(const char* s, const char* name1, const char* name2)
