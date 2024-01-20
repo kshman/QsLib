@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "qs_qg.h"
 #include "qg/qg_stub.h"
 
 //
@@ -16,6 +15,7 @@ typedef struct QGLRENDER	QglRender;
 #define QGL_RDH				((QglRdh*)qg_instance_rdh)
 #define QGL_PENDING			(&QGL_RDH->pd)
 #define QGL_SESSION			(&QGL_RDH->ss)
+#define QGL_RESOURCE		(&QGL_RDH->res)
 
 // 참조 핸들
 typedef struct QGLREFHANDLE
@@ -110,6 +110,13 @@ typedef struct QGLPENDING
 	}					draw;
 } QglPending;
 
+// 리소스
+typedef struct QGLRESOURCE
+{
+	QglRender*			ortho_render;
+	QglRender*			glyph_render;
+} QglResource;
+
 // GL 렌더 디바이스
 struct QGLRDH
 {
@@ -117,6 +124,7 @@ struct QGLRDH
 
 	QglSession			ss;
 	QglPending			pd;
+	QglResource			res;
 
 	nint				disposed;
 };

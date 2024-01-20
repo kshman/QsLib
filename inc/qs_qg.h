@@ -423,19 +423,28 @@ typedef struct QGLAYOUTINPUT
 	bool32				normalize;							/// @brief 정규화	
 } QgLayoutInput;
 
-/// @brief 레이아웃
+/// @brief 레이아웃 데이터
 typedef struct QGLAYOUTDATA
 {
-	size_t				count;								/// @brief 요소 갯수
 	QgLayoutInput*		inputs;								/// @brief 요소 데이터 포인트
+	size_t				count;								/// @brief 요소 갯수
 } QgLayoutData;
 
 /// @brief 코드 데이터
 typedef struct QGCODEDATA
 {
+	void*				code;								/// @brief 코드 데이터
 	size_t				size;								/// @brief 코드 크기
-	const void*			code;								/// @brief 코드 데이터
 } QgCodeData;
+
+/// @brief 세이더 속성
+typedef struct QGPROPSHADER
+{
+	QgLayoutData		layout;
+	QgCodeData			vertex;
+	QgCodeData			pixel;
+	QgCodeData			geometry;
+} QgPropShader;
 
 /// @brief 블렌드
 typedef struct QGPROPBLEND
@@ -861,11 +870,12 @@ QSAPI const char* qg_window_event_to_str(QgWindowEventType wev);
 // render device
 
 typedef struct QGGAM		QgGam;							/// @brief 런더 감
+typedef struct QGNODE		QgNode;							/// @brief 노드
 typedef struct QGBUFFER		QgBuffer;						/// @brief 버퍼
 typedef struct QGSHADER		QgShader;						/// @brief 세이더
 typedef struct QGRENDER		QgRender;						/// @brief 렌더 파이프라인
 
-typedef void(*QgVarShaderFunc)(void*, QgShader*, size_t, const QgVarShader*);	/// @brief 세이더 변수 콜백 함수
+typedef void(*QgVarShaderFunc)(void*, size_t, const QgVarShader*);	/// @brief 세이더 변수 콜백 함수
 
 /// @brief 렌더러를 연다
 /// @param driver 드라이버 이름 (NULL로 지정하여 기본값)
@@ -966,26 +976,12 @@ QSAPI void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view);
 /// @details data 파라미터의 설명에도 있지만, 정적 버퍼로 만들고 나중에 데이터를 넣으면 문제가 생길 수도 있다
 QSAPI QgBuffer* qg_rdh_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data);
 
-/// @brief 세이더를 만든다. 바로는 쓸 수 없고 렌더 파이프라인의 인수로 사용한다
-/// @param name 세이더 이름
-/// @param layout 세이더 레이아웃
-/// @return 만들어진 세이더
-QSAPI QgShader* qg_rdh_create_shader(const char* name, const QgLayoutData* layout);
-
-/// @brief 세이더를 만든다. 인수로 세이더 코드를 받는다
-/// @param name 세이더 이름
-/// @param layout 세이더 레이아웃
-/// @param vs 정점 세이더 코드
-/// @param ps 픽셀 세이더 코드
-/// @param flags 플래그 (QgScFlag 참조)
-/// @return 만들어진 세이더
-QSAPI QgShader* qg_rdh_create_shader_buffer(const char* name, const QgLayoutData* layout, const QgCodeData* vs, const QgCodeData* ps, QgScFlag flags);
-
 /// @brief 렌더 파이프라인을 만든다
-/// @param prop 렌더 파이프라인 속성
-/// @param shader 세이더
+/// @param name 렌더 이름
+/// @param pipe 렌더 파이프라인 속성
+/// @param shader 세이더 속성
 /// @return 만들어진 렌더 파이프라인
-QSAPI QgRender* qg_rdh_create_render(const QgPropRender* prop, QgShader* shader);
+QSAPI QgRender* qg_rdh_create_render(const char* name, const QgPropRender* pipe, const QgPropShader* shader);
 
 /// @brief 인덱스 버퍼를 설정한다
 /// @param buffer 설정할 버퍼
@@ -1021,6 +1017,23 @@ QSAPI bool qg_rdh_draw_indexed(QgTopology tpg, int indices);
 
 //////////////////////////////////////////////////////////////////////////
 // 렌더 오브젝트
+
+/// @brief 노드
+struct QGNODE
+{
+	QsGam				base;
+
+	char				NAME[64];
+	size_t				HASH;
+	QgNode*				NEXT;
+	QgNode*				PREV;
+	QgNode*				SIBLING;
+};
+
+/// @brief 노드의 이름과 그 이름으로 해시를 설정한다
+/// @param self 노드
+/// @param name 설정할 이름
+QSAPI void qg_node_set_name(QgNode * self, const char* name);
 
 /// @brief 버퍼
 struct QGBUFFER
@@ -1061,56 +1074,11 @@ QSAPI bool qg_buffer_unmap(QgBuffer* g);
 /// @note data 는 반드시 size 만큼 데이터를 갖고 있어야한다
 QSAPI bool qg_buffer_data(QgBuffer* g, const void* data);
 
-/// @brief 세이더
-struct QGSHADER
-{
-	QsGam				base;
-
-	char				name[64];
-	QgShaderType		type;
-
-	struct QGSHADER_LAYOUT
-	{
-		ushort				counts[QGLOS_MAX_VALUE];
-		ushort				strides[QGLOS_MAX_VALUE];
-	}					layout;
-};
-
-qs_name_vt(QGSHADER)
-{
-	qs_name_vt(QSGAM)	base;
-	bool(*bind_shader)(QgShader*, QgShader*);
-	bool(*bind_buffer)(QgShader*, QgShaderType, const void*, size_t, QgScFlag);
-};
-
-/// @brief 세이더 개체를 바인드
-/// @param g 세이더 개체
-/// @param shader 바인드할 세이더	개체
-/// @return 문제가 없었으면 참
-QSAPI bool qg_shader_bind(QgShader* g, QgShader* shader);
-
-/// @brief 세이더 개체를 버퍼에서 읽어와 바인드
-/// @param g 세이더 개체
-/// @param type 세이더 타입
-/// @param code 세이더 코드
-/// @param flags 세이더 플래그 (QgScFlag 참조
-/// @return 문제가 없었으면 참
-QSAPI bool qg_shader_bind_buffer(QgShader* g, QgShaderType type, const QgCodeData* code, QgScFlag flags);
-
-/// @brief 세이더 개체를 파일에서 읽어서 바인드
-/// @param g 세이더 개체
-/// @param type 세이더 타입
-/// @param filename 파일 이름
-/// @param flags 바인드 플래그 (현재는 0으로 설정)
-/// @return 문제가 없었으면 참
-QSAPI bool qg_shader_bind_file(QgShader* g, QgShaderType type, const char* filename, int flags);
-
 /// @brief 렌더 파이프라인
 struct QGRENDER
 {
-	QsGam				base;
+	QgNode				base;
 
-	size_t				hash;
 	nuint				ref;
 };
 

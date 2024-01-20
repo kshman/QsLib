@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 #include <qs_ctn.h>
+#include "qs_qg.h"
+#include "qg_node.h"
 
 //////////////////////////////////////////////////////////////////////////
 // 스터브
@@ -125,6 +127,14 @@ extern void stub_initialize(StubBase* stub, QgFlag flags);
 //////////////////////////////////////////////////////////////////////////
 // 렌더 디바이스
 
+typedef enum RENDERNODESHED
+{
+	RDHNODE_NONE,
+	RDHNODE_RENDER,
+	RDHNODE_TEXTURE,
+	RDHNODE_MAX_VALUE,
+} RenderNodeShed;
+
 // 렌더러 정보
 typedef struct RENDERERINFO
 {
@@ -203,11 +213,14 @@ typedef struct RDHBASE
 	RenderTransform		tm;
 	RenderParam			param;
 	RenderInvoke		invokes;
+
+	QgNodeMukum			mukums[RDHNODE_MAX_VALUE];
 } RdhBase;
 
 qs_name_vt(RDHBASE)
 {
 	qs_name_vt(QSGAM)	base;
+	void (*layout)(void);
 	void (*reset)(void);
 	void (*clear)(int, const QmColor*, int, float);
 
@@ -217,7 +230,7 @@ qs_name_vt(RDHBASE)
 
 	QgBuffer* (*create_buffer)(QgBufferType, uint, uint, const void*);
 	QgShader* (*create_shader)(const char*, size_t, const QgLayoutInput*);
-	QgRender* (*create_render)(const QgPropRender*, QgShader*);
+	QgRender* (*create_render)(const char*, const QgPropRender*, QgShader*);
 
 	bool (*set_index)(QgBuffer*);
 	bool (*set_vertex)(QgLayoutStage, QgBuffer*);
@@ -244,15 +257,22 @@ extern RdhBase* qg_instance_rdh;
 extern RdhBase* es_allocator(QgFlag flags, QgFeature features);
 #endif
 
+// 렌더러 리소스 제거
+extern void rdh_internal_clean(void);
 // 렌더러 최종 제거
 extern void rdh_internal_dispose(void);
+// 렌더러 내부 레이아웃
+extern void rdh_internal_layout(void);
 // 렌더러 내부 리셋
 extern void rdh_internal_reset(void);
 // 인보크 리셋
 extern void rdh_internal_invoke_reset(void);
 // 레이아웃 검사
 extern void rdh_internal_check_layout(void);
-
+// 노드 추가요
+extern void rdh_internal_add_node(RenderNodeShed shed, void* node);
+// 노드 제거요 (dispose에서 호출용)
+extern void rdh_internal_unlink_node(RenderNodeShed shed, void* node);
 
 // 열거자 컨버터 초기화
 extern void qg_init_enum_convs(void);

@@ -2663,6 +2663,10 @@ QSAPI nuint qs_sc_set_desc(QsGam* RESTRICT g, nuint ptr);
 #define qs_loadc(g,type)	((g) ? (type*)qs_sc_load((QsGam*)(g)) : NULL)
 /// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
 #define qs_unloadc(g,type)	((g) ? (type*)qs_sc_unload((QsGam*)(g)) : NULL)
+/// @brief 참조를 추가한다. 널 검사 안한다
+#define qs_loadu(g,type)	(type*)qs_sc_load((QsGam*)(g))
+/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다. 널 검사 안한다
+#define qs_unloadu(g,type)	(type*)qs_sc_unload((QsGam*)(g))
 /// @brief 표현자(디스크립터)를 얻는다
 #define qs_get_desc(g,type)	(type)qs_sc_get_desc((QsGam*)(g))
 /// @brief 표현자(디스크립터)를 쓴다

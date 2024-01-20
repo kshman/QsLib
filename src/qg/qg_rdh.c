@@ -112,7 +112,12 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)
 		qm_rst(&param->m[i]);
 
+	// 묶음
+	for (size_t i = 0; i < QN_COUNTOF(rdh->mukums); i++)
+		qg_node_mukum_init_fast(&rdh->mukums[i]);
+
 	// 
+	qs_cast_vt(rdh, RDHBASE)->layout();			// 레이아웃 재설정
 	qs_cast_vt(rdh, RDHBASE)->reset();			// 장치 리셋
 	qn_timer_reset(qg_instance_stub->timer);	// 타이머도 리셋해둔다
 	return true;
@@ -122,6 +127,14 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 void qg_close_rdh(void)
 {
 	qg_instance_rdh = qs_unloadc(qg_instance_rdh, RdhBase);
+}
+
+//
+void rdh_internal_clean(void)
+{
+	RdhBase* rdh = qg_instance_rdh;
+	for (size_t i = 0; i < QN_COUNTOF(rdh->mukums); i++)
+		qg_node_mukum_disp_safe(&rdh->mukums[i]);
 }
 
 //
@@ -141,7 +154,7 @@ void rdh_internal_dispose(void)
 }
 
 //
-void rdh_internal_reset(void)
+void rdh_internal_layout(void)
 {
 	RdhBase* rdh = qg_instance_rdh;
 	const QmSize client_size = qg_instance_stub->client_size;
@@ -150,16 +163,24 @@ void rdh_internal_reset(void)
 	// tm
 	RenderTransform* tm = &rdh->tm;
 	tm->size = qm_sizef_size(client_size);
-	qm_rst(&tm->world);
-	qm_rst(&tm->view);
+	tm->world = qm_mat4_identity();
+	tm->view = qm_mat4_identity();
 	tm->proj = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->depth.Near, tm->depth.Far);
-	tm->view_proj = qm_mul(tm->view, tm->proj);
-	qm_rst(&tm->invv);
-	qm_rst(&tm->ortho);
+	tm->view_proj = tm->proj;
+	tm->invv = qm_mat4_identity();
+	tm->scissor = qm_rect_size(0, 0, client_size.Width, client_size.Height);
+}
+
+//
+void rdh_internal_reset(void)
+{
+	RdhBase* rdh = qg_instance_rdh;
+
+	// tm
+	RenderTransform* tm = &rdh->tm;
 	qm_rst(&tm->frm);
 	for (size_t i = 0; i < QN_COUNTOF(tm->tex); i++)
 		qm_rst(&tm->tex[i]);
-	tm->scissor = qm_rect_size(0, 0, client_size.Width, client_size.Height);
 
 	// param
 	RenderParam* param = &rdh->param;
@@ -198,7 +219,23 @@ void rdh_internal_check_layout(void)
 	const int height = (int)rdh->tm.size.Height;
 	if (size.Width == width && size.Height == height)
 		return;
-	qs_cast_vt(rdh, RDHBASE)->reset();
+	qs_cast_vt(rdh, RDHBASE)->layout();
+}
+
+//
+void rdh_internal_add_node(RenderNodeShed shed, void* node)
+{
+	qn_assert((size_t)shed < RDHNODE_MAX_VALUE, "invalid rdh node");
+	RdhBase* rdh = qg_instance_rdh;
+	qg_node_mukum_set(&rdh->mukums[shed], node);
+}
+
+//
+void rdh_internal_unlink_node(RenderNodeShed shed, void* node)
+{
+	qn_assert((size_t)shed < RDHNODE_MAX_VALUE, "invalid rdh node");
+	RdhBase* rdh = qg_instance_rdh;
+	qg_node_mukum_unlink(&rdh->mukums[shed], node);
 }
 
 //
@@ -372,40 +409,7 @@ QgBuffer* qg_rdh_create_buffer(QgBufferType type, uint count, uint stride, const
 }
 
 //
-QgShader* qg_rdh_create_shader(const char* name, const QgLayoutData* layout)
-{
-	RDH_ARG_CHK_NULL(layout == NULL, "shader parameter is null");
-	RDH_ARG_CHK_NULL(layout->count == 0, "shader input count is zero");
-	RDH_ARG_CHK_NULL(layout->inputs == NULL, "shader input is null");
-	RdhBase* rdh = qg_instance_rdh;
-	rdh->invokes.creations++;
-	rdh->invokes.invokes++;
-	return qs_cast_vt(rdh, RDHBASE)->create_shader(name, layout->count, layout->inputs);
-}
-
-//
-QgShader* qg_rdh_create_shader_buffer(const char* name, const QgLayoutData* layout, const QgCodeData* vs, const QgCodeData* ps, QgScFlag flags)
-{
-	RDH_ARG_CHK_NULL(layout == NULL || vs == NULL || ps == NULL, "shader parameter is null");
-	RDH_ARG_CHK_NULL(layout->count == 0, "shader input count is zero");
-	RDH_ARG_CHK_NULL(layout->inputs == NULL, "shader input is null");
-	RDH_ARG_CHK_NULL(flags != QGSCF_TEXT && (vs->size == 0 || ps->size == 0), "shader code size is zero");
-	RDH_ARG_CHK_NULL(vs->code == NULL || ps->code == NULL, "shader code is null");
-	RdhBase* rdh = qg_instance_rdh;
-	rdh->invokes.creations++;
-	rdh->invokes.invokes++;
-	QgShader* shader = qs_cast_vt(rdh, RDHBASE)->create_shader(name, layout->count, layout->inputs);
-	if (qs_cast_vt(shader, QGSHADER)->bind_buffer(shader, QGSHADER_VS, vs->code, vs->size, flags) == false ||
-		qs_cast_vt(shader, QGSHADER)->bind_buffer(shader, QGSHADER_PS, ps->code, ps->size, flags) == false)
-	{
-		qs_unload(shader);
-		return NULL;
-	}
-	return shader;
-}
-
-//
-QgRender* qg_rdh_create_render(const QgPropRender * prop, QgShader * shader)
+QgRender* qg_rdh_create_render(const char* name, const QgPropRender* prop, const QgPropShader* shader)
 {
 	RDH_ARG_CHK_NULL(prop == NULL, "pipeline property is null");
 	RDH_ARG_CHK_NULL(shader == NULL, "pipeline shader is null");
@@ -440,7 +444,7 @@ QgRender* qg_rdh_create_render(const QgPropRender * prop, QgShader * shader)
 	RdhBase* rdh = qg_instance_rdh;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qs_cast_vt(rdh, RDHBASE)->create_render(prop, shader);
+	return qs_cast_vt(rdh, RDHBASE)->create_render(name, prop, shader);
 }
 
 //
@@ -498,6 +502,19 @@ bool qg_rdh_draw_indexed(QgTopology tpg, int indices)
 
 //////////////////////////////////////////////////////////////////////////
 // 오브젝트
+
+//
+void qg_node_set_name(QgNode * self, const char* name)
+{
+	if (name)
+		qn_strncpy(self->NAME, name, QN_COUNTOF(self->NAME) - 1);
+	else
+	{
+		size_t i = qn_p_index();
+		qn_snprintf(self->NAME, QN_COUNTOF(self->NAME), "node_%zu", i);
+	}
+	self->HASH = qn_strihash(self->NAME);
+}
 
 //
 void* qg_buffer_map(QgBuffer * self)

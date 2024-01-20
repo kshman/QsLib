@@ -4,7 +4,7 @@
 //
 
 #include "pch.h"
-#if defined _QN_EMSCRIPTEN_ && !defined USE_SDL2
+#ifdef _QN_EMSCRIPTEN_
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include "qg/qg_stub.h"
@@ -499,4 +499,4 @@ static void emscripten_unregister_event_handler(void)
 	emscripten_set_keypress_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, 0, NULL);
 }
 
-#endif // __EMSCRIPTEN__ && !USE_SDL2
+#endif // __EMSCRIPTEN__

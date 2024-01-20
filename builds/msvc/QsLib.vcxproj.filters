@@ -105,6 +105,9 @@
     <ClInclude Include="..\..\src\qn\sdefl\sinfl.h">
       <Filter>헤더 파일\qn\sdefl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\qg\qg_node.h">
+      <Filter>헤더 파일\qg</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\qn\qn.c">

@@ -228,7 +228,7 @@
 
   <!-- 오브젝트 -->
   <Type Name="QSGAM">
-    <DisplayString>[&lt;{((QsGam*)this)-&gt;vt-&gt;name,s}&gt; (ref:{((QsGam*)this)-&gt;ref})]</DisplayString>
+    <DisplayString>[{((QsGam*)this)-&gt;vt-&gt;name,s}&lt;{((QsGam*)this)-&gt;ref}&gt; (desc:{((QsGam*)this)-&gt;desc})]</DisplayString>
     <Expand>
       <Item Name="[타입]">((QsGam*)this)-&gt;vt-&gt;name</Item>
       <Item Name="[참조]">((QsGam*)this)-&gt;ref</Item>
@@ -270,6 +270,30 @@
   <Type Name="StubEventCallback">
     <DisplayString>[키: {key} ({func} / {data}]</DisplayString>
   </Type>
+
+  <!-- 노드 -->
+  <Type Name="QGNODE">
+    <DisplayString>[{((QsGam*)this)-&gt;vt-&gt;name,s} / {NAME,s} (ref:{((QsGam*)this)-&gt;ref})]</DisplayString>
+    <Expand>
+      <Item Name="[타입]">((QsGam*)this)-&gt;vt-&gt;name</Item>
+      <Item Name="[참조]">((QsGam*)this)-&gt;ref</Item>
+      <Item Name="[해시]">HASH</Item>
+    </Expand>
+  </Type>
+  
+  <!-- QGNODEMUKUM -->
+  <Type Name="QGNODEMUKUM">
+    <DisplayString>[갯수: {COUNT}]</DisplayString>
+    <Expand>
+      <Item Name="[갯수]">COUNT</Item>
+      <LinkedListItems>
+        <Size>COUNT</Size>
+        <HeadPointer>FIRST</HeadPointer>
+        <NextPointer>NEXT</NextPointer>
+        <ValueNode>this</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
   
   <!-- QGBUFFER -->
   <Type Name="QGBUFFER">
@@ -285,7 +309,7 @@
   
   <!-- QGRENDER -->
   <Type Name="QGRENDER">
-    <DisplayString>[RENDER (hash:{hash})]</DisplayString>
+    <DisplayString>[RENDER]</DisplayString>
   </Type>
   
   <!-- ==================== ES 또는 GL ==================== -->
@@ -302,7 +326,7 @@
   
   <!-- QGLRENDER -->
   <Type Name="QGLRENDER">
-    <DisplayString>[{shader-&gt;base.name,s}]</DisplayString>  
+    <DisplayString>[{base.base.NAME,s}]</DisplayString>  
     <Expand>
       <Item Name="[GAM]">(QsGam*)this</Item>
       <Item Name="[해시]">base.hash</Item>

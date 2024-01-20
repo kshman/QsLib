@@ -11,7 +11,7 @@
 // ReSharper disable CppParameterMayBeConstPtrOrRef
 
 #include "pch.h"
-#if defined _WIN32 && !defined USE_SDL2
+#ifdef _QN_WINDOWS_
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include "qg/qg_stub.h"
@@ -1538,4 +1538,4 @@ pos_windows_mesg_proc_exit:
 	}
 #pragma endregion 윈도우 메시지
 
-#endif // _WIN32 && !USE_SDL2
+#endif // _QN_WINDOWS_
