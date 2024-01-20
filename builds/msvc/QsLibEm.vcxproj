@@ -56,7 +56,7 @@
     <Link>
       <GenerateDebugInformation>MoreDebugInformation</GenerateDebugInformation>
       <HtmlShellFile>$(ProjectDir)QsLibEm.html;%(HtmlShellFile)</HtmlShellFile>
-      <AdditionalOptions>-sASSERTIONS -sASYNCIFY -sEXPORTED_RUNTIME_METHODS=ccall -sFULL_ES3 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-sASSERTIONS -sASYNCIFY -sEXPORTED_RUNTIME_METHODS=ccall -sFULL_ES3=1 -sUSE_WEBGL2=1 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>emdwp -e $(OutDir)$(ProjectName).wasm -o $(OutDir)$(ProjectName).wasm.dwp
@@ -79,7 +79,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
     </ClCompile>
     <Link>
-      <AdditionalOptions>-sASYNCIFY -sEXPORTED_RUNTIME_METHODS=ccall -sFULL_ES3 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-sASYNCIFY -sEXPORTED_RUNTIME_METHODS=ccall -sFULL_ES3=1 -sUSE_WEBGL2=1 %(AdditionalOptions)</AdditionalOptions>
       <HtmlShellFile>$(ProjectDir)QsLibEm.html;%(HtmlShellFile)</HtmlShellFile>
       <RunJavaScriptOptimization>JavaScriptOptimization</RunJavaScriptOptimization>
     </Link>
@@ -114,7 +114,6 @@
     <ClCompile Include="..\..\src\qg\stub\qgrdh_es.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_windows.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_wayland.c" />
-    <ClCompile Include="..\..\src\qg\stub\qgstub_sdl.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_emscripten.c" />
     <ClCompile Include="..\..\src\qg\qg_kmc.c" />
     <ClCompile Include="..\..\src\qn\PatrickPowell_snprintf.c" />

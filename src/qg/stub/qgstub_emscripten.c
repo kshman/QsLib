@@ -212,6 +212,12 @@ void* stub_system_get_display(void)
 	return EGL_DEFAULT_DISPLAY;
 }
 
+//
+const char* stub_system_get_canvas(void)
+{
+	return emCanvas;
+}
+
 // 언로드 이벤트
 static const char* handler_before_unload(int eventType, const void* reserved, void* userData)
 {

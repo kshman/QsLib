@@ -13,9 +13,9 @@ typedef struct QGLRENDER	QglRender;
 #define GL_INVALID_HANDLE	(GLuint)(-1)
 #endif
 
-#define QGL_RDH_INSTANCE	((QglRdh*)qg_instance_rdh)
-#define QGL_PENDING			(&QGL_RDH_INSTANCE->pd)
-#define QGL_SESSION			(&QGL_RDH_INSTANCE->ss)
+#define QGL_RDH				((QglRdh*)qg_instance_rdh)
+#define QGL_PENDING			(&QGL_RDH->pd)
+#define QGL_SESSION			(&QGL_RDH->ss)
 
 // 참조 핸들
 typedef struct QGLREFHANDLE

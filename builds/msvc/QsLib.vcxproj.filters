@@ -143,9 +143,6 @@
     <ClCompile Include="..\..\src\pch.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\stub\qgstub_sdl.c">
-      <Filter>소스 파일\qg\stub</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\qg\stub\qgstub_windows.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>

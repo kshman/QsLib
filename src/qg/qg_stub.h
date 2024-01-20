@@ -86,6 +86,8 @@ extern void stub_system_fullscreen(bool fullscreen);
 extern void* stub_system_get_window(void);
 // 시스템 디스플레이 핸들을 얻는다 (윈도우에서는 HDC)
 extern void* stub_system_get_display(void);
+// 시스템 캔버스 이름을 얻는다 (EMSCRIPTEN)
+extern const char* stub_system_get_canvas(void);
 
 // 내부적으로 마우스 눌림을 연산한다
 extern bool stub_track_mouse_click(QimButton button, QimTrack track);
@@ -138,6 +140,9 @@ typedef struct RENDERERINFO
 	uint				max_tex_count;						// 최대 텍스쳐 갯수
 	uint				max_off_count;						// 최대 오프 텍스쳐(=렌더타겟/프레임버퍼) 갯수
 	QgClrFmt			clr_fmt;							// 색깔 포맷
+#ifdef _QN_UNIX_
+	int					visual_id;							// 비주얼 아이디
+#endif
 } RendererInfo;
 
 // 렌더 추적 정보
@@ -263,3 +268,5 @@ extern const char* qg_clrfmt_to_str(QgClrFmt fmt);
 extern const char* qg_layout_usage_to_str(const QgLayoutUsage usage);
 // 세이더 자동 상수 문자열로 변환
 extern const char* qg_shader_const_auto_to_str(const QgScAuto sca);
+// 알수 없음을 문자열로
+extern const char* qg_unknown_str(int value);

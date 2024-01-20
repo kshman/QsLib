@@ -6,22 +6,18 @@
 #include "pch.h"
 #ifdef USE_ES
 #ifndef _QN_EMSCRIPTEN_
-#ifndef USE_SDL2
 #define GLAD_EGL_IMPLEMENTATION		1
-#endif
 #define GLAD_GLES2_IMPLEMENTATION	1
-#endif
+#else
+#include <emscripten/html5_webgl.h>
+#endif // _QN_EMSCRIPTEN_
 #include "qgrdh_es.h"
 #include <limits.h>
 
 #define ES_MAX_LAYOUT_COUNT		16
-#ifndef _QN_EMSCRIPTEN_
 #define ES_VERSION_2			200
 #define ES_VERSION_3			300
-#else
-#define ES_VERSION_2			100		// WEBGL 1.0
-#define ES_VERSION_3			200		// WEBGL 2.0
-#endif
+
 
 //////////////////////////////////////////////////////////////////////////
 // OPENGL ES 렌더 디바이스
@@ -70,7 +66,7 @@ qs_name_vt(RDHBASE) vt_es_rdh =
 	.draw_indexed = es_draw_indexed,
 };
 
-#if !defined STATIC_ES_LIBRARY && !defined USE_SDL2
+#ifndef ES_STATIC_LINK
 //
 static QnModule* es_egl_module = NULL;
 
@@ -129,11 +125,7 @@ static QnModule* es_api_module = NULL;
 //
 static GLADapiproc es_load_api(const char* name)
 {
-#if false
-	return (GLADapiproc)eglGetProcAddress(name);
-#else
 	return (GLADapiproc)qn_mod_func(es_api_module, name);
-#endif
 }
 
 //
@@ -185,70 +177,68 @@ static bool es_init_api(int major)
 	}
 	return true;
 }
-#endif
+#endif // ES_STATIC_LINK
 
-#ifdef USE_SDL2
-//
-static GLADapiproc es_load_sdl_api(const char* name)
-{
-	return (GLADapiproc)SDL_GL_GetProcAddress(name);
-}
-
-//
-static bool esl_init_sdl_api(void)
-{
-	return gladLoadGLES2(es_load_sdl_api) != 0;
-}
-#else
 //
 static const char* es_egl_error_string(EGLint error)
 {
-#define ERROR_CASE(x)		case EGL_##x: return "EGL_" QN_STRING(x)
+#define ERROR_CASE(x)		case x: return #x
 	static char unknown[32];
 	switch (error)
 	{
-		ERROR_CASE(SUCCESS);
-		ERROR_CASE(NOT_INITIALIZED);
-		ERROR_CASE(BAD_ACCESS);
-		ERROR_CASE(BAD_ALLOC);
-		ERROR_CASE(BAD_ATTRIBUTE);
-		ERROR_CASE(BAD_CONTEXT);
-		ERROR_CASE(BAD_CONFIG);
-		ERROR_CASE(BAD_CURRENT_SURFACE);
-		ERROR_CASE(BAD_DISPLAY);
-		ERROR_CASE(BAD_SURFACE);
-		ERROR_CASE(BAD_MATCH);
-		ERROR_CASE(BAD_PARAMETER);
-		ERROR_CASE(BAD_NATIVE_PIXMAP);
-		ERROR_CASE(BAD_NATIVE_WINDOW);
-		ERROR_CASE(CONTEXT_LOST);
+		ERROR_CASE(EGL_SUCCESS);
+		ERROR_CASE(EGL_NOT_INITIALIZED);
+		ERROR_CASE(EGL_BAD_ACCESS);
+		ERROR_CASE(EGL_BAD_ALLOC);
+		ERROR_CASE(EGL_BAD_ATTRIBUTE);
+		ERROR_CASE(EGL_BAD_CONTEXT);
+		ERROR_CASE(EGL_BAD_CONFIG);
+		ERROR_CASE(EGL_BAD_CURRENT_SURFACE);
+		ERROR_CASE(EGL_BAD_DISPLAY);
+		ERROR_CASE(EGL_BAD_SURFACE);
+		ERROR_CASE(EGL_BAD_MATCH);
+		ERROR_CASE(EGL_BAD_PARAMETER);
+		ERROR_CASE(EGL_BAD_NATIVE_PIXMAP);
+		ERROR_CASE(EGL_BAD_NATIVE_WINDOW);
+		ERROR_CASE(EGL_CONTEXT_LOST);
 		default:
-			qn_snprintf(unknown, QN_COUNTOF(unknown), "UNKNOWN(%X)", error);
-			return unknown;
+			return qg_unknown_str(error);
 	}
 #undef ERROR_CASE
 }
 
 //
-static EGLint es_get_config_attr(const EsRdh* self, EGLConfig config, EGLenum name)
+static EGLint es_get_config_attr(EGLDisplay display, EGLConfig config, EGLenum name)
 {
 	EGLint v;
-	eglGetConfigAttrib(self->display, config, name, &v);
+	eglGetConfigAttrib(display, config, name, &v);
 	return v;
 }
 
 //
-static const EsConfig* es_find_config(const EsConfig* wanted, const EsConfig* configs, int count)
+static void es_get_config(EGLDisplay display, EGLConfig ec, EsConfig* config)
+{
+	config->handle = ec;
+	config->red = es_get_config_attr(display, ec, EGL_RED_SIZE);
+	config->green = es_get_config_attr(display, ec, EGL_GREEN_SIZE);
+	config->blue = es_get_config_attr(display, ec, EGL_BLUE_SIZE);
+	config->alpha = es_get_config_attr(display, ec, EGL_ALPHA_SIZE);
+	config->depth = es_get_config_attr(display, ec, EGL_DEPTH_SIZE);
+	config->stencil = es_get_config_attr(display, ec, EGL_STENCIL_SIZE);
+	config->samples = es_get_config_attr(display, ec, EGL_SAMPLES);
+	config->version = (es_get_config_attr(display, ec, EGL_RENDERABLE_TYPE) & EGL_OPENGL_ES3_BIT) != 0 ? 3 : 2;
+}
+
+//
+static const EsConfig* es_detect_config(const EsConfig* wanted, const EsConfig* configs, EGLint count)
 {
 	uint least_missing = UINT_MAX;
 	uint least_color = UINT_MAX;
 	uint least_extra = UINT_MAX;
 	const EsConfig* found = NULL;
-	for (int i = 0; i < count; i++)
+	for (EGLint i = 0; i < count; i++)
 	{
 		const EsConfig* c = &configs[i];
-		if (c->version < wanted->version)
-			continue;
 
 		uint missing = 0;
 		if (wanted->alpha > 0 && c->alpha == 0) missing++;
@@ -273,6 +263,8 @@ static const EsConfig* es_find_config(const EsConfig* wanted, const EsConfig* co
 			extra += (wanted->stencil - c->stencil) * (wanted->stencil - c->stencil);
 		if (wanted->samples > 0)
 			extra += (wanted->samples - c->samples) * (wanted->samples - c->samples);
+		if (wanted->version > 0)
+			extra += (wanted->version - c->version) * (wanted->version - c->version);
 
 		if (missing < least_missing)
 			found = c;
@@ -290,107 +282,129 @@ static const EsConfig* es_find_config(const EsConfig* wanted, const EsConfig* co
 	}
 	return found;
 }
-#endif
 
+//
+static bool es_choose_config(EsRdh* self, const EsConfig* config, bool msaa)
+{
+#define ATTR_ADD(e,v)		QN_STMT_BEGIN{ attrs[i++] = e; attrs[i++] = v; }QN_STMT_END
+	EGLint attrs[32], i = 0;
+	ATTR_ADD(EGL_RED_SIZE, config->red);
+	ATTR_ADD(EGL_GREEN_SIZE, config->green);
+	ATTR_ADD(EGL_BLUE_SIZE, config->blue);
+	if (config->alpha > 0)
+		ATTR_ADD(EGL_ALPHA_SIZE, config->alpha);
+	if (config->depth > 0)
+		ATTR_ADD(EGL_DEPTH_SIZE, config->depth);
+	if (config->stencil > 0)
+		ATTR_ADD(EGL_STENCIL_SIZE, config->stencil);
+	if (msaa && config->samples > 0)
+		ATTR_ADD(EGL_SAMPLES, config->samples);
+	ATTR_ADD(EGL_RENDERABLE_TYPE, config->version == 3 ? EGL_OPENGL_ES3_BIT : EGL_OPENGL_ES2_BIT);
+	ATTR_ADD(EGL_COLOR_BUFFER_TYPE, EGL_RGB_BUFFER);
+	ATTR_ADD(EGL_SURFACE_TYPE, EGL_WINDOW_BIT);
+	ATTR_ADD(EGL_NONE, EGL_NONE);
+	qn_verify(i < QN_COUNTOF(attrs));
+#undef ATTR_ADD
+
+	EGLint config_count = 0;
+	EGLConfig* configs = qn_alloc(64, EGLConfig);
+	if (eglChooseConfig(self->display, attrs, configs, 64, &config_count) == EGL_FALSE || config_count == 0)
+	{
+		qn_debug_outputf(true, "ESRDH", "failed to choose config: %s", es_egl_error_string(eglGetError()));
+		qn_free(configs);
+		return false;
+	}
+
+	bool ret;
+	if (config_count == 1)
+	{
+		ret = true;
+		es_get_config(self->display, configs[0], &self->config);
+	}
+	else
+	{
+		EsConfig* esconfigs = qn_alloc(config_count, EsConfig);
+		for (i = 0; i < config_count; i++)
+			es_get_config(self->display, configs[i], &esconfigs[i]);
+
+		const EsConfig* found = es_detect_config(config, esconfigs, config_count);
+		if (found == NULL)
+			ret = false;
+		else
+		{
+			self->config = *found;
+			ret = true;
+		}
+		qn_free(esconfigs);
+	}
+
+	qn_free(configs);
+	return ret;
+}
+
+//
 RdhBase* es_allocator(QgFlag flags, QgFeature features)
 {
-	if (QN_TMASK(features, QGRENDERER_ES3) == false)
+	if (QN_TMASK(features, QGRENDERER_ES) == false)
 		return NULL;
 
-#if !defined STATIC_ES_LIBRARY && !defined USE_SDL2
+#ifndef ES_STATIC_LINK
 	if (es_init_egl() == false)
 		return NULL;
-#endif
+#endif // ES_STATIC_LINK
 
-#ifdef _QN_EMSCRIPTEN_
-	flags &= ~(QGFLAG_MSAA | QGFLAG_DITHER | QGFLAG_DITHER_ALPHA_STENCIL);
-#endif
-
-	// 프로퍼티에 있으면 가져온다
-	int size_red = 8, size_green = 8, size_blue = 8, size_alpha = 8;
+	//----- 설정 초기화. 프로퍼티에 있으면 가져온다
+	bool msaa = QN_TMASK(flags, QGFLAG_MSAA);
+	EsConfig config =
+	{
+		.red = 8,
+		.green = 8,
+		.blue = 8,
+		.alpha = 8,
+		.depth = qn_get_prop_int(QG_PROP_DEPTH_SIZE, 24, 4, 32),
+		.stencil = qn_get_prop_int(QG_PROP_STENCIL_SIZE, 8, 4, 16),
+		.samples = msaa ? qn_get_prop_int(QG_PROP_MSAA, 4, 0, 8) : 0,
+		.version = 3,
+	};
 	const char* size_prop = qn_get_prop(QG_PROP_RGBA_SIZE);
 	if (size_prop != NULL && strlen(size_prop) >= 4)
 	{
-		size_red = size_prop[0] - '0';
-		size_green = size_prop[1] - '0';
-		size_blue = size_prop[2] - '0';
-		size_alpha = size_prop[3] - '0';
-	}
-	int size_depth = qn_get_prop_int(QG_PROP_DEPTH_SIZE, 24, 4, 32);
-	int size_stencil = qn_get_prop_int(QG_PROP_STENCIL_SIZE, 8, 4, 16);
-	int msaa_value = qn_get_prop_int(QG_PROP_MSAA, 4, 0, 8);
-
-	if (QN_TMASK(flags, QGFLAG_DITHER | QGFLAG_DITHER_ALPHA_STENCIL))	// 디더 강제로 줄여
-	{
-		size_red = 5;
-		size_blue = 5;
-		if (QN_TMASK(flags, QGFLAG_DITHER_ALPHA_STENCIL))
-		{
-			size_green = 5;
-			size_alpha = 1;
-			size_stencil = 8;
-		}
-		else
-		{
-			size_green = 6;
-			size_alpha = 0;
-			size_stencil = 0;
-		}
-		size_depth = 16;
+		config.red = size_prop[0] - '0';
+		config.green = size_prop[1] - '0';
+		config.blue = size_prop[2] - '0';
+		config.alpha = size_prop[3] - '0';
 	}
 
-	//
+	//----- 여기에 RDH가!
 	EsRdh* self = qn_alloc_zero_1(EsRdh);
-
-#ifdef USE_SDL2
-	//----- SDL 초기화
-	self->window = (SDL_Window*)stub_system_get_window();
-	self->context = SDL_GL_CreateContext(self->window);
-
-	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, size_red);
-	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, size_green);
-	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, size_blue);
-	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, size_alpha);
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, size_depth);
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, size_stencil);
-	if (QN_TMASK(flags, QGFLAG_MSAA))
-	{
-		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaa_value);
-	}
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
-
-	Uint32 sdl_flag = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
-	if (QN_TMASK(flags, QGFLAG_VSYNC))
-		sdl_flag |= SDL_RENDERER_PRESENTVSYNC;
-
-	self->renderer = SDL_CreateRenderer(self->window, -1, sdl_flag);
-	if (self->renderer == NULL || SDL_GL_LoadLibrary(NULL) != 0)
-	{
-		qn_debug_outputf(true, "ESRDH", "failed to create renderer (%s)", SDL_GetError());
-		goto pos_fail_exit;
-	}
-
-	// GL 함수 초기화
-	if (esl_init_sdl_api() == false)
-	{
-		qn_debug_outputs(true, "ESRDH", "cannot initialize es client");
-		goto pos_fail_exit;
-	}
-
-	if (QN_TMASK(flags, QGFLAG_VSYNC) == false)
-		SDL_GL_SetSwapInterval(0);
-	else
-	{
-		if (SDL_GL_SetSwapInterval(-1) < 0)
-			SDL_GL_SetSwapInterval(1);
-	}
-#else
-	//----- EGL 초기화
 	self->native_window = (NativeWindowType)stub_system_get_window();
 	self->native_display = (NativeDisplayType)stub_system_get_display();
 
+#ifdef _QN_EMSCRIPTEN_
+	// EMSCRIPTEN ES3 초기화 WEBGL 이용하는 듯
+	EmscriptenWebGLContextAttributes emattrs =
+	{
+		.alpha = config.alpha > 0 ? EM_TRUE : EM_FALSE,
+		.depth = config.depth > 0 ? EM_TRUE : EM_FALSE,
+		.stencil = config.stencil > 0 ? EM_TRUE : EM_FALSE,
+		.antialias = msaa ? EM_TRUE : EM_FALSE,
+		//.premultipliedAlpha = 0,
+		//.preserveDrawingBuffer = 0,
+		.powerPreference = EM_WEBGL_POWER_PREFERENCE_DEFAULT,
+		//.failIfMajorPerformanceCaveat = 0,
+		.majorVersion = 3,
+		.minorVersion = 2,
+		//.enableExtensionsByDefault = 0,
+		//.explicitSwapControl = 0,	
+	};
+	emscripten_webgl_init_context_attributes(&emattrs);
+	emattrs.majorVersion = 3;
+	const char* canvas = stub_system_get_canvas();
+	EMSCRIPTEN_WEBGL_CONTEXT_HANDLE webgl_context = emscripten_webgl_create_context(canvas, &emattrs);
+	emscripten_webgl_make_context_current(webgl_context);
+#endif // _QN_EMSCRIPTEN_
+
+	//----- EGL 초기화
 	self->display = eglGetDisplay(self->native_display);
 	if (self->display == EGL_NO_DISPLAY)
 	{
@@ -398,105 +412,49 @@ RdhBase* es_allocator(QgFlag flags, QgFeature features)
 		goto pos_fail_exit;
 	}
 
-	if (eglInitialize(self->display, &self->egl_major, &self->egl_minor) == false)
+	if (eglInitialize(self->display, NULL, NULL) == false)
 	{
 		qn_debug_outputf(true, "ESRDH", "failed to initialize: %s", es_egl_error_string(eglGetError()));
 		goto pos_fail_exit;
 	}
-#if !defined STATIC_ES_LIBRARY
-	// eglInitialize 이후에나 버전을 알 수 있다. glad egl은 버전이 필요함
-	es_reload_egl(self->display);
+#if !defined ES_STATIC_LINK
+	es_reload_egl(self->display);	// eglInitialize 이후에나 버전을 알 수 있다. glad egl은 버전이 필요함
 #endif
 
-	EGLint egl_config_count;
-	eglGetConfigs(self->display, NULL, 0, &egl_config_count);
-	if (egl_config_count == 0)
-	{
-		qn_debug_outputs(true, "ESRDH", "no config found");
-		goto pos_fail_exit;
-	}
-
-	bool support3 = false;
-	int config_entry_count = 0;
-	EsConfig* config_entries = qn_alloc_zero(egl_config_count, EsConfig);
-	EGLConfig* egl_configs = qn_alloc_zero(egl_config_count, EGLConfig);
-	eglGetConfigs(self->display, egl_configs, egl_config_count, &egl_config_count);
-
-	for (EGLint i = 0; i < egl_config_count; i++)
-	{
-		const EGLConfig c = egl_configs[i];
-		EsConfig* u = &config_entries[config_entry_count];
-
-		if (es_get_config_attr(self, c, EGL_COLOR_BUFFER_TYPE) != EGL_RGB_BUFFER)
-			continue;
-		if (QN_TMASK(es_get_config_attr(self, c, EGL_SURFACE_TYPE), EGL_WINDOW_BIT) == false)
-			continue;
-		const EGLint vmask = es_get_config_attr(self, c, EGL_RENDERABLE_TYPE);
-		if (QN_TMASK(vmask, EGL_OPENGL_ES3_BIT | EGL_OPENGL_ES2_BIT) == false)
-			continue;
-
-		u->handle = c;
-		u->red = es_get_config_attr(self, c, EGL_RED_SIZE);
-		u->green = es_get_config_attr(self, c, EGL_GREEN_SIZE);
-		u->blue = es_get_config_attr(self, c, EGL_BLUE_SIZE);
-		u->alpha = es_get_config_attr(self, c, EGL_ALPHA_SIZE);
-		u->depth = es_get_config_attr(self, c, EGL_DEPTH_SIZE);
-		u->stencil = es_get_config_attr(self, c, EGL_STENCIL_SIZE);
-		u->samples = es_get_config_attr(self, c, EGL_SAMPLES);
-		if (QN_TMASK(vmask, EGL_OPENGL_ES3_BIT) == false)
-			u->version = 2;
-		else
-		{
-			u->version = 3;
-			support3 = true;
-		}
-		config_entry_count++;
-	}
-
-	const EsConfig want_config =
-	{
-		NULL,
-		size_red, size_green, size_blue, size_alpha,
-		size_depth, size_stencil, QN_TMASK(flags, QGFLAG_MSAA) ? msaa_value : 0,
-		support3 ? 3 : 2
-	};
-	const EsConfig* found_entry = es_find_config(&want_config, config_entries, config_entry_count);
-	self->config = *found_entry;
-	qn_free(egl_configs);
-	qn_free(config_entries);
-
+	// API 바인드
 	if (eglBindAPI(EGL_OPENGL_ES_API) == false)
 	{
 		qn_debug_outputf(true, "ESRDH", "failed to initialize: %s", es_egl_error_string(eglGetError()));
 		goto pos_fail_exit;
 	}
 
+	// 컨피그 찾기
+	if (es_choose_config(self, &config, msaa) == false)
+		goto pos_fail_exit;
+
+	// 컨텍스트 만들기
 	EGLint context_attrs[] =
 	{
-		EGL_CONTEXT_CLIENT_VERSION, support3 ? 3 : 2,
+		EGL_CONTEXT_CLIENT_VERSION, self->config.version,
 		EGL_NONE, EGL_NONE,
 	};
 	self->context = eglCreateContext(self->display, self->config.handle, NULL, context_attrs);
 	if (self->context == EGL_NO_CONTEXT)
 	{
-		if (support3)
-		{
-			context_attrs[1] = 2;
-			self->context = eglCreateContext(self->display, self->config.handle, NULL, context_attrs);
-			if (self->context != EGL_NO_CONTEXT)
-				goto pos_context_ok;
-		}
+		context_attrs[1] = self->config.version == 2 ? 3 : 2;
+		self->context = eglCreateContext(self->display, self->config.handle, NULL, context_attrs);
+		if (self->context != EGL_NO_CONTEXT)
+			goto pos_context_ok;
 
 		qn_debug_outputf(true, "ESRDH", "failed to create context: %s", es_egl_error_string(eglGetError()));
 		goto pos_fail_exit;
 	}
 pos_context_ok:
-	eglQueryContext(self->display, self->context, EGL_CONTEXT_CLIENT_VERSION, &self->version_major);
+	eglQueryContext(self->display, self->context, EGL_CONTEXT_CLIENT_VERSION, &self->version);
 
+	// 서피스 만들기
 #ifdef _QN_ANDROID_
-	EGLint android_visual_id;
-	eglGetConfigAttrib(self->display, self->config, EGL_NATIVE_VISUAL_ID, &android_visual_id);
-	ANativeWindow_setBuffersGeometry(self->native_window, 0, 0, android_visual_id);
+	ANativeWindow_setBuffersGeometry(self->native_window, 0, 0, self->base.base.info.visual_id);
 #endif
 	const EGLint surface_attrs[] =
 	{
@@ -508,6 +466,10 @@ pos_context_ok:
 		qn_debug_outputf(true, "ESRDH", "failed to create surface: %s", es_egl_error_string(eglGetError()));
 		goto pos_fail_exit;
 	}
+#ifdef _QN_ANDROID_
+	int android_format = ANativeWindow_getFormat(self->native_window);
+	Android_SetFormat(self->base.base.info.visual_id, android_format);
+#endif
 
 	// 서피스를 만들었으니 여기서 윈도우 표시
 	stub_system_actuate();
@@ -519,17 +481,15 @@ pos_context_ok:
 		goto pos_fail_exit;
 	}
 
-#ifndef STATIC_ES_LIBRARY
-	// eglMakeCurrent 하고 나야 GL 드라이버가 로드된다
-	if (es_init_api(self->version_major) == false)
+#ifndef ES_STATIC_LINK
+	if (es_init_api(self->version) == false)	// eglMakeCurrent 하고 나야 GL 드라이버가 로드된다
 		goto pos_fail_exit;
-#endif
+#endif // ES_STATIC_LINK
 
 	eglSwapInterval(self->display, QN_TMASK(flags, QGFLAG_VSYNC) ? 1 : 0);
-#endif
 
 	//----- 정보 설정
-	RendererInfo* infos = &self->base.base.info;	// 여기서 rdh_info()는 쓸 수 없다
+	RendererInfo* infos = &self->base.base.info;	// 여기서 RDH_INFO는 쓸 수 없다
 
 	qgl_copy_string(infos->renderer, QN_COUNTOF(infos->renderer), GL_RENDERER);
 	qgl_copy_string(infos->vendor, QN_COUNTOF(infos->vendor), GL_VENDOR);
@@ -543,35 +503,24 @@ pos_context_ok:
 	infos->max_tex_dim = qgl_get_integer_v(GL_MAX_TEXTURE_SIZE);
 	infos->max_tex_count = qgl_get_integer_v(GL_MAX_TEXTURE_IMAGE_UNITS);
 	infos->max_off_count = 1; //qgl_get_integer_v(GL_FRAMEBUFFER_BINDING);
-	infos->clr_fmt = qg_rgba_to_clrfmt(size_red, size_green, size_blue, size_alpha, false);
+	infos->clr_fmt = qg_rgba_to_clrfmt(config.red, config.green, config.blue, config.alpha, false);
 	infos->max_off_count = 1;
-
-	// 여기서 세이더 유니폼 함수 등록
 
 	//
 	qn_debug_outputf(false, "ESRDH", "OPENGLES %d/%d [%s by %s]",
 		infos->renderer_version, infos->shader_version,
 		infos->renderer, infos->vendor);
-#ifndef _QN_EMSCRIPTEN_
-	qn_debug_outputf(false, "ESRDH", "ES VERSION: %s", gl_version);
-#else
-	qn_debug_outputf(false, "ESRDH", "WEBGL VERSION: %s", gl_version);
-#endif
-	qn_debug_outputf(false, "ESRDH", "SHADER VERSION: %s", gl_shader_version);
+	qn_debug_outputf(false, "ESRDH", "%s", gl_version);
+	qn_debug_outputf(false, "ESRDH", "%s", gl_shader_version);
 	return qs_init(self, RdhBase, &vt_es_rdh);
 
 pos_fail_exit:
-#ifdef USE_SDL2
-	if (self->renderer)
-		SDL_DestroyRenderer(self->renderer);
-#else
 	if (self->context != EGL_NO_CONTEXT)
 		eglDestroyContext(self->display, self->context);
 	if (self->surface != EGL_NO_SURFACE)
 		eglDestroySurface(self->display, self->surface);
 	if (self->display != EGL_NO_DISPLAY)
 		eglTerminate(self->display);
-#endif
 	qn_free(self);
 	return NULL;
 }
@@ -590,17 +539,12 @@ static void es_dispose(QsGam* g)
 	qs_unload(pd->render.render);
 
 	//----- 장치 제거
-#ifdef USE_SDL2
-	if (self->renderer)
-		SDL_DestroyRenderer(self->renderer);
-#else
 	if (self->context != EGL_NO_CONTEXT)
 		eglDestroyContext(self->display, self->context);
 	if (self->surface != EGL_NO_SURFACE)
 		eglDestroySurface(self->display, self->surface);
 	if (self->display != EGL_NO_DISPLAY)
 		eglTerminate(self->display);
-#endif
 
 	self->base.disposed = true;
 	rdh_internal_dispose();
@@ -611,7 +555,7 @@ static void es_reset(void)
 {
 	rdh_internal_reset();
 
-	EsRdh* self = ES_RDH_INSTANCE;
+	EsRdh* self = ES_RDH;
 	const RendererInfo* info = RDH_INFO;
 	RenderTransform* tm = RDH_TRANSFORM;
 
@@ -723,7 +667,7 @@ static void es_end(void)
 // 플러시
 static void es_flush(void)
 {
-	EsRdh* self = ES_RDH_INSTANCE;
+	EsRdh* self = ES_RDH;
 
 	glFlush();
 #ifdef USE_SDL2

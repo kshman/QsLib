@@ -217,7 +217,6 @@
     <ClCompile Include="..\..\src\qg\stub\qgrdh_es.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_windows.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_wayland.c" />
-    <ClCompile Include="..\..\src\qg\stub\qgstub_sdl.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_emscripten.c" />
     <ClCompile Include="..\..\src\qg\qg_kmc.c" />
     <ClCompile Include="..\..\src\qn\PatrickPowell_snprintf.c" />
