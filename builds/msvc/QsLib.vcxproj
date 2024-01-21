@@ -205,6 +205,7 @@
     <ClInclude Include="..\..\src\qg\stub\qgrdh_glbase.h" />
     <ClInclude Include="..\..\src\qg\stub\qgstub_win_func.h" />
     <ClInclude Include="..\..\src\qg\stub\qgstub_wlx_func.h" />
+    <ClInclude Include="..\..\src\qs_supp.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\pch.c">

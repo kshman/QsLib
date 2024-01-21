@@ -241,48 +241,68 @@ INLINE QgScType qgl_enum_to_shader_const(GLenum gl_type)
 {
 	switch (gl_type)
 	{
-		case GL_FLOAT:				return QGSCT_FLOAT1;
-		case GL_FLOAT_VEC2:			return QGSCT_FLOAT2;
-		case GL_FLOAT_VEC3:			return QGSCT_FLOAT3;
-		case GL_FLOAT_VEC4:			return QGSCT_FLOAT4;
-		case GL_INT:				return QGSCT_INT1;
-		case GL_INT_VEC2:			return QGSCT_INT2;
-		case GL_INT_VEC3:			return QGSCT_INT3;
-		case GL_INT_VEC4:			return QGSCT_INT4;
-		case GL_UNSIGNED_INT:		return QGSCT_UINT1;
-		case GL_UNSIGNED_INT_VEC2:	return QGSCT_UINT2;
-		case GL_UNSIGNED_INT_VEC3:	return QGSCT_UINT3;
-		case GL_UNSIGNED_INT_VEC4:	return QGSCT_UINT4;
-		case GL_BOOL:				return QGSCT_BYTE1;
-		case GL_BOOL_VEC2:			return QGSCT_BYTE2;
-		case GL_BOOL_VEC3:			return QGSCT_BYTE3;
-		case GL_BOOL_VEC4:			return QGSCT_BYTE4;
-		case GL_FLOAT_MAT2:			return QGSCT_FLOAT4;
-		case GL_FLOAT_MAT4:			return QGSCT_FLOAT16;
+		case GL_FLOAT:						return QGSCT_FLOAT1;
+		case GL_FLOAT_VEC2:					return QGSCT_FLOAT2;
+		case GL_FLOAT_VEC3:					return QGSCT_FLOAT3;
+		case GL_FLOAT_VEC4:					return QGSCT_FLOAT4;
+		case GL_INT:						return QGSCT_INT1;
+		case GL_INT_VEC2:					return QGSCT_INT2;
+		case GL_INT_VEC3:					return QGSCT_INT3;
+		case GL_INT_VEC4:					return QGSCT_INT4;
+		case GL_UNSIGNED_INT:				return QGSCT_UINT1;
+#ifdef GL_UNSIGNED_INT_VEC2
+		case GL_UNSIGNED_INT_VEC2:			return QGSCT_UINT2;
+#endif
+#ifdef GL_UNSIGNED_INT_VEC3
+		case GL_UNSIGNED_INT_VEC3:			return QGSCT_UINT3;
+#endif
+#ifdef GL_UNSIGNED_INT_VEC4
+		case GL_UNSIGNED_INT_VEC4:			return QGSCT_UINT4;
+#endif
+		case GL_BOOL:						return QGSCT_BYTE1;
+		case GL_BOOL_VEC2:					return QGSCT_BYTE2;
+		case GL_BOOL_VEC3:					return QGSCT_BYTE3;
+		case GL_BOOL_VEC4:					return QGSCT_BYTE4;
+		case GL_FLOAT_MAT2:					return QGSCT_FLOAT4;
+		case GL_FLOAT_MAT4:					return QGSCT_FLOAT16;
 #ifdef GL_SAMPLER_1D
-		case GL_SAMPLER_1D:			return QGSCT_SPLR_1D;
+		case GL_SAMPLER_1D:					return QGSCT_SAMPLER1D;
 #endif
-		case GL_SAMPLER_2D:			return QGSCT_SPLR_2D;
+		case GL_SAMPLER_2D:					return QGSCT_SAMPLER2D;
 #ifdef GL_SAMPLER_3D
-		case GL_SAMPLER_3D:			return QGSCT_SPLR_3D;
+		case GL_SAMPLER_3D:					return QGSCT_SAMPLER3D;
 #endif
-#ifdef GL_SAMPLER_CUBE
-		case GL_SAMPLER_CUBE:		return QGSCT_SPLR_CUBE;
-#endif
+		case GL_SAMPLER_CUBE:				return QGSCT_SAMPLERCUBE;
 #if false
 		case GL_SAMPLER_2D_SHADOW:
 		case GL_SAMPLER_2D_ARRAY:
 		case GL_SAMPLER_2D_ARRAY_SHADOW:
 		case GL_SAMPLER_CUBE_SHADOW:
-		case GL_INT_SAMPLER_2D:
-		case GL_INT_SAMPLER_3D:
-		case GL_INT_SAMPLER_CUBE:
+#endif
+#ifdef GL_INT_SAMPLER_2D
+		case GL_INT_SAMPLER_2D:				return QGSCT_SAMPLER2D;
+#endif
+#ifdef GL_INT_SAMPLER_3D
+		case GL_INT_SAMPLER_3D:				return QGSCT_SAMPLER3D;
+#endif
+#ifdef GL_INT_SAMPLER_CUBE
+		case GL_INT_SAMPLER_CUBE:			return QGSCT_SAMPLERCUBE;
+#endif
+#if false
 		case GL_INT_SAMPLER_2D_ARRAY:
-		case GL_UNSIGNED_INT_SAMPLER_2D:
-		case GL_UNSIGNED_INT_SAMPLER_3D:
-		case GL_UNSIGNED_INT_SAMPLER_CUBE:
+#endif
+#ifdef GL_UNSIGNED_INT_SAMPLER_2D
+		case GL_UNSIGNED_INT_SAMPLER_2D:	return QGSCT_SAMPLER2D;
+#endif
+#ifdef GL_UNSIGNED_INT_SAMPLER_3D
+		case GL_UNSIGNED_INT_SAMPLER_3D:	return QGSCT_SAMPLER3D;
+#endif
+#ifdef GL_UNSIGNED_INT_SAMPLER_CUBE
+		case GL_UNSIGNED_INT_SAMPLER_CUBE:	return QGSCT_SAMPLERCUBE;
+#endif
+#if false
 		case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:
 #endif
-		default:					return QGSCT_UNKNOWN;
+		default:							return QGSCT_UNKNOWN;
 	}
 }

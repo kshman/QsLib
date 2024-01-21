@@ -34,6 +34,15 @@ INLINE void qg_node_mukum_init_fast(QgNodeMukum* mukum)
 	mukum->NODES = qn_alloc_zero(QN_MIN_HASH, QgNode*);
 }
 
+INLINE QnPtrCtnr qg_node_mukum_to_ctnr(QgNodeMukum* mukum)
+{
+	QnPtrCtnr ctnr = { mukum->COUNT, qn_alloc(mukum->COUNT, void*) };
+	QgNode** ptr = (QgNode**)qn_ctnr_data(&ctnr);
+	for (QgNode* node = mukum->FIRST; node; node = node->NEXT)
+		*ptr++ = node;
+	return ctnr;
+}
+
 /// @brief 해제
 INLINE void qg_node_mukum_disp(QgNodeMukum* mukum)
 {
@@ -50,13 +59,11 @@ INLINE void qg_node_mukum_disp_safe(QgNodeMukum* mukum)
 {
 	if (mukum->COUNT > 0)
 	{
-		QgNode** nodes = qn_alloc(mukum->COUNT, QgNode*);
-		QgNode** pnode = nodes;
-		for (QgNode* node = mukum->FIRST; node; node = node->NEXT)
-			*pnode++ = node;
-		for (size_t i = 0; i < mukum->COUNT; i++)
-			qs_unload(nodes[i]);
-		qn_free(nodes);
+		QnPtrCtnr ctnr = qg_node_mukum_to_ctnr(mukum);
+		size_t i;
+		qn_ctnr_foreach(&ctnr, i)
+			qs_unload(qn_ctnr_nth(&ctnr, i));
+		qn_ctnr_disp(&ctnr);
 	}
 	qn_free(mukum->NODES);
 }
@@ -126,33 +133,6 @@ INLINE void qg_node_mukum_clear(QgNodeMukum* mukum)
 	qg_internal_node_mukum_test_size(mukum);
 }
 
-/// @brief 노드 제거, 링크만 해제하고 노드 자체를 해제하지 않는다(노드 dispose에서 호출용)
-INLINE void qg_node_mukum_unlink(QgNodeMukum* mukum, void* item)
-{
-	QgNode* node = (QgNode*)item;
-	QgNode** pnode = &node;
-	*pnode = node->SIBLING;
-	if (node->NEXT)
-		node->NEXT->PREV = node->PREV;
-	else
-	{
-		qn_assert(mukum->LAST == node, "invalid last node");
-		mukum->LAST = node->PREV;
-	}
-	if (node->PREV)
-		node->PREV->NEXT = node->NEXT;
-	else
-	{
-		qn_assert(mukum->FIRST == node, "invalid first node");
-		mukum->FIRST = node->NEXT;
-	}
-	size_t hash = node->HASH % mukum->BUCKET;
-	if (mukum->NODES[hash] == node)
-		mukum->NODES[hash] = node->SIBLING;
-	mukum->COUNT--;
-	mukum->REVISION++;
-}
-
 /// @brief 해시 룩업
 INLINE QgNode** qg_internal_node_mukum_lookup(QgNodeMukum* mukum, size_t hash, const char* name)
 {
@@ -160,18 +140,19 @@ INLINE QgNode** qg_internal_node_mukum_lookup(QgNodeMukum* mukum, size_t hash, c
 	QgNode* node;
 	while ((node = *pnode) != NULL)
 	{
-		if (node->HASH == hash && qn_strcmp(node->NAME, name) == 0)
+		if (node->HASH == hash && qn_streqv(node->NAME, name))
 			break;
 		pnode = &node->SIBLING;
 	}
+	qn_assert(pnode != NULL, "invalid node lookup");
 	return pnode;
 }
 
 /// @brief 해시 셋
 INLINE void qg_internal_node_mukum_input(QgNodeMukum* mukum, QgNode* item, bool replace)
 {
+	qn_ret_if_ok(item->HASH == 0);
 	QgNode** pnode = qg_internal_node_mukum_lookup(mukum, item->HASH, item->NAME);
-	qn_assert(pnode != NULL, "invalid node lookup");
 	QgNode* node = *pnode;
 	if (node)
 	{
@@ -220,13 +201,39 @@ INLINE void qg_internal_node_mukum_input(QgNodeMukum* mukum, QgNode* item, bool 
 	}
 }
 
+/// @brief 노드 제거, 링크만 해제하고 노드 자체를 해제하지 않는다
+INLINE void qg_internal_node_mukum_unlink(QgNodeMukum* mukum, QgNode** pnode)
+{
+	QgNode* node = *pnode;
+	*pnode = node->SIBLING;
+	if (node->NEXT)
+		node->NEXT->PREV = node->PREV;
+	else
+	{
+		qn_assert(mukum->LAST == node, "invalid last node");
+		mukum->LAST = node->PREV;
+	}
+	if (node->PREV)
+		node->PREV->NEXT = node->NEXT;
+	else
+	{
+		qn_assert(mukum->FIRST == node, "invalid first node");
+		mukum->FIRST = node->NEXT;
+	}
+	size_t hash = node->HASH % mukum->BUCKET;
+	if (mukum->NODES[hash] == node)
+		mukum->NODES[hash] = node->SIBLING;
+	mukum->COUNT--;
+	mukum->REVISION++;
+}
+
 /// @brief 노드 제거, 실제로 노드를 제거한다!
 INLINE bool qg_internal_node_mukum_erase(QgNodeMukum* mukum, size_t hash, const char* name)
 {
 	QgNode** pnode = qg_internal_node_mukum_lookup(mukum, hash, name);
 	if (*pnode == NULL)
 		return false;
-	qg_node_mukum_unlink(mukum, *pnode);
+	qg_internal_node_mukum_unlink(mukum, pnode);
 	qs_unloadu(*pnode, QgNode);
 	return true;
 }
@@ -234,29 +241,36 @@ INLINE bool qg_internal_node_mukum_erase(QgNodeMukum* mukum, size_t hash, const 
 /// @brief 노드 얻기, 참조 처리 하지 않는다!
 INLINE void* qg_node_mukum_get(QgNodeMukum* mukum, const char* name)
 {
-	size_t hash = qn_strihash(name);
+	size_t hash = qn_strhash(name);
 	QgNode** pnode = qg_internal_node_mukum_lookup(mukum, hash, name);
 	return *pnode;
 }
 
 /// @brief 노드 추가, 참조 처리 하지 않는다!
-INLINE void qg_node_mukum_add(QgNodeMukum* mukum, void* item)
+INLINE void qg_node_mukum_add(QgNodeMukum* mukum, QgNode* node)
 {
-	qg_internal_node_mukum_input(mukum, (QgNode*)item, false);
+	qg_internal_node_mukum_input(mukum, node, false);
 }
 
 /// @brief 노드 설정, 참조 처리 하지 않는다!
-INLINE void qg_node_mukum_set(QgNodeMukum* mukum, void* item)
+INLINE void qg_node_mukum_set(QgNodeMukum* mukum, QgNode* node)
 {
-	qg_internal_node_mukum_input(mukum, (QgNode*)item, true);
+	qg_internal_node_mukum_input(mukum, node, true);
 }
 
-/// @brief 노드 제거
+/// @brief 노드 제거, 실제 노드를 제거한다!
 INLINE void qg_node_mukum_remove(QgNodeMukum* mukum, const char* name)
 {
-	size_t hash = qn_strihash(name);
+	size_t hash = qn_strhash(name);
 	qg_internal_node_mukum_erase(mukum, hash, name);
 	qg_internal_node_mukum_test_size(mukum);
+}
+
+/// @brief 링크를 제거한다, 노드를 제거하지 않는다! (노드 dispose에서 호출용)
+INLINE void qg_node_mukum_unlink(QgNodeMukum* mukum, QgNode* node)
+{
+	qn_ret_if_ok(node->HASH == 0);
+	qg_internal_node_mukum_unlink(mukum, &node);
 }
 
 /// @brief 찾기

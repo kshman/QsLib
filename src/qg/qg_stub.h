@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include <qs_ctn.h>
-#include "qs_qg.h"
+#include <qs_qg.h>
 #include "qg_node.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -274,7 +274,7 @@ extern void rdh_internal_add_node(RenderNodeShed shed, void* node);
 extern void rdh_internal_unlink_node(RenderNodeShed shed, void* node);
 
 // 열거자 컨버터 초기화
-extern void qg_init_enum_convs(void);
+extern void qg_init_converters(void);
 // 색깔 변환
 extern QgClrFmt qg_rgba_to_clrfmt(int red, int green, int blue, int alpha, bool is_float);
 // LAYOUT USAGE 변환
@@ -290,17 +290,3 @@ extern const char* qg_shader_const_auto_to_str(const QgScAuto sca);
 // 알수 없음을 문자열로
 extern const char* qg_unknown_str(int value);
 
-// 인수 검사 매크로
-#define RDH_ACK_COND(cond,mesg,ret)			QN_STMT_BEGIN{if ((cond)) { qn_debug_outputf(true, "RDH", "%s: %s", __FUNCTION__, mesg); return ret; }}QN_STMT_END
-#define RDH_ACK_NULL(item,ret)				QN_STMT_BEGIN{if ((item)==NULL) { qn_debug_outputf(true, "RDH", "%s: '%s' is null", __FUNCTION__, #item); return ret; }}QN_STMT_END
-#define RDH_ACK_ZERO(item,ret)				QN_STMT_BEGIN{if ((size_t)(item)==0) { qn_debug_outputf(true, "RDH", "%s: '%s' is zero", #item); return ret; }}QN_STMT_END
-#define RDH_ACK_MAX(item,vmax,ret)			QN_STMT_BEGIN{if ((size_t)(item) >= (vmax)) { qn_debug_outputf(true, "RDH", "%s: invalid '%s' value: %d", __FUNCTION__, #item, item); return ret; }}QN_STMT_END
-#define RDH_ACK_MIN(item,vmin,ret)			QN_STMT_BEGIN{if ((item) <= (vmin)) { qn_debug_outputf(true, "RDH", "%s: invalid '%s' value: %d", __FUNCTION__, #item, item); return ret; }}QN_STMT_END
-#define RDH_ACK_NULL2(ctn,item,ret)			QN_STMT_BEGIN{if ((ctn)->item == NULL) { qn_debug_outputf(true, "RDH", "'%s: %s.%s' is null", __FUNCTION__, #ctn, #item); return ret; }}QN_STMT_END
-#define RDH_ACK_ZERO2(ctn,item,ret)			QN_STMT_BEGIN{if (((size_t)(ctn)->item) == 0) { qn_debug_outputf(true, "RDH", "'%s: %s.%s' is zero", __FUNCTION__, #ctn, #item); return ret; }}QN_STMT_END
-#define RDH_ACK_MAX2(ctn,item,vmax,ret)		QN_STMT_BEGIN{if ((size_t)(ctn)->item >= (vmax)) { qn_debug_outputf(true, "RDH", "%s: invalid '%s.%s' value: %d", __FUNCTION__, #ctn, #item, (ctn)->item); return ret; }}QN_STMT_END
-#define RDH_ACK_MIN2(ctn,item,vmin,ret)		QN_STMT_BEGIN{if ((ctn)->item <= (vmin)) { qn_debug_outputf(true, "RDH", "%s: invalid '%s.%s' value: %d", __FUNCTION__, #ctn, #item, (ctn)->item); return ret; }}QN_STMT_END
-#define RDH_ACK_NULL3(ctn,sec,item,ret)		QN_STMT_BEGIN{if ((ctn)->sec.item == NULL) { qn_debug_outputf(true, "RDH", "'%s: %s.%s.%s' is null", __FUNCTION__, #ctn, #sec, #item); return ret; }}QN_STMT_END
-#define RDH_ACK_ZERO3(ctn,sec,item,ret)		QN_STMT_BEGIN{if ((size_t)((ctn)->sec.item) == 0) { qn_debug_outputf(true, "RDH", "'%s: %s.%s.%s' is zero", __FUNCTION__, #ctn, #sec, #item); return ret; }}QN_STMT_END
-#define RDH_ACK_MAX3(ctn,sec,item,vmax,ret)	QN_STMT_BEGIN{if ((size_t)(ctn)->sec.item >= (vmax)) { qn_debug_outputf(true, "RDH", "%s: invalid '%s.%s.%s' value: %d", __FUNCTION__, #ctn, #sec, #item, (ctn)->sec.item); return ret; }}QN_STMT_END
-#define RDH_ACK_MIN3(ctn,sec,item,vmin,ret)	QN_STMT_BEGIN{if ((ctn)->sec.item <= (vmin)) { qn_debug_outputf(true, "RDH", "%s: invalid '%s.%s.%s' value: %d", __FUNCTION__, #ctn, #sec, #item, (ctn)->sec.item); return ret; }}QN_STMT_END

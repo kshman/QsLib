@@ -45,16 +45,9 @@ int main(void)
 	if (qg_open_rdh(NULL, "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 
-	QgPropShader prop_shader =
-	{
-		{ QN_COUNTOF(layouts), layouts },
-		{ 0, vs },
-		{ 0, ps },
-	};
-	QgPropRender prop_render = qg_default_prop_render();
-
-	QgShader* shader = qg_rdh_create_shader_buffer(NULL, &prop_shader, QGSCF_TEXT);
-	QgRender* render = qg_rdh_create_render(NULL, &prop_render, shader);
+	QgPropRender prop_render = QG_DEFAULT_PROP_RENDER;
+	QgPropShader prop_shader = { { layouts, QN_COUNTOF(layouts) }, { vs, 0 }, { ps, 0 } };
+	QgRender* render = qg_rdh_create_render("named", &prop_render, &prop_shader);
 	QgBuffer* vertexbuf = qg_rdh_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(vertices), sizeof(float), vertices);
 	QgBuffer* colorbuf = qg_rdh_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(colors), sizeof(float), colors);
 
@@ -81,7 +74,6 @@ int main(void)
 	qs_unload(vertexbuf);
 	qs_unload(colorbuf);
 	qs_unload(render);
-	qs_unload(shader);
 	qg_close_rdh();
 
 	return 0;

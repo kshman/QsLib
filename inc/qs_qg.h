@@ -420,21 +420,21 @@ typedef struct QGLAYOUTINPUT
 	QgLayoutStage		stage;								/// @brief 스테이지 구분
 	QgLayoutUsage		usage;								/// @brief 사용법
 	QgClrFmt			format;								/// @brief 포맷
-	bool32				normalize;							/// @brief 정규화	
+	bool32				normalized;							/// @brief 정규화	
 } QgLayoutInput;
 
 /// @brief 레이아웃 데이터
 typedef struct QGLAYOUTDATA
 {
-	QgLayoutInput*		inputs;								/// @brief 요소 데이터 포인트
-	size_t				count;								/// @brief 요소 갯수
+	const QgLayoutInput*	inputs;							/// @brief 요소 데이터 포인트
+	size_t					count;							/// @brief 요소 갯수
 } QgLayoutData;
 
 /// @brief 코드 데이터
 typedef struct QGCODEDATA
 {
-	void*				code;								/// @brief 코드 데이터
-	size_t				size;								/// @brief 코드 크기
+	const void*			code;								/// @brief 코드 데이터
+	size_t				size;								/// @brief 코드 크기 (텍스트 타입이면 반드시 0이어야 한다!)
 } QgCodeData;
 
 /// @brief 세이더 속성
@@ -443,7 +443,7 @@ typedef struct QGPROPSHADER
 	QgLayoutData		layout;
 	QgCodeData			vertex;
 	QgCodeData			pixel;
-	QgCodeData			geometry;
+	//QgCodeData		geometry;
 } QgPropShader;
 
 /// @brief 블렌드
@@ -486,15 +486,18 @@ typedef struct QGPROPRENDER
 /// @brief 세이더 변수
 typedef struct QGVARSHADER
 {
+#ifdef _QN_64_
+	char				name[64 + 4];						/// @brief 변수 이름
+#else
 	char				name[64];							/// @brief 변수 이름
+#endif
 	size_t				hash;								/// @brief 변수 이름 해시
-	int					key;								/// @brief 키
 
 	ushort				offset;								/// @brief 변수 옵셋
-	ushort				size;								/// @brief 변수의 크기
+	ushort				size;								/// @brief 변수의 갯수
 
 	QgScType			sctype;								/// @brief 변수 타입
-	QgScAuto			scauto;								/// @brief 자동 타입
+	QgScAuto			scauto;								/// @brief 자동 타입 또는 사용자 정의 키 값
 } QgVarShader;
 
 /// @brief 키 상태
@@ -879,7 +882,7 @@ typedef struct QGRENDER		QgRender;						/// @brief 렌더 파이프라인
 /// @details 두번째 인수(int)는 qn_get_key로 얻어진 키 값을 전달하므로 자동 변수가 아닐 경우
 /// 미리 qn_set_key로 키 값을 등록해야 한다. 키 값이 없다면 0으로 전달하므로,
 /// 그 경우 세이더 변수의 name으로 변수를 특정해야 한다
-typedef void(*QgVarShaderFunc)(void*, int, const QgVarShader*);
+typedef void(*QgVarShaderFunc)(void*, nint, const QgVarShader*);
 
 /// @brief 렌더러를 연다
 /// @param driver 드라이버 이름 (NULL로 지정하여 기본값)
@@ -978,10 +981,10 @@ QSAPI QgBuffer* qg_rdh_create_buffer(QgBufferType type, uint count, uint stride,
 
 /// @brief 렌더 파이프라인을 만든다
 /// @param name 렌더 이름 (이름을 지정하면 캐시한다)
-/// @param pipe 렌더 파이프라인 속성
+/// @param render 렌더 파이프라인 속성
 /// @param shader 세이더 속성
 /// @return 만들어진 렌더 파이프라인
-QSAPI QgRender* qg_rdh_create_render(const char* name, const QgPropRender* pipe, const QgPropShader* shader);
+QSAPI QgRender* qg_rdh_create_render(const char* name, const QgPropRender* render, const QgPropShader* shader);
 
 /// @brief 정점 버퍼를 설정한다
 /// @param stage 버퍼를 지정할 스테이지
@@ -1001,6 +1004,11 @@ QSAPI bool qg_rdh_set_index(QgBuffer* buffer);
 /// @brief 렌더 파이프라인을 설정한다
 /// @param render 렌더 파이프라인
 QSAPI bool qg_rdh_set_render(QgRender* render);
+
+/// @brief 렌더 파이프라인을 캐시에서 설정한다
+/// @param name 설정할 렌더의 이름
+/// @return 캐시에 해당 이름이 없으면 거짓
+QSAPI bool qg_rdh_set_render_named(const char* name);
 
 /// @brief 정점으로 그리기
 /// @param tpg 그릴 모양의 토폴로지
@@ -1087,19 +1095,15 @@ struct QGRENDER
 // 인라인
 
 // 기본 렌더 프로퍼티
-INLINE QgPropRender qg_default_prop_render(void)
-{
-	QgPropRender prop =
-	{
-		.rasterizer.fill = QGFILL_SOLID,
-		.rasterizer.cull = QGCULL_BACK,
-		.depth = QGDEPTH_LE,
-		.stencil = QGSTENCIL_OFF,
-		.format.count = 1,
-		.format.rtv[0] = QGCF_R8G8B8A8,
-		.topology = QGTPG_TRI,
-	};
-	return prop;
-}
+#define QG_DEFAULT_PROP_RENDER\
+	{\
+		.rasterizer.fill = QGFILL_SOLID,\
+		.rasterizer.cull = QGCULL_BACK,\
+		.depth = QGDEPTH_LE,\
+		.stencil = QGSTENCIL_OFF,\
+		.format.count = 1,\
+		.format.rtv[0] = QGCF_R8G8B8A8,\
+		.topology = QGTPG_TRI,\
+	}
 
 QN_EXTC_END

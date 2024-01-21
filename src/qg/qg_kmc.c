@@ -258,12 +258,15 @@ static struct QGSHADERCONSTAUTOMAP
 };
 
 //
-void qg_init_enum_convs(void)
+void qg_init_converters(void)
 {
+	static bool inited = false;
+	qn_ret_if_ok(inited);
 	for (size_t i = 0; i < QN_COUNTOF(QgLayoutUsageMap); i++)
 		QgLayoutUsageMap[i].hash = qn_strhash(QgLayoutUsageMap[i].name);
 	for (size_t i = 0; i < QN_COUNTOF(QgScAutoMap); i++)
 		QgScAutoMap[i].hash = qn_strhash(QgScAutoMap[i].name);
+	inited = true;
 }
 
 //
