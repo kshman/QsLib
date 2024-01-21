@@ -46,6 +46,9 @@
 #ifndef QS_NO_THREAD
 #define QS_NO_THREAD			1
 #endif
+#ifndef QS_SUPPRESS_VAR_CHK
+#define QS_SUPPRESS_VAR_CHK		1
+#endif
 #endif
 
 // __STDC_VERSION__
