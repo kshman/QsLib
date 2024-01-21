@@ -56,6 +56,8 @@ QN_EXTC_BEGIN
 #define QM_PI2			6.28318530717958647692f								/// @brief 원주율 두배
 #define QM_PI_H			1.57079632679489661923f								/// @brief 원주울의 반
 #define QM_PI_Q			0.78539816339744830961f								/// @brief 원주율의 사분의 일
+#define QM_DIV_PI		0.31830988618379067154f								/// @brief 원주율의 역수
+#define QM_DIV_PI2		0.15915494309189533577f								/// @brief 원주율 두배의 역수
 #define QM_SQRT2		1.41421356237309504880f								/// @brief 2의 제곱근
 #define QM_SQRTH		0.70710678118654752440f								/// @brief 2의 제곱근의 반
 #define QM_RAD2DEG		(180.0f/QM_PI)
@@ -172,10 +174,35 @@ INLINE float qm_lerpf(const float left, const float right, const float scale)
 }
 
 /// @brief 사인과 코사인을 동시에 계산
-INLINE void qm_sincosf(const float f, float* s, float* c)
+INLINE void qm_sincosf(const float v, float* s, float* c)
 {
-	*s = QM_SINF(f);
-	*c = QM_COSF(f);
+#if false
+	*s = QM_SINF(v);
+	*c = QM_COSF(v);
+#else
+	float q = QM_DIV_PI2 * v;
+	if (v >= 0.0f)
+		q = (float)((int)(q + 0.5f));
+	else
+		q = (float)((int)(q - 0.5f));
+	float y = v - QM_PI2 * q;
+	float u;
+	if (y > QM_PI_H)
+	{
+		y = QM_PI - y;
+		u = -1.0f;
+	}
+	else if (y < -QM_PI_H)
+	{
+		y = -QM_PI - y;
+		u = -1.0f;
+	}
+	else
+		u = 1.0f;
+	float y2 = y * y;
+	*s = (((((-2.3889859e-08f * y2 + 2.7525562e-06f) * y2 - 0.00019840874f) * y2 + 0.0083333310f) * y2 - 0.16666667f) * y2 + 1.0f) * y;
+	*c = (((((-2.6051615e-07f * y2 + 2.4760495e-05f) * y2 - 0.0013888378f) * y2 + 0.041666638f) * y2 - 0.5f) * y2 + 1.0f) * u;
+#endif
 }
 
 /// @brief 제곱근
@@ -239,7 +266,7 @@ typedef union QMVEC3
 } QmVec3;
 
 /// @brief 벡터4
-typedef union ALIGNOF(16) QMVEC4
+typedef union QMVEC4
 {
 	struct
 	{
@@ -274,7 +301,7 @@ typedef union ALIGNOF(16) QMVEC4
 } QmVec4;
 
 /// @brief 사원수
-typedef union ALIGNOF(16) QMQUAT
+typedef union QMQUAT
 {
 	struct
 	{
@@ -298,7 +325,7 @@ typedef union ALIGNOF(16) QMQUAT
 } QmQuat;
 
 /// @brief 행렬4x4
-typedef union ALIGNOF(16) QMMAT4
+typedef union QMMAT4
 {
 	struct
 	{
@@ -319,7 +346,7 @@ typedef union ALIGNOF(16) QMMAT4
 } QmMat4;
 
 /// @brief 평면
-typedef union ALIGNOF(16) QMPLANE
+typedef union QMPLANE
 {
 	struct
 	{
@@ -365,7 +392,7 @@ typedef union QMSIZEF
 } QmSizeF, QmDepth;
 
 /// @brief 사각형
-typedef union ALIGNOF(16) QMRECTF
+typedef union QMRECTF
 {
 	struct
 	{
@@ -386,7 +413,7 @@ typedef union ALIGNOF(16) QMRECTF
 } QmRectF;
 
 /// @brief 색깔
-typedef union ALIGNOF(16) QMCOLOR
+typedef union QMCOLOR
 {
 	struct
 	{

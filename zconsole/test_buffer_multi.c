@@ -19,10 +19,10 @@ static const char* ps =
 "  //gl_FragColor = vec4 (1.0, 1.0, 1.0, 1.0 );\n"
 "  gl_FragColor = vcolor;\n"
 "}\n";
-static QgPropLayout layout[] =
+static QgLayoutInput layouts[] =
 {
-	{QGLOS_1, 0, QGLOU_POSITION, QGLOT_FLOAT2},
-	{QGLOS_2, 0, QGLOU_COLOR, QGLOT_FLOAT4},
+	{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT2, true },
+	{ QGLOS_2, QGLOU_COLOR1, QGLOT_FLOAT4, false },
 };
 static float vertices[] =
 {
@@ -37,49 +37,45 @@ static float colors[] =
 	0.0f, 0.0f, 1.0f, 1.0f
 };
 
-int main()
+int main(void)
 {
-	qn_runtime(NULL);
+	qn_runtime();
 
-	QgRdh* rdh = qg_rdh_new(NULL, "RDH", 800, 600, QGFLAG_IDLE | QGFLAG_RESIZABLE | QGFLAG_VSYNC);
-	qn_retval_if_fail(rdh, -1);
+	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA;
+	int features = QGFEATURE_NONE;
+	if (qg_open_rdh(NULL, "RDH", 0, 0, 0, flags, features) == false)
+		return -1;
 
-	QgVlo* vlo = qg_rdh_create_layout(rdh, QN_COUNTOF(layout), layout);
-	QgBuf* vertexbuf = qg_rdh_create_buffer(rdh, QGBUF_VERTEX, QN_COUNTOF(vertices), sizeof(float), vertices);
-	QgBuf* colorbuf = qg_rdh_create_buffer(rdh, QGBUF_VERTEX, QN_COUNTOF(colors), sizeof(float), colors);
-	QgShd* shd = qg_rdh_create_shader(rdh, NULL);
-	qg_shd_bind(shd, QGSHT_VS, vs, 0, 0);
-	qg_shd_bind(shd, QGSHT_PS, ps, 0, 0);
-	qg_shd_link(shd);
+	QgPropRender prop_render = QG_DEFAULT_PROP_RENDER;
+	QgPropShader prop_shader = { { layouts, QN_COUNTOF(layouts) }, { vs, 0 }, { ps, 0 } };
+	QgRender* render = qg_rdh_create_render("named", &prop_render, &prop_shader);
+	QgBuffer* vertexbuf = qg_rdh_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(vertices), sizeof(float), vertices);
+	QgBuffer* colorbuf = qg_rdh_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(colors), sizeof(float), colors);
 
-	while (qg_rdh_loop(rdh))
+	while (qg_loop())
 	{
 		QgEvent ev;
-		while (qg_rdh_poll(rdh, &ev))
+		while (qg_poll(&ev))
 		{
 			if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_ESC)
-				qg_rdh_exit_loop(rdh);
+				qg_exit_loop();
 		}
 
-		if (qg_rdh_begin(rdh, true))
+		if (qg_rdh_begin(true))
 		{
-			qg_rdh_set_shader(rdh, shd, vlo);
-			qg_rdh_set_vertex(rdh, QGLOS_1, vertexbuf);
-			qg_rdh_set_vertex(rdh, QGLOS_2, colorbuf);
-			qg_rdh_draw(rdh, QGTPG_TRI, 3);
+			qg_rdh_set_render(render);
+			qg_rdh_set_vertex(QGLOS_1, vertexbuf);
+			qg_rdh_set_vertex(QGLOS_2, colorbuf);
+			qg_rdh_draw(QGTPG_TRI, 3);
 
-			qg_rdh_end(rdh);
-			qg_rdh_flush(rdh);
+			qg_rdh_end(true);
 		}
 	}
 
-	qm_unload(shd);
-	qm_unload(colorbuf);
-	qm_unload(vertexbuf);
-	qm_unload(vlo);
-
-	qm_unload(rdh);
+	qs_unload(vertexbuf);
+	qs_unload(colorbuf);
+	qs_unload(render);
+	qg_close_rdh();
 
 	return 0;
 }
-
