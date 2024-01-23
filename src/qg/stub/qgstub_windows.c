@@ -568,7 +568,7 @@ void stub_system_update_bound(void)
 	RECT rect;
 
 	GetWindowRect(wStub.hwnd, &rect);
-	memcpy(&wStub.base.bound, &rect, sizeof(RECT));
+	wStub.base.bound = qm_rect_RECT(rect);
 
 	GetClientRect(wStub.hwnd, &rect);
 	wStub.base.client_size = qm_size(rect.right - rect.left, rect.bottom - rect.top);
@@ -598,7 +598,7 @@ void stub_system_fullscreen(bool fullscreen)
 
 	if (fullscreen)
 	{
-		memcpy(&wStub.window_bound, &wStub.base.bound, sizeof(RECT));
+		wStub.window_bound = qm_rect_to_RECT(wStub.base.bound);
 
 		style &= ~WS_OVERLAPPEDWINDOW;
 		style |= WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP;

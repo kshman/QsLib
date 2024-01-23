@@ -156,7 +156,7 @@ INLINE int qgl_get_version(const char* s, const char* name1, const char* name2)
 		qn_strnicmp(s, name1, strlen(name1)) == 0 ? strtof(s + strlen(name1), NULL) :
 		qn_strnicmp(s, name2, strlen(name2)) == 0 ? strtof(s + strlen(name2), NULL) :
 		qn_strtof(s);
-	return (int)(QM_FLOORF(f) * 100.0f + (QM_FRACT(f) * 10.0));
+	return (int)(floorf(f) * 100.0f + (qm_fractf(f) * 10.0));
 }
 
 // 문자열 얻기

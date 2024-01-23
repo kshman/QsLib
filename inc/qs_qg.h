@@ -946,17 +946,9 @@ QSAPI void qg_rdh_reset(void);
 /// @param clear 지우기 플래그
 QSAPI void qg_rdh_clear(QgClear clear);
 
-/// @brief 세이더 vec3 타입 파라미터 설정
-/// @param at 0부터 3까지 총 4가지
-/// @param v vec3 타입 값
-/// @note 내부에서 vec4 타입으로 처리한다
-/// @see qg_rdh_set_param_vec4
-QSAPI void qg_rdh_set_param_vec3(int at, const QmVec3* v);
-
 /// @brief 세이더 vec4 타입 파라미터 설정
 /// @param at 0부터 3까지 총 4가지
 /// @param v vec4 타입 값
-
 QSAPI void qg_rdh_set_param_vec4(int at, const QmVec4* v);
 
 /// @brief 세이더 mat4 타입 파라미터 설정

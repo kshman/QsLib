@@ -550,8 +550,8 @@ static void es_layout(void)
 	rdh_internal_layout();
 
 	RenderTransform* tm = RDH_TRANSFORM;
-	tm->ortho = qm_mat4_ortho_lh(tm->size.Width, -tm->size.Height, -1.0f, 1.0f);
-	tm->ortho.rows[3] = qm_vec4(-1.0f, 1.0f, 0.0f, tm->ortho._44);
+	QmMat4 ortho = ortho = qm_mat4_ortho_lh(tm->size.Width, -tm->size.Height, -1.0f, 1.0f);
+	tm->ortho = qm_mul(ortho, qm_mat4_loc(-1.0f, 1.0f, 0.0f));
 
 	// 뷰포트
 	glViewport(0, 0, (GLsizei)tm->size.Width, (GLsizei)tm->size.Height);
@@ -829,33 +829,33 @@ static void es_process_shader_variable(const QgVarShader* var)
 	{
 		case QGSCA_ORTHO_PROJ:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, RDH_TRANSFORM->ortho.l);
+			glUniformMatrix4fv(var->offset, 1, false, &RDH_TRANSFORM->ortho._11);
 			break;
 		case QGSCA_WORLD:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, RDH_TRANSFORM->world.l);
+			glUniformMatrix4fv(var->offset, 1, false, &RDH_TRANSFORM->world._11);
 			break;
 		case QGSCA_VIEW:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, RDH_TRANSFORM->view.l);
+			glUniformMatrix4fv(var->offset, 1, false, &RDH_TRANSFORM->view._11);
 			break;
 		case QGSCA_PROJ:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, RDH_TRANSFORM->proj.l);
+			glUniformMatrix4fv(var->offset, 1, false, &RDH_TRANSFORM->proj._11);
 			break;
 		case QGSCA_VIEW_PROJ:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, RDH_TRANSFORM->view_proj.l);
+			glUniformMatrix4fv(var->offset, 1, false, &RDH_TRANSFORM->view_proj._11);
 			break;
 		case QGSCA_INV_VIEW:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, RDH_TRANSFORM->invv.l);
+			glUniformMatrix4fv(var->offset, 1, false, &RDH_TRANSFORM->invv._11);
 			break;
 		case QGSCA_WORLD_VIEW_PROJ:
 		{
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			QmMat4 m = qm_mul(RDH_TRANSFORM->world, RDH_TRANSFORM->view_proj);
-			glUniformMatrix4fv(var->offset, 1, false, m.l);
+			glUniformMatrix4fv(var->offset, 1, false, &m._11);
 		} break;
 		case QGSCA_TEX1:
 		case QGSCA_TEX2:
@@ -896,19 +896,19 @@ static void es_process_shader_variable(const QgVarShader* var)
 			break;
 		case QGSCA_PROP_MAT1:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, RDH_PARAM->m[0].l);
+			glUniformMatrix4fv(var->offset, 1, false, &RDH_PARAM->m[0]._11);
 			break;
 		case QGSCA_PROP_MAT2:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, RDH_PARAM->m[1].l);
+			glUniformMatrix4fv(var->offset, 1, false, &RDH_PARAM->m[1]._11);
 			break;
 		case QGSCA_PROP_MAT3:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, RDH_PARAM->m[2].l);
+			glUniformMatrix4fv(var->offset, 1, false, &RDH_PARAM->m[2]._11);
 			break;
 		case QGSCA_PROP_MAT4:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, RDH_PARAM->m[3].l);
+			glUniformMatrix4fv(var->offset, 1, false, &RDH_PARAM->m[3]._11);
 			break;
 		case QGSCA_MAT_PALETTE:
 			qn_verify(var->sctype == QGSCT_FLOAT16);

@@ -94,19 +94,20 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 
 	// 한번 설정하면 바뀔일이 없거나 신경 안써도 되는것
 	RenderTransform* tm = &rdh->tm;
-	qm_rst(&tm->world);
-	qm_rst(&tm->view);
-	qm_rst(&tm->invv);
-	qm_rst(&tm->frm);										// 장치별 텍스쳐 변환 행렬
+	tm->world = qm_mat4_unit();
+	tm->view = qm_mat4_unit();
+	tm->invv = qm_mat4_unit();
+	tm->frm = qm_mat4_unit();
 	for (size_t i = 0; i < QN_COUNTOF(tm->tex); i++)		// 텍스쳐 행렬
-		qm_rst(&tm->tex[i]);
-	qm_set(&tm->depth, 1.0f, 100000.0f);					// Z깊이
+		tm->tex[i] = qm_mat4_unit();
+	tm->Near = 1.0f;										// Z깊이
+	tm->Far = 100000.0f;
 
 	RenderParam* param = &rdh->param;
 	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)		// 벡터 인수
-		qm_rst(&param->v[i]);
+		param->v[i] = qm_vec4_zero();
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)		// 행렬 인수
-		qm_rst(&param->m[i]);
+		param->m[i] = qm_mat4_unit();
 	param->bgc = qm_color(0.0f, 0.0f, 0.0f, 1.0f);			// 배경색
 
 	// 묶음
@@ -155,8 +156,8 @@ void rdh_internal_layout(void)
 
 	// tm
 	RenderTransform* tm = RDH_TRANSFORM;
-	tm->size = qm_sizef_size(client_size);
-	tm->proj = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->depth.Near, tm->depth.Far);
+	tm->size = client_size;
+	tm->proj = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->Near, tm->Far);
 	tm->view_proj = qm_mul(tm->view, tm->proj);
 	tm->scissor = qm_rect_size(0, 0, client_size.Width, client_size.Height);
 }
@@ -273,16 +274,6 @@ void qg_rdh_clear(QgClear clear)
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	qs_cast_vt(rdh, RDHBASE)->clear(clear);
-}
-
-//
-void qg_rdh_set_param_vec3(int at, const QmVec3* v)
-{
-	RdhBase* rdh = RDH;
-	VAR_CHK_IF_NULL(v, );
-	VAR_CHK_IF_MAX(at, QN_COUNTOF(rdh->param.v), );
-	rdh->param.v[at] = qm_vec4v(*v, 0.0f);
-	rdh->invokes.invokes++;
 }
 
 //

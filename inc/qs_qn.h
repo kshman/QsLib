@@ -173,6 +173,7 @@
 
 // compiler specific
 #ifdef _MSC_VER
+#define QN_CONST_ANY		extern const __declspec(selectany)
 #define QN_STMT_BEGIN		PRAGMA(warning(suppress:4127 4296)) do
 #define QN_STMT_END			while(0)
 #define QN_WARN_PUSH		PRAGMA(warning(push))
@@ -180,6 +181,7 @@
 #define QN_WARN_SIGN
 #define QN_WARN_ASSIGN		PRAGMA(warning(disable:4706))
 #elif defined __GNUC__
+#define QN_CONST_ANY		extern const __attribute__((weak))
 #define QN_STMT_BEGIN		do
 #define QN_STMT_END			while(0)
 #define QN_WARN_PUSH		PRAGMA(GCC diagnostic push)

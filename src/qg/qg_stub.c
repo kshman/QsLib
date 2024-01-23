@@ -1277,8 +1277,8 @@ bool stub_event_on_mouse_wheel(const float x, const float y, const bool directio
 	}
 	um->wheel.accm.X += x;
 	const int ix =
-		(um->wheel.accm.X > 0.0f) ? (int)QM_FLOORF(um->wheel.accm.X) :		// NOLINT
-		(um->wheel.accm.X < 0.0f) ? (int)QM_CEILF(um->wheel.accm.X) : 0;	// NOLINT
+		(um->wheel.accm.X > 0.0f) ? (int)floorf(um->wheel.accm.X) :		// NOLINT
+		(um->wheel.accm.X < 0.0f) ? (int)ceilf(um->wheel.accm.X) : 0;	// NOLINT
 	um->wheel.accm.X -= (float)ix;
 
 	if (y > 0.0f)
@@ -1293,8 +1293,8 @@ bool stub_event_on_mouse_wheel(const float x, const float y, const bool directio
 	}
 	um->wheel.accm.Y += y;
 	const int iy =
-		(um->wheel.accm.Y > 0.0f) ? (int)QM_FLOORF(um->wheel.accm.Y) :		// NOLINT
-		(um->wheel.accm.Y < 0.0f) ? (int)QM_CEILF(um->wheel.accm.Y) : 0;	// NOLINT
+		(um->wheel.accm.Y > 0.0f) ? (int)floorf(um->wheel.accm.Y) :		// NOLINT
+		(um->wheel.accm.Y < 0.0f) ? (int)ceilf(um->wheel.accm.Y) : 0;	// NOLINT
 	um->wheel.accm.Y -= (float)iy;
 
 	um->wheel.integral = qm_point(ix, iy);
