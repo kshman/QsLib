@@ -5,7 +5,50 @@
 
 #include "pch.h"
 
-#if defined QM_USE_SSE
+//////////////////////////////////////////////////////////////////////////
+// XOR SHIFT
+
+static nuint qm_rand_state1 = UINTPTR_MAX / 3;
+static nuint qm_rand_state2 = UINTPTR_MAX / 5;
+
+//
+void qm_srand(nuint seed)
+{
+	if (seed == 0)
+		seed = (nuint)qn_now();
+	qm_rand_state1 = seed;
+	qm_rand_state2 = seed % 7;
+}
+
+//
+nuint qm_rand(void)
+{
+	qm_rand_state1 ^= qm_rand_state1 << 13;
+	qm_rand_state1 ^= qm_rand_state1 >> 17;
+	qm_rand_state1 ^= qm_rand_state1 << 5;
+	qm_rand_state2 ^= qm_rand_state2 << 17;
+	qm_rand_state2 ^= qm_rand_state2 >> 13;
+	qm_rand_state2 ^= qm_rand_state2 << 7;
+	return qm_rand_state1 ^ qm_rand_state2;
+}
+
+//
+float qm_randf(void)
+{
+	return (float)qm_rand() / (float)UINTPTR_MAX;
+}
+
+//
+double qm_randd(void)
+{
+	return (double)qm_rand() / (double)UINTPTR_MAX;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// 수학 함수
+
+#if defined QM_USE_AVX
 #define _mm_ror_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((byte)((i)+3)%4,(byte)((i)+2)%4,(byte)((i)+1)%4,(byte)((i)+0)%4))) : (vec))
 #define _mm_rol_ps(vec,i)   (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((byte)(7-(i))%4,(byte)(6-(i))%4,(byte)(5-(i))%4,(byte)(4-(i))%4))) : (vec))		// NOLINT
 
@@ -123,7 +166,7 @@ QmMat4 QM_VECTORCALL qm_sse_mat4_inv(const QmMat4 m)
 
 	// 행렬식: *(float*)&dt
 }
-#endif // QM_USE_SSE
+#endif // QM_USE_AVX
 
 #if defined QM_USE_NEON
 // NEON 행렬식
@@ -792,7 +835,7 @@ INLINE void qm_depth_set(QmDepth * d, float Near, float Far)
 INLINE QmRectF qm_rectf(float left, float top, float right, float bottom)
 {
 	QmRectF v =
-#if defined QM_USE_SSE
+#if defined QM_USE_AVX
 	{ .v = _mm_setr_ps(left, top, right, bottom) };
 #elif defined QM_USE_NEON
 	{.v = { left, top, right, bottom } };
@@ -823,7 +866,7 @@ INLINE QmRectF qm_rectf_pos_size(QmPointF pos, QmSizeF size)
 /// @param left,top,right,bottom 사각형 요소
 INLINE void qm_rectf_set(QmRectF * r, float left, float top, float right, float bottom)
 {
-#if defined QM_USE_SSE
+#if defined QM_USE_AVX
 	r->m128 = _mm_setr_ps(left, top, right, bottom);
 #elif defined QM_USE_NEON
 	float32x4_t neon = { left, top, right, bottom };
@@ -853,7 +896,7 @@ INLINE void qm_rectf_diag(QmRectF * v, float diag)
 INLINE QmRectF qm_rectf_add(QmRectF left, QmRectF right)
 {
 	QmRectF v =
-#if defined QM_USE_SSE
+#if defined QM_USE_AVX
 	{ .v = _mm_add_ps(left.v, right.v) };
 #elif defined QM_USE_NEON
 	{.v = vaddq_f32(left.v, right.v) };
@@ -869,7 +912,7 @@ INLINE QmRectF qm_rectf_add(QmRectF left, QmRectF right)
 INLINE QmRectF qm_rectf_sub(QmRectF left, QmRectF right)
 {
 	QmRectF v =
-#if defined QM_USE_SSE
+#if defined QM_USE_AVX
 	{ .v = _mm_sub_ps(left.v, right.v) };
 #elif defined QM_USE_NEON
 	{.v = vsubq_f32(left.v, right.v) };
@@ -884,7 +927,7 @@ INLINE QmRectF qm_rectf_sub(QmRectF left, QmRectF right)
 /// @param right 확대값
 INLINE QmRectF qm_rectf_mag(QmRectF left, float right)
 {
-#if defined QM_USE_SSE
+#if defined QM_USE_AVX
 	const __m128 m = _mm_set1_ps(right);
 	QmRectF v = { .v = _mm_mul_ps(left.v, m) };
 #elif defined QM_USE_NEON
