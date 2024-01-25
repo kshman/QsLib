@@ -53,7 +53,7 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	emscripten_set_canvas_element_size(emCanvas, 1, 1);
 	double css_width, css_height;
 	emscripten_get_element_css_size(emCanvas, &css_width, &css_height);
-	emStub.external_sizing = (int)QM_FLOORF(css_width) != 1 || (int)QM_FLOORF(css_height) != 1;
+	emStub.external_sizing = (int)floorf(css_width) != 1 || (int)floorf(css_height) != 1;
 
 	if (QN_TMASK(flags, QGFLAG_RESIZE) && emStub.external_sizing)
 	{

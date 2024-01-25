@@ -105,7 +105,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 
 	RenderParam* param = &rdh->param;
 	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)		// 벡터 인수
-		param->v[i] = qm_vec4_zero();
+		param->v[i] = qm_vec_zero();
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)		// 행렬 인수
 		param->m[i] = qm_mat4_unit();
 	param->bgc = qm_color(0.0f, 0.0f, 0.0f, 1.0f);			// 배경색
@@ -152,13 +152,13 @@ void rdh_internal_dispose(void)
 void rdh_internal_layout(void)
 {
 	const QmSize client_size = STUB->client_size;
-	const float aspect = qm_size_aspect(client_size);
+	const float aspect = qm_size_get_aspect(client_size);
 
 	// tm
 	RenderTransform* tm = RDH_TRANSFORM;
 	tm->size = client_size;
 	tm->proj = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->Near, tm->Far);
-	tm->view_proj = qm_mul(tm->view, tm->proj);
+	tm->view_proj = qm_mat4_mul(tm->view, tm->proj);
 	tm->scissor = qm_rect_size(0, 0, client_size.Width, client_size.Height);
 }
 
@@ -308,7 +308,7 @@ void qg_rdh_set_param_weight(int count, QmMat4* weight)
 }
 
 //
-void qg_rdh_set_background(const QmColor* color)
+void qg_rdh_set_background(const QmVec4* color)
 {
 	RdhBase* rdh = RDH;
 	if (color)
@@ -334,8 +334,8 @@ void qg_rdh_set_view(const QmMat4* view)
 	VAR_CHK_IF_NULL(view, );
 	RdhBase* rdh = RDH;
 	rdh->tm.view = *view;
-	rdh->tm.invv = qm_inv(*view);
-	rdh->tm.view_proj = qm_mul(*view, rdh->tm.proj);
+	rdh->tm.invv = qm_mat4_inv(*view);
+	rdh->tm.view_proj = qm_mat4_mul(*view, rdh->tm.proj);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
@@ -346,7 +346,7 @@ void qg_rdh_set_project(const QmMat4* proj)
 	VAR_CHK_IF_NULL(proj, );
 	RdhBase* rdh = RDH;
 	rdh->tm.proj = *proj;
-	rdh->tm.view_proj = qm_mul(rdh->tm.view, *proj);
+	rdh->tm.view_proj = qm_mat4_mul(rdh->tm.view, *proj);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
@@ -359,8 +359,8 @@ void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view)
 	RdhBase* rdh = RDH;
 	rdh->tm.proj = *proj;
 	rdh->tm.view = *view;
-	rdh->tm.invv = qm_inv(*view);
-	rdh->tm.view_proj = qm_mul(*proj, *view);
+	rdh->tm.invv = qm_mat4_inv(*view);
+	rdh->tm.view_proj = qm_mat4_mul(*proj, *view);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }

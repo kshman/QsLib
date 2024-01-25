@@ -963,7 +963,7 @@ QSAPI void qg_rdh_set_param_weight(int count, QmMat4* weight);
 
 /// @brief 배경색을 설정한다
 /// @param background_color 배경색 (널값일 경우 (0.0f, 0.0f, 0.0f, 1.0f)로 초기화)
-QSAPI void qg_rdh_set_background(const QmColor* background_color);
+QSAPI void qg_rdh_set_background(const QmVec4* background_color);
 
 /// @brief 월드 행렬을 설정한다
 /// @param world 월드 행렬

@@ -551,7 +551,7 @@ static void es_layout(void)
 
 	RenderTransform* tm = RDH_TRANSFORM;
 	QmMat4 ortho = ortho = qm_mat4_ortho_lh(tm->size.Width, -tm->size.Height, -1.0f, 1.0f);
-	tm->ortho = qm_mul(ortho, qm_mat4_loc(-1.0f, 1.0f, 0.0f));
+	tm->ortho = qm_mat4_mul(ortho, qm_mat4_loc(-1.0f, 1.0f, 0.0f));
 
 	// 뷰포트
 	glViewport(0, 0, (GLsizei)tm->size.Width, (GLsizei)tm->size.Height);
@@ -693,8 +693,8 @@ static void es_clear(QgClear flags)
 	}
 	if (QN_TMASK(flags, QGCLEAR_RENDER))
 	{
-		const QmColor c = RDH_PARAM->bgc;
-		glClearColor(c.R, c.G, c.B, c.A);
+		const QmVec4 c = RDH_PARAM->bgc;
+		glClearColor(c.X, c.Y, c.Z, c.W);
 		cf |= GL_COLOR_BUFFER_BIT;
 	}
 
@@ -854,7 +854,7 @@ static void es_process_shader_variable(const QgVarShader* var)
 		case QGSCA_WORLD_VIEW_PROJ:
 		{
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			QmMat4 m = qm_mul(RDH_TRANSFORM->world, RDH_TRANSFORM->view_proj);
+			QmMat4 m = qm_mat4_mul(RDH_TRANSFORM->world, RDH_TRANSFORM->view_proj);
 			glUniformMatrix4fv(var->offset, 1, false, &m._11);
 		} break;
 		case QGSCA_TEX1:

@@ -197,7 +197,7 @@ typedef struct RENDERPARAM
 	QmMat4				m[4];
 	QmMat4*				bone_ptr;
 	int					bone_count;
-	QmColor				bgc;
+	QmVec4				bgc;
 
 	QgVarShaderFunc		callback_func;
 	void*				callback_data;
