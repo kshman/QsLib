@@ -17,5 +17,13 @@ int main(void)
 	}
 	qn_outputf("sum: %f, avg: %f", sum, sum / 10000.0f);
 
+	QmQuat s = qm_quat_y(-QM_PI_H);
+	QmQuat e = qm_quat_y(QM_PI_H);
+	for (int i = 0; i <= 100; i++)
+	{
+		QmQuat q = qm_quat_slerp(s, e, i / 100.0f);
+		qn_outputf("%d: %f, %f, %f, %f", i, q.X, q.Y, q.Z, q.W);
+	}
+
 	return 0;
 }
