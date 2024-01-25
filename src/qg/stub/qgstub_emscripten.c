@@ -4,7 +4,7 @@
 //
 
 #include "pch.h"
-#if defined _QN_EMSCRIPTEN_ && !defined USE_SDL2
+#ifdef _QN_EMSCRIPTEN_
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include "qg/qg_stub.h"
@@ -53,7 +53,7 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	emscripten_set_canvas_element_size(emCanvas, 1, 1);
 	double css_width, css_height;
 	emscripten_get_element_css_size(emCanvas, &css_width, &css_height);
-	emStub.external_sizing = (int)QM_FLOORF(css_width) != 1 || (int)QM_FLOORF(css_height) != 1;
+	emStub.external_sizing = (int)floorf(css_width) != 1 || (int)floorf(css_height) != 1;
 
 	if (QN_TMASK(flags, QGFLAG_RESIZE) && emStub.external_sizing)
 	{
@@ -210,6 +210,12 @@ void* stub_system_get_window(void)
 void* stub_system_get_display(void)
 {
 	return EGL_DEFAULT_DISPLAY;
+}
+
+//
+const char* stub_system_get_canvas(void)
+{
+	return emCanvas;
 }
 
 // 언로드 이벤트
@@ -493,4 +499,4 @@ static void emscripten_unregister_event_handler(void)
 	emscripten_set_keypress_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, 0, NULL);
 }
 
-#endif // __EMSCRIPTEN__ && !USE_SDL2
+#endif // __EMSCRIPTEN__

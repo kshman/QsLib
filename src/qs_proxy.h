@@ -26,8 +26,8 @@
 INLINE void glad_version_sscanf(const char* version, int* major, int* minor)
 {
 	const float f = qn_strtof(version);
-	*major = (int)QM_FLOORF(f);
-	*minor = (int)(QM_FRACT(f) * 10.0f);
+	*major = (int)floorf(f);
+	*minor = (int)(qm_fractf(f) * 10.0f);
 }
 #endif // GLAD_PLATFORM_H_
 

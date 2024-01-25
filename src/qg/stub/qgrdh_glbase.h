@@ -1,49 +1,40 @@
 ﻿#pragma once
 
-#include "qs_qg.h"
 #include "qg/qg_stub.h"
 
 //
 typedef struct QGLRDH		QglRdh;
 typedef struct QGLBUFFER	QglBuffer;
-typedef struct QGLSHADER	QglShader;
 typedef struct QGLRENDER	QglRender;
 
 #ifndef GL_INVALID_HANDLE
 #define GL_INVALID_HANDLE	(GLuint)(-1)
 #endif
 
-#define QGL_RDH_INSTANCE	((QglRdh*)qg_instance_rdh)
-#define QGL_PENDING			(&QGL_RDH_INSTANCE->pd)
-#define QGL_SESSION			(&QGL_RDH_INSTANCE->ss)
-
-// 참조 핸들
-typedef struct QGLREFHANDLE
-{
-	volatile nint		ref;
-	GLuint				handle;
-} QglRefHandle;
+#define QGL_RDH				((QglRdh*)qg_instance_rdh)
+#define QGL_PENDING			(&QGL_RDH->pd)
+#define QGL_SESSION			(&QGL_RDH->ss)
+#define QGL_RESOURCE		(&QGL_RDH->res)
 
 // 레이아웃 요소
 typedef struct QGLLAYOUTINPUT
 {
-	QgLoStage			stage : 16;
-	QgLoUsage			usage : 16;
-	GLuint				count;
-	GLenum				format;
+	QgLayoutStage		stage : 16;
+	QgLayoutUsage		usage : 16;
 	GLuint				offset;
+	GLenum				format;
+	GLuint				count : 16;
 	GLboolean			normalized;
-	GLboolean			converted;
 } QglLayoutInput;
+QN_DECL_CTNR(QglCtnLayoutInput, QglLayoutInput);
 
 // 레이아웃 프로퍼티
 typedef struct QGLLAYOUTPROPERTY
 {
-	const void*			pointer;
-	GLuint				buffer;
-	GLsizei				stride;
-	GLuint				count;
+	GLuint				offset;
 	GLenum				format;
+	GLsizei				stride;
+	GLuint				count : 16;
 	GLboolean			normalized;
 } QglLayoutProperty;
 
@@ -53,14 +44,18 @@ QN_DECL_CTNR(QglCtnUniform, QgVarShader);
 // 세이더 어트리뷰트
 typedef struct QGLVARATTR
 {
+#ifdef _QN_64_
+	char				name[32 + 8];
+#else
 	char				name[32];
+#endif
 	size_t				hash;
 
-	GLint				attrib : 8;
-	GLint				size : 8;
+	GLint				attrib;
+	GLint				size;
 
-	QgLoUsage			usage : 8;
-	QgScType			sctype : 8;
+	QgLayoutUsage		usage : 8;			// 최대 24(2024-01-20 시점)으로 괜춘
+	QgScType			sctype : 8;			// 최대 22(2032-01-20 시점)으로 괜춘		
 } QglVarAttr;
 QN_DECL_CTNR(QglCtnAttr, QglVarAttr);
 
@@ -96,15 +91,15 @@ typedef struct QGLPENDING
 	struct QGLPENDING_DRAW
 	{
 		uint				topology;
-		uint				index_stride;
-		uint				index_size;
-		uint				vertex_count;
-		uint				vertex_stride;
-		uint				vertext_size;
-		void*				index_data;
-		void*				vertex_data;
 	}					draw;
 } QglPending;
+
+// 리소스
+typedef struct QGLRESOURCE
+{
+	QglRender*			ortho_render;
+	QglRender*			glyph_render;
+} QglResource;
 
 // GL 렌더 디바이스
 struct QGLRDH
@@ -113,6 +108,7 @@ struct QGLRDH
 
 	QglSession			ss;
 	QglPending			pd;
+	QglResource			res;
 
 	nint				disposed;
 };
@@ -128,78 +124,39 @@ struct QGLBUFFER
 	void*				lock_pointer;
 };
 
-// 세이더
-struct QGLSHADER
-{
-	QgShader			base;
-
-	QglRefHandle*		vertex;
-	QglRefHandle*		fragment;
-
-	QglCtnUniform		uniforms;
-	QglCtnAttr			attrs;
-	byte				attr_index[QGLOU_MAX_SIZE];
-
-	bool				linked;
-};
-
 // 렌더 파이프라인
 struct QGLRENDER
 {
 	QgRender			base;
 
-	QglShader*			shader;
-
-	struct QGLRENDER_LAYOUTELEMENT
+	struct QGLRENDER_SHADER
 	{
-		ushort				count[QGLOS_MAX_VALUE];
-		ushort				stride[QGLOS_MAX_VALUE];
+		GLuint				program;
+		GLuint				vertex;
+		GLuint				fragment;
+
+		QglCtnUniform		uniforms;
+		QglCtnAttr			attrs;
+		byte				usages[QGLOU_MAX_SIZE];
+	}					shader;
+
+	struct QGLRENDER_LAYOUT
+	{
+		QglCtnLayoutInput	inputs;
 		QglLayoutInput*		stages[QGLOS_MAX_VALUE];
-		QglLayoutInput*		inputs;
+		ushort				counts[QGLOS_MAX_VALUE];
+		ushort				strides[QGLOS_MAX_VALUE];
 	}					layout;
 };
 
-// 참조 핸들 만들기
-INLINE QglRefHandle* qgl_ref_handle_new(GLuint handle)
-{
-	QglRefHandle* ptr = qn_alloc_1(QglRefHandle);
-	ptr->ref = 1;
-	ptr->handle = handle;
-	return ptr;
-}
-
-// 참조 핸들을 해제한다 (세이더용)
-INLINE void qgl_ref_handle_unload_shader(QglRefHandle* ptr, GLuint handle)
-{
-	qn_ret_if_fail(ptr);
-	if (handle > 0)
-		glDetachShader(handle, ptr->handle);
-	const nint ref = --ptr->ref;
-	if (ref == 0)
-	{
-		glDeleteShader(ptr->handle);
-		qn_free(ptr);
-	}
-}
-
-// 참조 핸들을 복제한다 (세이더용)
-INLINE QglRefHandle* qgl_ref_handle_load_shader(QglRefHandle* ptr, GLuint handle)
-{
-	glAttachShader(handle, ptr->handle);
-	++ptr->ref;
-	return ptr;
-}
-
 // 문자열 버전에서 숫자만 mnn 방식으로
-INLINE int qgl_get_version(GLenum name, const char* name1, const char* name2)
+INLINE int qgl_get_version(const char* s, const char* name1, const char* name2)
 {
-	const char* s = (const char*)glGetString(name);
-	qn_val_if_fail(s, 0);
 	const float f =
 		qn_strnicmp(s, name1, strlen(name1)) == 0 ? strtof(s + strlen(name1), NULL) :
 		qn_strnicmp(s, name2, strlen(name2)) == 0 ? strtof(s + strlen(name2), NULL) :
 		qn_strtof(s);
-	return (int)(QM_FLOORF(f) * 100.0f + (QM_FRACT(f) * 10.0));
+	return (int)(floorf(f) * 100.0f + (qm_fractf(f) * 10.0));
 }
 
 // 문자열 얻기
@@ -284,48 +241,68 @@ INLINE QgScType qgl_enum_to_shader_const(GLenum gl_type)
 {
 	switch (gl_type)
 	{
-		case GL_FLOAT:				return QGSCT_FLOAT1;
-		case GL_FLOAT_VEC2:			return QGSCT_FLOAT2;
-		case GL_FLOAT_VEC3:			return QGSCT_FLOAT3;
-		case GL_FLOAT_VEC4:			return QGSCT_FLOAT4;
-		case GL_INT:				return QGSCT_INT1;
-		case GL_INT_VEC2:			return QGSCT_INT2;
-		case GL_INT_VEC3:			return QGSCT_INT3;
-		case GL_INT_VEC4:			return QGSCT_INT4;
-		case GL_UNSIGNED_INT:		return QGSCT_UINT1;
-		case GL_UNSIGNED_INT_VEC2:	return QGSCT_UINT2;
-		case GL_UNSIGNED_INT_VEC3:	return QGSCT_UINT3;
-		case GL_UNSIGNED_INT_VEC4:	return QGSCT_UINT4;
-		case GL_BOOL:				return QGSCT_BYTE1;
-		case GL_BOOL_VEC2:			return QGSCT_BYTE2;
-		case GL_BOOL_VEC3:			return QGSCT_BYTE3;
-		case GL_BOOL_VEC4:			return QGSCT_BYTE4;
-		case GL_FLOAT_MAT2:			return QGSCT_FLOAT4;
-		case GL_FLOAT_MAT4:			return QGSCT_FLOAT16;
+		case GL_FLOAT:						return QGSCT_FLOAT1;
+		case GL_FLOAT_VEC2:					return QGSCT_FLOAT2;
+		case GL_FLOAT_VEC3:					return QGSCT_FLOAT3;
+		case GL_FLOAT_VEC4:					return QGSCT_FLOAT4;
+		case GL_INT:						return QGSCT_INT1;
+		case GL_INT_VEC2:					return QGSCT_INT2;
+		case GL_INT_VEC3:					return QGSCT_INT3;
+		case GL_INT_VEC4:					return QGSCT_INT4;
+		case GL_UNSIGNED_INT:				return QGSCT_UINT1;
+#ifdef GL_UNSIGNED_INT_VEC2
+		case GL_UNSIGNED_INT_VEC2:			return QGSCT_UINT2;
+#endif
+#ifdef GL_UNSIGNED_INT_VEC3
+		case GL_UNSIGNED_INT_VEC3:			return QGSCT_UINT3;
+#endif
+#ifdef GL_UNSIGNED_INT_VEC4
+		case GL_UNSIGNED_INT_VEC4:			return QGSCT_UINT4;
+#endif
+		case GL_BOOL:						return QGSCT_BYTE1;
+		case GL_BOOL_VEC2:					return QGSCT_BYTE2;
+		case GL_BOOL_VEC3:					return QGSCT_BYTE3;
+		case GL_BOOL_VEC4:					return QGSCT_BYTE4;
+		case GL_FLOAT_MAT2:					return QGSCT_FLOAT4;
+		case GL_FLOAT_MAT4:					return QGSCT_FLOAT16;
 #ifdef GL_SAMPLER_1D
-		case GL_SAMPLER_1D:			return QGSCT_SPLR_1D;
+		case GL_SAMPLER_1D:					return QGSCT_SAMPLER1D;
 #endif
-		case GL_SAMPLER_2D:			return QGSCT_SPLR_2D;
+		case GL_SAMPLER_2D:					return QGSCT_SAMPLER2D;
 #ifdef GL_SAMPLER_3D
-		case GL_SAMPLER_3D:			return QGSCT_SPLR_3D;
+		case GL_SAMPLER_3D:					return QGSCT_SAMPLER3D;
 #endif
-#ifdef GL_SAMPLER_CUBE
-		case GL_SAMPLER_CUBE:		return QGSCT_SPLR_CUBE;
-#endif
+		case GL_SAMPLER_CUBE:				return QGSCT_SAMPLERCUBE;
 #if false
 		case GL_SAMPLER_2D_SHADOW:
 		case GL_SAMPLER_2D_ARRAY:
 		case GL_SAMPLER_2D_ARRAY_SHADOW:
 		case GL_SAMPLER_CUBE_SHADOW:
-		case GL_INT_SAMPLER_2D:
-		case GL_INT_SAMPLER_3D:
-		case GL_INT_SAMPLER_CUBE:
+#endif
+#ifdef GL_INT_SAMPLER_2D
+		case GL_INT_SAMPLER_2D:				return QGSCT_SAMPLER2D;
+#endif
+#ifdef GL_INT_SAMPLER_3D
+		case GL_INT_SAMPLER_3D:				return QGSCT_SAMPLER3D;
+#endif
+#ifdef GL_INT_SAMPLER_CUBE
+		case GL_INT_SAMPLER_CUBE:			return QGSCT_SAMPLERCUBE;
+#endif
+#if false
 		case GL_INT_SAMPLER_2D_ARRAY:
-		case GL_UNSIGNED_INT_SAMPLER_2D:
-		case GL_UNSIGNED_INT_SAMPLER_3D:
-		case GL_UNSIGNED_INT_SAMPLER_CUBE:
+#endif
+#ifdef GL_UNSIGNED_INT_SAMPLER_2D
+		case GL_UNSIGNED_INT_SAMPLER_2D:	return QGSCT_SAMPLER2D;
+#endif
+#ifdef GL_UNSIGNED_INT_SAMPLER_3D
+		case GL_UNSIGNED_INT_SAMPLER_3D:	return QGSCT_SAMPLER3D;
+#endif
+#ifdef GL_UNSIGNED_INT_SAMPLER_CUBE
+		case GL_UNSIGNED_INT_SAMPLER_CUBE:	return QGSCT_SAMPLERCUBE;
+#endif
+#if false
 		case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:
 #endif
-		default:					return QGSCT_UNKNOWN;
+		default:							return QGSCT_UNKNOWN;
 	}
 }

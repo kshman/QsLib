@@ -46,6 +46,9 @@
 #ifndef QS_NO_THREAD
 #define QS_NO_THREAD			1
 #endif
+#ifndef QS_SUPPRESS_VAR_CHK
+#define QS_SUPPRESS_VAR_CHK		1
+#endif
 #endif
 
 // __STDC_VERSION__
@@ -170,6 +173,7 @@
 
 // compiler specific
 #ifdef _MSC_VER
+#define QN_CONST_ANY		extern const __declspec(selectany)
 #define QN_STMT_BEGIN		PRAGMA(warning(suppress:4127 4296)) do
 #define QN_STMT_END			while(0)
 #define QN_WARN_PUSH		PRAGMA(warning(push))
@@ -177,6 +181,7 @@
 #define QN_WARN_SIGN
 #define QN_WARN_ASSIGN		PRAGMA(warning(disable:4706))
 #elif defined __GNUC__
+#define QN_CONST_ANY		const __attribute__((weak))
 #define QN_STMT_BEGIN		do
 #define QN_STMT_END			while(0)
 #define QN_WARN_PUSH		PRAGMA(GCC diagnostic push)
@@ -278,6 +283,7 @@ typedef uint16_t			uchar2;
 #endif
 
 typedef uint16_t			halfint;						/// @brief 16비트 부호 없는 정수(half int)
+typedef uint16_t			halffloat;						/// @brief 16비트 실수(half float)
 typedef int16_t				bool16;							/// @brief 16비트 참거짓
 typedef int32_t				bool32;							/// @brief 32비트 참거짓
 
@@ -417,6 +423,16 @@ QSAPI int qn_get_prop_int(const char* name, int default_value, int min_value, in
 /// @param max_value 최대값
 /// @return 얻은 실수값
 QSAPI float qn_get_prop_float(const char* name, float default_value, float min_value, float max_value);
+
+/// @brief 키를 설정한다
+/// @param name 키 이름
+/// @param value 키 값
+QSAPI void qn_set_key(const char* RESTRICT name, const nint value);
+
+/// @brief 키를 얻는다
+/// @param name 키 이름
+/// @return 키 값. 키가 없어도 0을 반환
+QSAPI const nint qn_get_key(const char* name);
 
 /// @brief 에러 메시지를 얻는다
 /// @return 에러 메시지 문자열. 없다면 NULL
@@ -2658,10 +2674,14 @@ QSAPI nuint qs_sc_set_desc(QsGam* RESTRICT g, nuint ptr);
 #define qs_load(g)			((g) ? qs_sc_load((QsGam*)(g)) : NULL)
 /// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
 #define qs_unload(g)		((g) ? qs_sc_unload((QsGam*)(g)) : NULL)
-/// @brief 참조를 추가한다
+/// @brief 참조를 추가한다 (타입 변환)
 #define qs_loadc(g,type)	((g) ? (type*)qs_sc_load((QsGam*)(g)) : NULL)
-/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
+/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다 (타입 변환)
 #define qs_unloadc(g,type)	((g) ? (type*)qs_sc_unload((QsGam*)(g)) : NULL)
+/// @brief 참조를 추가한다. 널 검사 안한다 (타입 변환)
+#define qs_loadu(g,type)	(type*)qs_sc_load((QsGam*)(g))
+/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다. 널 검사 안한다 (타입 변환)
+#define qs_unloadu(g,type)	(type*)qs_sc_unload((QsGam*)(g))
 /// @brief 표현자(디스크립터)를 얻는다
 #define qs_get_desc(g,type)	(type)qs_sc_get_desc((QsGam*)(g))
 /// @brief 표현자(디스크립터)를 쓴다

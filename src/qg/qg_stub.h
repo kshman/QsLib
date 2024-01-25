@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 #include <qs_ctn.h>
+#include <qs_qg.h>
+#include "qg_node.h"
 
 //////////////////////////////////////////////////////////////////////////
 // 스터브
@@ -86,6 +88,8 @@ extern void stub_system_fullscreen(bool fullscreen);
 extern void* stub_system_get_window(void);
 // 시스템 디스플레이 핸들을 얻는다 (윈도우에서는 HDC)
 extern void* stub_system_get_display(void);
+// 시스템 캔버스 이름을 얻는다 (EMSCRIPTEN)
+extern const char* stub_system_get_canvas(void);
 
 // 내부적으로 마우스 눌림을 연산한다
 extern bool stub_track_mouse_click(QimButton button, QimTrack track);
@@ -123,6 +127,14 @@ extern void stub_initialize(StubBase* stub, QgFlag flags);
 //////////////////////////////////////////////////////////////////////////
 // 렌더 디바이스
 
+typedef enum RENDERNODESHED
+{
+	RDHNODE_NONE,
+	RDHNODE_RENDER,
+	RDHNODE_TEXTURE,
+	RDHNODE_MAX_VALUE,
+} RenderNodeShed;
+
 // 렌더러 정보
 typedef struct RENDERERINFO
 {
@@ -138,6 +150,9 @@ typedef struct RENDERERINFO
 	uint				max_tex_count;						// 최대 텍스쳐 갯수
 	uint				max_off_count;						// 최대 오프 텍스쳐(=렌더타겟/프레임버퍼) 갯수
 	QgClrFmt			clr_fmt;							// 색깔 포맷
+#ifdef _QN_UNIX_
+	int					visual_id;							// 비주얼 아이디
+#endif
 } RendererInfo;
 
 // 렌더 추적 정보
@@ -162,8 +177,8 @@ typedef struct RENDERINVOKE
 // 렌더 트랜스포메이션
 typedef struct RENDERTRANSFORM
 {
-	QmSizeF				size;
-	QmDepth				depth;
+	QmSize				size;
+	float				Near, Far;
 	QmMat4				ortho;								// ortho transform
 	QmMat4				world;
 	QmMat4				view;
@@ -182,7 +197,7 @@ typedef struct RENDERPARAM
 	QmMat4				m[4];
 	QmMat4*				bone_ptr;
 	int					bone_count;
-	QmColor				bgc;
+	QmVec4				bgc;
 
 	QgVarShaderFunc		callback_func;
 	void*				callback_data;
@@ -198,24 +213,26 @@ typedef struct RDHBASE
 	RenderTransform		tm;
 	RenderParam			param;
 	RenderInvoke		invokes;
+
+	QgNodeMukum			mukums[RDHNODE_MAX_VALUE];
 } RdhBase;
 
 qs_name_vt(RDHBASE)
 {
 	qs_name_vt(QSGAM)	base;
+	void (*layout)(void);
 	void (*reset)(void);
-	void (*clear)(int, const QmColor*, int, float);
+	void (*clear)(QgClear);
 
 	bool (*begin)(bool);
 	void (*end)(void);
 	void (*flush)(void);
 
 	QgBuffer* (*create_buffer)(QgBufferType, uint, uint, const void*);
-	QgShader* (*create_shader)(const char*);
-	QgRender* (*create_render)(const QgPropRender*, QgShader*);
+	QgRender* (*create_render)(const char*, const QgPropRender*, const QgPropShader*);
 
+	bool (*set_vertex)(QgLayoutStage, QgBuffer*);
 	bool (*set_index)(QgBuffer*);
-	bool (*set_vertex)(QgLoStage, QgBuffer*);
 	bool (*set_render)(QgRender*);
 
 	bool (*draw)(QgTopology, int);
@@ -239,21 +256,37 @@ extern RdhBase* qg_instance_rdh;
 extern RdhBase* es_allocator(QgFlag flags, QgFeature features);
 #endif
 
+// 렌더러 리소스 제거
+extern void rdh_internal_clean(void);
 // 렌더러 최종 제거
 extern void rdh_internal_dispose(void);
+// 렌더러 내부 레이아웃
+extern void rdh_internal_layout(void);
 // 렌더러 내부 리셋
 extern void rdh_internal_reset(void);
 // 인보크 리셋
 extern void rdh_internal_invoke_reset(void);
 // 레이아웃 검사
 extern void rdh_internal_check_layout(void);
+// 노드 추가요
+extern void rdh_internal_add_node(RenderNodeShed shed, void* node);
+// 노드 제거요 (dispose에서 호출용)
+extern void rdh_internal_unlink_node(RenderNodeShed shed, void* node);
 
-
+// 열거자 컨버터 초기화
+extern void qg_init_converters(void);
 // 색깔 변환
 extern QgClrFmt qg_rgba_to_clrfmt(int red, int green, int blue, int alpha, bool is_float);
-// 열거자 컨버터 초기화
-extern void qg_init_enum_convs(void);
 // LAYOUT USAGE 변환
-extern QgLoUsage qg_str_to_layout_usage(size_t hash, const char* name);
+extern QgLayoutUsage qg_str_to_layout_usage(size_t hash, const char* name);
 // 세이더 자동 상수 변환
-QgScAuto qg_str_to_shader_const_auto(size_t hash, const char* name);
+extern QgScAuto qg_str_to_shader_const_auto(size_t hash, const char* name);
+// 색깔 포맷 문자열로 변환
+extern const char* qg_clrfmt_to_str(QgClrFmt fmt);
+// LAYOTU USAGE 문자열로 변환
+extern const char* qg_layout_usage_to_str(const QgLayoutUsage usage);
+// 세이더 자동 상수 문자열로 변환
+extern const char* qg_shader_const_auto_to_str(const QgScAuto sca);
+// 알수 없음을 문자열로
+extern const char* qg_unknown_str(int value);
+

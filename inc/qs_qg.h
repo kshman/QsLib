@@ -31,22 +31,79 @@ QN_EXTC_BEGIN
 // types
 
 /// @brief 색깔 포맷
+/// @note 항목을 변경하면 qg_clrfmt_to_str() 함수도 고칠 것
 typedef enum QGCLRFMT
 {
-	QGCF_NONE,
-	QGCF8_L,												/// @brief 8비트 루미넌스
-	QGCF16_L,												/// @brief 16비트 루미넌스
-	QGCF16_RGB,												/// @brief 16비트 RGB
-	QGCF16_RGBA,											/// @brief 16비트 RGBA
-	QGCF32_RGB,												/// @brief 32비트 RGB
-	QGCF32_RGBA,											/// @brief 32비트 RGBA
-	QGCF32_BGRA,											/// @brief 32비트 BGRA
-	QGCF16F_R,												/// @brief 16비트 실수 R
-	QGCF32F_R,												/// @brief 32비트 실수 R
-	QGCF64F_BGRA,											/// @brief 64비트 실수 BGRA
-	QGCF128F_BGRA,											/// @brief 128비트 실수 BGRA
+	QGCF_UNKNOWN,
+
+	QGCF_R32G32B32A32F,										/// @brief 128비트 실수 RGBA
+	QGCF_R32G32B32F,										/// @brief 96비트 실수 RGB
+	QGCF_R32G32F,											/// @brief 64비트 실수 RG
+	QGCF_R32F,												/// @brief 32비트 실수 R
+
+	QGCF_R32G32B32A32,										/// @brief 128비트 정수 RGBA
+	QGCF_R32G32B32,											/// @brief 96비트 정수 RGB
+	QGCF_R32G32,											/// @brief 64비트 정수 RG
+	QGCF_R32,												/// @brief 32비트 정수 R
+
+	QGCF_R16G16B16A16F,										/// @brief 64비트 실수 RGBA
+	QGCF_R16G16F,											/// @brief 32비트 실수 RG
+	QGCF_R16F,												/// @brief 16비트 실수 R
+	QGCF_R11G11B10F,										/// @brief 32비트 실수 RGB
+
+	QGCF_R16G16B16A16,										/// @brief 64비트 정수 RGBA
+	QGCF_R16G16,											/// @brief 32비트 정수 RG
+	QGCF_R16,												/// @brief 16비트 정수 R
+	QGCF_R10G10B10A2,										/// @brief 32비트 정수 RGBA
+
+	QGCF_R8G8B8A8,											/// @brief 32비트 정수 RGBA
+	QGCF_R8G8B8,											/// @brief 24비트 정수 RGB
+	QGCF_R8G8,												/// @brief 16비트 정수 RG
+	QGCF_R8,												/// @brief 8비트 정수 R
+	QGCF_A8,												/// @brief 8비트 정수 A
+	QGCF_L8,												/// @brief 8비트 정수 L
+
+	QGCF_R5G6B5,											/// @brief 16비트 RGB
+	QGCF_R5G5B5A1,											/// @brief 16비트 RGBA
+	QGCF_R4G4B4A4,											/// @brief 16비트 RGBA
+
+	QGCF_D32F,												/// @brief 32비트 실수 뎁스
+	QGCF_D24S8,												/// @brief 32비트 뎁스 24 스텐실 8
+
 	QGCF_MAX_VALUE,
 } QgClrFmt;
+
+// 좌표 타입
+#define QGCF_X32Y32Z32W32F	QGCF_R32G32B32A32F
+#define QGCF_X32Y32Z32F		QGCF_R32G32B32F
+#define QGCF_X32Y32F		QGCF_R32G32F
+#define QGCF_X32F			QGCF_R32F
+#define QGCF_X16Y16Z16W16F	QGCF_R16G16B16A16F
+#define QGCF_X16Y16F		QGCF_R16G16F
+#define QGCF_U32V32F		QGCF_R32G32F
+#define QGCF_U16V16F		QGCF_R16G16F
+#define QGCF_X8Y8Z8W8		QGCF_R8G8B8A8
+#define QGCF_X8Y8			QGCF_R8G8
+
+// 레이아웃 타입
+#define QGLOT_FLOAT1		QGCF_R32F
+#define QGLOT_FLOAT2		QGCF_R32G32F
+#define QGLOT_FLOAT3		QGCF_R32G32B32F
+#define QGLOT_FLOAT4		QGCF_R32G32B32A32F
+#define QGLOT_INT1			QGCF_R32
+#define QGLOT_INT2			QGCF_R32G32
+#define QGLOT_INT3			QGCF_R32G32B32
+#define QGLOT_INT4			QGCF_R32G32B32A32
+#define QGLOT_HALF1			QGCF_R16F
+#define QGLOT_HALF2			QGCF_R16G16F
+#define QGLOT_HALF4			QGCF_R16G16B16A16F
+#define QGLOT_SHORT1		QGCF_R16
+#define QGLOT_SHORT2		QGCF_R16G16
+#define QGLOT_SHORT4		QGCF_R16G16B16A16
+#define QGLOT_BYTE1			QGCF_R8
+#define QGLOT_BYTE2			QGCF_R8G8
+#define QGLOT_BYTE3			QGCF_R8G8B8
+#define QGLOT_BYTE4			QGCF_R8G8B8A8
 
 /// @brief 토폴로지
 typedef enum QGTOPOLOGY
@@ -96,11 +153,12 @@ typedef enum QGLAYOUTSTAGE
 	QGLOS_3,												/// @brief 레이아웃 3
 	QGLOS_4,												/// @brief 레이아웃 4
 	QGLOS_MAX_VALUE,
-} QgLoStage;
+} QgLayoutStage;
 
 /// @brief 레아아웃 사용 방법
 typedef enum QGLAYOUTUSAGE
 {
+	QGLOU_UNKNOWN,											/// @brief 알 수 없음
 	QGLOU_POSITION,											/// @brief XYZ 좌표
 	QGLOU_COORD1,											/// @brief UV 좌표 1	
 	QGLOU_COORD2,											/// @brief UV 좌표 2
@@ -124,29 +182,19 @@ typedef enum QGLAYOUTUSAGE
 	QGLOU_BLEND_INDEX,										/// @brief 블렌드 영향 정점 인덱스
 	QGLOU_BLEND_EXTRA,										/// @brief 블렌드 영향 정점 인덱스 추가
 	QGLOU_MAX_VALUE
-} QgLoUsage;
-#define QGLOU_INVALID		QGLOU_MAX_VALUE
+} QgLayoutUsage;
 #define QGLOU_MAX_SIZE		((size_t)(QGLOU_MAX_VALUE+sizeof(size_t)-1))&((size_t)~(sizeof(size_t)-1))
 
-/// @brief 레아아웃 타입
-typedef enum QGLAYOUTCONSTTYPE
+/// @brief 블렌드 모드
+typedef enum QGBLEND
 {
-	QGLOT_FLOAT1,											/// @brief 1개의 실수
-	QGLOT_FLOAT2,											/// @brief 2개의 실수(Vector2)
-	QGLOT_FLOAT3,											/// @brief 3개의 실수(Vector3)
-	QGLOT_FLOAT4,											/// @brief 4개의 실수(Vector4)
-	QGLOT_HALF2,											/// @brief 2개의 하프 정수
-	QGLOT_HALF4,											/// @brief 4개의 하프 정수
-	QGLOT_BYTE2,											/// @brief 2개의 바이트
-	QGLOT_BYTE4,											/// @brief 4개의 바이트
-	QGLOT_BYTE4_N,											/// @brief 4개의 정규화된 바이트(QmKolor)
-	QGLOT_SHORT2,											/// @brief 2개의 16비트 정수
-	QGLOT_SHORT4,											/// @brief 4개의 16비트 정수
-	QGLOT_SHORT2_N,											/// @brief 2개의 정규화된 16비트 정수(Texture Coordinate)
-	QGLOT_COLOR,											/// @brief 색깔
-	QGLOT_COLORN,											/// @brief 정규화된 색깔
-	QGLOT_MAX_VALUE
-} QgLoType;
+	QGBLEND_OFF,											/// @brief dstRGBA = srcRGBA
+	QGBLEND_BLEND,											/// @brief dstRGB = (srcRGB * srcA) + (dstRGB * (1 - srcA), dstA = srcA  +  (dstA * (1 - srcA))
+	QGBLEND_ADD,											/// @brief dstRGB = (srgRGB * srcA) + dstRGB, dstA = dstA
+	QGBLEND_MOD,											/// @brief dstRGB = srcRGB * dstRGB, dstA = dstA
+	QGBLEND_MUL,											/// @brief dstRGB = (srcRGB * dstRGB) + (dstRGB * (1 - srcA)), dstA = dstA
+	QGBLEND_MAX_VALUE,
+} QgBlend;
 
 /// @brief 뎁스 모드
 typedef enum QGDEPTH
@@ -160,17 +208,6 @@ typedef enum QGDEPTH
 	QGDEPTH_ALWAYS,											/// @brief 뎁스는 언제나 통과
 	QGDEPTH_MAX_VALUE,
 } QgDepth;
-
-/// @brief 블렌드 모드
-typedef enum QGBLEND
-{
-	QGBLEND_OFF,											/// @brief dstRGBA = srcRGBA
-	QGBLEND_BLEND,											/// @brief dstRGB = (srcRGB * srcA) + (dstRGB * (1 - srcA), dstA = srcA  +  (dstA * (1 - srcA))
-	QGBLEND_ADD,											/// @brief dstRGB = (srgRGB * srcA) + dstRGB, dstA = dstA
-	QGBLEND_MOD,											/// @brief dstRGB = srcRGB * dstRGB, dstA = dstA
-	QGBLEND_MUL,											/// @brief dstRGB = (srcRGB * dstRGB) + (dstRGB * (1 - srcA)), dstA = dstA
-	QGBLEND_MAX_VALUE,
-} QgBlend;
 
 /// @brief 스텐실 모드
 typedef enum QGSTENCIL
@@ -216,16 +253,17 @@ typedef enum QGSHADERCONSTTYPE
 	QGSCT_BYTE2,											/// @brief 2개의 바이트
 	QGSCT_BYTE3,											/// @brief 3개의 바이트
 	QGSCT_BYTE4,											/// @brief 4개의 바이트
-	QGSCT_SPLR_1D,											/// @brief 1D 텍스쳐 샘플러
-	QGSCT_SPLR_2D,											/// @brief 2D 텍스쳐 샘플러
-	QGSCT_SPLR_3D,											/// @brief 3D 텍스쳐 샘플러
-	QGSCT_SPLR_CUBE,										/// @brief 큐브 텍스쳐 샘플러
+	QGSCT_SAMPLER1D,										/// @brief 1D 텍스쳐 샘플러
+	QGSCT_SAMPLER2D,										/// @brief 2D 텍스쳐 샘플러
+	QGSCT_SAMPLER3D,										/// @brief 3D 텍스쳐 샘플러
+	QGSCT_SAMPLERCUBE,										/// @brief 큐브 텍스쳐 샘플러
 	QGSCT_MAX_VALUE
 } QgScType;
 
 /// @brief 세이더 자동처리 전역 변수
 typedef enum QGSHADERCONSTAUTO
 {
+	QGSCA_UNKNOWN,											/// @brief 알 수 없음
 	QGSCA_ORTHO_PROJ,										/// @brief 평면 투영 행렬
 	QGSCA_WORLD,											/// @brief 월드 행렬
 	QGSCA_VIEW,												/// @brief 뷰 행렬
@@ -252,7 +290,6 @@ typedef enum QGSHADERCONSTAUTO
 	QGSCA_MAT_PALETTE,										/// @brief 행렬 팔레트
 	QGSCA_MAX_VALUE
 } QgScAuto;
-#define QGSCA_INVALID		QGSCA_MAX_VALUE
 
 /// @brief 버퍼 타입
 typedef enum QGBUFFERTYPE
@@ -307,7 +344,7 @@ typedef enum QGFEATURE
 	QGFEATURE_REMOVE_EVENTS = QN_BIT(6),					/// @brief 루프 때 사용하지 않은 이벤트를 삭제한다
 	QGFEATURE_ENABLE_ASPECT = QN_BIT(7),
 	// 렌더러 종류 (24~31)
-	QGRENDERER_ES3 = QN_BIT(29),
+	QGRENDERER_ES = QN_BIT(29),
 	QGRENDERER_OPENGL = QN_BIT(30),
 	QGRENDERER_DIRECTX = QN_BIT(31),
 } QgFeature;
@@ -332,6 +369,7 @@ typedef enum QGSTUBSTAT
 } QgStubStat;
 
 /// @brief 이벤트 타입
+/// @note 항목을 변경하면 qg_event_to_str() 함수도 고칠 것
 typedef enum QGEVENTTYPE
 {
 	QGEV_NONE,												/// @brief 이벤트 없음
@@ -358,6 +396,7 @@ typedef enum QGEVENTTYPE
 } QgEventType;
 
 /// @brief 윈도우 이벤트
+/// @note 항목을 변경하면 qg_window_event_to_str() 함수도 고칠 것
 typedef enum QGWINDOWEVENTTYPE
 {
 	QGWEV_NONE,												/// @brief 이벤트 없음
@@ -395,41 +434,52 @@ typedef struct QGPROPPIXEL
 	byte				ar, al;								/// @brief 알파
 } QgPropPixel;
 
-/// @brief 세이더 코드
-typedef struct QGSHADERCODE
-{
-	size_t				size;								/// @brief 코드 크기
-	const void*			code;								/// @brief 코드 데이터
-} QgShaderCode;
-
 /// @brief 레이아웃 요소
 typedef struct QGLAYOUTINPUT
 {
-	QgLoStage			stage;								/// @brief 스테이지 구분
-	QgLoUsage			usage;								/// @brief 사용법
-	QgLoType			type;								/// @brief 데이터 타입
+	QgLayoutStage		stage;								/// @brief 스테이지 구분
+	QgLayoutUsage		usage;								/// @brief 사용법
+	QgClrFmt			format;								/// @brief 포맷
+	bool32				normalized;							/// @brief 정규화	
 } QgLayoutInput;
 
-/// @brief 레이아웃
-typedef struct QGPROPLAYOUT
+/// @brief 레이아웃 데이터
+typedef struct QGLAYOUTDATA
 {
-	size_t				count;								/// @brief 요소 갯수
-	QgLayoutInput*		inputs;								/// @brief 요소 데이터 포인트
-} QgPropLayout;
+	const QgLayoutInput*	inputs;							/// @brief 요소 데이터 포인트
+	size_t					count;							/// @brief 요소 갯수
+} QgLayoutData;
+
+/// @brief 코드 데이터
+typedef struct QGCODEDATA
+{
+	const void*			code;								/// @brief 코드 데이터
+	size_t				size;								/// @brief 코드 크기 (텍스트 타입이면 반드시 0이어야 한다!)
+} QgCodeData;
+
+/// @brief 세이더 속성
+typedef struct QGPROPSHADER
+{
+	QgLayoutData		layout;
+	QgCodeData			vertex;
+	QgCodeData			pixel;
+	//QgCodeData		geometry;
+} QgPropShader;
 
 /// @brief 블렌드
 typedef struct QGPROPBLEND
 {
-	bool16				use_coverage;						/// @brief sample coverage / alpha to coverage
-	bool16				separate;							/// @brief 거짓이면 rb[0]만 사용
+	bool32				use_coverage;						/// @brief sample coverage / alpha to coverage
+	bool32				separate;							/// @brief 거짓이면 rb[0]만 사용
 	QgBlend				rb[QGRVS_MAX_VALUE];				/// @brief 스테이지 별 블렌드 정보
 } QgPropBlend;
 
 /// @brief 래스터라이저
 typedef struct QGPROPRASTERIZER
 {
-	QgFill				fill;								/// @brief 채우기 방법
-	QgCull				cull;								/// @brief 면 제거 방법
+	QgFill				fill : 16;							/// @brief 채우기 방법
+	QgCull				cull : 16;							/// @brief 면 제거 방법
+	bool32				scissor;							/// @brief 가위질
 	float				depth_bias;							/// @brief 주어진 픽셀에 추가하는 깊이 값
 	float				slope_scale;						/// @brief 픽셀 경사면에 주어지는 스칼라 값
 } QgPropRasterizer;
@@ -438,33 +488,36 @@ typedef struct QGPROPRASTERIZER
 typedef struct QGPROPRVFORMAT
 {
 	uint				count;								/// @brief rtv 갯수
-	QgClrFmt			rtv[QGRVS_MAX_VALUE];				/// @brief Render Target (color) Value
-	QgClrFmt			dsv;								/// @brief Depth Stencil (color) Value
+	QgClrFmt			rtv[QGRVS_MAX_VALUE];				/// @brief Render Target format
+	QgClrFmt			dsv;								/// @brief Depth Stencil format
 } QgPropRvFormat;
 
 /// @brief 렌더 파이프라인
 typedef struct QGPROPRENDER
 {
+	QgPropRvFormat		format;								/// @brief 렌더 포맷
 	QgPropBlend			blend;								/// @brief 블렌드
 	QgPropRasterizer	rasterizer;							/// @brief 래스터라이저
-	QgDepth				depth;								/// @brief 뎁스
-	QgStencil			stencil;							/// @brief 스텐실
-	QgPropLayout		layout;								/// @brief 정점 레이아웃
-	QgPropRvFormat		format;								/// @brief 렌더 포맷
+	QgDepth				depth : 16;							/// @brief 뎁스
+	QgStencil			stencil : 16;						/// @brief 스텐실
 	QgTopology			topology;							/// @brief 토폴로지
 } QgPropRender;
 
 /// @brief 세이더 변수
 typedef struct QGVARSHADER
 {
+#ifdef _QN_64_
+	char				name[64 + 4];						/// @brief 변수 이름
+#else
 	char				name[64];							/// @brief 변수 이름
+#endif
 	size_t				hash;								/// @brief 변수 이름 해시
 
 	ushort				offset;								/// @brief 변수 옵셋
-	ushort				size;								/// @brief 변수의 크기
+	ushort				size;								/// @brief 변수의 갯수
 
 	QgScType			sctype;								/// @brief 변수 타입
-	QgScAuto			scauto;								/// @brief 자동 타입
+	QgScAuto			scauto;								/// @brief 자동 타입 또는 사용자 정의 키 값
 } QgVarShader;
 
 /// @brief 키 상태
@@ -484,19 +537,19 @@ typedef struct QGUIMMOUSE
 	QmPoint				last;								/// @brief 마우스의 이전 좌표
 	QmPoint				delta;								/// @brief 이동 거리 차이
 
-	struct QGUIMMOUSECLICK
+	struct QGUIMMOUSE_CLICK
 	{
 		uint				tick;							/// @brief 첫번째 눌렸을 때
 		uint				ltick;							/// @brief 마지막으로 두번 눌렸을 때
 		QimButton			btn;							/// @brief 두번 검새 때 눌린 마우스 버튼
 		QmPoint				loc;							/// @brief 두번 검사 때 마우스 위치
 	}					clk;								/// @brief 마우스 눌림 정보
-	struct QGUIMMOUSELIMIT
+	struct QGUIMMOUSE_LIMIT
 	{
 		uint				move;							/// @brief 제한 이동 거리(포인트)의 제곱
 		uint				tick;							/// @brief 제한 클릭 시간(밀리초)
 	}					lim;								/// @brief 마우스 더블 클릭 구현 정보
-	struct QGUIMMOUSEWHEEL
+	struct QGUIMMOUSE_WHEEL
 	{
 		QmVec2				accm;							/// @brief 가속도
 		QmVec2				precise;						/// @brief 정밀 값
@@ -554,7 +607,7 @@ typedef union QGEVENT
 {
 	QgEventType			ev;									/// @brief 이벤트 타입
 #ifdef _QN_WINDOWS_
-	struct QGEVENTSYSWINDOWS
+	struct QGEVENT_SYSWINDOWS
 	{
 		QgEventType			ev;
 		uint				mesg;							/// @brief 메시지
@@ -563,40 +616,40 @@ typedef union QGEVENT
 		void*				hwnd;							/// @brief 윈도우 핸들
 	}					windows;
 #endif
-	struct QGEVENTACTIVE
+	struct QGEVENT_ACTIVE
 	{
 		QgEventType			ev;
 		bool32				active;							/// @brief 활성 상태면 참
 		double				delta;							/// @brief 마지막 활성 상태로 부터의 지난 시간(초)
 	}					active;								/// @brief 액티브 이벤트
-	struct QGEVENTLAYOUT
+	struct QGEVENT_LAYOUT
 	{
 		QgEventType			ev;
 		QmRect				bound;							/// @brief 실제 윈도우의 사각 영역
 		QmSize				size;							/// @brief 그리기 영역 크기
 	}					layout;								/// @brief 레이아웃 이벤트
-	struct QGEVENTKEYBOARD
+	struct QGEVENT_KEYBOARD
 	{
 		QgEventType			ev;
 		QikKey				key;							/// @brief 이벤트에 해당하는 키
 		QikMask				mask;							/// @brief 특수키 상태
 		bool32				repeat;							/// @brief 계속 눌려 있었다면 참
 	}					key;								/// @brief 키 눌림 떼임 이벤트
-	struct QGEVENTMOUSEMOVE
+	struct QGEVENT_MOUSEMOVE
 	{
 		QgEventType			ev;
 		QmPoint				pt;								/// @brief 마우스 좌표
 		QmPoint				delta;							/// @brief 마우스 이동 거리
 		QimMask				mask;							/// @brief 마우스 버튼의 상태
 	}					mmove;								/// @brief 마우스 이동 이벤트
-	struct QGEVENTMOUSEBUTTON
+	struct QGEVENT_MOUSEBUTTON
 	{
 		QgEventType			ev;
 		QmPoint				pt;								/// @brief 마우스 좌표
 		QimButton			button;							/// @brief 이벤트에 해당하는 버튼
 		QimMask				mask;							/// @brief 마으스 버튼의 상태
 	}					mbutton;							/// @brief 마우스 버튼 눌림 떼임 이벤트
-	struct QGEVENTMOUSEWHEEL
+	struct QGEVENT_MOUSEWHEEL
 	{
 		QgEventType			ev;
 		QmPoint				pt;								/// @brief 마우스 좌표
@@ -604,26 +657,26 @@ typedef union QGEVENT
 		QmVec2				precise;						/// @brief 정밀한 움직임 (Y가 기본휠, X는 틸트)
 		int					direction;						/// @brief 참이면 뱡향이 반대
 	}					mwheel;								/// @brief 마우스 휠 이벤트
-	struct QGEVENTTEXT
+	struct QGEVENT_TEXT
 	{
 		QgEventType			ev;
 		int					len;							/// @brief 텍스트 길이
 		char				data[16];						/// @brief 텍스트 내용
 	}					text;
-	struct QGEVENTDROP
+	struct QGEVENT_DROP
 	{
 		QgEventType			ev;
 		int					len;							/// @brief 데이타의 길이
 		char*				data;							/// @brief 테이타 포인터. 데이터의 유효기간은 다음 loop 까지
 	}					drop;
-	struct QGEVENTWINDOWEVENT
+	struct QGEVENT_WINDOWEVENT
 	{
 		QgEventType			ev;
 		QgWindowEventType	mesg;							/// @brief 윈도우 이벤트 메시지
 		int					param1;							/// @brief 파라미터1
 		int					param2;							/// @brief 파라미터2
 	}					wevent;
-	struct QGEVENTMONITOR
+	struct QGEVENT_MONITOR
 	{
 		QgEventType			ev;
 		int					state;							/// @brief 0=연결 끊김, 1=연결, 3=스터브의 활성 모니터가 바뀜
@@ -632,7 +685,7 @@ typedef union QGEVENT
 } QgEvent;
 
 /// @brief 이벤트 콜백, 반환값이 0이 아니면 다른 핸들러로 이벤트를 전달하지 않는다
-typedef int (*QgEventCallback)(void* data, QgEventType event_type, const QgEvent* event_param);
+typedef int (*QgEventCallback)(void* data, const QgEventType type, const QgEvent* param);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -841,11 +894,15 @@ QSAPI const char* qg_window_event_to_str(QgWindowEventType wev);
 // render device
 
 typedef struct QGGAM		QgGam;							/// @brief 런더 감
+typedef struct QGNODE		QgNode;							/// @brief 노드
 typedef struct QGBUFFER		QgBuffer;						/// @brief 버퍼
-typedef struct QGSHADER		QgShader;						/// @brief 세이더
 typedef struct QGRENDER		QgRender;						/// @brief 렌더 파이프라인
 
-typedef void(*QgVarShaderFunc)(void*, QgShader*, size_t, const QgVarShader*);	/// @brief 세이더 변수 콜백 함수
+/// @brief 세이더 콜백
+/// @details 두번째 인수(int)는 qn_get_key로 얻어진 키 값을 전달하므로 자동 변수가 아닐 경우
+/// 미리 qn_set_key로 키 값을 등록해야 한다. 키 값이 없다면 0으로 전달하므로,
+/// 그 경우 세이더 변수의 name으로 변수를 특정해야 한다
+typedef void(*QgVarShaderFunc)(void*, nint, const QgVarShader*);
 
 /// @brief 렌더러를 연다
 /// @param driver 드라이버 이름 (NULL로 지정하여 기본값)
@@ -857,7 +914,6 @@ typedef void(*QgVarShaderFunc)(void*, QgShader*, size_t, const QgVarShader*);	//
 /// @param features 스터브 및 렌더러 사양
 /// @return 만들어졌으면 참
 /// @note 내부에서 qg_open_stub 함수를 호출한다 (미리 만들어 놔도 된다)
-///
 QSAPI bool qg_open_rdh(const char* driver, const char* title, int display, int width, int height, int flags, int features);
 
 /// @brief 렌더러를 닫는다
@@ -886,24 +942,13 @@ QSAPI void qg_rdh_flush(void);
 /// @note 이 함수는 직접 호출하지 않아도 좋다. 외부 스터브 사용할 때 화면 크기가 바뀔 때 사용하면 좋음
 QSAPI void qg_rdh_reset(void);
 
-/// @brief 렌더러를 지운다
+/// @brief 렌더러를 지운다 (배경은 지정간 배경색으로, 뎁스는 1로, 스텐실은 0으로)
 /// @param clear 지우기 플래그
-/// @param color 배경색
-/// @param stencil 스텐실 값
-/// @param depth 뎁스 값
-QSAPI void qg_rdh_clear(QgClear clear, const QmColor* color, int stencil, float depth);
-
-/// @brief 세이더 vec3 타입 파라미터 설정
-/// @param at 0부터 3까지 총 4가지
-/// @param v vec3 타입 값
-/// @note 내부에서 vec4 타입으로 처리한다
-/// @see qg_rdh_set_param_vec4
-QSAPI void qg_rdh_set_param_vec3(int at, const QmVec3* v);
+QSAPI void qg_rdh_clear(QgClear clear);
 
 /// @brief 세이더 vec4 타입 파라미터 설정
 /// @param at 0부터 3까지 총 4가지
 /// @param v vec4 타입 값
-
 QSAPI void qg_rdh_set_param_vec4(int at, const QmVec4* v);
 
 /// @brief 세이더 mat4 타입 파라미터 설정
@@ -917,8 +962,8 @@ QSAPI void qg_rdh_set_param_mat4(int at, const QmMat4* m);
 QSAPI void qg_rdh_set_param_weight(int count, QmMat4* weight);
 
 /// @brief 배경색을 설정한다
-/// @param background_color 배경색
-QSAPI void qg_rdh_set_background(const QmColor* background_color);
+/// @param background_color 배경색 (널값일 경우 (0.0f, 0.0f, 0.0f, 1.0f)로 초기화)
+QSAPI void qg_rdh_set_background(const QmVec4* background_color);
 
 /// @brief 월드 행렬을 설정한다
 /// @param world 월드 행렬
@@ -946,24 +991,20 @@ QSAPI void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view);
 /// @details data 파라미터의 설명에도 있지만, 정적 버퍼로 만들고 나중에 데이터를 넣으면 문제가 생길 수도 있다
 QSAPI QgBuffer* qg_rdh_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data);
 
-/// @brief 세이더를 만든다. 바로는 쓸 수 없고 렌더 파이프라인의 인수로 사용한다
-/// @param name 세이더 이름
-/// @return 만들어진 세이더
-QSAPI QgShader* qg_rdh_create_shader(const char* name);
-
-/// @brief 세이더를 만든다. 인수로 세이더 코드를 받는다
-/// @param name 세이더 이름
-/// @param vs 정점 세이더	코드
-/// @param ps 픽셀 세이더 코드
-/// @param flags 플래그 (QgScFlag 참조)
-/// @return 만들어진 세이더
-QSAPI QgShader* qg_rdh_create_shader_buffer(const char* name, const QgShaderCode* vs, const QgShaderCode* ps, QgScFlag flags);
-
 /// @brief 렌더 파이프라인을 만든다
-/// @param prop 렌더 파이프라인 속성
-/// @param shader 세이더
+/// @param name 렌더 이름 (이름을 지정하면 캐시한다)
+/// @param render 렌더 파이프라인 속성
+/// @param shader 세이더 속성
 /// @return 만들어진 렌더 파이프라인
-QSAPI QgRender* qg_rdh_create_render(const QgPropRender* prop, QgShader* shader);
+QSAPI QgRender* qg_rdh_create_render(const char* name, const QgPropRender* render, const QgPropShader* shader);
+
+/// @brief 정점 버퍼를 설정한다
+/// @param stage 버퍼를 지정할 스테이지
+/// @param buffer 설정할 버퍼
+/// @return 실패하면 거짓을 반환
+/// @retval true 문제 없이 정점 버퍼를 설정했다
+/// @retval false buffer 인수에 문제가 있거나 정점 버퍼가 아니다
+QSAPI bool qg_rdh_set_vertex(QgLayoutStage stage, QgBuffer* buffer);
 
 /// @brief 인덱스 버퍼를 설정한다
 /// @param buffer 설정할 버퍼
@@ -972,17 +1013,14 @@ QSAPI QgRender* qg_rdh_create_render(const QgPropRender* prop, QgShader* shader)
 /// @retval false buffer 인수에 문제가 있거나 인덱스 버퍼가 아니다
 QSAPI bool qg_rdh_set_index(QgBuffer* buffer);
 
-/// @brief 정점 버퍼를 설정한다
-/// @param stage 버퍼를 지정할 스테이지
-/// @param buffer 설정할 버퍼
-/// @return 실패하면 거짓을 반환
-/// @retval true 문제 없이 정점 버퍼를 설정했다
-/// @retval false buffer 인수에 문제가 있거나 정점 버퍼가 아니다
-QSAPI bool qg_rdh_set_vertex(QgLoStage stage, QgBuffer* buffer);
-
 /// @brief 렌더 파이프라인을 설정한다
 /// @param render 렌더 파이프라인
 QSAPI bool qg_rdh_set_render(QgRender* render);
+
+/// @brief 렌더 파이프라인을 캐시에서 설정한다
+/// @param name 설정할 렌더의 이름
+/// @return 캐시에 해당 이름이 없으면 거짓
+QSAPI bool qg_rdh_set_render_named(const char* name);
 
 /// @brief 정점으로 그리기
 /// @param tpg 그릴 모양의 토폴로지
@@ -999,6 +1037,23 @@ QSAPI bool qg_rdh_draw_indexed(QgTopology tpg, int indices);
 
 //////////////////////////////////////////////////////////////////////////
 // 렌더 오브젝트
+
+/// @brief 노드
+struct QGNODE
+{
+	QsGam				base;
+
+	char				NAME[64];
+	size_t				HASH;
+	QgNode*				NEXT;
+	QgNode*				PREV;
+	QgNode*				SIBLING;
+};
+
+/// @brief 노드의 이름과 그 이름으로 해시를 설정한다
+/// @param self 노드
+/// @param name 설정할 이름
+QSAPI void qg_node_set_name(QgNode * self, const char* name);
 
 /// @brief 버퍼
 struct QGBUFFER
@@ -1039,50 +1094,11 @@ QSAPI bool qg_buffer_unmap(QgBuffer* g);
 /// @note data 는 반드시 size 만큼 데이터를 갖고 있어야한다
 QSAPI bool qg_buffer_data(QgBuffer* g, const void* data);
 
-/// @brief 세이더
-struct QGSHADER
-{
-	QsGam				base;
-
-	char				name[64];
-	QgShaderType		type;
-};
-
-qs_name_vt(QGSHADER)
-{
-	qs_name_vt(QSGAM)	base;
-	bool(*bind_shader)(QgShader*, QgShader*);
-	bool(*bind_buffer)(QgShader*, QgShaderType, const void*, size_t, QgScFlag);
-};
-
-/// @brief 세이더 개체를 바인드
-/// @param g 세이더 개체
-/// @param shader 바인드할 세이더	개체
-/// @return 문제가 없었으면 참
-QSAPI bool qg_shader_bind(QgShader* g, QgShader* shader);
-
-/// @brief 세이더 개체를 버퍼에서 읽어와 바인드
-/// @param g 세이더 개체
-/// @param type 세이더 타입
-/// @param code 세이더 코드
-/// @param flags 세이더 플래그 (QgScFlag 참조
-/// @return 문제가 없었으면 참
-QSAPI bool qg_shader_bind_buffer(QgShader* g, QgShaderType type, const QgShaderCode* code, QgScFlag flags);
-
-/// @brief 세이더 개체를 파일에서 읽어서 바인드
-/// @param g 세이더 개체
-/// @param type 세이더 타입
-/// @param filename 파일 이름
-/// @param flags 바인드 플래그 (현재는 0으로 설정)
-/// @return 문제가 없었으면 참
-QSAPI bool qg_shader_bind_file(QgShader* g, QgShaderType type, const char* filename, int flags);
-
 /// @brief 렌더 파이프라인
 struct QGRENDER
 {
-	QsGam				base;
+	QgNode				base;
 
-	size_t				hash;
 	nuint				ref;
 };
 
@@ -1091,22 +1107,15 @@ struct QGRENDER
 // 인라인
 
 // 기본 렌더 프로퍼티
-INLINE QgPropRender qg_default_prop_render(QgLayoutInput* inputs, size_t icount)
-{
-	QgPropRender prop =
-	{
-		.rasterizer.fill = QGFILL_SOLID,
-		.rasterizer.cull = QGCULL_BACK,
-		.depth = QGDEPTH_LE,
-		.stencil = QGSTENCIL_OFF,
-		.layout.count = icount,
-		.layout.inputs = inputs,
-		.format.count = 1,
-		.format.rtv[0] = QGCF32_RGBA,
-		.format.dsv = QGCF8_L,
-		.topology = QGTPG_TRI,
-	};
-	return prop;
-}
+#define QG_DEFAULT_PROP_RENDER\
+	{\
+		.rasterizer.fill = QGFILL_SOLID,\
+		.rasterizer.cull = QGCULL_BACK,\
+		.depth = QGDEPTH_LE,\
+		.stencil = QGSTENCIL_OFF,\
+		.format.count = 1,\
+		.format.rtv[0] = QGCF_R8G8B8A8,\
+		.topology = QGTPG_TRI,\
+	}
 
 QN_EXTC_END

@@ -31,7 +31,6 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <EnableASAN>true</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -45,7 +44,6 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <EnableASAN>true</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -102,6 +100,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -150,6 +149,7 @@
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -191,6 +191,7 @@
     <ClInclude Include="..\..\inc\qs_kmc.h" />
     <ClInclude Include="..\..\inc\qs_qg.h" />
     <ClInclude Include="..\..\src\pch.h" />
+    <ClInclude Include="..\..\src\qg\qg_node.h" />
     <ClInclude Include="..\..\src\qn\sdefl\sdefl.h" />
     <ClInclude Include="..\..\src\qn\sdefl\sinfl.h" />
     <ClInclude Include="..\..\src\qs_conf.h" />
@@ -204,6 +205,7 @@
     <ClInclude Include="..\..\src\qg\stub\qgrdh_glbase.h" />
     <ClInclude Include="..\..\src\qg\stub\qgstub_win_func.h" />
     <ClInclude Include="..\..\src\qg\stub\qgstub_wlx_func.h" />
+    <ClInclude Include="..\..\src\qs_supp.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\pch.c">
@@ -217,7 +219,6 @@
     <ClCompile Include="..\..\src\qg\stub\qgrdh_es.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_windows.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_wayland.c" />
-    <ClCompile Include="..\..\src\qg\stub\qgstub_sdl.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_emscripten.c" />
     <ClCompile Include="..\..\src\qg\qg_kmc.c" />
     <ClCompile Include="..\..\src\qn\PatrickPowell_snprintf.c" />

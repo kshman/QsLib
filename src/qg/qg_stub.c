@@ -836,7 +836,7 @@ bool stub_track_mouse_click(const QimButton button, const QimTrack track)
 	{
 		if (m->clk.tick > 0)
 		{
-			const uint d = qm_len_sq(qm_sub(m->clk.loc, m->pt));
+			const uint d = qm_point_len_sq(qm_sub(m->clk.loc, m->pt));
 			if (d > m->lim.move)
 			{
 				// 마우스가 move 만큼 움직이면 두번 누르기 취소
@@ -1064,9 +1064,9 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 			break;
 
 		case QGWEV_SIZED:
-			if (qm_rect_width(stub->bound) == param1 && qm_rect_height(stub->bound) == param2)
+			if (qm_rect_get_width(stub->bound) == param1 && qm_rect_get_height(stub->bound) == param2)
 				return 0;
-			stub->bound = qm_rect_resize(stub->bound, param1, param2);
+			stub->bound = qm_rect_set_size(stub->bound, param1, param2);
 			break;
 
 		case QGWEV_FOCUS:
@@ -1277,8 +1277,8 @@ bool stub_event_on_mouse_wheel(const float x, const float y, const bool directio
 	}
 	um->wheel.accm.X += x;
 	const int ix =
-		(um->wheel.accm.X > 0.0f) ? (int)QM_FLOORF(um->wheel.accm.X) :		// NOLINT
-		(um->wheel.accm.X < 0.0f) ? (int)QM_CEILF(um->wheel.accm.X) : 0;	// NOLINT
+		(um->wheel.accm.X > 0.0f) ? (int)floorf(um->wheel.accm.X) :		// NOLINT
+		(um->wheel.accm.X < 0.0f) ? (int)ceilf(um->wheel.accm.X) : 0;	// NOLINT
 	um->wheel.accm.X -= (float)ix;
 
 	if (y > 0.0f)
@@ -1293,8 +1293,8 @@ bool stub_event_on_mouse_wheel(const float x, const float y, const bool directio
 	}
 	um->wheel.accm.Y += y;
 	const int iy =
-		(um->wheel.accm.Y > 0.0f) ? (int)QM_FLOORF(um->wheel.accm.Y) :		// NOLINT
-		(um->wheel.accm.Y < 0.0f) ? (int)QM_CEILF(um->wheel.accm.Y) : 0;	// NOLINT
+		(um->wheel.accm.Y > 0.0f) ? (int)floorf(um->wheel.accm.Y) :		// NOLINT
+		(um->wheel.accm.Y < 0.0f) ? (int)ceilf(um->wheel.accm.Y) : 0;	// NOLINT
 	um->wheel.accm.Y -= (float)iy;
 
 	um->wheel.integral = qm_point(ix, iy);

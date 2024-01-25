@@ -11,7 +11,7 @@
 // ReSharper disable CppParameterMayBeConstPtrOrRef
 
 #include "pch.h"
-#if defined _WIN32 && !defined USE_SDL2
+#ifdef _QN_WINDOWS_
 #include "qs_qg.h"
 #include "qs_kmc.h"
 #include "qg/qg_stub.h"
@@ -177,8 +177,8 @@ typedef struct WINDOWSSTUB
 
 	bool				class_registered;
 	bool				clear_background;
+	bool				enter_movesize;
 	bool				mouse_tracked;
-	bool				bool_padding2;
 } WindowsStub;
 
 // 윈도우 스터브 여기 있다!
@@ -568,7 +568,7 @@ void stub_system_update_bound(void)
 	RECT rect;
 
 	GetWindowRect(wStub.hwnd, &rect);
-	memcpy(&wStub.base.bound, &rect, sizeof(RECT));
+	wStub.base.bound = qm_rect_RECT(rect);
 
 	GetClientRect(wStub.hwnd, &rect);
 	wStub.base.client_size = qm_size(rect.right - rect.left, rect.bottom - rect.top);
@@ -598,7 +598,7 @@ void stub_system_fullscreen(bool fullscreen)
 
 	if (fullscreen)
 	{
-		memcpy(&wStub.window_bound, &wStub.base.bound, sizeof(RECT));
+		wStub.window_bound = qm_rect_to_RECT(wStub.base.bound);
 
 		style &= ~WS_OVERLAPPEDWINDOW;
 		style |= WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP;
@@ -1345,7 +1345,8 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 			stub_event_on_window_event(QGWEV_MOVED, rect.left, rect.top);
 			stub_event_on_window_event(QGWEV_SIZED, rect.right - rect.left, rect.bottom - rect.top);
-			stub_event_on_layout(false);
+			if (wStub.enter_movesize == false)
+				stub_event_on_layout(false);
 
 			InvalidateRect(hwnd, NULL, FALSE);
 		}break;
@@ -1439,10 +1440,12 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			break;
 
 		case WM_ENTERSIZEMOVE:
+			wStub.enter_movesize = true;
 			stub_event_on_layout(true);
 			break;
 
 		case WM_EXITSIZEMOVE:
+			wStub.enter_movesize = false;
 			stub_event_on_layout(false);
 			break;
 
@@ -1505,7 +1508,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				const float ydpi = LOWORD(wp) / 96.0f;
 				// TODO: 여기에 DPI 변경 알림 이벤트 날리면 좋겠네
 #endif
-			}
+				}
 			break;
 
 		case WM_GETDPISCALEDSIZE:
@@ -1526,13 +1529,13 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		default:
 			break;
-	}
+			}
 
 pos_windows_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-}
+	}
 #pragma endregion 윈도우 메시지
 
-#endif // _WIN32 && !USE_SDL2
+#endif // _QN_WINDOWS_

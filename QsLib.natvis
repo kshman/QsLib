@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
+  <!-- ==================== QNCTN & QG ==================== -->
+
   <!-- 배열 / 컨테이너 / 슬라이스 -->
   <Type Name="QnPtrArr">
     <AlternativeType Name="QnByteArr"/>
@@ -13,8 +15,10 @@
     <AlternativeType Name="ErrorArray"/>
     <AlternativeType Name="SubArray"/>
     <AlternativeType Name="StubMonitorCtnr"/>
+    <AlternativeType Name="QglCtnLayoutInput"/>
     <AlternativeType Name="QglCtnUniform"/>
     <AlternativeType Name="QglCtnAttr"/>
+    <AlternativeType Name="EsCtnConfig"/>
     <DisplayString>[갯수: {COUNT}]</DisplayString>
     <Expand>
       <Item Name="[갯수]">COUNT</Item>
@@ -26,7 +30,7 @@
       </ArrayItems>
     </Expand>
   </Type>
-  
+
   <!-- 리스트 -->
   <Type Name="QnPtrList">
     <AlternativeType Name="StubListEventCb"/>
@@ -41,7 +45,7 @@
       </LinkedListItems>
     </Expand>
   </Type>
-  
+
   <!-- 해시 노드 -->
   <Type Name="QnInlineHashNode">
     <DisplayString>[key={KEY}, value={NEXT}]</DisplayString>
@@ -68,6 +72,8 @@
     </Expand>
   </Type>
 
+  <!-- ==================== QN ==================== -->
+
   <!-- 데이트 타임 -->
   <Type Name="QnDateTime">
     <DisplayString>[{year}-{month}-{day} {hour}:{minute}:{second}.{millisecond}]</DisplayString>
@@ -77,7 +83,7 @@
   <Type Name="QnTimer">
     <DisplayString>[실행: {runtime} (FPS: {fps})]</DisplayString>
   </Type>
-  
+
   <!-- 메모리 블럭 -->
   <Type Name="MemBlock">
     <DisplayString>[{size}바이트 ({block}, {desc,s}:{line})]</DisplayString>
@@ -110,30 +116,47 @@
     </Expand>
   </Type>
 
-  <!-- 오브젝트 -->
-  <Type Name="QSGAM">
-    <DisplayString>[&lt;{((QsGam*)this)-&gt;vt-&gt;name,s}&gt; (ref:{((QsGam*)this)-&gt;ref})]</DisplayString>
+  <!-- QMVECTOR_FIU -->
+  <Type Name="QMVECTOR_FIU">
+    <DisplayString>[{f[0]}, {f[1]}, {f[2]}, {f[3]}]</DisplayString>
     <Expand>
-      <Item Name="[타입]">((QsGam*)this)-&gt;vt-&gt;name</Item>
-      <Item Name="[참조]">((QsGam*)this)-&gt;ref</Item>
+      <Item Name="X">f[0]</Item>
+      <Item Name="Y">f[1]</Item>
+      <Item Name="Z">f[2]</Item>
+      <Item Name="W">f[3]</Item>
     </Expand>
   </Type>
 
-  <!-- vec2 -->
-  <Type Name="QmVec2">
-    <AlternativeType Name="QmPoint"/>
-    <AlternativeType Name="QmVecH2"/>
-    <DisplayString>[({X}, {Y})]</DisplayString>
+  <!-- __m128 -->
+  <Type Name ="__m128">
+    <DisplayString>[{m128_f32[0]}, {m128_f32[1]}, {m128_f32[2]}, {m128_f32[3]}]</DisplayString>
+    <Expand>
+      <Item Name="X">m128_f32[0]</Item>
+      <Item Name="Y">m128_f32[1]</Item>
+      <Item Name="Z">m128_f32[2]</Item>
+      <Item Name="W">m128_f32[3]</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMVEC2 / QMVECI2 / QMVECH2 -->
+  <Type Name="QMVEC2">
+    <AlternativeType Name="QMVECI2"/>
+    <AlternativeType Name="QMVECH2"/>
+    <AlternativeType Name="QMFLOAT2"/>
+    <AlternativeType Name="QMINT2"/>
+    <AlternativeType Name="QMUINT2"/>
+    <DisplayString>[{X}, {Y}]</DisplayString>
     <Expand>
       <Item Name="X">X</Item>
       <Item Name="Y">Y</Item>
     </Expand>
   </Type>
 
-  <!-- vec3 -->
-  <Type Name="QmVec3">
-    <AlternativeType Name="QmVecH3"/>
-    <DisplayString>[({X}, {Y}, {Z})]</DisplayString>
+  <!-- QMVEC3 (이 형식은 없다) -->
+  <Type Name="QMFLOAT3">
+    <AlternativeType Name="QMINT3"/>
+    <AlternativeType Name="QMUINT3"/>
+    <DisplayString>[{X}, {Y}, {Z}]</DisplayString>
     <Expand>
       <Item Name="X">X</Item>
       <Item Name="Y">Y</Item>
@@ -141,11 +164,15 @@
     </Expand>
   </Type>
 
-  <!-- vec4 -->
-  <Type Name="QmVec4">
-    <AlternativeType Name="QmQuat"/>
-    <AlternativeType Name="QmVecH4"/>
-    <DisplayString>[({X}, {Y}, {Z}, {W})]</DisplayString>
+  <!-- QMVEC4 / QMVECI4 / QMVECH4 -->
+  <Type Name="QMVEC4">
+    <AlternativeType Name="QMVECI4"/>
+    <AlternativeType Name="QMVECU4"/>
+    <AlternativeType Name="QMVECH4"/>
+    <AlternativeType Name="QMFLOAT4"/>
+    <AlternativeType Name="QMINT4"/>
+    <AlternativeType Name="QMUINT4"/>
+    <DisplayString>[{X}, {Y}, {Z}, {W}]</DisplayString>
     <Expand>
       <Item Name="X">X</Item>
       <Item Name="Y">Y</Item>
@@ -154,20 +181,56 @@
     </Expand>
   </Type>
 
-  <!-- mat4 -->
-  <Type Name="QmMat4">
+  <!-- QMMAT4 -->
+  <Type Name="QMMAT4">
+    <AlternativeType Name="QMFLOAT4X4"/>
     <DisplayString>[({_11}, {_22}, {_33}, {_44}) ({_41}, {_42}, {_43}, {_44})]</DisplayString>
     <Expand>
-      <Item Name="#1">f[0]</Item>
-      <Item Name="#2">f[1]</Item>
-      <Item Name="#3">f[2]</Item>
-      <Item Name="#4">f[3]</Item>
+      <Item Name="#1">m[0]</Item>
+      <Item Name="#2">m[1]</Item>
+      <Item Name="#3">m[2]</Item>
+      <Item Name="#4">m[3]</Item>
+    </Expand>
+  </Type>
+  <Type Name="QMFLOAT2X2">
+    <DisplayString>[({_11}, {_22}) ({_21}, {_22})]</DisplayString>
+    <Expand>
+      <Item Name="#1">m[0]</Item>
+      <Item Name="#2">m[1]</Item>
+    </Expand>
+  </Type>
+  <Type Name ="QMFLOAT3X3">
+    <DisplayString>[({_11}, {_22}, {_33}) ({_21}, {_22}, {_23}) ({_31}, {_32}, {_33})]</DisplayString>
+    <Expand>
+      <Item Name="#1">m[0]</Item>
+      <Item Name="#2">m[1]</Item>
+      <Item Name="#3">m[2]</Item>
     </Expand>
   </Type>
 
-  <!-- rect -->
-  <Type Name="QmRect">
-    <AlternativeType Name="QmRectF"/>
+  <!-- QMCOLOR / QMKOLOR -->
+  <Type Name="QMCOLOR">
+    <AlternativeType Name="QMKOLOR"/>
+    <DisplayString>[{R}, {G}, {B}, {A}]</DisplayString>
+    <Expand>
+      <Item Name="R">R</Item>
+      <Item Name="G">G</Item>
+      <Item Name="B">B</Item>
+      <Item Name="A">A</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMSIZE -->
+  <Type Name="QMSIZE">
+    <DisplayString>[{Width}, {Height}]</DisplayString>
+    <Expand>
+      <Item Name="Width / MIN">Width</Item>
+      <Item Name="Height / MAX">Height</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMRECT -->
+  <Type Name="QMRECT">
     <DisplayString>[({Left}, {Top})-({Right}, {Bottom})]</DisplayString>
     <Expand>
       <Item Name="Left">Left</Item>
@@ -179,59 +242,24 @@
     </Expand>
   </Type>
 
-  <!-- size -->
-  <Type Name="QmSize">
-    <AlternativeType Name="QmSizeF"/>
-    <DisplayString>[({Width}, {Height})]</DisplayString>
+  <!-- ==================== QS ==================== -->
+
+  <!-- 오브젝트 -->
+  <Type Name="QSGAM">
+    <DisplayString>[{((QsGam*)this)-&gt;vt-&gt;name,s}&lt;{((QsGam*)this)-&gt;ref}&gt; (desc:{((QsGam*)this)-&gt;desc})]</DisplayString>
     <Expand>
-      <Item Name="Width">Width</Item>
-      <Item Name="Height">Height</Item>
+      <Item Name="[타입]">((QsGam*)this)-&gt;vt-&gt;name</Item>
+      <Item Name="[참조]">((QsGam*)this)-&gt;ref</Item>
     </Expand>
   </Type>
 
-  <!-- color -->
-  <Type Name="QmColor">
-    <AlternativeType Name="QmKolor"/>
-    <DisplayString>[({R}, {G}, {B}, {A})]</DisplayString>
-    <Expand>
-      <Item Name="R">R</Item>
-      <Item Name="G">G</Item>
-      <Item Name="B">B</Item>
-      <Item Name="A">A</Item>
-    </Expand>
-  </Type>
-
-  <!-- plane -->
-  <Type Name="QmPlane">
-    <DisplayString>[({A}, {B}, {C}, {D})]</DisplayString>
-    <Expand>
-      <Item Name="A">A</Item>
-      <Item Name="B">B</Item>
-      <Item Name="C">C</Item>
-      <Item Name="D">D</Item>
-    </Expand>
-  </Type>
-
-  <!-- line -->
-  <Type Name="QmLine3">
-    <DisplayString>[({Begin.X},{Begin.Y},{Begin.Z})-({End.X},{End.Y},{End.Z})]</DisplayString>
-  </Type>
-
-  <!-- trfm -->
-  <Type Name="QmTrfm">
-    <DisplayString>[({Location.X},{Location.Y},{Location.Z}) ({Rotation.X},{Rotation.Y},{Rotation.Z},{Rotation.W}) ({Scale.X},{Scale.Y},{Scale.Z})]</DisplayString>
-    <Expand>
-      <Item Name="Location">Location</Item>
-      <Item Name="Rotation">Rotation</Item>
-      <Item Name="Scailing">Scale</Item>
-    </Expand>
-  </Type>
+  <!-- ==================== QG ==================== -->
 
   <!-- 이벤트 노드 -->
   <Type Name="EventNode">
     <DisplayString>[{event.ev} (키: {key})]</DisplayString>
   </Type>
-  
+
   <!-- 노드 리스트 -->
   <Type Name="EventNodeList">
     <DisplayString>[갯수: {COUNT}]</DisplayString>
@@ -250,40 +278,67 @@
   <Type Name="QgEvent">
     <DisplayString>[{ev}]</DisplayString>
   </Type>
-  
+
   <!-- ShedEvent -->
   <Type Name="ShedEvent">
     <DisplayString>[q={queue.COUNT} / p={prior.COUNT} / c={cache.COUNT} / m={reserved_mems.COUNT} ({loop.count})</DisplayString>
   </Type>
-  
+
   <!-- StubEventCallback -->
   <Type Name="StubEventCallback">
     <DisplayString>[키: {key} ({func} / {data}]</DisplayString>
   </Type>
-  
+
+  <!-- 노드 -->
+  <Type Name="QGNODE">
+    <DisplayString>[{((QsGam*)this)-&gt;vt-&gt;name,s} / {NAME,s} (ref:{((QsGam*)this)-&gt;ref})]</DisplayString>
+    <Expand>
+      <Item Name="[타입]">((QsGam*)this)-&gt;vt-&gt;name</Item>
+      <Item Name="[참조]">((QsGam*)this)-&gt;ref</Item>
+      <Item Name="[해시]">HASH</Item>
+    </Expand>
+  </Type>
+
+  <!-- QGNODEMUKUM -->
+  <Type Name="QGNODEMUKUM">
+    <DisplayString>[갯수: {COUNT}]</DisplayString>
+    <Expand>
+      <Item Name="[갯수]">COUNT</Item>
+      <LinkedListItems>
+        <Size>COUNT</Size>
+        <HeadPointer>FIRST</HeadPointer>
+        <NextPointer>NEXT</NextPointer>
+        <ValueNode>this</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
   <!-- QGBUFFER -->
   <Type Name="QGBUFFER">
     <AlternativeType Name="QGLBUFFER"/>
     <DisplayString Condition="((QGBUFFER*)this)-&gt;mapped == 0">[{((QGBUFFER*)this)-&gt;type} (count:{((QGBUFFER*)this)-&gt;count}, stride:{((QGBUFFER*)this)-&gt;stride})]</DisplayString>
     <DisplayString Condition="((QGBUFFER*)this)-&gt;mapped != 0">[매핑중 {((QGBUFFER*)this)-&gt;type} (count:{((QGBUFFER*)this)-&gt;count}, stride:{((QGBUFFER*)this)-&gt;stride})]</DisplayString>
   </Type>
-  
-  <!-- QGLSHADER-->
-  <Type Name="QGLSHADER">
-    <DisplayString>[{base.name,s} (u:{uniforms.COUNT}, a:{attrs.COUNT}, ref:{base.base.ref})]</DisplayString>
+
+  <!-- QGRENDER -->
+  <Type Name="QGRENDER">
+    <DisplayString>[RENDER]</DisplayString>
   </Type>
-  
+
+  <!-- ==================== ES 또는 GL ==================== -->
+
+  <!-- QGLREFHANDLE -->
+  <Type Name="QGLREFHANDLE">
+    <DisplayString>[handle: {handle} (ref:{ref})]</DisplayString>
+  </Type>
+
   <!-- QGLRENDER -->
   <Type Name="QGLRENDER">
-    <DisplayString>[{shader-&gt;base.name,s} (input:{{{layout.count[0]},{layout.count[1]},{layout.count[2]}}},{layout.count[3]}, stride:{{{layout.stride[0]},{layout.stride[1]},{layout.stride[2]},{layout.stride[3]}}}]</DisplayString>  
+    <DisplayString>[{base.base.NAME,s}]</DisplayString>
     <Expand>
       <Item Name="[GAM]">(QsGam*)this</Item>
       <Item Name="[해시]">base.hash</Item>
       <Item Name="[세이더]">shader</Item>
-      <ArrayItems>
-        <Size>layout.count[0]+layout.count[1]+layout.count[2]+layout.count[3]</Size>
-        <ValuePointer>layout.inputs</ValuePointer>
-      </ArrayItems>
     </Expand>
   </Type>
 
