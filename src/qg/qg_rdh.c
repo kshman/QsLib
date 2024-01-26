@@ -49,7 +49,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 		for (size_t i = 0; i < QN_COUNTOF(renderers) - 1; i++)
 			if (qn_strieqv(renderers[i].name, driver) || qn_strieqv(renderers[i].alias, driver))
 			{
-				renderer = &renderer[i];
+				renderer = &renderers[i];
 				break;
 			}
 	}
