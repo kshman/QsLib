@@ -143,16 +143,20 @@ typedef struct RENDERERINFO
 	char				vendor[64];							// 디바이스 제조사
 	int					renderer_version;					// 렌더러 버전
 	int					shader_version;						// 세이더 버전
+
 	uint				max_layout_count;					// 최대 레이아웃(=정점 속성) 갯수
 	uint				max_indices;						// 최대 인덱스 갯수
 	uint				max_vertices;						// 최대 정점 갯수
 	uint				max_tex_dim;						// 최대 텍스쳐 크기
 	uint				max_tex_count;						// 최대 텍스쳐 갯수
 	uint				max_off_count;						// 최대 오프 텍스쳐(=렌더타겟/프레임버퍼) 갯수
+
 	QgClrFmt			clr_fmt;							// 색깔 포맷
 #ifdef _QN_UNIX_
 	int					visual_id;							// 비주얼 아이디
 #endif
+
+	bool				enabled_stencil;					// 스텐실 사용 가능
 } RendererInfo;
 
 // 렌더 추적 정보
@@ -252,8 +256,10 @@ extern RdhBase* qg_instance_rdh;
 #define rdh_inc_ends()		(qg_instance_rdh->invokes.ends++)
 
 #ifdef USE_ES
-// OPENGL ES 할당
-extern RdhBase* es_allocator(QgFlag flags, QgFeature features);
+extern RdhBase* es_allocator(QgFlag flags, QgFeature features);			// OPENGL ES 할당
+#endif
+#ifdef USE_GL
+extern RdhBase* gl_allocator(QgFlag flags, QgFeature features);			// OPENGL 할당
 #endif
 
 // 렌더러 리소스 제거

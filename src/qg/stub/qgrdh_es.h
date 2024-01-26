@@ -1,4 +1,9 @@
-﻿#pragma once
+﻿//
+// qgrdh_es.h - OPENGL ES 렌더 디바이스
+// 2024-1-26 by kim
+//
+
+#pragma once
 
 #ifndef __QS_QN__
 #error include "qs_qn.h" first
@@ -22,20 +27,14 @@
 #pragma warning(default: 4191)
 #endif
 #endif
-#include "qgrdh_glbase.h"
+#include "qgrdh_qgl.h"
+
+static_assert(sizeof(int) == sizeof(EGLint), "EGLint size is not equal to int");
+static_assert(sizeof(void*) == sizeof(EGLConfig), "EGLConfig size is not equal to void*");
 
 typedef struct ESRDH		EsRdh;
 
 #define ES_RDH				((EsRdh*)qg_instance_rdh)
-
-// ES 컨피그
-typedef struct ESCONFIG
-{
-	EGLConfig			handle;
-	EGLint				red, green, blue, alpha;
-	EGLint				depth, stencil, samples;
-	int					version;
-} EsConfig;
 
 // ES 렌더 디바이스
 struct ESRDH
@@ -48,8 +47,6 @@ struct ESRDH
 	EGLContext			context;
 	EGLDisplay			display;
 	EGLSurface			surface;
-
-	EsConfig			config;
 	EGLint				version;
 };
 

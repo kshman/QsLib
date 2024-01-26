@@ -25,6 +25,8 @@ QN_EXTC_BEGIN
 #define QG_PROP_DEPTH_SIZE				"QG_PROP_DEPTH_SIZE"
 #define QG_PROP_STENCIL_SIZE			"QG_PROP_STENCIL_SIZE"
 #define QG_PROP_MSAA					"QG_PROP_MSAA"
+#define QG_PROP_DRIVER_MAJOR			"QG_PROP_DRIVER_MAJOR"
+#define QG_PROP_DRIVER_MINOR			"QG_PROP_DRIVER_MINOR"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -201,9 +203,10 @@ typedef enum QGDEPTH
 {
 	QGDEPTH_OFF,											/// @brief 뎁스 테스트 하지 않음
 	QGDEPTH_LE,												/// @brief 뎁스가 작으면 통과
-	QGDEPTH_EQ,												/// @brief 뎁스가 같으면 통과
 	QGDEPTH_LEQ,											/// @brief 뎁스가 작거나 같으면 통과
 	QGDEPTH_GR,												/// @brief 뎁스가 크면 통과
+	QGDEPTH_GEQ,											/// @brief 뎁스가 크거나 같으면 통과
+	QGDEPTH_EQ,												/// @brief 뎁스가 같으면 통과
 	QGDEPTH_NEQ,											/// @brief 뎁스가 같지 않으면 통과
 	QGDEPTH_ALWAYS,											/// @brief 뎁스는 언제나 통과
 	QGDEPTH_MAX_VALUE,
@@ -213,8 +216,9 @@ typedef enum QGDEPTH
 typedef enum QGSTENCIL
 {
 	QGSTENCIL_OFF,											/// @brief 스텐실 테스트 하지 않음
-	QGSTENCIL_ALWAY,										/// @brief 스텐실을 언제나 설정 (마스크: 0xFF)
-	QGSTENCIL_NEQ,											/// @brief 스텐실이 같지 않으면 설정 (마스크: 0)
+	QGSTENCIL_WRITE,										/// @brief 스텐실을 언제나 설정 (1 / 0xFF / 0xFF)
+	QGSTENCIL_EVADE,										/// @brief 스텐실을 피함 (1 / 0xFF / 0)
+	QGSTENCIL_OVER,											/// @brief 스텐실을 덮음 (1 / 0xFF / 0)
 	QGSTENCIL_MAX_VALUE,
 } QgStencil;
 

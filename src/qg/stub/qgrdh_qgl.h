@@ -1,4 +1,9 @@
-﻿#pragma once
+﻿//
+// qgrdh_qgl.h - GL 공통 디바이스
+// 2024-1-2 by kim
+//
+
+#pragma once
 
 #include "qg/qg_stub.h"
 
@@ -15,6 +20,16 @@ typedef struct QGLRENDER	QglRender;
 #define QGL_PENDING			(&QGL_RDH->pd)
 #define QGL_SESSION			(&QGL_RDH->ss)
 #define QGL_RESOURCE		(&QGL_RDH->res)
+
+#ifndef GLAPIENTRY
+#ifdef APIENTRY
+#define GLAPIENTRY			APIENTRY
+#elif defined(_WIN32)
+#define GLAPIENTRY			__stdcall
+#else
+#define GLAPIENTRY
+#endif
+#endif
 
 // 레이아웃 요소
 typedef struct QGLLAYOUTINPUT
@@ -101,16 +116,43 @@ typedef struct QGLRESOURCE
 	QglRender*			glyph_render;
 } QglResource;
 
+// 컨피그
+typedef struct QGLCONFIG
+{
+	void*				handle;
+	int					red, green, blue, alpha;
+	int					depth, stencil, samples;
+	int					version;
+} QglConfig;
+
+// 초기화 정보
+typedef struct QGLINITIALINFO
+{
+	const char*			name;
+	const char*			version_string[2];
+	const char*			shader_string[2];
+	int					max_layout_count;
+} QglInitialInfo;
+
 // GL 렌더 디바이스
 struct QGLRDH
 {
 	RdhBase				base;
 
+	QglConfig			cfg;	
 	QglSession			ss;
 	QglPending			pd;
 	QglResource			res;
 
 	nint				disposed;
+};
+
+qs_name_vt(QGLRDH)
+{
+	qs_name_vt(RDHBASE)	base;
+
+	void (*gl_depth_range)(float n, float f);
+	void (*gl_clear_depth)(float depth);
 };
 
 // 버퍼
@@ -147,15 +189,85 @@ struct QGLRENDER
 		ushort				counts[QGLOS_MAX_VALUE];
 		ushort				strides[QGLOS_MAX_VALUE];
 	}					layout;
+
+	QgDepth				depth;
+	QgStencil			stencil;
 };
+
+extern void qgl_wanted_config(QglConfig* config, int version, QgFlag flags);
+extern const QglConfig* qgl_detect_config(const QglConfig* wanted, const QglConfig* configs, int count);
+
+extern void qgl_rdh_init_info(QglRdh* self, const QglConfig* config, const QglInitialInfo* initial);
+extern bool qgl_rdh_finalize(QglRdh* self);
+
+extern void qgl_rdh_layout(void);
+extern void qgl_rdh_reset(void);
+
+extern void qgl_rdh_clear(QgClear flags);
+extern bool qgl_rdh_begin(bool clear);
+extern void qgl_rdh_end(void);
+extern void qgl_rdh_flush(void);
+
+extern bool qgl_rdh_set_vertex(QgLayoutStage stage, QgBuffer* buffer);
+extern bool qgl_rdh_set_index(QgBuffer* buffer);
+extern bool qgl_rdh_set_render(QgRender* render);
+
+extern void qgl_bind_buffer(const QglBuffer* buffer);
+extern bool qgl_commit_shader_layout(const QglRender* rdr);
+extern void qgl_commit_depth_stencil(const QglRender* rdr);
+
+extern QgRender* qgl_create_render(const char* name, const QgPropRender* prop, const QgPropShader* shader);
+
+
+//////////////////////////////////////////////////////////////////////////
+
+// 정점 바인딩
+INLINE void qgl_bind_vertex_buffer(const QglBuffer* buffer)
+{
+	qn_assert(buffer->base.type == QGBUFFER_VERTEX, "try to bind non-vertex buffer");
+	QglSession* ss = QGL_SESSION;
+	GLuint gl_id = qs_get_desc(buffer, GLuint);
+	if (ss->buffer.vertex != gl_id)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, gl_id);
+		ss->buffer.vertex = gl_id;
+	}
+}
+
+// 인덱스 바인딩
+INLINE void qgl_bind_index_buffer(const QglBuffer* buffer)
+{
+	qn_assert(buffer->base.type == QGBUFFER_INDEX, "try to bind non-index buffer");
+	QglSession* ss = QGL_SESSION;
+	GLuint gl_id = qs_get_desc(buffer, GLuint);
+	if (ss->buffer.index != gl_id)
+	{
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_id);
+		ss->buffer.index = gl_id;
+	}
+}
+
+// 유니폼 바인딩
+INLINE void qgl_bind_uniform_buffer(const QglBuffer* buffer)
+{
+	qn_assert(buffer->base.type == QGBUFFER_CONSTANT, "try to bind non-uniform buffer");
+	QglSession* ss = QGL_SESSION;
+	GLuint gl_id = qs_get_desc(buffer, GLuint);
+	if (ss->buffer.uniform != gl_id)
+	{
+		glBindBuffer(GL_UNIFORM_BUFFER, gl_id);
+		ss->buffer.uniform = gl_id;
+	}
+}
 
 // 문자열 버전에서 숫자만 mnn 방식으로
 INLINE int qgl_get_version(const char* s, const char* name1, const char* name2)
 {
 	const float f =
+		name1 != NULL ?
 		qn_strnicmp(s, name1, strlen(name1)) == 0 ? strtof(s + strlen(name1), NULL) :
 		qn_strnicmp(s, name2, strlen(name2)) == 0 ? strtof(s + strlen(name2), NULL) :
-		qn_strtof(s);
+		qn_strtof(s) : qn_strtof(s);
 	return (int)(floorf(f) * 100.0f + (qm_fractf(f) * 10.0));
 }
 
@@ -304,5 +416,22 @@ INLINE QgScType qgl_enum_to_shader_const(GLenum gl_type)
 		case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:
 #endif
 		default:							return QGSCT_UNKNOWN;
+	}
+}
+
+// depth 함수 변환
+INLINE GLenum qgl_depth_to_enum(QgDepth func)
+{
+	switch (func)
+	{
+		case QGDEPTH_OFF:		return GL_NEVER;
+		case QGDEPTH_LE:		return GL_LESS;
+		case QGDEPTH_LEQ:		return GL_LEQUAL;
+		case QGDEPTH_GR:		return GL_GREATER;
+		case QGDEPTH_GEQ:		return GL_GEQUAL;
+		case QGDEPTH_EQ:		return GL_EQUAL;
+		case QGDEPTH_NEQ:		return GL_NOTEQUAL;
+		case QGDEPTH_ALWAYS:	return GL_ALWAYS;
+		default:				return GL_NONE;
 	}
 }

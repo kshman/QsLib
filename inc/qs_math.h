@@ -243,7 +243,7 @@ typedef union QMVEC2
 } QmVec2;
 
 /// @brief 벡터4
-typedef union QMVEC4
+typedef union QMVECF
 {
 	float f[4];
 	QMSVEC v;
@@ -251,12 +251,13 @@ typedef union QMVEC4
 	{
 		float X, Y, Z, W;
 	};
-} QmVec4;
+} QmVec4, QmVecF, QmVec;
 
 /// @brief 벡터4
 typedef union QMVECU
 {
 	uint u[4];
+	int i[4];
 	QMSVEC v;
 	QmVec4 v4;
 	struct
@@ -279,7 +280,7 @@ typedef union QMMAT4
 		float _31, _32, _33, _34;
 		float _41, _42, _43, _44;
 	};
-} QmMat4;
+} QmMat4, QmMat;
 
 /// @brief 위치값 (포인트)
 typedef union QMPOINT

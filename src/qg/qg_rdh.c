@@ -29,10 +29,15 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	};
 	static struct rdh_renderer renderers[] =
 	{
+#if defined USE_GL
+		{ "GL", "OPENGL", gl_allocator, QGRENDERER_OPENGL },
+#endif
 #if defined USE_ES
 		{ "ES", "GLES", es_allocator, QGRENDERER_ES },
 #endif
-#if defined USE_ES
+#if defined USE_GL
+		{ NULL, NULL, gl_allocator, QGRENDERER_OPENGL },
+#elif defined USE_ES
 		{ NULL, NULL, es_allocator, QGRENDERER_ES },
 #else
 		{ NULL, NULL, NULL, 0 },
