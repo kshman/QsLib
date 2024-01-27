@@ -18,6 +18,7 @@
 #include <windowsx.h>
 #include <Xinput.h>
 #include <shellscalingapi.h>
+#include <Dbt.h>
 
 static_assert(sizeof(RECT) == sizeof(QmRect), "RECT size not equal to QmRect");
 
@@ -118,6 +119,9 @@ static bool windows_dll_init(void)
 
 #pragma region 스터브 선언
 
+static const GUID GUID_DEVINTERFACE_HID = { 0x4D1E55B2, 0xF16F, 0x11CF,{ 0x88,0xCB,0x00,0x11,0x11,0x00,0x00,0x30 } };
+static const GUID GUID_DEVINTERFACE_MONITOR = { 0xE6F07B5F, 0xEE97, 0x4a90,{ 0xB0,0x4E,0x82,0x42,0x33,0x28,0x25,0x96 } };
+
 // 윈도우 모니터 > QgUdevMonitor
 typedef struct WINDOWSMONITOR
 {
@@ -151,8 +155,11 @@ typedef struct WINDOWSSTUB
 
 	HINSTANCE			instance;
 	HWND				hwnd;
+	HWND				dummy_hwnd;
+	HDC					hdc;
 
 	wchar				class_name[64];
+	wchar				dummy_class_name[64];
 	DWORD				window_style;
 
 	RECT				window_bound;
@@ -167,6 +174,8 @@ typedef struct WINDOWSSTUB
 	int					imcs;
 	int					high_surrogate;
 
+	HDEVNOTIFY			hdn_hid;
+
 	int					deadzone_min;
 	int					deadzone_max;
 
@@ -176,6 +185,7 @@ typedef struct WINDOWSSTUB
 	QimMask				mouse_pending;
 
 	bool				class_registered;
+	bool				dummy_class_registered;
 	bool				clear_background;
 	bool				enter_movesize;
 	bool				mouse_tracked;
@@ -191,6 +201,7 @@ static void windows_set_key_hook(HINSTANCE instance);
 static void windows_set_dpi_awareness(void);
 static bool windows_detect_displays(void);
 static void windows_hold_mouse(bool hold);
+static LRESULT CALLBACK windows_dummy_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
 static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
 #pragma endregion 스터브 선언
 
@@ -223,6 +234,44 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	{
 		qn_debug_outputs(true, "WINDOWS STUB", "cannot detect any display");
 		return false;
+	}
+
+	// 더미 윈도우
+	if (wStub.dummy_class_registered == false)
+	{
+		qn_snwprintf(wStub.dummy_class_name, QN_COUNTOF(wStub.dummy_class_name), L"qs_dummy_%llu", qn_now());
+		WNDCLASSEX dummy_wc = { sizeof(WNDCLASSEX) };
+		dummy_wc.lpfnWndProc = windows_dummy_proc;
+		dummy_wc.hInstance = wStub.instance;
+		dummy_wc.lpszClassName = wStub.dummy_class_name;
+		if (RegisterClassEx(&dummy_wc) == FALSE)
+		{
+			qn_debug_outputs(true, "WINDOWS STUB", "support window class registration failed");
+			return false;
+		}
+
+		wStub.dummy_hwnd = CreateWindowEx(WS_EX_OVERLAPPEDWINDOW, wStub.dummy_class_name, L"QS DUMMY",
+			WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 1, 1, NULL, NULL, wStub.instance, NULL);
+		if (wStub.dummy_hwnd == NULL)
+		{
+			qn_debug_outputs(true, "WINDOWS STUB", "support window creation failed");
+			return false;
+		}
+		ShowWindow(wStub.dummy_hwnd, SW_HIDE);
+
+		DEV_BROADCAST_DEVICEINTERFACE bdi = { sizeof(DEV_BROADCAST_DEVICEINTERFACE) };
+		bdi.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+		bdi.dbcc_classguid = GUID_DEVINTERFACE_HID;
+		wStub.hdn_hid = RegisterDeviceNotification(wStub.dummy_hwnd, &bdi, DEVICE_NOTIFY_WINDOW_HANDLE);
+
+		MSG dummy_msg;
+		while (PeekMessage(&dummy_msg, wStub.dummy_hwnd, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&dummy_msg);
+			DispatchMessage(&dummy_msg);
+		}
+
+		wStub.dummy_class_registered = true;
 	}
 
 	// 윈도우 클래스
@@ -363,6 +412,7 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 		qn_debug_outputs(true, "WINDOWS STUB", "cannot create window");
 		return false;
 	}
+	wStub.hdc = GetDC(wStub.hwnd);
 
 	// 최종 스타일 변경
 	if (QN_TMASK(flags, QGFLAG_FULLSCREEN) == false)
@@ -410,6 +460,13 @@ void stub_system_finalize(void)
 	if (QN_TMASK(wStub.base.features, QGFEATURE_DISABLE_ACS))
 		stub_system_disable_acs(false);
 
+	if (wStub.hdn_hid != NULL)
+	{
+		if (wStub.hdn_hid != NULL)
+			UnregisterDeviceNotification(wStub.hdn_hid);
+		DestroyWindow(wStub.dummy_hwnd);
+	}
+
 	if (wStub.hwnd != NULL)
 	{
 		wStub.base.stats |= QGSST_EXIT;
@@ -424,12 +481,15 @@ void stub_system_finalize(void)
 	if (wStub.mouse_cursor != NULL)
 		DestroyCursor(wStub.mouse_cursor);
 
+	if (wStub.dummy_class_registered)
+	{
+		wStub.dummy_class_registered = false;
+		UnregisterClass(wStub.dummy_class_name, wStub.instance);
+	}
 	if (wStub.class_registered)
 	{
 		wStub.class_registered = false;
-		WNDCLASSEX wc;
-		if (GetClassInfoEx(wStub.instance, wStub.class_name, &wc))
-			UnregisterClass(wStub.class_name, wStub.instance);
+		UnregisterClass(wStub.class_name, wStub.instance);
 	}
 }
 
@@ -637,7 +697,13 @@ void* stub_system_get_window(void)
 //
 void* stub_system_get_display(void)
 {
-	return (void*)GetDC(wStub.hwnd);
+	return (void*)wStub.hdc;
+}
+
+//
+void* stub_system_get_dummy_window(void)
+{
+	return (void*)wStub.dummy_hwnd;
 }
 #pragma endregion 시스템 함수
 
@@ -1113,6 +1179,43 @@ static void windows_mesg_active(const bool focus)
 	}
 }
 
+// 더미 윈도우 프로시저
+static LRESULT CALLBACK windows_dummy_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
+{
+	switch (mesg)
+	{
+		case WM_DISPLAYCHANGE:
+			windows_detect_displays();
+			break;
+		case  WM_DEVICECHANGE:
+		{
+			if (wp == DBT_DEVICEARRIVAL)
+			{
+				const DEV_BROADCAST_HDR* hdr = (const DEV_BROADCAST_HDR*)lp;
+				if (hdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
+				{
+					const DEV_BROADCAST_DEVICEINTERFACE* di = (const DEV_BROADCAST_DEVICEINTERFACE*)lp;
+					if (memcmp(&di->dbcc_classguid, &GUID_DEVINTERFACE_MONITOR, sizeof(GUID)) == 0)
+						windows_detect_displays();
+				}
+			}
+			else if (wp == DBT_DEVICEREMOVECOMPLETE)
+			{
+				const DEV_BROADCAST_HDR* hdr = (const DEV_BROADCAST_HDR*)lp;
+				if (hdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
+				{
+					const DEV_BROADCAST_DEVICEINTERFACE* di = (const DEV_BROADCAST_DEVICEINTERFACE*)lp;
+					if (memcmp(&di->dbcc_classguid, &GUID_DEVINTERFACE_MONITOR, sizeof(GUID)) == 0)
+						windows_detect_displays();
+				}
+			}
+		} break;
+		default:
+			break;
+	}
+	return DefWindowProc(hwnd, mesg, wp, lp);
+}
+
 // 윈도우 메시지 프로시저
 static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 {
@@ -1369,9 +1472,6 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				return HTCLIENT;
 			break;
 
-		case WM_DISPLAYCHANGE:
-			break;
-
 		case WM_NCCREATE:
 			if (EnableNonClientDpiScaling != NULL && QN_TMASK(wStub.base.flags, QGFLAG_DPISCALE))
 				EnableNonClientDpiScaling(hwnd);
@@ -1508,7 +1608,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				const float ydpi = LOWORD(wp) / 96.0f;
 				// TODO: 여기에 DPI 변경 알림 이벤트 날리면 좋겠네
 #endif
-				}
+			}
 			break;
 
 		case WM_GETDPISCALEDSIZE:
@@ -1529,13 +1629,13 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		default:
 			break;
-			}
+	}
 
 pos_windows_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-	}
+}
 #pragma endregion 윈도우 메시지
 
 #endif // _QN_WINDOWS_

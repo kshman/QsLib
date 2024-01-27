@@ -21,6 +21,10 @@ QN_EXTC_BEGIN
 // property
 #define QG_PROP_WINDOWS_ICON			"QG_PROP_WINDOWS_ICON"
 #define QG_PROP_WINDOWS_SMALLICON		"QG_PROP_WINDOWS_SMALLICON"
+#define QG_PROP_DRIVER_MAJOR			"QG_PROP_DRIVER_MAJOR"
+#define QG_PROP_DRIVER_MINOR			"QG_PROP_DRIVER_MINOR"
+#define QG_PROP_DRIVER_PROFILE			"QG_PROP_DRIVER_PROFILE"
+#define QG_PROP_CAPABILITY				"QG_PROP_CAPABILITY"
 #define QG_PROP_RGBA_SIZE				"QG_PROP_RGBA_SIZE"
 #define QG_PROP_DEPTH_SIZE				"QG_PROP_DEPTH_SIZE"
 #define QG_PROP_STENCIL_SIZE			"QG_PROP_STENCIL_SIZE"
@@ -201,9 +205,10 @@ typedef enum QGDEPTH
 {
 	QGDEPTH_OFF,											/// @brief 뎁스 테스트 하지 않음
 	QGDEPTH_LE,												/// @brief 뎁스가 작으면 통과
-	QGDEPTH_EQ,												/// @brief 뎁스가 같으면 통과
 	QGDEPTH_LEQ,											/// @brief 뎁스가 작거나 같으면 통과
 	QGDEPTH_GR,												/// @brief 뎁스가 크면 통과
+	QGDEPTH_GEQ,											/// @brief 뎁스가 크거나 같으면 통과
+	QGDEPTH_EQ,												/// @brief 뎁스가 같으면 통과
 	QGDEPTH_NEQ,											/// @brief 뎁스가 같지 않으면 통과
 	QGDEPTH_ALWAYS,											/// @brief 뎁스는 언제나 통과
 	QGDEPTH_MAX_VALUE,
@@ -213,8 +218,9 @@ typedef enum QGDEPTH
 typedef enum QGSTENCIL
 {
 	QGSTENCIL_OFF,											/// @brief 스텐실 테스트 하지 않음
-	QGSTENCIL_ALWAY,										/// @brief 스텐실을 언제나 설정 (마스크: 0xFF)
-	QGSTENCIL_NEQ,											/// @brief 스텐실이 같지 않으면 설정 (마스크: 0)
+	QGSTENCIL_WRITE,										/// @brief 스텐실을 언제나 설정 (1 / 0xFF / 0xFF)
+	QGSTENCIL_EVADE,										/// @brief 스텐실을 피함 (1 / 0xFF / 0)
+	QGSTENCIL_OVER,											/// @brief 스텐실을 덮음 (1 / 0xFF / 0)
 	QGSTENCIL_MAX_VALUE,
 } QgStencil;
 
@@ -321,10 +327,12 @@ typedef enum QGFLAG
 	QGFLAG_DPISCALE = QN_BIT(6),							/// @brief DPI 스케일
 	QGFLAG_MAXIMIZE = QN_BIT(7),							/// @brief 시작할 때 최대화
 	// 렌더러 플래그 (16~29)
-	QGFLAG_VSYNC = QN_BIT(16),								/// @brief VSYNC 켜기
-	QGFLAG_MSAA = QN_BIT(17),								/// @brief 멀티 샘플링 사용
-	QGFLAG_DITHER = QN_BIT(18),								/// @brief 16비트 모드 사용
-	QGFLAG_DITHER_ALPHA_STENCIL = QN_BIT(19),				/// @brief 16비트 모드일 때 알파 1비트 추가하고 스텐실도 켬
+	QGFLAG_DEBUG = QN_BIT(16),								/// @brief 디버그 모드
+	QGFLAG_VSYNC = QN_BIT(18),								/// @brief VSYNC 켜기
+	QGFLAG_MSAA = QN_BIT(19),								/// @brief 멀티 샘플링 사용
+	QGFLAG_SRGB = QN_BIT(20),								/// @brief sRGB 모드
+	QGFLAG_STEREO = QN_BIT(21),								/// @brief 스테레오 모드
+	QGFLAG_TRANSPARENT = QN_BIT(22),						/// @brief 투명한 윈도우
 	// 사용자가 설정할 수 없는 플래그
 	QGSPECIFIC_RDHSTUB = QN_BIT(30),						/// @brief 스터브 만들었음
 	QGSPECIFIC_VIRTUAL = QN_BIT(31),						/// @brief 가상 스터브 사용
@@ -344,7 +352,7 @@ typedef enum QGFEATURE
 	QGFEATURE_REMOVE_EVENTS = QN_BIT(6),					/// @brief 루프 때 사용하지 않은 이벤트를 삭제한다
 	QGFEATURE_ENABLE_ASPECT = QN_BIT(7),
 	// 렌더러 종류 (24~31)
-	QGRENDERER_ES = QN_BIT(29),
+	QGRENDERER_GLES = QN_BIT(29),
 	QGRENDERER_OPENGL = QN_BIT(30),
 	QGRENDERER_DIRECTX = QN_BIT(31),
 } QgFeature;

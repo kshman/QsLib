@@ -44,7 +44,7 @@
     <ClCompile>
       <LanguageStandard>gnuc17</LanguageStandard>
       <PrecompiledHeaderCompileAs>CompileAsC</PrecompiledHeaderCompileAs>
-      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_ES;_DEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_GL;_DEBUG</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -67,7 +67,7 @@
     <ClCompile>
       <LanguageStandard>gnuc17</LanguageStandard>
       <PrecompiledHeaderCompileAs>CompileAsC</PrecompiledHeaderCompileAs>
-      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_ES</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_EMSCRIPTEN;USE_GL</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -92,6 +92,9 @@
     <ClInclude Include="..\..\inc\qs_kmc.h" />
     <ClInclude Include="..\..\inc\qs_qg.h" />
     <ClInclude Include="..\..\src\pch.h" />
+    <ClInclude Include="..\..\src\qg\qg_node.h" />
+    <ClInclude Include="..\..\src\qg\stub\glad\wgl.h" />
+    <ClInclude Include="..\..\src\qg\stub\glad\wglext.h" />
     <ClInclude Include="..\..\src\qn\sdefl\sdefl.h" />
     <ClInclude Include="..\..\src\qn\sdefl\sinfl.h" />
     <ClInclude Include="..\..\src\qs_conf.h" />
@@ -99,10 +102,7 @@
     <ClInclude Include="..\..\src\qg\qg_stub.h" />
     <ClInclude Include="..\..\src\qg\stub\glad\egl.h" />
     <ClInclude Include="..\..\src\qg\stub\glad\gl.h" />
-    <ClInclude Include="..\..\src\qg\stub\glad\gles2.h" />
-    <ClInclude Include="..\..\src\qg\stub\glad\wgl.h" />
-    <ClInclude Include="..\..\src\qg\stub\qgrdh_es.h" />
-    <ClInclude Include="..\..\src\qg\stub\qgrdh_glbase.h" />
+    <ClInclude Include="..\..\src\qg\stub\qgrdh_qgl.h" />
     <ClInclude Include="..\..\src\qg\stub\qgstub_win_func.h" />
     <ClInclude Include="..\..\src\qg\stub\qgstub_wlx_func.h" />
     <ClInclude Include="..\..\src\qs_supp.h" />
@@ -112,7 +112,9 @@
     <ClCompile Include="..\..\src\pch.c" />
     <ClCompile Include="..\..\src\qg\qg_rdh.c" />
     <ClCompile Include="..\..\src\qg\qg_stub.c" />
-    <ClCompile Include="..\..\src\qg\stub\qgrdh_es.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgrdh_qgl.c" />
+    <ClCompile Include="..\..\src\qg\stub\glad_gl.c" />
+    <ClCompile Include="..\..\src\qg\stub\glad_egl.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_windows.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_wayland.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_emscripten.c" />

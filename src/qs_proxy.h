@@ -18,19 +18,6 @@
 
 #define wcstombs(x,y,z)	qn_wcstombs(x, z, y, 0)
 
-#ifdef GLAD_PLATFORM_H_
-#define sscanf(a,b,c,d)		glad_version_sscanf(a,c,d)
-#define sscanf_s(a,b,c,d)	glad_version_sscanf(a,c,d)
-
-// GLAD_IMPL_UTIL_SSCANF(version, "%d.%d", &major, &minor);
-INLINE void glad_version_sscanf(const char* version, int* major, int* minor)
-{
-	const float f = qn_strtof(version);
-	*major = (int)floorf(f);
-	*minor = (int)(qm_fractf(f) * 10.0f);
-}
-#endif // GLAD_PLATFORM_H_
-
 #ifdef _MSC_VER
 #pragma warning(disable:4127)
 #pragma warning(disable:4242)

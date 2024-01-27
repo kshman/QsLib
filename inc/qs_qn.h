@@ -944,6 +944,9 @@ QSAPI char* qn_strchr(const char* p, int ch);
 /// @brief 문자열에서 뒤에서부터 문자의 위치를 찾는다
 QSAPI char* qn_strrchr(const char* p, int ch);
 
+/// @brief 구분자로 분리된 문자열에서 이름에 해당하는 문자열이 있는지 확인한다
+QSAPI const char* qn_strext(const char* p, const char* name, int separator);
+
 /// @brief 문자열을 특정 위치에서 얻는다
 /// @param[in,out] dest 얻은 문자열 버퍼
 /// @param[in] src 원본 문자열

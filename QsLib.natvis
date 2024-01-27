@@ -18,7 +18,7 @@
     <AlternativeType Name="QglCtnLayoutInput"/>
     <AlternativeType Name="QglCtnUniform"/>
     <AlternativeType Name="QglCtnAttr"/>
-    <AlternativeType Name="EsCtnConfig"/>
+    <AlternativeType Name="QglCtnConfig"/>
     <DisplayString>[갯수: {COUNT}]</DisplayString>
     <Expand>
       <Item Name="[갯수]">COUNT</Item>

@@ -29,11 +29,12 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	};
 	static struct rdh_renderer renderers[] =
 	{
-#if defined USE_ES
-		{ "ES", "GLES", es_allocator, QGRENDERER_ES },
+#if defined USE_GL
+		{ "GL", "OPENGL", qgl_allocator, QGRENDERER_OPENGL },
+		{ "ES", "GLES", qgl_allocator, QGRENDERER_GLES },
 #endif
-#if defined USE_ES
-		{ NULL, NULL, es_allocator, QGRENDERER_ES },
+#if defined USE_GL
+		{ NULL, NULL, qgl_allocator, QGRENDERER_GLES },
 #else
 		{ NULL, NULL, NULL, 0 },
 #endif
@@ -44,33 +45,13 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 		for (size_t i = 0; i < QN_COUNTOF(renderers) - 1; i++)
 			if (qn_strieqv(renderers[i].name, driver) || qn_strieqv(renderers[i].alias, driver))
 			{
-				renderer = &renderer[i];
+				renderer = &renderers[i];
 				break;
 			}
 	}
 
 	VAR_CHK_IF_COND(renderer->allocator == NULL, "no valid renderer found", false);
 	features |= renderer->feature;
-
-	if (QN_TMASK(flags, QGFLAG_DITHER | QGFLAG_DITHER_ALPHA_STENCIL))	// 디더 강제로 줄여
-	{
-		if (QN_TMASK(flags, QGFLAG_DITHER_ALPHA_STENCIL))
-		{
-			if (qn_get_prop(QG_PROP_RGBA_SIZE) == NULL)
-				qn_set_prop(QG_PROP_RGBA_SIZE, "4444");
-			if (qn_get_prop(QG_PROP_STENCIL_SIZE) == NULL)
-				qn_set_prop(QG_PROP_STENCIL_SIZE, "8");
-		}
-		else
-		{
-			if (qn_get_prop(QG_PROP_RGBA_SIZE) == NULL)
-				qn_set_prop(QG_PROP_RGBA_SIZE, "5650");
-			if (qn_get_prop(QG_PROP_STENCIL_SIZE) == NULL)
-				qn_set_prop(QG_PROP_STENCIL_SIZE, "0");
-		}
-		if (qn_get_prop(QG_PROP_DEPTH_SIZE) == NULL)
-			qn_set_prop(QG_PROP_DEPTH_SIZE, "16");
-	}
 
 	bool stub_created;
 	if (STUB != NULL)
