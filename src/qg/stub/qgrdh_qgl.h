@@ -8,7 +8,6 @@
 #include "qg/qg_stub.h"
 #if defined _QN_EMSCRIPTEN_ || defined _QN_MOBILE_
 #define ES_LINK_STATIC	1
-#define 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES3/gl3.h>

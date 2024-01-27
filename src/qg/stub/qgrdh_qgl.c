@@ -7,7 +7,7 @@
 #if defined USE_GL
 #include "qgrdh_qgl.h"
 #include <qs_supp.h>
-#include <limits.h>
+#include <ctype.h>
 
 //////////////////////////////////////////////////////////////////////////
 // 오픈GL 컨피그 + 도움꾼
@@ -16,6 +16,10 @@
 void qgl_default_config(QglConfig* config, QgFlag flags, QgFeature features)
 {
 	config->handle = NULL;
+#ifdef _QN_EMSCRIPTEN_
+	config->ver_major = 3;
+	config->ver_minor = 0;
+#else
 	if (QN_TMASK(features, QGRENDERER_OPENGL))
 	{
 		config->ver_major = qn_get_prop_int(QG_PROP_DRIVER_MAJOR, 4, 2, 4);
@@ -26,6 +30,7 @@ void qgl_default_config(QglConfig* config, QgFlag flags, QgFeature features)
 		config->ver_major = qn_get_prop_int(QG_PROP_DRIVER_MAJOR, 3, 2, 3);
 		config->ver_minor = qn_get_prop_int(QG_PROP_DRIVER_MINOR, 2, 0, 9);
 	}
+#endif
 	config->red = 8;
 	config->green = 8;
 	config->blue = 8;

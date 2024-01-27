@@ -21,10 +21,6 @@
 //////////////////////////////////////////////////////////////////////////
 // EGL 확장
 
-int GLAD_EGL_EXT_platform_base = 0;
-int GLAD_EGL_EXT_platform_device = 0;
-int GLAD_EGL_EXT_platform_wayland = 0;
-int GLAD_EGL_EXT_platform_x11 = 0;
 int GLAD_EGL_EXT_present_opaque = 0;
 int GLAD_EGL_KHR_context_flush_control = 0;
 int GLAD_EGL_KHR_create_context = 0;
@@ -42,13 +38,11 @@ static int glad_egl_has_extension(const char *extensions, const char *ext) {
 }
 
 static int glad_egl_find_extensions_egl(EGLDisplay display) {
+#ifndef _QN_EMSCRIPTEN_
+	// EMSCRIPTEN에서는 확장이 없다
 	const char *extensions;
 	if (!glad_egl_get_extensions(display, &extensions)) return 0;
 
-	GLAD_EGL_EXT_platform_base = glad_egl_has_extension(extensions, "EGL_EXT_platform_base");
-	GLAD_EGL_EXT_platform_device = glad_egl_has_extension(extensions, "EGL_EXT_platform_device");
-	GLAD_EGL_EXT_platform_wayland = glad_egl_has_extension(extensions, "EGL_EXT_platform_wayland");
-	GLAD_EGL_EXT_platform_x11 = glad_egl_has_extension(extensions, "EGL_EXT_platform_x11");
 	GLAD_EGL_EXT_present_opaque = glad_egl_has_extension(extensions, "EGL_EXT_present_opaque");
 	GLAD_EGL_KHR_context_flush_control = glad_egl_has_extension(extensions, "EGL_KHR_context_flush_control");
 	GLAD_EGL_KHR_create_context = glad_egl_has_extension(extensions, "EGL_KHR_create_context");
@@ -69,7 +63,7 @@ static int glad_egl_find_extensions_egl(EGLDisplay display) {
 		brk = qn_strchr(extensions, ' ');
 	}
 #endif
-
+#endif
 	return 1;
 }
 
@@ -594,7 +588,7 @@ EGLSurface egl_create_surface(EGLDisplay display, EGLContext context, EGLConfig 
 	ATTR_ADD(EGL_NONE, EGL_NONE);
 #undef ATTR_ADD
 
-	EGLNativeWindowType native_window = stub_system_get_window();
+	EGLNativeWindowType native_window = (EGLNativeWindowType)stub_system_get_window();
 #ifdef _QN_ANDROID_
 	EGLint format;
 	eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format);
