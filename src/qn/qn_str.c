@@ -1281,6 +1281,26 @@ char* qn_strrchr(const char* p, int ch)
 }
 
 //
+const char* qn_strext(const char* p, const char* name, int separator)
+{
+	size_t len = strlen(name);
+	for (;;)
+	{
+		const char* t = strstr(p, name);
+		if (t == NULL)
+			break;
+		if (t == p || *(t - 1) == separator)
+		{
+			const char* e = t + len;
+			if (*e == '\0' || *e == separator)
+				return t;
+		}
+		p = t + len;
+	}
+	return NULL;
+}
+
+//
 char* qn_strmid(char* RESTRICT dest, const char* RESTRICT src, const size_t pos, const size_t len)
 {
 	const size_t size = strlen(src);

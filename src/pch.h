@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <time.h>
 #include <math.h>
+#include <limits.h>
 
 // Windows
 #ifdef _WIN32

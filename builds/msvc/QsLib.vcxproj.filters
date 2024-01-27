@@ -63,9 +63,6 @@
     <ClInclude Include="..\..\src\qg\qg_stub.h">
       <Filter>헤더 파일\qg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\qgrdh_es.h">
-      <Filter>헤더 파일\qg\stub</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\qg\stub\qgrdh_qgl.h">
       <Filter>헤더 파일\qg\stub</Filter>
     </ClInclude>
@@ -93,9 +90,6 @@
     <ClInclude Include="..\..\src\qg\stub\glad\gl.h">
       <Filter>헤더 파일\qg\stub\glad</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\glad\gles2.h">
-      <Filter>헤더 파일\qg\stub\glad</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\qn\sdefl\sdefl.h">
       <Filter>헤더 파일\qn\sdefl</Filter>
     </ClInclude>
@@ -108,10 +102,10 @@
     <ClInclude Include="..\..\src\qs_supp.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\stub\qgrdh_gl4.h">
-      <Filter>헤더 파일\qg\stub</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\qg\stub\glad\wglext.h">
+      <Filter>헤더 파일\qg\stub\glad</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\glad\wgl.h">
       <Filter>헤더 파일\qg\stub\glad</Filter>
     </ClInclude>
   </ItemGroup>
@@ -164,9 +158,6 @@
     <ClCompile Include="..\..\src\qg\qg_stub.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\stub\qgrdh_es.c">
-      <Filter>소스 파일\qg\stub</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\qg\stub\qgstub_emscripten.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
@@ -179,10 +170,10 @@
     <ClCompile Include="..\..\src\qg\stub\qgrdh_qgl.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\stub\qgrdh_gl4.c">
+    <ClCompile Include="..\..\src\qg\stub\glad_gl.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\stub\qgrdh_qglfunc.c">
+    <ClCompile Include="..\..\src\qg\stub\glad_egl.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
   </ItemGroup>

@@ -40,7 +40,7 @@ int main(void)
 
 	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA;
 	int features = QGFEATURE_NONE;
-	if (qg_open_rdh("GL", "RDH", 0, 0, 0, flags, features) == false)
+	if (qg_open_rdh(NULL, "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 
 	QgPropRender prop_render = QG_DEFAULT_PROP_RENDER;

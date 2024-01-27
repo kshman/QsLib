@@ -127,6 +127,7 @@ extern void stub_initialize(StubBase* stub, QgFlag flags);
 //////////////////////////////////////////////////////////////////////////
 // 렌더 디바이스
 
+// 렌더 노드 창고 번호
 typedef enum RENDERNODESHED
 {
 	RDHNODE_NONE,
@@ -255,11 +256,8 @@ extern RdhBase* qg_instance_rdh;
 #define rdh_set_flush(v)	(qg_instance_rdh->invokes.flush=(v))
 #define rdh_inc_ends()		(qg_instance_rdh->invokes.ends++)
 
-#ifdef USE_ES
-extern RdhBase* es_allocator(QgFlag flags, QgFeature features);			// OPENGL ES 할당
-#endif
 #ifdef USE_GL
-extern RdhBase* gl_allocator(QgFlag flags, QgFeature features);			// OPENGL 할당
+extern RdhBase* qgl_allocator(QgFlag flags, QgFeature features);			// OPENGL 할당 (+ES)
 #endif
 
 // 렌더러 리소스 제거
