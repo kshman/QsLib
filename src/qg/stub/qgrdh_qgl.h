@@ -6,13 +6,21 @@
 #pragma once
 
 #include "qg/qg_stub.h"
-#if defined _QN_EMSCRIPTEN_ || defined _QN_MOBILE_
-#define ES_LINK_STATIC	1
+#ifdef _QN_MOBILE_
+#define QGL_LINK_STATIC		1
+#endif
+#ifdef _QN_EMSCRIPTEN_
+#define QGL_EGL_NO_EXT		1
+#endif
+#if defined _QN_WINDOWS_ || (defined _QN_UNIX_ && !defined _QN_MOBILE_ && !defined USE_WAYLAND)
+#define QGL_MAYBE_GL_CORE	1
+#endif
+
+#ifdef QGL_LINK_STATIC
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES3/gl3.h>
 #else
-#define MAYBE_CORE_CONTEXT	1
 #include "glad/egl.h"
 #include "glad/gl.h"
 #endif
@@ -44,11 +52,11 @@ typedef struct QGLRENDER	QglRender;
 // 컨피그
 typedef struct QGLCONFIG
 {
-	void*				handle;
-	int					ver_major, ver_minor;
+	int					version;
 	int					red, green, blue, alpha;
 	int					depth, stencil, samples;
 	byte				float_buffer, no_error, robustness;
+	void*				handle;
 } QglConfig;
 QN_DECL_CTNR(QglCtnConfig, QglConfig);
 
@@ -153,9 +161,12 @@ struct QGLRDH
 		EGLContext			context;
 		EGLSurface			surface;
 	}					egl;
+#ifdef _QN_WINDOWS_
+	HGLRC				context;
+#endif
 
 	bool				disposed;
-	bool				by_egl;
+	bool				use_egl;
 };
 
 // 버퍼
@@ -197,13 +208,15 @@ struct QGLRENDER
 	QgStencil			stencil;
 };
 
-// 컨피그
-extern void qgl_default_config(QglConfig* config, QgFlag flags, QgFeature features);
-extern const QglConfig* qgl_detect_config(const QglConfig* wanted, const QglCtnConfig* configs);
+// 버전 찾기
+#ifndef _QN_EMSCRIPTEN_
+extern int qgl_get_opengl_version(bool is_core, int i);
+extern int qgl_index_of_opengl_version(bool is_core, int v);
+#endif
 
 // EGL
-extern EGLDisplay egl_initialize(const QglConfig* wanted_config);
-extern EGLContext egl_create_context(EGLDisplay display, const QglConfig* wanted_config, QglConfig* final_config, QgFlag flags);
-extern EGLSurface egl_create_surface(EGLDisplay display, EGLContext context, EGLConfig config, int visual_id, QgFlag flags);
-extern bool egl_make_current(EGLDisplay display, EGLSurface surface, EGLContext context);
-extern void egl_dispose(EGLDisplay display, EGLSurface surface, EGLContext context);
+extern EGLDisplay egl_initialize(_In_ const QglConfig* wanted_config);
+extern EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wanted_config, _Out_ QglConfig* config, _In_ QgFlag flags, _In_ bool isCore);
+extern EGLSurface egl_create_surface(_In_ EGLDisplay display, _In_ EGLContext context, _In_ EGLConfig config, _In_ int visual_id, _In_ QgFlag flags);
+extern bool egl_make_current(_In_ EGLDisplay display, _In_ EGLSurface surface, _In_ EGLContext context, _In_ bool isCore);
+extern void egl_dispose(_In_ EGLDisplay display, _In_ EGLSurface surface, _In_ EGLContext context);

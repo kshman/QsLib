@@ -88,15 +88,17 @@
 #ifdef __linux__
 #define _QN_LINUX_			1
 #endif
-#ifdef __android__
-#define _QN_ANDROID_		1
-#define _QN_MOBILE_			1
-#endif
 #ifdef __EMSCRIPTEN__
 #define _QN_EMSCRIPTEN_		1
 #endif
+#ifdef __android__
+#define _QN_ANDROID_		1
+#endif
 #if defined _WIN64 || defined _M_AMD64 || defined _M_X64 || defined __LP64__ || defined __amd64__ || defined __x86_64__ || defined __aarch64__
 #define _QN_64_				1
+#endif
+#if defined _QN_EMSCRIPTEN_ || defined _QN_ANDROID_
+#define _QN_MOBILE_			1
 #endif
 
 // c standard specific
