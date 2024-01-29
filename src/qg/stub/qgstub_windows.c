@@ -155,11 +155,9 @@ typedef struct WINDOWSSTUB
 
 	HINSTANCE			instance;
 	HWND				hwnd;
-	HWND				dummy_hwnd;
 	HDC					hdc;
 
 	wchar				class_name[64];
-	wchar				dummy_class_name[64];
 	DWORD				window_style;
 
 	RECT				window_bound;
@@ -174,8 +172,7 @@ typedef struct WINDOWSSTUB
 	int					imcs;
 	int					high_surrogate;
 
-	HDEVNOTIFY			hdn_hid;
-
+	HDEVNOTIFY			hdn_controller;
 	int					deadzone_min;
 	int					deadzone_max;
 
@@ -185,7 +182,6 @@ typedef struct WINDOWSSTUB
 	QimMask				mouse_pending;
 
 	bool				class_registered;
-	bool				dummy_class_registered;
 	bool				clear_background;
 	bool				enter_movesize;
 	bool				mouse_tracked;
@@ -234,44 +230,6 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	{
 		qn_debug_outputs(true, "WINDOWS STUB", "cannot detect any display");
 		return false;
-	}
-
-	// 더미 윈도우
-	if (wStub.dummy_class_registered == false)
-	{
-		qn_snwprintf(wStub.dummy_class_name, QN_COUNTOF(wStub.dummy_class_name), L"qs_dummy_%llu", qn_now());
-		WNDCLASSEX dummy_wc = { sizeof(WNDCLASSEX) };
-		dummy_wc.lpfnWndProc = windows_dummy_proc;
-		dummy_wc.hInstance = wStub.instance;
-		dummy_wc.lpszClassName = wStub.dummy_class_name;
-		if (RegisterClassEx(&dummy_wc) == FALSE)
-		{
-			qn_debug_outputs(true, "WINDOWS STUB", "support window class registration failed");
-			return false;
-		}
-
-		wStub.dummy_hwnd = CreateWindowEx(WS_EX_OVERLAPPEDWINDOW, wStub.dummy_class_name, L"QS DUMMY",
-			WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 1, 1, NULL, NULL, wStub.instance, NULL);
-		if (wStub.dummy_hwnd == NULL)
-		{
-			qn_debug_outputs(true, "WINDOWS STUB", "support window creation failed");
-			return false;
-		}
-		ShowWindow(wStub.dummy_hwnd, SW_HIDE);
-
-		DEV_BROADCAST_DEVICEINTERFACE bdi = { sizeof(DEV_BROADCAST_DEVICEINTERFACE) };
-		bdi.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
-		bdi.dbcc_classguid = GUID_DEVINTERFACE_HID;
-		wStub.hdn_hid = RegisterDeviceNotification(wStub.dummy_hwnd, &bdi, DEVICE_NOTIFY_WINDOW_HANDLE);
-
-		MSG dummy_msg;
-		while (PeekMessage(&dummy_msg, wStub.dummy_hwnd, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&dummy_msg);
-			DispatchMessage(&dummy_msg);
-		}
-
-		wStub.dummy_class_registered = true;
 	}
 
 	// 윈도우 클래스
@@ -440,6 +398,15 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 		wStub.window_style = (DWORD)GetWindowLong(wStub.hwnd, GWL_STYLE);
 	}
 
+	// 컨트롤러 연결 알림
+	DEV_BROADCAST_DEVICEINTERFACE filter =
+	{
+		.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE),
+		.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE,
+		.dbcc_classguid = GUID_DEVINTERFACE_HID,
+	};
+	wStub.hdn_controller = RegisterDeviceNotification(wStub.hwnd, &filter, DEVICE_NOTIFY_WINDOW_HANDLE);
+
 	// 렌더러가 없다면 표시하고, 있으면 렌더러 만들고 stub_system_actuate()를 호출할 것
 	if (QN_TMASK(features, 0xFF000000) == false)
 		stub_system_actuate();
@@ -460,12 +427,8 @@ void stub_system_finalize(void)
 	if (QN_TMASK(wStub.base.features, QGFEATURE_DISABLE_ACS))
 		stub_system_disable_acs(false);
 
-	if (wStub.hdn_hid != NULL)
-	{
-		if (wStub.hdn_hid != NULL)
-			UnregisterDeviceNotification(wStub.hdn_hid);
-		DestroyWindow(wStub.dummy_hwnd);
-	}
+	if (wStub.hdn_controller != NULL)
+		UnregisterDeviceNotification(wStub.hdn_controller);
 
 	if (wStub.hwnd != NULL)
 	{
@@ -481,11 +444,6 @@ void stub_system_finalize(void)
 	if (wStub.mouse_cursor != NULL)
 		DestroyCursor(wStub.mouse_cursor);
 
-	if (wStub.dummy_class_registered)
-	{
-		wStub.dummy_class_registered = false;
-		UnregisterClass(wStub.dummy_class_name, wStub.instance);
-	}
 	if (wStub.class_registered)
 	{
 		wStub.class_registered = false;
@@ -701,9 +659,15 @@ void* stub_system_get_display(void)
 }
 
 //
-void* stub_system_get_dummy_window(void)
+void* stub_system_get_instance(void)
 {
-	return (void*)wStub.dummy_hwnd;
+	return (void*)wStub.instance;
+}
+
+//
+const wchar* stub_system_get_class_name(void)
+{
+	return wStub.class_name;
 }
 #pragma endregion 시스템 함수
 
@@ -1179,43 +1143,6 @@ static void windows_mesg_active(const bool focus)
 	}
 }
 
-// 더미 윈도우 프로시저
-static LRESULT CALLBACK windows_dummy_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
-{
-	switch (mesg)
-	{
-		case WM_DISPLAYCHANGE:
-			windows_detect_displays();
-			break;
-		case  WM_DEVICECHANGE:
-		{
-			if (wp == DBT_DEVICEARRIVAL)
-			{
-				const DEV_BROADCAST_HDR* hdr = (const DEV_BROADCAST_HDR*)lp;
-				if (hdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
-				{
-					const DEV_BROADCAST_DEVICEINTERFACE* di = (const DEV_BROADCAST_DEVICEINTERFACE*)lp;
-					if (memcmp(&di->dbcc_classguid, &GUID_DEVINTERFACE_MONITOR, sizeof(GUID)) == 0)
-						windows_detect_displays();
-				}
-			}
-			else if (wp == DBT_DEVICEREMOVECOMPLETE)
-			{
-				const DEV_BROADCAST_HDR* hdr = (const DEV_BROADCAST_HDR*)lp;
-				if (hdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
-				{
-					const DEV_BROADCAST_DEVICEINTERFACE* di = (const DEV_BROADCAST_DEVICEINTERFACE*)lp;
-					if (memcmp(&di->dbcc_classguid, &GUID_DEVINTERFACE_MONITOR, sizeof(GUID)) == 0)
-						windows_detect_displays();
-				}
-			}
-		} break;
-		default:
-			break;
-	}
-	return DefWindowProc(hwnd, mesg, wp, lp);
-}
-
 // 윈도우 메시지 프로시저
 static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp)
 {
@@ -1460,6 +1387,10 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 			break;
 #endif
 
+		case WM_DISPLAYCHANGE:
+			windows_detect_displays();
+			break;
+
 		case WM_NCCALCSIZE:
 			break;
 
@@ -1538,6 +1469,39 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 		case WM_CAPTURECHANGED:
 			// 타이틀 안 눌림
 			break;
+
+		case WM_DEVICECHANGE:
+		{
+			if (wp == DBT_DEVICEARRIVAL)
+			{
+				const DEV_BROADCAST_HDR* hdr = (const DEV_BROADCAST_HDR*)lp;
+				if (hdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
+				{
+					const DEV_BROADCAST_DEVICEINTERFACE* di = (const DEV_BROADCAST_DEVICEINTERFACE*)lp;
+					
+					if (memcmp(&di->dbcc_classguid, &GUID_DEVINTERFACE_HID, sizeof(GUID))==0)
+					{
+						// 컨트롤러
+					}
+					/*else if (memcmp(&di->dbcc_classguid, &GUID_DEVINTERFACE_MONITOR, sizeof(GUID)) == 0)
+						windows_detect_displays();*/
+				}
+			}
+			else if (wp == DBT_DEVICEREMOVECOMPLETE)
+			{
+				const DEV_BROADCAST_HDR* hdr = (const DEV_BROADCAST_HDR*)lp;
+				if (hdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
+				{
+					const DEV_BROADCAST_DEVICEINTERFACE* di = (const DEV_BROADCAST_DEVICEINTERFACE*)lp;
+					if (memcmp(&di->dbcc_classguid, &GUID_DEVINTERFACE_HID, sizeof(GUID)) == 0)
+					{
+						// 컨트롤러
+					}
+					/*else if (memcmp(&di->dbcc_classguid, &GUID_DEVINTERFACE_MONITOR, sizeof(GUID)) == 0)
+						windows_detect_displays();*/
+				}
+			}
+		} break;
 
 		case WM_ENTERSIZEMOVE:
 			wStub.enter_movesize = true;

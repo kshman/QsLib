@@ -190,6 +190,7 @@
     <ClInclude Include="..\..\inc\qs_math.h" />
     <ClInclude Include="..\..\inc\qs_kmc.h" />
     <ClInclude Include="..\..\inc\qs_qg.h" />
+    <ClInclude Include="..\..\inc\salieri.h" />
     <ClInclude Include="..\..\src\pch.h" />
     <ClInclude Include="..\..\src\qg\qg_node.h" />
     <ClInclude Include="..\..\src\qg\stub\glad\wgl.h" />
@@ -216,8 +217,8 @@
     <ClCompile Include="..\..\src\qg\qg_rdh.c" />
     <ClCompile Include="..\..\src\qg\qg_stub.c" />
     <ClCompile Include="..\..\src\qg\stub\qgrdh_qgl.c" />
-    <ClCompile Include="..\..\src\qg\stub\glad_gl.c" />
-    <ClCompile Include="..\..\src\qg\stub\glad_egl.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgrdh_qgl_glad.c" />
+    <ClCompile Include="..\..\src\qg\stub\qgrdh_qgl_api.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_windows.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_wayland.c" />
     <ClCompile Include="..\..\src\qg\stub\qgstub_emscripten.c" />

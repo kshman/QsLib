@@ -25,22 +25,23 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 		const char* name;
 		const char* alias;
 		RdhBase* (*allocator)(QgFlag, QgFeature);
+		QgFlag flag;
 		QgFeature feature;
 	};
 	static struct rdh_renderer renderers[] =
 	{
 #if defined USE_GL
-		{ "GL", "OPENGL", qgl_allocator, QGRENDERER_OPENGL },
-		{ "ES", "GLES", qgl_allocator, QGRENDERER_GLES },
+		{ "GL", "OPENGL", qgl_allocator, QGSPECIFIC_CORE, QGRENDERER_OPENGL },
+		{ "ES", "OPENGLES", qgl_allocator, QGFLAG_NONE, QGRENDERER_OPENGL },
 #endif
 #if defined USE_GL
-		{ NULL, NULL, qgl_allocator, QGRENDERER_GLES },
+		{ NULL, NULL, qgl_allocator, QGFLAG_NONE, QGRENDERER_OPENGL },
 #else
 		{ NULL, NULL, NULL, 0 },
 #endif
 	};
 	struct rdh_renderer* renderer = &renderers[QN_COUNTOF(renderers) - 1];
-	if (driver != NULL)
+	if (driver != NULL && *driver != '\0')
 	{
 		for (size_t i = 0; i < QN_COUNTOF(renderers) - 1; i++)
 			if (qn_strieqv(renderers[i].name, driver) || qn_strieqv(renderers[i].alias, driver))
@@ -51,6 +52,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	}
 
 	VAR_CHK_IF_COND(renderer->allocator == NULL, "no valid renderer found", false);
+	flags |= renderer->flag;
 	features |= renderer->feature;
 
 	bool stub_created;

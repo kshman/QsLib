@@ -23,7 +23,6 @@ QN_EXTC_BEGIN
 #define QG_PROP_WINDOWS_SMALLICON		"QG_PROP_WINDOWS_SMALLICON"
 #define QG_PROP_DRIVER_MAJOR			"QG_PROP_DRIVER_MAJOR"
 #define QG_PROP_DRIVER_MINOR			"QG_PROP_DRIVER_MINOR"
-#define QG_PROP_DRIVER_PROFILE			"QG_PROP_DRIVER_PROFILE"
 #define QG_PROP_CAPABILITY				"QG_PROP_CAPABILITY"
 #define QG_PROP_RGBA_SIZE				"QG_PROP_RGBA_SIZE"
 #define QG_PROP_DEPTH_SIZE				"QG_PROP_DEPTH_SIZE"
@@ -326,14 +325,11 @@ typedef enum QGFLAG
 	QGFLAG_TEXT = QN_BIT(5),								/// @brief 텍스트 입력을 받을 수 있음
 	QGFLAG_DPISCALE = QN_BIT(6),							/// @brief DPI 스케일
 	QGFLAG_MAXIMIZE = QN_BIT(7),							/// @brief 시작할 때 최대화
-	// 렌더러 플래그 (16~29)
-	QGFLAG_DEBUG = QN_BIT(16),								/// @brief 디버그 모드
-	QGFLAG_VSYNC = QN_BIT(18),								/// @brief VSYNC 켜기
-	QGFLAG_MSAA = QN_BIT(19),								/// @brief 멀티 샘플링 사용
-	QGFLAG_SRGB = QN_BIT(20),								/// @brief sRGB 모드
-	QGFLAG_STEREO = QN_BIT(21),								/// @brief 스테레오 모드
-	QGFLAG_TRANSPARENT = QN_BIT(22),						/// @brief 투명한 윈도우
+	// 렌더러 플래그 (16~28)
+	QGFLAG_VSYNC = QN_BIT(16),								/// @brief VSYNC 켜기
+	QGFLAG_MSAA = QN_BIT(17),								/// @brief 멀티 샘플링 사용
 	// 사용자가 설정할 수 없는 플래그
+	QGSPECIFIC_CORE = QN_BIT(29),							/// @brief 코어 프로파일
 	QGSPECIFIC_RDHSTUB = QN_BIT(30),						/// @brief 스터브 만들었음
 	QGSPECIFIC_VIRTUAL = QN_BIT(31),						/// @brief 가상 스터브 사용
 } QgFlag;
@@ -352,7 +348,6 @@ typedef enum QGFEATURE
 	QGFEATURE_REMOVE_EVENTS = QN_BIT(6),					/// @brief 루프 때 사용하지 않은 이벤트를 삭제한다
 	QGFEATURE_ENABLE_ASPECT = QN_BIT(7),
 	// 렌더러 종류 (24~31)
-	QGRENDERER_GLES = QN_BIT(29),
 	QGRENDERER_OPENGL = QN_BIT(30),
 	QGRENDERER_DIRECTX = QN_BIT(31),
 } QgFeature;

@@ -178,10 +178,10 @@ extern "C" {
 
 #define GLAD_GENERATOR_VERSION "2.0.4"
 
-typedef void (*GLADapiproc)(void);
+typedef void (GLAD_API_PTR *GLADapiproc)(void);
 
-typedef GLADapiproc (*GLADloadfunc)(const char *name);
-typedef GLADapiproc (*GLADuserptrloadfunc)(void *userptr, const char *name);
+typedef GLADapiproc(GLAD_API_PTR *GLADloadfunc)(const char *name);
+typedef GLADapiproc(GLAD_API_PTR *GLADuserptrloadfunc)(void *userptr, const char *name);
 
 typedef void (*GLADprecallback)(const char *name, GLADapiproc apiproc, int len_args, ...);
 typedef void (*GLADpostcallback)(void *ret, const char *name, GLADapiproc apiproc, int len_args, ...);
@@ -4141,18 +4141,6 @@ GLAD_API_CALL PFNGLPRIMITIVEBOUNDINGBOXPROC glad_glPrimitiveBoundingBox;
 #define glPrimitiveBoundingBox glad_glPrimitiveBoundingBox
 GLAD_API_CALL PFNGLPUSHDEBUGGROUPKHRPROC glad_glPushDebugGroupKHR;
 #define glPushDebugGroupKHR glad_glPushDebugGroupKHR
-
-
-
-
-
-GLAD_API_CALL int gladLoadGLUserPtr( GLADuserptrloadfunc load, void *userptr);
-GLAD_API_CALL int gladLoadGL( GLADloadfunc load);
-
-GLAD_API_CALL int gladLoadGLES2UserPtr( GLADuserptrloadfunc load, void *userptr);
-GLAD_API_CALL int gladLoadGLES2( GLADloadfunc load);
-
-
 
 #ifdef __cplusplus
 }

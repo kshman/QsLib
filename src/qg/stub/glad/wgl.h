@@ -19,10 +19,10 @@
  *  - ON_DEMAND = False
  *
  * Commandline:
- *    --api='wgl=1.0' --extensions='WGL_ARB_create_context,WGL_ARB_create_context_robustness,WGL_ARB_extensions_string,WGL_ARB_multisample,WGL_ARB_pixel_format,WGL_EXT_colorspace,WGL_EXT_extensions_string,WGL_EXT_swap_control' c
+ *    --api='wgl=1.0' --extensions='WGL_ARB_create_context,WGL_ARB_create_context_robustness,WGL_ARB_extensions_string,WGL_ARB_multisample,WGL_ARB_pixel_format,WGL_ARB_pixel_format_float,WGL_EXT_colorspace,WGL_EXT_create_context_es2_profile,WGL_EXT_create_context_es_profile,WGL_EXT_depth_float,WGL_EXT_extensions_string,WGL_EXT_swap_control,WGL_NV_float_buffer' c --header-only
  *
  * Online:
- *    http://glad.sh/#api=wgl%3D1.0&extensions=WGL_ARB_create_context%2CWGL_ARB_create_context_robustness%2CWGL_ARB_extensions_string%2CWGL_ARB_multisample%2CWGL_ARB_pixel_format%2CWGL_EXT_colorspace%2CWGL_EXT_extensions_string%2CWGL_EXT_swap_control&generator=c&options=
+ *    http://glad.sh/#api=wgl%3D1.0&extensions=WGL_ARB_create_context%2CWGL_ARB_create_context_robustness%2CWGL_ARB_extensions_string%2CWGL_ARB_multisample%2CWGL_ARB_pixel_format%2CWGL_ARB_pixel_format_float%2CWGL_EXT_colorspace%2CWGL_EXT_create_context_es2_profile%2CWGL_EXT_create_context_es_profile%2CWGL_EXT_depth_float%2CWGL_EXT_extensions_string%2CWGL_EXT_swap_control%2CWGL_NV_float_buffer&generator=c&options=HEADER_ONLY
  *
  */
 
@@ -144,10 +144,10 @@ extern "C" {
 
 #define GLAD_GENERATOR_VERSION "2.0.4"
 
-typedef void (*GLADapiproc)(void);
+typedef void (GLAD_API_PTR *GLADapiproc)(void);
 
-typedef GLADapiproc (*GLADloadfunc)(const char *name);
-typedef GLADapiproc (*GLADuserptrloadfunc)(void *userptr, const char *name);
+typedef GLADapiproc(GLAD_API_PTR *GLADloadfunc)(const char *name);
+typedef GLADapiproc(GLAD_API_PTR *GLADuserptrloadfunc)(void *userptr, const char *name);
 
 typedef void (*GLADprecallback)(const char *name, GLADapiproc apiproc, int len_args, ...);
 typedef void (*GLADpostcallback)(void *ret, const char *name, GLADapiproc apiproc, int len_args, ...);
@@ -155,6 +155,8 @@ typedef void (*GLADpostcallback)(void *ret, const char *name, GLADapiproc apipro
 #endif /* GLAD_PLATFORM_H_ */
 
 #define ERROR_INVALID_VERSION_ARB 0x2095
+#define ERROR_INVALID_PROFILE_ARB 0x2096
+#define ERROR_INCOMPATIBLE_DEVICE_CONTEXTS_ARB 0x2054
 #define WGL_ACCELERATION_ARB 0x2003
 #define WGL_ACCUM_ALPHA_BITS_ARB 0x2021
 #define WGL_ACCUM_BITS_ARB 0x201D
@@ -164,6 +166,10 @@ typedef void (*GLADpostcallback)(void *ret, const char *name, GLADapiproc apipro
 #define WGL_ALPHA_BITS_ARB 0x201B
 #define WGL_ALPHA_SHIFT_ARB 0x201C
 #define WGL_AUX_BUFFERS_ARB 0x2024
+#define WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RGBA_NV 0x20B4
+#define WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RGB_NV 0x20B3
+#define WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RG_NV 0x20B2
+#define WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_R_NV 0x20B1
 #define WGL_BLUE_BITS_ARB 0x2019
 #define WGL_BLUE_SHIFT_ARB 0x201A
 #define WGL_COLORSPACE_EXT 0x309D
@@ -171,6 +177,10 @@ typedef void (*GLADpostcallback)(void *ret, const char *name, GLADapiproc apipro
 #define WGL_COLORSPACE_SRGB_EXT 0x3089
 #define WGL_COLOR_BITS_ARB 0x2014
 #define WGL_CONTEXT_DEBUG_BIT_ARB 0x00000001
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
+#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB 0x00000002
+#define WGL_CONTEXT_ES2_PROFILE_BIT_EXT 0x00000004
+#define WGL_CONTEXT_ES_PROFILE_BIT_EXT 0x00000004
 #define WGL_CONTEXT_FLAGS_ARB 0x2094
 #define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB 0x00000002
 #define WGL_CONTEXT_LAYER_PLANE_ARB 0x2093
@@ -178,10 +188,14 @@ typedef void (*GLADpostcallback)(void *ret, const char *name, GLADapiproc apipro
 #define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
 #define WGL_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB 0x8256
 #define WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB 0x00000004
+#define WGL_CONTEXT_OPENGL_NO_ERROR_ARB 0x31B3
+#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
 #define WGL_DEPTH_BITS_ARB 0x2022
+#define WGL_DEPTH_FLOAT_EXT 0x2040
 #define WGL_DOUBLE_BUFFER_ARB 0x2011
 #define WGL_DRAW_TO_BITMAP_ARB 0x2002
 #define WGL_DRAW_TO_WINDOW_ARB 0x2001
+#define WGL_FLOAT_COMPONENTS_NV 0x20B0
 #define WGL_FONT_LINES 0
 #define WGL_FONT_POLYGONS 1
 #define WGL_FULL_ACCELERATION_ARB 0x2027
@@ -244,6 +258,10 @@ typedef void (*GLADpostcallback)(void *ret, const char *name, GLADapiproc apipro
 #define WGL_SWAP_UNDERLAY7 0x00400000
 #define WGL_SWAP_UNDERLAY8 0x00800000
 #define WGL_SWAP_UNDERLAY9 0x01000000
+#define WGL_TEXTURE_FLOAT_RGBA_NV 0x20B8
+#define WGL_TEXTURE_FLOAT_RGB_NV 0x20B7
+#define WGL_TEXTURE_FLOAT_RG_NV 0x20B6
+#define WGL_TEXTURE_FLOAT_R_NV 0x20B5
 #define WGL_TRANSPARENT_ALPHA_VALUE_ARB 0x203A
 #define WGL_TRANSPARENT_ARB 0x200A
 #define WGL_TRANSPARENT_BLUE_VALUE_ARB 0x2039
@@ -252,6 +270,7 @@ typedef void (*GLADpostcallback)(void *ret, const char *name, GLADapiproc apipro
 #define WGL_TRANSPARENT_RED_VALUE_ARB 0x2037
 #define WGL_TYPE_COLORINDEX_ARB 0x202C
 #define WGL_TYPE_RGBA_ARB 0x202B
+#define WGL_TYPE_RGBA_FLOAT_ARB 0x21A0
 
 
 
@@ -314,12 +333,24 @@ GLAD_API_CALL int GLAD_WGL_ARB_extensions_string;
 GLAD_API_CALL int GLAD_WGL_ARB_multisample;
 #define WGL_ARB_pixel_format 1
 GLAD_API_CALL int GLAD_WGL_ARB_pixel_format;
+#define WGL_ARB_pixel_format_float 1
+GLAD_API_CALL int GLAD_WGL_ARB_pixel_format_float;
 #define WGL_EXT_colorspace 1
 GLAD_API_CALL int GLAD_WGL_EXT_colorspace;
+#define WGL_EXT_create_context_es2_profile 1
+GLAD_API_CALL int GLAD_WGL_EXT_create_context_es2_profile;
+#define WGL_EXT_create_context_es_profile 1
+GLAD_API_CALL int GLAD_WGL_EXT_create_context_es_profile;
+#define WGL_EXT_depth_float 1
+GLAD_API_CALL int GLAD_WGL_EXT_depth_float;
 #define WGL_EXT_extensions_string 1
 GLAD_API_CALL int GLAD_WGL_EXT_extensions_string;
 #define WGL_EXT_swap_control 1
 GLAD_API_CALL int GLAD_WGL_EXT_swap_control;
+#define WGL_NV_float_buffer 1
+GLAD_API_CALL int GLAD_WGL_NV_float_buffer;
+#define WGL_ARB_create_context_no_error 1
+GLAD_API_CALL int GLAD_WGL_ARB_create_context_no_error;
 
 
 typedef int (GLAD_API_PTR *PFNCHOOSEPIXELFORMATPROC)(HDC hDc, const PIXELFORMATDESCRIPTOR * pPfd);
@@ -357,6 +388,19 @@ typedef BOOL (GLAD_API_PTR *PFNWGLUSEFONTOUTLINESPROC)(HDC hDC, DWORD first, DWO
 typedef BOOL (GLAD_API_PTR *PFNWGLUSEFONTOUTLINESAPROC)(HDC hDC, DWORD first, DWORD count, DWORD listBase, FLOAT deviation, FLOAT extrusion, int format, LPGLYPHMETRICSFLOAT lpgmf);
 typedef BOOL (GLAD_API_PTR *PFNWGLUSEFONTOUTLINESWPROC)(HDC hDC, DWORD first, DWORD count, DWORD listBase, FLOAT deviation, FLOAT extrusion, int format, LPGLYPHMETRICSFLOAT lpgmf);
 
+
+GLAD_API_CALL PFNWGLGETPROCADDRESSPROC glad_wglGetProcAddress;
+#define wglGetProcAddress glad_wglGetProcAddress
+GLAD_API_CALL PFNWGLCREATECONTEXTPROC glad_wglCreateContext;
+#define wglCreateContext glad_wglCreateContext
+GLAD_API_CALL PFNWGLDELETECONTEXTPROC glad_wglDeleteContext;
+#define wglDeleteContext glad_wglDeleteContext
+GLAD_API_CALL PFNWGLMAKECURRENTPROC glad_wglMakeCurrent;
+#define wglMakeCurrent glad_wglMakeCurrent
+GLAD_API_CALL PFNWGLGETCURRENTDCPROC glad_wglGetCurrentDC;
+#define wglGetCurrentDC glad_wglGetCurrentDC
+GLAD_API_CALL PFNWGLGETCURRENTCONTEXTPROC glad_wglGetCurrentContext;
+#define wglGetCurrentContext glad_wglGetCurrentContext
 GLAD_API_CALL PFNWGLCHOOSEPIXELFORMATARBPROC glad_wglChoosePixelFormatARB;
 #define wglChoosePixelFormatARB glad_wglChoosePixelFormatARB
 GLAD_API_CALL PFNWGLCREATECONTEXTATTRIBSARBPROC glad_wglCreateContextAttribsARB;
@@ -373,14 +417,6 @@ GLAD_API_CALL PFNWGLGETSWAPINTERVALEXTPROC glad_wglGetSwapIntervalEXT;
 #define wglGetSwapIntervalEXT glad_wglGetSwapIntervalEXT
 GLAD_API_CALL PFNWGLSWAPINTERVALEXTPROC glad_wglSwapIntervalEXT;
 #define wglSwapIntervalEXT glad_wglSwapIntervalEXT
-
-
-
-
-
-GLAD_API_CALL int gladLoadWGLUserPtr(HDC hdc, GLADuserptrloadfunc load, void *userptr);
-GLAD_API_CALL int gladLoadWGL(HDC hdc, GLADloadfunc load);
-
 
 #ifdef __cplusplus
 }

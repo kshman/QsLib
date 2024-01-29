@@ -181,9 +181,14 @@ QN_DECL_CTNR(QnAnyCtn, any_t);								/// @brief any_t 배열
 		}\
 	}QN_STMT_END
 
+#ifdef _MSC_VER
 #define qn_ctnr_foreach(p, index)\
 	size_t QN_CONCAT(count,__LINE__) = (p)->COUNT;\
 	for ((index)=0;(index)<QN_CONCAT(count,__LINE__);(index)++)
+#else
+#define qn_ctnr_foreach(p, index)\
+	for ((index)=0;(index)<(p)->COUNT;(index)++)
+#endif
 #define qn_ctnr_foreach_1(p,func1)\
 	QN_STMT_BEGIN{\
 		size_t __i, __cnt=(p)->COUNT;\

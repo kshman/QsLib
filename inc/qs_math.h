@@ -410,7 +410,7 @@ INLINE float qm_lerpf(float left, float right, float scale)
 	return left + scale * (right - left);
 }
 
-/// @brief 실수를 정수부만 뽑기
+/// @brief 실수에서 실수부만 뽑기
 INLINE float qm_fractf(float f)
 {
 	return f - floorf(f);

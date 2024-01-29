@@ -142,10 +142,10 @@ extern "C" {
 
 #define GLAD_GENERATOR_VERSION "2.0.4"
 
-typedef void (*GLADapiproc)(void);
+typedef void (GLAD_API_PTR *GLADapiproc)(void);
 
-typedef GLADapiproc (*GLADloadfunc)(const char *name);
-typedef GLADapiproc (*GLADuserptrloadfunc)(void *userptr, const char *name);
+typedef GLADapiproc (GLAD_API_PTR *GLADloadfunc)(const char *name);
+typedef GLADapiproc (GLAD_API_PTR *GLADuserptrloadfunc)(void *userptr, const char *name);
 
 typedef void (*GLADprecallback)(const char *name, GLADapiproc apiproc, int len_args, ...);
 typedef void (*GLADpostcallback)(void *ret, const char *name, GLADapiproc apiproc, int len_args, ...);
@@ -869,7 +869,7 @@ typedef void *EGLSurface;
 typedef void *EGLSync;
 typedef void *EGLSyncKHR;
 typedef void *EGLSyncNV;
-typedef void (*__eglMustCastToProperFunctionPointerType)(void);
+typedef void (GLAD_API_PTR *__eglMustCastToProperFunctionPointerType)(void);
 typedef khronos_utime_nanoseconds_t EGLTimeKHR;
 typedef khronos_utime_nanoseconds_t EGLTime;
 typedef khronos_utime_nanoseconds_t EGLTimeNV;
