@@ -38,9 +38,7 @@ static short opengles_versions[] =
 	/* 3.0 */ 300,
 	/* 2.0 */ 200,
 };
-#endif // _QN_EMSCRIPTEN_
 
-#ifndef _QN_EMSCRIPTEN_
 // 오픈 GL 버전 얻기
 int qgl_get_opengl_version(bool is_core, int i)
 {
@@ -147,6 +145,7 @@ static void qgl_default_config(QglConfig* config, QgFlag flags, bool is_core)
 	config->robustness = 0;
 	config->handle = NULL;
 
+#ifndef QGL_EGL_NO_EXT
 	prop = qn_get_prop(QG_PROP_CAPABILITY);
 	if (prop != NULL)
 	{
@@ -173,6 +172,7 @@ static void qgl_default_config(QglConfig* config, QgFlag flags, bool is_core)
 			prop = qn_strchr(brk + 1, ';');
 		}
 	}
+#endif
 }
 
 // 문자열 버전에서 숫자만 mnn 방식으로
@@ -285,6 +285,7 @@ qs_name_vt(RDHBASE) vt_qgl_rdh =
 	/* draw_indexed */	qgl_rdh_draw_indexed,
 };
 
+#ifdef QGL_MAYBE_GL_CORE
 //
 static const char* qgl_initialize(QglRdh* self, QgFlag flags, QglConfig* config, bool isCore)
 {
@@ -311,6 +312,7 @@ static const char* qgl_initialize(QglRdh* self, QgFlag flags, QglConfig* config,
 
 	return name;
 }
+#endif
 
 //
 static const char* qgl_initialize_egl(QglRdh* self, QgFlag flags, QglConfig* config, bool isCore)
@@ -576,13 +578,13 @@ static void qgl_rdh_clear(QgClear flags)
 			glDepthMask(GL_TRUE);
 			glDepthFunc(GL_LESS);
 		}
-#ifndef QGL_MAYBE_GL_CORE
-		glClearDepthf(1.0f);
-#else
+#ifdef QGL_MAYBE_GL_CORE
 		if (QGL_RDH->use_egl || RDH_INFO->renderer_version >= 400)
 			glClearDepthf(1.0f);
 		else
 			glClearDepth(1.0f);
+#else
+		glClearDepthf(1.0f);
 #endif
 		cf |= GL_DEPTH_BUFFER_BIT;
 	}

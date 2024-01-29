@@ -153,6 +153,9 @@ static bool glad_load_egl_gles2(void)
 // EGL 오류 메시지 얻기
 static const char* egl_error_string(EGLint error)
 {
+#ifdef _QN_EMSCRIPTEN_
+	return qg_unknown_str(error, true);
+#else
 #define ERROR_CASE(x)		case x: return #x
 	static char unknown[32];
 	switch (error)
@@ -176,6 +179,7 @@ static const char* egl_error_string(EGLint error)
 			return qg_unknown_str(error, true);
 	}
 #undef ERROR_CASE
+#endif
 }
 
 // eglGetConfigAttrib 편하게 쓰자고 대리자
@@ -370,7 +374,9 @@ EGLDisplay egl_initialize(_In_ const QglConfig* wanted_config)
 		return EGL_NO_DISPLAY;
 	}
 
+#ifndef QGL_EGL_NO_EXT
 	glad_find_extensions_egl(display);
+#endif
 
 	return display;
 }
