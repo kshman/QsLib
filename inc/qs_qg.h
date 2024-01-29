@@ -326,12 +326,8 @@ typedef enum QGFLAG
 	QGFLAG_DPISCALE = QN_BIT(6),							/// @brief DPI 스케일
 	QGFLAG_MAXIMIZE = QN_BIT(7),							/// @brief 시작할 때 최대화
 	// 렌더러 플래그 (16~28)
-	QGFLAG_DEBUG = QN_BIT(16),								/// @brief 디버그 모드
-	QGFLAG_VSYNC = QN_BIT(18),								/// @brief VSYNC 켜기
-	QGFLAG_MSAA = QN_BIT(19),								/// @brief 멀티 샘플링 사용
-	QGFLAG_SRGB = QN_BIT(20),								/// @brief sRGB 모드
-	QGFLAG_STEREO = QN_BIT(21),								/// @brief 스테레오 모드
-	QGFLAG_TRANSPARENT = QN_BIT(22),						/// @brief 투명한 윈도우
+	QGFLAG_VSYNC = QN_BIT(16),								/// @brief VSYNC 켜기
+	QGFLAG_MSAA = QN_BIT(17),								/// @brief 멀티 샘플링 사용
 	// 사용자가 설정할 수 없는 플래그
 	QGSPECIFIC_CORE = QN_BIT(29),							/// @brief 코어 프로파일
 	QGSPECIFIC_RDHSTUB = QN_BIT(30),						/// @brief 스터브 만들었음

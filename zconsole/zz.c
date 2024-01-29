@@ -40,7 +40,7 @@ int main(void)
 
 	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA;
 	int features = QGFEATURE_NONE;
-	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
+	if (qg_open_rdh("es", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 
 	QgPropRender prop_render = QG_DEFAULT_PROP_RENDER;
@@ -66,9 +66,12 @@ int main(void)
 
 		if (qg_rdh_begin(true))
 		{
-			qg_rdh_set_render(render);
-			qg_rdh_set_vertex(QGLOS_1, buffer);
-			qg_rdh_draw(QGTPG_TRI, 3);
+			if (render)
+			{
+				qg_rdh_set_render(render);
+				qg_rdh_set_vertex(QGLOS_1, buffer);
+				qg_rdh_draw(QGTPG_TRI, 3);
+			}
 
 			qg_rdh_end(true);
 		}

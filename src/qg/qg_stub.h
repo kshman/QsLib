@@ -88,8 +88,12 @@ extern void stub_system_fullscreen(bool fullscreen);
 extern void* stub_system_get_window(void);
 // 시스템 디스플레이 핸들을 얻는다 (윈도우에서는 HDC)
 extern void* stub_system_get_display(void);
+// 시스템 인스턴스 핸들을 얻는다 (윈도우에서는 HINSTANCE)
+extern void* stub_system_get_instance(void);
 // 시스템 캔버스 이름을 얻는다 (EMSCRIPTEN)
 extern const char* stub_system_get_canvas(void);
+// 시스템 클래스 이름을 얻는다 (윈도우)
+extern const wchar* stub_system_get_class_name(void);
 
 // 내부적으로 마우스 눌림을 연산한다
 extern bool stub_track_mouse_click(QimButton button, QimTrack track);
@@ -292,5 +296,5 @@ extern const char* qg_layout_usage_to_str(const QgLayoutUsage usage);
 // 세이더 자동 상수 문자열로 변환
 extern const char* qg_shader_const_auto_to_str(const QgScAuto sca);
 // 알수 없음을 문자열로
-extern const char* qg_unknown_str(int value);
+extern const char* qg_unknown_str(int value, bool hex);
 

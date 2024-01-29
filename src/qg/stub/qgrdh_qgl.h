@@ -52,11 +52,12 @@ typedef struct QGLRENDER	QglRender;
 // 컨피그
 typedef struct QGLCONFIG
 {
-	int					version;
-	int					red, green, blue, alpha;
-	int					depth, stencil, samples;
-	byte				float_buffer, no_error, robustness;
 	void*				handle;
+	int					version;
+	byte				red, green, blue, alpha;
+	byte				depth, stencil, samples;
+	byte				stereo, srgb, transparent;
+	byte				float_buffer, no_error, robustness;
 } QglConfig;
 QN_DECL_CTNR(QglCtnConfig, QglConfig);
 
@@ -216,7 +217,15 @@ extern int qgl_index_of_opengl_version(bool is_core, int v);
 
 // EGL
 extern EGLDisplay egl_initialize(_In_ const QglConfig* wanted_config);
-extern EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wanted_config, _Out_ QglConfig* config, _In_ QgFlag flags, _In_ bool isCore);
-extern EGLSurface egl_create_surface(_In_ EGLDisplay display, _In_ EGLContext context, _In_ EGLConfig config, _In_ int visual_id, _In_ QgFlag flags);
+extern EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wanted_config, _Out_ QglConfig* config, _In_ bool isCore);
+extern EGLSurface egl_create_surface(_In_ EGLDisplay display, _In_ EGLContext context, _In_ const QglConfig* config, _In_ int visual_id);
 extern bool egl_make_current(_In_ EGLDisplay display, _In_ EGLSurface surface, _In_ EGLContext context, _In_ bool isCore);
 extern void egl_dispose(_In_ EGLDisplay display, _In_ EGLSurface surface, _In_ EGLContext context);
+
+// WGL, GLX?
+extern bool gl_initialize(void);
+extern void* gl_create_context(_In_ const QglConfig* wanted_config, _Out_ QglConfig* config, _In_ bool isCore);
+extern bool gl_make_current(_In_ void* context, _In_ bool isCore);
+extern bool gl_swap_buffers(void);
+extern bool gl_swap_interval(_In_ int interval);
+extern void gl_dispose(_In_ void* context);

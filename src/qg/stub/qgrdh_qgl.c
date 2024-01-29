@@ -96,7 +96,9 @@ static int qgl_near_of_opengl_version(bool is_core, int v)
 			index = 0;
 		return opengles_versions[index];
 	}
-#ifndef _QN_MOBILE_
+#ifdef _QN_MOBILE_
+	return opengles_versions[0];
+#else
 	int index = -1, diff = INT_MAX;
 	for (int i = 0; i < QN_COUNTOF(openglcore_versions); i++)
 	{
@@ -127,26 +129,23 @@ static void qgl_default_config(QglConfig* config, QgFlag flags, bool is_core)
 	else
 		config->version = qgl_near_of_opengl_version(is_core, ver_major * 100 + ver_minor);
 #endif
-	config->red = 8;
-	config->green = 8;
-	config->blue = 8;
-	config->alpha = 8;
-	config->depth = qn_get_prop_int(QG_PROP_DEPTH_SIZE, 24, 4, 32);
-	config->stencil = qn_get_prop_int(QG_PROP_STENCIL_SIZE, 8, 4, 16);
-	config->samples = QN_TMASK(flags, QGFLAG_MSAA) ? qn_get_prop_int(QG_PROP_MSAA, 4, 0, 8) : 0;
+	const char* prop = qn_get_prop(QG_PROP_RGBA_SIZE);
+	if (prop == NULL || strlen(prop) < 4)
+		prop = "8888";
+	config->red = (byte)prop[0] - '0';
+	config->green = (byte)prop[1] - '0';
+	config->blue = (byte)prop[2] - '0';
+	config->alpha = (byte)prop[3] - '0';
+	config->depth = (byte)qn_get_prop_int(QG_PROP_DEPTH_SIZE, 24, 4, 32);
+	config->stencil = (byte)qn_get_prop_int(QG_PROP_STENCIL_SIZE, 8, 4, 16);
+	config->samples = QN_TMASK(flags, QGFLAG_MSAA) ? (byte)qn_get_prop_int(QG_PROP_MSAA, 4, 0, 8) : 0;
+	config->srgb = 0;
+	config->stereo = 0;
+	config->transparent = 0;
 	config->float_buffer = 0;
 	config->no_error = 0;
 	config->robustness = 0;
 	config->handle = NULL;
-
-	const char* prop = qn_get_prop(QG_PROP_RGBA_SIZE);
-	if (prop != NULL && strlen(prop) >= 4)
-	{
-		config->red = prop[0] - '0';
-		config->green = prop[1] - '0';
-		config->blue = prop[2] - '0';
-		config->alpha = prop[3] - '0';
-	}
 
 	prop = qn_get_prop(QG_PROP_CAPABILITY);
 	if (prop != NULL)
@@ -165,6 +164,12 @@ static void qgl_default_config(QglConfig* config, QgFlag flags, bool is_core)
 				config->robustness = 1;
 			else if (qn_strnicmp(prop, "lostcontext", len) == 0)
 				config->robustness = 2;
+			else if (qn_strnicmp(prop, "stereo", len) == 0)
+				config->stereo = 1;
+			else if (qn_strnicmp(prop, "srgb", len) == 0)
+				config->srgb = 1;
+			else if (qn_strnicmp(prop, "transparent", len) == 0)
+				config->transparent = 1;
 			prop = qn_strchr(brk + 1, ';');
 		}
 	}
@@ -182,7 +187,7 @@ INLINE int qgl_get_version(const char* s)
 	if (*p == '\0')
 		return 0;
 	float f = qn_strtof(p);
-	return (int)(floorf(f) * 100.0f + (qm_fractf(f) * 10.0));
+	return (int)(floorf(f) * 100.0f + roundf(qm_fractf(f) * 10.0f));
 }
 
 // 문자열 얻기
@@ -281,45 +286,54 @@ qs_name_vt(RDHBASE) vt_qgl_rdh =
 };
 
 //
-static const char* qgl_initialize(QglRdh* self, QgFlag flags, QgFeature features)
+static const char* qgl_initialize(QglRdh* self, QgFlag flags, QglConfig* config, bool isCore)
 {
-#if false
-	// UNDONE: 해야함
 	static const char* name = "OpenGL";
 
-	QglConfig wanted_config, config;
-	qgl_default_config(&wanted_config, flags);
-#else
-	QN_DUMMY(self);
-	QN_DUMMY(flags);
-	QN_DUMMY(features);
-	return NULL;
-#endif
+	if (gl_initialize() == false)
+		return NULL;
+
+	QglConfig wanted_config;
+	qgl_default_config(&wanted_config, flags, isCore);
+
+	void* context = gl_create_context(&wanted_config, config, isCore);
+	if (context == NULL)
+		return NULL;
+
+	stub_system_actuate();
+
+	if (gl_make_current(context, isCore) == false)
+		return NULL;
+
+	gl_swap_interval(QN_TMASK(flags, QGFLAG_VSYNC) ? 1 : 0);
+
+	self->context = context;
+
+	return name;
 }
 
 //
-static const char* qgl_initialize_egl(QglRdh* self, QgFlag flags)
+static const char* qgl_initialize_egl(QglRdh* self, QgFlag flags, QglConfig* config, bool isCore)
 {
 	static const char* name = "OpenGL ES";
-	bool is_core = QN_TMASK(flags, QGSPECIFIC_CORE);
 
-	QglConfig wanted_config, config;
-	qgl_default_config(&wanted_config, flags, is_core);
+	QglConfig wanted_config;
+	qgl_default_config(&wanted_config, flags, isCore);
 
 	EGLDisplay display = egl_initialize(&wanted_config);
 	if (display == EGL_NO_DISPLAY)
 		return NULL;
 
-	EGLContext context = egl_create_context(display, &wanted_config, &config, flags, is_core);
+	EGLContext context = egl_create_context(display, &wanted_config, config, isCore);
 	if (context == EGL_NO_CONTEXT)
 		return NULL;
 
-	EGLSurface surface = egl_create_surface(display, context, (EGLConfig)config.handle, 0, flags);
+	EGLSurface surface = egl_create_surface(display, context, config, 0);
 	if (surface == EGL_NO_SURFACE)
 		return NULL;
 
 	stub_system_actuate();
-	if (egl_make_current(display, surface, context, is_core) == false)
+	if (egl_make_current(display, surface, context, isCore) == false)
 		return NULL;
 
 	eglSwapInterval(display, QN_TMASK(flags, QGFLAG_VSYNC) ? 1 : 0);
@@ -328,30 +342,31 @@ static const char* qgl_initialize_egl(QglRdh* self, QgFlag flags)
 	self->egl.context = context;
 	self->egl.surface = surface;
 
-	memcpy(&self->cfg, &config, sizeof(QglConfig));
-
 	return name;
 }
 
 //
 RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 {
+	qn_val_if_fail(QN_TMASK(features, QGRENDERER_OPENGL), NULL);
+
 	QglRdh* self = qn_alloc_zero_1(QglRdh);
 	const char* name;
+	bool is_core = QN_TMASK(flags, QGSPECIFIC_CORE);
 
 #ifdef QGL_MAYBE_GL_CORE
-	name = qgl_initialize(self, flags, features);
+	name = qgl_initialize(self, flags, &self->cfg, is_core);
 	if (name == NULL)
 #endif
 	{
-		name = qgl_initialize_egl(self, flags);
+		name = qgl_initialize_egl(self, flags, &self->cfg, is_core);
 		if (name == NULL)
 		{
 			qn_free(self);
 			return NULL;
 		}
-		self->use_egl = true;
 	}
+	self->use_egl = !is_core;
 
 	// 정보
 	const char* gl_version = (const char*)glGetString(GL_VERSION);
@@ -378,8 +393,7 @@ RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 	//
 	qn_debug_outputf(false, VAR_CHK_NAME, "%s %d/%d [%s by %s]",
 		name, info->renderer_version, info->shader_version, info->renderer, info->vendor);
-	qn_debug_outputs(false, VAR_CHK_NAME, gl_version);
-	qn_debug_outputs(false, VAR_CHK_NAME, gl_shader_version);
+	qn_debug_outputf(false, VAR_CHK_NAME, "%s / %s", gl_version, gl_shader_version);
 
 	//
 	return qs_init(self, RdhBase, &vt_qgl_rdh);
@@ -403,8 +417,10 @@ static void qgl_rdh_dispose(QsGam* g)
 	rdh_internal_clean();
 
 	//
-	if (self->use_egl)
-		egl_dispose(self->egl.display, self->egl.surface, self->egl.context);
+	egl_dispose(self->egl.display, self->egl.surface, self->egl.context);
+#ifdef QGL_MAYBE_GL_CORE
+	gl_dispose(self->context);
+#endif
 	rdh_internal_dispose();
 }
 
@@ -569,7 +585,7 @@ static void qgl_rdh_clear(QgClear flags)
 			glClearDepth(1.0f);
 #endif
 		cf |= GL_DEPTH_BUFFER_BIT;
-		}
+	}
 	if (QN_TMASK(flags, QGCLEAR_RENDER))
 	{
 		const QmVec4 c = RDH_PARAM->bgc;
@@ -579,7 +595,7 @@ static void qgl_rdh_clear(QgClear flags)
 
 	if (cf != 0)
 		glClear(cf);
-	}
+}
 
 // 시작
 static bool qgl_rdh_begin(bool clear)
@@ -599,11 +615,12 @@ static void qgl_rdh_flush(void)
 {
 	glFlush();
 	QglRdh* self = QGL_RDH;
-	if (self->use_egl)
-		eglSwapBuffers(self->egl.display, self->egl.surface);
-	else
+#ifdef QGL_MAYBE_GL_CORE
+	if (gl_swap_buffers() == false)
+#endif
 	{
-		// TODO: 해야함
+		if (self->egl.display && self->egl.surface)
+			eglSwapBuffers(self->egl.display, self->egl.surface);
 	}
 }
 

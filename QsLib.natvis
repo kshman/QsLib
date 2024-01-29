@@ -326,10 +326,10 @@
   </Type>
 
   <!-- ==================== ES 또는 GL ==================== -->
-
-  <!-- QGLREFHANDLE -->
-  <Type Name="QGLREFHANDLE">
-    <DisplayString>[handle: {handle} (ref:{ref})]</DisplayString>
+  
+  <!-- QGLCONFIG -->
+  <Type Name="QGLCONFIG">
+    <DisplayString>[{(int)red}/{(int)green}/{(int)blue}/{(int)alpha}, {(int)depth}/{(int)stencil} ({(int)samples})]</DisplayString>
   </Type>
 
   <!-- QGLRENDER -->
