@@ -14,7 +14,7 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifdef _QN_BSD_
+#ifdef _QN_FREEBSD_
 #include <sys/sysctl.h>
 #endif
 #endif
@@ -415,7 +415,7 @@ llong qn_file_size(QnFile* self)
 #else
 #ifdef _QN_LINUX_
 	off_t save, last;
-#elif defined _QN_BSD_
+#elif defined _QN_FREEBSD_
 	int save, last;
 #else
 	long save, last;
@@ -1021,7 +1021,7 @@ char* qn_get_base_path(void)
 	path = qn_alloc(sz + 1, char);
 	qn_u16to8(path, sz + 1, pw, 0);
 	qn_free(pw);
-#elif defined _QN_BSD_ || defined _QN_LINUX_
+#elif defined _QN_FREEBSD_ || defined _QN_LINUX_
 #if defined _QN_FREEBSD_
 	QN_STMT_BEGIN{
 		char fullpath[FILENAME_MAX];

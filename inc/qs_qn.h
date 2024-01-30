@@ -434,7 +434,7 @@ QSAPI void qn_set_key(const char* RESTRICT name, const nint value);
 /// @brief 키를 얻는다
 /// @param name 키 이름
 /// @return 키 값. 키가 없어도 0을 반환
-QSAPI const nint qn_get_key(const char* name);
+QSAPI nint qn_get_key(const char* name);
 
 /// @brief 에러 메시지를 얻는다
 /// @return 에러 메시지 문자열. 없다면 NULL
