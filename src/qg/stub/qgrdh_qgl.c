@@ -115,17 +115,19 @@ static int qgl_near_of_opengl_version(bool is_core, int v)
 #endif
 
 // 기본값 만들기
-static void qgl_default_config(QglConfig* config, QgFlag flags, bool is_core)
+static void qgl_default_config(QglConfig* config, QgFlag flags)
 {
+	bool core = QN_TMASK(flags, QGSPECIFIC_CORE);
+
 #ifdef _QN_EMSCRIPTEN_
 	config->version = 300;
 #else
 	int ver_major = qn_get_prop_int(QG_PROP_DRIVER_MAJOR, -1, 2, 4);
 	int ver_minor = qn_get_prop_int(QG_PROP_DRIVER_MINOR, -1, 0, 9);
 	if (ver_major < 0 || ver_minor < 0)
-		config->version = qgl_get_opengl_version(is_core, 0);
+		config->version = qgl_get_opengl_version(core, 0);
 	else
-		config->version = qgl_near_of_opengl_version(is_core, ver_major * 100 + ver_minor);
+		config->version = qgl_near_of_opengl_version(core, ver_major * 100 + ver_minor);
 #endif
 	const char* prop = qn_get_prop(QG_PROP_RGBA_SIZE);
 	if (prop == NULL || strlen(prop) < 4)
@@ -137,17 +139,26 @@ static void qgl_default_config(QglConfig* config, QgFlag flags, bool is_core)
 	config->depth = (byte)qn_get_prop_int(QG_PROP_DEPTH_SIZE, 24, 4, 32);
 	config->stencil = (byte)qn_get_prop_int(QG_PROP_STENCIL_SIZE, 8, 4, 16);
 	config->samples = QN_TMASK(flags, QGFLAG_MSAA) ? (byte)qn_get_prop_int(QG_PROP_MSAA, 4, 0, 8) : 0;
+
+#ifdef QGL_EGL_NO_EXT
 	config->srgb = 0;
 	config->stereo = 0;
 	config->transparent = 0;
 	config->float_buffer = 0;
 	config->no_error = 0;
 	config->robustness = 0;
-	config->handle = NULL;
-
-#ifndef QGL_EGL_NO_EXT
+#else
 	prop = qn_get_prop(QG_PROP_CAPABILITY);
-	if (prop != NULL)
+	if (prop == NULL)
+	{
+		config->srgb = 0;
+		config->stereo = 0;
+		config->transparent = 0;
+		config->float_buffer = 0;
+		config->no_error = 0;
+		config->robustness = 0;
+	}
+	else
 	{
 		char* brk = qn_strchr(prop, ';');
 		while (brk != NULL)
@@ -173,6 +184,9 @@ static void qgl_default_config(QglConfig* config, QgFlag flags, bool is_core)
 		}
 	}
 #endif
+
+	config->core = core;
+	config->handle = NULL;
 }
 
 // 문자열 버전에서 숫자만 mnn 방식으로
@@ -210,7 +224,7 @@ INLINE GLint qgl_get_integer_v(GLenum name)
 }
 
 // irrcht 엔젠에서 가져온 텍스쳐 행렬
-INLINE QmMat4 qgl_mat4_irrcht_texture(float radius, float cx, float cy, float tx, float ty, float sx, float sy)
+INLINE QmMat4 QM_VECTORCALL qgl_mat4_irrcht_texture(float radius, float cx, float cy, float tx, float ty, float sx, float sy)
 {
 	float c, s;
 	qm_sincosf(radius, &s, &c);
@@ -287,26 +301,22 @@ qs_name_vt(RDHBASE) vt_qgl_rdh =
 
 #ifdef QGL_MAYBE_GL_CORE
 //
-static const char* qgl_initialize(QglRdh* self, QgFlag flags, QglConfig* config, bool isCore)
+static const char* qgl_initialize(QglRdh* self, const QglConfig* wanted_config, QglConfig* config, bool vsync)
 {
 	static const char* name = "OpenGL";
 
 	if (gl_initialize() == false)
 		return NULL;
 
-	QglConfig wanted_config;
-	qgl_default_config(&wanted_config, flags, isCore);
-
-	void* context = gl_create_context(&wanted_config, config, isCore);
+	void* context = gl_create_context(wanted_config, config);
 	if (context == NULL)
 		return NULL;
 
 	stub_system_actuate();
-
-	if (gl_make_current(context, isCore) == false)
+	if (gl_make_current(context, config) == false)
 		return NULL;
 
-	gl_swap_interval(QN_TMASK(flags, QGFLAG_VSYNC) ? 1 : 0);
+	gl_swap_interval(vsync ? 1 : 0);
 
 	self->context = context;
 
@@ -315,18 +325,15 @@ static const char* qgl_initialize(QglRdh* self, QgFlag flags, QglConfig* config,
 #endif
 
 //
-static const char* qgl_initialize_egl(QglRdh* self, QgFlag flags, QglConfig* config, bool isCore)
+static const char* qgl_initialize_egl(QglRdh* self, const QglConfig* wanted_config, QglConfig* config, bool vsync)
 {
 	static const char* name = "OpenGL ES";
 
-	QglConfig wanted_config;
-	qgl_default_config(&wanted_config, flags, isCore);
-
-	EGLDisplay display = egl_initialize(&wanted_config);
+	EGLDisplay display = egl_initialize(wanted_config);
 	if (display == EGL_NO_DISPLAY)
 		return NULL;
 
-	EGLContext context = egl_create_context(display, &wanted_config, config, isCore);
+	EGLContext context = egl_create_context(display, wanted_config, config);
 	if (context == EGL_NO_CONTEXT)
 		return NULL;
 
@@ -335,10 +342,10 @@ static const char* qgl_initialize_egl(QglRdh* self, QgFlag flags, QglConfig* con
 		return NULL;
 
 	stub_system_actuate();
-	if (egl_make_current(display, surface, context, isCore) == false)
+	if (egl_make_current(display, surface, context, config) == false)
 		return NULL;
 
-	eglSwapInterval(display, QN_TMASK(flags, QGFLAG_VSYNC) ? 1 : 0);
+	eglSwapInterval(display, vsync ? 1 : 0);
 
 	self->egl.display = display;
 	self->egl.context = context;
@@ -353,22 +360,23 @@ RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 	qn_val_if_fail(QN_TMASK(features, QGRENDERER_OPENGL), NULL);
 
 	QglRdh* self = qn_alloc_zero_1(QglRdh);
+
 	const char* name;
-	bool is_core = QN_TMASK(flags, QGSPECIFIC_CORE);
+	QglConfig wanted_config;
+	qgl_default_config(&wanted_config, flags);
 
 #ifdef QGL_MAYBE_GL_CORE
-	name = qgl_initialize(self, flags, &self->cfg, is_core);
+	name = qgl_initialize(self, &wanted_config, &self->cfg, QN_TMASK(flags, QGFLAG_VSYNC));
 	if (name == NULL)
 #endif
 	{
-		name = qgl_initialize_egl(self, flags, &self->cfg, is_core);
+		name = qgl_initialize_egl(self, &wanted_config, &self->cfg, QN_TMASK(flags, QGFLAG_VSYNC));
 		if (name == NULL)
 		{
 			qn_free(self);
 			return NULL;
 		}
 	}
-	self->use_egl = !is_core;
 
 	// 정보
 	const char* gl_version = (const char*)glGetString(GL_VERSION);
@@ -391,6 +399,18 @@ RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 	info->clr_fmt = qg_rgba_to_clrfmt(self->cfg.red, self->cfg.green, self->cfg.blue, self->cfg.alpha, false);
 
 	info->enabled_stencil = self->cfg.stencil > 0;
+
+	if (self->cfg.core)
+	{
+		int major = info->shader_version / 100, minor = info->shader_version % 100;
+		qn_snprintf(self->res.hdr_vertex, QN_COUNTOF(self->res.hdr_vertex), "#version %d%d0 core\n", major, minor);
+		qn_snprintf(self->res.hdr_fragment, QN_COUNTOF(self->res.hdr_fragment), "#version %d%d0 core\n", major, minor);
+	}
+	else
+	{
+		self->res.hdr_vertex[0] = '\0';
+		qn_strcpy(self->res.hdr_fragment, "precision mediump float;");
+	}
 
 	//
 	qn_debug_outputf(false, VAR_CHK_NAME, "%s %d/%d [%s by %s]",
@@ -431,7 +451,6 @@ static void qgl_rdh_layout(void)
 {
 	rdh_internal_layout();
 
-	QglRdh* self = QGL_RDH;
 	RenderTransform* tm = RDH_TRANSFORM;
 	QmMat4 ortho = ortho = qm_mat4_ortho_lh((float)tm->size.Width, (float)-tm->size.Height, -1.0f, 1.0f);
 	tm->ortho = qm_mat4_mul(ortho, qm_mat4_loc(-1.0f, 1.0f, 0.0f));
@@ -439,10 +458,10 @@ static void qgl_rdh_layout(void)
 	// 뷰포트
 	glViewport(0, 0, (GLsizei)tm->size.Width, (GLsizei)tm->size.Height);
 #ifdef QGL_MAYBE_GL_CORE
-	if (self->use_egl || RDH_INFO->renderer_version >= 400)
-		glDepthRangef(0.0f, 1.0f);
-	else
+	if (QGL_CORE && RDH_INFO->renderer_version < 400)
 		glDepthRange(0.0f, 1.0f);
+	else
+		glDepthRangef(0.0f, 1.0f);
 #else
 	glDepthRangef(0.0f, 1.0f);
 #endif
@@ -500,7 +519,7 @@ static void qgl_rdh_reset(void)
 
 	// 브랜드
 #ifdef QGL_MAYBE_GL_CORE
-	if (info->renderer_version >= 400)
+	if (QGL_CORE && info->renderer_version >= 400)
 	{
 		for (i = 0; i < info->max_tex_count; i++)
 		{
@@ -543,15 +562,13 @@ static void qgl_rdh_reset(void)
 	glFrontFace(GL_CW);
 
 #ifdef QGL_MAYBE_GL_CORE
-	if (QGL_RDH->use_egl == false)
+	if (QGL_CORE)
 	{
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-	}
-	if (info->renderer_version >= 400)
-	{
-		glPatchParameteri(GL_PATCH_VERTICES, 3);
+		if (info->renderer_version >= 400)
+			glPatchParameteri(GL_PATCH_VERTICES, 3);
 	}
 #endif
 
@@ -579,10 +596,10 @@ static void qgl_rdh_clear(QgClear flags)
 			glDepthFunc(GL_LESS);
 		}
 #ifdef QGL_MAYBE_GL_CORE
-		if (QGL_RDH->use_egl || RDH_INFO->renderer_version >= 400)
-			glClearDepthf(1.0f);
-		else
+		if (QGL_CORE && RDH_INFO->renderer_version < 400)
 			glClearDepth(1.0f);
+		else
+			glClearDepthf(1.0f);
 #else
 		glClearDepthf(1.0f);
 #endif
@@ -597,7 +614,7 @@ static void qgl_rdh_clear(QgClear flags)
 
 	if (cf != 0)
 		glClear(cf);
-}
+	}
 
 // 시작
 static bool qgl_rdh_begin(bool clear)
@@ -1050,7 +1067,7 @@ static void qgl_buffer_dispose(QsGam* g)
 	QglBuffer* self = qs_cast_type(g, QglBuffer);
 	if (self->base.mapped)
 	{
-		if (QGL_RDH->use_egl && RDH_INFO->renderer_version < 300)
+		if (QGL_CORE == false && RDH_INFO->renderer_version < 300)
 			qn_free(self->lock_pointer);
 		else
 			glUnmapBuffer(self->gl_type);
@@ -1069,7 +1086,7 @@ static void* qgl_buffer_map(QgBuffer* g)
 	VAR_CHK_IF_NEED2(self, gl_usage, GL_DYNAMIC_DRAW, NULL);
 	qn_assert(self->lock_pointer == NULL, "버퍼가 잠겨있는데요!");
 
-	if (QGL_RDH->use_egl && RDH_INFO->renderer_version < 300)
+	if (QGL_CORE == false && RDH_INFO->renderer_version < 300)
 	{
 		// ES2 전용
 		self->lock_pointer = qn_alloc(self->base.size, byte);
@@ -1093,7 +1110,7 @@ static bool qgl_buffer_unmap(QgBuffer* g)
 
 	qgl_bind_buffer(self);
 
-	if (QGL_RDH->use_egl && RDH_INFO->renderer_version < 300)
+	if (QGL_CORE == false && RDH_INFO->renderer_version < 300)
 	{
 		// ES2 전용
 		glBufferSubData(self->gl_type, 0, self->base.size, self->lock_pointer);
@@ -1242,11 +1259,12 @@ INLINE GLint qgl_get_shader_iv(GLuint handle, GLenum name)
 }
 
 // 세이더 컴파일
-static GLuint qgl_render_compile_shader(GLenum gl_type, const char* code)
+static GLuint qgl_render_compile_shader(GLenum gl_type, const char* header, const char* code)
 {
 	// http://msdn.microsoft.com/ko-kr/library/windows/apps/dn166905.aspx
 	GLuint gl_shader = glCreateShader(gl_type);
-	glShaderSource(gl_shader, 1, &code, NULL);
+	const char* codes[2] = { header, code };
+	glShaderSource(gl_shader, 2, codes, NULL);
 	glCompileShader(gl_shader);
 
 	if (qgl_get_shader_iv(gl_shader, GL_COMPILE_STATUS) != GL_FALSE)
@@ -1343,8 +1361,8 @@ INLINE QgScType qgl_enum_to_shader_const(GLenum gl_type)
 static bool qgl_render_bind_shader(QglRender* self, const QgCodeData* vertex, const QgCodeData* fragment)
 {
 	// 프로그램이랑 세이더 만들고
-	GLuint gl_vertex_shader = qgl_render_compile_shader(GL_VERTEX_SHADER, vertex->code);
-	GLuint gl_fragment_shader = qgl_render_compile_shader(GL_FRAGMENT_SHADER, fragment->code);
+	GLuint gl_vertex_shader = qgl_render_compile_shader(GL_VERTEX_SHADER, QGL_RESOURCE->hdr_vertex, vertex->code);
+	GLuint gl_fragment_shader = qgl_render_compile_shader(GL_FRAGMENT_SHADER, QGL_RESOURCE->hdr_fragment, fragment->code);
 	if (gl_vertex_shader == 0 || gl_fragment_shader == 0)
 	{
 		if (gl_vertex_shader != 0)

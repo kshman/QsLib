@@ -11,7 +11,7 @@ static const char* vs =
 "   vcolor = acolor;\n"
 "}\n";
 static const char* ps =
-"precision mediump float;\n"
+//"precision mediump float;\n"
 "varying vec4 vcolor;\n"
 "void main()\n"
 "{\n"

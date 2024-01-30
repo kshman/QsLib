@@ -19,6 +19,65 @@ extern int gladLoadGL(GLADloadfunc load);
 extern int gladLoadGLES2(GLADloadfunc load);
 #endif
 
+//////////////////////////////////////////////////////////////////////////
+// 공용
+
+// 후보 컨피그 중에서 가장 적합한 것 찾기
+static const QglConfig* qgl_detect_config(_In_ const QglConfig* wanted, _In_ const QglCtnConfig* configs)
+{
+	uint least_missing = UINT_MAX;
+	uint least_color = UINT_MAX;
+	uint least_extra = UINT_MAX;
+	const QglConfig* found = NULL;
+	size_t i;
+	qn_ctnr_foreach(configs, i)
+	{
+		const QglConfig* c = &qn_ctnr_nth(configs, i);
+		if (c->handle == NULL)
+			continue;
+
+		uint missing = 0;
+		if (wanted->alpha > 0 && c->alpha == 0) missing++;
+		if (wanted->depth > 0 && c->depth == 0) missing++;
+		if (wanted->stencil > 0 && c->stencil == 0) missing++;
+		if (wanted->samples > 0 && c->samples == 0) missing++;
+		if (wanted->transparent != c->transparent) missing++;
+
+		uint color = 0;
+		if (wanted->red > 0)
+			color += (wanted->red - c->red) * (wanted->red - c->red);
+		if (wanted->blue > 0)
+			color += (wanted->blue - c->blue) * (wanted->blue - c->blue);
+		if (wanted->green > 0)
+			color += (wanted->green - c->green) * (wanted->green - c->green);
+
+		uint extra = 0;
+		if (wanted->alpha > 0)
+			extra += (wanted->alpha - c->alpha) * (wanted->alpha - c->alpha);
+		if (wanted->depth > 0)
+			extra += (wanted->depth - c->depth) * (wanted->depth - c->depth);
+		if (wanted->stencil > 0)
+			extra += (wanted->stencil - c->stencil) * (wanted->stencil - c->stencil);
+		if (wanted->samples > 0)
+			extra += (wanted->samples - c->samples) * (wanted->samples - c->samples);
+
+		if (missing < least_missing)
+			found = c;
+		else if (missing == least_missing)
+		{
+			if (color < least_color || (color == least_color && extra < least_extra))
+				found = c;
+		}
+		if (found == c)
+		{
+			least_missing = missing;
+			least_color = color;
+			least_extra = extra;
+		}
+	}
+	return found;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // EGL 확장
@@ -191,9 +250,8 @@ static EGLint egl_get_config_attrib(EGLDisplay display, EGLConfig config, EGLenu
 }
 
 // EGL 설정 읽기
-static void egl_get_config(EGLDisplay display, EGLConfig ec, QglConfig* config, const QglConfig* wanted_config)
+static void egl_get_config(_Out_ QglConfig* config, _In_ EGLDisplay display, _In_ EGLConfig ec, _In_ const QglConfig* wanted_config)
 {
-	config->handle = ec;
 	config->version = wanted_config->version;
 	config->red = (byte)egl_get_config_attrib(display, ec, EGL_RED_SIZE);
 	config->green = (byte)egl_get_config_attrib(display, ec, EGL_GREEN_SIZE);
@@ -208,64 +266,9 @@ static void egl_get_config(EGLDisplay display, EGLConfig ec, QglConfig* config, 
 	config->float_buffer = wanted_config->float_buffer;
 	config->no_error = wanted_config->no_error;
 	config->robustness = wanted_config->robustness;
+	config->core = wanted_config->core;
+	config->handle = ec;
 }
-
-// 후보 컨피그 중에서 가장 적합한 것 찾기
-static const QglConfig* egl_detect_config(const QglConfig* wanted, const QglCtnConfig* configs)
-{
-	uint least_missing = UINT_MAX;
-	uint least_color = UINT_MAX;
-	uint least_extra = UINT_MAX;
-	const QglConfig* found = NULL;
-	size_t i;
-	qn_ctnr_foreach(configs, i)
-	{
-		const QglConfig* c = &qn_ctnr_nth(configs, i);
-		if (c->handle == NULL)
-			continue;
-
-		uint missing = 0;
-		if (wanted->alpha > 0 && c->alpha == 0) missing++;
-		if (wanted->depth > 0 && c->depth == 0) missing++;
-		if (wanted->stencil > 0 && c->stencil == 0) missing++;
-		if (wanted->samples > 0 && c->samples == 0) missing++;
-		if (wanted->transparent != c->transparent) missing++;
-
-		uint color = 0;
-		if (wanted->red > 0)
-			color += (wanted->red - c->red) * (wanted->red - c->red);
-		if (wanted->blue > 0)
-			color += (wanted->blue - c->blue) * (wanted->blue - c->blue);
-		if (wanted->green > 0)
-			color += (wanted->green - c->green) * (wanted->green - c->green);
-
-		uint extra = 0;
-		if (wanted->alpha > 0)
-			extra += (wanted->alpha - c->alpha) * (wanted->alpha - c->alpha);
-		if (wanted->depth > 0)
-			extra += (wanted->depth - c->depth) * (wanted->depth - c->depth);
-		if (wanted->stencil > 0)
-			extra += (wanted->stencil - c->stencil) * (wanted->stencil - c->stencil);
-		if (wanted->samples > 0)
-			extra += (wanted->samples - c->samples) * (wanted->samples - c->samples);
-
-		if (missing < least_missing)
-			found = c;
-		else if (missing == least_missing)
-		{
-			if (color < least_color || (color == least_color && extra < least_extra))
-				found = c;
-		}
-		if (found == c)
-		{
-			least_missing = missing;
-			least_color = color;
-			least_extra = extra;
-		}
-	}
-	return found;
-}
-
 
 // EGL 설정 얻기
 static bool egl_choose_config(EGLDisplay display, const QglConfig* wanted_config, QglConfig* found_config)
@@ -303,16 +306,16 @@ static bool egl_choose_config(EGLDisplay display, const QglConfig* wanted_config
 	if (config_count == 1)
 	{
 		ret = true;
-		egl_get_config(display, configs[0], found_config, wanted_config);
+		egl_get_config(found_config, display, configs[0], wanted_config);
 	}
 	else
 	{
 		QglCtnConfig qgl_configs;
 		qn_ctnr_init(QglCtnConfig, &qgl_configs, config_count);
 		for (i = 0; i < config_count; i++)
-			egl_get_config(display, configs[i], &qn_ctnr_nth(&qgl_configs, i), wanted_config);
+			egl_get_config(&qn_ctnr_nth(&qgl_configs, i), display, configs[i], wanted_config);
 
-		const QglConfig* found = egl_detect_config(wanted_config, &qgl_configs);
+		const QglConfig* found = qgl_detect_config(wanted_config, &qgl_configs);
 		if (found == NULL)
 			ret = false;
 		else
@@ -382,7 +385,7 @@ EGLDisplay egl_initialize(_In_ const QglConfig* wanted_config)
 }
 
 // EGL 컨텍스트 만들기
-EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wanted_config, _Out_ QglConfig* config, _In_ bool isCore)
+EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wanted_config, _Out_ QglConfig* config)
 {
 	qn_verify(display != EGL_NO_DISPLAY);
 	qn_verify(wanted_config != NULL);
@@ -400,22 +403,22 @@ EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wan
 	if (GLAD_EGL_KHR_create_context)
 	{
 		EGLint mask = 0, flags = 0;
-		ATTR_ADD(EGL_CONTEXT_MAJOR_VERSION, wanted_config->version / 100);
-		ATTR_ADD(EGL_CONTEXT_MINOR_VERSION, wanted_config->version % 100);
+		ATTR_ADD(EGL_CONTEXT_MAJOR_VERSION, config->version / 100);
+		ATTR_ADD(EGL_CONTEXT_MINOR_VERSION, config->version % 100);
 #ifndef _QN_MOBILE_
-		if (isCore)
+		if (config->core)
 		{
 			// 일단 ANGLE은 안됨, LINUX/BSD는 됨
 			profile = EGL_OPENGL_API;
 			mask |= EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT;
 		}
 #endif
-		if (wanted_config->no_error)
+		if (config->no_error)
 			ATTR_ADD(EGL_CONTEXT_OPENGL_NO_ERROR_KHR, EGL_TRUE);
-		if (wanted_config->robustness != 0)
+		if (config->robustness != 0)
 		{
 			ATTR_ADD(EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY,
-				wanted_config->robustness == 1 ? EGL_NO_RESET_NOTIFICATION : EGL_LOSE_CONTEXT_ON_RESET);
+				config->robustness == 1 ? EGL_NO_RESET_NOTIFICATION : EGL_LOSE_CONTEXT_ON_RESET);
 			flags |= EGL_CONTEXT_OPENGL_ROBUST_ACCESS_BIT_KHR;
 		}
 		if (mask != 0)
@@ -429,7 +432,7 @@ EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wan
 #ifdef _QN_EMSCRIPTEN_
 		ATTR_ADD(EGL_CONTEXT_CLIENT_VERSION, 3);
 #else
-		ATTR_ADD(EGL_CONTEXT_CLIENT_VERSION, wanted_config->version / 100);
+		ATTR_ADD(EGL_CONTEXT_CLIENT_VERSION, config->version / 100);
 #endif
 	}
 	ATTR_ADD(EGL_NONE, EGL_NONE);
@@ -450,12 +453,12 @@ EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wan
 		attrs[1] = 2;
 		context = eglCreateContext(display, config->handle, NULL, attrs);
 #else
-		int index = qgl_index_of_opengl_version(isCore, wanted_config->version);
+		int index = qgl_index_of_opengl_version(config->core, config->version);
 		if (index >= 0)
 		{
 			for (int i = index + 1; ; i++)
 			{
-				int version = qgl_get_opengl_version(isCore, i);
+				int version = qgl_get_opengl_version(config->core, i);
 				if (version < 0)
 					break;
 				attrs[1] = version / 100;
@@ -526,7 +529,7 @@ EGLSurface egl_create_surface(_In_ EGLDisplay display, _In_ EGLContext context, 
 }
 
 // 커런트 만들기
-bool egl_make_current(_In_ EGLDisplay display, _In_ EGLSurface surface, _In_ EGLContext context, _In_ bool isCore)
+bool egl_make_current(_In_ EGLDisplay display, _In_ EGLSurface surface, _In_ EGLContext context, _In_ const QglConfig* config)
 {
 	qn_verify(display != EGL_NO_DISPLAY);
 	qn_verify(surface != EGL_NO_SURFACE);
@@ -539,7 +542,7 @@ bool egl_make_current(_In_ EGLDisplay display, _In_ EGLSurface surface, _In_ EGL
 	}
 
 #ifndef QGL_LINK_STATIC
-	if ((isCore ? glad_load_egl_gl() : glad_load_egl_gles2()) == false)
+	if ((config->core ? glad_load_egl_gl() : glad_load_egl_gles2()) == false)
 	{
 		qn_debug_outputs(true, VAR_CHK_NAME, "failed to load proc");
 		return false;
@@ -752,11 +755,11 @@ static int wgl_find_format_attr(int count, const int* attrs, const int* values, 
 }
 
 // 사양 확인
-static bool wgl_get_config(_In_ int attr_count, _In_ const int* attrs, _In_ const int* values,
-	_In_ int pixel_format, _Out_ QglConfig* config, _In_ const QglConfig* wanted_config)
+_Success_(return) static bool wgl_get_config(_Out_ QglConfig* config,
+	_In_ int attr_count, _In_ const int* attrs, _In_ const int* values,
+	_In_ int pixel_format, _In_ const QglConfig* wanted_config)
 {
 #define ATTR_FIND(e)		wgl_find_format_attr(attr_count, attrs, values, e)
-	config->handle = NULL;
 	if (ATTR_FIND(WGL_SUPPORT_OPENGL_ARB) == false ||
 		ATTR_FIND(WGL_DRAW_TO_WINDOW_ARB) == false)
 		return false;
@@ -787,12 +790,14 @@ static bool wgl_get_config(_In_ int attr_count, _In_ const int* attrs, _In_ cons
 	config->float_buffer = GLAD_WGL_NV_float_buffer ? (byte)ATTR_FIND(WGL_FLOAT_COMPONENTS_NV) : 0;
 	config->no_error = GLAD_WGL_ARB_create_context_no_error ? wanted_config->no_error : 0;
 	config->robustness = GLAD_WGL_ARB_create_context_robustness ? wanted_config->robustness : 0;
+	config->core = wanted_config->core;
+	config->handle = NULL;
 #undef ATTR_FIND
 	return true;
 }
 
 // ARB 픽셀 포맷을 고른다
-_Success_(return) static bool wgl_choose_arb_pixel_format(_In_ HDC hdc, _In_ const QglConfig * wanted_config, _Out_ QglConfig * found_config)
+_Success_(return) static bool wgl_choose_arb_pixel_format(_In_ HDC hdc, _In_ const QglConfig * wanted_config, _Out_ QglConfig* found_config)
 {
 #define ATTR_ADD(e,v)	QN_STMT_BEGIN{ attrs[attr_count++]=e; attrs[attr_count++]=v; }QN_STMT_END
 	int attrs[40], attr_count = 0;
@@ -867,7 +872,7 @@ _Success_(return) static bool wgl_choose_arb_pixel_format(_In_ HDC hdc, _In_ con
 		if (wglGetPixelFormatAttribivARB(hdc, pixel_formats[0], 0, attr_count, attrs, values) == FALSE)
 			return false;
 		ret = true;
-		wgl_get_config(attr_count, attrs, values, pixel_formats[0], found_config, wanted_config);
+		wgl_get_config(found_config, attr_count, attrs, values, pixel_formats[0], wanted_config);
 	}
 	else
 	{
@@ -883,10 +888,10 @@ _Success_(return) static bool wgl_choose_arb_pixel_format(_In_ HDC hdc, _In_ con
 				c->handle = NULL;
 				continue;
 			}
-			wgl_get_config(attr_count, attrs, values, pixel_formats[i], c, wanted_config);
+			wgl_get_config(c, attr_count, attrs, values, pixel_formats[i], wanted_config);
 		}
 
-		const QglConfig* found = egl_detect_config(wanted_config, &qgl_configs);
+		const QglConfig* found = qgl_detect_config(wanted_config, &qgl_configs);
 		if (found == NULL)
 			ret = false;
 		else
@@ -900,7 +905,7 @@ _Success_(return) static bool wgl_choose_arb_pixel_format(_In_ HDC hdc, _In_ con
 }
 
 //
-_Success_(return) static bool wgl_choose_desc_pixel_format(_In_ HDC hdc, _In_ const QglConfig * wanted_config, _Out_ QglConfig * found_config)
+_Success_(return) static bool wgl_choose_desc_pixel_format(_In_ HDC hdc, _In_ const QglConfig * wanted_config, _Out_ QglConfig* found_config)
 {
 	// https://learn.microsoft.com/ko-kr/windows/win32/api/wingdi/ns-wingdi-pixelformatdescriptor
 	PIXELFORMATDESCRIPTOR target = { sizeof(PIXELFORMATDESCRIPTOR), 1, };
@@ -963,7 +968,6 @@ _Success_(return) static bool wgl_choose_desc_pixel_format(_In_ HDC hdc, _In_ co
 		return false;
 
 	DescribePixelFormat(hdc, best_format, sizeof(PIXELFORMATDESCRIPTOR), &target);
-	found_config->handle = (void*)(nuint)best_format;
 	found_config->version = wanted_config->version;
 	found_config->red = target.cRedBits;
 	found_config->green = target.cGreenBits;
@@ -978,11 +982,13 @@ _Success_(return) static bool wgl_choose_desc_pixel_format(_In_ HDC hdc, _In_ co
 	found_config->float_buffer = 0;
 	found_config->no_error = 0;
 	found_config->robustness = 0;
+	found_config->core = wanted_config->core;
+	found_config->handle = (void*)(nuint)best_format;
 	return true;
 }
 
 //
-static bool wgl_choose_pixel_format(_In_ const QglConfig * wanted_config, _Out_ QglConfig * found_config)
+static bool wgl_choose_pixel_format(_In_ const QglConfig* wanted_config, _Out_ QglConfig* found_config)
 {
 	qn_verify(wanted_config != NULL);
 	qn_verify(found_config != NULL);
@@ -1002,15 +1008,15 @@ static bool wgl_choose_pixel_format(_In_ const QglConfig * wanted_config, _Out_ 
 }
 
 //
-static HGLRC wgl_create_context_arb(HDC hdc, int* attrs, int version, bool is_core)
+static HGLRC wgl_create_context_arb(_In_ HDC hdc, _In_ int* attrs, _In_ int version, _In_ bool core)
 {
-	int index = qgl_index_of_opengl_version(is_core, version);
+	int index = qgl_index_of_opengl_version(core, version);
 	if (index < 0)
 		return NULL;
 
 	for (int i = index; ; i++)
 	{
-		version = qgl_get_opengl_version(is_core, i);
+		version = qgl_get_opengl_version(core, i);
 		if (version < 0)
 			break;
 
@@ -1055,12 +1061,12 @@ bool gl_initialize(void)
 }
 
 //
-void* gl_create_context(_In_ const QglConfig * wanted_config, _Out_ QglConfig * config, _In_ bool isCore)
+void* gl_create_context(_In_ const QglConfig* wanted_config, _Out_ QglConfig* config)
 {
 	qn_verify(wanted_config != NULL);
 	qn_verify(config != NULL);
 
-	if (!isCore && GLAD_WGL_EXT_create_context_es2_profile == 0)
+	if (wanted_config->core == false && GLAD_WGL_EXT_create_context_es2_profile == 0)
 	{
 		qn_debug_outputs(true, VAR_CHK_NAME, "driver not support opengl es");
 		config->version = 0;
@@ -1072,7 +1078,7 @@ void* gl_create_context(_In_ const QglConfig * wanted_config, _Out_ QglConfig * 
 
 	HDC hdc = (HDC)stub_system_get_display();
 	PIXELFORMATDESCRIPTOR pfd;
-	if (DescribePixelFormat(hdc, (UINT)config->handle, sizeof(PIXELFORMATDESCRIPTOR), &pfd) == 0)
+	if (DescribePixelFormat(hdc, (UINT)(nuint)config->handle, sizeof(PIXELFORMATDESCRIPTOR), &pfd) == 0)
 		goto pos_error;
 	if (SetPixelFormat(hdc, (int)(nuint)config->handle, &pfd) == FALSE)
 		goto pos_error;
@@ -1087,7 +1093,7 @@ void* gl_create_context(_In_ const QglConfig * wanted_config, _Out_ QglConfig * 
 #endif
 		ATTR_ADD(WGL_CONTEXT_MAJOR_VERSION_ARB, config->version / 100);
 		ATTR_ADD(WGL_CONTEXT_MINOR_VERSION_ARB, config->version % 100);
-		ATTR_ADD(WGL_CONTEXT_PROFILE_MASK_ARB, isCore ? WGL_CONTEXT_CORE_PROFILE_BIT_ARB : WGL_CONTEXT_ES2_PROFILE_BIT_EXT);
+		ATTR_ADD(WGL_CONTEXT_PROFILE_MASK_ARB, config->core ? WGL_CONTEXT_CORE_PROFILE_BIT_ARB : WGL_CONTEXT_ES2_PROFILE_BIT_EXT);
 		if (GLAD_WGL_ARB_create_context_no_error && config->no_error != 0)
 			ATTR_ADD(WGL_CONTEXT_OPENGL_NO_ERROR_ARB, GL_TRUE);
 		if (GLAD_WGL_ARB_create_context_robustness && config->robustness != 0)
@@ -1101,7 +1107,7 @@ void* gl_create_context(_In_ const QglConfig * wanted_config, _Out_ QglConfig * 
 		ATTR_ADD(0, 0);
 #undef ATTR_ADD
 
-		context = wgl_create_context_arb(hdc, attrs, config->version, isCore);
+		context = wgl_create_context_arb(hdc, attrs, config->version, config->core);
 	}
 	if (context == NULL)
 	{
@@ -1120,7 +1126,7 @@ pos_error:
 }
 
 //
-bool gl_make_current(_In_ void* context, _In_ bool isCore)
+bool gl_make_current(_In_ void* context, _In_ const QglConfig* config)
 {
 	qn_verify(context != NULL);
 
@@ -1132,15 +1138,10 @@ bool gl_make_current(_In_ void* context, _In_ bool isCore)
 		goto pos_error_exit;
 	}
 
-	if (isCore)
+	if ((config->core ? glad_load_wgl_gl() : glad_load_wgl_gles2()) == false)
 	{
-		if (glad_load_wgl_gl() == false)
-			goto pos_error_exit;
-	}
-	else
-	{
-		if (glad_load_wgl_gles2() == false)
-			goto pos_error_exit;
+		qn_debug_outputs(true, VAR_CHK_NAME, "failed to load proc");
+		goto pos_error_exit;
 	}
 
 	return true;

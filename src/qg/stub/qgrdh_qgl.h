@@ -35,6 +35,7 @@ typedef struct QGLRENDER	QglRender;
 #endif
 
 #define QGL_RDH				qs_cast_type(qg_instance_rdh, QglRdh)
+#define QGL_CORE			(QGL_RDH->cfg.core)
 #define QGL_PENDING			(&QGL_RDH->pd)
 #define QGL_SESSION			(&QGL_RDH->ss)
 #define QGL_RESOURCE		(&QGL_RDH->res)
@@ -52,12 +53,13 @@ typedef struct QGLRENDER	QglRender;
 // 컨피그
 typedef struct QGLCONFIG
 {
-	void*				handle;
 	int					version;
 	byte				red, green, blue, alpha;
 	byte				depth, stencil, samples;
 	byte				stereo, srgb, transparent;
 	byte				float_buffer, no_error, robustness;
+	bool				core;
+	void*				handle;
 } QglConfig;
 QN_DECL_CTNR(QglCtnConfig, QglConfig);
 
@@ -144,6 +146,9 @@ typedef struct QGLRESOURCE
 {
 	QglRender*			ortho_render;
 	QglRender*			glyph_render;
+
+	char				hdr_vertex[256];
+	char				hdr_fragment[256];
 } QglResource;
 
 // GL 렌더 디바이스
@@ -167,7 +172,6 @@ struct QGLRDH
 #endif
 
 	bool				disposed;
-	bool				use_egl;
 };
 
 // 버퍼
@@ -217,15 +221,15 @@ extern int qgl_index_of_opengl_version(bool is_core, int v);
 
 // EGL
 extern EGLDisplay egl_initialize(_In_ const QglConfig* wanted_config);
-extern EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wanted_config, _Out_ QglConfig* config, _In_ bool isCore);
+extern EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wanted_config, _Out_ QglConfig* config);
 extern EGLSurface egl_create_surface(_In_ EGLDisplay display, _In_ EGLContext context, _In_ const QglConfig* config, _In_ int visual_id);
-extern bool egl_make_current(_In_ EGLDisplay display, _In_ EGLSurface surface, _In_ EGLContext context, _In_ bool isCore);
+extern bool egl_make_current(_In_ EGLDisplay display, _In_ EGLSurface surface, _In_ EGLContext context, _In_ const QglConfig* config);
 extern void egl_dispose(_In_ EGLDisplay display, _In_ EGLSurface surface, _In_ EGLContext context);
 
 // WGL, GLX?
 extern bool gl_initialize(void);
-extern void* gl_create_context(_In_ const QglConfig* wanted_config, _Out_ QglConfig* config, _In_ bool isCore);
-extern bool gl_make_current(_In_ void* context, _In_ bool isCore);
+extern void* gl_create_context(_In_ const QglConfig* wanted_config, _Out_ QglConfig* config);
+extern bool gl_make_current(_In_ void* context, _In_ const QglConfig* config);
 extern bool gl_swap_buffers(void);
 extern bool gl_swap_interval(_In_ int interval);
 extern void gl_dispose(_In_ void* context);
