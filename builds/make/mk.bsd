@@ -1,0 +1,11 @@
+﻿# Makefile for QSLIB
+
+MAKE=make
+
+
+all:
+
+clean:
+
+rebuild: clean all
+
