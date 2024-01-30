@@ -4,7 +4,7 @@
 //
 
 #include "pch.h"
-#ifdef __GNUC__
+#ifdef _QN_UNIX_
 #include <signal.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -78,9 +78,9 @@ uint qn_spin_enter(QnSpinLock* lock)
 		if (intrinsics < backoff)
 		{
 #if defined __GNUC__ && (defined __i386__ || defined __amd64__ || defined __x86_64__)
-			__asm__ __volatile__("pause\n")
+			__asm__ __volatile__("pause\n");
 #elif defined __GNUC__ && defined __aarch64__
-			__asm__ __volatile__("yield" ::: "memory")
+			__asm__ __volatile__("yield" ::: "memory");
 #else
 			qn_sleep(0);
 #endif

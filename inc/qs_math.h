@@ -419,7 +419,7 @@ INLINE float qm_fractf(float f)
 /// @brief 사인과 코사인을 동시에 계산
 INLINE void qm_sincosf(float v, float* s, float* c)
 {
-#if defined QM_USE_AVX
+#if defined _MSC_VER && defined QM_USE_AVX
 	QMSVEC i = _mm_set_ss(v);
 	QMSVEC o = _mm_sincos_ps(&i, i);
 	*s = _mm_cvtss_f32(o);
@@ -1407,20 +1407,20 @@ INLINE QmVec4 QM_VECTORCALL qm_vec_simd_rsqrt(const QmVec4 v)
 /// @brief 벡터 한번에 사인 코사인
 INLINE void QM_VECTORCALL qm_vec_simd_sincos(const QmVec4 v, QmVec4* retSin, QmVec4* retCos)
 {
-#if defined QM_USE_AVX
+#if defined _MSC_VER && defined QM_USE_AVX
 	retSin->v = _mm_sincos_ps(&retCos->v, v.v);
 #else
 	float s = sinf(v.X);
 	float c = cosf(v.X);
-	retSin->v = (QMSVEC){ { s, s, s, s } };
-	retCos->v = (QMSVEC){ { c, c, c, c } };
+	*retSin = (QmVec4){ { s, s, s, s } };
+	*retCos = (QmVec4){ { c, c, c, c } };
 #endif
 }
 
 /// @brief 벡터 한번에 사인
 INLINE QmVec4 QM_VECTORCALL qm_vec_simd_sin(const QmVec4 v)
 {
-#if defined QM_USE_AVX
+#if defined _MSC_VER && defined QM_USE_AVX
 	QMSVEC h = _mm_sin_ps(v.v);
 	return *(QmVec4*)&h;
 #else
@@ -1432,7 +1432,7 @@ INLINE QmVec4 QM_VECTORCALL qm_vec_simd_sin(const QmVec4 v)
 /// @brief 벡터 한번에 코사인
 INLINE QmVec4 QM_VECTORCALL qm_vec_simd_cos(const QmVec4 v)
 {
-#if defined QM_USE_AVX
+#if defined _MSC_VER && defined QM_USE_AVX
 	QMSVEC h = _mm_cos_ps(v.v);
 	return *(QmVec4*)&h;
 #else
@@ -1444,7 +1444,7 @@ INLINE QmVec4 QM_VECTORCALL qm_vec_simd_cos(const QmVec4 v)
 /// @brief 벡터 한번에 탄젠트
 INLINE QmVec4 QM_VECTORCALL qm_vec_simd_tan(const QmVec4 v)
 {
-#if defined QM_USE_AVX
+#if defined _MSC_VER && defined QM_USE_AVX
 	QMSVEC h = _mm_tan_ps(v.v);
 	return *(QmVec4*)&h;
 #else
@@ -1456,7 +1456,7 @@ INLINE QmVec4 QM_VECTORCALL qm_vec_simd_tan(const QmVec4 v)
 /// @brief 벡터 한번에 아크사인
 INLINE QmVec4 QM_VECTORCALL qm_vec_simd_asin(const QmVec4 v)
 {
-#if defined QM_USE_AVX
+#if defined _MSC_VER && defined QM_USE_AVX
 	QMSVEC h = _mm_asin_ps(v.v);
 	return *(QmVec4*)&h;
 #else
@@ -1468,7 +1468,7 @@ INLINE QmVec4 QM_VECTORCALL qm_vec_simd_asin(const QmVec4 v)
 /// @brief 벡터 한번에 아크코사인
 INLINE QmVec4 QM_VECTORCALL qm_vec_simd_acos(const QmVec4 v)
 {
-#if defined QM_USE_AVX
+#if defined _MSC_VER && defined QM_USE_AVX
 	QMSVEC h = _mm_acos_ps(v.v);
 	return *(QmVec4*)&h;
 #else
@@ -1480,7 +1480,7 @@ INLINE QmVec4 QM_VECTORCALL qm_vec_simd_acos(const QmVec4 v)
 /// @brief 벡터 한번에 아크탄젠트
 INLINE QmVec4 QM_VECTORCALL qm_vec_simd_atan(const QmVec4 v)
 {
-#if defined QM_USE_AVX
+#if defined _MSC_VER && defined QM_USE_AVX
 	QMSVEC h = _mm_atan_ps(v.v);
 	return *(QmVec4*)&h;
 #else
@@ -1492,7 +1492,7 @@ INLINE QmVec4 QM_VECTORCALL qm_vec_simd_atan(const QmVec4 v)
 /// @brief 벡터 한번에 아크탄젠트 (y/x)
 INLINE QmVec4 QM_VECTORCALL qm_vec_simd_atan2(const QmVec4 y, const QmVec4 x)
 {
-#if defined QM_USE_AVX
+#if defined _MSC_VER &&  defined QM_USE_AVX
 	QMSVEC h = _mm_atan2_ps(y.v, x.v);
 	return *(QmVec4*)&h;
 #else

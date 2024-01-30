@@ -228,7 +228,7 @@ void qn_set_key(const char* RESTRICT name, const nint value)
 }
 
 //
-const nint qn_get_key(const char* name)
+nint qn_get_key(const char* name)
 {
 	qn_val_if_fail(runtime_impl.inited, 0);
 	qn_val_if_fail(name != NULL, 0);

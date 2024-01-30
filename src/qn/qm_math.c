@@ -51,6 +51,7 @@ double qm_randd(QmRandom* r)
 //////////////////////////////////////////////////////////////////////////
 // 수학 함수
 
+#if false
 /// @brief 행렬식
 QSAPI float QM_VECTORCALL qm_mat4_det(QmMat4 m)
 {
@@ -60,6 +61,7 @@ QSAPI float QM_VECTORCALL qm_mat4_det(QmMat4 m)
 	QmVec4 s32 = qm_vec_sub(qm_vec_mag(m.r[2], m._44), qm_vec_mag(m.r[3], m._34));
 	return qm_vec3_dot(c01, s32) + qm_vec3_dot(c23, s10);
 }
+#endif
 
 
 

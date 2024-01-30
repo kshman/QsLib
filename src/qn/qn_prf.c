@@ -4,8 +4,9 @@
 //
 
 #include "pch.h"
-#ifdef __GNUC__
+#ifdef _QN_UNIX_
 #include <signal.h>
+#include <pthread.h>
 #endif
 #ifdef _QN_EMSCRIPTEN_
 #include <emscripten/console.h>
