@@ -305,7 +305,7 @@ static void _qn_thd_set_name(QnRealThread* self)
 	static PFWin32SetThreadDescription Win32SetThreadDescription = NULL;
 	if (kernel32 == NULL)
 	{
-		kernel32 = qn_mod_load("KERNEL32", 0);
+		kernel32 = qn_load_mod("KERNEL32", 0);
 		if (kernel32 != NULL)
 			Win32SetThreadDescription = (PFWin32SetThreadDescription)qn_mod_func(kernel32, "SetThreadDescription");
 	}
@@ -427,7 +427,7 @@ QnThread* qn_thread_self(void)
 }
 
 //
-QnThread* qn_thread_new(const char* RESTRICT name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
+QnThread* qn_new_thread(const char* RESTRICT name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
 {
 	QnRealThread* self = qn_alloc_zero_1(QnRealThread);
 
@@ -687,7 +687,7 @@ struct QNMUTEX
 #endif
 };
 
-QnMutex* qn_mutex_new(void)
+QnMutex* qn_new_mutex(void)
 {
 	QnMutex* self = qn_alloc_1(QnMutex);
 #ifdef _QN_WINDOWS_
@@ -752,7 +752,7 @@ struct QNCOND
 };
 
 //
-QnCond* qn_cond_new(void)
+QnCond* qn_new_cond(void)
 {
 #ifdef _QN_WINDOWS_
 	QnCond* self = qn_alloc_zero_1(QnCond);
@@ -870,7 +870,7 @@ struct QNSEM
 };
 
 //
-QnSem* qn_sem_new(int initial)
+QnSem* qn_new_sem(int initial)
 {
 #ifdef _QN_WINDOWS_
 	const HANDLE handle = CreateSemaphoreEx(NULL, initial, 32 * 1024, NULL, 0, SEMAPHORE_ALL_ACCESS);

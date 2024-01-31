@@ -45,10 +45,13 @@
 
 #if (defined _MSC_VER || defined __clang__) && !defined _M_ARM && !defined _M_ARM64 && !defined __EMSCRIPTEN__
 #define QM_VECTORCALL	__vectorcall
+#define QM_VECTORDECL	__vectorcall
 #elif defined __GNUC__
 #define QM_VECTORCALL
+#define QM_VECTORDECL
 #else
 #define QM_VECTORCALL	__fastcall
+#define QM_VECTORDECL
 #endif
 
 #include <limits.h>
@@ -127,7 +130,7 @@ QSAPI double qm_randd(QmRandom* r);
 
 
 //////////////////////////////////////////////////////////////////////////
-// value types
+// pack types
 
 /// @brief FLOAT2
 typedef struct QMFLOAT2
@@ -183,23 +186,69 @@ typedef struct QMUINT4
 	uint X, Y, Z, W;
 } QmUint4;
 
-/// @brief HALF2
-typedef struct QMHALF2
+/// @brief USHORT2
+typedef union QMUSHORT2
 {
-	halffloat X, Y;
+	struct { ushort X, Y; };
+	uint v;
+} QmUshort2;
+
+/// @brief USHORT4
+typedef union QMUSHORT4
+{
+	struct { ushort X, Y, Z, W; };
+	ullong v;
+} QmUshort4;
+
+/// @brief HALF2
+typedef union QMHALF2
+{
+	struct { halffloat X, Y; };
+	uint v;
 } QmHalf2;
 
-/// @brief HALF3
-typedef struct QMHALF3
-{
-	halffloat X, Y, Z;
-} QmHalf3;
-
 /// @brief HALF4
-typedef struct QMHALF4
+typedef union QMHALF4
 {
-	halffloat X, Y, Z, W;
+	struct { halffloat X, Y, Z, W; };
+	ullong v;
 } QmHalf4;
+
+/// @brief UINT 4/4/4/4
+typedef union QMU4444
+{
+	struct { ushort B : 4, G : 4, R : 4, A : 4; };
+	ushort v;
+} QmU4444;
+
+/// @brief UINT 5/5/5/1
+typedef union QMU5551
+{
+	struct { ushort B : 5, G : 5, R : 5, A : 1; };
+	ushort v;
+} QmU5551;
+
+/// @brief UINT 5/6/5
+typedef union QMU565
+{
+	struct { ushort B : 5, G : 6, R : 5; };
+	ushort v;
+} QmU565;
+
+/// @brief float 11/11/10
+typedef union QMF111110
+{
+	struct { uint B : 11, G : 11, R : 10; };
+	struct { uint Bm : 6, Be : 5, Gm : 6, Ge : 5, Rm : 5, Re : 5; };
+	uint v;
+} QmF111110;
+
+/// @brief UINT 10/10/10/2
+typedef union QMU1010102
+{
+	struct { uint B : 10, G : 10, R : 10, A : 2; };
+	uint v;
+} QmU1010102;
 
 /// @brief FLOAT4X4
 typedef union QMFLOAT4X4
@@ -325,11 +374,8 @@ typedef union QMRECT
 typedef union QMKOLOR
 {
 	byte b[4];
-	uint U;
-	struct
-	{
-		byte B, G, R, A;
-	};
+	uint v;
+	struct { byte B, G, R, A; };
 } QmKolor;
 
 

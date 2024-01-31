@@ -63,7 +63,7 @@ struct ShedEvent
 // 초기화
 static void shed_event_init(void)
 {
-	shed_event.mutex = qn_mutex_new();
+	shed_event.mutex = qn_new_mutex();
 	// 루프
 	shed_event.loop.reset = false;
 	shed_event.loop.count = 0;
@@ -302,7 +302,7 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 {
 	qg_instance_stub = stub;
 
-	stub->mutex = qn_mutex_new();
+	stub->mutex = qn_new_mutex();
 
 	stub->flags = flags;
 	stub->features = QGFEATURE_NONE;						// 나중에 설정해야 하므로 NONE
@@ -310,7 +310,7 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 
 	stub->aspect = 9.0f / 16.0f;
 
-	stub->timer = qn_timer_new();
+	stub->timer = qn_new_timer();
 	stub->run = stub->timer->runtime;
 	stub->active = stub->timer->abstime;
 	stub->frames = 1.0 / 60.0;
@@ -331,7 +331,7 @@ void qg_close_stub(void)
 
 	stub_system_finalize();
 
-	qn_timer_delete(self->timer);
+	qn_unloadu(self->timer);
 
 	qn_pctnr_foreach_1(&self->monitors, qn_mem_free);
 	qn_pctnr_disp(&self->monitors);

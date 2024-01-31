@@ -51,6 +51,7 @@ static bool _qn_realtag_write_file(const QnRealTag* self, QnFile* file, int iden
 // RML
 struct QNMLU
 {
+	QnGam				base;
 	SubArray			tags;
 	ErrorArray			errs;
 
@@ -58,20 +59,28 @@ struct QNMLU
 };
 
 //
-QnMlu* qn_mlu_new(void)
+static void qn_mlu_dispose(QnGam* gam);
+
+//
+QnMlu* qn_new_mlu(void)
 {
 	QnMlu* self = qn_alloc_zero_1(QnMlu);
-	return self;
+	static qn_gam_vt(QNGAM) qn_mlu_vt =
+	{
+		"MLU",
+		qn_mlu_dispose,
+	};
+	return qn_gam_init(self, QnMlu, &qn_mlu_vt);
 }
 
 //
-QnMlu* qn_mlu_new_file(const char* filename)
+QnMlu* qn_open_mlu(const char* filename)
 {
 	int size;
 	byte* data = (byte*)qn_file_alloc(filename, &size);
 	qn_val_if_fail(data, NULL);
 
-	QnMlu* self = qn_mlu_new();
+	QnMlu* self = qn_new_mlu();
 	if (!self)
 	{
 		qn_free(data);
@@ -91,13 +100,13 @@ QnMlu* qn_mlu_new_file(const char* filename)
 }
 
 //
-QnMlu* qn_mlu_new_file_l(const wchar* filename)
+QnMlu* qn_open_mlu_l(const wchar* filename)
 {
 	int size;
 	byte* data = (byte*)qn_file_alloc_l(filename, &size);
 	qn_val_if_fail(data, NULL);
 
-	QnMlu* self = qn_mlu_new();
+	QnMlu* self = qn_new_mlu();
 	if (!self)
 	{
 		qn_free(data);
@@ -117,12 +126,12 @@ QnMlu* qn_mlu_new_file_l(const wchar* filename)
 }
 
 //
-QnMlu* qn_mlu_new_buffer(const void* RESTRICT data, const int size)
+QnMlu* qn_new_mlu_buffer(const void* RESTRICT data, const int size)
 {
 	qn_val_if_fail(data, NULL);
 	qn_val_if_fail(size > 0, NULL);
 
-	QnMlu* self = qn_mlu_new();
+	QnMlu* self = qn_new_mlu();
 	qn_val_if_fail(self, NULL);
 
 	qn_mlu_load_buffer(self, data, size);
@@ -131,8 +140,9 @@ QnMlu* qn_mlu_new_buffer(const void* RESTRICT data, const int size)
 }
 
 //
-void qn_mlu_delete(QnMlu* self)
+static void qn_mlu_dispose(QnGam* gam)
 {
+	QnMlu* self = (QnMlu*)gam;
 	qn_mlu_clean_tags(self);
 	qn_mlu_clean_errs(self);
 
@@ -475,7 +485,7 @@ bool qn_mlu_load_buffer(QnMlu* self, const void* RESTRICT data, const int size)
 				}
 
 				// 열기
-				curtag = (QnRealTag*)qn_mltag_new(qn_bstr_data(bname));
+				curtag = (QnRealTag*)qn_new_mltag(qn_bstr_data(bname));
 				if (!curtag)
 				{
 					qn_mlu_add_errf(self, "line#%d, out of memory.", line);
@@ -580,7 +590,7 @@ bool qn_mlu_write_file(const QnMlu* self, const char* RESTRICT filename)
 	qn_val_if_fail(filename, false);
 	qn_val_if_fail(qn_arr_count(&self->tags) > 0, false);
 
-	QnFile* file = qn_file_new(filename, "w");
+	QnFile* file = qn_open_file(filename, "w");
 	qn_val_if_fail(file, false);
 
 	// UTF8 BOM
@@ -596,7 +606,7 @@ bool qn_mlu_write_file(const QnMlu* self, const char* RESTRICT filename)
 		_qn_realtag_write_file(tag, file, 0);
 	}
 
-	qn_file_delete(file);
+	qn_unloadu(file);
 
 	return true;
 }
@@ -687,7 +697,7 @@ QnMlTag* qn_mlu_add(QnMlu* self, const char* RESTRICT name, const char* RESTRICT
 {
 	qn_val_if_fail(name, NULL);
 
-	QnRealTag* tag = (QnRealTag*)qn_mltag_new(name);
+	QnRealTag* tag = (QnRealTag*)qn_new_mltag(name);
 	qn_val_if_fail(tag, NULL);
 
 	tag->base.line = line;
@@ -779,7 +789,7 @@ bool qn_mlu_remove_tag(QnMlu* self, QnMlTag* RESTRICT tag, const bool is_delete)
 // 노드
 
 //
-QnMlTag* qn_mltag_new(const char* name)
+QnMlTag* qn_new_mltag(const char* name)
 {
 	QnRealTag* self = qn_alloc_zero_1(QnRealTag);
 	qn_val_if_fail(self, NULL);
@@ -1169,7 +1179,7 @@ QnMlTag* qn_mltag_add_sub(QnMlTag* ptr, const char* RESTRICT name, const char* R
 	qn_val_if_fail(name, NULL);
 
 	QnRealTag* self = (QnRealTag*)ptr;
-	QnRealTag* mt = (QnRealTag*)qn_mltag_new(name);
+	QnRealTag* mt = (QnRealTag*)qn_new_mltag(name);
 	qn_val_if_fail(mt, NULL);
 
 	mt->base.line = line;

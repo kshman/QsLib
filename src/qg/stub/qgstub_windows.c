@@ -64,7 +64,7 @@ static bool windows_dll_init(void)
 	for (int i = 4; i >= 1; i--)
 	{
 		xinput_dll[8] = (char)('0' + i);
-		if ((module = qn_mod_load(xinput_dll, 1)) != NULL)
+		if ((module = qn_load_mod(xinput_dll, 1)) != NULL)
 		{
 			dll_name = xinput_dll;
 			break;
@@ -77,7 +77,7 @@ static bool windows_dll_init(void)
 		return false;
 	}
 #define DEF_WIN_DLL_BEGIN(name)\
-	module = qn_mod_load(dll_name = (name), 1); if (module == NULL)\
+	module = qn_load_mod(dll_name = (name), 1); if (module == NULL)\
 	{ qn_debug_outputf(true, "WINDOWS STUB", "DLL load filed: %s", dll_name); return false; } else {
 #define DEF_WIN_DLL_END }
 #define DEF_WIN_FUNC(ret,name,args)\
@@ -197,7 +197,6 @@ static void windows_set_key_hook(HINSTANCE instance);
 static void windows_set_dpi_awareness(void);
 static bool windows_detect_displays(void);
 static void windows_hold_mouse(bool hold);
-static LRESULT CALLBACK windows_dummy_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
 static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARAM lp);
 #pragma endregion 스터브 선언
 
@@ -761,7 +760,8 @@ static void windows_set_dpi_awareness(void)
 	if (SetProcessDpiAwareness != NULL &&
 		SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE) != E_INVALIDARG)
 		return;
-	SetProcessDPIAware();
+	if (SetProcessDPIAware != NULL)
+		SetProcessDPIAware();
 }
 
 // 친숙한 모니터 이름 
@@ -1478,8 +1478,8 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				if (hdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
 				{
 					const DEV_BROADCAST_DEVICEINTERFACE* di = (const DEV_BROADCAST_DEVICEINTERFACE*)lp;
-					
-					if (memcmp(&di->dbcc_classguid, &GUID_DEVINTERFACE_HID, sizeof(GUID))==0)
+
+					if (memcmp(&di->dbcc_classguid, &GUID_DEVINTERFACE_HID, sizeof(GUID)) == 0)
 					{
 						// 컨트롤러
 					}
@@ -1572,7 +1572,7 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 				const float ydpi = LOWORD(wp) / 96.0f;
 				// TODO: 여기에 DPI 변경 알림 이벤트 날리면 좋겠네
 #endif
-			}
+				}
 			break;
 
 		case WM_GETDPISCALEDSIZE:
@@ -1593,13 +1593,13 @@ static LRESULT CALLBACK windows_mesg_proc(HWND hwnd, UINT mesg, WPARAM wp, LPARA
 
 		default:
 			break;
-	}
+			}
 
 pos_windows_mesg_proc_exit:
 	if (result >= 0)
 		return result;
 	return CallWindowProc(DefWindowProc, hwnd, mesg, wp, lp);
-}
+	}
 #pragma endregion 윈도우 메시지
 
 #endif // _QN_WINDOWS_

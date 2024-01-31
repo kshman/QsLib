@@ -215,7 +215,7 @@ typedef struct RENDERPARAM
 // 렌더러 디바이스
 typedef struct RDHBASE
 {
-	QsGam				base;
+	QnGam				base;
 
 	RendererInfo		info;
 
@@ -226,9 +226,9 @@ typedef struct RDHBASE
 	QgNodeMukum			mukums[RDHNODE_MAX_VALUE];
 } RdhBase;
 
-qs_name_vt(RDHBASE)
+qn_gam_vt(RDHBASE)
 {
-	qs_name_vt(QSGAM)	base;
+	qn_gam_vt(QNGAM)	base;
 	void (*layout)(void);
 	void (*reset)(void);
 	void (*clear)(QgClear);
@@ -238,11 +238,11 @@ qs_name_vt(RDHBASE)
 	void (*flush)(void);
 
 	QgBuffer* (*create_buffer)(QgBufferType, uint, uint, const void*);
-	QgRender* (*create_render)(const char*, const QgPropRender*, const QgPropShader*);
+	QgRenderState* (*create_render)(const char*, const QgPropRender*, const QgPropShader*);
 
 	bool (*set_vertex)(QgLayoutStage, QgBuffer*);
 	bool (*set_index)(QgBuffer*);
-	bool (*set_render)(QgRender*);
+	bool (*set_render)(QgRenderState*);
 
 	bool (*draw)(QgTopology, int);
 	bool (*draw_indexed)(QgTopology, int);

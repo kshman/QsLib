@@ -25,11 +25,7 @@
 // 파일 구조체
 struct QNFILE
 {
-#ifdef _QN_WINDOWS_
-	HANDLE			fd;
-#else
-	int				fd;
-#endif
+	QnGam			base;
 	char*			name;
 	QnFileAccess	acs;
 	int				flag;
@@ -37,6 +33,16 @@ struct QNFILE
 
 // 최대 할당 크기
 static size_t max_file_alloc_size = 512ULL * 1024ULL * 1024ULL;
+
+//
+static void qn_file_dispose(QnGam* gam);
+
+//
+static qn_gam_vt(QNGAM) qn_file_vt =
+{
+	"FILE",
+	qn_file_dispose,
+};
 
 // 분석
 static void qn_file_access_parse(const char* mode, QnFileAccess* self, int* flag)
@@ -246,7 +252,7 @@ static void qn_file_access_parse(const char* mode, QnFileAccess* self, int* flag
 }
 
 //
-QnFile* qn_file_new(const char* RESTRICT filename, const char* RESTRICT mode)
+QnFile* qn_open_file(const char* RESTRICT filename, const char* RESTRICT mode)
 {
 	qn_val_if_fail(filename, NULL);
 
@@ -257,14 +263,12 @@ QnFile* qn_file_new(const char* RESTRICT filename, const char* RESTRICT mode)
 
 #ifdef _QN_WINDOWS_
 	wchar* uni = (wchar*)qn_u8to16_dup(filename, 0);
-	self->fd = CreateFile(uni, self->acs.access, self->acs.share, NULL, self->acs.mode, self->acs.attr, NULL);
+	HANDLE fd = CreateFile(uni, self->acs.access, self->acs.share, NULL, self->acs.mode, self->acs.attr, NULL);
 	qn_free(uni);
-
-	if (!self->fd || self->fd == INVALID_HANDLE_VALUE)
+	if (!fd || fd == INVALID_HANDLE_VALUE)
 #else
-	self->fd = self->acs.access == 0 ? open(filename, self->acs.mode) : open(filename, self->acs.mode, self->acs.access);
-
-	if (self->fd < 0)
+	int fd = self->acs.access == 0 ? open(filename, self->acs.mode) : open(filename, self->acs.mode, self->acs.access);
+	if (fd < 0)
 #endif
 	{
 		qn_free(self);
@@ -272,8 +276,9 @@ QnFile* qn_file_new(const char* RESTRICT filename, const char* RESTRICT mode)
 	}
 
 	self->name = qn_strdup(filename);
+	qn_set_gam_desc(self, fd);
 
-	return self;
+	return qn_gam_init(self, QnFile, &qn_file_vt);
 }
 
 //
@@ -296,14 +301,12 @@ QnFile* qn_file_new_l(const wchar* RESTRICT filename, const wchar* RESTRICT mode
 	char* u8;
 #ifdef _QN_WINDOWS_
 	u8 = qn_u16to8_dup((const uchar2*)filename, 0);
-	self->fd = CreateFile(filename, self->acs.access, self->acs.share, NULL, self->acs.mode, self->acs.attr, NULL);
-
-	if (!self->fd || self->fd == INVALID_HANDLE_VALUE)
+	HANDLE fd = CreateFile(filename, self->acs.access, self->acs.share, NULL, self->acs.mode, self->acs.attr, NULL);
+	if (!fd || fd == INVALID_HANDLE_VALUE)
 #else
 	u8 = qn_u32to8_dup((const uchar4*)filename, 0);
-	self->fd = self->acs.access == 0 ? open(u8, self->acs.mode) : open(u8, self->acs.mode, self->acs.access);
-
-	if (self->fd < 0)
+	int fd = self->acs.access == 0 ? open(u8, self->acs.mode) : open(u8, self->acs.mode, self->acs.access);
+	if (fd < 0)
 #endif
 	{
 		qn_free(u8);
@@ -312,12 +315,13 @@ QnFile* qn_file_new_l(const wchar* RESTRICT filename, const wchar* RESTRICT mode
 	}
 
 	self->name = u8;
+	qn_set_gam_desc(self, fd);
 
-	return self;
+	return qn_gam_init(self, QnFile, &qn_file_vt);
 }
 
 //
-QnFile* qn_file_new_dup(QnFile* src)
+QnFile* qn_file_dup(QnFile* src)
 {
 	QnFile* self = qn_alloc_1(QnFile);
 	qn_val_if_fail(self, NULL);
@@ -326,18 +330,15 @@ QnFile* qn_file_new_dup(QnFile* src)
 
 #ifdef _QN_WINDOWS_
 	const HANDLE p = GetCurrentProcess();
-	HANDLE d;
-	if (!DuplicateHandle(p, self->fd, p, &d, 0, false, DUPLICATE_SAME_ACCESS))
+	HANDLE fd;
+	if (!DuplicateHandle(p, qn_get_gam_handle(self), p, &fd, 0, false, DUPLICATE_SAME_ACCESS))
 	{
 		qn_free(self);
 		return NULL;
 	}
-
-	self->fd = d;
 #else
-	self->fd = dup(src->fd);
-
-	if (self->fd < 0)
+	int fd = dup(qn_get_gam_desc_int(self));
+	if (fd < 0)
 	{
 		qn_free(self);
 		return NULL;
@@ -345,19 +346,24 @@ QnFile* qn_file_new_dup(QnFile* src)
 #endif
 
 	self->name = qn_strdup(src->name);
+	qn_set_gam_desc(self, fd);
 
-	return self;
+	return qn_gam_init(self, QnFile, &qn_file_vt);
 }
 
 //
-void qn_file_delete(QnFile* self)
+static void qn_file_dispose(QnGam* gam)
 {
+	QnFile* self = qn_cast_type(gam, QnFile);
+
 #ifdef _QN_WINDOWS_
-	if (self->fd && self->fd != INVALID_HANDLE_VALUE)
-		CloseHandle(self->fd);
+	HANDLE fd = qn_get_gam_handle(self);
+	if (fd && fd != INVALID_HANDLE_VALUE)
+		CloseHandle(fd);
 #else
-	if (self->fd >= 0)
-		close(self->fd);
+	int fd = qn_get_gam_desc_int(self);
+	if (fd >= 0)
+		close(fd);
 #endif
 
 	qn_free(self->name);
@@ -385,9 +391,9 @@ int qn_file_read(QnFile* self, void* RESTRICT buffer, const int offset, const in
 	byte* ptr = (byte*)buffer;
 #ifdef _QN_WINDOWS_
 	DWORD ret;
-	return ReadFile(self->fd, ptr + offset, size, &ret, NULL) ? (int)ret : 0;
+	return ReadFile(qn_get_gam_handle(self), ptr + offset, size, &ret, NULL) ? (int)ret : 0;
 #else
-	return (int)read(self->fd, ptr + offset, (size_t)size);
+	return (int)read(qn_get_gam_desc_int(self), ptr + offset, (size_t)size);
 #endif
 }
 
@@ -400,9 +406,9 @@ int qn_file_write(QnFile* self, const void* RESTRICT buffer, const int offset, c
 	const byte* ptr = (const byte*)buffer;
 #ifdef _QN_WINDOWS_
 	DWORD ret;
-	return WriteFile(self->fd, ptr + offset, size, &ret, NULL) ? (int)ret : 0;
+	return WriteFile(qn_get_gam_handle(self), ptr + offset, size, &ret, NULL) ? (int)ret : 0;
 #else
-	return (int)write(self->fd, ptr + offset, (size_t)size);
+	return (int)write(qn_get_gam_desc_int(self), ptr + offset, (size_t)size);
 #endif
 }
 
@@ -411,19 +417,11 @@ llong qn_file_size(QnFile* self)
 {
 #ifdef _QN_WINDOWS_
 	LARGE_INTEGER ll;
-	return GetFileSizeEx(self->fd, &ll) ? ll.QuadPart : -1;
+	return GetFileSizeEx(qn_get_gam_handle(self), &ll) ? ll.QuadPart : -1;
 #else
-#ifdef _QN_LINUX_
-	off_t save, last;
-#elif defined _QN_FREEBSD_
-	int save, last;
-#else
-	long save, last;
-#endif
-	save = lseek(self->fd, 0, SEEK_CUR);
-	last = lseek(self->fd, 0, SEEK_END);
-	lseek(self->fd, save, SEEK_SET);
-	return last;
+	struct stat s;
+	int n = fstat(qn_get_gam_desc_int(self), &s);
+	return n < 0 ? -1 : s.st_size;
 #endif
 }
 
@@ -433,9 +431,9 @@ llong qn_file_tell(QnFile* self)
 #ifdef _QN_WINDOWS_
 	const LARGE_INTEGER pl = { .QuadPart = 0 };
 	LARGE_INTEGER ll;
-	return SetFilePointerEx(self->fd, pl, &ll, FILE_CURRENT) ? ll.QuadPart : -1;
+	return SetFilePointerEx(qn_get_gam_handle(self), pl, &ll, FILE_CURRENT) ? ll.QuadPart : -1;
 #else
-	return lseek(self->fd, 0, SEEK_CUR);
+	return lseek(qn_get_gam_desc_int(self), 0, SEEK_CUR);
 #endif
 }
 
@@ -446,11 +444,11 @@ llong qn_file_seek(QnFile* self, const llong offset, const QnSeek org)
 	static_assert(FILE_BEGIN == QNSEEK_BEGIN && FILE_CURRENT == QNSEEK_CUR && FILE_END == QNSEEK_END, "QnSeek not equal to OS seek");
 	const LARGE_INTEGER* po = (const LARGE_INTEGER*)&offset;
 	LARGE_INTEGER ll;
-	const BOOL b = SetFilePointerEx(self->fd, *po, &ll, org);
+	const BOOL b = SetFilePointerEx(qn_get_gam_handle(self), *po, &ll, org);
 	return b ? ll.QuadPart : -1;
 #else
 	static_assert(SEEK_SET == QNSEEK_BEGIN && SEEK_CUR == QNSEEK_CUR && SEEK_END == QNSEEK_END, "QnSeek not equal to OS seek");
-	return lseek(self->fd, offset, (int)org);
+	return lseek(qn_get_gam_desc_int(self), offset, (int)org);
 #endif
 }
 
@@ -458,9 +456,9 @@ llong qn_file_seek(QnFile* self, const llong offset, const QnSeek org)
 bool qn_file_flush(const QnFile* self)
 {
 #ifdef _QN_WINDOWS_
-	return FlushFileBuffers(self->fd) != 0;
+	return FlushFileBuffers(qn_get_gam_handle(self)) != 0;
 #else
-	return fsync(self->fd) == 0;
+	return fsync(qn_get_gam_desc_int(self)) == 0;
 #endif
 }
 
@@ -584,55 +582,106 @@ void qn_file_set_max_alloc_size(const size_t n)
 }
 
 //
-void* qn_file_alloc(const char* RESTRICT filename, int* size)
+_Success_(return != NULL)
+void* qn_file_alloc(_In_ const char* RESTRICT filename, _Out_opt_ int* size)
 {
 	qn_val_if_fail(filename != NULL, NULL);
 
-	QnFile* file = qn_file_new(filename, "rb");
-	qn_val_if_fail(file, NULL);
-
-	const llong len = qn_file_size(file);
-	if (!len || len > (llong)max_file_alloc_size)
+#ifdef _QN_WINDOWS_
+	wchar* uni = (wchar*)qn_u8to16_dup(filename, 0);
+	HANDLE fd = CreateFile(uni, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	qn_free(uni);
+	if (fd == NULL || fd == INVALID_HANDLE_VALUE)
+		return NULL;
+	LARGE_INTEGER ll;
+	if (!GetFileSizeEx(fd, &ll))
 	{
-		qn_file_delete(file);
+		CloseHandle(fd);
 		return NULL;
 	}
-
-	void* buf = qn_alloc((size_t)len + 4, byte);
-	qn_file_read(file, buf, 0, (int)len);
-
-	qn_file_delete(file);
+	void* buf = qn_alloc((size_t)ll.QuadPart, byte);
+	DWORD len;
+	if (!ReadFile(fd, buf, (DWORD)ll.QuadPart, &len, NULL))
+	{
+		qn_free(buf);
+		CloseHandle(fd);
+		return NULL;
+	}
+	len = (DWORD)ll.QuadPart;
+#else
+	int fd = open(filename, O_RDONLY);
+	if (fd < 0)
+		return NULL;
+	struct stat s;
+	if (fstat(fd, &s) < 0)
+	{
+		close(fd);
+		return NULL;
+	}
+	int len = (int)s.st_size;
+	void* buf = qn_alloc(len, byte);
+	if (read(fd, buf, len) < 0)
+	{
+		qn_free(buf);
+		close(fd);
+		return NULL;
+	}
+#endif
 
 	if (size)
 		*size = (int)len;
-
 	return buf;
 }
 
 //
-void* qn_file_alloc_l(const wchar* RESTRICT filename, int* size)
+_Success_(return != NULL)
+void* qn_file_alloc_l(_In_ const wchar * RESTRICT filename, _Out_opt_ int* size)
 {
-	qn_val_if_fail(filename, NULL);
+	qn_val_if_fail(filename != NULL, NULL);
 
-	QnFile* file = qn_file_new_l(filename, L"rb");
-	qn_val_if_fail(file, NULL);
-
-	const llong len = qn_file_size(file);
-
-	if (len <= 0 || (size_t)len > max_file_alloc_size)
+#ifdef _QN_WINDOWS_
+	HANDLE fd = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (fd == NULL || fd == INVALID_HANDLE_VALUE)
+		return NULL;
+	LARGE_INTEGER ll;
+	if (!GetFileSizeEx(fd, &ll))
 	{
-		qn_file_delete(file);
+		CloseHandle(fd);
 		return NULL;
 	}
-
-	void* buf = qn_alloc((size_t)len + 4, byte);
-	qn_file_read(file, buf, 0, (int)len);
-
-	qn_file_delete(file);
+	void* buf = qn_alloc((size_t)ll.QuadPart, byte);
+	DWORD len;
+	if (!ReadFile(fd, buf, (DWORD)ll.QuadPart, &len, NULL))
+	{
+		qn_free(buf);
+		CloseHandle(fd);
+		return NULL;
+	}
+	len = (DWORD)ll.QuadPart;
+#else
+	char* u8 = qn_u32to8_dup((const uchar4*)filename, 0);
+	int fd = open(u8, O_RDONLY);
+	qn_free(u8);
+	if (fd < 0)
+		return NULL;
+	struct stat s;
+	if (fstat(fd, &s) < 0)
+	{
+		close(fd);
+		return NULL;
+	}
+	int len = (int)s.st_size;
+	void* buf = qn_alloc(len, byte);
+	if (read(fd, buf, len) < 0)
+	{
+		qn_free(buf);
+		close(fd);
+		return NULL;
+	}
+#endif
 
 	if (size)
 		*size = (int)len;
-
 	return buf;
 }
 
@@ -670,20 +719,29 @@ size_t qn_get_file_path(const char* filename, char* dest, size_t destsize)
 // 디렉토리 구조체.
 struct QNDIR
 {
+	QnGam			base;
 #ifdef _QN_WINDOWS_
-	HANDLE			handle;
 	WIN32_FIND_DATA	ffd;
 	wchar*			name;
 	int				stat;
 	char			file[MAX_PATH];
 #else
-	DIR*			pd;
 	wchar			ufile[FILENAME_MAX];
 #endif
 };
 
 //
-QnDir* qn_dir_new(const char* path)
+static void qn_dir_dispose(QnGam * gam);
+
+//
+static qn_gam_vt(QNGAM) qn_dir_vt =
+{
+	"DIR",
+	qn_dir_dispose,
+};
+
+//
+QnDir* qn_open_dir(const char* path)
 {
 #ifdef _QN_WINDOWS_
 	qn_val_if_fail(path != NULL, NULL);
@@ -724,7 +782,7 @@ QnDir* qn_dir_new(const char* path)
 	}
 
 	self->name = suffix;
-	self->handle = INVALID_HANDLE_VALUE;
+	qn_set_gam_desc(self, INVALID_HANDLE_VALUE);
 #else
 	qn_val_if_fail(path, NULL);
 
@@ -732,14 +790,14 @@ QnDir* qn_dir_new(const char* path)
 	qn_val_if_fail(pd != NULL, NULL);
 
 	QnDir* self = qn_alloc_zero_1(QnDir);
-	self->pd = pd;
+	qn_set_gam_desc(self, pd);
 #endif
 
-	return self;
+	return qn_gam_init(self, QnDir, &qn_dir_vt);
 }
 
 //
-QnDir* qn_dir_new_l(const wchar* path)
+QnDir* qn_dir_new_l(const wchar * path)
 {
 #ifdef _QN_WINDOWS_
 	qn_val_if_fail(path != NULL, NULL);
@@ -778,7 +836,7 @@ QnDir* qn_dir_new_l(const wchar* path)
 	}
 
 	self->name = suffix;
-	self->handle = INVALID_HANDLE_VALUE;
+	qn_set_gam_desc(self, INVALID_HANDLE_VALUE);
 #else
 	qn_val_if_fail(path, NULL);
 
@@ -788,23 +846,27 @@ QnDir* qn_dir_new_l(const wchar* path)
 	qn_val_if_fail(pd != NULL, NULL);
 
 	QnDir* self = qn_alloc_zero_1(QnDir);
-	self->pd = pd;
+	qn_set_gam_desc(self, pd);
 #endif
 
 	return self;
 }
 
 //
-void qn_dir_delete(QnDir* self)
+static void qn_dir_dispose(QnGam * gam)
 {
+	QnDir* self = qn_cast_type(gam, QnDir);
+
 #ifdef _QN_WINDOWS_
-	if (self->handle != INVALID_HANDLE_VALUE)
-		FindClose(self->handle);
+	HANDLE handle = qn_get_gam_handle(self);
+	if (handle != INVALID_HANDLE_VALUE)
+		FindClose(handle);
 
 	qn_free(self->name);
 	qn_free(self->file);
 #else
-	closedir(self->pd);
+	DIR* pd = qn_get_gam_desc(self, DIR*);
+	closedir(pd);
 	qn_free(self->ufile);
 #endif
 
@@ -812,7 +874,7 @@ void qn_dir_delete(QnDir* self)
 }
 
 //
-const char* qn_dir_read(QnDir* self)
+const char* qn_dir_read(QnDir * self)
 {
 #ifdef _QN_WINDOWS_
 	for (;;)
@@ -822,18 +884,19 @@ const char* qn_dir_read(QnDir* self)
 		else if (self->stat == 0)
 		{
 			// 처음
-			self->handle = FindFirstFileEx(self->name, FindExInfoStandard, &self->ffd, FindExSearchNameMatch, NULL, 0);
-			self->stat = self->handle == INVALID_HANDLE_VALUE ? -1 : 1;
+			HANDLE handle = FindFirstFileEx(self->name, FindExInfoStandard, &self->ffd, FindExSearchNameMatch, NULL, 0);
+			qn_set_gam_desc(self, handle);
+			self->stat = handle == INVALID_HANDLE_VALUE ? -1 : 1;
 		}
 		else
 		{
 			// 계속
-			if (FindNextFile(self->handle, &self->ffd))
+			if (FindNextFile(qn_get_gam_handle(self), &self->ffd))
 				self->stat++;
 			else
 			{
-				FindClose(self->handle);
-				self->handle = INVALID_HANDLE_VALUE;
+				FindClose(qn_get_gam_handle(self));
+				qn_set_gam_desc(self, INVALID_HANDLE_VALUE);
 				self->stat = -1;
 
 				return NULL;
@@ -847,17 +910,18 @@ const char* qn_dir_read(QnDir* self)
 		return self->file;
 	}
 #else
-	struct dirent* ent = readdir(self->pd);
+	DIR* pd = qn_get_gam_desc(self, DIR*);
+	struct dirent* ent = readdir(pd);
 
 	while (ent && (qn_streqv(ent->d_name, ".") || qn_streqv(ent->d_name, "..")))
-		ent = readdir(self->pd);
+		ent = readdir(pd);
 
 	return ent ? ent->d_name : NULL;
 #endif
-	}
+}
 
 //
-const wchar* qn_dir_read_l(QnDir* self)
+const wchar* qn_dir_read_l(QnDir * self)
 {
 #ifdef _QN_WINDOWS_
 	for (;;)
@@ -867,18 +931,19 @@ const wchar* qn_dir_read_l(QnDir* self)
 		else if (self->stat == 0)
 		{
 			// 처음
-			self->handle = FindFirstFileEx(self->name, FindExInfoStandard, &self->ffd, FindExSearchNameMatch, NULL, 0);
-			self->stat = self->handle == INVALID_HANDLE_VALUE ? -1 : 1;
+			HANDLE handle = FindFirstFileEx(self->name, FindExInfoStandard, &self->ffd, FindExSearchNameMatch, NULL, 0);
+			qn_set_gam_desc(self, handle);
+			self->stat = handle == INVALID_HANDLE_VALUE ? -1 : 1;
 		}
 		else
 		{
 			// 계속
-			if (FindNextFile(self->handle, &self->ffd))
+			if (FindNextFile(qn_get_gam_handle(self), &self->ffd))
 				self->stat++;
 			else
 			{
-				FindClose(self->handle);
-				self->handle = INVALID_HANDLE_VALUE;
+				FindClose(qn_get_gam_handle(self));
+				qn_set_gam_desc(self, INVALID_HANDLE_VALUE);
 				self->stat = -1;
 
 				return NULL;
@@ -891,10 +956,11 @@ const wchar* qn_dir_read_l(QnDir* self)
 		return self->ffd.cFileName;
 	}
 #else
-	struct dirent* ent = readdir(self->pd);
+	DIR* pd = qn_get_gam_desc(self, DIR*);
+	struct dirent* ent = readdir(pd);
 
 	while (ent && (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0))
-		ent = readdir(self->pd);
+		ent = readdir(pd);
 
 	if (!ent)
 		return NULL;
@@ -907,41 +973,43 @@ const wchar* qn_dir_read_l(QnDir* self)
 }
 
 //
-void qn_dir_rewind(QnDir* self)
+void qn_dir_rewind(QnDir * self)
 {
 #ifdef _QN_WINDOWS_
-	if (self->handle != INVALID_HANDLE_VALUE)
-		FindClose(self->handle);
+	HANDLE handle = qn_get_gam_handle(self);
+	if (handle != INVALID_HANDLE_VALUE)
+		FindClose(handle);
 
-	self->handle = INVALID_HANDLE_VALUE;
+	qn_set_gam_desc(self, INVALID_HANDLE_VALUE);
 	self->stat = 0;
 #else
-	rewinddir(self->pd);
+	rewinddir(qn_get_gam_desc(self, DIR*));
 #endif
 }
 
 //
-int qn_dir_tell(QnDir* self)
+int qn_dir_tell(QnDir * self)
 {
 #ifdef _QN_WINDOWS_
 	return self->stat;
 #elif defined _QN_ANDROID_
 	return -1;
 #else
-	return (int)telldir(self->pd);
+	return (int)telldir(qn_get_gam_desc(self, DIR*));
 #endif
 }
 
 //
-void qn_dir_seek(QnDir* self, const int pos)
+void qn_dir_seek(QnDir * self, const int pos)
 {
 #ifdef _QN_WINDOWS_
 	if (pos < 0)
 	{
-		if (self->handle != INVALID_HANDLE_VALUE)
-			FindClose(self->handle);
+		HANDLE handle = qn_get_gam_handle(self);
+		if (handle != INVALID_HANDLE_VALUE)
+			FindClose(handle);
 
-		self->handle = INVALID_HANDLE_VALUE;
+		qn_set_gam_desc(self, INVALID_HANDLE_VALUE);
 		self->stat = -1;
 	}
 	else
@@ -952,16 +1020,17 @@ void qn_dir_seek(QnDir* self, const int pos)
 			;
 	}
 #elif _QN_ANDROID_
+	DIR* pd = qn_get_gam_desc(self, DIR*);
 	int cnt = 0;
-	rewinddir(self->pd);
+	rewinddir(pd);
 
-	while (cnt < pos && readdir(self->pd))
+	while (cnt < pos && readdir(pd))
 		cnt++;
-
 #else
-	seekdir(self->pd, pos);
+	DIR* pd = qn_get_gam_desc(self, DIR*);
+	seekdir(pd, pos);
 #endif
-	}
+}
 
 //
 #if !defined _QN_WINDOWS_ && !defined __EMSCRIPTEN__
@@ -1014,7 +1083,7 @@ char* qn_get_base_path(void)
 		if (pw[i] == L'\\')
 			break;
 	}
-	qn_assert(i > 0, "베이스 패스가 잘못된거 같은데요!");
+	qn_assert(i > 0, "probably invalid base path!");
 	pw[i + 1] = L'\0';
 
 	const size_t sz = qn_u16to8(NULL, 0, pw, 0);
@@ -1071,7 +1140,7 @@ char* qn_get_base_path(void)
 // 모듈
 
 // 모듈 플래그
-typedef enum QnModFlag
+typedef enum QNMODFLAG
 {
 	QNMDF_SYSTEM = QN_BIT(0),			// 시스템 모듈 (load 인수로 true)를 입력했을 때 반응하도록 함
 	QNMDF_RESIDENT = QN_BIT(1),			// 로드된 모듈로 만들어졌을 때
@@ -1082,16 +1151,11 @@ typedef enum QnModFlag
 // 단위 모듈 내용
 struct QNMODULE
 {
+	QnGam				base;
+
 	char*				filename;
 	size_t				hash;
-
-	enum QnModFlag		flags;
-	int					ref;
-#ifdef _QN_WINDOWS_
-	HMODULE				handle;
-#else
-	void*				handle;
-#endif
+	QnModFlag			flags;
 
 	QnModule*			next;
 };
@@ -1118,12 +1182,12 @@ void qn_module_down(void)
 	{
 		QnModule* next = node->next;
 		if (QN_TMASK(node->flags, QNMDF_SYSTEM | QNMDF_RESIDENT | QNMDF_MULTIPLE) == false)
-			qn_debug_outputf(false, "MODULE", "'%s' not unloaded (ref: %d)", node->filename, node->ref);
-		if (QN_TMASK(node->flags, QNMDF_RESIDENT) == false && node->handle != NULL)
+			qn_debug_outputf(false, "MODULE", "'%s' not unloaded (ref: %d)", node->filename, qn_gam_ref(node));
+		if (QN_TMASK(node->flags, QNMDF_RESIDENT) == false && qn_get_gam_pointer(node) != NULL)
 #ifdef _QN_WINDOWS_
-			FreeLibrary(node->handle);
+			FreeLibrary(qn_get_gam_handle(node));
 #else
-			dlclose(node->handle);
+			dlclose(qn_get_gam_pointer(node));
 #endif
 		qn_free(node->filename);
 		qn_free(node);
@@ -1166,15 +1230,64 @@ static void _qn_module_set_error(void)
 }
 
 //
+static void _qn_mod_free(QnModule* self, const bool dispose)
+{
+	if (qn_get_gam_pointer(self) != NULL)
+	{
+#ifdef _QN_WINDOWS_
+		if (FreeLibrary(qn_get_gam_handle(self)) == FALSE)
+#else
+		if (dlclose(qn_get_gam_pointer(self)) != 0)
+#endif
+			_qn_module_set_error();
+	}
+	if (dispose)
+	{
+		qn_free(self->filename);
+		qn_free(self);
+	}
+}
+
+//
+static void qn_mod_dispose(QnGam* gam)
+{
+	QnModule* self = qn_cast_type(gam, QnModule);
+	qn_ret_if_ok(QN_TMASK(self->flags, QNMDF_SELF));
+
+	QN_LOCK(module_impl.lock);
+	for (QnModule *last = NULL, *node = module_impl.modules; node; )
+	{
+		if (node == self)
+		{
+			if (last)
+				last->next = node->next;
+			else
+				module_impl.modules = node->next;
+			break;
+		}
+		last = node;
+		node = node->next;
+	}
+	self->next = NULL;
+	QN_UNLOCK(module_impl.lock);
+
+	_qn_mod_free(self, true);
+}
+
+//
+static qn_gam_vt(QNGAM) qn_mod_vt =
+{
+	"MODULE",
+	qn_mod_dispose,
+};
+
+//
 QnModule* qn_mod_self(void)
 {
 	qn_set_error(NULL);
 
 	if (module_impl.self != NULL)
-	{
-		module_impl.self->ref++;
-		return module_impl.self;
-	}
+		return qn_loadu(module_impl.self, QnModule);
 
 #ifdef _QN_WINDOWS_
 	HMODULE handle =
@@ -1188,19 +1301,18 @@ QnModule* qn_mod_self(void)
 #endif
 
 	QnModule* self = qn_alloc_zero_1(QnModule);
-	self->handle = handle;
-	self->ref = 1;
+	qn_set_gam_desc(self, handle);
 	self->flags = (QnModFlag)(QNMDF_RESIDENT | QNMDF_SELF);
 
 	QN_LOCK(module_impl.lock);
 	module_impl.self = self;
 	QN_UNLOCK(module_impl.lock);
 
-	return self;
+	return qn_gam_init(self, QnModule, &qn_mod_vt);
 }
 
 //
-QnModule* qn_mod_load(const char* filename, const int flags)
+QnModule* qn_load_mod(const char* filename, const int flags)
 {
 	qn_val_if_fail(filename != NULL, NULL);
 
@@ -1210,9 +1322,8 @@ QnModule* qn_mod_load(const char* filename, const int flags)
 	QnModule* self = _qn_module_find(filename, hash);
 	if (self != NULL)
 	{
-		self->ref++;
 		QN_SMASK(&self->flags, QNMDF_MULTIPLE, true);
-		return self;
+		return qn_loadu(module_impl.self, QnModule);
 	}
 
 	QnModFlag mod_flag = (QnModFlag)flags;
@@ -1241,65 +1352,14 @@ QnModule* qn_mod_load(const char* filename, const int flags)
 	self = qn_alloc_1(QnModule);
 	self->hash = hash;
 	self->filename = qn_strdup(filename);
-	self->ref = 1;
 	self->flags = mod_flag;
-	self->handle = handle;
+	qn_set_gam_desc(self, handle);
 
 	QN_LOCK(module_impl.lock);
 	self->next = module_impl.modules;
 	module_impl.modules = self;
 	QN_UNLOCK(module_impl.lock);
-	return self;
-}
-
-//
-static void _qn_mod_free(QnModule * self, const bool dispose)
-{
-	if (self->handle != NULL)
-	{
-#ifdef _QN_WINDOWS_
-		if (FreeLibrary(self->handle) == FALSE)
-#else
-		if (dlclose(self->handle) != 0)
-#endif
-			_qn_module_set_error();
-	}
-	if (dispose)
-	{
-		qn_free(self->filename);
-		qn_free(self);
-	}
-}
-
-//
-bool qn_mod_unload(QnModule* self)
-{
-	qn_val_if_ok(QN_TMASK(self->flags, QNMDF_SELF), false);
-	qn_val_if_fail(self->ref > 0, false);
-
-	self->ref--;
-	if (self->ref > 0)
-		return true;
-
-	QN_LOCK(module_impl.lock);
-	for (QnModule *last = NULL, *node = module_impl.modules; node; )
-	{
-		if (node == self)
-		{
-			if (last)
-				last->next = node->next;
-			else
-				module_impl.modules = node->next;
-			break;
-		}
-		last = node;
-		node = node->next;
-	}
-	self->next = NULL;
-	QN_UNLOCK(module_impl.lock);
-
-	_qn_mod_free(self, true);
-	return true;
+	return qn_gam_init(self, QnModule, &qn_mod_vt);
 }
 
 //
@@ -1310,20 +1370,13 @@ void* qn_mod_func(QnModule* self, const char* RESTRICT name)
 #ifdef __WINRT__
 	void* ptr = (void*)GetProcAddress(NULL, name);
 #else
-	void* ptr = (void*)GetProcAddress(self->handle, name);
+	void* ptr = (void*)GetProcAddress(qn_get_gam_handle(self), name);
 #endif
 #else
-	void* ptr = dlsym(self->handle, name);
+	void* ptr = dlsym(qn_get_gam_pointer(self), name);
 #endif
 	if (ptr == NULL)
 		_qn_module_set_error();
 	return ptr;
 }
-
-//
-int qn_mod_ref(const QnModule* self)
-{
-	return self->ref;
-}
-
 

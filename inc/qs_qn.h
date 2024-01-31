@@ -176,7 +176,7 @@
 // compiler specific
 #ifdef _MSC_VER
 #define QN_CONST_ANY		extern const __declspec(selectany)
-#define QN_STMT_BEGIN		PRAGMA(warning(suppress:4127 4296)) do
+#define QN_STMT_BEGIN		PRAGMA(warning(suppress:4127 4296 6011)) do
 #define QN_STMT_END			while(0)
 #define QN_WARN_PUSH		PRAGMA(warning(push))
 #define QN_WARN_POP			PRAGMA(warning(pop))
@@ -1592,6 +1592,99 @@ QSAPI uchar2* qn_a_i_u32to16(const uchar4* src, size_t srclen, const char* desc,
 
 
 //////////////////////////////////////////////////////////////////////////
+// gam 
+
+/// @brief GAM 할거리를 의미. 영어로 OBJECT 개념
+typedef struct QNGAM		QnGam;
+
+/// @brief GAM 타입 이름
+#define qn_gam_type(TYPE)		struct TYPE
+/// @brief GAM 가상 테이블 이름을 얻는다
+#define qn_gam_vt(TYPE)			struct _VT_##TYPE
+
+/// @brief GAM 포인터를 다른 타입으로 캐스팅한다
+#define qn_cast_type(g,type)	((type*)(g))
+/// @brief GAM 가상 테이블로 GAM 포인터를 캐스팅한다
+#define qn_cast_vt(g,TYPE)		((struct _VT_##TYPE*)((QnGam*)(g))->vt)
+
+//
+qn_gam_vt(QNGAM)
+{
+	const char* name;
+	void (*dispose)(QnGam*);
+};
+
+//
+struct QNGAM
+{
+	qn_gam_vt(QNGAM)*	vt;
+	volatile nint		ref;
+	nuint				desc;
+};
+
+/// @brief GAM 가상 테이블을 초기화하고 GAM 포인터 반환
+/// @param g 현재 오브젝트
+/// @param vt 가상 테이블
+/// @return 현재 오브젝트 그대로
+QSAPI QnGam* qn_sc_init(QnGam* RESTRICT g, void* RESTRICT vt);
+
+/// @brief 참조를 추가한다.
+/// @param g 현재 오브젝트
+/// @return 현재 오브젝트 그대로
+QSAPI QnGam* qn_sc_load(QnGam* RESTRICT g);
+
+/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
+/// @param g 현재 오브젝트
+/// @return 현재 오브젝트 그대로
+QSAPI QnGam* qn_sc_unload(QnGam* RESTRICT g);
+
+/// @brief 참조를 얻는다
+/// @param g 현재 오브젝트
+/// @return 현재 참조값
+QSAPI nint qn_sc_get_ref(QnGam* RESTRICT g);
+
+/// @brief 표현자(디스크립터)를 얻는다
+/// @param g 현재 오브젝트
+/// @return 현재 표현자
+QSAPI nuint qn_sc_get_desc(const QnGam* RESTRICT g);
+
+/// @brief 표현자(디스크립터)를 쓴다
+/// @param g 현재 오브젝트
+/// @param ptr 표현자(디스크립터)
+/// @return 설정하기 전에 갖고 있던 이전 표현자
+QSAPI nuint qn_sc_set_desc(QnGam* RESTRICT g, nuint ptr);
+
+/// @brief GAM 가상 테이블을 초기화하고 GAM 포인터 반환
+#define qn_gam_init(g,type,pvt)		((type*)qn_sc_init((QnGam*)(g), pvt))
+/// @brief 참조를 얻는다
+#define qn_gam_ref(g)				qn_sc_get_ref((QnGam*)(g))
+/// @brief 참조를 추가한다
+#define qn_load(g)					((g) ? qn_sc_load((QnGam*)(g)) : NULL)
+/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
+#define qn_unload(g)				((g) ? qn_sc_unload((QnGam*)(g)) : NULL)
+/// @brief 참조를 추가한다 (타입 변환)
+#define qn_loadc(g,type)			((g) ? (type*)qn_sc_load((QnGam*)(g)) : NULL)
+/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
+#define qn_unloadc(g)				((g) ? (void*)qn_sc_unload((QnGam*)(g)) : NULL)
+/// @brief 참조를 추가한다. 널 검사 안한다 (타입 변환)
+#define qn_loadu(g,type)			(type*)qn_sc_load((QnGam*)(g))
+/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다. 널 검사 안한다
+#define qn_unloadu(g)				(void*)qn_sc_unload((QnGam*)(g))
+/// @brief 표현자(디스크립터)를 얻는다
+#define qn_get_gam_desc(g,type)		(type)qn_sc_get_desc((QnGam*)(g))
+/// @brief 표현자(디스크립터)를 쓴다
+#define qn_set_gam_desc(g,ptr)		qn_sc_set_desc((QnGam*)(g),(nuint)(ptr))
+#ifdef _QN_WINDOWS_
+/// @brief (WIN32) 핸들을 표현자로 읽는다
+#define qn_get_gam_handle(g)		qn_get_gam_desc(g,HANDLE)
+#endif
+/// @brief 포인터를 표현자로 읽는다
+#define qn_get_gam_pointer(p)		qn_get_gam_desc(p,void*)
+/// @brief 정수를 표현자로 읽는다
+#define qn_get_gam_desc_int(p)		qn_get_gam_desc(p,int)
+
+
+//////////////////////////////////////////////////////////////////////////
 // time
 
 /// @brief 로컬 시간으로 변화
@@ -1675,6 +1768,7 @@ QSAPI QnTimeStamp qn_mstod(uint msec);
 /// @brief timer
 typedef struct QNTIMER
 {
+	QnGam				base;				/// @brief 감
 	double				abstime;			/// @brief 타이머 절대 시간
 	double				runtime;			/// @brief 타이머 시작부터 수행 시간
 	double				advance;			/// @brief 타이머 갱신에 따른 시간 (프레임 당 시간)
@@ -1683,20 +1777,14 @@ typedef struct QNTIMER
 
 /// @brief 타이머 만들기
 /// @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 타이머
-QSAPI QnTimer* qn_timer_new(void);
-
-/// @brief 타이머 제거
-/// @param[in]	self	타이머 개체
-QSAPI void qn_timer_delete(QnTimer* self);
+QSAPI QnTimer* qn_new_timer(void);
 
 /// @brief 타이머 리셋
 /// @param[in]	self	타이머 개체
-
 QSAPI void qn_timer_reset(QnTimer* self);
 
 /// @brief 타이머 시작
 /// @param[in]	self	타이머 개체
-
 QSAPI void qn_timer_start(QnTimer* self);
 
 /// @brief 타이머 정지
@@ -1793,18 +1881,13 @@ typedef enum QNFILEFLAG
 /// @param[in]	mode		파일 처리 모드
 /// @return	만들어진 파일 구조
 /// @retval NULL 만들지 못했다
-QSAPI QnFile* qn_file_new(const char* RESTRICT filename, const char* RESTRICT mode);
+QSAPI QnFile* qn_open_file(const char* RESTRICT filename, const char* RESTRICT mode);
 
 /// @brief 파일 복제. 핸들을 복제하여 따로 사용할 수 있도록 한다
 /// @param[in]	src	(널값이 아닌) 원본
 /// @return	만들어진 반환 구조
 /// @retval NULL 복제하지 못했다
-QSAPI QnFile* qn_file_new_dup(QnFile* src);
-
-/// @brief 파일 구조를 제거한다. 더 이상 파일 관리를 하지 않을 때 사용한다
-/// @param[in]	self	파일 개체
-/// @note 파일을 지우는게 아니다!
-QSAPI void qn_file_delete(QnFile* self);
+QSAPI QnFile* qn_file_dup(QnFile* src);
 
 /// @brief 파일 플래그를 가져온다
 /// @param[in]	self	파일 개체
@@ -1883,8 +1966,8 @@ QSAPI bool qn_file_exist(const char* RESTRICT filename, /*RET-NULLABLE*/bool* is
 /// @brief 파일 할당. 즉, 파일 전체를 읽어 메모리에 할당한 후 반환한다
 /// @param[in]	filename	파일의 이름
 /// @param[out]	size	(널값이 아니면) 읽은 파일의 크기
-/// @return	읽은 버퍼. 사용한 다음 k_free 함수로 해제해야한다
-QSAPI void* qn_file_alloc(const char* RESTRICT filename, int* size);
+/// @return	읽은 버퍼. 사용한 다음 qn_free 함수로 해제해야한다
+QSAPI _Success_(return != NULL) void* qn_file_alloc(_In_ const char* RESTRICT filename, _Out_opt_ int* size);
 
 /// @brief 유니코드용 새 파일 구조를 만든다
 /// @param[in]	filename	파일의 이름
@@ -1899,7 +1982,7 @@ QSAPI QnFile* qn_file_new_l(const wchar* RESTRICT filename, const wchar* RESTRIC
 /// @return	파일 존재 여부 반환
 /// @retval true 파일이 있따
 /// @retval false 파일이 없다
-QSAPI bool qn_file_exist_l(const wchar* RESTRICT filename, /*RET-NULLABLE*/bool* is_dir);
+QSAPI _Success_(return != NULL) void* qn_file_alloc_l(_In_ const wchar * RESTRICT filename, _Out_opt_ int* size);
 
 /// @brief 파일 할당. 즉, 파일 전체를 읽어 메모리에 할당한 후 반환한다. 유니코드 버전
 /// @param[in]	filename	파일의 이름
@@ -1928,11 +2011,7 @@ QSAPI size_t qn_get_file_path(const char* filename, char* dest, size_t destsize)
 /// @param[in]	path 	디렉토리의 완전한 경로 이름
 /// @return 디렉토리 관리 개체 반환
 /// @retval NULL 문제가 있거나 실패했다
-QSAPI QnDir* qn_dir_new(const char* path);
-
-/// @brief 디렉토리 개체 제거
-/// @param[in]	self	디렉토리 개체
-QSAPI void qn_dir_delete(QnDir* self);
+QSAPI QnDir* qn_open_dir(const char* path);
 
 /// @brief 디렉토리에서 항목 읽기
 /// @param[in]	self	디렉토리 개체
@@ -1981,25 +2060,13 @@ QSAPI QnModule* qn_mod_self(void);
 /// @param flags 플래그. 지금은 사용하지 않는다 0으로
 /// @return 만들어진 모듈
 /// @note 파일 이름은 대소문자를 구별하며 오류를 막기위해 윈도우에서는 대문자로 하는게 좋아요
-QSAPI QnModule* qn_mod_load(const char* filename, int flags);
-
-/// @brief 모듈 사용을 그만한다
-/// @param self 모듈
-/// @return 성공적으로 언로드하면 참을 반환
-/// @details 모듈은 참조 방식으로 다른 곳에서 같은 모듈을 사용할 수도 있다.
-/// @see qn_mod_ref
-QSAPI bool qn_mod_unload(QnModule* self);
+QSAPI QnModule* qn_load_mod(const char* filename, int flags);
 
 /// @brief 함수를 읽는다
 /// @param self 모듈
 /// @param name 읽을 함수 이름
 /// @return 함수 포인터
 QSAPI void* qn_mod_func(QnModule* self, const char* RESTRICT name);
-
-/// @brief 모듈의 참조값을 얻는다
-/// @param self 모듈
-/// @return 모듈의 참조값
-QSAPI int qn_mod_ref(const QnModule* self);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -2070,7 +2137,7 @@ QSAPI QnThread* qn_thread_self(void);
 /// * | 0    | 보통     |
 /// * | 1    | 높음     |
 /// * | 2    | 아주 높음 |
-QSAPI QnThread* qn_thread_new(const char* RESTRICT name, QnThreadCallback func, void* data, uint stack_size, int busy);
+QSAPI QnThread* qn_new_thread(const char* RESTRICT name, QnThreadCallback func, void* data, uint stack_size, int busy);
 
 /// @brief 스레드를 제거한다. 실행 중이면 끝날 때 까지 대기한다
 /// @param self 스레드
@@ -2140,7 +2207,7 @@ typedef struct QNMUTEX QnMutex;
 
 /// @brief 뮤텍스를 만든다. 이 뮤텍스는 RECURSIVE 타입이다
 /// @return 만들어진 뮤텍스
-QSAPI QnMutex* qn_mutex_new(void);
+QSAPI QnMutex* qn_new_mutex(void);
 
 /// @brief 뮤텍스를 삭제한다
 /// @param self 뮤텍스
@@ -2168,7 +2235,7 @@ typedef struct QNCOND QnCond;
 
 /// @brief 조건을 만든다
 /// @return 만들어진 조건
-QSAPI QnCond* qn_cond_new(void);
+QSAPI QnCond* qn_new_cond(void);
 
 /// @brief 조건을 삭제한다
 /// @param self 조건
@@ -2205,7 +2272,7 @@ typedef struct QNSEM QnSem;
 /// @brief 세마포어를 만든다
 /// @param initial 초기값
 /// @return 만들어진 세마포어
-QSAPI QnSem* qn_sem_new(int initial);
+QSAPI QnSem* qn_new_sem(int initial);
 
 /// @brief 세마포어를 삭제한다
 /// @param self 세마포어
@@ -2264,30 +2331,26 @@ typedef struct QNMLTAG
 /// @brief RML을 만든다
 /// @return 만들어진 RML 개체
 /// @retval NULL 문제가 있거나 실패했을 때
-QSAPI QnMlu* qn_mlu_new(void);
-
-/// @brief 파일에서 RML을 만든다
-/// @param[in]	filename	파일의 이름
-/// @return 만들어진 RML 개체
-/// @retval NULL 문제가 있거나 실패했을 때
-QSAPI QnMlu* qn_mlu_new_file(const char* filename);
-
-/// @brief 파일에서 RML을 만든다. 유니코드 파일 이름을 사용한다
-/// @param[in]	filename	파일의 이름
-/// @return 만들어진 RML 개체
-/// @retval NULL 문제가 있거나 실패했을 때
-QSAPI QnMlu* qn_mlu_new_file_l(const wchar* filename);
+QSAPI QnMlu* qn_new_mlu(void);
 
 /// @brief 버퍼에서 RML을 만든다
 /// @param[in]	data	버퍼
 /// @param[in]	size	버퍼 크기
 /// @return 만들어진 RML 개체
 /// @retval NULL 문제가 있거나 실패했을 때
-QSAPI QnMlu* qn_mlu_new_buffer(const void* RESTRICT data, int size);
+QSAPI QnMlu* qn_new_mlu_buffer(const void* RESTRICT data, int size);
 
-/// @brief RML을 제거한다
-/// @param[in]	self	Mlu 개체
-QSAPI void qn_mlu_delete(QnMlu* self);
+/// @brief 파일에서 RML을 만든다
+/// @param[in]	filename	파일의 이름
+/// @return 만들어진 RML 개체
+/// @retval NULL 문제가 있거나 실패했을 때
+QSAPI QnMlu* qn_open_mlu(const char* filename);
+
+/// @brief 파일에서 RML을 만든다. 유니코드 파일 이름을 사용한다
+/// @param[in]	filename	파일의 이름
+/// @return 만들어진 RML 개체
+/// @retval NULL 문제가 있거나 실패했을 때
+QSAPI QnMlu* qn_open_mlu_l(const wchar* filename);
 
 /// @brief 모든 RML 태그를 삭제한다
 /// @param[in]	self	Mlu 개체
@@ -2439,7 +2502,7 @@ QSAPI void qn_mlu_print(const QnMlu* self);
 /// @param[in]	name	태그 이름
 /// @return	만들어지느 태그 노드
 /// @retval NULL 태그 노드를 만들 수가 없었다
-QSAPI QnMlTag* qn_mltag_new(const char* name);
+QSAPI QnMlTag* qn_new_mltag(const char* name);
 
 /// @brief 태그 노드를 제거한다
 /// @param[in]	self	MlTag 개체
@@ -2606,91 +2669,6 @@ QSAPI void qn_mltag_set_arg(QnMlTag* ptr, const char* RESTRICT name, const char*
 /// @retval true 인수 제거의 성공
 /// @retval false 인수 제거의 실패
 QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* RESTRICT name);
-
-
-//////////////////////////////////////////////////////////////////////////
-// gam 
-
-/// @brief GAM 할거리를 의미. 영어로 OBJECT
-typedef struct QSGAM		QsGam;
-
-/// @brief GAM 타입 이름
-#define qs_name_type(TYPE)		struct TYPE
-/// @brief GAM 가상 테이블 이름을 얻는다
-#define qs_name_vt(TYPE)		struct _VT_##TYPE
-
-/// @brief GAM 포인터를 다른 타입으로 캐스팅한다
-#define qs_cast_type(g,type)	((type*)(g))
-/// @brief GAM 가상 테이블로 GAM 포인터를 캐스팅한다
-#define qs_cast_vt(g,TYPE)		((struct _VT_##TYPE*)((QsGam*)(g))->vt)
-
-//
-qs_name_vt(QSGAM)
-{
-	const char* name;
-	void (*dispose)(QsGam*);
-};
-
-//
-struct QSGAM
-{
-	qs_name_vt(QSGAM)*	vt;
-	volatile nint		ref;
-	nuint				desc;
-};
-
-/// @brief GAM 가상 테이블을 초기화하고 GAM 포인터 반환
-/// @param g 현재 오브젝트
-/// @param vt 가상 테이블
-/// @return 현재 오브젝트 그대로
-QSAPI QsGam* qs_sc_init(QsGam* RESTRICT g, void* RESTRICT vt);
-
-/// @brief 참조를 추가한다.
-/// @param g 현재 오브젝트
-/// @return 현재 오브젝트 그대로
-QSAPI QsGam* qs_sc_load(QsGam* RESTRICT g);
-
-/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
-/// @param g 현재 오브젝트
-/// @return 현재 오브젝트 그대로
-QSAPI QsGam* qs_sc_unload(QsGam* RESTRICT g);
-
-/// @brief 참조를 얻는다
-/// @param g 현재 오브젝트
-/// @return 현재 참조값
-QSAPI nint qs_sc_get_ref(QsGam* RESTRICT g);
-
-/// @brief 표현자(디스크립터)를 얻는다
-/// @param g 현재 오브젝트
-/// @return 현재 표현자
-QSAPI nuint qs_sc_get_desc(const QsGam* RESTRICT g);
-
-/// @brief 표현자(디스크립터)를 쓴다
-/// @param g 현재 오브젝트
-/// @param ptr 표현자(디스크립터)
-/// @return 설정하기 전에 갖고 있던 이전 표현자
-QSAPI nuint qs_sc_set_desc(QsGam* RESTRICT g, nuint ptr);
-
-/// @brief GAM 가상 테이블을 초기화하고 GAM 포인터 반환
-#define qs_init(g,type,pvt)	((type*)qs_sc_init((QsGam*)(g), pvt))
-/// @brief 참조를 얻는다
-#define qs_get_ref(g)		qs_sc_get_ref((QsGam*)(g))
-/// @brief 참조를 추가한다
-#define qs_load(g)			((g) ? qs_sc_load((QsGam*)(g)) : NULL)
-/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다
-#define qs_unload(g)		((g) ? qs_sc_unload((QsGam*)(g)) : NULL)
-/// @brief 참조를 추가한다 (타입 변환)
-#define qs_loadc(g,type)	((g) ? (type*)qs_sc_load((QsGam*)(g)) : NULL)
-/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다 (타입 변환)
-#define qs_unloadc(g,type)	((g) ? (type*)qs_sc_unload((QsGam*)(g)) : NULL)
-/// @brief 참조를 추가한다. 널 검사 안한다 (타입 변환)
-#define qs_loadu(g,type)	(type*)qs_sc_load((QsGam*)(g))
-/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다. 널 검사 안한다 (타입 변환)
-#define qs_unloadu(g,type)	(type*)qs_sc_unload((QsGam*)(g))
-/// @brief 표현자(디스크립터)를 얻는다
-#define qs_get_desc(g,type)	(type)qs_sc_get_desc((QsGam*)(g))
-/// @brief 표현자(디스크립터)를 쓴다
-#define qs_set_desc(g,ptr)	qs_sc_set_desc((QsGam*)(g),(nuint)(ptr))
 
 
 //////////////////////////////////////////////////////////////////////////

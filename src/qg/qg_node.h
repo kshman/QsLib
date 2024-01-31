@@ -49,7 +49,7 @@ INLINE void qg_node_mukum_disp(QgNodeMukum* mukum)
 	for (QgNode *next, *node = mukum->FIRST; node; node = next)
 	{
 		next = node->NEXT;
-		qs_unload(node);
+		qn_unload(node);
 	}
 	qn_free(mukum->NODES);
 }
@@ -62,7 +62,7 @@ INLINE void qg_node_mukum_disp_safe(QgNodeMukum* mukum)
 		QnPtrCtnr ctnr = qg_node_mukum_to_ctnr(mukum);
 		size_t i;
 		qn_ctnr_foreach(&ctnr, i)
-			qs_unload(qn_ctnr_nth(&ctnr, i));
+			qn_unload(qn_ctnr_nth(&ctnr, i));
 		qn_ctnr_disp(&ctnr);
 	}
 	qn_free(mukum->NODES);
@@ -125,7 +125,7 @@ INLINE void qg_node_mukum_clear(QgNodeMukum* mukum)
 	for (QgNode *next, *node = mukum->FIRST; node; node = next)
 	{
 		next = node->NEXT;
-		qs_unload(node);
+		qn_unload(node);
 	}
 	mukum->FIRST = mukum->LAST = NULL;
 	mukum->COUNT = 0;
@@ -176,12 +176,12 @@ INLINE void qg_internal_node_mukum_input(QgNodeMukum* mukum, QgNode* item, bool 
 				mukum->FIRST = item;
 			}
 			*pnode = item;
-			qs_unload(node);
+			qn_unload(node);
 		}
 		else
 		{
 			// 헐 지워야하나
-			qs_unload(item);
+			qn_unload(item);
 		}
 	}
 	else
@@ -234,7 +234,7 @@ INLINE bool qg_internal_node_mukum_erase(QgNodeMukum* mukum, size_t hash, const 
 	if (*pnode == NULL)
 		return false;
 	qg_internal_node_mukum_unlink(mukum, pnode);
-	qs_unloadu(*pnode, QgNode);
+	qn_unloadu(*pnode);
 	return true;
 }
 

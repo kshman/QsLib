@@ -26,15 +26,15 @@
 #endif
 
 //
-typedef struct QGLRDH		QglRdh;
-typedef struct QGLBUFFER	QglBuffer;
-typedef struct QGLRENDER	QglRender;
+typedef struct QGLRDH			QglRdh;
+typedef struct QGLBUFFER		QglBuffer;
+typedef struct QGLRENDERSTATE	QglRenderState;
 
 #ifndef GL_INVALID_HANDLE
 #define GL_INVALID_HANDLE	(GLuint)(-1)
 #endif
 
-#define QGL_RDH				qs_cast_type(qg_instance_rdh, QglRdh)
+#define QGL_RDH				qn_cast_type(qg_instance_rdh, QglRdh)
 #define QGL_CORE			(QGL_RDH->cfg.core)
 #define QGL_PENDING			(&QGL_RDH->pd)
 #define QGL_SESSION			(&QGL_RDH->ss)
@@ -133,7 +133,7 @@ typedef struct QGLPENDING
 	{
 		QglBuffer*			index_buffer;
 		QglBuffer*			vertex_buffers[QGLOS_MAX_VALUE];
-		QglRender*			render;
+		QglRenderState*		render_state;
 	}					render;
 	struct QGLPENDING_DRAW
 	{
@@ -144,8 +144,8 @@ typedef struct QGLPENDING
 // 리소스
 typedef struct QGLRESOURCE
 {
-	QglRender*			ortho_render;
-	QglRender*			glyph_render;
+	QglRenderState*		ortho_render;
+	QglRenderState*		glyph_render;
 
 	char				hdr_vertex[256];
 	char				hdr_fragment[256];
@@ -185,12 +185,12 @@ struct QGLBUFFER
 	void*				lock_pointer;
 };
 
-// 렌더 파이프라인
-struct QGLRENDER
+// 렌더 파이프라인 상태
+struct QGLRENDERSTATE
 {
-	QgRender			base;
+	QgRenderState			base;
 
-	struct QGLRENDER_SHADER
+	struct QGLRENDERSTATE_SHADER
 	{
 		GLuint				program;
 		GLuint				vertex;
@@ -201,7 +201,7 @@ struct QGLRENDER
 		byte				usages[QGLOU_MAX_SIZE];
 	}					shader;
 
-	struct QGLRENDER_LAYOUT
+	struct QGLRENDERSTATE_LAYOUT
 	{
 		QglCtnLayoutInput	inputs;
 		QglLayoutInput*		stages[QGLOS_MAX_VALUE];
