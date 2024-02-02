@@ -290,10 +290,15 @@ typedef struct QNREALTIMER
 } QnRealTimer;
 
 //
-QnTimer* qn_timer_new(void)
+static void qn_timer_dispose(QnGam* gam)
+{
+	qn_free(gam);
+}
+
+//
+QnTimer* qn_new_timer(void)
 {
 	QnRealTimer* self = qn_alloc_zero_1(QnRealTimer);
-	qn_val_if_fail(self, NULL);
 
 	self->frame.q = cycle_impl.tick_count;
 	self->tick = 1.0 / (double)cycle_impl.tick_count;
@@ -305,13 +310,12 @@ QnTimer* qn_timer_new(void)
 	self->base.abstime = (double)self->curtime.q * self->tick;
 	self->cut = 9999999.0;  //10.0;
 
-	return (QnTimer*)self;
-}
-
-//
-void qn_timer_delete(QnTimer* self)
-{
-	qn_free(self);
+	static qn_gam_vt(QNGAM) qn_timer_vt =
+	{
+		"TIMER",
+		qn_timer_dispose,
+	};
+	return qn_gam_init(self, QnTimer, &qn_timer_vt);
 }
 
 //

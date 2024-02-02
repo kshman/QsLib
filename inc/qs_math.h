@@ -45,10 +45,13 @@
 
 #if (defined _MSC_VER || defined __clang__) && !defined _M_ARM && !defined _M_ARM64 && !defined __EMSCRIPTEN__
 #define QM_VECTORCALL	__vectorcall
+#define QM_VECTORDECL	__vectorcall
 #elif defined __GNUC__
 #define QM_VECTORCALL
+#define QM_VECTORDECL
 #else
 #define QM_VECTORCALL	__fastcall
+#define QM_VECTORDECL
 #endif
 
 #include <limits.h>
@@ -99,6 +102,11 @@ QN_EXTC_BEGIN
 #define QM_TAU_Q		1.57079632679489661923f								/// @brief 타우의 반의 반 (90도)
 #define QM_RTAU			0.15915494309189533577f								/// @brief 타우의 역수
 #define QM_RTAU_H		0.07957747154594766788f								/// @brief 타우의 두배의 역수
+#define QM_DEG_45		0.78539816339744830961f								/// @brief 45도
+#define QM_DEG_90		1.57079632679489661923f								/// @brief 90도
+#define QM_DEG_180		3.14159265358979323846f								/// @brief 180도
+#define QM_DEG_270		4.71238898038468985769f								/// @brief 270도
+#define QM_DEG_360		6.28318530717958647692f								/// @brief 360도
 #define QM_RAD2DEG		(180.0f/QM_PI)
 #define QM_DEG2RAD		(QM_PI/180.0f)
 
@@ -127,7 +135,7 @@ QSAPI double qm_randd(QmRandom* r);
 
 
 //////////////////////////////////////////////////////////////////////////
-// value types
+// pack types
 
 /// @brief FLOAT2
 typedef struct QMFLOAT2
@@ -183,23 +191,69 @@ typedef struct QMUINT4
 	uint X, Y, Z, W;
 } QmUint4;
 
-/// @brief HALF2
-typedef struct QMHALF2
+/// @brief USHORT2
+typedef union QMUSHORT2
 {
-	halffloat X, Y;
+	struct { ushort X, Y; };
+	uint v;
+} QmUshort2;
+
+/// @brief USHORT4
+typedef union QMUSHORT4
+{
+	struct { ushort X, Y, Z, W; };
+	ullong v;
+} QmUshort4;
+
+/// @brief HALF2
+typedef union QMHALF2
+{
+	struct { halffloat X, Y; };
+	uint v;
 } QmHalf2;
 
-/// @brief HALF3
-typedef struct QMHALF3
-{
-	halffloat X, Y, Z;
-} QmHalf3;
-
 /// @brief HALF4
-typedef struct QMHALF4
+typedef union QMHALF4
 {
-	halffloat X, Y, Z, W;
+	struct { halffloat X, Y, Z, W; };
+	ullong v;
 } QmHalf4;
+
+/// @brief UINT 4/4/4/4
+typedef union QMU4444
+{
+	struct { ushort B : 4, G : 4, R : 4, A : 4; };
+	ushort v;
+} QmU4444;
+
+/// @brief UINT 5/5/5/1
+typedef union QMU5551
+{
+	struct { ushort B : 5, G : 5, R : 5, A : 1; };
+	ushort v;
+} QmU5551;
+
+/// @brief UINT 5/6/5
+typedef union QMU565
+{
+	struct { ushort B : 5, G : 6, R : 5; };
+	ushort v;
+} QmU565;
+
+/// @brief float 11/11/10
+typedef union QMF111110
+{
+	struct { uint B : 11, G : 11, R : 10; };
+	struct { uint Bm : 6, Be : 5, Gm : 6, Ge : 5, Rm : 5, Re : 5; };
+	uint v;
+} QmF111110;
+
+/// @brief UINT 10/10/10/2
+typedef union QMU1010102
+{
+	struct { uint B : 10, G : 10, R : 10, A : 2; };
+	uint v;
+} QmU1010102;
 
 /// @brief FLOAT4X4
 typedef union QMFLOAT4X4
@@ -251,7 +305,11 @@ typedef union QMVECF
 	{
 		float X, Y, Z, W;
 	};
-} QmVec4, QmVecF, QmVec;
+	struct
+	{
+		float R, G, B, A;
+	};
+} QmVec4, QmVecF, QmVec, QmColor;
 
 /// @brief 벡터4
 typedef union QMVECU
@@ -325,11 +383,8 @@ typedef union QMRECT
 typedef union QMKOLOR
 {
 	byte b[4];
-	uint U;
-	struct
-	{
-		byte B, G, R, A;
-	};
+	uint v;
+	struct { byte B, G, R, A; };
 } QmKolor;
 
 
@@ -358,6 +413,12 @@ INLINE int qm_absi(int v)
 INLINE int qm_clampi(int v, int min, int max)
 {
 	return QN_CLAMP(v, min, max);
+}
+
+/// @brief Power Of Two 계산
+INLINE bool qm_pot(uint v)
+{
+	return (v & (v - 1)) == 0;
 }
 
 /// @brief 실수의 앱실론 비교
@@ -795,6 +856,7 @@ INLINE int qm_size_len_sq(const QmSize s);
 INLINE float qm_size_len(const QmSize v);
 INLINE float qm_size_get_aspect(const QmSize s);
 INLINE float qm_size_calc_dpi(const QmSize pt, float horizontal, float vertical);
+INLINE QmPoint qm_size_locate_center(const QmSize s, int width, int height);
 INLINE bool qm_size_eq(const QmSize left, const QmSize right);
 
 INLINE QmRect qm_rect(int left, int top, int right, int bottom);
@@ -827,19 +889,44 @@ INLINE RECT qm_rect_to_RECT(const QmRect rt);
 
 
 //////////////////////////////////////////////////////////////////////////
+// Color value
+
+QN_CONST_ANY QmColor QMCOLOR_EMPTY = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+QN_CONST_ANY QmColor QMCOLOR_BLACK = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_WHITE = { { 1.0f, 1.0f, 1.0f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_RED = { { 1.0f, 0.0f, 0.0f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_GREEN = { { 0.0f, 1.0f, 0.0f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_BLUE = { { 0.0f, 0.0f, 1.0f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_YELLOW = { { 1.0f, 0.92f, 0.016f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_CYAN = { { 0.0f, 1.0f, 1.0f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_MAGENTA = { { 1.0f, 0.0f, 1.0f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_GRAY = { { 0.5f, 0.5f, 0.5f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_DARKGRAY = { { 0.25f, 0.25f, 0.25f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_LIGHTGRAY = { { 0.75f, 0.75f, 0.75f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_HALF_RED = { { 0.5f, 0.0f, 0.0f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_HALF_GREEN = { { 0.0f, 0.5f, 0.0f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_HALF_BLUE = { { 0.0f, 0.0f, 0.5f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_HALF_YELLOW = { { 0.5f, 0.496f, 0.01f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_HALF_CYAN = { { 0.0f, 0.5f, 0.5f, 1.0f } };
+QN_CONST_ANY QmColor QMCOLOR_HALF_MAGENTA = { { 0.5f, 0.0f, 0.5f, 1.0f } };
+
+
+//////////////////////////////////////////////////////////////////////////
 // SIMD support
 
-QN_CONST_ANY QmVec4 QMC_ZERO = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-QN_CONST_ANY QmVec4 QMC_ONE = { { 1.0f, 1.0f, 1.0f, 1.0f } };
-QN_CONST_ANY QmVec4 QMC_NEG = { { -1.0f, -1.0f, -1.0f, -1.0f } };
-QN_CONST_ANY QmVec4 QMC_UNIT_R0 = { { 1.0f, 0.0f, 0.0f, 0.0f } };
-QN_CONST_ANY QmVec4 QMC_UNIT_R1 = { { 0.0f, 1.0f, 0.0f, 0.0f } };
-QN_CONST_ANY QmVec4 QMC_UNIT_R2 = { { 0.0f, 0.0f, 1.0f, 0.0f } };
-QN_CONST_ANY QmVec4 QMC_UNIT_R3 = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-QN_CONST_ANY QmVecU QMC_S1000 = { { 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000 } };
-QN_CONST_ANY QmVecU QMC_S1100 = { { 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000 } };
-QN_CONST_ANY QmVecU QMC_S1110 = { { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000 } };
-QN_CONST_ANY QmVecU QMC_S1011 = { { 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF } };
+QN_CONST_ANY QmVec4 QMCONST_ZERO = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+QN_CONST_ANY QmVec4 QMCONST_ONE = { { 1.0f, 1.0f, 1.0f, 1.0f } };
+QN_CONST_ANY QmVec4 QMCONST_NEG = { { -1.0f, -1.0f, -1.0f, -1.0f } };
+QN_CONST_ANY QmVec4 QMCONST_UNIT_R0 = { { 1.0f, 0.0f, 0.0f, 0.0f } };
+QN_CONST_ANY QmVec4 QMCONST_UNIT_R1 = { { 0.0f, 1.0f, 0.0f, 0.0f } };
+QN_CONST_ANY QmVec4 QMCONST_UNIT_R2 = { { 0.0f, 0.0f, 1.0f, 0.0f } };
+QN_CONST_ANY QmVec4 QMCONST_UNIT_R3 = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+QN_CONST_ANY QmVec4 QMCONST_XY00 = { { 1.0f, 1.0f, 0.0f, 0.0f } };
+QN_CONST_ANY QmVec4 QMCONST_00ZW = { { 0.0f, 0.0f, 1.0f, 1.0f } };
+QN_CONST_ANY QmVecU QMCONST_S1000 = { { 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000 } };
+QN_CONST_ANY QmVecU QMCONST_S1100 = { { 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000 } };
+QN_CONST_ANY QmVecU QMCONST_S1110 = { { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000 } };
+QN_CONST_ANY QmVecU QMCONST_S1011 = { { 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF } };
 
 #if defined QM_USE_SIMD && !defined QM_USE_NEON
 #ifdef QM_USE_AVX
@@ -1024,7 +1111,7 @@ INLINE QmVec4 QM_VECTORCALL qm_vec_neg(const QmVec4 v)
 INLINE QmVec4 QM_VECTORCALL qm_vec_rcp(const QmVec4 v)
 {
 #if defined QM_USE_AVX
-	QMSVEC h = _mm_div_ps(QMC_ONE.v, v.v);
+	QMSVEC h = _mm_div_ps(QMCONST_ONE.v, v.v);
 	return *(QmVec4*)&h;
 #elif defined QM_USE_NEON
 	QMSVEC h = vrecpeq_f32(v.v);
@@ -1622,7 +1709,7 @@ INLINE QmVec4 QM_VECTORCALL qm_vec_select_ctrl(uint i0, uint i1, uint i2, uint i
 {
 #if defined QM_USE_AVX
 	__m128i l = _mm_set_epi32((int)i3, (int)i2, (int)i1, (int)i0);
-	__m128i r = _mm_castps_si128(QMC_ZERO.v);
+	__m128i r = _mm_castps_si128(QMCONST_ZERO.v);
 	QMSVEC h = _mm_castsi128_ps(_mm_cmpgt_epi32(l, r));
 	return *(QmVec4*)&h;
 #else
@@ -2547,7 +2634,7 @@ INLINE QmVec4 QM_VECTORCALL qm_quatv(const QmVec4 v, float w)
 /// @brief 단위 사원수
 INLINE QmVec4 QM_VECTORCALL qm_quat_unit(void)
 {
-	return QMC_UNIT_R3;
+	return QMCONST_UNIT_R3;
 }
 
 /// @brief 사원수 곱셈
@@ -2598,7 +2685,7 @@ INLINE QmVec4 QM_VECTORCALL qm_quat_inv(const QmVec4 q)
 	QmVec4 l = qm_vec4_simd_dot(q, q);
 	QmVec4 c = qm_quat_cjg(q);
 	QmVec4 d = qm_vec_div(c, l);
-	return qm_vec_select(d, QMC_ZERO, qm_vec_op_leq(l, epsilon));
+	return qm_vec_select(d, QMCONST_ZERO, qm_vec_op_leq(l, epsilon));
 }
 
 /// @brief 지수 사원수
@@ -2655,13 +2742,13 @@ INLINE QmVec4 QM_VECTORCALL qm_quat_slerp_dxm(const QmVec4 Q0, const QmVec4 Q1, 
 
 	const QmVec4 Zero = qm_vec_zero();
 	QmVec4 Control = qm_vec_op_lt(CosOmega, Zero);
-	QmVec4 Sign = qm_vec_select(QMC_ONE, NegativeOne, Control);
+	QmVec4 Sign = qm_vec_select(QMCONST_ONE, NegativeOne, Control);
 
 	CosOmega = qm_vec_mul(CosOmega, Sign);
 
 	Control = qm_vec_op_lt(CosOmega, OneMinusEpsilon);
 
-	QmVec4 SinOmega = qm_vec_msub(CosOmega, CosOmega, QMC_ONE);
+	QmVec4 SinOmega = qm_vec_msub(CosOmega, CosOmega, QMCONST_ONE);
 	SinOmega = qm_vec_simd_sqrt(SinOmega);
 
 	QmVec4 Omega = qm_vec_simd_atan2(SinOmega, CosOmega);
@@ -2670,7 +2757,7 @@ INLINE QmVec4 QM_VECTORCALL qm_quat_slerp_dxm(const QmVec4 Q0, const QmVec4 Q1, 
 	QmVec4 V01 = qm_vec_bit_shl(t, Zero, 2);
 	SignMask = qm_vec_bit_shl(SignMask, Zero, 3);
 	V01 = qm_vec_bit_xor(V01, SignMask);
-	V01 = qm_vec_add(QMC_UNIT_R0, V01);
+	V01 = qm_vec_add(QMCONST_UNIT_R0, V01);
 
 	QmVec4 InvSinOmega = qm_vec_rcp(SinOmega);
 
@@ -2772,11 +2859,11 @@ INLINE QmVec4 QM_VECTORCALL qm_quat_rot_mat4(const QmMat4 rot)
 	QMSVEC r11 = _MM_PERMUTE_PS(r1, _MM_SHUFFLE(1, 1, 1, 1));
 	QMSVEC r22 = _MM_PERMUTE_PS(r2, _MM_SHUFFLE(2, 2, 2, 2));
 	QMSVEC r11mr00 = _mm_sub_ps(r11, r00);
-	QMSVEC x2gey2 = _mm_cmple_ps(r11mr00, QMC_ZERO.v);
+	QMSVEC x2gey2 = _mm_cmple_ps(r11mr00, QMCONST_ZERO.v);
 	QMSVEC r11pr00 = _mm_add_ps(r11, r00);
-	QMSVEC z2gew2 = _mm_cmple_ps(r11pr00, QMC_ZERO.v);
-	QMSVEC x2py2gez2pw2 = _mm_cmple_ps(r22, QMC_ZERO.v);
-	QMSVEC t0 = _MM_FMADD_PS(PMMP.v, r00, QMC_ONE.v);
+	QMSVEC z2gew2 = _mm_cmple_ps(r11pr00, QMCONST_ZERO.v);
+	QMSVEC x2py2gez2pw2 = _mm_cmple_ps(r22, QMCONST_ZERO.v);
+	QMSVEC t0 = _MM_FMADD_PS(PMMP.v, r00, QMCONST_ONE.v);
 	QMSVEC t1 = _mm_mul_ps(MPMP.v, r11);
 	QMSVEC t2 = _MM_FMADD_PS(MMPP.v, r22, t0);
 	QMSVEC x2y2z2w2 = _mm_add_ps(t1, t2);
@@ -2859,7 +2946,7 @@ INLINE void QM_VECTORCALL qm_quat_to_axis_angle(const QmVec4 q, QmVec4* axis, fl
 /// @brief 단위 사원수인가?
 INLINE bool QM_VECTORCALL qm_quat_isu(const QmVec4 v)
 {
-	return qm_vec_eq(v, QMC_UNIT_R3);
+	return qm_vec_eq(v, QMCONST_UNIT_R3);
 }
 
 
@@ -2901,7 +2988,7 @@ INLINE QmVec4 QM_VECTORCALL qm_planevvv(const QmVec4 v1, const QmVec4 v2, const 
 /// @brief 단위 평면
 INLINE QmVec4 QM_VECTORCALL qm_plane_unit(void)
 {
-	return QMC_UNIT_R3;
+	return QMCONST_UNIT_R3;
 }
 
 /// @brief 평면 정규화
@@ -2925,7 +3012,7 @@ INLINE QmVec4 QM_VECTORCALL qm_plane_rnorm(const QmVec4 plane)
 {
 #if defined QM_USE_AVX
 	QMSVEC d = _mm_dp_ps(plane.v, plane.v, 0x7F);
-	QMSVEC h = _mm_mul_ps(_mm_rsqrt_ps(d), QMC_NEG.v);
+	QMSVEC h = _mm_mul_ps(_mm_rsqrt_ps(d), QMCONST_NEG.v);
 	h = _mm_mul_ps(plane.v, h);
 	return *(QmVec4*)&h;
 #else
@@ -2959,7 +3046,7 @@ INLINE QmVec4 QM_VECTORCALL qm_plane_simd_dot(const QmVec4 plane, const QmVec4 v
 /// @brief 평면과 점의 내적 벡터형
 INLINE QmVec4 QM_VECTORCALL qm_plane_simd_dot_coord(const QmVec4 plane, const QmVec4 v)
 {
-	QmVec4 s = qm_vec_select(QMC_ONE, v, QMC_S1110.v4);
+	QmVec4 s = qm_vec_select(QMCONST_ONE, v, QMCONST_S1110.v4);
 	return qm_vec4_simd_dot(plane, s);
 }
 
@@ -3099,7 +3186,7 @@ INLINE QmVec4 QM_VECTORCALL qm_colork(QmKolor k)
 /// @brief 초기 색깔
 INLINE QmVec4 QM_VECTORCALL qm_color_unit(void)
 {
-	return QMC_UNIT_R3;
+	return QMCONST_UNIT_R3;
 }
 
 /// @brief 같은값 설정
@@ -3145,7 +3232,7 @@ INLINE QmVec4 QM_VECTORCALL qm_color_contrast(const QmVec4 c, float contrast)
 	static const QmVec4 half = { { 0.5f, 0.5f, 0.5f, 0.5f } };
 	QMSVEC h = vsubq_f32(c.v, half.v);
 	h = vmlaq_n_f32(half.v, h, contrast);
-	h = vbslq_f32(QMC_S1110.v4, h, half.v);
+	h = vbslq_f32(QMCONST_S1110.v4, h, half.v);
 	return *(QmVec4*)&h;
 #else
 	float r = 0.5f + contrast * (c.X - 0.5f);
@@ -3171,7 +3258,7 @@ INLINE QmVec4 QM_VECTORCALL qm_color_saturation(const QmVec4 c, float saturation
 	QMSVEC l = qm_vec3_simd_dot(c, luminance).v;
 	QMSVEC h = vsubq_f32(c.v, l);
 	h = vmlaq_n_f32(l, h, saturation);
-	h = vbslq_f32(QMC_S1110.v4, l, c.v);
+	h = vbslq_f32(QMCONST_S1110.v4, l, c.v);
 	return *(QmVec4*)&h;
 #else
 	float l = qm_vec3_dot(c, luminance);
@@ -3190,10 +3277,10 @@ INLINE QmVec4 QM_VECTORCALL qm_color_saturation(const QmVec4 c, float saturation
 INLINE QmMat4 QM_VECTORCALL qm_mat4_unit(void)
 {
 	QmMat4 m;
-	m.v[0] = QMC_UNIT_R0.v;
-	m.v[1] = QMC_UNIT_R1.v;
-	m.v[2] = QMC_UNIT_R2.v;
-	m.v[3] = QMC_UNIT_R3.v;
+	m.v[0] = QMCONST_UNIT_R0.v;
+	m.v[1] = QMCONST_UNIT_R1.v;
+	m.v[2] = QMCONST_UNIT_R2.v;
+	m.v[3] = QMCONST_UNIT_R3.v;
 	return m;
 }
 
@@ -3201,10 +3288,10 @@ INLINE QmMat4 QM_VECTORCALL qm_mat4_unit(void)
 INLINE QmMat4 QM_VECTORCALL qm_mat4_zero(void)
 {
 	QmMat4 m;
-	m.v[0] = QMC_ZERO.v;
-	m.v[1] = QMC_ZERO.v;
-	m.v[2] = QMC_ZERO.v;
-	m.v[3] = QMC_ZERO.v;
+	m.v[0] = QMCONST_ZERO.v;
+	m.v[1] = QMCONST_ZERO.v;
+	m.v[2] = QMCONST_ZERO.v;
+	m.v[3] = QMCONST_ZERO.v;
 	return m;
 }
 
@@ -3649,7 +3736,7 @@ INLINE QmMat4 QM_VECTORCALL qm_mat4_inv(const QmMat4 m)
 	QmVec4 c23 = qm_vec3_cross(m.r[2], m.r[3]);
 	QmVec4 s10 = qm_vec_sub(qm_vec_mag(m.r[0], m._24), qm_vec_mag(m.r[1], m._14));
 	QmVec4 s32 = qm_vec_sub(qm_vec_mag(m.r[2], m._44), qm_vec_mag(m.r[3], m._34));
-	QmVec4 inv = qm_vec_div(QMC_ONE, qm_vec_add(qm_vec3_simd_dot(c01, s32), qm_vec3_simd_dot(c23, s10)));
+	QmVec4 inv = qm_vec_div(QMCONST_ONE, qm_vec_add(qm_vec3_simd_dot(c01, s32), qm_vec3_simd_dot(c23, s10)));
 	c01 = qm_vec_mul(c01, inv);
 	c23 = qm_vec_mul(c23, inv);
 	s10 = qm_vec_mul(s10, inv);
@@ -3778,7 +3865,7 @@ INLINE QmMat4 QM_VECTORCALL qm_mat4_rot_quat(const QmVec4 rot)
 	m.v[1] = Q1;
 	Q1 = _mm_shuffle_ps(V1, R0, _MM_SHUFFLE(3, 2, 1, 0));
 	m.v[2] = Q1;
-	m.v[3] = QMC_UNIT_R3.v;
+	m.v[3] = QMCONST_UNIT_R3.v;
 	return m;
 #else
 	QmVec4 norm = qm_vec4_norm(rot);
@@ -3864,9 +3951,9 @@ INLINE QmMat4 QM_VECTORCALL qm_mat4_rot_z(float rot)
 INLINE QmMat4 QM_VECTORCALL qm_mat4_affine(const QmVec4* scl, const QmVec4* rotcenter, const QmVec4* rot, const QmVec4* loc)
 {
 	QmMat4 m = scl ? qm_mat4_scl_vec3(*scl) : qm_mat4_unit();
-	QmVec4 vc = rotcenter ? *rotcenter : QMC_ZERO;
+	QmVec4 vc = rotcenter ? *rotcenter : QMCONST_ZERO;
 	QmMat4 mr = rot ? qm_mat4_rot_quat(*rot) : qm_mat4_unit();
-	QmVec4 vl = loc ? *loc : QMC_ZERO;
+	QmVec4 vl = loc ? *loc : QMCONST_ZERO;
 	m.r[3] = qm_vec_sub(m.r[3], vc);
 	m = qm_mat4_mul(m, mr);
 	m.r[3] = qm_vec_add(m.r[3], vc);
@@ -3934,10 +4021,10 @@ INLINE QmMat4 QM_VECTORCALL qm_mat4_reflect(const QmVec4 plane)
 	QmVec4 c = qm_vec_sp_z(p);
 	QmVec4 d = qm_vec_sp_w(p);
 	QmMat4 m;
-	m.r[0] = qm_vec_madd(a, s, QMC_UNIT_R0);
-	m.r[1] = qm_vec_madd(b, s, QMC_UNIT_R1);
-	m.r[2] = qm_vec_madd(c, s, QMC_UNIT_R2);
-	m.r[3] = qm_vec_madd(d, s, QMC_UNIT_R3);
+	m.r[0] = qm_vec_madd(a, s, QMCONST_UNIT_R0);
+	m.r[1] = qm_vec_madd(b, s, QMCONST_UNIT_R1);
+	m.r[2] = qm_vec_madd(c, s, QMCONST_UNIT_R2);
+	m.r[3] = qm_vec_madd(d, s, QMCONST_UNIT_R3);
 	return m;
 }
 
@@ -3975,10 +4062,10 @@ INLINE QmMat4 QM_VECTORCALL qm_mat4_internal_look_to(const QmVec4 eye, const QmV
 	QmVec4 d1 = qm_vec3_simd_dot(r1, r3);
 	QmVec4 d2 = qm_vec3_simd_dot(r2, r3);
 	QmMat4 m;
-	m.r[0] = qm_vec_select(d0, r0, QMC_S1110.v4);
-	m.r[1] = qm_vec_select(d1, r1, QMC_S1110.v4);
-	m.r[2] = qm_vec_select(d2, r2, QMC_S1110.v4);
-	m.r[3] = QMC_UNIT_R3;
+	m.r[0] = qm_vec_select(d0, r0, QMCONST_S1110.v4);
+	m.r[1] = qm_vec_select(d1, r1, QMCONST_S1110.v4);
+	m.r[2] = qm_vec_select(d2, r2, QMCONST_S1110.v4);
+	m.r[3] = QMCONST_UNIT_R3;
 	return qm_mat4_tran(m);
 }
 
@@ -4119,19 +4206,19 @@ INLINE QmMat4 QM_VECTORCALL qm_mat4_viewport(float x, float y, float width, floa
 INLINE bool QM_VECTORCALL qm_mat4_isu(QmMat4 m)
 {
 #if defined QM_USE_AVX
-	QMSVEC r1 = _mm_cmpeq_ps(m.v[0], QMC_UNIT_R0.v);
-	QMSVEC r2 = _mm_cmpeq_ps(m.v[1], QMC_UNIT_R1.v);
-	QMSVEC r3 = _mm_cmpeq_ps(m.v[2], QMC_UNIT_R2.v);
-	QMSVEC r4 = _mm_cmpeq_ps(m.v[3], QMC_UNIT_R3.v);
+	QMSVEC r1 = _mm_cmpeq_ps(m.v[0], QMCONST_UNIT_R0.v);
+	QMSVEC r2 = _mm_cmpeq_ps(m.v[1], QMCONST_UNIT_R1.v);
+	QMSVEC r3 = _mm_cmpeq_ps(m.v[2], QMCONST_UNIT_R2.v);
+	QMSVEC r4 = _mm_cmpeq_ps(m.v[3], QMCONST_UNIT_R3.v);
 	r1 = _mm_and_ps(r1, r2);
 	r3 = _mm_and_ps(r3, r4);
 	r1 = _mm_and_ps(r1, r3);
 	return (_mm_movemask_ps(r1) == 0x0f);
 #elif defined QM_USE_NEON
-	uint32x4_t r1 = vceqq_f32(m.v[0], QMC_UNIT_R0.v);
-	uint32x4_t r2 = vceqq_f32(m.v[1], QMC_UNIT_R1.v);
-	uint32x4_t r3 = vceqq_f32(m.v[2], QMC_UNIT_R2.v);
-	uint32x4_t r4 = vceqq_f32(m.v[3], QMC_UNIT_R3.v);
+	uint32x4_t r1 = vceqq_f32(m.v[0], QMCONST_UNIT_R0.v);
+	uint32x4_t r2 = vceqq_f32(m.v[1], QMCONST_UNIT_R1.v);
+	uint32x4_t r3 = vceqq_f32(m.v[2], QMCONST_UNIT_R2.v);
+	uint32x4_t r4 = vceqq_f32(m.v[3], QMCONST_UNIT_R3.v);
 	r1 = vandq_u32(r1, r3);
 	r2 = vandq_u32(r2, r4);
 	r1 = vandq_u32(r1, r2);
@@ -4389,6 +4476,12 @@ INLINE float qm_size_get_aspect(const QmSize s)
 	return (float)s.Width / (float)s.Height;
 }
 
+/// @brief 가운데 위치하도록 위치를 구한다
+INLINE QmPoint qm_size_locate_center(const QmSize s, int width, int height)
+{
+	return qm_point((s.Width - width) / 2, (s.Height - height) / 2);
+}
+
 /// @brief 대각선 DPI를 구한다
 INLINE float qm_size_calc_dpi(const QmSize pt, float horizontal, float vertical)
 {
@@ -4568,6 +4661,30 @@ INLINE bool qm_rect_eq(const QmRect left, const QmRect right)
 INLINE bool qm_rect_isz(const QmRect pv)
 {
 	return pv.Left == 0 && pv.Top == 0 && pv.Right == 0 && pv.Bottom == 0;
+}
+
+/// @brief 사각형을 회전한다
+/// @param rt 원본 사각형
+/// @param angle 회전 각도(호도)
+/// @param tl 왼쪽 위
+/// @param tr 오른쪽 위
+/// @param bl 왼쪽 아래
+/// @param br 오른쪽 아래
+INLINE void qm_rect_rotate(_In_ QmRect rt, _In_ float angle, _Out_ QmVec2* tl, _Out_ QmVec2* tr, _Out_ QmVec2* bl, _Out_ QmVec2* br)
+{
+	qn_verify(tl != NULL && tr != NULL && bl != NULL && br != NULL);
+	float s, c;
+	qm_sincosf(angle, &s, &c);
+	QmVec2 dt = qm_vec2((float)(rt.Right - rt.Left) * 0.5f, (float)(rt.Bottom - rt.Top) * 0.5f);
+	QmVec2 ot = qm_vec2((float)rt.Left + dt.X, (float)rt.Top + dt.Y);
+	QmVec2 vo[4], vi[4] = { {{-dt.X, -dt.Y}}, {{dt.X, -dt.Y}}, {{-dt.X, dt.Y}}, {{dt.X, dt.Y}} };
+	for (int i = 0; i < 4; i++)
+	{
+		vo[i].X = vi[i].X * c - vi[i].Y * s;
+		vo[i].Y = vi[i].X * s + vi[i].Y * c;
+		vo[i] = qm_vec2_add(vo[i], ot);
+	}
+	*tl = vo[0]; *tr = vo[1]; *bl = vo[2]; *br = vo[3];
 }
 
 #ifdef _WINDEF_

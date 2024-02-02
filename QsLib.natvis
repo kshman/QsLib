@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-  <!-- ==================== QNCTN & QG ==================== -->
+  <!-- ==================== QNCTN (+QN+QG) ==================== -->
 
   <!-- 배열 / 컨테이너 / 슬라이스 -->
   <Type Name="QnPtrArr">
@@ -74,6 +74,15 @@
 
   <!-- ==================== QN ==================== -->
 
+  <!-- 오브젝트 -->
+  <Type Name="QNGAM">
+    <DisplayString>[{((QNGAM*)this)-&gt;vt-&gt;name,s}&lt;{((QNGAM*)this)-&gt;ref}&gt; (desc:{((QNGAM*)this)-&gt;desc})]</DisplayString>
+    <Expand>
+      <Item Name="[타입]">((QNGAM*)this)-&gt;vt-&gt;name</Item>
+      <Item Name="[참조]">((QNGAM*)this)-&gt;ref</Item>
+    </Expand>
+  </Type>
+
   <!-- 데이트 타임 -->
   <Type Name="QnDateTime">
     <DisplayString>[{year}-{month}-{day} {hour}:{minute}:{second}.{millisecond}]</DisplayString>
@@ -116,8 +125,8 @@
     </Expand>
   </Type>
 
-  <!-- QMVECTOR_FIU -->
-  <Type Name="QMVECTOR_FIU">
+  <!-- QMSVECFIU -->
+  <Type Name="QMSVECFIU">
     <DisplayString>[{f[0]}, {f[1]}, {f[2]}, {f[3]}]</DisplayString>
     <Expand>
       <Item Name="X">f[0]</Item>
@@ -141,10 +150,11 @@
   <!-- QMVEC2 / QMVECI2 / QMVECH2 -->
   <Type Name="QMVEC2">
     <AlternativeType Name="QMVECI2"/>
-    <AlternativeType Name="QMVECH2"/>
     <AlternativeType Name="QMFLOAT2"/>
     <AlternativeType Name="QMINT2"/>
     <AlternativeType Name="QMUINT2"/>
+    <AlternativeType Name="QMHALF2"/>
+    <AlternativeType Name="QMPOINT"/>
     <DisplayString>[{X}, {Y}]</DisplayString>
     <Expand>
       <Item Name="X">X</Item>
@@ -165,13 +175,12 @@
   </Type>
 
   <!-- QMVEC4 / QMVECI4 / QMVECH4 -->
-  <Type Name="QMVEC4">
-    <AlternativeType Name="QMVECI4"/>
-    <AlternativeType Name="QMVECU4"/>
-    <AlternativeType Name="QMVECH4"/>
+  <Type Name="QMVECF">
+    <AlternativeType Name="QMVECU"/>
     <AlternativeType Name="QMFLOAT4"/>
     <AlternativeType Name="QMINT4"/>
     <AlternativeType Name="QMUINT4"/>
+    <AlternativeType Name="QMHALF4"/>
     <DisplayString>[{X}, {Y}, {Z}, {W}]</DisplayString>
     <Expand>
       <Item Name="X">X</Item>
@@ -192,25 +201,14 @@
       <Item Name="#4">m[3]</Item>
     </Expand>
   </Type>
-  <Type Name="QMFLOAT2X2">
-    <DisplayString>[({_11}, {_22}) ({_21}, {_22})]</DisplayString>
-    <Expand>
-      <Item Name="#1">m[0]</Item>
-      <Item Name="#2">m[1]</Item>
-    </Expand>
-  </Type>
-  <Type Name ="QMFLOAT3X3">
-    <DisplayString>[({_11}, {_22}, {_33}) ({_21}, {_22}, {_23}) ({_31}, {_32}, {_33})]</DisplayString>
-    <Expand>
-      <Item Name="#1">m[0]</Item>
-      <Item Name="#2">m[1]</Item>
-      <Item Name="#3">m[2]</Item>
-    </Expand>
-  </Type>
 
   <!-- QMCOLOR / QMKOLOR -->
-  <Type Name="QMCOLOR">
-    <AlternativeType Name="QMKOLOR"/>
+  <Type Name="QMKOLOR">
+    <AlternativeType Name="QMU4444"/>
+    <AlternativeType Name="QMU5551"/>
+    <AlternativeType Name="QMU565"/>
+    <AlternativeType Name="QMF111110"/>
+    <AlternativeType Name="QMU1010102"/>
     <DisplayString>[{R}, {G}, {B}, {A}]</DisplayString>
     <Expand>
       <Item Name="R">R</Item>
@@ -239,17 +237,6 @@
       <Item Name="Bottom">Bottom</Item>
       <Item Name="[Width]">Right-Left</Item>
       <Item Name="[Height]">Bottom-Top</Item>
-    </Expand>
-  </Type>
-
-  <!-- ==================== QS ==================== -->
-
-  <!-- 오브젝트 -->
-  <Type Name="QSGAM">
-    <DisplayString>[{((QsGam*)this)-&gt;vt-&gt;name,s}&lt;{((QsGam*)this)-&gt;ref}&gt; (desc:{((QsGam*)this)-&gt;desc})]</DisplayString>
-    <Expand>
-      <Item Name="[타입]">((QsGam*)this)-&gt;vt-&gt;name</Item>
-      <Item Name="[참조]">((QsGam*)this)-&gt;ref</Item>
     </Expand>
   </Type>
 
@@ -291,11 +278,12 @@
 
   <!-- 노드 -->
   <Type Name="QGNODE">
-    <DisplayString>[{((QsGam*)this)-&gt;vt-&gt;name,s} / {NAME,s} (ref:{((QsGam*)this)-&gt;ref})]</DisplayString>
+    <DisplayString>[{((QNGAM*)this)-&gt;vt-&gt;name,s} / {NAME,s} (ref:{((QNGAM*)this)-&gt;ref})]</DisplayString>
     <Expand>
-      <Item Name="[타입]">((QsGam*)this)-&gt;vt-&gt;name</Item>
-      <Item Name="[참조]">((QsGam*)this)-&gt;ref</Item>
-      <Item Name="[해시]">HASH</Item>
+      <Item Name="[타입]">((QNGAM*)this)-&gt;vt-&gt;name</Item>
+      <Item Name="[참조]">((QNGAM*)this)-&gt;ref</Item>
+      <Item Name="[해시]">HASH,X</Item>
+      <Item Name="[이름]">NAME</Item>
     </Expand>
   </Type>
 
@@ -321,24 +309,74 @@
   </Type>
 
   <!-- QGRENDER -->
-  <Type Name="QGRENDER">
-    <DisplayString>[RENDER]</DisplayString>
+  <Type Name="QGRENDERSTATE">
+    <DisplayString>[(RENDER) {((QNGAM*)this)-&gt;vt-&gt;name,s} / {((QGNODE*)this)-&gt;NAME,s} (ref:{((QNGAM*)this)-&gt;ref})]</DisplayString>
+    <Expand>
+      <Item Name="[타입]">((QNGAM*)this)-&gt;vt-&gt;name</Item>
+      <Item Name="[참조]">((QNGAM*)this)-&gt;ref</Item>
+      <Item Name="[해시]">((QGNODE*)this)-&gt;HASH,X</Item>
+      <Item Name="[이름]">((QGNODE*)this)-&gt;NAME</Item>
+    </Expand>
+  </Type>
+  
+  <!-- QGIMAGE -->
+  <Type Name="QGIMAGE">
+    <DisplayString>[(이미지) {width}x{height}+{mipmaps} ({prop.format},{prop.bpp},ref:{((QNGAM*)this)-&gt;ref})</DisplayString>
+    <Expand>
+      <Item Name="[타입]">((QNGAM*)this)-&gt;vt-&gt;name</Item>
+      <Item Name="[너비]">width</Item>
+      <Item Name="[높이]">height</Item>
+      <Item Name="[밉맵]">mipmaps</Item>
+      <Item Name="[포맷]">prop.format</Item>
+      <Item Name="[픽셀당비트]">prop.bpp</Item>
+      <Item Name="[참조]">((QNGAM*)this)-&gt;ref</Item>
+    </Expand>
+  </Type>
+  
+  <!-- QGTEXTURE -->
+  <Type Name="QGTEXTURE">
+    <DisplayString>[(텍스쳐) {width}x{height}+{mipmaps} ({prop.format},{prop.bpp},ref:{((QNGAM*)this)-&gt;ref})</DisplayString>
+    <Expand>
+      <Item Name="[타입]">((QNGAM*)this)-&gt;vt-&gt;name</Item>
+      <Item Name="[너비]">width</Item>
+      <Item Name="[높이]">height</Item>
+      <Item Name="[밉맵]">mipmaps</Item>
+      <Item Name="[포맷]">prop.format</Item>
+      <Item Name="[픽셀당비트]">prop.bpp</Item>
+      <Item Name="[참조]">((QNGAM*)this)-&gt;ref</Item>
+    </Expand>
   </Type>
 
-  <!-- ==================== ES 또는 GL ==================== -->
+  <!-- ==================== GL ==================== -->
   
   <!-- QGLCONFIG -->
   <Type Name="QGLCONFIG">
     <DisplayString>[{(int)red}/{(int)green}/{(int)blue}/{(int)alpha}, {(int)depth}/{(int)stencil} ({(int)samples})]</DisplayString>
   </Type>
+  
+  <!-- QGLVARATTR -->
+  <Type Name="QGLVARATTR">
+    <DisplayString>[{name,s} ({attrib}/{usage},{sctype})]</DisplayString>
+    <Expand>
+      <Item Name="[이름]">name,s</Item>
+      <Item Name="[해시]">hash,X</Item>
+      <Item Name="[ATTR]">attrib</Item>
+      <Item Name="[크기]">size</Item>
+      <Item Name="[용도]">usage</Item>
+      <Item Name="[타입]">sctype</Item>
+    </Expand>
+  </Type>
 
   <!-- QGLRENDER -->
-  <Type Name="QGLRENDER">
+  <Type Name="QGLRENDERSTATE">
     <DisplayString>[{base.base.NAME,s}]</DisplayString>
     <Expand>
-      <Item Name="[GAM]">(QsGam*)this</Item>
-      <Item Name="[해시]">base.hash</Item>
+      <Item Name="[GAM]">(QnGam*)this</Item>
+      <Item Name="[해시]">base.base.HASH,X</Item>
       <Item Name="[세이더]">shader</Item>
+      <Item Name="[레이아웃]">layout</Item>
+      <Item Name="[뎁스]">depth</Item>
+      <Item Name="[스텐실]">stencil</Item>
     </Expand>
   </Type>
 

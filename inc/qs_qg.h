@@ -63,15 +63,25 @@ typedef enum QGCLRFMT
 	QGCF_R8G8B8,											/// @brief 24비트 정수 RGB
 	QGCF_R8G8,												/// @brief 16비트 정수 RG
 	QGCF_R8,												/// @brief 8비트 정수 R
-	QGCF_A8,												/// @brief 8비트 정수 A
-	QGCF_L8,												/// @brief 8비트 정수 L
+	QGCF_A8,												/// @brief 8비트 정수 A (표면 전용)
+	QGCF_L8,												/// @brief 8비트 정수 L (표면 전용)
+	QGCF_A8L8,												/// @brief 16비트 정수 AL (표면 전용)
 
-	QGCF_R5G6B5,											/// @brief 16비트 RGB
-	QGCF_R5G5B5A1,											/// @brief 16비트 RGBA
-	QGCF_R4G4B4A4,											/// @brief 16비트 RGBA
+	QGCF_R5G6B5,											/// @brief 16비트 RGB (표면 전용)
+	QGCF_R5G5B5A1,											/// @brief 16비트 RGBA (표면 전용)
+	QGCF_R4G4B4A4,											/// @brief 16비트 RGBA (표면 전용)
 
-	QGCF_D32F,												/// @brief 32비트 실수 뎁스
-	QGCF_D24S8,												/// @brief 32비트 뎁스 24 스텐실 8
+	QGCF_D32F,												/// @brief 32비트 실수 뎁스 (뎁스 전용)
+	QGCF_D24S8,												/// @brief 32비트 뎁스 24 스텐실 8 (뎁스 스텐실 전용)
+
+	QGCF_DXT1,												/// @brief DXT1 압축 포맷 (이미지 전용)
+	QGCF_DXT3,												/// @brief DXT3 압축 포맷 (이미지 전용)
+	QGCF_DXT5,												/// @brief DXT5 압축 포맷 (이미지 전용)
+	QGCF_EXT1,												/// @brief ETC1 압축 포맷 (이미지 전용)
+	QGCF_EXT2,												/// @brief ETC2 압축 포맷 (이미지 전용)
+	QGCF_EXT2_EAC,											/// @brief ETC2 EAC 압축 포맷 (이미지 전용)
+	QGCF_ASTC4,												/// @brief ASTC 4x4 압축 포맷 (이미지 전용)
+	QGCF_ASTC8,												/// @brief ASTC 8x8 압축 포맷 (이미지 전용)
 
 	QGCF_MAX_VALUE,
 } QgClrFmt;
@@ -107,6 +117,12 @@ typedef enum QGCLRFMT
 #define QGLOT_BYTE2			QGCF_R8G8
 #define QGLOT_BYTE3			QGCF_R8G8B8
 #define QGLOT_BYTE4			QGCF_R8G8B8A8
+#define QGLOT_MAX_VALUE		QGCF_D32F
+
+// 별명
+#define QCFG_BC1			QGCF_DXT1
+#define QCFG_BC2			QGCF_DXT3
+#define QCFG_BC3			QGCF_DXT5
 
 /// @brief 토폴로지
 typedef enum QGTOPOLOGY
@@ -312,6 +328,35 @@ typedef enum QGCLEAR
 	QGCLEAR_RENDER = QN_BIT(2),								/// @brief 렌더 타겟 영영 지우기
 } QgClear;
 
+/// @brief 텍스쳐 플래그
+typedef enum QGTEXFLAG
+{
+	QGTEXF_NONE = 0,
+
+	QGTEXF_DISCARD_IMAGE = QN_BIT(0),						/// @brief 사용한 이미지를 버림
+	QGTEXF_READ = QN_BIT(1),								/// @brief 읽기 가능
+	QGTEXF_WRITE = QN_BIT(2),								/// @brief 쓰기 가능
+	QGTEXF_MIPMAP = QN_BIT(3),								/// @brief 밉맵을 만든다
+	QGTEXF_LINEAR = QN_BIT(4),								/// @brief 선형 필터링
+	QGTEXF_ANISO = QN_BIT(5),								/// @brief 아니소트로피 필터링 (지금은 안됨)
+	QGTEXF_CLAMP = QN_BIT(6),								/// @brief 클램핑
+	QGTEXF_BORDER = QN_BIT(7),								/// @brief 테두리 색 사용
+	QGTEXF_ELAPSED = QN_BIT(8),								/// @brief 경과 시간 사용 애니메이션 텍스쳐, 포즈에도 움직일 수 있음
+
+	QGTEXFS_COMPRESS = QN_BIT(16),							/// @brief 압축 텍스쳐
+	QGTEXFS_FLOAT = QN_BIT(17),								/// @brief 실수 텍스쳐
+
+	QGTEXSPEC_DEPTH = QN_BIT(23),							/// @brief 뎁스 텍스쳐
+	QGTEXSPEC_STENCIL = QN_BIT(24),							/// @brief 스텐실 텍스쳐
+	QFTEXSPEC_TARGET = QN_BIT(25),							/// @brief 렌더 타겟 텍스쳐
+	QFTEXSPEC_ANIM = QN_BIT(26),							/// @brief 애니메이션 텍스쳐
+	QGTEXSPEC_1D = QN_BIT(27),								/// @brief 1D 텍스쳐
+	QGTEXSPEC_2D = QN_BIT(28),								/// @brief 2D 텍스쳐
+	QGTEXSPEC_3D = QN_BIT(29),								/// @brief 3D 텍스쳐
+	QGTEXSPEC_CUBE = QN_BIT(30),							/// @brief 큐브 텍스쳐
+	QGTEXSPEC_ARRAY = QN_BIT(31),							/// @brief 배열 텍스쳐
+} QgTexFlag;
+
 /// @brief 스터브와 렌더러 만들 때 플래그
 typedef enum QGFLAG
 {
@@ -429,12 +474,9 @@ typedef enum QGWINDOWEVENTTYPE
 /// @brief 픽셀 포맷
 typedef struct QGPROPPIXEL
 {
-	QgClrFmt			fmt;								/// @brief 픽셀 포맷
-	uint				bpp;								/// @brief 픽셀 당 비트 수
-	byte				rr, rl;								/// @brief 빨강
-	byte				gr, gl;								/// @brief 녹색
-	byte				br, bl;								/// @brief 파랑
-	byte				ar, al;								/// @brief 알파
+	QgClrFmt			format;								/// @brief 픽셀 포맷
+	ushort				bpp;								/// @brief 픽셀 당 비트 수
+	ushort				tbp;								/// @brief 픽셀 당 바이트 수
 } QgPropPixel;
 
 /// @brief 레이아웃 요소
@@ -817,6 +859,9 @@ QSAPI float qg_get_aspect(void);
 /// @param height 높이
 QSAPI void qg_set_aspect(const int width, const int height);
 
+/// @brief 스터브 크기를 얻는다
+QSAPI void qg_get_size(_Out_ QmSize* size);
+
 /// @brief 스터브 루프를 처리한다
 /// @return 거짓이면 프로그램을 종료한다
 QSAPI bool qg_loop(void);
@@ -896,10 +941,12 @@ QSAPI const char* qg_window_event_to_str(QgWindowEventType wev);
 //////////////////////////////////////////////////////////////////////////
 // render device
 
-typedef struct QGGAM		QgGam;							/// @brief 런더 감
-typedef struct QGNODE		QgNode;							/// @brief 노드
-typedef struct QGBUFFER		QgBuffer;						/// @brief 버퍼
-typedef struct QGRENDER		QgRender;						/// @brief 렌더 파이프라인
+typedef struct QGGAM			QgGam;							/// @brief 런더 감
+typedef struct QGNODE			QgNode;							/// @brief 노드
+typedef struct QGBUFFER			QgBuffer;						/// @brief 버퍼
+typedef struct QGRENDERSTATE	QgRenderState;					/// @brief 렌더 파이프라인
+typedef struct QGIMAGE			QgImage;						/// @brief 이미지
+typedef struct QGTEXTURE		QgTexture;						/// @brief 텍스쳐
 
 /// @brief 세이더 콜백
 /// @details 두번째 인수(int)는 qn_get_key로 얻어진 키 값을 전달하므로 자동 변수가 아닐 경우
@@ -925,21 +972,21 @@ QSAPI void qg_close_rdh(void);
 /// @brief 세이더 변수 콜백을 등록한다
 /// @param func 세이더 콜백 함수
 /// @param data 세이더 콜백 함수의 인수
-QSAPI void qg_rdh_set_shader_var_callback(QgVarShaderFunc func, void* data);
+QSAPI void qg_set_shader_var_callback(QgVarShaderFunc func, void* data);
 
 /// @brief 렌더러를 준비한다
 /// @param clear 배경, 스텐실, 뎁스를 초기화 하려면 true 로 한다
 /// @return 렌더러가 준비됐으면 참
 /// @retval true 렌더러가 준비됐다
 /// @retval false 렌더러가 준비되지 않았거나, 프로그램이 종료했다
-QSAPI bool qg_rdh_begin(bool clear);
+QSAPI bool qg_begin_render(bool clear);
 
 /// @brief 렌더러를 끝낸다
 /// @param flush 화면 갱신을 하려면 참으로
-QSAPI void qg_rdh_end(bool flush);
+QSAPI void qg_end_render(bool flush);
 
 /// @brief 렌더러 결과를 화면으로 출력한다
-QSAPI void qg_rdh_flush(void);
+QSAPI void qg_flush(void);
 
 /// @brief 렌더러 상태를 초기화 한다
 /// @note 이 함수는 직접 호출하지 않아도 좋다. 외부 스터브 사용할 때 화면 크기가 바뀔 때 사용하면 좋음
@@ -947,43 +994,43 @@ QSAPI void qg_rdh_reset(void);
 
 /// @brief 렌더러를 지운다 (배경은 지정간 배경색으로, 뎁스는 1로, 스텐실은 0으로)
 /// @param clear 지우기 플래그
-QSAPI void qg_rdh_clear(QgClear clear);
+QSAPI void qg_clear_render(QgClear clear);
 
 /// @brief 세이더 vec4 타입 파라미터 설정
 /// @param at 0부터 3까지 총 4가지
 /// @param v vec4 타입 값
-QSAPI void qg_rdh_set_param_vec4(int at, const QmVec4* v);
+QSAPI void qg_set_param_vec4(int at, const QmVec4* v);
 
 /// @brief 세이더 mat4 타입 파라미터 설정
 /// @param at 0부터 3까지 총 4가지
 /// @param m mat4 타입 값
-QSAPI void qg_rdh_set_param_mat4(int at, const QmMat4* m);
+QSAPI void qg_set_param_mat4(int at, const QmMat4* m);
 
 /// @brief 세이더 영향치(주로 뼈대 팔레트) 파라미터 설정
 /// @param count 행렬 갯수
 /// @param weight 영향치 행렬
-QSAPI void qg_rdh_set_param_weight(int count, QmMat4* weight);
+QSAPI void qg_set_param_weight(int count, QmMat4* weight);
 
 /// @brief 배경색을 설정한다
 /// @param background_color 배경색 (널값일 경우 (0.0f, 0.0f, 0.0f, 1.0f)로 초기화)
-QSAPI void qg_rdh_set_background(const QmVec4* background_color);
+QSAPI void qg_set_background(const QmColor* background_color);
 
 /// @brief 월드 행렬을 설정한다
 /// @param world 월드 행렬
-QSAPI void qg_rdh_set_world(const QmMat4* world);
+QSAPI void qg_set_world(const QmMat4* world);
 
 /// @brief 뷰 행렬을 설정한다
 /// @param view 뷰 행렬
-QSAPI void qg_rdh_set_view(const QmMat4* view);
+QSAPI void qg_set_view(const QmMat4* view);
 
 /// @brief 투영 행렬을 설정한다
 /// @param proj 투영 행렬
-QSAPI void qg_rdh_set_project(const QmMat4* proj);
+QSAPI void qg_set_project(const QmMat4* proj);
 
 /// @brief 뷰와 투영 행렬을 설정한다
 /// @param proj 투영 행렬
 /// @param view 뷰 행렬
-QSAPI void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view);
+QSAPI void qg_set_view_project(const QmMat4* proj, const QmMat4* view);
 
 /// @brief 버퍼를 만든다
 /// @param type 버퍼 타입
@@ -992,14 +1039,28 @@ QSAPI void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view);
 /// @param initial_data 초기화할 요소 데이터로 이 값이 NULL이면 동적 버퍼, 값이 있으면 정적 버퍼로 만들어진다
 /// @return 만들어진 버퍼
 /// @details data 파라미터의 설명에도 있지만, 정적 버퍼로 만들고 나중에 데이터를 넣으면 문제가 생길 수도 있다
-QSAPI QgBuffer* qg_rdh_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data);
+QSAPI QgBuffer* qg_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data);
 
 /// @brief 렌더 파이프라인을 만든다
 /// @param name 렌더 이름 (이름을 지정하면 캐시한다)
 /// @param render 렌더 파이프라인 속성
 /// @param shader 세이더 속성
 /// @return 만들어진 렌더 파이프라인
-QSAPI QgRender* qg_rdh_create_render(const char* name, const QgPropRender* render, const QgPropShader* shader);
+QSAPI QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgPropShader* shader);
+
+/// @brief 텍스쳐를 만든다
+/// @param name 텍스쳐 이름
+/// @param image 이미지
+/// @param flags 텍스쳐 플래그 
+/// @return 만들어진 텍스쳐
+QSAPI QgTexture* qg_create_texture(const char* name, const QgImage* image, QgTexFlag flags);
+
+/// @brief 텍스쳐를 파일에서 읽어 만든다
+/// @param fuse 퓨즈 번호
+/// @param filename 파일 이름
+/// @param flags 텍스쳐 플래그
+/// @return 읽어서 만든 텍스쳐
+QSAPI QgTexture* qg_load_texture(int fuse, const char* filename, QgTexFlag flags);
 
 /// @brief 정점 버퍼를 설정한다
 /// @param stage 버퍼를 지정할 스테이지
@@ -1007,35 +1068,55 @@ QSAPI QgRender* qg_rdh_create_render(const char* name, const QgPropRender* rende
 /// @return 실패하면 거짓을 반환
 /// @retval true 문제 없이 정점 버퍼를 설정했다
 /// @retval false buffer 인수에 문제가 있거나 정점 버퍼가 아니다
-QSAPI bool qg_rdh_set_vertex(QgLayoutStage stage, QgBuffer* buffer);
+QSAPI bool qg_set_vertex(QgLayoutStage stage, QgBuffer* buffer);
 
 /// @brief 인덱스 버퍼를 설정한다
 /// @param buffer 설정할 버퍼
 /// @return 실패하면 거짓을 반환
 /// @retval true 문제 없이 인덱스 버퍼를 설정했다
 /// @retval false buffer 인수에 문제가 있거나 인덱스 버퍼가 아니다
-QSAPI bool qg_rdh_set_index(QgBuffer* buffer);
+QSAPI bool qg_set_index(QgBuffer* buffer);
 
 /// @brief 렌더 파이프라인을 설정한다
 /// @param render 렌더 파이프라인
-QSAPI bool qg_rdh_set_render(QgRender* render);
+QSAPI bool qg_set_render_state(QgRenderState* render);
 
 /// @brief 렌더 파이프라인을 캐시에서 설정한다
 /// @param name 설정할 렌더의 이름
 /// @return 캐시에 해당 이름이 없으면 거짓
-QSAPI bool qg_rdh_set_render_named(const char* name);
+QSAPI bool qg_set_render_named(const char* name);
+
+/// @brief 텍스쳐를 설정한다
+/// @param stage 텍스쳐 스테이지 번호 (최대 8)
+/// @param texture 설정할 텍스쳐 (널로 텍스쳐를 해제할 수 있다)
+QSAPI bool qg_set_texture(int stage, QgTexture* texture);
 
 /// @brief 정점으로 그리기
 /// @param tpg 그릴 모양의 토폴로지
 /// @param vertices 정점 갯수
 /// @return 문제없이 그리면 참
-QSAPI bool qg_rdh_draw(QgTopology tpg, int vertices);
+QSAPI bool qg_draw(QgTopology tpg, int vertices);
 
 /// @brief 인덱스와 정점으로 그리기
 /// @param tpg 그릴 모양의 토폴로지
 /// @param indices 그릴 인덱스 갯수
 /// @return 문제없이 그리면 참
-QSAPI bool qg_rdh_draw_indexed(QgTopology tpg, int indices);
+QSAPI bool qg_draw_indexed(QgTopology tpg, int indices);
+
+/// @brief 텍스쳐 스프라이트를 그린다
+/// @param bound 그릴 영역
+/// @param color 색깔 (널이면 흰색)
+/// @param texture 텍스쳐
+/// @param coord 텍스쳐 좌표 (널이면 전체 텍스쳐)
+QSAPI void qg_draw_sprite(const QmRect* bound, const QmColor* color, QgTexture* texture, const QmVec* coord);
+
+/// @brief 텍스쳐 스프라이트를 회전시켜 그린다
+/// @param bound 그릴 영영역
+/// @param angle 회전 각도(호도)
+/// @param color 색깔 (널이면 흰색)
+/// @param texture 텍스쳐
+/// @param coord 텍스쳐 좌표 (널이면 전체 텍스쳐)
+QSAPI void qg_draw_sprite_ex(const QmRect* bound, float angle, const QmColor* color, QgTexture* texture, const QmVec* coord);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1044,7 +1125,7 @@ QSAPI bool qg_rdh_draw_indexed(QgTopology tpg, int indices);
 /// @brief 노드
 struct QGNODE
 {
-	QsGam				base;
+	QnGam				base;
 
 	char				NAME[64];
 	size_t				HASH;
@@ -1061,7 +1142,7 @@ QSAPI void qg_node_set_name(QgNode * self, const char* name);
 /// @brief 버퍼
 struct QGBUFFER
 {
-	QsGam				base;
+	QnGam				base;
 
 	QgBufferType		type;
 	uint				size;
@@ -1071,12 +1152,12 @@ struct QGBUFFER
 	bool16				mapped;
 };
 
-qs_name_vt(QGBUFFER)
+qn_gam_vt(QGBUFFER)
 {
-	qs_name_vt(QSGAM)	base;
-	void*(*map)(QgBuffer*);
-	bool (*unmap)(QgBuffer*);
-	bool (*data)(QgBuffer*, const void*);
+	qn_gam_vt(QNGAM)	base;
+	void*(*map)(void*);
+	bool (*unmap)(void*);
+	bool (*data)(void*, int, const void*);
 };
 
 /// @brief 버퍼 설정을 위해 잠근다
@@ -1092,18 +1173,65 @@ QSAPI bool qg_buffer_unmap(QgBuffer* g);
 
 /// @brief 버퍼에 데이터를 설정한다
 /// @param g 버퍼
+/// @param size 데이터의 크기
 /// @param data 설정할 데이터
 /// @return 버퍼에 데이터가 들어갔으면 참
 /// @note data 는 반드시 size 만큼 데이터를 갖고 있어야한다
-QSAPI bool qg_buffer_data(QgBuffer* g, const void* data);
+QSAPI bool qg_buffer_data(QgBuffer* g, int size, const void* data);
 
-/// @brief 렌더 파이프라인
-struct QGRENDER
+/// @brief 렌더 파이프라인 상태
+struct QGRENDERSTATE
 {
 	QgNode				base;
 
 	nuint				ref;
 };
+
+/// @brief 텍스쳐
+struct QGTEXTURE
+{
+	QnGam				base;
+
+	QgPropPixel			prop;
+	int					width;
+	int					height;
+	int					mipmaps;
+	QgTexFlag			flags;
+};
+
+qn_gam_vt(QGTEXTURE)
+{
+	qn_gam_vt(QNGAM)	base;
+	bool (*bind)(QgTexture*, int);
+};
+
+
+//////////////////////////////////////////////////////////////////////////
+// 도움 오브젝트
+
+// 이미지
+struct QGIMAGE
+{
+	QnGam				base;
+
+	QgPropPixel			prop;
+	int					width;
+	int					height;
+	int					pitch;
+	int					mipmaps;
+	byte*				data;
+};
+
+QSAPI QgImage* qg_new_image(QgClrFmt fmt, int width, int height);
+QSAPI QgImage* qg_new_image_filled(int width, int height, const QmColor* color);
+QSAPI QgImage* qg_new_image_gradient_linear(int width, int height, const QmColor* begin, const QmColor* end, float direction);
+QSAPI QgImage* qg_new_image_gradient_radial(int width, int height, const QmColor* inner, const QmColor* outer, float density);
+QSAPI QgImage* qg_new_image_check_pattern(int width, int height, const QmColor* oddColor, const QmColor* evenColor, int checkWidth, int checkHeight);
+
+QSAPI QgImage* qg_create_image(const void* data, int size);
+QSAPI QgImage* qg_load_image(int fuse, const char* filename);
+
+QSAPI bool qg_image_set_pixel(QgImage* self, int x, int y, const QmColor* color);
 
 
 //////////////////////////////////////////////////////////////////////////

@@ -6,12 +6,14 @@
 #ifndef QS_SUPPRESS_VAR_CHK
 #define VAR_CHK_IF_COND(cond,mesg,ret)			QN_STMT_BEGIN{if ((cond)) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: %s", __FUNCTION__, mesg); return ret; }}QN_STMT_END
 #define VAR_CHK_IF_NULL(item,ret)				QN_STMT_BEGIN{if ((item)==NULL) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: '%s' is null", __FUNCTION__, #item); return ret; }}QN_STMT_END
-#define VAR_CHK_IF_ZERO(item,ret)				QN_STMT_BEGIN{if ((size_t)(item)==0) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: '%s' is zero", #item); return ret; }}QN_STMT_END
+#define VAR_CHK_IF_ZERO(item,ret)				QN_STMT_BEGIN{if ((size_t)(item) == 0) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: '%s' is zero", #item); return ret; }}QN_STMT_END
+#define VAR_CHK_IF_NEQ(item,value,ret)			QN_STMT_BEGIN{if ((item)==(value)) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: '%s' must not %s", __FUNCTION__, #item, #value); return ret; }}QN_STMT_END
 #define VAR_CHK_IF_NEED(item,value,ret)			QN_STMT_BEGIN{if ((item)!=(value)) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: '%s' is not %s", __FUNCTION__, #item, #value); return ret; }}QN_STMT_END
 #define VAR_CHK_IF_MAX(item,vmax,ret)			QN_STMT_BEGIN{if ((size_t)(item) >= (vmax)) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: invalid '%s' value: %d", __FUNCTION__, #item, item); return ret; }}QN_STMT_END
 #define VAR_CHK_IF_MIN(item,vmin,ret)			QN_STMT_BEGIN{if ((item) <= (vmin)) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: invalid '%s' value: %d", __FUNCTION__, #item, item); return ret; }}QN_STMT_END
 #define VAR_CHK_IF_NULL2(ctn,item,ret)			QN_STMT_BEGIN{if ((ctn)->item == NULL) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: '%s.%s' is null", __FUNCTION__, #ctn, #item); return ret; }}QN_STMT_END
 #define VAR_CHK_IF_ZERO2(ctn,item,ret)			QN_STMT_BEGIN{if (((size_t)(ctn)->item) == 0) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: '%s.%s' is zero", __FUNCTION__, #ctn, #item); return ret; }}QN_STMT_END
+#define VAR_CHK_IF_NEQ2(ctn,item,value,ret)		QN_STMT_BEGIN{if (((ctn)->item) == (value)) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: '%s.%s' must not %s", __FUNCTION__, #ctn, #item, #value); return ret; }}QN_STMT_END
 #define VAR_CHK_IF_NEED2(ctn,item,value,ret)	QN_STMT_BEGIN{if (((ctn)->item) == 0) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: '%s.%s' is not %s", __FUNCTION__, #ctn, #item, #value); return ret; }}QN_STMT_END
 #define VAR_CHK_IF_MAX2(ctn,item,vmax,ret)		QN_STMT_BEGIN{if ((size_t)(ctn)->item >= (vmax)) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: invalid '%s.%s' value: %d", __FUNCTION__, #ctn, #item, (ctn)->item); return ret; }}QN_STMT_END
 #define VAR_CHK_IF_MIN2(ctn,item,vmin,ret)		QN_STMT_BEGIN{if ((ctn)->item <= (vmin)) { qn_debug_outputf(true, VAR_CHK_NAME, "%s: invalid '%s.%s' value: %d", __FUNCTION__, #ctn, #item, (ctn)->item); return ret; }}QN_STMT_END
@@ -23,11 +25,13 @@
 #define VAR_CHK_IF_COND(cond,mesg,ret)			QN_STMT_BEGIN{if ((cond)) return ret; }QN_STMT_END
 #define VAR_CHK_IF_NULL(item,ret)				QN_STMT_BEGIN{if ((item)==NULL) return ret; }QN_STMT_END
 #define VAR_CHK_IF_ZERO(item,ret)				QN_STMT_BEGIN{if ((size_t)(item)==0) return ret; }QN_STMT_END
+#define VAR_CHK_IF_NEQ(item,value,ret)			QN_STMT_BEGIN{if ((item)==(value)) return ret; }QN_STMT_END
 #define VAR_CHK_IF_NEED(item,value,ret)			QN_STMT_BEGIN{if ((item)!=(value)) return ret; }QN_STMT_END
 #define VAR_CHK_IF_MAX(item,vmax,ret)			QN_STMT_BEGIN{if ((size_t)(item) >= (vmax)) return ret; }QN_STMT_END
 #define VAR_CHK_IF_MIN(item,vmin,ret)			QN_STMT_BEGIN{if ((item) <= (vmin)) return ret; }QN_STMT_END
 #define VAR_CHK_IF_NULL2(ctn,item,ret)			QN_STMT_BEGIN{if ((ctn)->item == NULL) return ret; }QN_STMT_END
 #define VAR_CHK_IF_ZERO2(ctn,item,ret)			QN_STMT_BEGIN{if (((size_t)(ctn)->item) == 0) return ret; }QN_STMT_END
+#define VAR_CHK_IF_NEQ2(ctn,item,value,ret)		QN_STMT_BEGIN{if (((ctn)->item) == (value)) return ret; }QN_STMT_END
 #define VAR_CHK_IF_NEED2(ctn,item,value,ret)	QN_STMT_BEGIN{if (((ctn)->item) == 0) return ret; }QN_STMT_END
 #define VAR_CHK_IF_MAX2(ctn,item,vmax,ret)		QN_STMT_BEGIN{if ((size_t)(ctn)->item >= (vmax)) return ret; }QN_STMT_END
 #define VAR_CHK_IF_MIN2(ctn,item,vmin,ret)		QN_STMT_BEGIN{if ((ctn)->item <= (vmin)) return ret; }QN_STMT_END

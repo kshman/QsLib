@@ -98,8 +98,8 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 		qg_node_mukum_init_fast(&rdh->mukums[i]);
 
 	// 
-	qs_cast_vt(rdh, RDHBASE)->layout();						// 레이아웃 재설정
-	qs_cast_vt(rdh, RDHBASE)->reset();						// 장치 리셋
+	qn_cast_vt(rdh, RDHBASE)->layout();						// 레이아웃 재설정
+	qn_cast_vt(rdh, RDHBASE)->reset();						// 장치 리셋
 	qn_timer_reset(STUB->timer);							// 타이머도 리셋해둔다
 	return true;
 }
@@ -107,7 +107,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 //
 void qg_close_rdh(void)
 {
-	RDH = qs_unloadc(RDH, RdhBase);
+	RDH = qn_unloadc(RDH);
 }
 
 //
@@ -180,7 +180,7 @@ void rdh_internal_check_layout(void)
 	const int height = (int)rdh->tm.size.Height;
 	if (size.Width == width && size.Height == height)
 		return;
-	qs_cast_vt(rdh, RDHBASE)->layout();
+	qn_cast_vt(rdh, RDHBASE)->layout();
 }
 
 //
@@ -188,7 +188,7 @@ void rdh_internal_add_node(RenderNodeShed shed, void* node)
 {
 	VAR_CHK_IF_MAX(shed, RDHNODE_MAX_VALUE, );
 	RdhBase* rdh = RDH;
-	qg_node_mukum_set(&rdh->mukums[shed], qs_loadu(node, QgNode));
+	qg_node_mukum_set(&rdh->mukums[shed], qn_loadu(node, QgNode));
 }
 
 //
@@ -196,11 +196,11 @@ void rdh_internal_unlink_node(RenderNodeShed shed, void* node)
 {
 	VAR_CHK_IF_MAX(shed, RDHNODE_MAX_VALUE, );
 	RdhBase* rdh = RDH;
-	qg_node_mukum_unlink(&rdh->mukums[shed], qs_cast_type(node, QgNode));
+	qg_node_mukum_unlink(&rdh->mukums[shed], qn_cast_type(node, QgNode));
 }
 
 //
-void qg_rdh_set_shader_var_callback(QgVarShaderFunc func, void* data)
+void qg_set_shader_var_callback(QgVarShaderFunc func, void* data)
 {
 	RenderParam* param = RDH_PARAM;
 	param->callback_func = func;
@@ -208,37 +208,37 @@ void qg_rdh_set_shader_var_callback(QgVarShaderFunc func, void* data)
 }
 
 //
-bool qg_rdh_begin(bool clear)
+bool qg_begin_render(bool clear)
 {
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.begins++;
 	rdh->invokes.flush = false;
-	return qs_cast_vt(rdh, RDHBASE)->begin(clear);
+	return qn_cast_vt(rdh, RDHBASE)->begin(clear);
 }
 
 //
-void qg_rdh_end(bool flush)
+void qg_end_render(bool flush)
 {
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.ends++;
 	rdh->invokes.flush = true;
-	qs_cast_vt(rdh, RDHBASE)->end();
+	qn_cast_vt(rdh, RDHBASE)->end();
 	if (flush)
-		qs_cast_vt(rdh, RDHBASE)->flush();
+		qn_cast_vt(rdh, RDHBASE)->flush();
 }
 
 //
-void qg_rdh_flush(void)
+void qg_flush(void)
 {
 	RdhBase* rdh = RDH;
 	if (!rdh->invokes.flush)
 	{
 		qn_debug_outputs(true, "RDH", "call end() before flush");
-		qg_rdh_end(false);
+		qg_end_render(false);
 	}
-	qs_cast_vt(rdh, RDHBASE)->flush();
+	qn_cast_vt(rdh, RDHBASE)->flush();
 	rdh->invokes.invokes++;
 	rdh->invokes.frames++;
 }
@@ -248,19 +248,19 @@ void qg_rdh_reset(void)
 {
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	qs_cast_vt(rdh, RDHBASE)->reset();
+	qn_cast_vt(rdh, RDHBASE)->reset();
 }
 
 //
-void qg_rdh_clear(QgClear clear)
+void qg_clear_render(QgClear clear)
 {
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	qs_cast_vt(rdh, RDHBASE)->clear(clear);
+	qn_cast_vt(rdh, RDHBASE)->clear(clear);
 }
 
 //
-void qg_rdh_set_param_vec4(int at, const QmVec4* v)
+void qg_set_param_vec4(int at, const QmVec4* v)
 {
 	RdhBase* rdh = RDH;
 	VAR_CHK_IF_NULL(v, );
@@ -270,7 +270,7 @@ void qg_rdh_set_param_vec4(int at, const QmVec4* v)
 }
 
 //
-void qg_rdh_set_param_mat4(int at, const QmMat4* m)
+void qg_set_param_mat4(int at, const QmMat4* m)
 {
 	RdhBase* rdh = RDH;
 	VAR_CHK_IF_NULL(m, );
@@ -280,7 +280,7 @@ void qg_rdh_set_param_mat4(int at, const QmMat4* m)
 }
 
 //
-void qg_rdh_set_param_weight(int count, QmMat4* weight)
+void qg_set_param_weight(int count, QmMat4* weight)
 {
 	VAR_CHK_IF_MIN(count, 0, );
 	VAR_CHK_IF_NULL(weight, );
@@ -291,7 +291,7 @@ void qg_rdh_set_param_weight(int count, QmMat4* weight)
 }
 
 //
-void qg_rdh_set_background(const QmVec4* color)
+void qg_set_background(const QmColor* color)
 {
 	RdhBase* rdh = RDH;
 	if (color)
@@ -302,7 +302,7 @@ void qg_rdh_set_background(const QmVec4* color)
 }
 
 //
-void qg_rdh_set_world(const QmMat4* world)
+void qg_set_world(const QmMat4* world)
 {
 	VAR_CHK_IF_NULL(world, );
 	RdhBase* rdh = RDH;
@@ -312,7 +312,7 @@ void qg_rdh_set_world(const QmMat4* world)
 }
 
 //
-void qg_rdh_set_view(const QmMat4* view)
+void qg_set_view(const QmMat4* view)
 {
 	VAR_CHK_IF_NULL(view, );
 	RdhBase* rdh = RDH;
@@ -324,7 +324,7 @@ void qg_rdh_set_view(const QmMat4* view)
 }
 
 //
-void qg_rdh_set_project(const QmMat4* proj)
+void qg_set_project(const QmMat4* proj)
 {
 	VAR_CHK_IF_NULL(proj, );
 	RdhBase* rdh = RDH;
@@ -335,7 +335,7 @@ void qg_rdh_set_project(const QmMat4* proj)
 }
 
 //
-void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view)
+void qg_set_view_project(const QmMat4* proj, const QmMat4* view)
 {
 	VAR_CHK_IF_NULL(proj, );
 	VAR_CHK_IF_NULL(view, );
@@ -349,18 +349,18 @@ void qg_rdh_set_view_project(const QmMat4* proj, const QmMat4* view)
 }
 
 //
-QgBuffer* qg_rdh_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data)
+QgBuffer* qg_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data)
 {
 	VAR_CHK_IF_ZERO(count, NULL);
 	VAR_CHK_IF_MIN(stride, 1, NULL);
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qs_cast_vt(rdh, RDHBASE)->create_buffer(type, count, stride, initial_data);
+	return qn_cast_vt(rdh, RDHBASE)->create_buffer(type, count, stride, initial_data);
 }
 
 //
-QgRender* qg_rdh_create_render(const char* name, const QgPropRender* render, const QgPropShader* shader)
+QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgPropShader* shader)
 {
 	VAR_CHK_IF_NULL(render, NULL);
 	VAR_CHK_IF_MAX3(render, rasterizer, fill, QGFILL_MAX_VALUE, NULL);
@@ -380,69 +380,133 @@ QgRender* qg_rdh_create_render(const char* name, const QgPropRender* render, con
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qs_cast_vt(rdh, RDHBASE)->create_render(name, render, shader);
+	return qn_cast_vt(rdh, RDHBASE)->create_render(name, render, shader);
 }
 
 //
-bool qg_rdh_set_index(QgBuffer* buffer)
+QgTexture* qg_create_texture(const char* name, const QgImage* image, QgTexFlag flags)
+{
+	VAR_CHK_IF_NULL(image, NULL);
+	VAR_CHK_IF_NULL2(image, data, NULL);
+
+	RdhBase* rdh = RDH;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	return qn_cast_vt(rdh, RDHBASE)->create_texture(name, image, flags);
+}
+
+//
+QgTexture* qg_load_texture(int fuse, const char* filename, QgTexFlag flags)
+{
+	VAR_CHK_IF_NULL(filename, NULL);
+
+	QgImage* image = qg_load_image(fuse, filename);
+	VAR_CHK_IF_NULL(image, NULL);
+	VAR_CHK_IF_NULL2(image, data, NULL);
+
+	RdhBase* rdh = RDH;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	return qn_cast_vt(rdh, RDHBASE)->create_texture(filename, image, flags | QGTEXF_DISCARD_IMAGE);
+}
+
+//
+bool qg_set_index(QgBuffer* buffer)
 {
 	VAR_CHK_IF_NULL(buffer, false);
 	VAR_CHK_IF_COND(buffer->type != QGBUFFER_INDEX, "cannot set non-index buffer as index buffer", false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qs_cast_vt(rdh, RDHBASE)->set_index(buffer);
+	return qn_cast_vt(rdh, RDHBASE)->set_index(buffer);
 }
 
 //
-bool qg_rdh_set_vertex(QgLayoutStage stage, QgBuffer* buffer)
+bool qg_set_vertex(QgLayoutStage stage, QgBuffer* buffer)
 {
 	VAR_CHK_IF_NULL(buffer, false);
 	VAR_CHK_IF_COND(buffer->type != QGBUFFER_VERTEX, "cannot set non-vertex buffer as vertex buffer", false);
 	VAR_CHK_IF_MAX(stage, QGLOS_MAX_VALUE, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qs_cast_vt(rdh, RDHBASE)->set_vertex(stage, buffer);
+	return qn_cast_vt(rdh, RDHBASE)->set_vertex(stage, buffer);
 }
 
 //
-bool qg_rdh_set_render(QgRender * render)
+bool qg_set_render_state(QgRenderState * render)
 {
 	VAR_CHK_IF_NULL(render, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qs_cast_vt(rdh, RDHBASE)->set_render(render);
+	return qn_cast_vt(rdh, RDHBASE)->set_render(render);
 }
 
 //
-bool qg_rdh_set_render_named(const char* name)
+bool qg_set_render_named(const char* name)
 {
 	VAR_CHK_IF_NULL(name, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	QgRender* rdr = qg_node_mukum_get(&rdh->mukums[RDHNODE_RENDER], name);
-	return rdr == NULL ? false : qs_cast_vt(rdh, RDHBASE)->set_render(rdr);
+	QgRenderState* rdr = qg_node_mukum_get(&rdh->mukums[RDHNODE_RENDER], name);
+	return rdr == NULL ? false : qn_cast_vt(rdh, RDHBASE)->set_render(rdr);
 }
 
 //
-bool qg_rdh_draw(QgTopology tpg, int vertices)
+bool qg_set_texture(int stage, QgTexture* texture)
+{
+	VAR_CHK_IF_MAX(stage, 8/*RDH_INFO->max_tex_count*/, false);
+	RdhBase* rdh = RDH;
+	rdh->invokes.invokes++;
+	return qn_cast_vt(rdh, RDHBASE)->set_texture(stage, texture);
+}
+
+//
+bool qg_draw(QgTopology tpg, int vertices)
 {
 	VAR_CHK_IF_MAX(tpg, QGTPG_MAX_VALUE, false);
 	VAR_CHK_IF_MIN(vertices, 0, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	return qs_cast_vt(rdh, RDHBASE)->draw(tpg, vertices);
+	return qn_cast_vt(rdh, RDHBASE)->draw(tpg, vertices);
 }
 
 //
-bool qg_rdh_draw_indexed(QgTopology tpg, int indices)
+bool qg_draw_indexed(QgTopology tpg, int indices)
 {
 	VAR_CHK_IF_MAX(tpg, QGTPG_MAX_VALUE, false);
 	VAR_CHK_IF_MIN(indices, 0, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	return qs_cast_vt(rdh, RDHBASE)->draw_indexed(tpg, indices);
+	return qn_cast_vt(rdh, RDHBASE)->draw_indexed(tpg, indices);
+}
+
+//
+void qg_draw_sprite(const QmRect* bound, const QmColor* color, QgTexture* texture, const QmVec* coord)
+{
+	VAR_CHK_IF_NULL(bound, );
+	if (color == NULL)
+		color = &QMCOLOR_WHITE;
+	if (coord == NULL)
+		coord = &QMCONST_00ZW;
+	RdhBase* rdh = RDH;
+	rdh->invokes.invokes++;
+	rdh->invokes.draws++;
+	qn_cast_vt(rdh, RDHBASE)->draw_sprite(bound, color, texture, coord);
+}
+
+//
+void qg_draw_sprite_ex(const QmRect* bound, float angle, const QmColor* color, QgTexture* texture, const QmVec* coord)
+{
+	VAR_CHK_IF_NULL(bound, );
+	if (color == NULL)
+		color = &QMCOLOR_WHITE;
+	if (coord == NULL)
+		coord = &QMCONST_00ZW;
+	RdhBase* rdh = RDH;
+	rdh->invokes.invokes++;
+	rdh->invokes.draws++;
+	qn_cast_vt(rdh, RDHBASE)->draw_sprite_ex(bound, angle, color, texture, coord);
 }
 
 
@@ -477,20 +541,20 @@ void qg_node_set_name(QgNode * self, const char* name)
 void* qg_buffer_map(QgBuffer * self)
 {
 	VAR_CHK_IF_COND(self->mapped != false, "buffer already mapped", NULL);
-	return qs_cast_vt(self, QGBUFFER)->map(self);
+	return qn_cast_vt(self, QGBUFFER)->map(self);
 }
 
 //
 bool qg_buffer_unmap(QgBuffer * self)
 {
 	VAR_CHK_IF_COND(self->mapped == false, "buffer not mapped", false);
-	return qs_cast_vt(self, QGBUFFER)->unmap(self);
+	return qn_cast_vt(self, QGBUFFER)->unmap(self);
 }
 
 //
-bool qg_buffer_data(QgBuffer * self, const void* data)
+bool qg_buffer_data(QgBuffer * self, int size, const void* data)
 {
 	VAR_CHK_IF_COND(self->mapped != false, "buffer already mapped", false);
 	VAR_CHK_IF_NULL(data, false);
-	return qs_cast_vt(self, QGBUFFER)->data(self, data);
+	return qn_cast_vt(self, QGBUFFER)->data(self, size, data);
 }

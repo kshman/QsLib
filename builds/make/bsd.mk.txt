@@ -1,0 +1,51 @@
+# makefile for 'qs'
+
+#
+STD=gnu17
+DEFS=-DUSE_GL=1
+WARNS=-W -Wall -Wextra
+INCDIR=-I../../inc -I../../src -I/usr/include -I/usr/lib/clang/16/include
+CFLAGS=-O3 -pipe -fPIC -std=$(STD) -fvisibility=hidden $(WARNS) $(DEFS) $(INCDIR)
+
+.if "$(MACHINE_ARCH)" == "amd64"
+CFLAGS+=-mavx2 -mfma
+.endif
+
+#
+SRCS = \
+	../../src/pch.c \
+	../../src/qn/qn_file.c \
+	../../src/qn/qn_mlu.c \
+	../../src/qn/qn_prf.c \
+	../../src/qn/qn_str.c \
+	../../src/qn/qn_thd.c \
+	../../src/qn/qn_time.c \
+	../../src/qn/qs_gam.c \
+	../../src/qn/qm_math.c \
+	../../src/qn/PatrickPowell_snprintf.c \
+	../../src/qn/sdefl/sdefl.c \
+	../../src/qn/sdefl/sinfl.c \
+	../../src/qn/qn.c
+OBJS=${SRCS:N*.h:R:S/$/.o/g}
+ASMS=${SRCS:N*.h:R:S/$/.S/g}
+DEST=libqs.so.3
+
+#
+all: $(DEST)
+
+asm: $(ASMS)
+
+obj: $(OBJS)
+
+clean:
+	rm -f $(DEST) $(OBJS) $(ASMS) *.o *.S
+
+rebuild: clean all
+
+$(DEST): $(OBJS)
+	$(CC) -v -shared -Wl,-export-dynamic -Wl,-soname,$@ -o $@ $(OBJS)
+
+.SUFFIXES: .c .o .S
+
+.c.S: $(SRCS)
+	$(CC) -c -S $(CFLAGS) -fverbose-asm -Wa,-adhln -g -masm=intel -o "$(*F).S" "$<"

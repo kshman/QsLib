@@ -43,6 +43,9 @@
     <Filter Include="소스 파일\qn\sdefl">
       <UniqueIdentifier>{086126ea-f95e-4a0a-9419-47c89a65005d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\qg\stub\stb">
+      <UniqueIdentifier>{2a1c01e3-54b5-4553-a436-018807006c4d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\pch.h">
@@ -111,6 +114,9 @@
     <ClInclude Include="..\..\inc\salieri.h">
       <Filter>헤더 파일\inc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\qg\stub\stb\stb_image.h">
+      <Filter>헤더 파일\qg\stub\stb</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\qn\qn.c">
@@ -125,7 +131,7 @@
     <ClCompile Include="..\..\src\qn\qn_file.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qs_gam.c">
+    <ClCompile Include="..\..\src\qn\qn_gam.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qn\qm_math.c">
@@ -178,6 +184,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\qg\stub\qgrdh_qgl_api.c">
       <Filter>소스 파일\qg\stub</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qg_image.c">
+      <Filter>소스 파일\qg</Filter>
     </ClCompile>
     <ClCompile Include="..\..\zconsole\zz.c">
       <Filter>소스 파일</Filter>

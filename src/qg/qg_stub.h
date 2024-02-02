@@ -215,7 +215,7 @@ typedef struct RENDERPARAM
 // 렌더러 디바이스
 typedef struct RDHBASE
 {
-	QsGam				base;
+	QnGam				base;
 
 	RendererInfo		info;
 
@@ -226,9 +226,9 @@ typedef struct RDHBASE
 	QgNodeMukum			mukums[RDHNODE_MAX_VALUE];
 } RdhBase;
 
-qs_name_vt(RDHBASE)
+qn_gam_vt(RDHBASE)
 {
-	qs_name_vt(QSGAM)	base;
+	qn_gam_vt(QNGAM)	base;
 	void (*layout)(void);
 	void (*reset)(void);
 	void (*clear)(QgClear);
@@ -238,14 +238,18 @@ qs_name_vt(RDHBASE)
 	void (*flush)(void);
 
 	QgBuffer* (*create_buffer)(QgBufferType, uint, uint, const void*);
-	QgRender* (*create_render)(const char*, const QgPropRender*, const QgPropShader*);
+	QgRenderState* (*create_render)(const char*, const QgPropRender*, const QgPropShader*);
+	QgTexture* (*create_texture)(const char*, const QgImage*, QgTexFlag);
 
-	bool (*set_vertex)(QgLayoutStage, QgBuffer*);
-	bool (*set_index)(QgBuffer*);
-	bool (*set_render)(QgRender*);
+	bool (*set_vertex)(QgLayoutStage, void/*QgBuffer*/*);
+	bool (*set_index)(void/*QgBuffer*/*);
+	bool (*set_render)(void/*QgRenderState*/*);
+	bool (*set_texture)(int stage, void/*QgTexture*/*);
 
 	bool (*draw)(QgTopology, int);
 	bool (*draw_indexed)(QgTopology, int);
+	void (*draw_sprite)(const QmRect*, const QmVec*, void/*QgTexture*/*, const QmVec*);
+	void (*draw_sprite_ex)(const QmRect*, float, const QmVec*, void/*QgTexture*/*, const QmVec*);
 };
 
 // 렌더 디바이스
@@ -298,3 +302,26 @@ extern const char* qg_shader_const_auto_to_str(const QgScAuto sca);
 // 알수 없음을 문자열로
 extern const char* qg_unknown_str(int value, bool hex);
 
+
+//////////////////////////////////////////////////////////////////////////
+// 인라인
+
+// 이미지 크기 계산
+INLINE size_t qg_calc_image_block_size(const QgPropPixel* prop, int width, int height)
+{
+	switch (prop->format)
+	{
+		case QGCF_DXT1:
+		case QGCF_DXT3:
+		case QGCF_DXT5:
+		case QGCF_EXT1:
+		case QGCF_EXT2:
+		case QGCF_ASTC4:
+		case QGCF_ASTC8:
+			return ((width + 3) / 4) * ((height + 3) / 4) * prop->tbp;
+		default:
+			break;
+	}
+	// 그냥 계산
+	return width * height * prop->tbp;
+}

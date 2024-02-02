@@ -12,6 +12,13 @@
 //////////////////////////////////////////////////////////////////////////
 // 오픈GL 컨피그 + 도움꾼
 
+#ifdef _DEBUG
+#define GLDEBUG(x)				QN_STMT_BEGIN{ x; GLenum err = glGetError(); if (err != GL_NO_ERROR) qn_debug_outputf(true, VAR_CHK_NAME, "GL Error: %d(%X)", err, err); }QN_STMT_END
+#else
+#define GLDEBUG(x)				x
+#endif
+#define GLCHECK(x,action,ret)	QN_STMT_BEGIN{ x; GLenum err = glGetError(); if (err != GL_NO_ERROR) { qn_debug_outputf(true, VAR_CHK_NAME, "GL Error: %d(%X)", err, err); action; return ret; } }QN_STMT_END
+
 #ifndef _QN_EMSCRIPTEN_
 #ifndef _QN_MOBILE_
 static short openglcore_versions[] =
@@ -27,8 +34,6 @@ static short openglcore_versions[] =
 	/* 3.2 */ 302,
 	/* 3.1 */ 301,
 	/* 3.0 */ 300,
-	/* 2.1 */ 201,
-	/* 2.0 */ 200,
 };
 #endif // _QN_MOBILE_
 static short opengles_versions[] =
@@ -180,7 +185,7 @@ static void qgl_default_config(QglConfig* config, QgFlag flags)
 				config->srgb = 1;
 			else if (qn_strnicmp(prop, "transparent", len) == 0)
 				config->transparent = 1;
-			prop = qn_strchr(brk + 1, ';');
+			brk = qn_strchr(brk + 1, ';');
 		}
 	}
 #endif
@@ -207,7 +212,7 @@ INLINE int qgl_get_version(const char* s)
 // 문자열 얻기
 INLINE char* qgl_copy_string(char* buf, size_t size, GLenum name)
 {
-	const char* s = (const char*)glGetString(name);
+	const char* s = (const char*)glGetString(name); GLDEBUG((void)s);
 	if (s == NULL)
 		buf[0] = '\0';
 	else
@@ -215,11 +220,20 @@ INLINE char* qgl_copy_string(char* buf, size_t size, GLenum name)
 	return buf;
 }
 
+// 문자열 얻기 (할당)
+INLINE char* qgl_alloc_string(GLenum name)
+{
+	const char* s = (const char*)glGetString(name); GLDEBUG((void)s);
+	if (s == NULL)
+		return NULL;
+	return qn_strdup(s);
+}
+
 // 정수 얻기
 INLINE GLint qgl_get_integer_v(GLenum name)
 {
 	GLint n;
-	glGetIntegerv(name, &n);
+	GLDEBUG(glGetIntegerv(name, &n));
 	return n;
 }
 
@@ -257,46 +271,56 @@ INLINE QmMat4 QM_VECTORCALL qgl_mat4_irrcht_texture(float radius, float cx, floa
 #undef VAR_CHK_NAME
 #define VAR_CHK_NAME	"QGLRDH"
 
-static void qgl_rdh_dispose(QsGam* g);
+static void qgl_rdh_dispose(QnGam* g);
 static void qgl_rdh_layout(void);
 static void qgl_rdh_reset(void);
 static void qgl_rdh_flush(void);
 static void qgl_rdh_clear(QgClear flags);
 static bool qgl_rdh_begin(bool clear);
 static void qgl_rdh_end(void);
-static bool qgl_rdh_set_vertex(QgLayoutStage stage, QgBuffer* buffer);
-static bool qgl_rdh_set_index(QgBuffer* buffer);
-static bool qgl_rdh_set_render(QgRender* render);
+static bool qgl_rdh_set_vertex(QgLayoutStage stage, void* buffer);
+static bool qgl_rdh_set_index(void* buffer);
+static bool qgl_rdh_set_render(void* render);
+static bool qgl_rdh_set_texture(int stage, void* texture);
 static bool qgl_rdh_draw(QgTopology tpg, int vertices);
 static bool qgl_rdh_draw_indexed(QgTopology tpg, int indices);
+static void qgl_rdh_draw_sprite(_In_ const QmRect* bound, _In_ const QmVec* color, _In_opt_ void* texture, _In_ const QmVec* coord);
+static void qgl_rdh_draw_sprite_ex(_In_ const QmRect* bound, _In_ float angle, _In_ const QmVec* color, _In_opt_ void* texture, _In_ const QmVec* coord);
 
-static QgBuffer* qgl_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data);
-static QgRender* qgl_create_render(const char* name, const QgPropRender* prop, const QgPropShader* shader);
+static QgBuffer* qgl_create_buffer(_In_ QgBufferType type, _In_ uint count, _In_ uint stride, _In_ const void* initial_data);
+static QgRenderState* qgl_create_render(_In_ const char* name, _In_ const QgPropRender* prop, const _In_ QgPropShader* shader);
+static QgTexture* qgl_create_texture(_In_ const char* name, _In_ const QgImage* image, _In_ QgTexFlag flags);
 
-qs_name_vt(RDHBASE) vt_qgl_rdh =
+static bool qgl_buffer_data(void* g, int size, const void* data);
+
+qn_gam_vt(RDHBASE) vt_qgl_rdh =
 {
 	{
-		/* name */		VAR_CHK_NAME,
-		/* dispose */	qgl_rdh_dispose,
+		/* name */			VAR_CHK_NAME,
+		/* dispose */		qgl_rdh_dispose,
 	},
 
-	/* layout */		qgl_rdh_layout,
-	/* reset */			qgl_rdh_reset,
-	/* clear */			qgl_rdh_clear,
+	/* layout */			qgl_rdh_layout,
+	/* reset */				qgl_rdh_reset,
+	/* clear */				qgl_rdh_clear,
 
-	/* begin */			qgl_rdh_begin,
-	/* end */			qgl_rdh_end,
-	/* flush */			qgl_rdh_flush,
+	/* begin */				qgl_rdh_begin,
+	/* end */				qgl_rdh_end,
+	/* flush */				qgl_rdh_flush,
 
-	/* create_buffer */	qgl_create_buffer,
-	/* create_render */	qgl_create_render,
+	/* create_buffer */		qgl_create_buffer,
+	/* create_render */		qgl_create_render,
+	/* create_texture */	qgl_create_texture,
 
-	/* set_vertex */	qgl_rdh_set_vertex,
-	/* set_index */		qgl_rdh_set_index,
-	/* set_render */	qgl_rdh_set_render,
+	/* set_vertex */		qgl_rdh_set_vertex,
+	/* set_index */			qgl_rdh_set_index,
+	/* set_render */		qgl_rdh_set_render,
+	/* set_texture */		qgl_rdh_set_texture,
 
-	/* draw */			qgl_rdh_draw,
-	/* draw_indexed */	qgl_rdh_draw_indexed,
+	/* draw */				qgl_rdh_draw,
+	/* draw_indexed */		qgl_rdh_draw_indexed,
+	/* draw_sprite */		qgl_rdh_draw_sprite,
+	/* draw_sprite_ex */	qgl_rdh_draw_sprite_ex,
 };
 
 #ifdef QGL_MAYBE_GL_CORE
@@ -365,7 +389,7 @@ RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 	QglConfig wanted_config;
 	qgl_default_config(&wanted_config, flags);
 
-#ifdef QGL_MAYBE_GL_CORE
+#if defined QGL_MAYBE_GL_CORE
 	name = qgl_initialize(self, &wanted_config, &self->cfg, QN_TMASK(flags, QGFLAG_VSYNC));
 	if (name == NULL)
 #endif
@@ -393,7 +417,7 @@ RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 	info->max_indices = qgl_get_integer_v(GL_MAX_ELEMENTS_INDICES);
 	info->max_vertices = qgl_get_integer_v(GL_MAX_ELEMENTS_VERTICES);
 	info->max_tex_dim = qgl_get_integer_v(GL_MAX_TEXTURE_SIZE);
-	info->max_tex_count = qgl_get_integer_v(GL_MAX_TEXTURE_IMAGE_UNITS);
+	info->max_tex_count = qgl_get_integer_v(GL_MAX_TEXTURE_IMAGE_UNITS);	// GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS
 	info->max_off_count = qgl_get_integer_v(GL_MAX_DRAW_BUFFERS);
 
 	info->clr_fmt = qg_rgba_to_clrfmt(self->cfg.red, self->cfg.green, self->cfg.blue, self->cfg.alpha, false);
@@ -418,25 +442,44 @@ RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 	qn_debug_outputf(false, VAR_CHK_NAME, "%s / %s", gl_version, gl_shader_version);
 
 	//
-	return qs_init(self, RdhBase, &vt_qgl_rdh);
+#if false
+	char* exts = qgl_alloc_string(GL_EXTENSIONS);
+	if (exts != NULL)
+	{
+		char* brk, *sep = " ";
+		for (char* tok = qn_strtok(exts, sep, &brk); tok != NULL; tok = qn_strtok(NULL, sep, &brk))
+			qn_debug_outputf(false, VAR_CHK_NAME, "EXT: %s", tok);
+		qn_free(exts);
+	}
+#endif
+
+	//
+	return qn_gam_init(self, RdhBase, &vt_qgl_rdh);
 }
 
 //
-static void qgl_rdh_dispose(QsGam* g)
+static void qgl_rdh_dispose(QnGam* g)
 {
-	QglRdh* self = qs_cast_type(g, QglRdh);
+	QglRdh* self = qn_cast_type(g, QglRdh);
 	qn_ret_if_ok(self->disposed);
 	self->disposed = true;
 
 	// 펜딩
 	const QglPending* pd = &self->pd;
-	qs_unload(pd->render.index_buffer);
+	qn_unload(pd->render.index_buffer);
 	for (int i = 0; i < QGLOS_MAX_VALUE; i++)
-		qs_unload(pd->render.vertex_buffers[i]);
-	qs_unload(pd->render.render);
+		qn_unload(pd->render.vertex_buffers[i]);
+	qn_unload(pd->render.render_state);
+	for (int i = 0; i < QN_COUNTOF(pd->render.textures); i++)
+		qn_unload(pd->render.textures[i]);
 
 	// 리소스
 	rdh_internal_clean();
+
+	const QglResource* res = &self->res;
+	qn_unload(res->white_texture);
+	qn_unload(res->sprite_buffer);
+	qn_free(res->sprite_data);
 
 	//
 	egl_dispose(self->egl.display, self->egl.surface, self->egl.context);
@@ -452,18 +495,19 @@ static void qgl_rdh_layout(void)
 	rdh_internal_layout();
 
 	RenderTransform* tm = RDH_TRANSFORM;
-	QmMat4 ortho = ortho = qm_mat4_ortho_lh((float)tm->size.Width, (float)-tm->size.Height, -1.0f, 1.0f);
-	tm->ortho = qm_mat4_mul(ortho, qm_mat4_loc(-1.0f, 1.0f, 0.0f));
+	QmMat4 ortho = qm_mat4_ortho_lh((float)tm->size.Width, (float)-tm->size.Height, -1.0f, 1.0f);
+	ortho.r[3] = qm_vec4(-1.0f, 1.0f, 0.0f, 1.0f);
+	tm->ortho = ortho;
 
 	// 뷰포트
-	glViewport(0, 0, (GLsizei)tm->size.Width, (GLsizei)tm->size.Height);
+	GLDEBUG(glViewport(0, 0, (GLsizei)tm->size.Width, (GLsizei)tm->size.Height));
 #ifdef QGL_MAYBE_GL_CORE
 	if (QGL_CORE && RDH_INFO->renderer_version < 400)
-		glDepthRange(0.0f, 1.0f);
+		GLDEBUG(glDepthRange(0.0f, 1.0f));
 	else
-		glDepthRangef(0.0f, 1.0f);
+		GLDEBUG(glDepthRangef(0.0f, 1.0f));
 #else
-	glDepthRangef(0.0f, 1.0f);
+	GLDEBUG(glDepthRangef(0.0f, 1.0f));
 #endif
 }
 
@@ -477,9 +521,9 @@ static void qgl_rdh_reset(void)
 	QglSession* ss = QGL_SESSION;
 	uint i;
 
-	//----- 펜딩
+	// 펜딩
 
-	//----- 세션
+	// 세션
 	uint amask = ss->shader.amask;
 	ss->shader.program = 0;
 	ss->shader.amask = 0;
@@ -490,32 +534,33 @@ static void qgl_rdh_reset(void)
 	ss->depth = QGDEPTH_LE;
 	ss->stencil = QGSTENCIL_OFF;
 
-	//----- 트랜스폼
+	// 트랜스폼
 	tm->frm = qgl_mat4_irrcht_texture(0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -1.0f);
 
-	//----- 장치 설정
-	glPixelStorei(GL_PACK_ALIGNMENT, 1);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	// 장치 설정
+	GLDEBUG(glPixelStorei(GL_PACK_ALIGNMENT, 1));
+	GLDEBUG(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
 
 	// 뎁스 스텐실
-	glEnable(GL_DEPTH_TEST);
-	glDepthMask(GL_TRUE);
-	glDepthFunc(GL_LEQUAL);
+	GLDEBUG(glEnable(GL_DEPTH_TEST));
+	GLDEBUG(glDepthMask(GL_TRUE));
+	GLDEBUG(glDepthFunc(GL_LEQUAL));
 
 	if (info->enabled_stencil)
 	{
-		glEnable(GL_STENCIL_TEST);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
+		GLDEBUG(glEnable(GL_STENCIL_TEST));
+		GLDEBUG(glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE));
+		GLDEBUG(glStencilFunc(GL_ALWAYS, 1, 0xFF));
+		GLDEBUG(glStencilMask(0xFF));
 	}
-	glDisable(GL_STENCIL_TEST);
+	GLDEBUG(glDisable(GL_STENCIL_TEST));
 
 	// 래스터라이즈
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+	GLDEBUG(glEnable(GL_CULL_FACE));
+	GLDEBUG(glCullFace(GL_BACK));
+	GLDEBUG(glDisable(GL_CULL_FACE));
 
-	glDisable(GL_POLYGON_OFFSET_FILL);
+	GLDEBUG(glDisable(GL_POLYGON_OFFSET_FILL));
 
 	// 브랜드
 #ifdef QGL_MAYBE_GL_CORE
@@ -523,57 +568,106 @@ static void qgl_rdh_reset(void)
 	{
 		for (i = 0; i < info->max_tex_count; i++)
 		{
-			glEnablei(GL_BLEND, i);
-			glBlendEquationi(i, GL_FUNC_ADD);
-			glBlendFunci(i, GL_ONE, GL_ZERO);
+			GLDEBUG(glEnablei(GL_BLEND, i));
+			GLDEBUG(glBlendEquationi(i, GL_FUNC_ADD));
+			GLDEBUG(glBlendFunci(i, GL_ONE, GL_ZERO));
 
-			glDisablei(GL_BLEND, i);
-			glColorMaski(i, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+			GLDEBUG(glDisablei(GL_BLEND, i));
+			GLDEBUG(glColorMaski(i, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE));
 		}
 	}
 	else
 #endif
 	{
-		glEnable(GL_BLEND);
-		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
-		glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+		GLDEBUG(glEnable(GL_BLEND));
+		GLDEBUG(glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD));
+		GLDEBUG(glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO));
 
-		glDisable(GL_BLEND);
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		GLDEBUG(glDisable(GL_BLEND));
+		GLDEBUG(glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE));
 	}
 
 	// 텍스쳐
 	for (i = 0; i < info->max_tex_count; i++)
 	{
-		glActiveTexture((GLenum)(GL_TEXTURE0 + i));
-		glBindTexture(GL_TEXTURE_2D, 0);
+		GLDEBUG(glActiveTexture(GL_TEXTURE0 + i));
+		GLDEBUG(glBindTexture(GL_TEXTURE_2D, 0));
 	}
 
 	// 세이더
 	for (i = 0; i < info->max_layout_count; i++)
 	{
 		if (QN_TBIT(amask, i))
-			glDisableVertexAttribArray((GLuint)i);
+			GLDEBUG(glDisableVertexAttribArray((GLuint)i));
 	}
-	glUseProgram(0);
+	GLDEBUG(glUseProgram(0));
 
 	// 가위질
-	glDisable(GL_SCISSOR_TEST);
-	glFrontFace(GL_CW);
+	GLDEBUG(glDisable(GL_SCISSOR_TEST));
+	GLDEBUG(glFrontFace(GL_CW));
 
 #ifdef QGL_MAYBE_GL_CORE
 	if (QGL_CORE)
 	{
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+		GLDEBUG(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
+		GLDEBUG(glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST));
+		GLDEBUG(glHint(GL_LINE_SMOOTH_HINT, GL_NICEST));
 		if (info->renderer_version >= 400)
-			glPatchParameteri(GL_PATCH_VERTICES, 3);
+			GLDEBUG(glPatchParameteri(GL_PATCH_VERTICES, 3));
 	}
 #endif
 
 	// 리소스
-	// TODO: 옮겨야함
+	static const char vs_ortho[] = \
+		"uniform mat4 OrthoProj;" \
+		"attribute vec4 aPosition;" \
+		"attribute vec4 aColor;" \
+		"varying vec2 vCoord;" \
+		"varying vec4 vColor;" \
+		"void main()" \
+		"{" \
+		"	gl_Position = OrthoProj * vec4(aPosition.xy, 0.0, 1.0);" \
+		"	vCoord = aPosition.zw;"\
+		"	vColor = aColor;" \
+		"}";
+	static const char ps_ortho[] = \
+		"uniform sampler2D Texture;" \
+		"varying vec2 vCoord;" \
+		"varying vec4 vColor;" \
+		"void main()" \
+		"{" \
+		"	gl_FragColor = texture2D(Texture, vCoord) * vColor;\n" \
+		"}";
+	static const char ps_glyph[] = \
+		"uniform sampler2D Texture;" \
+		"varying vec2 vCoord;" \
+		"varying vec4 vColor;" \
+		"void main()" \
+		"{" \
+		"	float a = texture2D(Texture, vCoord).r * vColor.a;"\
+		"	gl_FragColor = vec4(vColor.rgb, a);" \
+		"}";
+	static QgLayoutInput inputs_ortho[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT4, false },
+		{ QGLOS_1, QGLOU_COLOR1, QGLOT_FLOAT4, false },
+	};
+	static QgPropRender render_ortho = QG_DEFAULT_PROP_RENDER;
+
+	QglResource* res = QGL_RESOURCE;
+
+	QgPropShader shader_ortho = { { inputs_ortho, QN_COUNTOF(inputs_ortho) }, { vs_ortho, 0 }, { ps_ortho, 0 } };
+	res->ortho_render = (QglRenderState*)qg_create_render_state("qg_ortho", &render_ortho, &shader_ortho);
+	qn_unload(res->ortho_render);
+
+	QgPropShader shader_glyph = { { inputs_ortho, QN_COUNTOF(inputs_ortho) }, { vs_ortho, 0 }, { ps_glyph, 0 } };
+	res->glyph_render = (QglRenderState*)qg_create_render_state("qg_glyph", &render_ortho, &shader_glyph);
+	qn_unload(res->glyph_render);
+
+	res->white_texture = (QglTexture*)qg_create_texture("qg_white", qg_new_image_filled(2, 2, &QMCOLOR_WHITE), QGTEXF_DISCARD_IMAGE);
+
+	res->sprite_buffer = (QglBuffer*)qg_create_buffer(QGBUFFER_VERTEX, 1024, sizeof(QmFloat4) + sizeof(QmFloat4), NULL);
+	res->sprite_data = qn_alloc((sizeof(QmFloat4) + sizeof(QmFloat4)) * 1024, byte);
 }
 
 // 지우기
@@ -584,7 +678,7 @@ static void qgl_rdh_clear(QgClear flags)
 
 	if (QN_TMASK(flags, QGCLEAR_STENCIL) && RDH_INFO->enabled_stencil)
 	{
-		glClearStencil(0);
+		GLDEBUG(glClearStencil(0));
 		cf |= GL_STENCIL_BUFFER_BIT;
 	}
 	if (QN_TMASK(flags, QGCLEAR_DEPTH))
@@ -592,29 +686,29 @@ static void qgl_rdh_clear(QgClear flags)
 		if (QGL_SESSION->depth == QGDEPTH_OFF)
 		{
 			QGL_SESSION->depth = QGDEPTH_LE;
-			glDepthMask(GL_TRUE);
-			glDepthFunc(GL_LESS);
+			GLDEBUG(glDepthMask(GL_TRUE));
+			GLDEBUG(glDepthFunc(GL_LESS));
 		}
 #ifdef QGL_MAYBE_GL_CORE
 		if (QGL_CORE && RDH_INFO->renderer_version < 400)
-			glClearDepth(1.0f);
+			GLDEBUG(glClearDepth(1.0f));
 		else
-			glClearDepthf(1.0f);
+			GLDEBUG(glClearDepthf(1.0f));
 #else
-		glClearDepthf(1.0f);
+		GLDEBUG(glClearDepthf(1.0f));
 #endif
 		cf |= GL_DEPTH_BUFFER_BIT;
 	}
 	if (QN_TMASK(flags, QGCLEAR_RENDER))
 	{
 		const QmVec4 c = RDH_PARAM->bgc;
-		glClearColor(c.X, c.Y, c.Z, c.W);
+		GLDEBUG(glClearColor(c.X, c.Y, c.Z, c.W));
 		cf |= GL_COLOR_BUFFER_BIT;
 	}
 
 	if (cf != 0)
-		glClear(cf);
-	}
+		GLDEBUG(glClear(cf));
+}
 
 // 시작
 static bool qgl_rdh_begin(bool clear)
@@ -644,40 +738,53 @@ static void qgl_rdh_flush(void)
 }
 
 // 정점 버퍼 설정, stage에 대한 오류 설정은 rdh에서 하고 왔을 거임
-static bool qgl_rdh_set_vertex(QgLayoutStage stage, QgBuffer* buffer)
+static bool qgl_rdh_set_vertex(QgLayoutStage stage, void* buffer)
 {
-	QglBuffer* buf = qs_cast_type(buffer, QglBuffer);
+	QglBuffer* buf = qn_cast_type(buffer, QglBuffer);
 	QglPending* pd = QGL_PENDING;
 	if (pd->render.vertex_buffers[stage] != buf)
 	{
-		qs_unload(pd->render.vertex_buffers[stage]);
-		pd->render.vertex_buffers[stage] = qs_loadc(buf, QglBuffer);
+		qn_unload(pd->render.vertex_buffers[stage]);
+		pd->render.vertex_buffers[stage] = qn_loadc(buf, QglBuffer);
 	}
 	return true;
 }
 
 // 인덱스 버퍼 설정
-static bool qgl_rdh_set_index(QgBuffer* buffer)
+static bool qgl_rdh_set_index(void* buffer)
 {
-	QglBuffer* buf = qs_cast_type(buffer, QglBuffer);
+	QglBuffer* buf = qn_cast_type(buffer, QglBuffer);
 	QglPending* pd = QGL_PENDING;
 	if (pd->render.index_buffer != buf)
 	{
-		qs_unload(pd->render.index_buffer);
-		pd->render.index_buffer = qs_loadc(buf, QglBuffer);
+		qn_unload(pd->render.index_buffer);
+		pd->render.index_buffer = qn_loadc(buf, QglBuffer);
 	}
 	return true;
 }
 
 // 렌더 설정
-static bool qgl_rdh_set_render(QgRender* render)
+static bool qgl_rdh_set_render(void* render)
 {
-	QglRender* rdr = qs_cast_type(render, QglRender);
+	QglRenderState* rdr = qn_cast_type(render, QglRenderState);
 	QglPending* pd = QGL_PENDING;
-	if (pd->render.render != rdr)
+	if (pd->render.render_state != rdr)
 	{
-		qs_unload(pd->render.render);
-		pd->render.render = qs_loadc(rdr, QglRender);
+		qn_unload(pd->render.render_state);
+		pd->render.render_state = qn_loadc(rdr, QglRenderState);
+	}
+	return true;
+}
+
+// 텍스쳐 설정
+static bool qgl_rdh_set_texture(int stage, void* texture)
+{
+	QglTexture* tex = qn_cast_type(texture, QglTexture);
+	QglPending* pd = QGL_PENDING;
+	if (pd->render.textures[stage] != tex)
+	{
+		qn_unload(pd->render.textures[stage]);
+		pd->render.textures[stage] = qn_loadc(tex, QglTexture);
 	}
 	return true;
 }
@@ -687,10 +794,10 @@ INLINE void qgl_bind_vertex_buffer(const QglBuffer* buffer)
 {
 	qn_assert(buffer->base.type == QGBUFFER_VERTEX, "try to bind non-vertex buffer");
 	QglSession* ss = QGL_SESSION;
-	GLuint gl_id = qs_get_desc(buffer, GLuint);
+	GLuint gl_id = buffer == NULL ? 0 : qn_get_gam_desc(buffer, GLuint);
 	if (ss->buffer.vertex != gl_id)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, gl_id);
+		GLDEBUG(glBindBuffer(GL_ARRAY_BUFFER, gl_id));
 		ss->buffer.vertex = gl_id;
 	}
 }
@@ -700,10 +807,10 @@ INLINE void qgl_bind_index_buffer(const QglBuffer* buffer)
 {
 	qn_assert(buffer->base.type == QGBUFFER_INDEX, "try to bind non-index buffer");
 	QglSession* ss = QGL_SESSION;
-	GLuint gl_id = qs_get_desc(buffer, GLuint);
+	GLuint gl_id = buffer == NULL ? 0 : qn_get_gam_desc(buffer, GLuint);
 	if (ss->buffer.index != gl_id)
 	{
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_id);
+		GLDEBUG(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_id));
 		ss->buffer.index = gl_id;
 	}
 }
@@ -713,10 +820,10 @@ INLINE void qgl_bind_uniform_buffer(const QglBuffer* buffer)
 {
 	qn_assert(buffer->base.type == QGBUFFER_CONSTANT, "try to bind non-uniform buffer");
 	QglSession* ss = QGL_SESSION;
-	GLuint gl_id = qs_get_desc(buffer, GLuint);
+	GLuint gl_id = buffer == NULL ? 0 : qn_get_gam_desc(buffer, GLuint);
 	if (ss->buffer.uniform != gl_id)
 	{
-		glBindBuffer(GL_UNIFORM_BUFFER, gl_id);
+		GLDEBUG(glBindBuffer(GL_UNIFORM_BUFFER, gl_id));
 		ss->buffer.uniform = gl_id;
 	}
 }
@@ -744,37 +851,39 @@ static void qgl_bind_buffer(const QglBuffer* buffer)
 // 오토 세이더 변수 (오토가 아니면 RDH의 사용자 함수로 떠넘긴다)
 static void qgl_process_shader_variable(const QgVarShader* var)
 {
+	RenderTransform* tm = RDH_TRANSFORM;
+	RenderParam* param = RDH_PARAM;
 	switch (var->scauto)
 	{
 		case QGSCA_ORTHO_PROJ:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, &RDH_TRANSFORM->ortho._11);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->ortho.f));
 			break;
 		case QGSCA_WORLD:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, &RDH_TRANSFORM->world._11);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->world.f));
 			break;
 		case QGSCA_VIEW:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, &RDH_TRANSFORM->view._11);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->view.f));
 			break;
 		case QGSCA_PROJ:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, &RDH_TRANSFORM->proj._11);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->proj.f));
 			break;
 		case QGSCA_VIEW_PROJ:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, &RDH_TRANSFORM->view_proj._11);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->view_proj.f));
 			break;
 		case QGSCA_INV_VIEW:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, &RDH_TRANSFORM->invv._11);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->invv.f));
 			break;
 		case QGSCA_WORLD_VIEW_PROJ:
 		{
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			QmMat4 m = qm_mat4_mul(RDH_TRANSFORM->world, RDH_TRANSFORM->view_proj);
-			glUniformMatrix4fv(var->offset, 1, false, &m._11);
+			QmMat4 m = qm_mat4_mul(tm->world, tm->view_proj);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, m.f));
 		} break;
 		case QGSCA_TEX1:
 		case QGSCA_TEX2:
@@ -790,7 +899,8 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 				case QGSCT_SAMPLER2D:
 				case QGSCT_SAMPLER3D:
 				case QGSCT_SAMPLERCUBE:
-					glUniform1i(var->offset, var->scauto - QGSCA_TEX1);
+					GLint index = var->scauto - QGSCA_TEX1;
+					GLDEBUG(glUniform1i(var->offset, index));
 					break;
 				default:
 					qn_debug_outputs(true, VAR_CHK_NAME, "invalid auto shader texture");
@@ -799,49 +909,49 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 			break;
 		case QGSCA_PROP_VEC1:
 			qn_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
-			glUniform4fv(var->offset, 1, RDH_PARAM->v[0].f);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->v[0].f));
 			break;
 		case QGSCA_PROP_VEC2:
 			qn_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
-			glUniform4fv(var->offset, 1, RDH_PARAM->v[1].f);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->v[1].f));
 			break;
 		case QGSCA_PROP_VEC3:
 			qn_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
-			glUniform4fv(var->offset, 1, RDH_PARAM->v[2].f);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->v[2].f));
 			break;
 		case QGSCA_PROP_VEC4:
 			qn_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
-			glUniform4fv(var->offset, 1, RDH_PARAM->v[3].f);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->v[3].f));
 			break;
 		case QGSCA_PROP_MAT1:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, &RDH_PARAM->m[0]._11);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, param->m[0].f));
 			break;
 		case QGSCA_PROP_MAT2:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, &RDH_PARAM->m[1]._11);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, param->m[1].f));
 			break;
 		case QGSCA_PROP_MAT3:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, &RDH_PARAM->m[2]._11);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, param->m[2].f));
 			break;
 		case QGSCA_PROP_MAT4:
 			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			glUniformMatrix4fv(var->offset, 1, false, &RDH_PARAM->m[3]._11);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, param->m[3].f));
 			break;
 		case QGSCA_MAT_PALETTE:
 			qn_verify(var->sctype == QGSCT_FLOAT16);
-			glUniformMatrix4fv(var->offset, RDH_PARAM->bone_count, false, (const GLfloat*)RDH_PARAM->bone_ptr);
+			GLDEBUG(glUniformMatrix4fv(var->offset, param->bone_count, false, (const GLfloat*)param->bone_ptr));
 			break;
 		default:
-			if (RDH_PARAM->callback_func != NULL)
-				RDH_PARAM->callback_func(RDH_PARAM->callback_data, (nint)var->hash, var);
+			if (param->callback_func != NULL)
+				param->callback_func(param->callback_data, (nint)var->hash, var);
 			break;
 	}
 }
 
 // 세이더랑 레이아웃
-static bool qgl_commit_shader_layout(const QglRender* rdr)
+static bool qgl_commit_shader_layout(const QglRenderState* rdr)
 {
 	const size_t max_attrs = RDH_INFO->max_layout_count;
 
@@ -849,7 +959,7 @@ static bool qgl_commit_shader_layout(const QglRender* rdr)
 	if (QGL_SESSION->shader.program != rdr->shader.program)
 	{
 		QGL_SESSION->shader.program = rdr->shader.program;
-		glUseProgram(rdr->shader.program);
+		GLDEBUG(glUseProgram(rdr->shader.program));
 	}
 
 	// 유니폼 값 넣고
@@ -869,7 +979,7 @@ static bool qgl_commit_shader_layout(const QglRender* rdr)
 			continue;
 		qgl_bind_vertex_buffer(buf);
 
-		const QglLayoutInput * stages = rdr->layout.stages[s];
+		const QglLayoutInput* stages = rdr->layout.stages[s];
 		const GLsizei gl_stride = (GLsizei)rdr->layout.strides[s];
 		const size_t count = rdr->layout.counts[s];
 		for (i = 0; i < count; i++)
@@ -887,18 +997,20 @@ static bool qgl_commit_shader_layout(const QglRender* rdr)
 			if (QN_TBIT(amask, gl_attr) == false)
 			{
 				QN_SBIT(&amask, gl_attr, true);
-				glEnableVertexAttribArray(gl_attr);
+				GLDEBUG(glEnableVertexAttribArray(gl_attr));
 			}
 
 			const GLuint gl_offset = input->offset;
 			QglLayoutProperty* lp = &QGL_SESSION->shader.lprops[input->usage];
-			if (lp->offset != gl_offset ||
+			if (lp->buffer != buf ||
+				lp->offset != gl_offset ||
 				lp->format != input->format ||
 				lp->stride != gl_stride ||
 				lp->count != input->count ||
 				lp->normalized != input->normalized)
 			{
-				glVertexAttribPointer(gl_attr, input->count, input->format, input->normalized, gl_stride, (GLvoid*)(size_t)gl_offset);
+				GLDEBUG(glVertexAttribPointer(gl_attr, input->count, input->format, input->normalized, gl_stride, (GLvoid*)(size_t)gl_offset));
+				lp->buffer = buf;
 				lp->offset = gl_offset;
 				lp->format = input->format;
 				lp->stride = gl_stride;
@@ -915,7 +1027,7 @@ static bool qgl_commit_shader_layout(const QglRender* rdr)
 		if (QN_TBIT(aftermask, 0))
 		{
 			QN_SBIT(&amask, i, false);
-			glDisableVertexAttribArray((GLuint)i);
+			GLDEBUG(glDisableVertexAttribArray((GLuint)i));
 		}
 		aftermask >>= 1;
 	}
@@ -942,7 +1054,7 @@ INLINE GLenum qgl_depth_to_enum(QgDepth func)
 }
 
 // 뎁스 스텐실
-static void qgl_commit_depth_stencil(const QglRender* rdr)
+static void qgl_commit_depth_stencil(const QglRenderState* rdr)
 {
 	QglSession* ss = QGL_SESSION;
 
@@ -952,14 +1064,14 @@ static void qgl_commit_depth_stencil(const QglRender* rdr)
 		if (rdr->depth == QGDEPTH_OFF)
 		{
 			if (ss->depth != QGDEPTH_OFF)
-				glDisable(GL_DEPTH_TEST);
+				GLDEBUG(glDisable(GL_DEPTH_TEST));
 		}
 		else
 		{
 			if (ss->depth == QGDEPTH_OFF)
-				glEnable(GL_DEPTH_TEST);
+				GLDEBUG(glEnable(GL_DEPTH_TEST));
 			GLenum gl_func = qgl_depth_to_enum(rdr->depth);
-			glDepthFunc(gl_func);
+			GLDEBUG(glDepthFunc(gl_func));
 		}
 		ss->depth = rdr->depth;
 	}
@@ -969,29 +1081,29 @@ static void qgl_commit_depth_stencil(const QglRender* rdr)
 	{
 		if (rdr->stencil == QGSTENCIL_OFF)
 		{
-			glDisable(GL_STENCIL_TEST);
+			GLDEBUG(glDisable(GL_STENCIL_TEST));
 		}
 		else
 		{
 			if (ss->stencil == QGSTENCIL_OFF)
-				glEnable(GL_STENCIL_TEST);
+				GLDEBUG(glEnable(GL_STENCIL_TEST));
 			if (rdr->stencil == QGSTENCIL_WRITE)
 			{
 				// 보통으로 그릴 때 스텐실을 1로 채움
-				glStencilFunc(GL_ALWAYS, 1, 0xFF);
-				glStencilMask(0xFF);
+				GLDEBUG(glStencilFunc(GL_ALWAYS, 1, 0xFF));
+				GLDEBUG(glStencilMask(0xFF));
 			}
 			else if (rdr->stencil == QGSTENCIL_EVADE)
 			{
 				// 스텐실 1로 채워진 부분은 그리지 않음 -> 외곽선 같은거 그릴때 (https://heinleinsgame.tistory.com/25)
-				glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-				glStencilMask(0);
+				GLDEBUG(glStencilFunc(GL_NOTEQUAL, 1, 0xFF));
+				GLDEBUG(glStencilMask(0));
 			}
 			else if (rdr->stencil == QGSTENCIL_OVER)
 			{
 				// 스텐실 1로 채워진 부분만 그림 -> 그림자/반사 같은거 그릴때 (https://open.gl/depthstencils)
-				glStencilFunc(GL_EQUAL, 1, 0xFF);
-				glStencilMask(0);
+				GLDEBUG(glStencilFunc(GL_EQUAL, 1, 0xFF));
+				GLDEBUG(glStencilMask(0));
 			}
 		}
 		ss->stencil = rdr->stencil;
@@ -1001,7 +1113,7 @@ static void qgl_commit_depth_stencil(const QglRender* rdr)
 // 렌더 커밋
 static bool qgl_rdh_commit_render(void)
 {
-	const QglRender* rdr = QGL_PENDING->render.render;
+	const QglRenderState* rdr = QGL_PENDING->render.render_state;
 	VAR_CHK_IF_NULL(rdr, false);
 
 	if (qgl_commit_shader_layout(rdr) == false)
@@ -1010,6 +1122,43 @@ static bool qgl_rdh_commit_render(void)
 	qgl_commit_depth_stencil(rdr);
 
 	return true;
+}
+
+// 텍스쳐 바인딩
+static void qgl_rdh_bind_texture(int stage)
+{
+	const QglTexture* tex = QGL_PENDING->render.textures[stage];
+	QglSession* ss = QGL_SESSION;
+
+	if (tex == NULL)
+	{
+		if (ss->texture.handle[stage] == GL_NONE)
+			return;
+		GLDEBUG(glActiveTexture((GLenum)(GL_TEXTURE0 + stage)));
+		GLDEBUG(glBindTexture(ss->texture.target[stage], 0));
+
+		ss->texture.handle[stage] = GL_NONE;
+		ss->texture.target[stage] = GL_NONE;
+		return;
+	}
+
+	GLuint gl_id = qn_get_gam_desc(tex, GLuint);
+	GLuint gl_target = tex->gl_target;
+	if (ss->texture.handle[stage] == gl_id && ss->texture.target[stage] == gl_target)
+		return;
+
+	GLDEBUG(glActiveTexture(GL_TEXTURE0 + stage));
+	GLDEBUG(glBindTexture(tex->gl_target, gl_id));
+
+	ss->texture.handle[stage] = gl_id;
+	ss->texture.target[stage] = tex->gl_target;
+}
+
+// 텍스쳐 커밋
+static void qgl_rdh_commit_texture(void)
+{
+	for (int i = 0; i < QN_COUNTOF(QGL_PENDING->render.textures); i++)
+		qgl_rdh_bind_texture(i);
 }
 
 // 토폴로지 변환
@@ -1030,11 +1179,12 @@ INLINE GLenum qgl_topology_to_enum(QgTopology tpg)
 // 그리기
 static bool qgl_rdh_draw(QgTopology tpg, int vertices)
 {
+	qgl_rdh_commit_texture();
 	if (qgl_rdh_commit_render() == false)
 		return false;
 
 	GLenum gl_tpg = qgl_topology_to_enum(tpg);
-	glDrawArrays(gl_tpg, 0, (GLsizei)vertices);
+	GLDEBUG(glDrawArrays(gl_tpg, 0, (GLsizei)vertices));
 	return true;
 }
 
@@ -1043,17 +1193,60 @@ static bool qgl_rdh_draw_indexed(QgTopology tpg, int indices)
 {
 	const QglBuffer* index = QGL_PENDING->render.index_buffer;
 	VAR_CHK_IF_NULL(index, false);
-	qgl_bind_index_buffer(index);
 
+	qgl_rdh_commit_texture();
 	if (qgl_rdh_commit_render() == false)
 		return false;
+	qgl_bind_index_buffer(index);
 
 	const GLenum gl_tpg = qgl_topology_to_enum(tpg);
 	const GLenum gl_stride = index->base.stride == sizeof(uint) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
-	glDrawElements(gl_tpg, (GLsizei)indices, gl_stride, NULL);
+	GLDEBUG(glDrawElements(gl_tpg, (GLsizei)indices, gl_stride, NULL));
 	return true;
 }
 
+// 스프라이트 그리기
+static void qgl_rdh_draw_sprite(_In_ const QmRect* bound, _In_ const QmVec* color, _In_opt_ void* texture, _In_ const QmVec* coord)
+{
+	QmFloat4* ptr = (QmFloat4*)QGL_RESOURCE->sprite_data;
+	ptr[0] = (QmFloat4){ (float)bound->Left, (float)bound->Top, coord->X, coord->Y }; ptr[1] = *(QmFloat4*)&color->v;
+	ptr[2] = (QmFloat4){ (float)bound->Right, (float)bound->Top, coord->Z, coord->Y }; ptr[3] = *(QmFloat4*)&color->v;
+	ptr[4] = (QmFloat4){ (float)bound->Left, (float)bound->Bottom, coord->X, coord->W }; ptr[5] = *(QmFloat4*)&color->v;
+	ptr[6] = (QmFloat4){ (float)bound->Right, (float)bound->Bottom, coord->Z, coord->W }; ptr[7] = *(QmFloat4*)&color->v;
+	qgl_buffer_data(QGL_RESOURCE->sprite_buffer, sizeof(QmFloat4) * 2 * 4, QGL_RESOURCE->sprite_data);
+
+	qgl_rdh_set_vertex(QGLOS_1, QGL_RESOURCE->sprite_buffer);
+	qgl_rdh_set_render(QGL_RESOURCE->ortho_render);
+	qgl_rdh_set_texture(0, texture ? texture : QGL_RESOURCE->white_texture);
+
+	qgl_rdh_commit_texture();
+	qgl_rdh_commit_render();
+
+	GLDEBUG(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+}
+
+// 회전 스프라이트 그리기
+static void qgl_rdh_draw_sprite_ex(_In_ const QmRect* bound, _In_ float angle, _In_ const QmVec* color, _In_opt_ void* texture, _In_ const QmVec* coord)
+{
+	QmVec2 tl, tr, bl, br;
+	qm_rect_rotate(*bound, angle, &tl, &tr, &bl, &br);
+
+	QmFloat4* ptr = (QmFloat4*)QGL_RESOURCE->sprite_data;
+	ptr[0] = (QmFloat4){ (float)tl.X, (float)tl.Y, coord->X, coord->Y }; ptr[1] = *(QmFloat4*)&color->v;
+	ptr[2] = (QmFloat4){ (float)tr.X, (float)tr.Y, coord->Z, coord->Y }; ptr[3] = *(QmFloat4*)&color->v;
+	ptr[4] = (QmFloat4){ (float)bl.X, (float)bl.Y, coord->X, coord->W }; ptr[5] = *(QmFloat4*)&color->v;
+	ptr[6] = (QmFloat4){ (float)br.X, (float)br.Y, coord->Z, coord->W }; ptr[7] = *(QmFloat4*)&color->v;
+	qgl_buffer_data(QGL_RESOURCE->sprite_buffer, sizeof(QmFloat4) * 2 * 4, QGL_RESOURCE->sprite_data);
+
+	qgl_rdh_set_vertex(QGLOS_1, QGL_RESOURCE->sprite_buffer);
+	qgl_rdh_set_render(QGL_RESOURCE->ortho_render);
+	qgl_rdh_set_texture(0, texture ? texture : QGL_RESOURCE->white_texture);
+
+	qgl_rdh_commit_texture();
+	qgl_rdh_commit_render();
+
+	GLDEBUG(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+}
 
 //////////////////////////////////////////////////////////////////////////
 // 버퍼
@@ -1062,27 +1255,27 @@ static bool qgl_rdh_draw_indexed(QgTopology tpg, int indices)
 #define VAR_CHK_NAME "QGLBUFFER"
 
 //
-static void qgl_buffer_dispose(QsGam* g)
+static void qgl_buffer_dispose(QnGam* g)
 {
-	QglBuffer* self = qs_cast_type(g, QglBuffer);
+	QglBuffer* self = qn_cast_type(g, QglBuffer);
 	if (self->base.mapped)
 	{
 		if (QGL_CORE == false && RDH_INFO->renderer_version < 300)
 			qn_free(self->lock_pointer);
 		else
-			glUnmapBuffer(self->gl_type);
+			GLDEBUG(glUnmapBuffer(self->gl_type));
 	}
 
-	GLuint gl_handle = qs_get_desc(self, GLuint);
-	glDeleteBuffers(1, &gl_handle);
+	GLuint gl_handle = qn_get_gam_desc(self, GLuint);
+	GLDEBUG(glDeleteBuffers(1, &gl_handle));
 
 	qn_free(self);
 }
 
 //
-static void* qgl_buffer_map(QgBuffer* g)
+static void* qgl_buffer_map(void* g)
 {
-	QglBuffer* self = qs_cast_type(g, QglBuffer);
+	QglBuffer* self = qn_cast_type(g, QglBuffer);
 	VAR_CHK_IF_NEED2(self, gl_usage, GL_DYNAMIC_DRAW, NULL);
 	qn_assert(self->lock_pointer == NULL, "버퍼가 잠겨있는데요!");
 
@@ -1094,8 +1287,8 @@ static void* qgl_buffer_map(QgBuffer* g)
 	else
 	{
 		qgl_bind_buffer(self);
-		self->lock_pointer = glMapBufferRange(self->gl_type, 0, self->base.size,
-			GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+		GLDEBUG(self->lock_pointer = glMapBufferRange(self->gl_type, 0, self->base.size,
+			GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
 	}
 
 	self->base.mapped = true;
@@ -1103,9 +1296,9 @@ static void* qgl_buffer_map(QgBuffer* g)
 }
 
 //
-static bool qgl_buffer_unmap(QgBuffer* g)
+static bool qgl_buffer_unmap(void* g)
 {
-	QglBuffer* self = qs_cast_type(g, QglBuffer);
+	QglBuffer* self = qn_cast_type(g, QglBuffer);
 	qn_assert(self->lock_pointer != NULL, "버퍼가 안 잠겼는데요!");
 
 	qgl_bind_buffer(self);
@@ -1113,12 +1306,12 @@ static bool qgl_buffer_unmap(QgBuffer* g)
 	if (QGL_CORE == false && RDH_INFO->renderer_version < 300)
 	{
 		// ES2 전용
-		glBufferSubData(self->gl_type, 0, self->base.size, self->lock_pointer);
+		GLDEBUG(glBufferSubData(self->gl_type, 0, self->base.size, self->lock_pointer));
 		qn_free(self->lock_pointer);
 	}
 	else
 	{
-		glUnmapBuffer(self->gl_type);
+		GLDEBUG(glUnmapBuffer(self->gl_type));
 	}
 
 	self->lock_pointer = NULL;
@@ -1127,19 +1320,19 @@ static bool qgl_buffer_unmap(QgBuffer* g)
 }
 
 //
-static bool qgl_buffer_data(QgBuffer* g, const void* data)
+static bool qgl_buffer_data(void* g, int size, const void* data)
 {
-	QglBuffer* self = qs_cast_type(g, QglBuffer);
+	QglBuffer* self = qn_cast_type(g, QglBuffer);
 	VAR_CHK_IF_NEED2(self, gl_usage, GL_DYNAMIC_DRAW, false);
 
 	qgl_bind_buffer(self);
-	glBufferSubData(self->gl_type, 0, self->base.size, data);
+	GLDEBUG(glBufferSubData(self->gl_type, 0, size <= 0 ? self->base.size : size, data));
 
 	return true;
 }
 
 //
-static QgBuffer* qgl_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data)
+static QgBuffer* qgl_create_buffer(_In_ QgBufferType type, _In_ uint count, _In_ uint stride, _In_ const void* initial_data)
 {
 	// 우선 만들자
 	GLsizeiptr gl_size = (GLsizeiptr)count * stride;
@@ -1169,15 +1362,15 @@ static QgBuffer* qgl_create_buffer(QgBufferType type, uint count, uint stride, c
 	}
 
 	GLuint gl_id;
-	glGenBuffers(1, &gl_id);
-	glBindBuffer(gl_type, gl_id);
+	GLDEBUG(glGenBuffers(1, &gl_id));
+	GLDEBUG(glBindBuffer(gl_type, gl_id));
 
 	GLenum gl_usage = initial_data != NULL ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
-	glBufferData(gl_type, gl_size, initial_data, gl_usage);		// 여기까지 초기 메모리 설정 또는 데이터 넣기(STATIC)
+	GLDEBUG(glBufferData(gl_type, gl_size, initial_data, gl_usage));		// 여기까지 초기 메모리 설정 또는 데이터 넣기(STATIC)
 
 	// 진짜 만듦
 	QglBuffer* self = qn_alloc_zero_1(QglBuffer);
-	qs_set_desc(self, gl_id);
+	qn_set_gam_desc(self, gl_id);
 	self->base.type = type;
 	self->base.size = (uint)gl_size;
 	self->base.count = count;
@@ -1186,7 +1379,7 @@ static QgBuffer* qgl_create_buffer(QgBufferType type, uint count, uint stride, c
 	self->gl_usage = gl_usage;
 
 	// VT 여기서 설정
-	static qs_name_vt(QGBUFFER) vt_qgl_buffer =
+	static qn_gam_vt(QGBUFFER) vt_qgl_buffer =
 	{
 		.base.name = VAR_CHK_NAME,
 		.base.dispose = qgl_buffer_dispose,
@@ -1195,7 +1388,7 @@ static QgBuffer* qgl_create_buffer(QgBufferType type, uint count, uint stride, c
 		.unmap = qgl_buffer_unmap,
 		.data = qgl_buffer_data,
 	};
-	return qs_init(self, QgBuffer, &vt_qgl_buffer);
+	return qn_gam_init(self, QgBuffer, &vt_qgl_buffer);
 }
 
 
@@ -1203,35 +1396,35 @@ static QgBuffer* qgl_create_buffer(QgBufferType type, uint count, uint stride, c
 // 렌더러
 
 #undef VAR_CHK_NAME
-#define VAR_CHK_NAME "QGLRENDER"
+#define VAR_CHK_NAME "QGLRENDERSTATE"
 
 //
-static void qgl_render_delete_shader(QglRender* self, bool check_rdh)
+static void qgl_render_delete_shader(QglRenderState* self, bool check_rdh)
 {
 	if (self->shader.program == 0)
 		return;
 	if (check_rdh && QGL_RDH->disposed == false && QGL_SESSION->shader.program == self->shader.program)
 	{
 		QGL_SESSION->shader.program = 0;
-		glUseProgram(0);
+		GLDEBUG(glUseProgram(0));
 	}
 	if (self->shader.vertex != 0)
 	{
-		glDetachShader(self->shader.program, self->shader.vertex);
-		glDeleteShader(self->shader.vertex);
+		GLDEBUG(glDetachShader(self->shader.program, self->shader.vertex));
+		GLDEBUG(glDeleteShader(self->shader.vertex));
 	}
 	if (self->shader.fragment != 0)
 	{
-		glDetachShader(self->shader.program, self->shader.fragment);
-		glDeleteShader(self->shader.fragment);
+		GLDEBUG(glDetachShader(self->shader.program, self->shader.fragment));
+		GLDEBUG(glDeleteShader(self->shader.fragment));
 	}
-	glDeleteProgram(self->shader.program);
+	GLDEBUG(glDeleteProgram(self->shader.program));
 }
 
 //
-static void qgl_render_dispose(QsGam* g)
+static void qgl_render_dispose(QnGam* g)
 {
-	QglRender* self = qs_cast_type(g, QglRender);
+	QglRenderState* self = qn_cast_type(g, QglRenderState);
 
 	qgl_render_delete_shader(self, true);
 	qn_ctnr_disp(&self->shader.uniforms);
@@ -1246,7 +1439,7 @@ static void qgl_render_dispose(QsGam* g)
 INLINE GLint qgl_get_program_iv(GLuint program, GLenum name)
 {
 	GLint n;
-	glGetProgramiv(program, name, &n);
+	GLDEBUG(glGetProgramiv(program, name, &n));
 	return n;
 }
 
@@ -1254,7 +1447,7 @@ INLINE GLint qgl_get_program_iv(GLuint program, GLenum name)
 INLINE GLint qgl_get_shader_iv(GLuint handle, GLenum name)
 {
 	GLint n;
-	glGetShaderiv(handle, name, &n);
+	GLDEBUG(glGetShaderiv(handle, name, &n));
 	return n;
 }
 
@@ -1262,10 +1455,10 @@ INLINE GLint qgl_get_shader_iv(GLuint handle, GLenum name)
 static GLuint qgl_render_compile_shader(GLenum gl_type, const char* header, const char* code)
 {
 	// http://msdn.microsoft.com/ko-kr/library/windows/apps/dn166905.aspx
-	GLuint gl_shader = glCreateShader(gl_type);
+	GLuint gl_shader = glCreateShader(gl_type); GLDEBUG((void)0);
 	const char* codes[2] = { header, code };
-	glShaderSource(gl_shader, 2, codes, NULL);
-	glCompileShader(gl_shader);
+	GLDEBUG(glShaderSource(gl_shader, 2, codes, NULL));
+	GLDEBUG(glCompileShader(gl_shader));
 
 	if (qgl_get_shader_iv(gl_shader, GL_COMPILE_STATUS) != GL_FALSE)
 		return gl_shader;
@@ -1277,7 +1470,7 @@ static GLuint qgl_render_compile_shader(GLenum gl_type, const char* header, cons
 	else
 	{
 		GLchar* gl_log = qn_alloc(gl_log_len, GLchar);
-		glGetShaderInfoLog(gl_shader, gl_log_len, &gl_log_len, gl_log);
+		GLDEBUG(glGetShaderInfoLog(gl_shader, gl_log_len, &gl_log_len, gl_log));
 		qn_debug_outputf(true, VAR_CHK_NAME, "failed to %s shader compile: %s", type, gl_log);
 		qn_free(gl_log);
 	}
@@ -1358,7 +1551,7 @@ INLINE QgScType qgl_enum_to_shader_const(GLenum gl_type)
 }
 
 // 세이더 만들기
-static bool qgl_render_bind_shader(QglRender* self, const QgCodeData* vertex, const QgCodeData* fragment)
+static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData * vertex, const QgCodeData * fragment)
 {
 	// 프로그램이랑 세이더 만들고
 	GLuint gl_vertex_shader = qgl_render_compile_shader(GL_VERTEX_SHADER, QGL_RESOURCE->hdr_vertex, vertex->code);
@@ -1366,20 +1559,20 @@ static bool qgl_render_bind_shader(QglRender* self, const QgCodeData* vertex, co
 	if (gl_vertex_shader == 0 || gl_fragment_shader == 0)
 	{
 		if (gl_vertex_shader != 0)
-			glDeleteShader(gl_vertex_shader);
+			GLDEBUG(glDeleteShader(gl_vertex_shader));
 		if (gl_fragment_shader != 0)
-			glDeleteShader(gl_fragment_shader);
+			GLDEBUG(glDeleteShader(gl_fragment_shader));
 		return false;
 	}
 
 	self->shader.vertex = gl_vertex_shader;
 	self->shader.fragment = gl_fragment_shader;
-	self->shader.program = glCreateProgram();
-	glAttachShader(self->shader.program, gl_vertex_shader);
-	glAttachShader(self->shader.program, gl_fragment_shader);
+	self->shader.program = glCreateProgram(); GLDEBUG((void)0);
+	GLDEBUG(glAttachShader(self->shader.program, gl_vertex_shader));
+	GLDEBUG(glAttachShader(self->shader.program, gl_fragment_shader));
 
 	// 링크
-	glLinkProgram(self->shader.program);
+	GLDEBUG(glLinkProgram(self->shader.program));
 	if (qgl_get_program_iv(self->shader.program, GL_LINK_STATUS) == GL_FALSE)
 	{
 		GLsizei gl_log_len = qgl_get_program_iv(self->shader.program, GL_INFO_LOG_LENGTH);
@@ -1388,7 +1581,7 @@ static bool qgl_render_bind_shader(QglRender* self, const QgCodeData* vertex, co
 		else
 		{
 			GLchar* gl_log = qn_alloc(gl_log_len, GLchar);
-			glGetProgramInfoLog(self->shader.program, gl_log_len, &gl_log_len, gl_log);
+			GLDEBUG(glGetProgramInfoLog(self->shader.program, gl_log_len, &gl_log_len, gl_log));
 			qn_debug_outputf(true, VAR_CHK_NAME, "failed to link shader: %s", gl_log);
 			qn_free(gl_log);
 		}
@@ -1407,8 +1600,8 @@ static bool qgl_render_bind_shader(QglRender* self, const QgCodeData* vertex, co
 		qn_ctnr_init(QglCtnUniform, &self->shader.uniforms, gl_count);
 		for (index = i = 0; i < gl_count; i++)
 		{
-			glGetActiveUniform(self->shader.program, i, QN_COUNTOF(sz), NULL, &gl_size, &gl_type, sz);
-			gl_index = glGetUniformLocation(self->shader.program, sz);
+			GLDEBUG(glGetActiveUniform(self->shader.program, i, QN_COUNTOF(sz), NULL, &gl_size, &gl_type, sz));
+			gl_index = glGetUniformLocation(self->shader.program, sz); GLDEBUG((void)0);
 			if (gl_index < 0)
 			{
 				qn_debug_outputf(true, VAR_CHK_NAME, "failed to get uniform location: %s", sz);
@@ -1422,7 +1615,7 @@ static bool qgl_render_bind_shader(QglRender* self, const QgCodeData* vertex, co
 			QgVarShader* var = &qn_ctnr_nth(&self->shader.uniforms, index++);
 			qn_strcpy(var->name, sz);
 			var->hash = qn_strihash(sz);
-			var->offset = (ushort)glGetUniformLocation(self->shader.program, sz);
+			var->offset = (ushort)glGetUniformLocation(self->shader.program, sz); GLDEBUG((void)0);
 			var->size = (ushort)gl_size;
 			var->sctype = sctype;
 			var->scauto = qg_str_to_shader_const_auto(var->hash, sz);
@@ -1439,8 +1632,8 @@ static bool qgl_render_bind_shader(QglRender* self, const QgCodeData* vertex, co
 		qn_ctnr_init(QglCtnAttr, &self->shader.attrs, gl_count);
 		for (index = i = 0; i < gl_count; i++)
 		{
-			glGetActiveAttrib(self->shader.program, i, QN_COUNTOF(sz), NULL, &gl_size, &gl_type, sz);
-			gl_index = glGetAttribLocation(self->shader.program, sz);
+			GLDEBUG(glGetActiveAttrib(self->shader.program, i, QN_COUNTOF(sz), NULL, &gl_size, &gl_type, sz));
+			gl_index = glGetAttribLocation(self->shader.program, sz); GLDEBUG((void)0);
 			if (gl_index < 0)
 			{
 				qn_debug_outputf(true, VAR_CHK_NAME, "failed to get attribute location: %s", sz);
@@ -1466,45 +1659,42 @@ static bool qgl_render_bind_shader(QglRender* self, const QgCodeData* vertex, co
 }
 
 // 버텍스 레이아웃 만들기
-static bool qgl_render_bind_layout_input(QglRender* self, const QgLayoutData* layout)
+static bool qgl_render_bind_layout_input(QglRenderState* self, const QgLayoutData * layout)
 {
-	static byte lo_count[QGCF_MAX_VALUE] =
+	static byte lo_count[QGLOT_MAX_VALUE] =
 	{
 		/* UNKNOWN */ 0,
 		/* FLOAT   */ 4, 3, 2, 1,
 		/* INT     */ 4, 3, 2, 1,
 		/* HALF-F  */ 4, 2, 1, 1,
 		/* HALF-I  */ 4, 2, 1, 1,
-		/* BYTE    */ 4, 3, 2, 1, 1, 1,
+		/* BYTE    */ 4, 3, 2, 1, 1, 1, 2,
 		/* USHORT  */ 1, 1, 1,
-		/* NONE    */ 0, 0,
 	};
-	static GLenum lo_format[QGCF_MAX_VALUE] =
+	static GLenum lo_format[QGLOT_MAX_VALUE] =
 	{
 		/* UNKNOWN */ GL_NONE,
 		/* FLOAT   */ GL_FLOAT, GL_FLOAT, GL_FLOAT, GL_FLOAT,
 		/* INT     */ GL_INT, GL_INT, GL_INT, GL_INT,
 		/* HALF-F  */ GL_HALF_FLOAT, GL_HALF_FLOAT, GL_HALF_FLOAT, GL_UNSIGNED_INT_10F_11F_11F_REV,
 		/* HALF-I  */ GL_SHORT, GL_SHORT, GL_SHORT, GL_UNSIGNED_INT_2_10_10_10_REV,
-		/* BYTE    */ GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE,
+		/* BYTE    */ GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT,
 		/* USHORT  */ GL_UNSIGNED_SHORT_5_6_5, GL_UNSIGNED_SHORT_5_5_5_1, GL_UNSIGNED_SHORT_4_4_4_4,
-		/* NONE    */ GL_NONE, GL_NONE,
 	};
-	static byte lo_size[QGCF_MAX_VALUE] =
+	static byte lo_size[QGLOT_MAX_VALUE] =
 	{
 		/* UNKNOWN */ 0,
 		/* FLOAT   */ 4 * sizeof(float), 3 * sizeof(float), 2 * sizeof(float), 1 * sizeof(float),
 		/* INT     */ 4 * sizeof(int), 3 * sizeof(int), 2 * sizeof(int), 1 * sizeof(int),
 		/* HALF-F  */ 4 * sizeof(halffloat), 2 * sizeof(halffloat), 1 * sizeof(halffloat), 1 * sizeof(int),
 		/* HALF-I  */ 4 * sizeof(short), 2 * sizeof(short), 1 * sizeof(short), 1 * sizeof(int),
-		/* BYTE    */ 4 * sizeof(byte), 3 * sizeof(byte), 2 * sizeof(byte), 1 * sizeof(byte), 1 * sizeof(byte), 1 * sizeof(byte),
+		/* BYTE    */ 4 * sizeof(byte), 3 * sizeof(byte), 2 * sizeof(byte), 1 * sizeof(byte), 1 * sizeof(byte), 1 * sizeof(byte), 2 * sizeof(ushort),
 		/* USHORT  */ 2 * sizeof(ushort), 2 * sizeof(ushort), 2 * sizeof(ushort),
-		/* NONE    */ 0, 0,
 	};
 
 	size_t i;
 
-	// 갯수 검사
+	// 갯수 및 내용 검사
 	ushort loac[QGLOS_MAX_VALUE] = { 0, };
 	for (i = 0; i < layout->count; i++)
 	{
@@ -1512,6 +1702,11 @@ static bool qgl_render_bind_layout_input(QglRender* self, const QgLayoutData* la
 		if ((size_t)input->stage >= QGLOS_MAX_VALUE)
 		{
 			qn_debug_outputf(true, VAR_CHK_NAME, "invalid layout stage: %d", input->stage);
+			return false;
+		}
+		if ((size_t)input->format >= QN_COUNTOF(lo_count))
+		{
+			qn_debug_outputf(true, VAR_CHK_NAME, "invalid layout format: %d", input->format);
 			return false;
 		}
 		loac[input->stage]++;
@@ -1559,10 +1754,10 @@ static bool qgl_render_bind_layout_input(QglRender* self, const QgLayoutData* la
 }
 
 // 렌더 만들기. 오류 처리는 다하고 왔을 것이다
-QgRender* qgl_create_render(const char* name, const QgPropRender* prop, const QgPropShader* shader)
+QgRenderState* qgl_create_render(_In_ const char* name, _In_ const QgPropRender* prop, const _In_ QgPropShader* shader)
 {
-	QglRender* self = qn_alloc_zero_1(QglRender);
-	qg_node_set_name(qs_cast_type(self, QgNode), name);
+	QglRenderState* self = qn_alloc_zero_1(QglRenderState);
+	qg_node_set_name(qn_cast_type(self, QgNode), name);
 
 	// 세이더
 	if (qgl_render_bind_shader(self, &shader->vertex, &shader->pixel) == false)
@@ -1577,15 +1772,15 @@ QgRender* qgl_create_render(const char* name, const QgPropRender* prop, const Qg
 	self->stencil = prop->stencil;
 
 	//
-	static qs_name_vt(QSGAM) vt_es_render =
+	static qn_gam_vt(QNGAM) vt_es_render =
 	{
 		.name = VAR_CHK_NAME,
 		.dispose = qgl_render_dispose,
 	};
-	qs_init(self, QgRender, &vt_es_render);
+	qn_gam_init(self, QgRenderState, &vt_es_render);
 	if (name)
 		rdh_internal_add_node(RDHNODE_RENDER, self);
-	return qs_cast_type(self, QgRender);
+	return qn_cast_type(self, QgRenderState);
 
 pos_error:
 	qgl_render_delete_shader(self, false);
@@ -1594,6 +1789,183 @@ pos_error:
 	qn_ctnr_disp(&self->layout.inputs);
 	qn_free(self);
 	return NULL;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// 텍스쳐
+
+#undef VAR_CHK_NAME
+#define VAR_CHK_NAME "QGLTEXTURE"
+
+// 텍스쳐 제거
+static void qgl_texture_dispose(QnGam* g)
+{
+	QglTexture* self = qn_cast_type(g, QglTexture);
+	GLuint gl_handle = qn_get_gam_desc(self, GLuint);
+	GLDEBUG(glDeleteTextures(1, &gl_handle));
+	qn_free(self);
+}
+
+// 컬러 포맷을 텍스쳐 포맷으로
+INLINE QglTexFormat qgl_clrfmt_to_tex_enum(QgClrFmt fmt)
+{
+	static QglTexFormat gl_enums[QGCF_MAX_VALUE] =
+	{
+		[QGCF_UNKNOWN] = { GL_NONE, GL_NONE, GL_NONE },
+
+		[QGCF_R32G32B32A32F] = { GL_RGBA32F, GL_RGBA, GL_FLOAT },
+		[QGCF_R32G32B32F] = { GL_RGB32F, GL_RGB, GL_FLOAT },
+		[QGCF_R32G32F] = { GL_RG32F, GL_RG, GL_FLOAT },
+		[QGCF_R32F] = { GL_R32F, GL_RED, GL_FLOAT },
+
+		[QGCF_R32G32B32A32] = { GL_RGBA32UI, GL_RGBA_INTEGER, GL_UNSIGNED_INT },
+		[QGCF_R32G32B32] = { GL_RGB32UI, GL_RGB_INTEGER, GL_UNSIGNED_INT },
+		[QGCF_R32G32] = { GL_RG32UI, GL_RG_INTEGER, GL_UNSIGNED_INT },
+		[QGCF_R32] = { GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT },
+
+		[QGCF_R16G16B16A16F] = { GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT },
+		[QGCF_R16G16F] = { GL_RG16F, GL_RG, GL_HALF_FLOAT },
+		[QGCF_R16F] = { GL_R16F, GL_RED, GL_HALF_FLOAT },
+		[QGCF_R11G11B10F] = { GL_R11F_G11F_B10F, GL_RGB, GL_UNSIGNED_INT_10F_11F_11F_REV },
+
+		[QGCF_R16G16B16A16] = { GL_RGBA16UI, GL_RGBA_INTEGER, GL_UNSIGNED_SHORT },
+		[QGCF_R16G16] = { GL_RG16UI, GL_RG_INTEGER, GL_UNSIGNED_SHORT },
+		[QGCF_R16] = { GL_R16UI, GL_RED_INTEGER, GL_UNSIGNED_SHORT },
+		[QGCF_R10G10B10A2] = { GL_RGB10_A2UI, GL_RGBA_INTEGER, GL_UNSIGNED_INT_2_10_10_10_REV },
+
+		[QGCF_R8G8B8A8] = { GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE },
+		[QGCF_R8G8B8] = { GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE },
+		[QGCF_R8G8] = { GL_RG8, GL_RG, GL_UNSIGNED_BYTE },
+		[QGCF_R8] = { GL_R8, GL_RED, GL_UNSIGNED_BYTE },
+		[QGCF_A8] = { GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE },
+		[QGCF_L8] = { GL_LUMINANCE, GL_LUMINANCE, GL_UNSIGNED_BYTE },
+		[QGCF_A8L8] = { GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE },
+
+		[QGCF_R5G6B5] = { GL_RGB, GL_RGB, GL_UNSIGNED_SHORT_5_6_5 },
+		[QGCF_R5G5B5A1] = { GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1 },
+		[QGCF_R4G4B4A4] = { GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4 },
+
+		[QGCF_D32F] = { GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT },
+		[QGCF_D24S8] = { GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8 },
+
+		[QGCF_DXT1] = { GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_NONE, GL_NONE },
+		[QGCF_DXT3] = { GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_NONE, GL_NONE },
+		[QGCF_DXT5] = { GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_NONE, GL_NONE },
+		[QGCF_EXT1] = { GL_COMPRESSED_RGB8_ETC1, GL_NONE, GL_NONE },
+		[QGCF_EXT2] = { GL_COMPRESSED_RGB8_ETC2, GL_NONE, GL_NONE },
+		[QGCF_EXT2_EAC] = { GL_COMPRESSED_RGBA8_ETC2_EAC, GL_NONE, GL_NONE },
+		[QGCF_ASTC4] = { GL_COMPRESSED_RGBA_ASTC_4x4, GL_NONE, GL_NONE },
+		[QGCF_ASTC8] = { GL_COMPRESSED_RGBA_ASTC_8x8, GL_NONE, GL_NONE },
+	};
+	return gl_enums[fmt];
+}
+
+// 2D 텍스쳐
+static QgTexture* qgl_create_texture(_In_ const char* name, _In_ const QgImage* image, _In_ QgTexFlag flags)
+{
+	QN_DUMMY(name);	// 어케할지 못정했음
+
+	QgClrFmt fmt = image->prop.format;
+	QglTexFormat gl_enum = qgl_clrfmt_to_tex_enum(fmt);
+	if (gl_enum.ifmt == GL_NONE)
+	{
+		qn_debug_outputf(true, VAR_CHK_NAME, "unsupported texture format: %s", qg_clrfmt_to_str(fmt));
+		return NULL;
+	}
+
+	GLuint gl_id;
+	GLDEBUG(glActiveTexture(GL_TEXTURE0));
+	GLDEBUG(glGenTextures(1, &gl_id));
+	GLDEBUG(glBindTexture(GL_TEXTURE_2D, gl_id));
+	QGL_SESSION->texture.handle[0] = GL_INVALID_HANDLE;
+	QGL_SESSION->texture.target[0] = 0;
+
+	int mcount;
+	if (gl_enum.format != GL_NONE)
+	{
+		// 그냥 이미지. 밉맵은 없을 것이다
+		qn_verify(image->mipmaps == 1);
+		mcount = 1;
+		GLCHECK(glTexImage2D(GL_TEXTURE_2D, 0, gl_enum.ifmt, image->width, image->height, 0, gl_enum.format, gl_enum.type, image->data),
+			glDeleteTextures(1, &gl_id), NULL);
+	}
+	else
+	{
+		// 압축 이미지
+		const byte* mdata = image->data;
+		int mwidth = image->width, mheight = image->height;
+		mcount = image->mipmaps;
+		for (int i = 0; i < mcount; i++)
+		{
+			size_t msize = qg_calc_image_block_size(&image->prop, mwidth, mheight);
+			GLCHECK(glCompressedTexImage2D(GL_TEXTURE_2D, i, gl_enum.ifmt, mwidth, mheight, 0, (GLsizei)msize, mdata),
+				glDeleteTextures(1, &gl_id), NULL);
+			mdata += msize;
+			mwidth = qm_maxi(mwidth >> 1, 1);
+			mheight = qm_maxi(mheight >> 1, 1);
+		}
+		flags |= QGTEXFS_COMPRESS;	// 압축 포맷이면 압축 플래그 추가 (압축 포맷이 아니면 무시됨)
+	}
+
+	GLenum gl_wrap = QN_TMASK(flags, QGTEXF_CLAMP) ? GL_CLAMP_TO_EDGE : QN_TMASK(flags, QGTEXF_BORDER) ? GL_CLAMP_TO_BORDER : GL_REPEAT;
+	GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl_wrap));
+	GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl_wrap));
+
+	if (mcount <= 1 && QN_TMASK(flags, QGTEXF_MIPMAP) && qm_pot(image->width) && qm_pot(image->height))
+	{
+		if (QN_TMASK(flags, QGTEXF_LINEAR | QGTEXF_ANISO))
+		{
+			GLDEBUG(glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST));
+			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
+			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+		}
+		else
+		{
+			GLDEBUG(glHint(GL_GENERATE_MIPMAP_HINT, GL_FASTEST));
+			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST));
+			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+		}
+		glGenerateMipmap(GL_TEXTURE_2D);
+		mcount = 1 + (int)floor(log2(QN_MAX(image->width, image->height)));
+	}
+	else
+	{
+		if (QN_TMASK(flags, QGTEXF_LINEAR | QGTEXF_ANISO))
+		{
+			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mcount > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR));
+			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+		}
+		else
+		{
+			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mcount > 1 ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST));
+			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+		}
+		QN_SMASK(&flags, QGTEXF_MIPMAP, mcount > 1);
+	}
+
+	QglTexture* self = qn_alloc_zero_1(QglTexture);
+	qn_set_gam_desc(self, gl_id);
+	self->base.prop = image->prop;
+	self->base.width = image->width;
+	self->base.height = image->height;
+	self->base.mipmaps = mcount;
+	self->base.flags = flags | QGTEXSPEC_2D;
+	self->gl_target = GL_TEXTURE_2D;
+	self->gl_enum = gl_enum;
+
+	if (QN_TMASK(flags, QGTEXF_DISCARD_IMAGE))
+	{
+		qn_unload(image);
+		QN_SMASK(&self->base.flags, QGTEXF_DISCARD_IMAGE, false);
+	}
+
+	static qn_gam_vt(QGTEXTURE) vt_qgl_texture =
+	{
+		.base.name = VAR_CHK_NAME,
+		.base.dispose = qgl_texture_dispose,
+	};
+	return qn_gam_init(self, QgTexture, &vt_qgl_texture);
 }
 
 #endif // USE_GL

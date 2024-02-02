@@ -1,38 +1,5 @@
-﻿// rdh 테스트
+﻿// 스프라이트 테스트
 #include <qs.h>
-
-static const char* vs =
-"attribute vec4 aposition;\n"
-"attribute vec4 acolor;\n"
-"varying vec4 vcolor;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(aposition.xyz, 1.0);\n"
-"   vcolor = acolor;\n"
-"}\n";
-static const char* ps =
-//"precision mediump float;\n"
-"varying vec4 vcolor;\n"
-"void main()\n"
-"{\n"
-"  gl_FragColor = vcolor;\n"
-"}\n";
-static QgLayoutInput layouts[] =
-{
-	{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT2, true },
-	{ QGLOS_1, QGLOU_COLOR1, QGLOT_FLOAT4, false },
-};
-struct vertextype
-{
-	QmFloat2	pos;
-	QmFloat4	color;
-};
-static struct vertextype vertices[] =
-{
-	{ {0.0f, 0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}},
-	{ {0.5f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}},
-	{ {-0.5f, -0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}},
-};
 
 int main(void)
 {
@@ -43,12 +10,14 @@ int main(void)
 	if (qg_open_rdh("es", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 
-	QgPropRender prop_render = QG_DEFAULT_PROP_RENDER;
-	QgPropShader prop_shader = { { layouts, QN_COUNTOF(layouts) }, { vs, 0 }, { ps, 0 } };
-	QgRender* render = qg_rdh_create_render("named", &prop_render, &prop_shader);
-	QgBuffer* buffer = qg_rdh_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(vertices), sizeof(struct vertextype), vertices);
+	QmVec bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
+	qg_set_background(&bgc);
 
-	float f = 0.0f;
+	QgImage* img_puru = qg_load_image(0, "../res/image/ff14_puru.jpg");
+	QgTexture* tex_puru = qg_create_texture("puru", img_puru, QGTEXF_DISCARD_IMAGE | QGTEXF_MIPMAP);
+	QgTexture* tex_autumn = qg_load_texture(0, "../res/image/ff14_autumn.dds", QGTEXF_LINEAR);
+
+	float f = 0.0f, angle = 0.0f;
 	while (qg_loop())
 	{
 		QgEvent ev;
@@ -61,24 +30,40 @@ int main(void)
 		f += qg_get_advance() * 0.5f;
 		if (f > 1.0f)
 			f = 0.0f;
-		QmVec c = { f, f, f, 1.0f };
-		qg_rdh_set_background(&c);
 
-		if (qg_rdh_begin(true))
+		angle += qg_get_advance() * QM_DEG_360 * (-1.0f / 3.0f);
+		if (angle >= QM_DEG_360)
+			angle -= QM_DEG_360;
+		else if (angle <= -QM_DEG_360)
+			angle += QM_DEG_360;
+
+		QmSize size;
+		qg_get_size(&size);
+		QmPoint pt_puru = qm_size_locate_center(size, tex_puru->width, tex_puru->height);
+
+		if (qg_begin_render(true))
 		{
-			if (render)
-			{
-				qg_rdh_set_render(render);
-				qg_rdh_set_vertex(QGLOS_1, buffer);
-				qg_rdh_draw(QGTPG_TRI, 3);
-			}
+			QmRect rt;
+			QmVec color, coord;
 
-			qg_rdh_end(true);
+			rt = qm_rect_size(10, 10, tex_autumn->width, tex_autumn->height);
+			coord = qm_vec(0.0f, 0.0f, 4.0f, 4.0f);
+			color = qm_vec(f, f, f, 1.0f);
+			qg_draw_sprite(&rt, &color, tex_autumn, &coord);
+
+			rt = qm_rect_size(size.Width - 10 - tex_autumn->width, size.Height - 10 - tex_autumn->height, tex_autumn->width, tex_autumn->height);
+			color = qm_vec(1.0f, 1.0f, 1.0f, 1.0f - f);
+			qg_draw_sprite(&rt, &color, tex_autumn, NULL);
+
+			rt = qm_rect_size(pt_puru.X, pt_puru.Y, tex_puru->width, tex_puru->height);
+			qg_draw_sprite_ex(&rt, angle, NULL, tex_puru, NULL);
+
+			qg_end_render(true);
 		}
 	}
 
-	qs_unload(buffer);
-	qs_unload(render);
+	qn_unload(tex_autumn);
+	qn_unload(tex_puru);
 	qg_close_rdh();
 
 	return 0;

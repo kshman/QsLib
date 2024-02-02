@@ -26,15 +26,16 @@
 #endif
 
 //
-typedef struct QGLRDH		QglRdh;
-typedef struct QGLBUFFER	QglBuffer;
-typedef struct QGLRENDER	QglRender;
+typedef struct QGLRDH			QglRdh;
+typedef struct QGLBUFFER		QglBuffer;
+typedef struct QGLRENDERSTATE	QglRenderState;
+typedef struct QGLTEXTURE		QglTexture;
 
 #ifndef GL_INVALID_HANDLE
 #define GL_INVALID_HANDLE	(GLuint)(-1)
 #endif
 
-#define QGL_RDH				qs_cast_type(qg_instance_rdh, QglRdh)
+#define QGL_RDH				qn_cast_type(qg_instance_rdh, QglRdh)
 #define QGL_CORE			(QGL_RDH->cfg.core)
 #define QGL_PENDING			(&QGL_RDH->pd)
 #define QGL_SESSION			(&QGL_RDH->ss)
@@ -78,6 +79,7 @@ QN_DECL_CTNR(QglCtnLayoutInput, QglLayoutInput);
 // 레이아웃 프로퍼티
 typedef struct QGLLAYOUTPROPERTY
 {
+	QglBuffer*			buffer;
 	GLuint				offset;
 	GLenum				format;
 	GLsizei				stride;
@@ -106,6 +108,14 @@ typedef struct QGLVARATTR
 } QglVarAttr;
 QN_DECL_CTNR(QglCtnAttr, QglVarAttr);
 
+// 컬러 포맷을 텍스쳐 포맷으로 구조체
+typedef struct QGLTEXFORMAT
+{
+	GLenum				ifmt;
+	GLenum				format;
+	GLenum				type;
+} QglTexFormat;
+
 // 세션 데이터
 typedef struct QGLSESSION
 {
@@ -121,6 +131,12 @@ typedef struct QGLSESSION
 		GLuint				index;		// element array
 		GLuint				uniform;
 	}					buffer;
+	struct QGLSESSION_TEXTURE
+	{
+		int					active;
+		GLuint				handle[8];
+		GLenum				target[8];
+	}					texture;
 
 	QgDepth				depth;
 	QgStencil			stencil;
@@ -133,7 +149,8 @@ typedef struct QGLPENDING
 	{
 		QglBuffer*			index_buffer;
 		QglBuffer*			vertex_buffers[QGLOS_MAX_VALUE];
-		QglRender*			render;
+		QglRenderState*		render_state;
+		QglTexture*			textures[8];
 	}					render;
 	struct QGLPENDING_DRAW
 	{
@@ -144,11 +161,15 @@ typedef struct QGLPENDING
 // 리소스
 typedef struct QGLRESOURCE
 {
-	QglRender*			ortho_render;
-	QglRender*			glyph_render;
-
 	char				hdr_vertex[256];
 	char				hdr_fragment[256];
+
+	QglRenderState*		ortho_render;
+	QglRenderState*		glyph_render;
+
+	QglTexture*			white_texture;
+	QglBuffer*			sprite_buffer;
+	byte*				sprite_data;
 } QglResource;
 
 // GL 렌더 디바이스
@@ -185,12 +206,12 @@ struct QGLBUFFER
 	void*				lock_pointer;
 };
 
-// 렌더 파이프라인
-struct QGLRENDER
+// 렌더 파이프라인 상태
+struct QGLRENDERSTATE
 {
-	QgRender			base;
+	QgRenderState			base;
 
-	struct QGLRENDER_SHADER
+	struct QGLRENDERSTATE_SHADER
 	{
 		GLuint				program;
 		GLuint				vertex;
@@ -201,7 +222,7 @@ struct QGLRENDER
 		byte				usages[QGLOU_MAX_SIZE];
 	}					shader;
 
-	struct QGLRENDER_LAYOUT
+	struct QGLRENDERSTATE_LAYOUT
 	{
 		QglCtnLayoutInput	inputs;
 		QglLayoutInput*		stages[QGLOS_MAX_VALUE];
@@ -211,6 +232,15 @@ struct QGLRENDER
 
 	QgDepth				depth;
 	QgStencil			stencil;
+};
+
+// 텍스쳐
+struct QGLTEXTURE
+{
+	QgTexture			base;
+
+	GLenum				gl_target;
+	QglTexFormat		gl_enum;	
 };
 
 // 버전 찾기

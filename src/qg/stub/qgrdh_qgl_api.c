@@ -152,7 +152,7 @@ static bool glad_load_egl(void)
 	};
 	for (size_t i = 0; egllibs[i]; i++)
 	{
-		egl_module = qn_mod_load(egllibs[i], 1);
+		egl_module = qn_load_mod(egllibs[i], 1);
 		if (egl_module != NULL)
 			break;
 	}
@@ -664,7 +664,7 @@ static bool glad_load_wgl(void)
 	static bool init = false;
 	if (init)
 		return true;
-	wgl_module = qn_mod_load("opengl32", 1);
+	wgl_module = qn_load_mod("opengl32", 1);
 	VAR_CHK_IF_COND(wgl_module == NULL, "cannot load wgl library", false);
 
 	glad_wglGetProcAddress = (PFNWGLGETPROCADDRESSPROC)qn_mod_func(wgl_module, "wglGetProcAddress");
