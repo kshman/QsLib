@@ -191,6 +191,7 @@ struct QGLRDH
 #ifdef _QN_WINDOWS_
 	HGLRC				context;
 #endif
+	GLuint				vao;
 
 	bool				disposed;
 };

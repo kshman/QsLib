@@ -402,6 +402,10 @@ RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 		}
 	}
 
+	// 이거 없으면 CORE에서 그냥 버텍스 관련 기능이 안된다 (3.0부터 되며, 당연히 ES3에서 됨)
+	glGenVertexArrays(1, &self->vao);
+	glBindVertexArray(self->vao);
+
 	// 정보
 	const char* gl_version = (const char*)glGetString(GL_VERSION);
 	const char* gl_shader_version = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
@@ -427,8 +431,8 @@ RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 	if (self->cfg.core)
 	{
 		int major = info->shader_version / 100, minor = info->shader_version % 100;
-		qn_snprintf(self->res.hdr_vertex, QN_COUNTOF(self->res.hdr_vertex), "#version %d%d0 core\n", major, minor);
-		qn_snprintf(self->res.hdr_fragment, QN_COUNTOF(self->res.hdr_fragment), "#version %d%d0 core\n", major, minor);
+		qn_snprintf(self->res.hdr_vertex, QN_COUNTOF(self->res.hdr_vertex), "#version %d%d0\n", major, minor);
+		qn_snprintf(self->res.hdr_fragment, QN_COUNTOF(self->res.hdr_fragment), "#version %d%d0\n", major, minor);
 	}
 	else
 	{
@@ -450,7 +454,7 @@ RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 		for (char* tok = qn_strtok(exts, sep, &brk); tok != NULL; tok = qn_strtok(NULL, sep, &brk))
 			qn_debug_outputf(false, VAR_CHK_NAME, "EXT: %s", tok);
 		qn_free(exts);
-	}
+}
 #endif
 
 	//
@@ -480,6 +484,10 @@ static void qgl_rdh_dispose(QnGam* g)
 	qn_unload(res->white_texture);
 	qn_unload(res->sprite_buffer);
 	qn_free(res->sprite_data);
+
+	//
+	glBindVertexArray(0);
+	glDeleteVertexArrays(1, &self->vao);
 
 	//
 	egl_dispose(self->egl.display, self->egl.surface, self->egl.context);
@@ -566,7 +574,7 @@ static void qgl_rdh_reset(void)
 #ifdef QGL_MAYBE_GL_CORE
 	if (QGL_CORE && info->renderer_version >= 400)
 	{
-		for (i = 0; i < info->max_tex_count; i++)
+		for (i = 0; i < info->max_off_count; i++)
 		{
 			GLDEBUG(glEnablei(GL_BLEND, i));
 			GLDEBUG(glBlendEquationi(i, GL_FUNC_ADD));
@@ -698,7 +706,7 @@ static void qgl_rdh_clear(QgClear flags)
 		GLDEBUG(glClearDepthf(1.0f));
 #endif
 		cf |= GL_DEPTH_BUFFER_BIT;
-	}
+		}
 	if (QN_TMASK(flags, QGCLEAR_RENDER))
 	{
 		const QmVec4 c = RDH_PARAM->bgc;
@@ -708,7 +716,7 @@ static void qgl_rdh_clear(QgClear flags)
 
 	if (cf != 0)
 		GLDEBUG(glClear(cf));
-}
+	}
 
 // 시작
 static bool qgl_rdh_begin(bool clear)
@@ -1916,13 +1924,15 @@ static QgTexture* qgl_create_texture(_In_ const char* name, _In_ const QgImage* 
 	{
 		if (QN_TMASK(flags, QGTEXF_LINEAR | QGTEXF_ANISO))
 		{
-			GLDEBUG(glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST));
+			if (QGL_CORE == false)
+				GLDEBUG(glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST));
 			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
 			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 		}
 		else
 		{
-			GLDEBUG(glHint(GL_GENERATE_MIPMAP_HINT, GL_FASTEST));
+			if (QGL_CORE == false)
+				GLDEBUG(glHint(GL_GENERATE_MIPMAP_HINT, GL_FASTEST));
 			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST));
 			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
 		}

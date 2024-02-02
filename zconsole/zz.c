@@ -7,7 +7,7 @@ int main(void)
 
 	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA;
 	int features = QGFEATURE_NONE;
-	if (qg_open_rdh("es", "RDH", 0, 0, 0, flags, features) == false)
+	if (qg_open_rdh("gl", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 
 	QmVec bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);

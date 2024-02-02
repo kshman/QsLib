@@ -307,6 +307,19 @@
     <DisplayString Condition="((QGBUFFER*)this)-&gt;mapped == 0">[{((QGBUFFER*)this)-&gt;type} (count:{((QGBUFFER*)this)-&gt;count}, stride:{((QGBUFFER*)this)-&gt;stride})]</DisplayString>
     <DisplayString Condition="((QGBUFFER*)this)-&gt;mapped != 0">[매핑중 {((QGBUFFER*)this)-&gt;type} (count:{((QGBUFFER*)this)-&gt;count}, stride:{((QGBUFFER*)this)-&gt;stride})]</DisplayString>
   </Type>
+  
+  <!-- QGVARSHADER -->
+  <Type Name="QGVARSHADER">
+    <DisplayString>[{offset}/{name,s} ({sctype}/{scauto})]</DisplayString>
+    <Expand>
+      <Item Name="[이름]">name,s</Item>
+      <Item Name="[해시]">hash,X</Item>
+      <Item Name="[옵셋]">offset</Item>
+      <Item Name="[크기]">size</Item>
+      <Item Name="[타입]">sctype</Item>
+      <Item Name="[자동]">scauto</Item>
+    </Expand>
+  </Type>
 
   <!-- QGRENDER -->
   <Type Name="QGRENDERSTATE">
