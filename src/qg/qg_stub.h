@@ -249,6 +249,7 @@ qn_gam_vt(RDHBASE)
 	bool (*draw)(QgTopology, int);
 	bool (*draw_indexed)(QgTopology, int);
 	void (*draw_sprite)(const QmRect*, const QmVec*, void/*QgTexture*/*, const QmVec*);
+	void (*draw_sprite_ex)(const QmRect*, float, const QmVec*, void/*QgTexture*/*, const QmVec*);
 };
 
 // 렌더 디바이스
@@ -306,27 +307,21 @@ extern const char* qg_unknown_str(int value, bool hex);
 // 인라인
 
 // 이미지 크기 계산
-INLINE size_t qg_calc_pixel_total(const QgPropPixel* prop, int width, int height)
+INLINE size_t qg_calc_image_block_size(const QgPropPixel* prop, int width, int height)
 {
-	if (width < 4 && height < 4)
+	switch (prop->format)
 	{
-		switch (prop->format)
-		{
-			case QGCF_DXT1:
-				return 8;
-				break;
-			case QGCF_DXT3:
-			case QGCF_DXT5:
-			case QGCF_EXT1:
-			case QGCF_EXT2:
-			case QGCF_ASTC4:
-			case QGCF_ASTC8:
-				return 16;
-				break;
-			default:
-				break;
-		}
+		case QGCF_DXT1:
+		case QGCF_DXT3:
+		case QGCF_DXT5:
+		case QGCF_EXT1:
+		case QGCF_EXT2:
+		case QGCF_ASTC4:
+		case QGCF_ASTC8:
+			return ((width + 3) / 4) * ((height + 3) / 4) * prop->tbp;
+		default:
+			break;
 	}
 	// 그냥 계산
-	return width * height * prop->bpp / 8;
+	return width * height * prop->tbp;
 }

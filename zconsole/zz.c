@@ -1,46 +1,5 @@
-﻿// rdh 테스트
+﻿// 스프라이트 테스트
 #include <qs.h>
-
-#define RENDERER "es"
-static const char* vs =
-"attribute vec4 aposition;\n"
-"attribute vec4 acolor;\n"
-"attribute vec2 acoord;\n"
-"varying vec4 vcolor;\n"
-"varying vec2 vcoord;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(aposition.xy, 0.0, 1.0);\n"
-"   vcolor = acolor;\n"
-"   vcoord = acoord;\n"
-"}\n";
-static const char* ps =
-"uniform sampler2D Texture;\n"
-"varying vec4 vcolor;\n"
-"varying vec2 vcoord;\n"
-"void main()\n"
-"{\n"
-"  vec4 t = texture2D(Texture, vcoord);\n"
-"  gl_FragColor = t * vcolor;\n"
-"}\n";
-static QgLayoutInput layouts[] =
-{
-	{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT4, false },
-	{ QGLOS_1, QGLOU_COLOR1, QGLOT_FLOAT4, false },
-};
-struct vertextype
-{
-	QmFloat4	pos;
-	QmFloat4	color;
-	QmFloat2	coord;
-};
-static struct vertextype quadverts[] =
-{
-	{ {-0.5f, -0.5f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-	{ {0.5f, -0.5f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-	{ {-0.5f, 0.5f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-	{ {0.5f, 0.5f, 1.0f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-};
 
 int main(void)
 {
@@ -48,21 +7,17 @@ int main(void)
 
 	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA;
 	int features = QGFEATURE_NONE;
-	if (qg_open_rdh(RENDERER, "RDH", 0, 0, 0, flags, features) == false)
+	if (qg_open_rdh("es", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 
-	QgPropRender prop_render = QG_DEFAULT_PROP_RENDER;
-	QgPropShader prop_shader = { { layouts, QN_COUNTOF(layouts) }, { vs, 0 }, { ps, 0 } };
-	QgRenderState* render = qg_create_render_state("named", &prop_render, &prop_shader);
-	QgBuffer* qbuffer = qg_create_buffer(QGBUFFER_VERTEX, 1024, sizeof(struct vertextype), NULL);
-	qg_buffer_data(qbuffer, sizeof(struct vertextype) * 4, quadverts);
+	QmVec bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
+	qg_set_background(&bgc);
 
-	QgImage* img_autumn = qg_load_image(0, "../res/image/ff14_autumn.png");
 	QgImage* img_puru = qg_load_image(0, "../res/image/ff14_puru.jpg");
-	QgTexture* tex_autumn = qg_load_texture(0, "../res/image/ff14_autumn.png", QGTEXF_LINEAR);
-	QgTexture* tex_white = qg_create_texture(NULL, qg_new_image_filled(4, 4, qm_vec(0.0f, 1.0f, 0.0f, 1.0f)), QGTEXF_DISCARD_IMAGE);
+	QgTexture* tex_puru = qg_create_texture("puru", img_puru, QGTEXF_DISCARD_IMAGE | QGTEXF_MIPMAP);
+	QgTexture* tex_autumn = qg_load_texture(0, "../res/image/ff14_autumn.dds", QGTEXF_LINEAR);
 
-	float f = 0.0f;
+	float f = 0.0f, angle = 0.0f;
 	while (qg_loop())
 	{
 		QgEvent ev;
@@ -75,33 +30,40 @@ int main(void)
 		f += qg_get_advance() * 0.5f;
 		if (f > 1.0f)
 			f = 0.0f;
-		QmVec c = { f, f, f, 1.0f };
-		//qg_set_background(&c);
+
+		angle += qg_get_advance() * QM_DEG_360 * (-1.0f / 3.0f);
+		if (angle >= QM_DEG_360)
+			angle -= QM_DEG_360;
+		else if (angle <= -QM_DEG_360)
+			angle += QM_DEG_360;
+
+		QmSize size;
+		qg_get_size(&size);
+		QmPoint pt_puru = qm_size_locate_center(size, tex_puru->width, tex_puru->height);
 
 		if (qg_begin_render(true))
 		{
-			if (render)
-			{
-				qg_set_render_state(render);
-				qg_set_texture(0, tex_autumn);
-				qg_set_vertex(QGLOS_1, qbuffer);
-				qg_draw(QGTPG_TRI_STRIP, 4);
-			}
+			QmRect rt;
+			QmVec color, coord;
 
-			QmRect rt = qm_rect(10, 10, 10+tex_autumn->width, 10+tex_autumn->height);
-			qg_draw_sprite(&rt, &c, tex_autumn, NULL);
+			rt = qm_rect_size(10, 10, tex_autumn->width, tex_autumn->height);
+			coord = qm_vec(0.0f, 0.0f, 4.0f, 4.0f);
+			color = qm_vec(f, f, f, 1.0f);
+			qg_draw_sprite(&rt, &color, tex_autumn, &coord);
+
+			rt = qm_rect_size(size.Width - 10 - tex_autumn->width, size.Height - 10 - tex_autumn->height, tex_autumn->width, tex_autumn->height);
+			color = qm_vec(1.0f, 1.0f, 1.0f, 1.0f - f);
+			qg_draw_sprite(&rt, &color, tex_autumn, NULL);
+
+			rt = qm_rect_size(pt_puru.X, pt_puru.Y, tex_puru->width, tex_puru->height);
+			qg_draw_sprite_ex(&rt, angle, NULL, tex_puru, NULL);
 
 			qg_end_render(true);
 		}
 	}
 
-	qn_unload(tex_white);
 	qn_unload(tex_autumn);
-	qn_unload(img_autumn);
-	qn_unload(img_puru);
-
-	qn_unload(qbuffer);
-	qn_unload(render);
+	qn_unload(tex_puru);
 	qg_close_rdh();
 
 	return 0;

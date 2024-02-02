@@ -233,6 +233,7 @@ QN_EXTC_BEGIN
 #define QN_MIN(a,b)			(((a)<(b))?(a):(b))				/// @brief 최소값 얻기
 #define QN_ABS(v)			(((v)<0)?-(v):(v))				/// @brief 절대값 얻기
 #define QN_CLAMP(v,l,h)		((v)<(l)?(l):(v)>(h)?(h):(v))	/// @brief 숫자를 최소/최대값으로 자르기
+#define QN_FOURCC(a,b,c,d)	((uint)(a)|((uint)(b)<<8)|((uint)(c)<<16)|((uint)(d)<<24))	/// @brief 4문자 코드 만들기
 
 #define QN_BIT(b)			(1<<(b))						/// @brief 마스크 만들기
 #define QN_TBIT(v,bit)		(((v)&(1<<(bit)))!=0)			/// @brief 비트가 있나 비교

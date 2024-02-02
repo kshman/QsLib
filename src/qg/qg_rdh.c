@@ -291,7 +291,7 @@ void qg_set_param_weight(int count, QmMat4* weight)
 }
 
 //
-void qg_set_background(const QmVec4* color)
+void qg_set_background(const QmColor* color)
 {
 	RdhBase* rdh = RDH;
 	if (color)
@@ -407,10 +407,7 @@ QgTexture* qg_load_texture(int fuse, const char* filename, QgTexFlag flags)
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	QgTexture* texture = qn_cast_vt(rdh, RDHBASE)->create_texture(filename, image, flags);
-	qn_unloadu(image);
-
-	return texture;
+	return qn_cast_vt(rdh, RDHBASE)->create_texture(filename, image, flags | QGTEXF_DISCARD_IMAGE);
 }
 
 //
@@ -485,19 +482,31 @@ bool qg_draw_indexed(QgTopology tpg, int indices)
 }
 
 //
-void qg_draw_sprite(const QmRect* bound, const QmVec* color, QgTexture* texture, const QmVec* coord)
+void qg_draw_sprite(const QmRect* bound, const QmColor* color, QgTexture* texture, const QmVec* coord)
 {
-	static QmVec white = { 1.0f, 1.0f, 1.0f, 1.0f };
-	static QmVec fillcoord = { 0.0f, 0.0f, 1.0f, 1.0f };
 	VAR_CHK_IF_NULL(bound, );
 	if (color == NULL)
-		color = &white;
+		color = &QMCOLOR_WHITE;
 	if (coord == NULL)
-		coord = &fillcoord;
+		coord = &QMCONST_00ZW;
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
 	qn_cast_vt(rdh, RDHBASE)->draw_sprite(bound, color, texture, coord);
+}
+
+//
+void qg_draw_sprite_ex(const QmRect* bound, float angle, const QmColor* color, QgTexture* texture, const QmVec* coord)
+{
+	VAR_CHK_IF_NULL(bound, );
+	if (color == NULL)
+		color = &QMCOLOR_WHITE;
+	if (coord == NULL)
+		coord = &QMCONST_00ZW;
+	RdhBase* rdh = RDH;
+	rdh->invokes.invokes++;
+	rdh->invokes.draws++;
+	qn_cast_vt(rdh, RDHBASE)->draw_sprite_ex(bound, angle, color, texture, coord);
 }
 
 

@@ -572,6 +572,12 @@ void qg_set_aspect(const int width, const int height)
 }
 
 //
+void qg_get_size(_Out_ QmSize* size)
+{
+	*size = qg_instance_stub->client_size;
+}
+
+//
 int qg_left_events(void)
 {
 	return (int)(qn_nodelist_count(&shed_event.queue) + qn_nodelist_count(&shed_event.prior));

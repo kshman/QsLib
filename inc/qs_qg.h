@@ -859,6 +859,9 @@ QSAPI float qg_get_aspect(void);
 /// @param height 높이
 QSAPI void qg_set_aspect(const int width, const int height);
 
+/// @brief 스터브 크기를 얻는다
+QSAPI void qg_get_size(_Out_ QmSize* size);
+
 /// @brief 스터브 루프를 처리한다
 /// @return 거짓이면 프로그램을 종료한다
 QSAPI bool qg_loop(void);
@@ -1010,7 +1013,7 @@ QSAPI void qg_set_param_weight(int count, QmMat4* weight);
 
 /// @brief 배경색을 설정한다
 /// @param background_color 배경색 (널값일 경우 (0.0f, 0.0f, 0.0f, 1.0f)로 초기화)
-QSAPI void qg_set_background(const QmVec4* background_color);
+QSAPI void qg_set_background(const QmColor* background_color);
 
 /// @brief 월드 행렬을 설정한다
 /// @param world 월드 행렬
@@ -1104,8 +1107,16 @@ QSAPI bool qg_draw_indexed(QgTopology tpg, int indices);
 /// @param bound 그릴 영역
 /// @param color 색깔 (널이면 흰색)
 /// @param texture 텍스쳐
-/// @param coord 텍스쳐 좌표
-QSAPI void qg_draw_sprite(const QmRect* bound, const QmVec* color, QgTexture* texture, const QmVec* coord);
+/// @param coord 텍스쳐 좌표 (널이면 전체 텍스쳐)
+QSAPI void qg_draw_sprite(const QmRect* bound, const QmColor* color, QgTexture* texture, const QmVec* coord);
+
+/// @brief 텍스쳐 스프라이트를 회전시켜 그린다
+/// @param bound 그릴 영영역
+/// @param angle 회전 각도(호도)
+/// @param color 색깔 (널이면 흰색)
+/// @param texture 텍스쳐
+/// @param coord 텍스쳐 좌표 (널이면 전체 텍스쳐)
+QSAPI void qg_draw_sprite_ex(const QmRect* bound, float angle, const QmColor* color, QgTexture* texture, const QmVec* coord);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1212,15 +1223,15 @@ struct QGIMAGE
 };
 
 QSAPI QgImage* qg_new_image(QgClrFmt fmt, int width, int height);
-QSAPI QgImage* QM_VECTORDECL qg_new_image_filled(int width, int height, const QmVec color);
-QSAPI QgImage* QM_VECTORDECL qg_new_image_gradient_linear(int width, int height, const QmVec begin, const QmVec end, float direction);
-QSAPI QgImage* QM_VECTORDECL qg_new_image_gradient_radial(int width, int height, const QmVec inner, const QmVec outer, float density);
-QSAPI QgImage* QM_VECTORDECL qg_new_image_check_pattern(int width, int height, const QmVec oddColor, const QmVec evenColor, int checkWidth, int checkHeight);
+QSAPI QgImage* qg_new_image_filled(int width, int height, const QmColor* color);
+QSAPI QgImage* qg_new_image_gradient_linear(int width, int height, const QmColor* begin, const QmColor* end, float direction);
+QSAPI QgImage* qg_new_image_gradient_radial(int width, int height, const QmColor* inner, const QmColor* outer, float density);
+QSAPI QgImage* qg_new_image_check_pattern(int width, int height, const QmColor* oddColor, const QmColor* evenColor, int checkWidth, int checkHeight);
 
 QSAPI QgImage* qg_create_image(const void* data, int size);
 QSAPI QgImage* qg_load_image(int fuse, const char* filename);
 
-QSAPI bool QM_VECTORDECL qg_image_set_pixel(QgImage* self, int x, int y, const QmVec color);
+QSAPI bool qg_image_set_pixel(QgImage* self, int x, int y, const QmColor* color);
 
 
 //////////////////////////////////////////////////////////////////////////
