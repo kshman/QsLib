@@ -384,6 +384,36 @@ QgRenderState* qg_create_render_state(const char* name, const QgPropRender* rend
 }
 
 //
+QgTexture* qg_create_texture(const char* name, const QgImage* image, QgTexFlag flags)
+{
+	VAR_CHK_IF_NULL(image, NULL);
+	VAR_CHK_IF_NULL2(image, data, NULL);
+
+	RdhBase* rdh = RDH;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	return qn_cast_vt(rdh, RDHBASE)->create_texture(name, image, flags);
+}
+
+//
+QgTexture* qg_load_texture(int fuse, const char* filename, QgTexFlag flags)
+{
+	VAR_CHK_IF_NULL(filename, NULL);
+
+	QgImage* image = qg_load_image(fuse, filename);
+	VAR_CHK_IF_NULL(image, NULL);
+	VAR_CHK_IF_NULL2(image, data, NULL);
+
+	RdhBase* rdh = RDH;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	QgTexture* texture = qn_cast_vt(rdh, RDHBASE)->create_texture(filename, image, flags);
+	qn_unloadu(image);
+
+	return texture;
+}
+
+//
 bool qg_set_index(QgBuffer* buffer)
 {
 	VAR_CHK_IF_NULL(buffer, false);
@@ -424,6 +454,15 @@ bool qg_set_render_named(const char* name)
 }
 
 //
+bool qg_set_texture(int stage, QgTexture* texture)
+{
+	VAR_CHK_IF_MAX(stage, 8/*RDH_INFO->max_tex_count*/, false);
+	RdhBase* rdh = RDH;
+	rdh->invokes.invokes++;
+	return qn_cast_vt(rdh, RDHBASE)->set_texture(stage, texture);
+}
+
+//
 bool qg_draw(QgTopology tpg, int vertices)
 {
 	VAR_CHK_IF_MAX(tpg, QGTPG_MAX_VALUE, false);
@@ -443,6 +482,22 @@ bool qg_draw_indexed(QgTopology tpg, int indices)
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
 	return qn_cast_vt(rdh, RDHBASE)->draw_indexed(tpg, indices);
+}
+
+//
+void qg_draw_sprite(const QmRect* bound, const QmVec* color, QgTexture* texture, const QmVec* coord)
+{
+	static QmVec white = { 1.0f, 1.0f, 1.0f, 1.0f };
+	static QmVec fillcoord = { 0.0f, 0.0f, 1.0f, 1.0f };
+	VAR_CHK_IF_NULL(bound, );
+	if (color == NULL)
+		color = &white;
+	if (coord == NULL)
+		coord = &fillcoord;
+	RdhBase* rdh = RDH;
+	rdh->invokes.invokes++;
+	rdh->invokes.draws++;
+	qn_cast_vt(rdh, RDHBASE)->draw_sprite(bound, color, texture, coord);
 }
 
 
@@ -488,9 +543,9 @@ bool qg_buffer_unmap(QgBuffer * self)
 }
 
 //
-bool qg_buffer_data(QgBuffer * self, const void* data)
+bool qg_buffer_data(QgBuffer * self, int size, const void* data)
 {
 	VAR_CHK_IF_COND(self->mapped != false, "buffer already mapped", false);
 	VAR_CHK_IF_NULL(data, false);
-	return qn_cast_vt(self, QGBUFFER)->data(self, data);
+	return qn_cast_vt(self, QGBUFFER)->data(self, size, data);
 }

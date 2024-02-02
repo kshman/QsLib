@@ -239,13 +239,16 @@ qn_gam_vt(RDHBASE)
 
 	QgBuffer* (*create_buffer)(QgBufferType, uint, uint, const void*);
 	QgRenderState* (*create_render)(const char*, const QgPropRender*, const QgPropShader*);
+	QgTexture* (*create_texture)(const char*, const QgImage*, QgTexFlag);
 
-	bool (*set_vertex)(QgLayoutStage, QgBuffer*);
-	bool (*set_index)(QgBuffer*);
-	bool (*set_render)(QgRenderState*);
+	bool (*set_vertex)(QgLayoutStage, void/*QgBuffer*/*);
+	bool (*set_index)(void/*QgBuffer*/*);
+	bool (*set_render)(void/*QgRenderState*/*);
+	bool (*set_texture)(int stage, void/*QgTexture*/*);
 
 	bool (*draw)(QgTopology, int);
 	bool (*draw_indexed)(QgTopology, int);
+	void (*draw_sprite)(const QmRect*, const QmVec*, void/*QgTexture*/*, const QmVec*);
 };
 
 // 렌더 디바이스
@@ -298,3 +301,32 @@ extern const char* qg_shader_const_auto_to_str(const QgScAuto sca);
 // 알수 없음을 문자열로
 extern const char* qg_unknown_str(int value, bool hex);
 
+
+//////////////////////////////////////////////////////////////////////////
+// 인라인
+
+// 이미지 크기 계산
+INLINE size_t qg_calc_pixel_total(const QgPropPixel* prop, int width, int height)
+{
+	if (width < 4 && height < 4)
+	{
+		switch (prop->format)
+		{
+			case QGCF_DXT1:
+				return 8;
+				break;
+			case QGCF_DXT3:
+			case QGCF_DXT5:
+			case QGCF_EXT1:
+			case QGCF_EXT2:
+			case QGCF_ASTC4:
+			case QGCF_ASTC8:
+				return 16;
+				break;
+			default:
+				break;
+		}
+	}
+	// 그냥 계산
+	return width * height * prop->bpp / 8;
+}

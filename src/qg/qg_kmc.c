@@ -361,11 +361,20 @@ const char* qg_clrfmt_to_str(QgClrFmt fmt)
 		"R8",				// QGCF_R8
 		"A8",				// QGCF_A8
 		"L8",				// QGCF_L8
+		"A8L8",				// QGCF_A8L8
 		"R5G6B5",			// QGCF_R5G6B5
 		"R5G5B5A1",			// QGCF_R5G5B5A1
 		"R4G4B4A4",			// QGCF_R4G4B4A4
 		"D32F",				// QGCF_D32F
 		"D24S8",			// QGCF_D24S8
+		"DXT1",				// QGCF_DXT1,
+		"DXT3",				// QGCF_DXT3,
+		"DXT5",				// QGCF_DXT5,
+		"EXT1",				// QGCF_EXT1,
+		"EXT2",				// QGCF_EXT2,
+		"EXT2_EAC",			// QGCF_EXT2_EAC,
+		"ASTC4x8",			// QGCF_ASTC4,
+		"ASTC8x8",			// QGCF_ASTC8,
 	};
 	if ((size_t)fmt < QN_COUNTOF(fmt_names))
 		return fmt_names[fmt];

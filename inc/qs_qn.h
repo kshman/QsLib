@@ -946,6 +946,9 @@ QSAPI char* qn_strchr(const char* p, int ch);
 /// @brief 문자열에서 뒤에서부터 문자의 위치를 찾는다
 QSAPI char* qn_strrchr(const char* p, int ch);
 
+/// @brief 문자열 토큰
+QSAPI char* qn_strtok(_Inout_opt_z_ char* RESTRICT p, _In_z_ const char* RESTRICT sep, _Inout_ char** RESTRICT ctx);
+
 /// @brief 구분자로 분리된 문자열에서 이름에 해당하는 문자열이 있는지 확인한다
 QSAPI const char* qn_strext(const char* p, const char* name, int separator);
 
@@ -1988,7 +1991,7 @@ QSAPI _Success_(return != NULL) void* qn_file_alloc_l(_In_ const wchar * RESTRIC
 /// @param[in]	filename	파일의 이름
 /// @param[out]	size	(널값이 아니면) 읽은 파일의 크기
 /// @return	읽은 버퍼. 사용한 다음 k_free 함수로 해제해야한다
-QSAPI void* qn_file_alloc_l(const wchar* RESTRICT filename, int* size);
+QSAPI _Success_(return != NULL) void* qn_file_alloc_l(_In_ const wchar * RESTRICT filename, _Out_opt_ int* size);
 
 /// @brief qn_file_alloc 함수에서 사용하는 파일 읽기 최대 할당 크기
 /// @return	최대 할당 크기

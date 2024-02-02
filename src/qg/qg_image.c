@@ -5,6 +5,7 @@
 
 #include "pch.h"
 #include "qs_qg.h"
+#include "qg_stub.h"
 #include "qs_supp.h"
 
 #define STBI_MALLOC(x) qn_alloc(x, byte)
@@ -132,32 +133,6 @@ static QgPropPixel* qg_get_prop_pixel(QgClrFmt format)
 	return NULL;
 }
 
-// 크기 계산
-static size_t qg_image_calc_size(const QgPropPixel* prop, int width, int height)
-{
-	if (width < 4 && height < 4)
-	{
-		switch (prop->format)
-		{
-			case QGCF_DXT1:
-				return 8;
-				break;
-			case QGCF_DXT3:
-			case QGCF_DXT5:
-			case QGCF_EXT1:
-			case QGCF_EXT2:
-			case QGCF_ASTC4:
-			case QGCF_ASTC8:
-				return 16;
-				break;
-			default:
-				break;
-		}
-	}
-	// 그냥 계산
-	return width * height * prop->bpp / 8;
-}
-
 // UNDONE: DDS
 static bool image_loader_dds(const byte* data, uint size, QgImage* image)
 {
@@ -213,33 +188,10 @@ static bool image_loader_dds(const byte* data, uint size, QgImage* image)
 	image->mipmaps = m;
 	image->prop = *prop;
 
-	// 크기 계산
-	size_t size_total = 0;
-	for (int i = 0; i < m; i++)
-	{
-		size_t size_mip = qg_image_calc_size(prop, w, h);
-		size_total += size_mip;
-		w = QN_MAX(w / 2, 1);
-		h = QN_MAX(h / 2, 1);
-	}
-	// 메모리 할당
-	byte* data_out = qn_alloc(size_total, byte);
-	byte* data_mip = data_out;
-	w = header->dwWidth;
-	h = header->dwHeight;
+	// 그냥 복사해도 됨
+	image->data = qn_alloc(size, byte);
+	memcpy(image->data, data, size);
 
-	// 미리 계산된 크기
-	for (int i = 0; i < m; i++)
-	{
-		size_t size_mip = qg_image_calc_size(prop, w, h);
-		memcpy(data_mip, data, size_mip);
-		data_mip += size_mip;
-		data += size_mip;
-		w = QN_MAX(w / 2, 1);
-		h = QN_MAX(h / 2, 1);
-	}
-
-	image->data = data_out;
 	return true;
 }
 
@@ -287,10 +239,9 @@ static bool image_loader_etc_pkm(const byte* data, uint size, QgImage* image)
 
 	// 읽기
 	size_t size_total = w * h * prop->bpp / 8;
-	byte* data_out = qn_alloc(size_total, byte);
-	memcpy(data_out, data, size_total);
+	image->data = qn_alloc(size_total, byte);
+	memcpy(image->data, data, size_total);
 
-	image->data = data_out;
 	return true;
 }
 
@@ -346,11 +297,10 @@ static bool image_loader_etc_ktx(const byte* data, uint size, QgImage* image)
 	// 읽기
 	size_t size_total = *(int*)data;
 	data += sizeof(int);
-	byte* data_out = qn_alloc(size_total, byte);
-	memcpy(data_out, data, size_total);
+	image->data = qn_alloc(size_total, byte);
+	memcpy(image->data, data, size_total);
 
-	image->data = data_out;
-	return data_out;
+	return true;
 }
 
 // ASTC
@@ -398,10 +348,9 @@ static bool image_loader_astc(const byte* data, uint size, QgImage* image)
 
 	// 읽기
 	size_t size_total = w * h * bpp / 8;
-	byte* data_out = qn_alloc(size_total, byte);
-	memcpy(data_out, data, size_total);
+	image->data = qn_alloc(size_total, byte);
+	memcpy(image->data, data, size_total);
 
-	image->data = data_out;
 	return true;
 }
 
@@ -444,7 +393,7 @@ QgImage* qg_new_image(QgClrFmt fmt, int width, int height)
 	self->height = height;
 	self->pitch = width * prop->tbp;
 	self->mipmaps = 1;
-	size_t size = (uint)qg_image_calc_size(prop, width, height);
+	size_t size = (uint)qg_calc_pixel_total(prop, width, height);
 	self->data = qn_alloc(size, byte);
 	return self;
 }
@@ -602,19 +551,19 @@ bool QM_VECTORDECL qg_image_set_pixel(QgImage* self, int x, int y, const QmVec c
 			((halffloat*)ptr)[0] = qm_f2hf(color.X);
 			break;
 		case QGCF_R11G11B10F:
-			pixel_color_to_r11g11b10f(&((uint*)ptr)[0], color);
+			pixel_color_to_r11g11b10f((uint*)ptr, color);
 			break;
 		case QGCF_R16G16B16A16:
-			pixel_color_to_r16g16b16a16(&((ullong*)ptr)[0], color);
+			pixel_color_to_r16g16b16a16((ullong*)ptr, color);
 			break;
 		case QGCF_R16:
 			((ushort*)ptr)[0] = (ushort)(color.X * 0xFFFF);
 			break;
 		case QGCF_R10G10B10A2:
-			pixel_color_to_r10g10b10a2(&((uint*)ptr)[0], color);
+			pixel_color_to_r10g10b10a2((uint*)ptr, color);
 			break;
 		case QGCF_R8G8B8A8:
-			pixel_color_to_r8g8b8a8(&((uint*)ptr)[0], color);
+			pixel_color_to_r8g8b8a8((uint*)ptr, color);
 			break;
 		case QGCF_R8G8B8:
 			pixel_color_to_r8g8b8(ptr, color);

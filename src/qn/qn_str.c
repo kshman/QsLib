@@ -1281,6 +1281,42 @@ char* qn_strrchr(const char* p, int ch)
 }
 
 //
+char* qn_strtok(_Inout_opt_z_ char* RESTRICT p, _In_z_ const char* RESTRICT sep, _Inout_ char** RESTRICT ctx)
+{
+#if defined _MSC_VER
+	return strtok_s(p, sep, ctx);
+#elif defined __GNUC__
+	return strtok_r(p, sep, ctx);
+#else
+	qn_val_if_fail(p != NULL, NULL);
+	qn_val_if_fail(sep != NULL, NULL);
+	qn_val_if_fail(ctx != NULL, NULL);
+	if (p)
+		*ctx = (char*)p;
+	else if (!*ctx)
+		return NULL;
+	char* s = *ctx;
+	while (*s)
+	{
+		const char* d = sep;
+		while (*d)
+		{
+			if (*s == *d)
+			{
+				*s++ = '\0';
+				*ctx = s;
+				return s - 1;
+			}
+			++d;
+		}
+		++s;
+	}
+	*ctx = NULL;
+	return NULL;
+#endif
+}
+
+//
 const char* qn_strext(const char* p, const char* name, int separator)
 {
 	size_t len = strlen(name);
