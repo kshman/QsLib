@@ -310,7 +310,7 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 
 	stub->aspect = 9.0f / 16.0f;
 
-	stub->timer = qn_new_timer();
+	stub->timer = qn_create_timer();
 	stub->run = stub->timer->runtime;
 	stub->active = stub->timer->abstime;
 	stub->frames = 1.0 / 60.0;

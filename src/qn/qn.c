@@ -15,8 +15,6 @@ extern void qn_module_up(void);
 extern void qn_module_down(void);
 extern void qn_thread_up(void);
 extern void qn_thread_down(void);
-extern void qn_error_up(void);
-extern void qn_error_down(void);
 
 // 프로퍼티
 QN_DECL_MUKUM(QnPropMukum, char*, char*);
@@ -87,7 +85,6 @@ static void qn_runtime_down(void)
 	qn_mukum_disp(QnPropMukum, &runtime_impl.props);
 	qn_mukum_disp(QnSymMukum, &runtime_impl.symbols);
 
-	qn_error_down();
 	qn_thread_down();
 	qn_module_down();
 	qn_mpf_down();
@@ -104,7 +101,6 @@ static void qn_runtime_up(void)
 	qn_mpf_up();
 	qn_module_up();
 	qn_thread_up();
-	qn_error_up();
 
 	qn_mukum_init(QnPropMukum, &runtime_impl.props);
 
@@ -170,6 +166,17 @@ size_t qn_p_index(void)
 {
 	static size_t s = 0;
 	return ++s;
+}
+
+// 모를 때 쓰는 문자열 (스레드 완전 위험)
+const char* qn_p_unknown(int value, bool hex)
+{
+	static char unknown_text[64];
+	if (hex)
+		qn_snprintf(unknown_text, QN_COUNTOF(unknown_text), "UNKNOWN(0x%X)", value);
+	else
+		qn_snprintf(unknown_text, QN_COUNTOF(unknown_text), "UNKNOWN(%d)", value);
+	return unknown_text;
 }
 
 //

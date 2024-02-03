@@ -44,7 +44,7 @@ struct QNREALTAG
 
 static void _qn_realtag_delete_ptr(QnRealTag** ptr);
 static bool _qn_realtag_parse_args(QnRealTag* self, QnBstr4k* bs);
-static bool _qn_realtag_write_file(const QnRealTag* self, QnFile* file, int ident);
+static bool _qn_realtag_write_file(const QnRealTag* self, QnStream* file, int ident);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -62,7 +62,7 @@ struct QNMLU
 static void qn_mlu_dispose(QnGamBase* gam);
 
 //
-QnMlu* qn_new_mlu(void)
+QnMlu* qn_create_mlu(void)
 {
 	QnMlu* self = qn_alloc_zero_1(QnMlu);
 	static qn_gam_vt(QNGAMBASE) qn_mlu_vt =
@@ -74,20 +74,20 @@ QnMlu* qn_new_mlu(void)
 }
 
 //
-QnMlu* qn_open_mlu(const char* filename)
+QnMlu* qn_open_mlu(QnMount* mount, const char* filename)
 {
 	int size;
-	byte* data = (byte*)qn_file_alloc(filename, &size);
+	char* data = qn_file_alloc_text(mount, filename, &size, NULL);
 	qn_val_if_fail(data, NULL);
 
-	QnMlu* self = qn_new_mlu();
+	QnMlu* self = qn_create_mlu();
 	if (!self)
 	{
 		qn_free(data);
 		return NULL;
 	}
 
-	const bool ret = qn_mlu_load_buffer(self, data, size);
+	const bool ret = qn_open_mlu_buffer(self, data, size);
 	qn_free(data);
 
 	if (!ret)
@@ -100,41 +100,24 @@ QnMlu* qn_open_mlu(const char* filename)
 }
 
 //
-QnMlu* qn_open_mlu_l(const wchar* filename)
+QnMlu* qn_open_mlu_l(QnMount* mount, const wchar* filename)
 {
-	int size;
-	byte* data = (byte*)qn_file_alloc_l(filename, &size);
-	qn_val_if_fail(data, NULL);
-
-	QnMlu* self = qn_new_mlu();
-	if (!self)
-	{
-		qn_free(data);
-		return NULL;
-	}
-
-	const bool ret = qn_mlu_load_buffer(self, data, size);
-	qn_free(data);
-
-	if (!ret)
-	{
-		qn_free(self);
-		return NULL;
-	}
-
-	return self;
+	QN_DUMMY(mount);
+	QN_DUMMY(filename);
+	qn_assert(0, "not implemented yet!");
+	return NULL;
 }
 
 //
-QnMlu* qn_new_mlu_buffer(const void* RESTRICT data, const int size)
+QnMlu* qn_create_mlu_buffer(const void* RESTRICT data, const int size)
 {
 	qn_val_if_fail(data, NULL);
 	qn_val_if_fail(size > 0, NULL);
 
-	QnMlu* self = qn_new_mlu();
+	QnMlu* self = qn_create_mlu();
 	qn_val_if_fail(self, NULL);
 
-	qn_mlu_load_buffer(self, data, size);
+	qn_open_mlu_buffer(self, data, size);
 
 	return self;
 }
@@ -208,7 +191,7 @@ void qn_mlu_print(const QnMlu* self)
 }
 
 //
-bool qn_mlu_load_buffer(QnMlu* self, const void* RESTRICT data, const int size)
+bool qn_open_mlu_buffer(QnMlu* self, const char* RESTRICT data, const int size)
 {
 	qn_val_if_fail(data, false);
 	qn_val_if_fail(size > 0, false);
@@ -216,34 +199,8 @@ bool qn_mlu_load_buffer(QnMlu* self, const void* RESTRICT data, const int size)
 	qn_mlu_clean_tags(self);
 	qn_mlu_clean_errs(self);
 
-	// UTF8 사인 찾기
-	int header = (*(const int*)data) & 0x00FFFFFF;
-	const char* pos;
-	int len;
-
-	if (header == 0x00BFBBEF)
-	{
-		// 헤더 만큼 떼기
-		pos = (const char*)data + 3;
-		len = size - 3;
-	}
-	else
-	{
-		// 혹시 16비트 유니코드인가?
-		header = (*(const uint16_t*)data);
-
-		if (header == 0 || header == 0xFEFF || header == 0xFFFE)
-		{
-			// 0 = 32비트 유니코드, 아마 UTF32 BE(0x0000FEFF) / 처리할 수 없다
-			// 0xFEFF = UTF16 LE / 처리 안함
-			// 0xFFFE = UTF16 BE, 또는 UTF32 LE(0xFFFE0000) / 처리 안함
-			return false;
-		}
-
-		// 사인 없음
-		pos = (const char*)data;
-		len = size;
-	}
+	const char* pos = data;
+	int len = size;
 
 	//
 	StackList* stack = NULL;
@@ -585,20 +542,24 @@ pos_exit:
 }
 
 //
-bool qn_mlu_write_file(const QnMlu* self, const char* RESTRICT filename)
+bool qn_mlu_write_file(const QnMlu* self, QnMount* mount, const char* RESTRICT filename)
 {
-	qn_val_if_fail(filename, false);
 	qn_val_if_fail(qn_arr_count(&self->tags) > 0, false);
 
-	QnFile* file = qn_open_file(filename, "w");
+	QnStream* file = qn_open_file(mount, filename, "w");
 	qn_val_if_fail(file, false);
+	if (qn_stream_can_write(file) == false)
+	{
+		qn_unloadu(file);
+		return false;
+	}
 
 	// UTF8 BOM
 	const int bom = 0x00BFBBEF;
-	qn_file_write(file, &bom, 0, 3);
+	qn_stream_write(file, &bom, 0, 3);
 
 	// xml 부호
-	qn_file_write(file, (const void*)ml_header_desc, 0, (int)strlen(ml_header_desc));
+	qn_stream_write(file, (const void*)ml_header_desc, 0, (int)strlen(ml_header_desc));
 
 	for (size_t i = 0; i < qn_arr_count(&self->tags); i++)
 	{
@@ -836,7 +797,7 @@ void qn_mltag_add_context(QnMlTag* ptr, const char* RESTRICT cntx, const int siz
 
 	if (self->base.context)
 	{
-		char* psz = qn_strcat(self->base.context, cntx, NULL);
+		char* psz = qn_strdupcat(self->base.context, cntx, NULL);
 		qn_free(self->base.context);
 		self->base.context = psz;
 		self->base.context_len = (int)strlen(psz);
@@ -965,26 +926,26 @@ static bool _qn_realtag_parse_args(QnRealTag* self, QnBstr4k* bs)
 }
 
 // 인수 파일에 쓰기
-static void _qn_realtag_write_file_arg(QnFile* file, char** pk, char** pv)
+static void _qn_realtag_write_file_arg(QnStream* file, char** pk, char** pv)
 {
 	char sz[3] = { 0, };
 	const char* k = *pk;
 	const char* v = *pv;
 
 	sz[0] = ' ';
-	qn_file_write(file, sz, 0, sizeof(char) * 1);
-	qn_file_write(file, k, 0, (int)strlen(k));
+	qn_stream_write(file, sz, 0, sizeof(char) * 1);
+	qn_stream_write(file, k, 0, (int)strlen(k));
 
 	sz[0] = '=';
 	sz[1] = '"';
-	qn_file_write(file, sz, 0, sizeof(char) * 2);
-	qn_file_write(file, v, 0, (int)strlen(v));
+	qn_stream_write(file, sz, 0, sizeof(char) * 2);
+	qn_stream_write(file, v, 0, (int)strlen(v));
 
-	qn_file_write(file, sz + 1, 0, sizeof(char) * 1);
+	qn_stream_write(file, sz + 1, 0, sizeof(char) * 1);
 }
 
 // 파일에 쓰기
-static bool _qn_realtag_write_file(const QnRealTag* self, QnFile* file, int ident)
+static bool _qn_realtag_write_file(const QnRealTag* self, QnStream* file, int ident)
 {
 	char ch;
 	char szident[260];
@@ -1004,17 +965,17 @@ static bool _qn_realtag_write_file(const QnRealTag* self, QnFile* file, int iden
 			{
 				qn_bstr_format(&bs, "%s<%s>%s</%s>\n",
 					szident, self->base.name, self->base.context, self->base.name);
-				qn_file_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
+				qn_stream_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
 			}
 			else
 			{
 				qn_bstr_format(&bs, "%s<%s", szident, self->base.name);
-				qn_file_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
+				qn_stream_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
 
 				qn_hash_foreach_3(ArgHash, &self->args, _qn_realtag_write_file_arg, file);
 
 				qn_bstr_format(&bs, ">%s</%s>\n", self->base.context, self->base.name);
-				qn_file_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
+				qn_stream_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
 			}
 		}
 		else
@@ -1023,17 +984,17 @@ static bool _qn_realtag_write_file(const QnRealTag* self, QnFile* file, int iden
 			{
 				qn_bstr_format(&bs, "%s<%s/>\n",
 					szident, self->base.name);
-				qn_file_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
+				qn_stream_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
 			}
 			else
 			{
 				qn_bstr_format(&bs, "%s<%s", szident, self->base.name);
-				qn_file_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
+				qn_stream_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
 
 				qn_hash_foreach_3(ArgHash, &self->args, _qn_realtag_write_file_arg, file);
 
 				qn_bstr_set(&bs, "/>\n");
-				qn_file_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
+				qn_stream_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
 			}
 		}
 	}
@@ -1042,31 +1003,31 @@ static bool _qn_realtag_write_file(const QnRealTag* self, QnFile* file, int iden
 		if (qn_hash_count(&self->args) == 0)
 		{
 			qn_bstr_format(&bs, "%s<%s>\n", szident, self->base.name);
-			qn_file_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
+			qn_stream_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
 		}
 		else
 		{
 			qn_bstr_format(&bs, "%s<%s", szident, self->base.name);
-			qn_file_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
+			qn_stream_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
 
 			qn_hash_foreach_3(ArgHash, &self->args, _qn_realtag_write_file_arg, file);
 
 			qn_bstr_set(&bs, ">\n");
-			qn_file_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
+			qn_stream_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
 		}
 
 		// 내용
 		if (self->base.context_len > 0)
 		{
-			qn_file_write(file, szident, 0, ident);
+			qn_stream_write(file, szident, 0, ident);
 
 			ch = '\t';
-			qn_file_write(file, &ch, 0, sizeof(char));
+			qn_stream_write(file, &ch, 0, sizeof(char));
 
-			qn_file_write(file, self->base.context, 0, self->base.context_len);
+			qn_stream_write(file, self->base.context, 0, self->base.context_len);
 
 			ch = '\n';
-			qn_file_write(file, &ch, 0, sizeof(char));
+			qn_stream_write(file, &ch, 0, sizeof(char));
 		}
 
 		// 자식
@@ -1080,7 +1041,7 @@ static bool _qn_realtag_write_file(const QnRealTag* self, QnFile* file, int iden
 
 		//
 		qn_bstr_format(&bs, "%s</%s>\n", szident, self->base.name);
-		qn_file_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
+		qn_stream_write(file, qn_bstr_data(&bs), 0, (int)qn_bstr_length(&bs));
 	}
 
 	return true;

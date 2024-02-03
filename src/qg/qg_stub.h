@@ -300,8 +300,6 @@ extern const char* qg_clrfmt_to_str(QgClrFmt fmt);
 extern const char* qg_layout_usage_to_str(const QgLayoutUsage usage);
 // 세이더 자동 상수 문자열로 변환
 extern const char* qg_shader_const_auto_to_str(const QgScAuto sca);
-// 알수 없음을 문자열로
-extern const char* qg_unknown_str(int value, bool hex);
 
 
 //////////////////////////////////////////////////////////////////////////

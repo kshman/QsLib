@@ -5,6 +5,20 @@ int main(void)
 {
 	qn_runtime();
 
+	QnMount* mnt = qn_open_mount(NULL, 0);
+	const char* name = qn_mount_get_name(mnt);
+	qn_outputf("Mount name: %s\n", name);
+	const char* path = qn_mount_get_path(mnt);
+	qn_outputf("Mount path: %s\n", path);
+	qn_mount_mkdir(mnt, "test");
+	qn_mount_chdir(mnt, "test");
+	qn_mount_chdir(mnt, "..");
+	qn_mount_remove(mnt, "test");
+	qn_mount_chdir(mnt, "..");
+	qn_mount_chdir(mnt, NULL);
+	qn_unload(mnt);
+
+
 	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA;
 	int features = QGFEATURE_NONE;
 	if (qg_open_rdh("gl", "RDH", 0, 0, 0, flags, features) == false)
@@ -24,7 +38,10 @@ int main(void)
 		while (qg_poll(&ev))
 		{
 			if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_ESC)
+			{
+				qn_mpfdbgprint();
 				qg_exit_loop();
+			}
 			else if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_F1)
 			{
 				static bool fullscreen = false;

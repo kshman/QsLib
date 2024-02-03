@@ -213,7 +213,7 @@ static bool glad_load_egl_gl_es2(void)
 static const char* egl_error_string(EGLint error)
 {
 #ifdef _QN_EMSCRIPTEN_
-	return qg_unknown_str(error, true);
+	return qn_p_unknown(error, true);
 #else
 #define ERROR_CASE(x)		case x: return #x
 	switch (error)
@@ -234,7 +234,7 @@ static const char* egl_error_string(EGLint error)
 		ERROR_CASE(EGL_BAD_NATIVE_WINDOW);
 		ERROR_CASE(EGL_CONTEXT_LOST);
 		default:
-			return qg_unknown_str(error, true);
+			return qn_p_unknown(error, true);
 	}
 #undef ERROR_CASE
 #endif
@@ -1021,7 +1021,7 @@ static HGLRC wgl_create_context_arb(_In_ HDC hdc, _In_ int* attrs, _In_ int vers
 		else if (dw == ERROR_NO_SYSTEM_RESOURCES)
 			qn_mesg(true, VAR_CHK_NAME, "no system resources");
 		else
-			qn_syserr((int)dw, true);
+			qn_mesg(true, VAR_CHK_NAME, qn_p_unknown(dw, true));
 		break;
 	}
 	return NULL;
@@ -1094,7 +1094,6 @@ void* gl_create_context(_In_ const QglConfig * wanted_config, _Out_ QglConfig * 
 	return context;
 
 pos_error:
-	qn_syserr(0, true);
 	return NULL;
 }
 
@@ -1105,10 +1104,7 @@ bool gl_make_current(_In_ void* context, _In_ const QglConfig * config)
 
 	const HDC hdc = (HDC)stub_system_get_display();
 	if (wglMakeCurrent(hdc, (HGLRC)context) == FALSE)
-	{
-		qn_syserr(0, true);
 		goto pos_error_exit;
-	}
 
 	if ((config->core ? glad_load_wgl_gl() : glad_load_wgl_gles2()) == false)
 		VAR_CHK_GOTO("failed to load proc", pos_error_exit);

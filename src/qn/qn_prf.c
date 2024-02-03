@@ -122,7 +122,7 @@ static void qn_dbg_buf_head(const char* RESTRICT head)
 }
 
 //
-static int qn_dbg_buf_flush(void)
+static int qn_dbg_buf_flush(bool debug_output)
 {
 	qn_val_if_fail(debug_impl.out_pos > 0, 0);
 	debug_impl.out_buf[debug_impl.out_pos] = '\0';
@@ -133,17 +133,19 @@ static int qn_dbg_buf_flush(void)
 		if (debug_impl.redirect || WriteConsoleA(debug_impl.handle, debug_impl.out_buf, debug_impl.out_pos, &wtn, NULL) == 0)
 			WriteFile(debug_impl.handle, debug_impl.out_buf, debug_impl.out_pos, &wtn, NULL);
 	}
-	if (debug_impl.debugger)
+	if (debug_impl.debugger && debug_output)
 		OutputDebugStringA(debug_impl.out_buf);
 #else
 	if (debug_impl.fp != NULL)
 		fputs(debug_impl.out_buf, debug_impl.fp);
 #ifdef __EMSCRIPTEN__
 	// 콘솔에 두번 나오니깐 한번만 출력하자
-	//emscripten_console_log(debug_impl.out_buf);
+	//if (debug_output)
+	//	emscripten_console_log(debug_impl.out_buf);
 #endif
 #ifdef _QN_ANDROID_
-	__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, debug_impl.out_buf);
+	if (debug_output)
+		__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, debug_impl.out_buf);
 #endif
 #endif
 	const int ret = debug_impl.out_pos;
@@ -170,7 +172,7 @@ int qn_asrt(const char* RESTRICT expr, const char* RESTRICT mesg, const char* RE
 		qn_dbg_buf_str(mesg);
 		qn_dbg_buf_str("]\n");
 	}
-	qn_dbg_buf_flush();
+	qn_dbg_buf_flush(true);
 
 	DEBUG_BREAK(debug_impl.debugger);
 	return 0;
@@ -183,7 +185,7 @@ _Noreturn void qn_halt(const char* RESTRICT head, const char* RESTRICT mesg)
 	qn_dbg_buf_head(head);
 	qn_dbg_buf_str(mesg);
 	qn_dbg_buf_ch('\n');
-	qn_dbg_buf_flush();
+	qn_dbg_buf_flush(true);
 
 	DEBUG_BREAK(debug_impl.debugger);
 	abort();
@@ -195,7 +197,7 @@ int qn_mesg(const bool breakpoint, const char* RESTRICT head, const char* RESTRI
 	qn_dbg_buf_head(head);
 	qn_dbg_buf_str(mesg);
 	qn_dbg_buf_ch('\n');
-	const int len = qn_dbg_buf_flush();
+	const int len = qn_dbg_buf_flush(true);
 
 	DEBUG_BREAK(breakpoint && debug_impl.debugger);
 	return len;
@@ -210,7 +212,7 @@ int qn_mesgf(const bool breakpoint, const char* RESTRICT head, const char* RESTR
 	qn_dbg_buf_va(fmt, va);
 	va_end(va);
 	qn_dbg_buf_ch('\n');
-	const int len = qn_dbg_buf_flush();
+	const int len = qn_dbg_buf_flush(true);
 
 	DEBUG_BREAK(breakpoint && debug_impl.debugger);
 	return len;
@@ -221,7 +223,7 @@ int qn_outputs(const char* mesg)
 {
 	qn_dbg_buf_str(mesg);
 	qn_dbg_buf_ch('\n');
-	return qn_dbg_buf_flush();
+	return qn_dbg_buf_flush(false);
 }
 
 //
@@ -232,12 +234,13 @@ int qn_outputf(const char* fmt, ...)
 	qn_dbg_buf_va(fmt, va);
 	va_end(va);
 	qn_dbg_buf_ch('\n');
-	return qn_dbg_buf_flush();
+	return qn_dbg_buf_flush(false);
 }
 
 
+#if false
 //////////////////////////////////////////////////////////////////////////
-// 오류 처리
+// 오류 처리 (사용 안함)
 
 static struct ERRORIMPL
 {
@@ -321,7 +324,18 @@ bool qn_syserr(int errcode, bool debug_break)
 #else
 	if (errcode == 0)
 		errcode = errno;
+#if defeind _QN_EMSCRIPTEN_ && !defined _DEBUG
+	if (errcode == 0)
+		buf = NULL;
+	else
+	{
+		static char sz[64];
+		qn_snprintf(sz, 64, "error: %d", errcode);
+		buf = sz;
+	}
+#else
 	buf = errcode == 0 ? NULL : strerror(errcode);
+#endif
 #endif
 	if (buf != NULL)
 	{
@@ -333,6 +347,7 @@ bool qn_syserr(int errcode, bool debug_break)
 	qn_tlsset(error_impl.error, buf);
 	return true;
 }
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////

@@ -202,13 +202,17 @@ static QnModule* _qn_module_find(const char* filename, const size_t hash)
 // dlerror 처리용
 static void _qn_module_set_error(void)
 {
-#ifndef _QN_WINDOWS_
+#ifdef _QN_WINDOWS_
+	LPVOID lpMsgBuf;
+	FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&lpMsgBuf, 0, NULL);
+	qn_mesg(false, "MODULE", (const char*)lpMsgBuf);
+	LocalFree(lpMsgBuf);
+#else
 	const char* err = dlerror();
 	if (err != NULL)
-		qn_seterr(err);
-	else
+		qn_mesg(false, "MODULE", err);
 #endif
-		qn_syserr(0, false);
 }
 
 //
@@ -266,8 +270,6 @@ static qn_gam_vt(QNGAMBASE) qn_mod_vt =
 //
 QnModule* qn_mod_self(void)
 {
-	qn_seterr(NULL, false);
-
 	if (module_impl.self != NULL)
 		return qn_loadu(module_impl.self, QnModule);
 
@@ -297,8 +299,6 @@ QnModule* qn_mod_self(void)
 QnModule* qn_load_mod(const char* filename, const int flags)
 {
 	qn_val_if_fail(filename != NULL, NULL);
-
-	qn_seterr(NULL, false);
 
 	const size_t hash = qn_strhash(filename);
 	QnModule* self = _qn_module_find(filename, hash);

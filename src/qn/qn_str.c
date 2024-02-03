@@ -837,7 +837,7 @@ char* qn_a_str_dup(const char* p)
 }
 
 //
-char* qn_a_str_cat(const char* p, ...)
+char* qn_a_str_dup_cat(const char* p, ...)
 {
 	va_list va, vq;
 	va_start(va, p);
@@ -930,7 +930,7 @@ char* qn_a_i_str_dup(const char* desc, size_t line, const char* p)
 }
 
 //
-char* qn_a_i_str_cat(const char* desc, size_t line, const char* p, ...)
+char* qn_a_i_str_dup_cat(const char* desc, size_t line, const char* p, ...)
 {
 	va_list va, vq;
 	va_start(va, p);
@@ -1001,11 +1001,13 @@ char* qn_strncpy(char* RESTRICT p, const char* RESTRICT src, size_t len)
 	while (len && ((*p++ = *src++)))
 		--len;
 	*p = '\0';
+#if false
 	if (len)
 	{
 		while (--len)
 			*p++ = '\0';
 	}
+#endif
 	return o;
 #endif
 }
@@ -1016,6 +1018,59 @@ char* qn_stpcpy(char* RESTRICT dest, const char* RESTRICT src)
 	do (*dest++ = *src);
 	while (*src++ != '\0');
 	return dest - 1;
+}
+
+//
+char* qn_strcat(char* RESTRICT dest, const char* RESTRICT src)
+{
+#ifdef __GNUC__
+	return strcat(dest, src);
+#else
+	char* o = dest;
+	while (*dest) dest++;
+	while ((*dest++ = *src++)) {}
+	return o;
+#endif
+}
+
+//
+char* qn_strncat(char* RESTRICT dest, const char* RESTRICT src, size_t len)
+{
+#ifdef __GNUC__
+	return strncat(dest, src, len);
+#else
+	char* o = dest;
+	while (*dest) dest++;
+	while (len && (*dest++ = *src++))
+		--len;
+	*dest = '\0';
+	return o;
+#endif
+}
+
+//
+char* qn_strconcat(size_t max_len, char* RESTRICT dest, ...)
+{
+	va_list va;
+	char* c = dest;
+	char* s;
+
+	va_start(va, dest);
+	s = va_arg(va, char*);
+	while (s)
+	{
+		while (*s)
+		{
+			if (--max_len == 0)
+				goto pos_exit;
+			*c++ = *s++;
+		}
+		s = va_arg(va, char*);
+	}
+pos_exit:
+	va_end(va);
+	*c = '\0';
+	return dest;
 }
 
 //
@@ -1721,7 +1776,7 @@ wchar* qn_a_wcs_dup(const wchar* p)
 }
 
 //
-wchar* qn_a_wcs_cat(const wchar* p, ...)
+wchar* qn_a_wcs_dup_cat(const wchar* p, ...)
 {
 	va_list va, vq;
 	va_start(va, p);
@@ -1808,7 +1863,7 @@ wchar* qn_a_i_wcs_dup(const char* desc, size_t line, const wchar* p)
 }
 
 //
-wchar* qn_a_i_wcs_cat(const char* desc, size_t line, const wchar* p, ...)
+wchar* qn_a_i_wcs_dup_cat(const char* desc, size_t line, const wchar* p, ...)
 {
 	va_list va, vq;
 	va_start(va, p);
@@ -1894,6 +1949,63 @@ wchar* qn_wcpcpy(wchar* RESTRICT dest, const wchar* RESTRICT src)
 	do (*dest++ = *src);
 	while (*src++ != L'\0');
 	return dest - 1;
+}
+
+//
+wchar* qn_wcscat(wchar* RESTRICT dest, const wchar* RESTRICT src)
+{
+#ifdef __GNUC__
+	return wcscat(dest, src);
+#else
+	wchar* o = dest;
+	while (*dest) dest++;
+	while ((*dest++ = *src++)) {}
+	return o;
+#endif
+}
+
+//
+wchar* qn_wcsncat(wchar* RESTRICT dest, const wchar* RESTRICT src, size_t len)
+{
+#ifdef __GNUC__
+	return wcsncat(dest, src, len);
+#else
+	wchar* o = dest;
+	while (*dest) dest++;
+	while (len && (*dest++ = *src++))
+		--len;
+	*dest = L'\0';
+	return o;
+#endif
+}
+
+//
+wchar* qn_wcsconcat(size_t max_len, wchar* RESTRICT dest, ...)
+{
+	va_list va;
+	wchar* c = dest;
+	wchar* s;
+
+	va_start(va, dest);
+	s = va_arg(va, wchar*);
+	while (s)
+	{
+		while (*s)
+		{
+			while (*s)
+			{
+				if (--max_len == 0)
+					goto pos_exit;
+				*c++ = *s++;
+			}
+			*c++ = *s++;
+		}
+		s = va_arg(va, wchar*);
+	}
+pos_exit:
+	va_end(va);
+	*c = L'\0';
+	return dest;
 }
 
 //
@@ -2759,7 +2871,7 @@ size_t qn_u8to32(uchar4* RESTRICT dest, const size_t destsize, const char* RESTR
 	else
 	{
 		const size_t slen = srclen == 0 ? qn_u8len(src) : srclen;
-		const size_t size = QN_MIN(destsize, slen);
+		const size_t size = QN_MIN(destsize - 1, slen);
 
 		const char* t;
 		size_t i;
@@ -2790,7 +2902,7 @@ size_t qn_u8to16(uchar2* RESTRICT dest, const size_t destsize, const char* RESTR
 	else
 	{
 		const size_t slen = srclen == 0 ? qn_u8len(src) : srclen;
-		const size_t size = QN_MIN(destsize, slen);
+		const size_t size = QN_MIN(destsize - 1, slen);
 
 		const char* t;
 		size_t i;
@@ -2816,7 +2928,7 @@ size_t qn_u8to16(uchar2* RESTRICT dest, const size_t destsize, const char* RESTR
 }
 
 //
-size_t qn_u32to8(char* RESTRICT dest, const size_t destsize, const uchar4* RESTRICT src, const size_t srclen)
+size_t qn_u32to8(char* RESTRICT dest, size_t destsize, const uchar4* RESTRICT src, const size_t srclen)
 {
 	qn_val_if_fail(src, 0);
 
@@ -2827,6 +2939,7 @@ size_t qn_u32to8(char* RESTRICT dest, const size_t destsize, const uchar4* RESTR
 
 	if (destsize > 0)
 	{
+		destsize--;
 		for (size = 0, i = 0; slen == 0 || i < slen; i++)
 		{
 			uc = src[i];
@@ -2850,7 +2963,7 @@ size_t qn_u32to8(char* RESTRICT dest, const size_t destsize, const uchar4* RESTR
 
 			const size_t z = size + n;
 
-			if (z > destsize)
+			if (z >= destsize)
 				break;
 
 			size = z;
@@ -2897,7 +3010,7 @@ size_t qn_u32to8(char* RESTRICT dest, const size_t destsize, const uchar4* RESTR
 }
 
 //
-size_t qn_u16to8(char* RESTRICT dest, const size_t destsize, const uchar2* RESTRICT src, const size_t srclen)
+size_t qn_u16to8(char* RESTRICT dest, size_t destsize, const uchar2* RESTRICT src, const size_t srclen)
 {
 	qn_val_if_fail(src, 0);
 
@@ -2910,6 +3023,7 @@ size_t qn_u16to8(char* RESTRICT dest, const size_t destsize, const uchar2* RESTR
 
 	if (destsize > 0)
 	{
+		destsize--;
 		for (; (srclen == 0 || (size_t)(cp - src) < srclen) && *cp; cp++)
 		{
 			ch = *cp;
@@ -2957,7 +3071,7 @@ size_t qn_u16to8(char* RESTRICT dest, const size_t destsize, const uchar2* RESTR
 				6;
 
 			const size_t z = size + n;
-			if (z > destsize)
+			if (z >= destsize)
 				break;
 			size = z;
 		}
@@ -3059,7 +3173,7 @@ size_t qn_u16to8(char* RESTRICT dest, const size_t destsize, const uchar2* RESTR
 }
 
 //
-size_t qn_u16to32(uchar4* RESTRICT dest, const size_t destsize, const uchar2* RESTRICT src, const size_t srclen)
+size_t qn_u16to32(uchar4* RESTRICT dest, size_t destsize, const uchar2* RESTRICT src, const size_t srclen)
 {
 	qn_val_if_fail(src, 0);
 
@@ -3068,6 +3182,7 @@ size_t qn_u16to32(uchar4* RESTRICT dest, const size_t destsize, const uchar2* RE
 
 	if (destsize > 0)
 	{
+		destsize--;
 		for (const uchar2* cp = src; (srclen == 0 || (size_t)(cp - src) < srclen) && *cp; cp++)
 		{
 			const uchar2 ch = *cp;
@@ -3107,7 +3222,7 @@ size_t qn_u16to32(uchar4* RESTRICT dest, const size_t destsize, const uchar2* RE
 
 			const size_t z = size + 1;
 
-			if (z > destsize)
+			if (z >= destsize)
 				break;
 
 			size = z;
@@ -3204,7 +3319,7 @@ size_t qn_u16to32(uchar4* RESTRICT dest, const size_t destsize, const uchar2* RE
 }
 
 //
-size_t qn_u32to16(uchar2* RESTRICT dest, const size_t destsize, const uchar4* RESTRICT src, const size_t srclen)
+size_t qn_u32to16(uchar2* RESTRICT dest, size_t destsize, const uchar4* RESTRICT src, const size_t srclen)
 {
 	qn_val_if_fail(src, 0);
 
@@ -3215,6 +3330,7 @@ size_t qn_u32to16(uchar2* RESTRICT dest, const size_t destsize, const uchar4* RE
 
 	if (destsize > 0)
 	{
+		destsize--;
 		for (i = 0; (slen == 0 || i < slen) && src[i]; i++)
 		{
 			const uchar4 uc = src[i];
@@ -3231,7 +3347,7 @@ size_t qn_u32to16(uchar2* RESTRICT dest, const size_t destsize, const uchar4* RE
 				return 0;
 
 			z += size;
-			if (z > destsize)
+			if (z >= destsize)
 				break;
 			size = z;
 		}

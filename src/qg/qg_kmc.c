@@ -6,18 +6,6 @@
 #include "pch.h"
 #include "qs_qg.h"
 
-// 모를 때 쓰는 문자열 (스레드 완전 위험)
-const char* qg_unknown_str(int value, bool hex)
-{
-	static char unknown_text[64];
-	if (hex)
-		qn_snprintf(unknown_text, QN_COUNTOF(unknown_text), "UNKNOWN(%X)", value);
-	else
-		qn_snprintf(unknown_text, QN_COUNTOF(unknown_text), "UNKNOWN(%d)", value);
-	return unknown_text;
-}
-
-
 //////////////////////////////////////////////////////////////////////////
 // qmkc supp
 
@@ -86,7 +74,7 @@ const char* qg_qim_to_str(const QimButton button)
 	};
 	if ((size_t)button < QN_COUNTOF(mouse_button_names))
 		return mouse_button_names[button];
-	return qg_unknown_str(button, false);
+	return qn_p_unknown(button, false);
 }
 
 //
@@ -112,7 +100,7 @@ const char* qg_qic_to_str(const QicButton button)
 	};
 	if ((size_t)button < QN_COUNTOF(controller_button_names))
 		return controller_button_names[button];
-	return qg_unknown_str(button, false);
+	return qn_p_unknown(button, false);
 }
 
 //
@@ -143,7 +131,7 @@ const char* qg_event_to_str(const QgEventType ev)
 	};
 	if ((size_t)ev < QN_COUNTOF(event_names))
 		return event_names[ev];
-	return qg_unknown_str(ev, false);
+	return qn_p_unknown(ev, false);
 }
 
 //
@@ -166,7 +154,7 @@ const char* qg_window_event_to_str(const QgWindowEventType wev)
 	};
 	if ((size_t)wev < QN_COUNTOF(window_event_names))
 		return window_event_names[wev];
-	return qg_unknown_str(wev, false);
+	return qn_p_unknown(wev, false);
 }
 
 //
@@ -378,7 +366,7 @@ const char* qg_clrfmt_to_str(QgClrFmt fmt)
 	};
 	if ((size_t)fmt < QN_COUNTOF(fmt_names))
 		return fmt_names[fmt];
-	return qg_unknown_str(fmt, false);
+	return qn_p_unknown(fmt, false);
 }
 
 //
@@ -411,7 +399,7 @@ const char* qg_layout_usage_to_str(const QgLayoutUsage usage)
 		if (usage == QgLayoutUsageMap[i].usage)
 			return QgLayoutUsageMap[i].name + 1;	// 'a' 제거
 	}
-	return qg_unknown_str(usage, false);
+	return qn_p_unknown(usage, false);
 }
 
 //
@@ -422,7 +410,7 @@ const char* qg_shader_const_auto_to_str(const QgScAuto sca)
 		if (sca == QgScAutoMap[i].value)
 			return QgScAutoMap[i].name;
 	}
-	return qg_unknown_str(sca, false);
+	return qn_p_unknown(sca, false);
 }
 
 

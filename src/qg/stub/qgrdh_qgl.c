@@ -661,7 +661,7 @@ static void qgl_rdh_reset(void)
 	res->glyph_render = (QglRenderState*)qg_create_render_state("qg_glyph", &render_ortho, &shader_glyph);
 	qn_unload(res->glyph_render);
 
-	res->white_texture = (QglTexture*)qg_create_texture("qg_white", qg_new_image_filled(2, 2, &QMCOLOR_WHITE), QGTEXF_DISCARD_IMAGE);
+	res->white_texture = (QglTexture*)qg_create_texture("qg_white", qg_create_image_filled(2, 2, &QMCOLOR_WHITE), QGTEXF_DISCARD_IMAGE);
 
 	res->sprite_buffer = (QglBuffer*)qg_create_buffer(QGBUFFER_VERTEX, 1024, sizeof(QmFloat4) + sizeof(QmFloat4), NULL);
 	res->sprite_data = qn_alloc((sizeof(QmFloat4) + sizeof(QmFloat4)) * 1024, byte);

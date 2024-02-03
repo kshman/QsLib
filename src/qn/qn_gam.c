@@ -14,16 +14,6 @@ QnGam qn_sc_init(QnGam g, void* RESTRICT vt)
 	return g;
 }
 
-//
-QnGam qc_sc_init_dup(QnGam g, QnGam source)
-{
-	QnGamBase* base = qn_cast_type(g, QnGamBase);
-	QnGamBase* from = qn_cast_type(source, QnGamBase);
-	base->vt = from->vt;
-	base->ref = 1;
-	return g;
-}
-
 // 로드
 QnGam qn_sc_load(QnGam g)
 {

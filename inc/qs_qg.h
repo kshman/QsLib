@@ -1222,15 +1222,28 @@ struct QGIMAGE
 	byte*				data;
 };
 
-QSAPI QgImage* qg_new_image(QgClrFmt fmt, int width, int height);
-QSAPI QgImage* qg_new_image_filled(int width, int height, const QmColor* color);
-QSAPI QgImage* qg_new_image_gradient_linear(int width, int height, const QmColor* begin, const QmColor* end, float direction);
-QSAPI QgImage* qg_new_image_gradient_radial(int width, int height, const QmColor* inner, const QmColor* outer, float density);
-QSAPI QgImage* qg_new_image_check_pattern(int width, int height, const QmColor* oddColor, const QmColor* evenColor, int checkWidth, int checkHeight);
+/// @brief 빈 이미지를 만든다
+QSAPI QgImage* qg_create_image(QgClrFmt fmt, int width, int height);
 
-QSAPI QgImage* qg_create_image(const void* data, int size);
+/// @brief 색깔로 채운 이미지를 만든다
+QSAPI QgImage* qg_create_image_filled(int width, int height, const QmColor* color);
+
+/// @brief 선형 그라디언트 이미지를 만든다
+QSAPI QgImage* qg_create_image_gradient_linear(int width, int height, const QmColor* begin, const QmColor* end, float direction);
+
+/// @brief 원형 그라디언트 이미지를 만든다
+QSAPI QgImage* qg_create_image_gradient_radial(int width, int height, const QmColor* inner, const QmColor* outer, float density);
+
+/// @brief 격자 패턴	이미지를 만든다
+QSAPI QgImage* qg_create_image_check_pattern(int width, int height, const QmColor* oddColor, const QmColor* evenColor, int checkWidth, int checkHeight);
+
+/// @brief 이미지를 이미지 형식이 담긴 데이터로 부터 만든다
+QSAPI QgImage* qg_load_image_buffer(const void* data, int size);
+
+/// @brief 이미지를 파일에서 읽어 만든다
 QSAPI QgImage* qg_load_image(int fuse, const char* filename);
 
+/// @brief 이미지에 점을 찍는다
 QSAPI bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* color);
 
 

@@ -380,7 +380,7 @@ static QgImage* qg_image(void)
 }
 
 //
-QgImage* qg_new_image(QgClrFmt fmt, int width, int height)
+QgImage* qg_create_image(QgClrFmt fmt, int width, int height)
 {
 	const QgPropPixel* prop = qg_get_prop_pixel(fmt);
 	VAR_CHK_IF_NULL(prop, NULL);
@@ -397,9 +397,9 @@ QgImage* qg_new_image(QgClrFmt fmt, int width, int height)
 }
 
 //
-QgImage* qg_new_image_filled(int width, int height, const QmColor* color)
+QgImage* qg_create_image_filled(int width, int height, const QmColor* color)
 {
-	QgImage* self = qg_new_image(QGCF_R8G8B8A8, width, height);
+	QgImage* self = qg_create_image(QGCF_R8G8B8A8, width, height);
 	uint* data = (uint*)self->data;
 	uint c;
 	pixel_color_to_r8_g8_b8_a8(&c, *color);
@@ -409,9 +409,9 @@ QgImage* qg_new_image_filled(int width, int height, const QmColor* color)
 }
 
 //
-QgImage* qg_new_image_gradient_linear(int width, int height, const QmColor* begin, const QmColor* end, float direction)
+QgImage* qg_create_image_gradient_linear(int width, int height, const QmColor* begin, const QmColor* end, float direction)
 {
-	QgImage* self = qg_new_image(QGCF_R8G8B8A8, width, height);
+	QgImage* self = qg_create_image(QGCF_R8G8B8A8, width, height);
 	uint* data = (uint*)self->data;
 	float sn, cs;
 	qm_sincosf(direction, &sn, &cs);
@@ -428,9 +428,9 @@ QgImage* qg_new_image_gradient_linear(int width, int height, const QmColor* begi
 }
 
 //
-QgImage* qg_new_image_gradient_radial(int width, int height, const QmColor* inner, const QmColor* outer, float density)
+QgImage* qg_create_image_gradient_radial(int width, int height, const QmColor* inner, const QmColor* outer, float density)
 {
-	QgImage* self = qg_new_image(QGCF_R8G8B8A8, width, height);
+	QgImage* self = qg_create_image(QGCF_R8G8B8A8, width, height);
 	uint* data = (uint*)self->data;
 	const float r = (float)QN_MIN(width, height) * 0.5f;
 	const float cx = (float)width * 0.5f;
@@ -449,9 +449,9 @@ QgImage* qg_new_image_gradient_radial(int width, int height, const QmColor* inne
 }
 
 //
-QgImage* qg_new_image_check_pattern(int width, int height, const QmColor* oddColor, const QmColor* evenColor, int checkWidth, int checkHeight)
+QgImage* qg_create_image_check_pattern(int width, int height, const QmColor* oddColor, const QmColor* evenColor, int checkWidth, int checkHeight)
 {
-	QgImage* self = qg_new_image(QGCF_R8G8B8A8, width, height);
+	QgImage* self = qg_create_image(QGCF_R8G8B8A8, width, height);
 	uint* data = (uint*)self->data;
 	uint oc, ec;
 	pixel_color_to_r8_g8_b8_a8(&oc, *oddColor);
@@ -465,7 +465,7 @@ QgImage* qg_new_image_check_pattern(int width, int height, const QmColor* oddCol
 }
 
 //
-QgImage* qg_create_image(const void* data, int size)
+QgImage* qg_load_image_buffer(const void* data, int size)
 {
 	VAR_CHK_IF_NULL(data, NULL);
 	VAR_CHK_IF_MIN(size, 0, NULL);
@@ -518,10 +518,10 @@ QgImage* qg_load_image(int fuse, const char* filename)
 	QN_DUMMY(fuse);
 
 	int size;
-	byte* data = qn_file_alloc(filename, &size);
+	byte* data = qn_file_alloc(NULL, filename, &size);
 	qn_val_if_fail(data != NULL, NULL);
 
-	QgImage* self = qg_create_image(data, size);
+	QgImage* self = qg_load_image_buffer(data, size);
 	qn_free(data);
 	return self;
 }

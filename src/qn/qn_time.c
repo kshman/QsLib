@@ -296,7 +296,7 @@ static void qn_timer_dispose(QnGamBase* gam)
 }
 
 //
-QnTimer* qn_new_timer(void)
+QnTimer* qn_create_timer(void)
 {
 	QnRealTimer* self = qn_alloc_zero_1(QnRealTimer);
 
