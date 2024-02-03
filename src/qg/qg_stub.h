@@ -215,7 +215,7 @@ typedef struct RENDERERPARAM
 // 렌더러 디바이스
 typedef struct RDHBASE
 {
-	QnGam				base;
+	QnGamBase				base;
 
 	RendererInfo		info;
 
@@ -228,7 +228,7 @@ typedef struct RDHBASE
 
 qn_gam_vt(RDHBASE)
 {
-	qn_gam_vt(QNGAM)	base;
+	qn_gam_vt(QNGAMBASE)	base;
 	void (*layout)(void);
 	void (*reset)(void);
 	void (*clear)(QgClear);

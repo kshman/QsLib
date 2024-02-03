@@ -51,7 +51,7 @@ static bool _qn_realtag_write_file(const QnRealTag* self, QnFile* file, int iden
 // RML
 struct QNMLU
 {
-	QnGam				base;
+	QnGamBase				base;
 	SubArray			tags;
 	ErrorArray			errs;
 
@@ -59,18 +59,18 @@ struct QNMLU
 };
 
 //
-static void qn_mlu_dispose(QnGam* gam);
+static void qn_mlu_dispose(QnGamBase* gam);
 
 //
 QnMlu* qn_new_mlu(void)
 {
 	QnMlu* self = qn_alloc_zero_1(QnMlu);
-	static qn_gam_vt(QNGAM) qn_mlu_vt =
+	static qn_gam_vt(QNGAMBASE) qn_mlu_vt =
 	{
 		"MLU",
 		qn_mlu_dispose,
 	};
-	return qn_gam_init(self, QnMlu, &qn_mlu_vt);
+	return qn_gam_init(self, qn_mlu_vt);
 }
 
 //
@@ -140,7 +140,7 @@ QnMlu* qn_new_mlu_buffer(const void* RESTRICT data, const int size)
 }
 
 //
-static void qn_mlu_dispose(QnGam* gam)
+static void qn_mlu_dispose(QnGamBase* gam)
 {
 	QnMlu* self = (QnMlu*)gam;
 	qn_mlu_clean_tags(self);
@@ -352,7 +352,7 @@ bool qn_mlu_load_buffer(QnMlu* self, const void* RESTRICT data, const int size)
 					line++;
 				/*
 				else if (pos[i]=='/')
-				hassingle=true;
+				has_single=true;
 				*/
 				else if (pos[i] == '>')
 				{
@@ -647,17 +647,17 @@ QnMlTag* qn_mlu_get_tag_nth(const QnMlu* self, const int at)
 }
 
 //
-const char* qn_mlu_get_context(const QnMlu* self, const char* RESTRICT name, const char* RESTRICT ifnotexist)
+const char* qn_mlu_get_context(const QnMlu* self, const char* RESTRICT name, const char* RESTRICT if_not_exist)
 {
 	const QnMlTag* tag = qn_mlu_get_tag(self, name);
-	return tag ? tag->context : ifnotexist;
+	return tag ? tag->context : if_not_exist;
 }
 
 //
-const char* qn_mlu_get_context_nth(const QnMlu* self, int at, const char* RESTRICT ifnotexist)
+const char* qn_mlu_get_context_nth(const QnMlu* self, int at, const char* RESTRICT if_not_exist)
 {
 	const QnMlTag* tag = qn_mlu_get_tag_nth(self, at);
-	return tag ? tag->context : ifnotexist;
+	return tag ? tag->context : if_not_exist;
 }
 
 //
@@ -1121,17 +1121,17 @@ QnMlTag* qn_mltag_get_sub_nth(QnMlTag* ptr, const int at)
 }
 
 //
-const char* qn_mltag_get_sub_context(QnMlTag* ptr, const char* RESTRICT name, const char* RESTRICT ifnotexist)
+const char* qn_mltag_get_sub_context(QnMlTag* ptr, const char* RESTRICT name, const char* RESTRICT if_not_exist)
 {
 	const QnMlTag* tag = qn_mltag_get_sub(ptr, name);
-	return tag ? tag->context : ifnotexist;
+	return tag ? tag->context : if_not_exist;
 }
 
 //
-const char* qn_mltag_get_sub_context_nth(QnMlTag* ptr, const int at, const char* RESTRICT ifnotexist)
+const char* qn_mltag_get_sub_context_nth(QnMlTag* ptr, const int at, const char* RESTRICT if_not_exist)
 {
 	const QnMlTag* tag = qn_mltag_get_sub_nth(ptr, at);
-	return tag ? tag->context : ifnotexist;
+	return tag ? tag->context : if_not_exist;
 }
 
 //

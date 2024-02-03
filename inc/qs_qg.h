@@ -1125,7 +1125,7 @@ QSAPI void qg_draw_sprite_ex(const QmRect* bound, float angle, const QmColor* co
 /// @brief 노드
 struct QGNODE
 {
-	QnGam				base;
+	QnGamBase				base;
 
 	char				NAME[64];
 	size_t				HASH;
@@ -1142,7 +1142,7 @@ QSAPI void qg_node_set_name(QgNode * self, const char* name);
 /// @brief 버퍼
 struct QGBUFFER
 {
-	QnGam				base;
+	QnGamBase				base;
 
 	QgBufferType		type;
 	uint				size;
@@ -1154,7 +1154,7 @@ struct QGBUFFER
 
 qn_gam_vt(QGBUFFER)
 {
-	qn_gam_vt(QNGAM)	base;
+	qn_gam_vt(QNGAMBASE)	base;
 	void*(*map)(void*);
 	bool (*unmap)(void*);
 	bool (*data)(void*, int, const void*);
@@ -1190,7 +1190,7 @@ struct QGRENDERSTATE
 /// @brief 텍스쳐
 struct QGTEXTURE
 {
-	QnGam				base;
+	QnGamBase				base;
 
 	QgPropPixel			prop;
 	int					width;
@@ -1201,7 +1201,7 @@ struct QGTEXTURE
 
 qn_gam_vt(QGTEXTURE)
 {
-	qn_gam_vt(QNGAM)	base;
+	qn_gam_vt(QNGAMBASE)	base;
 	bool (*bind)(QgTexture*, int);
 };
 
@@ -1212,7 +1212,7 @@ qn_gam_vt(QGTEXTURE)
 // 이미지
 struct QGIMAGE
 {
-	QnGam				base;
+	QnGamBase				base;
 
 	QgPropPixel			prop;
 	int					width;

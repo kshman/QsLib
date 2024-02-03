@@ -133,7 +133,7 @@ typedef enum QNMODFLAG
 // 단위 모듈 내용
 struct QNMODULE
 {
-	QnGam				base;
+	QnGamBase				base;
 
 	char*				filename;
 	size_t				hash;
@@ -231,7 +231,7 @@ static void _qn_mod_free(QnModule* self, const bool dispose)
 }
 
 //
-static void qn_mod_dispose(QnGam* gam)
+static void qn_mod_dispose(QnGamBase* gam)
 {
 	QnModule* self = qn_cast_type(gam, QnModule);
 	qn_ret_if_ok(QN_TMASK(self->flags, QNMDF_SELF));
@@ -257,7 +257,7 @@ static void qn_mod_dispose(QnGam* gam)
 }
 
 //
-static qn_gam_vt(QNGAM) qn_mod_vt =
+static qn_gam_vt(QNGAMBASE) qn_mod_vt =
 {
 	"MODULE",
 	qn_mod_dispose,
@@ -290,7 +290,7 @@ QnModule* qn_mod_self(void)
 	module_impl.self = self;
 	QN_UNLOCK(module_impl.lock);
 
-	return qn_gam_init(self, QnModule, &qn_mod_vt);
+	return qn_gam_init(self, qn_mod_vt);
 }
 
 //
@@ -340,7 +340,7 @@ QnModule* qn_load_mod(const char* filename, const int flags)
 	self->next = module_impl.modules;
 	module_impl.modules = self;
 	QN_UNLOCK(module_impl.lock);
-	return qn_gam_init(self, QnModule, &qn_mod_vt);
+	return qn_gam_init(self, qn_mod_vt);
 }
 
 //

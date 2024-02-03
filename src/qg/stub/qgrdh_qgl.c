@@ -269,7 +269,7 @@ INLINE QmMat4 QM_VECTORCALL qgl_mat4_irrcht_texture(float radius, float cx, floa
 #undef VAR_CHK_NAME
 #define VAR_CHK_NAME	"QGLRDH"
 
-static void qgl_rdh_dispose(QnGam* g);
+static void qgl_rdh_dispose(QnGamBase* g);
 static void qgl_rdh_layout(void);
 static void qgl_rdh_reset(void);
 static void qgl_rdh_flush(void);
@@ -445,11 +445,11 @@ RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 	qn_mesgf(false, VAR_CHK_NAME, "%s / %s", gl_version, gl_shader_version);
 
 	//
-	return qn_gam_init(self, RdhBase, &vt_qgl_rdh);
+	return qn_gam_init(self, vt_qgl_rdh);
 }
 
 //
-static void qgl_rdh_dispose(QnGam* g)
+static void qgl_rdh_dispose(QnGamBase* g)
 {
 	QglRdh* self = qn_cast_type(g, QglRdh);
 	qn_ret_if_ok(self->disposed);
@@ -1262,7 +1262,7 @@ static void qgl_rdh_draw_sprite_ex(_In_ const QmRect* bound, _In_ float angle, _
 #define VAR_CHK_NAME "QGLBUFFER"
 
 //
-static void qgl_buffer_dispose(QnGam* g)
+static void qgl_buffer_dispose(QnGamBase* g)
 {
 	QglBuffer* self = qn_cast_type(g, QglBuffer);
 	if (self->base.mapped)
@@ -1396,7 +1396,7 @@ static QgBuffer* qgl_create_buffer(_In_ QgBufferType type, _In_ uint count, _In_
 		.unmap = qgl_buffer_unmap,
 		.data = qgl_buffer_data,
 	};
-	return qn_gam_init(self, QgBuffer, &vt_qgl_buffer);
+	return qn_gam_init(self, vt_qgl_buffer);
 }
 
 
@@ -1431,7 +1431,7 @@ static void qgl_render_delete_shader(const QglRenderState* self, bool check_rdh)
 }
 
 //
-static void qgl_render_dispose(QnGam* g)
+static void qgl_render_dispose(QnGamBase* g)
 {
 	QglRenderState* self = qn_cast_type(g, QglRenderState);
 
@@ -1782,12 +1782,12 @@ QgRenderState* qgl_create_render(_In_ const char* name, _In_ const QgPropRender*
 	self->stencil = prop->stencil;
 
 	//
-	static qn_gam_vt(QNGAM) vt_es_render =
+	static qn_gam_vt(QNGAMBASE) vt_es_render =
 	{
 		.name = VAR_CHK_NAME,
 		.dispose = qgl_render_dispose,
 	};
-	qn_gam_init(self, QgRenderState, &vt_es_render);
+	qn_gam_init(self, vt_es_render);
 	if (name)
 		rdh_internal_add_node(RDHNODE_RENDER, self);
 	return qn_cast_type(self, QgRenderState);
@@ -1809,7 +1809,7 @@ pos_error:
 #define VAR_CHK_NAME "QGLTEXTURE"
 
 // 텍스쳐 제거
-static void qgl_texture_dispose(QnGam* g)
+static void qgl_texture_dispose(QnGamBase* g)
 {
 	QglTexture* self = qn_cast_type(g, QglTexture);
 	const GLuint gl_handle = qn_get_gam_desc(self, GLuint);
@@ -1978,7 +1978,7 @@ static QgTexture* qgl_create_texture(_In_ const char* name, _In_ const QgImage* 
 		.base.name = VAR_CHK_NAME,
 		.base.dispose = qgl_texture_dispose,
 	};
-	return qn_gam_init(self, QgTexture, &vt_qgl_texture);
+	return qn_gam_init(self, vt_qgl_texture);
 }
 
 #endif // USE_GL
