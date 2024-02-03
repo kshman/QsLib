@@ -139,7 +139,7 @@ static bool glad_load_egl(void)
 	static bool init = false;
 	if (init)
 		return true;
-	static const char* egllibs[] =
+	static const char* egl_libs[] =
 	{
 #if defined _QN_WINDOWS_
 		"libEGL",
@@ -150,9 +150,9 @@ static bool glad_load_egl(void)
 #endif
 		NULL,
 	};
-	for (size_t i = 0; egllibs[i]; i++)
+	for (size_t i = 0; egl_libs[i]; i++)
 	{
-		egl_module = qn_load_mod(egllibs[i], 1);
+		egl_module = qn_load_mod(egl_libs[i], 1);
 		if (egl_module != NULL)
 			break;
 	}
@@ -195,7 +195,7 @@ static bool glad_load_egl_gl(void)
 }
 
 //
-static bool glad_load_egl_gles2(void)
+static bool glad_load_egl_gl_es2(void)
 {
 	static int version = 0;
 	if (version != 0)
@@ -216,7 +216,6 @@ static const char* egl_error_string(EGLint error)
 	return qg_unknown_str(error, true);
 #else
 #define ERROR_CASE(x)		case x: return #x
-	static char unknown[32];
 	switch (error)
 	{
 		ERROR_CASE(EGL_SUCCESS);
@@ -242,7 +241,7 @@ static const char* egl_error_string(EGLint error)
 }
 
 // eglGetConfigAttrib 편하게 쓰자고 대리자
-static EGLint egl_get_config_attrib(EGLDisplay display, EGLConfig config, EGLenum name)
+static EGLint egl_get_config_attrib(_In_ EGLDisplay display, _In_ EGLConfig config, _In_ EGLint name)
 {
 	EGLint v;
 	eglGetConfigAttrib(display, config, name, &v);
@@ -271,7 +270,7 @@ static void egl_get_config(_Out_ QglConfig* config, _In_ EGLDisplay display, _In
 }
 
 // EGL 설정 얻기
-static bool egl_choose_config(EGLDisplay display, const QglConfig* wanted_config, QglConfig* found_config)
+static bool egl_choose_config(_In_ EGLDisplay display, _In_ const QglConfig* wanted_config, _Out_ QglConfig* found_config)
 {
 #define ATTR_ADD(e,v)	QN_STMT_BEGIN{ attrs[i++] = e; attrs[i++] = v; }QN_STMT_END
 	EGLint attrs[32], i = 0;
@@ -290,17 +289,13 @@ static bool egl_choose_config(EGLDisplay display, const QglConfig* wanted_config
 	if (wanted_config->samples > 0)
 		ATTR_ADD(EGL_SAMPLES, wanted_config->samples);
 	ATTR_ADD(EGL_NONE, EGL_NONE);
-	qn_verify(i < QN_COUNTOF(attrs));
+	qn_verify((size_t)i < QN_COUNTOF(attrs));
 #undef ATTR_ADD
 
 	EGLint config_count = 0;
 	EGLConfig configs[64];
 	if (eglChooseConfig(display, attrs, configs, 64, &config_count) == EGL_FALSE || config_count == 0)
-	{
-		qn_debug_outputf(true, VAR_CHK_NAME, "failed to choose config: %s", egl_error_string(eglGetError()));
-		qn_free(configs);
-		return false;
-	}
+		VAR_CHK_RET(egl_error_string(eglGetError()), false);
 
 	bool ret;
 	if (config_count == 1)
@@ -362,19 +357,16 @@ EGLDisplay egl_initialize(_In_ const QglConfig* wanted_config)
 	QN_DUMMY(wanted_config);
 #endif
 
-	EGLDisplay display = eglGetDisplay((EGLNativeDisplayType)stub_system_get_display());
+	const EGLDisplay display = eglGetDisplay((EGLNativeDisplayType)stub_system_get_display());
 	if (display == EGL_NO_DISPLAY)
-	{
-		qn_debug_outputs(true, VAR_CHK_NAME, "failed to get display");
-		return EGL_NO_DISPLAY;
-	}
+		VAR_CHK_RET("failed to get display", EGL_NO_DISPLAY);
 
 	EGLint major, minor;
 	if (eglInitialize(display, &major, &minor) == false)
 	{
-		qn_debug_outputf(true, VAR_CHK_NAME, "failed to initialize: %s", egl_error_string(eglGetError()));
+		const char* error = egl_error_string(eglGetError());
 		eglTerminate(display);
-		return EGL_NO_DISPLAY;
+		VAR_CHK_RET(error, EGL_NO_DISPLAY);
 	}
 
 #ifndef QGL_EGL_NO_EXT
@@ -440,10 +432,7 @@ EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wan
 
 	// 바인드 먼저
 	if (eglBindAPI(profile) == false)
-	{
-		qn_debug_outputf(true, VAR_CHK_NAME, "failed to initialize: %s", egl_error_string(eglGetError()));
-		goto pos_error_exit;
-	}
+		VAR_CHK_GOTO(egl_error_string(eglGetError()), pos_error_exit);
 
 	// 컨텍스트 만들고
 	EGLContext context = eglCreateContext(display, config->handle, NULL, attrs);
@@ -453,12 +442,12 @@ EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wan
 		attrs[1] = 2;
 		context = eglCreateContext(display, config->handle, NULL, attrs);
 #else
-		int index = qgl_index_of_opengl_version(config->core, config->version);
+		const int index = qgl_index_of_opengl_version(config->core, config->version);
 		if (index >= 0)
 		{
 			for (int i = index + 1; ; i++)
 			{
-				int version = qgl_get_opengl_version(config->core, i);
+				const int version = qgl_get_opengl_version(config->core, i);
 				if (version < 0)
 					break;
 				attrs[1] = version / 100;
@@ -471,10 +460,7 @@ EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wan
 		}
 #endif
 		if (context == EGL_NO_CONTEXT)
-		{
-			qn_debug_outputf(true, VAR_CHK_NAME, "failed to create context: %s", egl_error_string(eglGetError()));
-			goto pos_error_exit;
-		}
+			VAR_CHK_GOTO(egl_error_string(eglGetError()), pos_error_exit);
 	}
 
 	return context;
@@ -512,13 +498,13 @@ EGLSurface egl_create_surface(_In_ EGLDisplay display, _In_ EGLContext context, 
 	eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format);
 	ANativeWindow_setBuffersGeometry(native_window, 0, 0, format);
 #endif
-	EGLSurface surface = eglCreateWindowSurface(display, config->handle, native_window, attrs);
+	const EGLSurface surface = eglCreateWindowSurface(display, config->handle, native_window, attrs);
 	if (surface == EGL_NO_SURFACE)
 	{
-		qn_debug_outputf(true, VAR_CHK_NAME, "failed to create surface: %s", egl_error_string(eglGetError()));
+		const char* error = egl_error_string(eglGetError());
 		eglDestroyContext(display, context);
 		eglTerminate(display);
-		return EGL_NO_SURFACE;
+		VAR_CHK_RET(error, EGL_NO_SURFACE);
 	}
 #ifdef _QN_ANDROID_
 	int android_format = ANativeWindow_getFormat(native_window);
@@ -536,17 +522,11 @@ bool egl_make_current(_In_ EGLDisplay display, _In_ EGLSurface surface, _In_ EGL
 	qn_verify(context != EGL_NO_CONTEXT);
 
 	if (eglMakeCurrent(display, surface, surface, context) == false)
-	{
-		qn_debug_outputf(true, VAR_CHK_NAME, "failed to make current: %s", egl_error_string(eglGetError()));
-		return false;
-	}
+		VAR_CHK_RET(egl_error_string(eglGetError()), false);
 
 #ifndef QGL_LINK_STATIC
-	if ((config->core ? glad_load_egl_gl() : glad_load_egl_gles2()) == false)
-	{
-		qn_debug_outputs(true, VAR_CHK_NAME, "failed to load proc");
-		return false;
-	}
+	if ((config->core ? glad_load_egl_gl() : glad_load_egl_gl_es2()) == false)
+		VAR_CHK_RET("failed to load proc", false);
 #endif // QGL_LINK_STATIC
 
 	return true;
@@ -638,7 +618,7 @@ static int glad_find_extensions_wgl(HDC hdc)
 //
 static HWND wgl_create_dummy_window(void)
 {
-	HWND hwnd = CreateWindow(stub_system_get_class_name(), L"qgl_wgl", WS_POPUP | WS_DISABLED,
+	const HWND hwnd = CreateWindow(stub_system_get_class_name(), L"qgl_wgl", WS_POPUP | WS_DISABLED,
 		0, 0, 1, 1, NULL, NULL, (HINSTANCE)stub_system_get_instance(), NULL);
 	stub_system_poll();
 	return hwnd;
@@ -676,8 +656,8 @@ static bool glad_load_wgl(void)
 
 	bool ret = false;
 
-	HWND hwnd = wgl_create_dummy_window();
-	HDC hdc = GetDC(hwnd);
+	const HWND hwnd = wgl_create_dummy_window();
+	const HDC hdc = GetDC(hwnd);
 
 	PIXELFORMATDESCRIPTOR pfd = { sizeof(PIXELFORMATDESCRIPTOR), };
 	pfd.nVersion = 1;
@@ -687,12 +667,12 @@ static bool glad_load_wgl(void)
 	if (!SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd))
 		goto pos_error;
 
-	HGLRC hglrc = wglCreateContext(hdc);
+	const HGLRC hglrc = wglCreateContext(hdc);
 	if (hglrc == NULL)
 		goto pos_error;
 
-	HDC wdc = wglGetCurrentDC();
-	HGLRC wglrc = wglGetCurrentContext();
+	const HDC wdc = wglGetCurrentDC();
+	const HGLRC wglrc = wglGetCurrentContext();
 	if (wglMakeCurrent(hdc, hglrc) == FALSE)
 	{
 		wglMakeCurrent(wdc, wglrc);
@@ -755,9 +735,9 @@ static int wgl_find_format_attr(int count, const int* attrs, const int* values, 
 }
 
 // 사양 확인
-_Success_(return) static bool wgl_get_config(_Out_ QglConfig* config,
+_Success_(return) static bool wgl_get_config(_Out_ QglConfig * config,
 	_In_ int attr_count, _In_ const int* attrs, _In_ const int* values,
-	_In_ int pixel_format, _In_ const QglConfig* wanted_config)
+	_In_ int pixel_format, _In_ const QglConfig * wanted_config)
 {
 #define ATTR_FIND(e)		wgl_find_format_attr(attr_count, attrs, values, e)
 	if (ATTR_FIND(WGL_SUPPORT_OPENGL_ARB) == false ||
@@ -797,7 +777,7 @@ _Success_(return) static bool wgl_get_config(_Out_ QglConfig* config,
 }
 
 // ARB 픽셀 포맷을 고른다
-_Success_(return) static bool wgl_choose_arb_pixel_format(_In_ HDC hdc, _In_ const QglConfig * wanted_config, _Out_ QglConfig* found_config)
+_Success_(return) static bool wgl_choose_arb_pixel_format(_In_ HDC hdc, _In_ const QglConfig * wanted_config, _Out_ QglConfig * found_config)
 {
 #define ATTR_ADD(e,v)	QN_STMT_BEGIN{ attrs[attr_count++]=e; attrs[attr_count++]=v; }QN_STMT_END
 	int attrs[40], attr_count = 0;
@@ -883,8 +863,6 @@ _Success_(return) static bool wgl_choose_arb_pixel_format(_In_ HDC hdc, _In_ con
 			QglConfig* c = &qn_ctnr_nth(&qgl_configs, i);
 			if (wglGetPixelFormatAttribivARB(hdc, pixel_formats[i], 0, attr_count, attrs, values) == FALSE)
 			{
-				const DWORD dw = GetLastError();
-				qn_debug_outputf(false, VAR_CHK_NAME, "failed to get pixel format attrib: %X / %x", dw, dw - 0xc0070000);
 				c->handle = NULL;
 				continue;
 			}
@@ -905,7 +883,7 @@ _Success_(return) static bool wgl_choose_arb_pixel_format(_In_ HDC hdc, _In_ con
 }
 
 //
-_Success_(return) static bool wgl_choose_desc_pixel_format(_In_ HDC hdc, _In_ const QglConfig * wanted_config, _Out_ QglConfig* found_config)
+_Success_(return) static bool wgl_choose_desc_pixel_format(_In_ HDC hdc, _In_ const QglConfig * wanted_config, _Out_ QglConfig * found_config)
 {
 	// https://learn.microsoft.com/ko-kr/windows/win32/api/wingdi/ns-wingdi-pixelformatdescriptor
 	PIXELFORMATDESCRIPTOR target = { sizeof(PIXELFORMATDESCRIPTOR), 1, };
@@ -921,9 +899,9 @@ _Success_(return) static bool wgl_choose_desc_pixel_format(_In_ HDC hdc, _In_ co
 	target.cDepthBits = wanted_config->depth;
 	target.cStencilBits = wanted_config->stencil;
 
-	int desc_count = DescribePixelFormat(hdc, 1, sizeof(PIXELFORMATDESCRIPTOR), NULL);
+	const int desc_count = DescribePixelFormat(hdc, 1, sizeof(PIXELFORMATDESCRIPTOR), NULL);
 	int best_format = -1;
-	uint dist, best_dist = UINT_MAX;
+	uint best_dist = UINT_MAX;
 	for (int i = 1; i < desc_count; i++)
 	{
 		PIXELFORMATDESCRIPTOR pfd;
@@ -949,7 +927,7 @@ _Success_(return) static bool wgl_choose_desc_pixel_format(_In_ HDC hdc, _In_ co
 			continue;
 		if (pfd.cStencilBits < target.cStencilBits)
 			continue;
-		dist = 0;
+		uint dist = 0;
 		dist += pfd.cColorBits - target.cColorBits;
 		dist += pfd.cRedBits - target.cRedBits;
 		dist += pfd.cGreenBits - target.cGreenBits;
@@ -988,13 +966,13 @@ _Success_(return) static bool wgl_choose_desc_pixel_format(_In_ HDC hdc, _In_ co
 }
 
 //
-static bool wgl_choose_pixel_format(_In_ const QglConfig* wanted_config, _Out_ QglConfig* found_config)
+static bool wgl_choose_pixel_format(_In_ const QglConfig * wanted_config, _Out_ QglConfig * found_config)
 {
 	qn_verify(wanted_config != NULL);
 	qn_verify(found_config != NULL);
 
-	HWND hwnd = wgl_create_dummy_window();
-	HDC hdc = GetDC(hwnd);
+	const HWND hwnd = wgl_create_dummy_window();
+	const HDC hdc = GetDC(hwnd);
 
 	bool isok = false;
 	if (GLAD_WGL_ARB_pixel_format)
@@ -1010,7 +988,7 @@ static bool wgl_choose_pixel_format(_In_ const QglConfig* wanted_config, _Out_ Q
 //
 static HGLRC wgl_create_context_arb(_In_ HDC hdc, _In_ int* attrs, _In_ int version, _In_ bool core)
 {
-	int index = qgl_index_of_opengl_version(core, version);
+	const int index = qgl_index_of_opengl_version(core, version);
 	if (index < 0)
 		return NULL;
 
@@ -1022,31 +1000,28 @@ static HGLRC wgl_create_context_arb(_In_ HDC hdc, _In_ int* attrs, _In_ int vers
 
 		attrs[1] = version / 100;
 		attrs[3] = version % 100;
-		HGLRC context = wglCreateContextAttribsARB(hdc, NULL, attrs);
+		const HGLRC context = wglCreateContextAttribsARB(hdc, NULL, attrs);
 		if (context != NULL)
 			return context;
 
 		const DWORD dw = GetLastError();
 		if (dw == ERROR_INVALID_VERSION_ARB)
 		{
-			qn_debug_outputf(false, VAR_CHK_NAME, "driver not support version %d.%d", attrs[1], attrs[3]);
+			qn_mesgf(false, VAR_CHK_NAME, "driver not support version %d.%d", attrs[1], attrs[3]);
 			continue;
 		}
 		if (dw == ERROR_INVALID_PROFILE_ARB)
-			qn_debug_outputs(true, VAR_CHK_NAME, "driver not support profile");
+			qn_mesg(true, VAR_CHK_NAME, "driver not support profile");
 		else if (dw == ERROR_INCOMPATIBLE_DEVICE_CONTEXTS_ARB)
-			qn_debug_outputs(true, VAR_CHK_NAME, "driver not support context");
+			qn_mesg(true, VAR_CHK_NAME, "driver not support context");
 		else if (dw == ERROR_INVALID_PARAMETER)
-			qn_debug_outputs(true, VAR_CHK_NAME, "invalid parameter");
+			qn_mesg(true, VAR_CHK_NAME, "invalid parameter");
 		else if (dw == ERROR_INVALID_PIXEL_FORMAT)
-			qn_debug_outputs(true, VAR_CHK_NAME, "invalid pixel format");
+			qn_mesg(true, VAR_CHK_NAME, "invalid pixel format");
 		else if (dw == ERROR_NO_SYSTEM_RESOURCES)
-			qn_debug_outputs(true, VAR_CHK_NAME, "no system resources");
+			qn_mesg(true, VAR_CHK_NAME, "no system resources");
 		else
-		{
-			const char* errmsg = qn_set_syserror((int)dw) ? qn_get_error() : qg_unknown_str((int)dw, true);
-			qn_debug_outputf(true, VAR_CHK_NAME, "failed to create context: %s", errmsg);
-		}
+			qn_syserr((int)dw, true);
 		break;
 	}
 	return NULL;
@@ -1061,24 +1036,23 @@ bool gl_initialize(void)
 }
 
 //
-void* gl_create_context(_In_ const QglConfig* wanted_config, _Out_ QglConfig* config)
+void* gl_create_context(_In_ const QglConfig * wanted_config, _Out_ QglConfig * config)
 {
 	qn_verify(wanted_config != NULL);
 	qn_verify(config != NULL);
 
 	if (wanted_config->core == false && GLAD_WGL_EXT_create_context_es2_profile == 0)
 	{
-		qn_debug_outputs(true, VAR_CHK_NAME, "driver not support opengl es");
 		config->version = 0;
-		return NULL;
+		VAR_CHK_RET("driver not support opengl es", NULL);
 	}
 
 	if (wgl_choose_pixel_format(wanted_config, config) == false)
 		return NULL;
 
-	HDC hdc = (HDC)stub_system_get_display();
+	const HDC hdc = (HDC)stub_system_get_display();
 	PIXELFORMATDESCRIPTOR pfd;
-	if (DescribePixelFormat(hdc, (UINT)(nuint)config->handle, sizeof(PIXELFORMATDESCRIPTOR), &pfd) == 0)
+	if (DescribePixelFormat(hdc, (int)(nuint)config->handle, sizeof(PIXELFORMATDESCRIPTOR), &pfd) == 0)
 		goto pos_error;
 	if (SetPixelFormat(hdc, (int)(nuint)config->handle, &pfd) == FALSE)
 		goto pos_error;
@@ -1120,30 +1094,24 @@ void* gl_create_context(_In_ const QglConfig* wanted_config, _Out_ QglConfig* co
 	return context;
 
 pos_error:
-	const DWORD dw = GetLastError();
-	const char* errstr = qn_set_syserror(dw) ? qn_get_error() : qg_unknown_str(dw, true);
-	qn_debug_outputf(true, VAR_CHK_NAME, "failed to create context: %s", errstr);
+	qn_syserr(0, true);
 	return NULL;
 }
 
 //
-bool gl_make_current(_In_ void* context, _In_ const QglConfig* config)
+bool gl_make_current(_In_ void* context, _In_ const QglConfig * config)
 {
 	qn_verify(context != NULL);
 
-	HDC hdc = (HDC)stub_system_get_display();
+	const HDC hdc = (HDC)stub_system_get_display();
 	if (wglMakeCurrent(hdc, (HGLRC)context) == FALSE)
 	{
-		const char* errstr = qn_set_syserror(0) ? qn_get_error() : qg_unknown_str(0, true);
-		qn_debug_outputf(true, VAR_CHK_NAME, "failed to make current: %s", errstr);
+		qn_syserr(0, true);
 		goto pos_error_exit;
 	}
 
 	if ((config->core ? glad_load_wgl_gl() : glad_load_wgl_gles2()) == false)
-	{
-		qn_debug_outputs(true, VAR_CHK_NAME, "failed to load proc");
-		goto pos_error_exit;
-	}
+		VAR_CHK_GOTO("failed to load proc", pos_error_exit);
 
 	return true;
 
@@ -1156,7 +1124,7 @@ pos_error_exit:
 //
 bool gl_swap_buffers(void)
 {
-	HDC hdc = (HDC)stub_system_get_display();
+	const HDC hdc = (HDC)stub_system_get_display();
 	SwapBuffers(hdc);
 	return true;
 }
@@ -1174,7 +1142,7 @@ void gl_dispose(_In_ void* context)
 {
 	qn_ret_if_fail(context != NULL);
 
-	HDC hdc = (HDC)stub_system_get_display();
+	const HDC hdc = (HDC)stub_system_get_display();
 	wglMakeCurrent(hdc, NULL);
 	wglDeleteContext((HGLRC)context);
 }

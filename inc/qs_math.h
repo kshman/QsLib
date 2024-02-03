@@ -817,6 +817,7 @@ INLINE QmMat4 QM_VECTORCALL qm_mat4_ortho_offcenter_lh(float left, float top, fl
 INLINE QmMat4 QM_VECTORCALL qm_mat4_ortho_offcenter_rh(float left, float top, float right, float bottom, float zn, float zf);
 INLINE QmMat4 QM_VECTORCALL qm_mat4_viewport(float x, float y, float width, float height);
 INLINE bool QM_VECTORCALL qm_mat4_isu(QmMat4 m);
+INLINE void QM_VECTORCALL qm_vec4_rect_rotate(_In_ QmVec4 rt, _In_ float angle, _Out_ QmVec2* tl, _Out_ QmVec2* tr, _Out_ QmVec2* bl, _Out_ QmVec2* br);
 
 INLINE QmPoint qm_point(int x, int y);
 INLINE QmPoint qm_pointv(const QmVec2 v);
@@ -882,6 +883,7 @@ INLINE bool qm_rect_include(const QmRect dest, const QmRect target);
 INLINE bool qm_rect_intersect(const QmRect r1, const QmRect r2, QmRect* p);
 INLINE bool qm_rect_eq(const QmRect left, const QmRect right);
 INLINE bool qm_rect_isz(const QmRect pv);
+INLINE void qm_rect_rotate(_In_ QmRect rt, _In_ float angle, _Out_ QmVec2* tl, _Out_ QmVec2* tr, _Out_ QmVec2* bl, _Out_ QmVec2* br);
 #ifdef _WINDEF_
 INLINE QmRect qm_rect_RECT(RECT rt);
 INLINE RECT qm_rect_to_RECT(const QmRect rt);
@@ -4248,6 +4250,30 @@ INLINE bool QM_VECTORCALL qm_mat4_isu(QmMat4 m)
 	u1 |= u0;
 	return (u1 == 0);
 #endif
+}
+
+/// @brief 사각형을 회전한다
+/// @param rt 원본 사각형
+/// @param angle 회전 각도(호도)
+/// @param tl 왼쪽 위
+/// @param tr 오른쪽 위
+/// @param bl 왼쪽 아래
+/// @param br 오른쪽 아래
+INLINE void QM_VECTORCALL qm_vec4_rect_rotate(_In_ QmVec4 rt, _In_ float angle, _Out_ QmVec2* tl, _Out_ QmVec2* tr, _Out_ QmVec2* bl, _Out_ QmVec2* br)
+{
+	qn_verify(tl != NULL && tr != NULL && bl != NULL && br != NULL);
+	float s, c;
+	qm_sincosf(angle, &s, &c);
+	QmVec2 dt = qm_vec2((rt.Z - rt.X) * 0.5f, (rt.W - rt.Y) * 0.5f);
+	QmVec2 ot = qm_vec2(rt.X + dt.X, rt.Y + dt.Y);
+	QmVec2 vo[4], vi[4] = { {{-dt.X, -dt.Y}}, {{dt.X, -dt.Y}}, {{-dt.X, dt.Y}}, {{dt.X, dt.Y}} };
+	for (int i = 0; i < 4; i++)
+	{
+		vo[i].X = vi[i].X * c - vi[i].Y * s;
+		vo[i].Y = vi[i].X * s + vi[i].Y * c;
+		vo[i] = qm_vec2_add(vo[i], ot);
+	}
+	*tl = vo[0]; *tr = vo[1]; *bl = vo[2]; *br = vo[3];
 }
 
 

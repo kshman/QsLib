@@ -1231,7 +1231,7 @@ QSAPI QgImage* qg_new_image_check_pattern(int width, int height, const QmColor* 
 QSAPI QgImage* qg_create_image(const void* data, int size);
 QSAPI QgImage* qg_load_image(int fuse, const char* filename);
 
-QSAPI bool qg_image_set_pixel(QgImage* self, int x, int y, const QmColor* color);
+QSAPI bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* color);
 
 
 //////////////////////////////////////////////////////////////////////////

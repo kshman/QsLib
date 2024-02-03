@@ -25,6 +25,12 @@ int main(void)
 		{
 			if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_ESC)
 				qg_exit_loop();
+			else if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_F1)
+			{
+				static bool fullscreen = false;
+				fullscreen = !fullscreen;
+				qg_toggle_fullscreen(fullscreen);
+			}
 		}
 
 		f += qg_get_advance() * 0.5f;

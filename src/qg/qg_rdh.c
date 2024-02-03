@@ -76,7 +76,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	RDH = rdh;
 
 	// 한번 설정하면 바뀔일이 없거나 신경 안써도 되는것
-	RenderTransform* tm = &rdh->tm;
+	RendererTransform* tm = &rdh->tm;
 	tm->world = qm_mat4_unit();
 	tm->view = qm_mat4_unit();
 	tm->invv = qm_mat4_unit();
@@ -86,7 +86,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	tm->Near = 1.0f;										// Z깊이
 	tm->Far = 100000.0f;
 
-	RenderParam* param = &rdh->param;
+	RendererParam* param = &rdh->param;
 	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)		// 벡터 인수
 		param->v[i] = qm_vec_zero();
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)		// 행렬 인수
@@ -138,7 +138,7 @@ void rdh_internal_layout(void)
 	const float aspect = qm_size_get_aspect(client_size);
 
 	// tm
-	RenderTransform* tm = RDH_TRANSFORM;
+	RendererTransform* tm = RDH_TRANSFORM;
 	tm->size = client_size;
 	tm->proj = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->Near, tm->Far);
 	tm->view_proj = qm_mat4_mul(tm->view, tm->proj);
@@ -149,7 +149,7 @@ void rdh_internal_layout(void)
 void rdh_internal_reset(void)
 {
 	// param
-	RenderParam* param = RDH_PARAM;
+	RendererParam* param = RDH_PARAM;
 	param->bone_ptr = NULL;									// 뼈대 포인터는 메모리 안전을 위해 초기화
 	param->bone_count = 0;									// 뼈대 가중치 개수도 초기화
 }
@@ -158,7 +158,7 @@ void rdh_internal_reset(void)
 void rdh_internal_invoke_reset(void)
 {
 	RdhBase* rdh = RDH;
-	RenderInvoke* ivk = &rdh->invokes;
+	RendererInvoke* ivk = &rdh->invokes;
 	ivk->invokes = 0;
 	ivk->begins = 0;
 	ivk->ends = 0;
@@ -202,7 +202,7 @@ void rdh_internal_unlink_node(RenderNodeShed shed, void* node)
 //
 void qg_set_shader_var_callback(QgVarShaderFunc func, void* data)
 {
-	RenderParam* param = RDH_PARAM;
+	RendererParam* param = RDH_PARAM;
 	param->callback_func = func;
 	param->callback_data = data;
 }
@@ -235,7 +235,7 @@ void qg_flush(void)
 	RdhBase* rdh = RDH;
 	if (!rdh->invokes.flush)
 	{
-		qn_debug_outputs(true, "RDH", "call end() before flush");
+		qn_mesg(true, "RDH", "call end() before flush");
 		qg_end_render(false);
 	}
 	qn_cast_vt(rdh, RDHBASE)->flush();

@@ -25,17 +25,17 @@
 
 INLINE void QM_VECTORCALL pixel_color_to_r5g6b5(ushort* v, const QmVec4 color)
 {
-	v[0] = ((ushort)(color.X * 31) << 11) | ((ushort)(color.Y * 63) << 5) | ((ushort)(color.Z * 31));
+	v[0] = (ushort)(((ushort)(color.X * 31) << 11) | ((ushort)(color.Y * 63) << 5) | ((ushort)(color.Z * 31)));
 }
 
 INLINE void QM_VECTORCALL pixel_color_to_r5b5g5a1(ushort* v, const QmVec4 color)
 {
-	v[0] = ((ushort)(color.X * 31) << 10) | ((ushort)(color.Y * 31) << 5) | ((ushort)(color.Z * 31)) | ((ushort)(color.W * 1) << 15);
+	v[0] = (ushort)(((ushort)(color.X * 31) << 10) | ((ushort)(color.Y * 31) << 5) | ((ushort)(color.Z * 31)) | ((ushort)(color.W * 1) << 15));
 }
 
 INLINE void QM_VECTORCALL pixel_color_to_r4b4g4a4(ushort* v, const QmVec4 color)
 {
-	v[0] = ((ushort)(color.X * 15) << 8) | ((ushort)(color.Y * 15) << 4) | ((ushort)(color.Z * 15)) | ((ushort)(color.W * 15) << 12);
+	v[0] = (ushort)(((ushort)(color.X * 15) << 8) | ((ushort)(color.Y * 15) << 4) | ((ushort)(color.Z * 15)) | ((ushort)(color.W * 15) << 12));
 }
 
 INLINE void QM_VECTORCALL pixel_color_to_r8g8b8(byte* v, const QmVec4 color)
@@ -137,7 +137,7 @@ static QgPropPixel* qg_get_prop_pixel(QgClrFmt format)
 static bool image_loader_dds(const byte* data, uint size, QgImage* image)
 {
 	// DDS 헤더
-	struct DDS_HEADER
+	const struct DDS_HEADER
 	{
 		uint magic;
 		uint dwSize;
@@ -167,7 +167,7 @@ static bool image_loader_dds(const byte* data, uint size, QgImage* image)
 	// 헤더 읽기
 	if (size < sizeof(struct DDS_HEADER))
 		return false;
-	header = (struct DDS_HEADER*)data;
+	header = (const struct DDS_HEADER*)data;
 	qn_val_if_fail(header->magic == 0x20534444, false);
 
 	// 픽셀 포맷
@@ -181,9 +181,9 @@ static bool image_loader_dds(const byte* data, uint size, QgImage* image)
 	data += sizeof(struct DDS_HEADER);
 	size -= sizeof(struct DDS_HEADER);
 	// 크기
-	int w = header->dwWidth;
-	int h = header->dwHeight;
-	int m = header->dwMipMapCount;
+	const int w = (int)header->dwWidth;
+	const int h = (int)header->dwHeight;
+	const int m = (int)header->dwMipMapCount;
 	image->width = w;
 	image->height = h;
 	image->pitch = 0;
@@ -201,7 +201,7 @@ static bool image_loader_dds(const byte* data, uint size, QgImage* image)
 static bool image_loader_etc_pkm(const byte* data, uint size, QgImage* image)
 {
 	// PKM 헤더
-	struct PKM_HEADER
+	const struct PKM_HEADER
 	{
 		uint magic;
 		ushort version;
@@ -215,12 +215,12 @@ static bool image_loader_etc_pkm(const byte* data, uint size, QgImage* image)
 	// 헤더 읽기
 	if (size < sizeof(struct PKM_HEADER))
 		return false;
-	header = (struct PKM_HEADER*)data;
+	header = (const struct PKM_HEADER*)data;
 	if (header->magic != 0x204D4B50)
 		return false;
 
 	// 픽셀 포맷
-	ushort type = ((header->type & 0xFF) << 8) | ((header->type & 0xFF00) >> 8);
+	const ushort type = (ushort)(((header->type & 0xFF) << 8) | ((header->type & 0xFF00) >> 8));
 	const QgPropPixel* prop = qg_get_prop_pixel(
 		type == 0x00 ? QGCF_EXT1 :
 		type == 0x01 ? QGCF_EXT2 :
@@ -229,10 +229,9 @@ static bool image_loader_etc_pkm(const byte* data, uint size, QgImage* image)
 
 	// 진행
 	data += sizeof(struct PKM_HEADER);
-	size -= sizeof(struct PKM_HEADER);
 	// 크기
-	int w = ((header->width & 0xFF) << 8) | ((header->width & 0xFF00) >> 8);
-	int h = ((header->height & 0xFF) << 8) | ((header->height & 0xFF00) >> 8);
+	const int w = ((header->width & 0xFF) << 8) | ((header->width & 0xFF00) >> 8);
+	const int h = ((header->height & 0xFF) << 8) | ((header->height & 0xFF00) >> 8);
 	image->width = w;
 	image->height = h;
 	image->pitch = 0;
@@ -240,7 +239,7 @@ static bool image_loader_etc_pkm(const byte* data, uint size, QgImage* image)
 	image->prop = *prop;
 
 	// 읽기
-	size_t size_total = w * h * prop->bpp / 8;
+	const size_t size_total = w * h * prop->bpp / 8;
 	image->data = qn_alloc(size_total, byte);
 	memcpy(image->data, data, size_total);
 
@@ -251,7 +250,7 @@ static bool image_loader_etc_pkm(const byte* data, uint size, QgImage* image)
 static bool image_loader_etc_ktx(const byte* data, uint size, QgImage* image)
 {
 	// KTX 헤더
-	struct KTX_HEADER
+	const struct KTX_HEADER
 	{
 		byte identifier[12];
 		uint endianness;
@@ -272,7 +271,7 @@ static bool image_loader_etc_ktx(const byte* data, uint size, QgImage* image)
 	// 헤더 읽기
 	if (size < sizeof(struct KTX_HEADER))
 		return false;
-	header = (struct KTX_HEADER*)data;
+	header = (const struct KTX_HEADER*)data;
 	if (header->endianness != 0x04030201)
 		return false;
 
@@ -285,11 +284,10 @@ static bool image_loader_etc_ktx(const byte* data, uint size, QgImage* image)
 
 	// 진행
 	data += sizeof(struct KTX_HEADER) + header->keypairbytes;
-	size -= sizeof(struct KTX_HEADER) + header->keypairbytes;
 	// 크기
-	int w = header->pixelwidth;
-	int h = header->pixelheight;
-	int m = header->miplevels;
+	const int w = (int)header->pixelwidth;
+	const int h = (int)header->pixelheight;
+	const int m = (int)header->miplevels;
 	image->width = w;
 	image->height = h;
 	image->pitch = 0;
@@ -297,7 +295,7 @@ static bool image_loader_etc_ktx(const byte* data, uint size, QgImage* image)
 	image->prop = *prop;
 
 	// 읽기
-	size_t size_total = *(int*)data;
+	const size_t size_total = *(const int*)data;
 	data += sizeof(int);
 	image->data = qn_alloc(size_total, byte);
 	memcpy(image->data, data, size_total);
@@ -309,7 +307,7 @@ static bool image_loader_etc_ktx(const byte* data, uint size, QgImage* image)
 static bool image_loader_astc(const byte* data, uint size, QgImage* image)
 {
 	// ASTC 헤더
-	struct ASTC_HEADER
+	const struct ASTC_HEADER
 	{
 		byte magic[4];
 		byte blockdim_x;
@@ -323,12 +321,12 @@ static bool image_loader_astc(const byte* data, uint size, QgImage* image)
 	// 헤더 읽기
 	if (size < sizeof(struct ASTC_HEADER))
 		return false;
-	header = (struct ASTC_HEADER*)data;
+	header = (const struct ASTC_HEADER*)data;
 	if (header->magic[0] != 0x13 || header->magic[1] != 0xAB || header->magic[2] != 0xA1 || header->magic[3] != 0x5C)
 		return false;
 
 	// 픽셀 포맷
-	int bpp = 128 / (header->blockdim_x * header->blockdim_y);
+	const int bpp = 128 / (header->blockdim_x * header->blockdim_y);
 	qn_val_if_fail(bpp == 8 || bpp == 2, false);
 	const QgPropPixel* prop = qg_get_prop_pixel(
 		header->blockdim_x == 8 ? QGCF_ASTC4 :
@@ -337,11 +335,9 @@ static bool image_loader_astc(const byte* data, uint size, QgImage* image)
 
 	// 진행
 	data += sizeof(struct ASTC_HEADER);
-	size -= sizeof(struct ASTC_HEADER);
 	// 크기
-	int w = header->xsize[0] | header->xsize[1] << 8 | header->xsize[2] << 16;
-	int h = header->ysize[0] | header->ysize[1] << 8 | header->ysize[2] << 16;
-	//int d = header->zsize[0] | header->zsize[1] << 8 | header->zsize[2] << 16;
+	const int w = header->xsize[0] | header->xsize[1] << 8 | header->xsize[2] << 16;
+	const int h = header->ysize[0] | header->ysize[1] << 8 | header->ysize[2] << 16;
 	image->width = w;
 	image->height = h;
 	image->pitch = 0;
@@ -349,7 +345,7 @@ static bool image_loader_astc(const byte* data, uint size, QgImage* image)
 	image->prop = *prop;
 
 	// 읽기
-	size_t size_total = w * h * bpp / 8;
+	const size_t size_total = w * h * bpp / 8;
 	image->data = qn_alloc(size_total, byte);
 	memcpy(image->data, data, size_total);
 
@@ -395,7 +391,7 @@ QgImage* qg_new_image(QgClrFmt fmt, int width, int height)
 	self->height = height;
 	self->pitch = width * prop->tbp;
 	self->mipmaps = 1;
-	size_t size = (uint)qg_calc_image_block_size(prop, width, height);
+	const size_t size = (uint)qg_calc_image_block_size(prop, width, height);
 	self->data = qn_alloc(size, byte);
 	return self;
 }
@@ -423,8 +419,8 @@ QgImage* qg_new_image_gradient_linear(int width, int height, const QmColor* begi
 	{
 		for (int x = 0; x < width; x++)
 		{
-			float f = qm_clampf((x * cs + y * sn) / (width * cs + height * cs), 0.0f, 1.0f);
-			QmVec c = qm_lerp(*begin, *end, f);
+			const float f = qm_clampf(((float)x * cs + (float)y * sn) / ((float)width * cs + (float)height * cs), 0.0f, 1.0f);
+			const QmVec c = qm_lerp(*begin, *end, f);
 			pixel_color_to_r8g8b8a8(&data[y * width + x], c);
 		}
 	}
@@ -436,16 +432,16 @@ QgImage* qg_new_image_gradient_radial(int width, int height, const QmColor* inne
 {
 	QgImage* self = qg_new_image(QGCF_R8G8B8A8, width, height);
 	uint* data = (uint*)self->data;
-	float r = (float)QN_MIN(width, height) * 0.5f;
-	float cx = width * 0.5f;
-	float cy = height * 0.5f;
+	const float r = (float)QN_MIN(width, height) * 0.5f;
+	const float cx = (float)width * 0.5f;
+	const float cy = (float)height * 0.5f;
 	for (int y = 0; y < height; y++)
 	{
 		for (int x = 0; x < width; x++)
 		{
-			float h = hypotf(x - cx, y - cy);
-			float m = qm_clampf((h - r * density) / (r * (1.0f - density)), 0.0f, 1.0f);
-			QmVec c = qm_lerp(*outer, *inner, m);
+			const float h = hypotf((float)x - cx, (float)y - cy);
+			const float m = qm_clampf((h - r * density) / (r * (1.0f - density)), 0.0f, 1.0f);
+			const QmVec c = qm_lerp(*outer, *inner, m);
 			pixel_color_to_r8g8b8a8(&data[y * width + x], c);
 		}
 	}
@@ -480,7 +476,7 @@ QgImage* qg_create_image(const void* data, int size)
 	if (self->data != NULL)
 	{
 		QgClrFmt fmt;
-		uint hdr = *(uint*)data; // 진짜 HDR 헤더임 "#?RGBE" 또는 "#?RADIANCE"
+		const uint hdr = *(const uint*)data; // 진짜 HDR 헤더임 "#?RGBE" 또는 "#?RADIANCE"
 		if (hdr == 0x41523F23 || hdr == 0x47523F23)
 		{
 			fmt =
@@ -531,10 +527,10 @@ QgImage* qg_load_image(int fuse, const char* filename)
 }
 
 //
-bool qg_image_set_pixel(QgImage* self, int x, int y, const QmColor* color)
+bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* color)
 {
 	qn_val_if_fail((size_t)x < (size_t)self->width && (size_t)y < (size_t)self->height, false);
-	byte* ptr = (byte*)self->data + (y * self->pitch) + (x * self->prop.tbp);
+	byte* ptr = self->data + (ptrdiff_t)((y * self->pitch) + (x * self->prop.tbp));
 	switch (self->prop.format)
 	{
 		case QGCF_R32G32B32A32F:
@@ -547,7 +543,7 @@ bool qg_image_set_pixel(QgImage* self, int x, int y, const QmColor* color)
 			((float*)ptr)[0] = color->X;
 			break;
 		case QGCF_R16G16B16A16F:
-			((QmHalf4*)ptr)[0] = (QmHalf4){ qm_f2hf(color->W), qm_f2hf(color->X), qm_f2hf(color->Y), qm_f2hf(color->Z) };
+			((QmHalf4*)ptr)[0] = (QmHalf4){ {qm_f2hf(color->W), qm_f2hf(color->X), qm_f2hf(color->Y), qm_f2hf(color->Z) } };
 			break;
 		case QGCF_R16F:
 			((halffloat*)ptr)[0] = qm_f2hf(color->X);
@@ -580,7 +576,7 @@ bool qg_image_set_pixel(QgImage* self, int x, int y, const QmColor* color)
 			*ptr = (byte)(color->X * 0xFF);
 			break;
 		case QGCF_A8L8:
-			((ushort*)ptr)[0] = ((byte)(color->W * 0xFF) << 8) | (byte)(color->X * 0xFF);
+			((ushort*)ptr)[0] = (ushort)(((byte)(color->W * 0xFF) << 8) | (byte)(color->X * 0xFF));
 			break;
 		case QGCF_R5G6B5:
 			pixel_color_to_r5g6b5(&((ushort*)ptr)[0], *color);
@@ -596,3 +592,4 @@ bool qg_image_set_pixel(QgImage* self, int x, int y, const QmColor* color)
 	}
 	return true;
 }
+

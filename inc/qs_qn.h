@@ -368,8 +368,8 @@ typedef struct FUNCPARAM_T
 #define qn_val_if_ok(x,r)	QN_STMT_BEGIN{ if ((x)) return (r); }QN_STMT_END						/// @brief 값이 참이면 반환
 
 #ifdef _DEBUG
-#define qn_assert(expr,msg)	QN_STMT_BEGIN{ if (!(expr)) qn_debug_assert(#expr, msg, __FUNCTION__, __LINE__); }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
-#define qn_verify(expr)		QN_STMT_BEGIN{ if (!(expr)) qn_debug_assert(#expr, NULL, __FUNCTION__, __LINE__); }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
+#define qn_assert(expr,msg)	QN_STMT_BEGIN{ if (!(expr)) qn_asrt(#expr, msg, __FUNCTION__, __LINE__); }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
+#define qn_verify(expr)		QN_STMT_BEGIN{ if (!(expr)) qn_asrt(#expr, NULL, __FUNCTION__, __LINE__); }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
 #else
 #define qn_assert(expr,msg)
 #define qn_verify(expr)
@@ -427,47 +427,48 @@ QSAPI int qn_get_prop_int(const char* name, int default_value, int min_value, in
 /// @return 얻은 실수값
 QSAPI float qn_get_prop_float(const char* name, float default_value, float min_value, float max_value);
 
-/// @brief 키를 설정한다
-/// @param name 키 이름
-/// @param value 키 값
-QSAPI void qn_set_key(const char* RESTRICT name, const nint value);
+/// @brief 시스템 심볼을 등록한다
+QSAPI void qn_syssym(const char** names, int count, nint start_sym);
 
-/// @brief 키를 얻는다
-/// @param name 키 이름
-/// @return 키 값. 키가 없어도 0을 반환
-QSAPI nint qn_get_key(const char* name);
+/// @brief 심볼을 얻는다
+/// @param name 심볼 이름
+///	@return 심볼 값	
+QSAPI nint qn_sym(const char* name);
 
 /// @brief 에러 메시지를 얻는다
 /// @return 에러 메시지 문자열. 없다면 NULL
-QSAPI const char* qn_get_error(void);
+QSAPI const char* qn_error(void);
 
 /// @brief 에러 메시지를 설정한다
 /// @param[in] mesg 에러 메시지
-QSAPI void qn_set_error(const char* mesg);
+/// @param debug_break 디버그 모드에서 중단점을 설정할지 여부
+QSAPI void qn_seterr(const char* mesg, bool debug_break);
 
 /// @brief 시스템 에러 메시지를 설정한다
 /// @param errcode 에러 코드 (0으로 설정하면 현재 에러 코드를 가져옴)
+/// @param debug_break 디버그 모드에서 중단점을 설정할지 여부
 /// @return 에러가 있었다면 참, 아니면 거짓
-QSAPI bool qn_set_syserror(int errcode);
+QSAPI bool qn_syserr(int errcode, bool debug_break);
 
 /// @brief 디버그용 검사 출력
 /// @param[in] expr 검사한 표현
+/// @param[in] mesg 메시지
 /// @param[in] filename 파일 이름이나 함수 이름
 /// @param[in] line 줄 번호
 /// @return 출력한 문자열 길이
-QSAPI int qn_debug_assert(const char* RESTRICT expr, const char* RESTRICT mesg, const char* RESTRICT filename, int line);
+QSAPI int qn_asrt(const char* RESTRICT expr, const char* RESTRICT mesg, const char* RESTRICT filename, int line);
 
 /// @brief HALT 메시지
 /// @param[in] head 머릿글
 /// @param[in] mesg 메시지
-QSAPI NORETURN void qn_debug_halt(const char* RESTRICT head, const char* RESTRICT mesg);
+QSAPI NORETURN void qn_halt(const char* RESTRICT head, const char* RESTRICT mesg);
 
 /// @brief 디버그용 문자열 출력
 /// @param[in] breakpoint 참이면 디버거 연결시 중단점 표시
 /// @param[in] head 머릿글
 /// @param[in] mesg 메시지
 /// @return 출력한 문자열 길이
-QSAPI int qn_debug_outputs(bool breakpoint, const char* RESTRICT head, const char* RESTRICT mesg);
+QSAPI int qn_mesg(bool breakpoint, const char* RESTRICT head, const char* RESTRICT mesg);
 
 /// @brief 디버그용 문자열 포맷 출력
 /// @param[in] breakpoint 참이면 디버거 연결시 중단점 표시
@@ -475,13 +476,7 @@ QSAPI int qn_debug_outputs(bool breakpoint, const char* RESTRICT head, const cha
 /// @param[in] fmt 문자열 포맷
 /// @param ... 인수
 /// @return 출력한 문자열 길이
-QSAPI int qn_debug_outputf(bool breakpoint, const char* RESTRICT head, const char* RESTRICT fmt, ...);
-
-/// @brief 에러 메시지를 출력한다
-/// @param breakpoint  참이면 디버거 연결시 중단점 표시
-/// @param head 머릿글
-/// @return 출력한 문자열 길이
-QSAPI int qn_debug_output_error(bool breakpoint, const char* head);
+QSAPI int qn_mesgf(bool breakpoint, const char* RESTRICT head, const char* RESTRICT fmt, ...);
 
 /// @brief 문자열을 출력한다 (디버그 메시지 포함)
 /// @param[in] mesg 출력할 내용
@@ -1891,7 +1886,7 @@ QSAPI QnFile* qn_open_file(const char* RESTRICT filename, const char* RESTRICT m
 /// @param[in]	src	(널값이 아닌) 원본
 /// @return	만들어진 반환 구조
 /// @retval NULL 복제하지 못했다
-QSAPI QnFile* qn_file_dup(QnFile* src);
+QSAPI QnFile* qn_file_dup(const QnFile* src);
 
 /// @brief 파일 플래그를 가져온다
 /// @param[in]	self	파일 개체

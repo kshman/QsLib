@@ -165,7 +165,7 @@ typedef struct RENDERERINFO
 } RendererInfo;
 
 // 렌더 추적 정보
-typedef struct RENDERINVOKE
+typedef struct RENDERERINVOKE
 {
 	uint				frames;
 	uint				creations;
@@ -181,10 +181,10 @@ typedef struct RENDERINVOKE
 	uint				primitives;
 
 	bool				flush;
-} RenderInvoke;
+} RendererInvoke;
 
 // 렌더 트랜스포메이션
-typedef struct RENDERTRANSFORM
+typedef struct RENDERERTRANSFORM
 {
 	QmSize				size;
 	float				Near, Far;
@@ -197,10 +197,10 @@ typedef struct RENDERTRANSFORM
 	QmMat4				frm;								// tex formation
 	QmMat4				tex[4];
 	QmRect				scissor;
-} RenderTransform;
+} RendererTransform;
 
 // 렌더 인수
-typedef struct RENDERPARAM
+typedef struct RENDERERPARAM
 {
 	QmVec4				v[4];
 	QmMat4				m[4];
@@ -210,7 +210,7 @@ typedef struct RENDERPARAM
 
 	QgVarShaderFunc		callback_func;
 	void*				callback_data;
-} RenderParam;
+} RendererParam;
 
 // 렌더러 디바이스
 typedef struct RDHBASE
@@ -219,9 +219,9 @@ typedef struct RDHBASE
 
 	RendererInfo		info;
 
-	RenderTransform		tm;
-	RenderParam			param;
-	RenderInvoke		invokes;
+	RendererTransform		tm;
+	RendererParam			param;
+	RendererInvoke		invokes;
 
 	QgNodeMukum			mukums[RDHNODE_MAX_VALUE];
 } RdhBase;
@@ -260,6 +260,7 @@ extern RdhBase* qg_instance_rdh;
 #define RDH_TRANSFORM		(&qg_instance_rdh->tm)
 #define RDH_PARAM			(&qg_instance_rdh->param)
 #define RDH_INVOKES			(&qg_instance_rdh->invokes)
+#define RDH_VERSION			(qg_instance_rdh->info.renderer_version)
 
 #define rdh_set_flush(v)	(qg_instance_rdh->invokes.flush=(v))
 #define rdh_inc_ends()		(qg_instance_rdh->invokes.ends++)

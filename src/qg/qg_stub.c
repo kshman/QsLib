@@ -271,7 +271,7 @@ bool qg_open_stub(const char* title, int display, int width, int height, int fla
 
 	if (qg_instance_stub)
 	{
-		qn_debug_outputs(true, "STUB", "already opened");
+		qn_mesg(true, "STUB", "already opened");
 		return false;
 	}
 
@@ -644,7 +644,7 @@ static void qg_poll_check_shed(void)
 	}
 	if (shed_event.loop.poll != shed_event.loop.count)
 	{
-		qn_debug_outputf(true, "STUB", "call qg_loop() before qg_poll()! [poll(%d) != loop(%d)]",
+		qn_mesgf(true, "STUB", "call qg_loop() before qg_poll()! [poll(%d) != loop(%d)]",
 			shed_event.loop.poll, shed_event.loop.count);
 		shed_event.loop.poll = shed_event.loop.count;
 	}
