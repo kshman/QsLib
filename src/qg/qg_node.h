@@ -29,7 +29,7 @@ INLINE void qg_node_mukum_init(QgNodeMukum* mukum)
 /// @brief 간단 초기화
 INLINE void qg_node_mukum_init_fast(QgNodeMukum* mukum)
 {
-	qn_assert(mukum->REVISION == 0 && mukum->COUNT == 0 && mukum->NODES == NULL, "cannot use fast init, use just init");
+	qn_debug_assert(mukum->REVISION == 0 && mukum->COUNT == 0 && mukum->NODES == NULL, "cannot use fast init, use just init");
 	mukum->BUCKET = QN_MIN_HASH;
 	mukum->NODES = qn_alloc_zero(QN_MIN_HASH, QgNode*);
 }
@@ -144,14 +144,14 @@ INLINE QgNode** qg_internal_node_mukum_lookup(QgNodeMukum* mukum, size_t hash, c
 			break;
 		pnode = &node->SIBLING;
 	}
-	qn_assert(pnode != NULL, "invalid node lookup");
+	qn_debug_assert(pnode != NULL, "invalid node lookup");
 	return pnode;
 }
 
 /// @brief 해시 셋
 INLINE void qg_internal_node_mukum_input(QgNodeMukum* mukum, QgNode* item, bool replace)
 {
-	qn_ret_if_ok(item->HASH == 0);
+	qn_return_on_ok(item->HASH == 0, /*void*/);
 	QgNode** pnode = qg_internal_node_mukum_lookup(mukum, item->HASH, item->NAME);
 	QgNode* node = *pnode;
 	if (node)
@@ -165,14 +165,14 @@ INLINE void qg_internal_node_mukum_input(QgNodeMukum* mukum, QgNode* item, bool 
 				node->NEXT->PREV = item;
 			else
 			{
-				qn_assert(mukum->LAST == node, "invalid last node");
+				qn_debug_assert(mukum->LAST == node, "invalid last node");
 				mukum->LAST = item;
 			}
 			if (node->PREV)
 				node->PREV->NEXT = item;
 			else
 			{
-				qn_assert(mukum->FIRST == node, "invalid first node");
+				qn_debug_assert(mukum->FIRST == node, "invalid first node");
 				mukum->FIRST = item;
 			}
 			*pnode = item;
@@ -210,14 +210,14 @@ INLINE void qg_internal_node_mukum_unlink(QgNodeMukum* mukum, QgNode** pnode)
 		node->NEXT->PREV = node->PREV;
 	else
 	{
-		qn_assert(mukum->LAST == node, "invalid last node");
+		qn_debug_assert(mukum->LAST == node, "invalid last node");
 		mukum->LAST = node->PREV;
 	}
 	if (node->PREV)
 		node->PREV->NEXT = node->NEXT;
 	else
 	{
-		qn_assert(mukum->FIRST == node, "invalid first node");
+		qn_debug_assert(mukum->FIRST == node, "invalid first node");
 		mukum->FIRST = node->NEXT;
 	}
 	size_t hash = node->HASH % mukum->BUCKET;
@@ -269,7 +269,7 @@ INLINE void qg_node_mukum_remove(QgNodeMukum* mukum, const char* name)
 /// @brief 링크를 제거한다, 노드를 제거하지 않는다! (노드 dispose에서 호출용)
 INLINE void qg_node_mukum_unlink(QgNodeMukum* mukum, QgNode* node)
 {
-	qn_ret_if_ok(node->HASH == 0);
+	qn_return_on_ok(node->HASH == 0, /*void*/);
 	qg_internal_node_mukum_unlink(mukum, &node);
 }
 

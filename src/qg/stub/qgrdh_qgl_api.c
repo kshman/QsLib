@@ -152,7 +152,7 @@ static bool glad_load_egl(void)
 	};
 	for (size_t i = 0; egl_libs[i]; i++)
 	{
-		egl_module = qn_load_mod(egl_libs[i], 1);
+		egl_module = qn_open_mod(egl_libs[i], 1);
 		if (egl_module != NULL)
 			break;
 	}
@@ -289,7 +289,7 @@ static bool egl_choose_config(_In_ EGLDisplay display, _In_ const QglConfig* wan
 	if (wanted_config->samples > 0)
 		ATTR_ADD(EGL_SAMPLES, wanted_config->samples);
 	ATTR_ADD(EGL_NONE, EGL_NONE);
-	qn_verify((size_t)i < QN_COUNTOF(attrs));
+	qn_debug_verify((size_t)i < QN_COUNTOF(attrs));
 #undef ATTR_ADD
 
 	EGLint config_count = 0;
@@ -326,7 +326,7 @@ static bool egl_choose_config(_In_ EGLDisplay display, _In_ const QglConfig* wan
 // EGL 초기화
 EGLDisplay egl_initialize(_In_ const QglConfig* wanted_config)
 {
-	qn_verify(wanted_config != NULL);
+	qn_debug_verify(wanted_config != NULL);
 #ifndef QGL_LINK_STATIC
 	if (glad_load_egl() == false)
 		return EGL_NO_DISPLAY;
@@ -379,9 +379,9 @@ EGLDisplay egl_initialize(_In_ const QglConfig* wanted_config)
 // EGL 컨텍스트 만들기
 EGLContext egl_create_context(_In_ EGLDisplay display, _In_ const QglConfig* wanted_config, _Out_ QglConfig* config)
 {
-	qn_verify(display != EGL_NO_DISPLAY);
-	qn_verify(wanted_config != NULL);
-	qn_verify(config != NULL);
+	qn_debug_verify(display != EGL_NO_DISPLAY);
+	qn_debug_verify(wanted_config != NULL);
+	qn_debug_verify(config != NULL);
 
 	// 컨피그 얻고
 	if (egl_choose_config(display, wanted_config, config) == false)
@@ -474,9 +474,9 @@ pos_error_exit:
 EGLSurface egl_create_surface(_In_ EGLDisplay display, _In_ EGLContext context, _In_ const QglConfig* config, _In_ int visual_id)
 {
 	QN_DUMMY(visual_id);
-	qn_verify(display != EGL_NO_DISPLAY);
-	qn_verify(context != EGL_NO_CONTEXT);
-	qn_verify(config != NULL);
+	qn_debug_verify(display != EGL_NO_DISPLAY);
+	qn_debug_verify(context != EGL_NO_CONTEXT);
+	qn_debug_verify(config != NULL);
 
 	// 속성 설정
 #ifdef QGL_EGL_NO_EXT
@@ -517,9 +517,9 @@ EGLSurface egl_create_surface(_In_ EGLDisplay display, _In_ EGLContext context, 
 // 커런트 만들기
 bool egl_make_current(_In_ EGLDisplay display, _In_ EGLSurface surface, _In_ EGLContext context, _In_ const QglConfig* config)
 {
-	qn_verify(display != EGL_NO_DISPLAY);
-	qn_verify(surface != EGL_NO_SURFACE);
-	qn_verify(context != EGL_NO_CONTEXT);
+	qn_debug_verify(display != EGL_NO_DISPLAY);
+	qn_debug_verify(surface != EGL_NO_SURFACE);
+	qn_debug_verify(context != EGL_NO_CONTEXT);
 
 	if (eglMakeCurrent(display, surface, surface, context) == false)
 		VAR_CHK_RET(egl_error_string(eglGetError()), false);
@@ -644,7 +644,7 @@ static bool glad_load_wgl(void)
 	static bool init = false;
 	if (init)
 		return true;
-	wgl_module = qn_load_mod("opengl32", 1);
+	wgl_module = qn_open_mod("opengl32", 1);
 	VAR_CHK_IF_COND(wgl_module == NULL, "cannot load wgl library", false);
 
 	glad_wglGetProcAddress = (PFNWGLGETPROCADDRESSPROC)qn_mod_func(wgl_module, "wglGetProcAddress");
@@ -818,7 +818,7 @@ _Success_(return) static bool wgl_choose_arb_pixel_format(_In_ HDC hdc, _In_ con
 	int pixel_formats[64];
 	if (wglChoosePixelFormatARB(hdc, attrs, NULL, 64, pixel_formats, &config_count) == FALSE || config_count == 0)
 		return false;
-	qn_verify(config_count < QN_COUNTOF(pixel_formats));
+	qn_debug_verify(config_count < QN_COUNTOF(pixel_formats));
 
 #define ATTR_ADD(e)		QN_STMT_BEGIN{ attrs[attr_count++]=e; }QN_STMT_END
 	attr_count = 0;
@@ -968,8 +968,8 @@ _Success_(return) static bool wgl_choose_desc_pixel_format(_In_ HDC hdc, _In_ co
 //
 static bool wgl_choose_pixel_format(_In_ const QglConfig * wanted_config, _Out_ QglConfig * found_config)
 {
-	qn_verify(wanted_config != NULL);
-	qn_verify(found_config != NULL);
+	qn_debug_verify(wanted_config != NULL);
+	qn_debug_verify(found_config != NULL);
 
 	const HWND hwnd = wgl_create_dummy_window();
 	const HDC hdc = GetDC(hwnd);
@@ -1038,8 +1038,8 @@ bool gl_initialize(void)
 //
 void* gl_create_context(_In_ const QglConfig * wanted_config, _Out_ QglConfig * config)
 {
-	qn_verify(wanted_config != NULL);
-	qn_verify(config != NULL);
+	qn_debug_verify(wanted_config != NULL);
+	qn_debug_verify(config != NULL);
 
 	if (wanted_config->core == false && GLAD_WGL_EXT_create_context_es2_profile == 0)
 	{
@@ -1100,7 +1100,7 @@ pos_error:
 //
 bool gl_make_current(_In_ void* context, _In_ const QglConfig * config)
 {
-	qn_verify(context != NULL);
+	qn_debug_verify(context != NULL);
 
 	const HDC hdc = (HDC)stub_system_get_display();
 	if (wglMakeCurrent(hdc, (HGLRC)context) == FALSE)
@@ -1136,7 +1136,7 @@ bool gl_swap_interval(_In_ int interval)
 //
 void gl_dispose(_In_ void* context)
 {
-	qn_ret_if_fail(context != NULL);
+	qn_return_when_fail(context != NULL, /*void*/);
 
 	const HDC hdc = (HDC)stub_system_get_display();
 	wglMakeCurrent(hdc, NULL);

@@ -101,7 +101,8 @@ static void qn_dbg_buf_str(const char* RESTRICT s)
 static void qn_dbg_buf_va(const char* RESTRICT fmt, va_list va)
 {
 	const int len = qn_vsnprintf(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - (size_t)debug_impl.out_pos, fmt, va);
-	debug_impl.out_pos += len;
+	if (len > 0)
+		debug_impl.out_pos += len;
 }
 
 //
@@ -124,7 +125,7 @@ static void qn_dbg_buf_head(const char* RESTRICT head)
 //
 static int qn_dbg_buf_flush(bool debug_output)
 {
-	qn_val_if_fail(debug_impl.out_pos > 0, 0);
+	qn_return_when_fail(debug_impl.out_pos > 0, 0);
 	debug_impl.out_buf[debug_impl.out_pos] = '\0';
 #ifdef _QN_WINDOWS_
 	if (debug_impl.handle != NULL)
@@ -156,7 +157,7 @@ static int qn_dbg_buf_flush(bool debug_output)
 //
 int qn_asrt(const char* RESTRICT expr, const char* RESTRICT mesg, const char* RESTRICT filename, const int line)
 {
-	qn_val_if_fail(expr, -1);
+	qn_return_when_fail(expr, -1);
 	qn_dbg_buf_str("ASSERT FAILED : ");
 	qn_dbg_buf_str(" (filename=\"");
 	qn_dbg_buf_str(filename);
@@ -229,6 +230,7 @@ int qn_outputs(const char* mesg)
 //
 int qn_outputf(const char* fmt, ...)
 {
+	qn_return_when_fail(fmt != NULL, -1);
 	va_list va;
 	va_start(va, fmt);
 	qn_dbg_buf_va(fmt, va);
@@ -262,7 +264,7 @@ void qn_error_down(void)
 //
 const char* qn_error(void)
 {
-	qn_val_if_fail(error_impl.error != 0, NULL);
+	qn_return_when_fail(error_impl.error != 0, NULL);
 	const char* mesg = qn_tlsget(error_impl.error);
 	return mesg;
 }
@@ -270,7 +272,7 @@ const char* qn_error(void)
 //
 void qn_seterr(const char* mesg, bool debug_break)
 {
-	qn_ret_if_fail(error_impl.error != 0);
+	qn_return_when_fail(error_impl.error != 0);
 	char* prev = qn_tlsget(error_impl.error);
 	qn_free(prev);
 	if (mesg != NULL)
@@ -286,7 +288,7 @@ void qn_seterr(const char* mesg, bool debug_break)
 //
 bool qn_syserr(int errcode, bool debug_break)
 {
-	qn_val_if_fail(error_impl.error != 0, false);
+	qn_return_when_fail(error_impl.error != 0, false);
 	char* prev = qn_tlsget(error_impl.error);
 	qn_free(prev);
 
@@ -525,7 +527,7 @@ static DWORD qn_internal_memory_exception(const DWORD ex, const size_t size, con
 //
 static void* qn_internal_alloc(size_t size, bool zero)
 {
-	qn_val_if_fail(size > 0, NULL);
+	qn_return_when_fail(size > 0, NULL);
 
 #ifdef _QN_WINDOWS_
 	size_t block = _memsize(size);
@@ -589,7 +591,7 @@ static void* qn_internal_realloc(void* ptr, size_t size)
 //
 static void qn_internal_free(void* ptr)
 {
-	qn_ret_if_fail(ptr);
+	qn_return_when_fail(ptr);
 
 	if (HeapValidate(mem_impl.heap, 0, ptr) == FALSE)
 	{
@@ -612,10 +614,10 @@ size_t qn_mpfsize(void)
 size_t qn_mpfcnt(void)
 {
 	return mem_impl.count;
-}
+	}
 
 //
-void qn_mpfdbgprint(void)
+void qn_mpfdbgout(void)
 {
 	if (mem_impl.count == 0 && mem_impl.frst == NULL && mem_impl.last == NULL)
 		return;
@@ -720,7 +722,7 @@ static DWORD qn_mpf_windows_exception(const DWORD ex, const char* desc, const si
 //
 static void* qn_mpf_alloc(size_t size, bool zero, const char* desc, size_t line)
 {
-	qn_val_if_fail(size > 0, NULL);
+	qn_return_when_fail(size > 0, NULL);
 
 	size_t block = _memsize(size);
 	MemBlock* node;
@@ -807,12 +809,12 @@ static void* qn_mpf_realloc(void* ptr, size_t size, const char* desc, size_t lin
 		qn_mpf_node_link(node);
 	}
 	return _memptr(node);
-}
+	}
 
 //
 static void qn_mpf_free(void* ptr)
 {
-	qn_ret_if_fail(ptr);
+	qn_return_when_fail(ptr,/*void*/);
 
 	MemBlock* node = _memhdr(ptr);
 	if (node == NULL ||
@@ -880,7 +882,7 @@ void* qn_a_realloc(void* ptr, const size_t size)
 //
 void* qn_a_mem_dup(const void* ptr, size_t size_or_zero_if_psz)
 {
-	qn_val_if_fail(ptr != NULL, NULL);
+	qn_return_when_fail(ptr != NULL, NULL);
 	if (size_or_zero_if_psz > 0)
 	{
 		byte* m = (byte*)qn_a_alloc(size_or_zero_if_psz, false);
@@ -908,7 +910,7 @@ void* qn_a_i_realloc(void* ptr, const size_t size, const char* desc, const size_
 //
 void* qn_a_i_mem_dup(const void* ptr, size_t size_or_zero_if_psz, const char* desc, size_t line)
 {
-	qn_val_if_fail(ptr != NULL, NULL);
+	qn_return_when_fail(ptr != NULL, NULL);
 	if (size_or_zero_if_psz > 0)
 	{
 		byte* m = (byte*)qn_a_i_alloc(size_or_zero_if_psz, false, desc, line);

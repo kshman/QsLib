@@ -238,7 +238,7 @@ static void _qn_mod_free(QnModule* self, const bool dispose)
 static void qn_mod_dispose(QnGamBase* gam)
 {
 	QnModule* self = qn_cast_type(gam, QnModule);
-	qn_ret_if_ok(QN_TMASK(self->flags, QNMDF_SELF));
+	qn_return_on_ok(QN_TMASK(self->flags, QNMDF_SELF),/*void*/);
 
 	QN_LOCK(module_impl.lock);
 	for (QnModule *last = NULL, *node = module_impl.modules; node; )
@@ -261,7 +261,7 @@ static void qn_mod_dispose(QnGamBase* gam)
 }
 
 //
-static qn_gam_vt(QNGAMBASE) qn_mod_vt =
+static QN_DECL_VTABLE(QNGAMBASE) qn_mod_vt =
 {
 	"MODULE",
 	qn_mod_dispose,
@@ -296,15 +296,15 @@ QnModule* qn_mod_self(void)
 }
 
 //
-QnModule* qn_load_mod(const char* filename, const int flags)
+QnModule* qn_open_mod(const char* filename, const int flags)
 {
-	qn_val_if_fail(filename != NULL, NULL);
+	qn_return_when_fail(filename != NULL, NULL);
 
 	const size_t hash = qn_strhash(filename);
 	QnModule* self = _qn_module_find(filename, hash);
 	if (self != NULL)
 	{
-		QN_SMASK(&self->flags, QNMDF_MULTIPLE, true);
+		QN_SMASK(self->flags, QNMDF_MULTIPLE, true);
 		return qn_loadu(module_impl.self, QnModule);
 	}
 
@@ -346,7 +346,7 @@ QnModule* qn_load_mod(const char* filename, const int flags)
 //
 void* qn_mod_func(QnModule* self, const char* RESTRICT name)
 {
-	qn_val_if_fail(name != NULL && *name != '\0', NULL);
+	qn_return_when_fail(name != NULL && *name != '\0', NULL);
 #ifdef _QN_WINDOWS_
 #ifdef __WINRT__
 	void* ptr = (void*)GetProcAddress(NULL, name);
@@ -502,7 +502,7 @@ static int _qn_thd_conv_busy(const QnRealThread* self)
 	switch (n)
 	{
 		case THREAD_PRIORITY_IDLE:			return -2;
-		case THREAD_PRIORITY_LOWEST:		FALL_THROUGH;
+		case THREAD_PRIORITY_LOWEST:		FALLTHROUGH;
 		case THREAD_PRIORITY_BELOW_NORMAL:	return -1;
 		case THREAD_PRIORITY_ABOVE_NORMAL:	return 1;
 		case THREAD_PRIORITY_HIGHEST:		return 2;
@@ -550,7 +550,7 @@ typedef struct tagTHREADNAME_INFO
 //
 static void _qn_thd_set_name(QnRealThread* self)
 {
-	qn_ret_if_fail(self->base.name != NULL);
+	qn_return_when_fail(self->base.name != NULL,/*void*/);
 
 #ifdef _QN_WINDOWS_
 #ifndef __WINRT__
@@ -558,7 +558,7 @@ static void _qn_thd_set_name(QnRealThread* self)
 	static PFWin32SetThreadDescription Win32SetThreadDescription = NULL;
 	if (kernel32 == NULL)
 	{
-		kernel32 = qn_load_mod("KERNEL32", 0);
+		kernel32 = qn_open_mod("KERNEL32", 0);
 		if (kernel32 != NULL)
 			Win32SetThreadDescription = (PFWin32SetThreadDescription)qn_mod_func(kernel32, "SetThreadDescription");
 	}
@@ -709,9 +709,9 @@ QnThread* qn_new_thread(const char* RESTRICT name, const QnThreadCallback func, 
 }
 
 //
-void qn_thread_delete(QnThread* self)
+void qn_delete_thread(QnThread* self)
 {
-	qn_ret_if_fail(self->canwait != false);
+	qn_return_when_fail(self->canwait != false,/*void*/);
 	QnRealThread* real = (QnRealThread*)self;
 
 	qn_thread_wait(self);
@@ -803,13 +803,13 @@ bool qn_thread_start(QnThread* self)
 	QnRealThread* real = (QnRealThread*)self;
 
 #ifdef _QN_WINDOWS_
-	qn_val_if_fail(real->handle == NULL, false);
+	qn_return_when_fail(real->handle == NULL, false);
 
 	real->handle = CreateThread(NULL, real->base.stack_size, &_qn_thd_entry, real, 0, &real->id);
 	if (real->handle == NULL || real->handle == INVALID_HANDLE_VALUE)
 		qn_halt("THREAD", "cannot start thread");
 #else
-	qn_val_if_ok(_qn_pthread_is_null(&real->handle), false);
+	qn_return_on_ok(_qn_pthread_is_null(&real->handle), false);
 
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
@@ -837,9 +837,9 @@ bool qn_thread_start(QnThread* self)
 void* qn_thread_wait(QnThread* self)
 {
 	QnRealThread* real = (QnRealThread*)self;
-	qn_val_if_fail(real->base.canwait != false, NULL);
+	qn_return_when_fail(real->base.canwait != false, NULL);
 #ifdef _QN_WINDOWS_
-	qn_val_if_fail(real->handle != NULL, NULL);
+	qn_return_when_fail(real->handle != NULL, NULL);
 
 	const DWORD dw = WaitForSingleObjectEx(real->handle, INFINITE, FALSE);
 	if (dw != WAIT_OBJECT_0)
@@ -847,7 +847,7 @@ void* qn_thread_wait(QnThread* self)
 	CloseHandle(real->handle);
 	real->handle = NULL;
 #else
-	qn_val_if_ok(_qn_pthread_is_null(&real->handle), NULL);
+	qn_return_on_ok(_qn_pthread_is_null(&real->handle), NULL);
 
 	void* ret;
 	pthread_join(real->handle, &ret);
@@ -861,7 +861,7 @@ void* qn_thread_wait(QnThread* self)
 void qn_thread_exit(void* ret)
 {
 	QnThread* self = qn_thread_self();
-	qn_ret_if_fail(self != NULL);
+	qn_return_when_fail(self != NULL,/*void*/);
 	self->cb_ret = ret;
 	_qn_thd_exit((QnRealThread*)self, true);
 }
@@ -876,9 +876,9 @@ bool qn_thread_set_busy(QnThread* self, const int busy)
 {
 	QnRealThread* real = (QnRealThread*)self;
 #ifdef _QN_WINDOWS_
-	qn_val_if_fail(real->handle != NULL, false);
+	qn_return_when_fail(real->handle != NULL, false);
 #else
-	qn_val_if_fail(real->handle != 0, false);
+	qn_return_when_fail(real->handle != 0, false);
 #endif
 	if (!_qn_thd_set_busy(real, busy))
 		return false;
@@ -911,7 +911,7 @@ QnTls qn_tls(const paramfunc_t callback)
 void qn_tlsset(const QnTls tls, void* RESTRICT data)
 {
 	const uint nth = (uint)tls;
-	qn_ret_if_fail(nth < (uint)QN_COUNTOF(thread_impl.tls_callback));
+	qn_return_when_fail(nth < (uint)QN_COUNTOF(thread_impl.tls_callback),/*void*/);
 
 	QnRealThread* thd = (QnRealThread*)qn_thread_self();
 	thd->tls[nth] = data;
@@ -921,7 +921,7 @@ void qn_tlsset(const QnTls tls, void* RESTRICT data)
 void* qn_tlsget(const QnTls tls)
 {
 	const uint nth = (uint)tls;
-	qn_val_if_fail(nth < (uint)QN_COUNTOF(thread_impl.tls_callback), NULL);
+	qn_return_when_fail(nth < (uint)QN_COUNTOF(thread_impl.tls_callback), NULL);
 
 	const QnRealThread* thd = _qn_thd_test_self();
 	return thd == NULL ? NULL : thd->tls[nth];
@@ -954,7 +954,7 @@ QnMutex* qn_new_mutex(void)
 	return self;
 }
 
-void qn_mutex_delete(QnMutex* self)
+void qn_delete_mutex(QnMutex* self)
 {
 #ifdef _QN_WINDOWS_
 	DeleteCriticalSection(&self->cs);
@@ -1019,7 +1019,7 @@ QnCond* qn_new_cond(void)
 }
 
 //
-void qn_cond_delete(QnCond* self)
+void qn_delete_cond(QnCond* self)
 {
 #ifndef _QN_WINDOWS_
 	pthread_cond_destroy(&self->cond);
@@ -1071,7 +1071,7 @@ static void qn_timed_timeval(struct timespec* ts, uint milliseconds)
 //
 bool qn_cond_wait_for(QnCond* self, QnMutex* lock, uint milliseconds)
 {
-	qn_val_if_fail(lock != NULL, false);
+	qn_return_when_fail(lock != NULL, false);
 
 #ifdef _QN_WINDOWS_
 	if (SleepConditionVariableCS(&self->cond, &lock->cs, milliseconds) == FALSE)
@@ -1093,7 +1093,7 @@ bool qn_cond_wait_for(QnCond* self, QnMutex* lock, uint milliseconds)
 	{
 		struct timespec ts;
 		qn_timed_timeval(&ts, milliseconds);
-		qn_val_if_fail(ts.tv_nsec < QN_NSEC_PER_SEC, true);
+		qn_return_when_fail(ts.tv_nsec < QN_NSEC_PER_SEC, true);
 		result = pthread_cond_timedwait(&self->cond, &lock->mutex, &ts);
 		timeout = result == ETIMEDOUT;
 	}
@@ -1148,7 +1148,7 @@ QnSem* qn_new_sem(int initial)
 }
 
 //
-void qn_sem_delete(QnSem* self)
+void qn_delete_sem(QnSem* self)
 {
 #ifdef _QN_WINDOWS_
 	CloseHandle(self->handle);

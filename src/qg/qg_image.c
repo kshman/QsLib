@@ -168,14 +168,14 @@ static bool image_loader_dds(const byte* data, uint size, QgImage* image)
 	if (size < sizeof(struct DDS_HEADER))
 		return false;
 	header = (const struct DDS_HEADER*)data;
-	qn_val_if_fail(header->magic == 0x20534444, false);
+	qn_return_when_fail(header->magic == 0x20534444, false);
 
 	// 픽셀 포맷
 	const QgPropPixel* prop = qg_get_prop_pixel(
 		header->ddspf.dwFourCC == 0x31545844 ? QGCF_DXT1 :
 		header->ddspf.dwFourCC == 0x33545844 ? QGCF_DXT3 :
 		header->ddspf.dwFourCC == 0x35545844 ? QGCF_DXT5 : QGCF_UNKNOWN);
-	qn_val_if_fail(prop != NULL, false);
+	qn_return_when_fail(prop != NULL, false);
 
 	// 진행
 	data += sizeof(struct DDS_HEADER);
@@ -225,7 +225,7 @@ static bool image_loader_etc_pkm(const byte* data, uint size, QgImage* image)
 		type == 0x00 ? QGCF_EXT1 :
 		type == 0x01 ? QGCF_EXT2 :
 		type == 0x03 ? QGCF_EXT2_EAC : QGCF_UNKNOWN);
-	qn_val_if_fail(prop != NULL, false);
+	qn_return_when_fail(prop != NULL, false);
 
 	// 진행
 	data += sizeof(struct PKM_HEADER);
@@ -280,7 +280,7 @@ static bool image_loader_etc_ktx(const byte* data, uint size, QgImage* image)
 		header->glinternalformat == 0x8D64 ? QGCF_EXT1 :
 		header->glinternalformat == 0x9278 ? QGCF_EXT2 :
 		header->glinternalformat == 0x9274 ? QGCF_EXT2_EAC : QGCF_UNKNOWN);
-	qn_val_if_fail(prop != NULL, false);
+	qn_return_when_fail(prop != NULL, false);
 
 	// 진행
 	data += sizeof(struct KTX_HEADER) + header->keypairbytes;
@@ -327,11 +327,11 @@ static bool image_loader_astc(const byte* data, uint size, QgImage* image)
 
 	// 픽셀 포맷
 	const int bpp = 128 / (header->blockdim_x * header->blockdim_y);
-	qn_val_if_fail(bpp == 8 || bpp == 2, false);
+	qn_return_when_fail(bpp == 8 || bpp == 2, false);
 	const QgPropPixel* prop = qg_get_prop_pixel(
 		header->blockdim_x == 8 ? QGCF_ASTC4 :
 		header->blockdim_x == 2 ? QGCF_ASTC8 : QGCF_UNKNOWN);
-	qn_val_if_fail(prop != NULL, false);
+	qn_return_when_fail(prop != NULL, false);
 
 	// 진행
 	data += sizeof(struct ASTC_HEADER);
@@ -371,7 +371,7 @@ static void qg_image_dispose(QnGamBase* gam)
 static QgImage* qg_image(void)
 {
 	QgImage* self = qn_alloc_1(QgImage);
-	static qn_gam_vt(QNGAMBASE) vt_qg_image =
+	static QN_DECL_VTABLE(QNGAMBASE) vt_qg_image =
 	{
 		.name = VAR_CHK_NAME,
 		.dispose = qg_image_dispose,
@@ -519,7 +519,7 @@ QgImage* qg_load_image(int fuse, const char* filename)
 
 	int size;
 	byte* data = qn_file_alloc(NULL, filename, &size);
-	qn_val_if_fail(data != NULL, NULL);
+	qn_return_when_fail(data != NULL, NULL);
 
 	QgImage* self = qg_load_image_buffer(data, size);
 	qn_free(data);
@@ -529,7 +529,7 @@ QgImage* qg_load_image(int fuse, const char* filename)
 //
 bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* color)
 {
-	qn_val_if_fail((size_t)x < (size_t)self->width && (size_t)y < (size_t)self->height, false);
+	qn_return_when_fail((size_t)x < (size_t)self->width && (size_t)y < (size_t)self->height, false);
 	byte* ptr = self->data + (ptrdiff_t)((y * self->pitch) + (x * self->prop.tbp));
 	switch (self->prop.format)
 	{

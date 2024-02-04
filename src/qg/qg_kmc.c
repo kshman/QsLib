@@ -252,7 +252,7 @@ static struct QGSHADERCONSTAUTOMAP
 void qg_init_converters(void)
 {
 	static bool inited = false;
-	qn_ret_if_ok(inited);
+	qn_return_on_ok(inited, /*void*/);
 	for (size_t i = 0; i < QN_COUNTOF(QgLayoutUsageMap); i++)
 		QgLayoutUsageMap[i].hash = qn_strhash(QgLayoutUsageMap[i].name);
 	for (size_t i = 0; i < QN_COUNTOF(QgScAutoMap); i++)

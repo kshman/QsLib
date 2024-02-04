@@ -4,7 +4,7 @@
 //
 // 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
 // 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
-// SPDX-License-Identifier: UNLICENSE
+// SPDX-License-Identifier: BSD-2-Clause
 //
 
 #pragma once
@@ -13,9 +13,6 @@
 #include <qs_qn.h>
 #include <qs_math.h>
 #include <qs_kmc.h>
-
-QN_EXTC_BEGIN
-
 
 //////////////////////////////////////////////////////////////////////////
 // property
@@ -1152,9 +1149,9 @@ struct QGBUFFER
 	bool16				mapped;
 };
 
-qn_gam_vt(QGBUFFER)
+QN_DECL_VTABLE(QGBUFFER)
 {
-	qn_gam_vt(QNGAMBASE)	base;
+	QN_DECL_VTABLE(QNGAMBASE)	base;
 	void*(*map)(void*);
 	bool (*unmap)(void*);
 	bool (*data)(void*, int, const void*);
@@ -1199,9 +1196,9 @@ struct QGTEXTURE
 	QgTexFlag			flags;
 };
 
-qn_gam_vt(QGTEXTURE)
+QN_DECL_VTABLE(QGTEXTURE)
 {
-	qn_gam_vt(QNGAMBASE)	base;
+	QN_DECL_VTABLE(QNGAMBASE)	base;
 	bool (*bind)(QgTexture*, int);
 };
 
@@ -1261,5 +1258,3 @@ QSAPI bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* 
 		.format.rtv[0] = QGCF_R8G8B8A8,\
 		.topology = QGTPG_TRI,\
 	}
-
-QN_EXTC_END

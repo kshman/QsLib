@@ -291,7 +291,7 @@ static QgTexture* qgl_create_texture(_In_ const char* name, _In_ const QgImage* 
 
 static bool qgl_buffer_data(void* g, int size, const void* data);
 
-qn_gam_vt(RDHBASE) vt_qgl_rdh =
+QN_DECL_VTABLE(RDHBASE) vt_qgl_rdh =
 {
 	{
 		/* name */			VAR_CHK_NAME,
@@ -379,7 +379,7 @@ static const char* qgl_initialize_egl(QglRdh* self, const QglConfig* wanted_conf
 //
 RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 {
-	qn_val_if_fail(QN_TMASK(features, QGRENDERER_OPENGL), NULL);
+	qn_return_when_fail(QN_TMASK(features, QGRENDERER_OPENGL), NULL);
 
 	QglRdh* self = qn_alloc_zero_1(QglRdh);
 
@@ -452,7 +452,7 @@ RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 static void qgl_rdh_dispose(QnGamBase* g)
 {
 	QglRdh* self = qn_cast_type(g, QglRdh);
-	qn_ret_if_ok(self->disposed);
+	qn_return_on_ok(self->disposed, /*void*/);
 	self->disposed = true;
 
 	// 펜딩
@@ -792,7 +792,7 @@ static bool qgl_rdh_set_texture(int stage, void* texture)
 // 정점 바인딩
 INLINE void qgl_bind_vertex_buffer(const QglBuffer* buffer)
 {
-	qn_assert(buffer->base.type == QGBUFFER_VERTEX, "try to bind non-vertex buffer");
+	qn_debug_assert(buffer->base.type == QGBUFFER_VERTEX, "try to bind non-vertex buffer");
 	QglSession* ss = QGL_SESSION;
 	const GLuint gl_id = buffer == NULL ? 0 : qn_get_gam_desc(buffer, GLuint);
 	if (ss->buffer.vertex != gl_id)
@@ -805,7 +805,7 @@ INLINE void qgl_bind_vertex_buffer(const QglBuffer* buffer)
 // 인덱스 바인딩
 INLINE void qgl_bind_index_buffer(const QglBuffer* buffer)
 {
-	qn_assert(buffer->base.type == QGBUFFER_INDEX, "try to bind non-index buffer");
+	qn_debug_assert(buffer->base.type == QGBUFFER_INDEX, "try to bind non-index buffer");
 	QglSession* ss = QGL_SESSION;
 	const GLuint gl_id = buffer == NULL ? 0 : qn_get_gam_desc(buffer, GLuint);
 	if (ss->buffer.index != gl_id)
@@ -818,7 +818,7 @@ INLINE void qgl_bind_index_buffer(const QglBuffer* buffer)
 // 유니폼 바인딩
 INLINE void qgl_bind_uniform_buffer(const QglBuffer* buffer)
 {
-	qn_assert(buffer->base.type == QGBUFFER_CONSTANT, "try to bind non-uniform buffer");
+	qn_debug_assert(buffer->base.type == QGBUFFER_CONSTANT, "try to bind non-uniform buffer");
 	QglSession* ss = QGL_SESSION;
 	const GLuint gl_id = buffer == NULL ? 0 : qn_get_gam_desc(buffer, GLuint);
 	if (ss->buffer.uniform != gl_id)
@@ -854,32 +854,32 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 	switch (var->scauto)
 	{
 		case QGSCA_ORTHO_PROJ:
-			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->ortho.f));
 			break;
 		case QGSCA_WORLD:
-			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->world.f));
 			break;
 		case QGSCA_VIEW:
-			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->view.f));
 			break;
 		case QGSCA_PROJ:
-			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->proj.f));
 			break;
 		case QGSCA_VIEW_PROJ:
-			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->view_proj.f));
 			break;
 		case QGSCA_INV_VIEW:
-			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->invv.f));
 			break;
 		case QGSCA_WORLD_VIEW_PROJ:
 		{
-			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			const QmMat4 m = qm_mat4_mul(tm->world, tm->view_proj);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, m.f));
 		} break;
@@ -906,39 +906,39 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 			}
 			break;
 		case QGSCA_PROP_VEC1:
-			qn_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
 			GLDEBUG(glUniform4fv(var->offset, 1, param->v[0].f));
 			break;
 		case QGSCA_PROP_VEC2:
-			qn_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
 			GLDEBUG(glUniform4fv(var->offset, 1, param->v[1].f));
 			break;
 		case QGSCA_PROP_VEC3:
-			qn_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
 			GLDEBUG(glUniform4fv(var->offset, 1, param->v[2].f));
 			break;
 		case QGSCA_PROP_VEC4:
-			qn_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
 			GLDEBUG(glUniform4fv(var->offset, 1, param->v[3].f));
 			break;
 		case QGSCA_PROP_MAT1:
-			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, param->m[0].f));
 			break;
 		case QGSCA_PROP_MAT2:
-			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, param->m[1].f));
 			break;
 		case QGSCA_PROP_MAT3:
-			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, param->m[2].f));
 			break;
 		case QGSCA_PROP_MAT4:
-			qn_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, param->m[3].f));
 			break;
 		case QGSCA_MAT_PALETTE:
-			qn_verify(var->sctype == QGSCT_FLOAT16);
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16);
 			GLDEBUG(glUniformMatrix4fv(var->offset, param->bone_count, false, (const GLfloat*)param->bone_ptr));
 			break;
 		default:
@@ -997,7 +997,7 @@ static bool qgl_commit_shader_layout(const QglRenderState* rdr)
 			aok |= QN_BIT(gl_attr);
 			if (QN_TBIT(amask, gl_attr) == false)
 			{
-				QN_SBIT(&amask, gl_attr, true);
+				QN_SBIT(amask, gl_attr, true);
 				GLDEBUG(glEnableVertexAttribArray(gl_attr));
 			}
 
@@ -1027,7 +1027,7 @@ static bool qgl_commit_shader_layout(const QglRenderState* rdr)
 	{
 		if (QN_TBIT(after_mask, 0))
 		{
-			QN_SBIT(&amask, i, false);
+			QN_SBIT(amask, i, false);
 			GLDEBUG(glDisableVertexAttribArray((GLuint)i));
 		}
 		after_mask >>= 1;
@@ -1284,7 +1284,7 @@ static void* qgl_buffer_map(void* g)
 {
 	QglBuffer* self = qn_cast_type(g, QglBuffer);
 	VAR_CHK_IF_NEED2(self, gl_usage, GL_DYNAMIC_DRAW, NULL);
-	qn_assert(self->lock_pointer == NULL, "버퍼가 잠겨있는데요!");
+	qn_debug_assert(self->lock_pointer == NULL, "버퍼가 잠겨있는데요!");
 
 	if (QGL_CORE == false && RDH_VERSION < 300)
 	{
@@ -1306,7 +1306,7 @@ static void* qgl_buffer_map(void* g)
 static bool qgl_buffer_unmap(void* g)
 {
 	QglBuffer* self = qn_cast_type(g, QglBuffer);
-	qn_assert(self->lock_pointer != NULL, "버퍼가 안 잠겼는데요!");
+	qn_debug_assert(self->lock_pointer != NULL, "버퍼가 안 잠겼는데요!");
 
 	qgl_bind_buffer(self);
 
@@ -1387,7 +1387,7 @@ static QgBuffer* qgl_create_buffer(_In_ QgBufferType type, _In_ uint count, _In_
 	self->gl_usage = gl_usage;
 
 	// VT 여기서 설정
-	static qn_gam_vt(QGBUFFER) vt_qgl_buffer =
+	static QN_DECL_VTABLE(QGBUFFER) vt_qgl_buffer =
 	{
 		.base.name = VAR_CHK_NAME,
 		.base.dispose = qgl_buffer_dispose,
@@ -1782,7 +1782,7 @@ QgRenderState* qgl_create_render(_In_ const char* name, _In_ const QgPropRender*
 	self->stencil = prop->stencil;
 
 	//
-	static qn_gam_vt(QNGAMBASE) vt_es_render =
+	static QN_DECL_VTABLE(QNGAMBASE) vt_es_render =
 	{
 		.name = VAR_CHK_NAME,
 		.dispose = qgl_render_dispose,
@@ -1896,7 +1896,7 @@ static QgTexture* qgl_create_texture(_In_ const char* name, _In_ const QgImage* 
 	if (gl_enum.format != GL_NONE)
 	{
 		// 그냥 이미지. 밉맵은 없을 것이다
-		qn_verify(image->mipmaps == 1);
+		qn_debug_verify(image->mipmaps == 1);
 		mcount = 1;
 		GLCHECK(glTexImage2D(GL_TEXTURE_2D, 0, gl_enum.ifmt, image->width, image->height, 0, gl_enum.format, gl_enum.type, image->data),
 			glDeleteTextures(1, &gl_id), NULL);
@@ -1954,7 +1954,7 @@ static QgTexture* qgl_create_texture(_In_ const char* name, _In_ const QgImage* 
 			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mcount > 1 ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST));
 			GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
 		}
-		QN_SMASK(&flags, QGTEXF_MIPMAP, mcount > 1);
+		QN_SMASK(flags, QGTEXF_MIPMAP, mcount > 1);
 	}
 
 	QglTexture* self = qn_alloc_zero_1(QglTexture);
@@ -1970,10 +1970,10 @@ static QgTexture* qgl_create_texture(_In_ const char* name, _In_ const QgImage* 
 	if (QN_TMASK(flags, QGTEXF_DISCARD_IMAGE))
 	{
 		qn_unload(image);
-		QN_SMASK(&self->base.flags, QGTEXF_DISCARD_IMAGE, false);
+		QN_SMASK(self->base.flags, QGTEXF_DISCARD_IMAGE, false);
 	}
 
-	static qn_gam_vt(QGTEXTURE) vt_qgl_texture =
+	static QN_DECL_VTABLE(QGTEXTURE) vt_qgl_texture =
 	{
 		.base.name = VAR_CHK_NAME,
 		.base.dispose = qgl_texture_dispose,

@@ -92,6 +92,26 @@
   <Type Name="QnTimer">
     <DisplayString>[실행: {runtime} (FPS: {fps})]</DisplayString>
   </Type>
+  
+  <!-- 마운트 -->
+  <Type Name="QNMOUNT">
+    <DisplayString>[{path.DATA,s} ({flags} &lt;{base.ref}&gt;)</DisplayString>
+    <Expand>
+      <Item Name="[기본 위치]">name,s</Item>
+      <Item Name="[현재 경로]">path.DATA,s</Item>
+      <Item Name="[플래그]">flags</Item>
+    </Expand>
+  </Type>
+  
+  <!-- 스트림 -->
+  <Type Name="QNSTREAM">
+    <DisplayString>[{name,s} ({flags} &lt;{base.ref}&gt;)</DisplayString>
+    <Expand>
+      <Item Name="[이름]">name,s</Item>
+      <Item Name="[플래그]">flags</Item>
+      <Item Name="[마운트]">mount</Item>
+    </Expand>
+  </Type>
 
   <!-- 메모리 블럭 -->
   <Type Name="MemBlock">

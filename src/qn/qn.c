@@ -63,7 +63,7 @@ static void qn_runtime_attach(void)
 // 런타임 내림
 static void qn_runtime_down(void)
 {
-	qn_ret_if_fail(runtime_impl.inited);
+	qn_return_when_fail(runtime_impl.inited,/*void*/);
 	runtime_impl.inited = false;
 
 	QN_LOCK(runtime_impl.lock);
@@ -112,7 +112,7 @@ static void qn_runtime_up(void)
 // 
 void qn_runtime(void)
 {
-	qn_ret_if_ok(runtime_impl.inited);
+	qn_return_on_ok(runtime_impl.inited,/*void*/);
 	qn_runtime_up();
 }
 
@@ -128,11 +128,11 @@ const char* qn_version(void)
 //
 void qn_atexit(paramfunc_t func, void* data)
 {
-	qn_ret_if_fail(runtime_impl.inited);
-	qn_ret_if_fail(func);
+	qn_return_when_fail(runtime_impl.inited,/*void*/);
+	qn_return_when_fail(func,/*void*/);
 
 	Closure* node = qn_alloc_1(Closure);
-	qn_ret_if_fail(node);
+	qn_return_when_fail(node,/*void*/);
 
 	node->fp.func = func;
 	node->fp.data = data;
@@ -146,11 +146,11 @@ void qn_atexit(paramfunc_t func, void* data)
 //
 void qn_p_atexit(paramfunc_t func, void* data)
 {
-	qn_ret_if_fail(runtime_impl.inited);
-	qn_ret_if_fail(func);
+	qn_return_when_fail(runtime_impl.inited,/*void*/);
+	qn_return_when_fail(func,/*void*/);
 
 	Closure* node = qn_alloc_1(Closure);
-	qn_ret_if_fail(node);
+	qn_return_when_fail(node,/*void*/);
 
 	node->fp.func = func;
 	node->fp.data = data;
@@ -182,8 +182,8 @@ const char* qn_p_unknown(int value, bool hex)
 //
 void qn_set_prop(const char* RESTRICT name, const char* RESTRICT value)
 {
-	qn_ret_if_fail(runtime_impl.inited);
-	qn_ret_if_fail(name != NULL);
+	qn_return_when_fail(runtime_impl.inited,/*void*/);
+	qn_return_when_fail(name != NULL,/*void*/);
 	QN_LOCK(runtime_impl.lock);
 	if (value == NULL || *value == '\0')
 		qn_mukum_remove(QnPropMukum, &runtime_impl.props, name, NULL);
@@ -195,8 +195,8 @@ void qn_set_prop(const char* RESTRICT name, const char* RESTRICT value)
 //
 const char* qn_get_prop(const char* name)
 {
-	qn_val_if_fail(runtime_impl.inited, NULL);
-	qn_val_if_fail(name != NULL, NULL);
+	qn_return_when_fail(runtime_impl.inited, NULL);
+	qn_return_when_fail(name != NULL, NULL);
 	char** ret;
 	QN_LOCK(runtime_impl.lock);
 	qn_mukum_get(QnPropMukum, &runtime_impl.props, name, &ret);
@@ -227,10 +227,10 @@ float qn_get_prop_float(const char* name, float default_value, float min_value, 
 //
 void qn_syssym(const char** names, int count, nint start_sym)
 {
-	qn_ret_if_fail(runtime_impl.inited);
-	qn_ret_if_fail(names != NULL);
-	qn_ret_if_fail(count > 0);
-	qn_ret_if_fail(start_sym + count < 10000);
+	qn_return_when_fail(runtime_impl.inited,/*void*/);
+	qn_return_when_fail(names != NULL,/*void*/);
+	qn_return_when_fail(count > 0,/*void*/);
+	qn_return_when_fail(start_sym + count < 10000,/*void*/);
 
 	QN_LOCK(runtime_impl.lock);
 	for (nint i = 0; i < count; i++)
@@ -242,8 +242,8 @@ void qn_syssym(const char** names, int count, nint start_sym)
 nint qn_sym(const char* name)
 {
 	static nint sym = 10000;
-	qn_val_if_fail(runtime_impl.inited, 0);
-	qn_val_if_fail(name != NULL, 0);
+	qn_return_when_fail(runtime_impl.inited, 0);
+	qn_return_when_fail(name != NULL, 0);
 	nint* ret;
 	QN_LOCK(runtime_impl.lock);
 	qn_mukum_get(QnSymMukum, &runtime_impl.symbols, name, &ret);

@@ -29,7 +29,7 @@ QnGam qn_sc_unload(QnGam g)
 	const volatile int ref = (int)--base->ref;
 	if (ref != 0)
 	{
-		qn_assert(ref > 0, "invalid reference value!");
+		qn_debug_assert(ref > 0, "invalid reference value!");
 		return g;
 	}
 	base->vt->dispose(g);

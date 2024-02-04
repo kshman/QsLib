@@ -4,7 +4,7 @@
 //
 // 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
 // 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
-// SPDX-License-Identifier: UNLICENSE
+// SPDX-License-Identifier: BSD-2-Clause
 //
 
 #pragma once
@@ -20,8 +20,6 @@
 #pragma warning(disable:4710)		// 'function': 함수가 인라인되지 않음
 #pragma warning(disable:5045)		// 컴파일러는 /Qspectre 스위치가 지정된 경우 메모리 로드를 위해 스펙터 완화를 삽입합니다.
 #endif
-
-QN_EXTC_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
 // common
@@ -93,7 +91,7 @@ QN_DECL_CTNR(QnAnyCtn, any_t);								/// @brief any_t 배열
 #define qn_ctnr_clear(p)				((p)->COUNT=0)
 #define qn_ctnr_remove_nth(name,p,nth)\
 	QN_STMT_BEGIN{\
-		qn_assert((size_t)(nth)<(p)->COUNT, "index overflow");\
+		qn_debug_assert((size_t)(nth)<(p)->COUNT, "index overflow");\
 		name##Type* __t=(name##Type*)(p)->DATA+(nth);\
 		if ((size_t)(nth)!=(p)->COUNT-1)\
 			memmove(__t, __t+1, qn_ctn_sizeof_type(name)*((p)->COUNT-((size_t)(nth)+1)));\
@@ -456,7 +454,7 @@ INLINE void qn_inl_arr_extend(void* arr, size_t size, size_t capa)
 	}QN_STMT_END
 #define qn_slice_test_init(name,p,maximum)\
 	QN_STMT_BEGIN{\
-		qn_assert((p)->DATA==NULL && (p)->MAX==0 && (p)->COUNT==0, "uninitialized memory");\
+		qn_debug_assert((p)->DATA==NULL && (p)->MAX==0 && (p)->COUNT==0, "uninitialized memory");\
 		(p)->DATA=qn_alloc(maximum, name##Type);\
 		(p)->MAX=maximum;\
 	}QN_STMT_END
@@ -627,13 +625,13 @@ QN_DECL_LIST(QnPtrList, void*);
 			if (__node->NEXT)\
 				__node->NEXT->PREV=__node->PREV;\
 			else {\
-				qn_assert((p)->LAST == __node, "invalid last node");\
+				qn_debug_assert((p)->LAST == __node, "invalid last node");\
 				(p)->LAST=__node->PREV;\
 			}\
 			if (__node->PREV)\
 				__node->PREV->NEXT=__node->NEXT;\
 			else {\
-				qn_assert((p)->FIRST == __node, "invalid first node");\
+				qn_debug_assert((p)->FIRST == __node, "invalid first node");\
 				(p)->FIRST=__node->NEXT;\
 			}\
 			(p)->COUNT--;\
@@ -955,13 +953,13 @@ INLINE bool qn_plist_find(const QnPtrList* p, bool (*func2)(void* data, void* no
 			if (__node->NEXT)\
 				__node->NEXT->PREV=__node->PREV;\
 			else {\
-				qn_assert((p)->LAST == __node, "invalid last node");\
+				qn_debug_assert((p)->LAST == __node, "invalid last node");\
 				(p)->LAST=__node->PREV;\
 			}\
 			if (__node->PREV)\
 				__node->PREV->NEXT=__node->NEXT;\
 			else {\
-				qn_assert((p)->FIRST == __node, "invalid first node");\
+				qn_debug_assert((p)->FIRST == __node, "invalid first node");\
 				(p)->FIRST=__node->NEXT;\
 			}\
 			(p)->COUNT--;\
@@ -974,13 +972,13 @@ INLINE bool qn_plist_find(const QnPtrList* p, bool (*func2)(void* data, void* no
 			if (__node->NEXT)\
 				__node->NEXT->PREV=__node->PREV;\
 			else {\
-				qn_assert((p)->LAST == __node, "invalid last node");\
+				qn_debug_assert((p)->LAST == __node, "invalid last node");\
 				(p)->LAST=__node->PREV;\
 			}\
 			if (__node->PREV)\
 				__node->PREV->NEXT=__node->NEXT;\
 			else {\
-				qn_assert((p)->FIRST == __node, "invalid first node");\
+				qn_debug_assert((p)->FIRST == __node, "invalid first node");\
 				(p)->FIRST=__node->NEXT;\
 			}\
 			(p)->COUNT--;\
@@ -1002,13 +1000,13 @@ INLINE bool qn_plist_find(const QnPtrList* p, bool (*func2)(void* data, void* no
 			if (__node->NEXT)\
 				__node->NEXT->PREV=__node->PREV;\
 			else {\
-				qn_assert((p)->LAST == __node, "invalid last node");\
+				qn_debug_assert((p)->LAST == __node, "invalid last node");\
 				(p)->LAST=__node->PREV;\
 			}\
 			if (__node->PREV)\
 				__node->PREV->NEXT=__node->NEXT;\
 			else {\
-				qn_assert((p)->FIRST == __node, "invalid first node");\
+				qn_debug_assert((p)->FIRST == __node, "invalid first node");\
 				(p)->FIRST=__node->NEXT;\
 			}\
 			(p)->COUNT--;\
@@ -1633,7 +1631,7 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t);
 
 // 해시 룩업
 #define qn_inl_hash_lookup_hash(name,p,keyptr,ret_ppnode,ret_hash)\
-	qn_assert((p)->NODES!=NULL, "uninitialized memory");\
+	qn_debug_assert((p)->NODES!=NULL, "uninitialized memory");\
 	size_t __lh=name##_Hash((name##ConstKey*)(keyptr));\
 	name##Node *__lnn, **__ln=&(p)->NODES[__lh%(p)->BUCKET];\
 	while ((__lnn=*__ln)!=NULL) {\
@@ -1717,13 +1715,13 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t);
 		if (__enn->NEXT)\
 			__enn->NEXT->PREV=__enn->PREV;\
 		else {\
-			qn_assert((p)->LAST == __enn, "invalid last node");\
+			qn_debug_assert((p)->LAST == __enn, "invalid last node");\
 			(p)->LAST=__enn->PREV;\
 		}\
 		if (__enn->PREV)\
 			__enn->PREV->NEXT=__enn->NEXT;\
 		else {\
-			qn_assert((p)->FIRST == __enn, "invalid first node");\
+			qn_debug_assert((p)->FIRST == __enn, "invalid first node");\
 			(p)->FIRST=__enn->NEXT;\
 		}\
 		/* step3 */\
@@ -1958,7 +1956,7 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t);
 
 // 묶음 룩업
 #define qn_inl_mukum_lookup_hash(name,p,keyptr,ret_node,ret_hash)\
-	/*qn_assert((p)->NODES!=NULL, "uninitialized memory");*/\
+	/*qn_debug_assert((p)->NODES!=NULL, "uninitialized memory");*/\
 	size_t __lh=name##_Hash((name##ConstKey*)(keyptr));\
 	name##Node *__lnn, **__ln=&(p)->NODES[__lh%(p)->BUCKET];\
 	while ((__lnn=*__ln)!=NULL) {\
@@ -2103,7 +2101,7 @@ QN_DECL_BSTR(4k, 4096);
 #define qn_bstr_inv(p,n)				((p)->DATA[((p)->LENGTH)-(n)-1])
 
 #define qn_bstr_test_init(p)\
-	qn_assert((p)->LENGTH==0 && (p)->DATA[0]=='\0', "need common initialize")
+	qn_debug_assert((p)->LENGTH==0 && (p)->DATA[0]=='\0', "need common initialize")
 
 #define qn_bstr_init(p,str)\
 	QN_STMT_BEGIN{\
@@ -2273,10 +2271,10 @@ INLINE int qn_bstr_find_char(const void* p, size_t at, char ch)
 	qn_inl_bstr_sub_bstr(((QnBstr*)(p)), (const QnBstr*)(s), pos, len)
 INLINE bool qn_inl_bstr_sub_bstr(QnBstr* p, const QnBstr* s, size_t pos, int len)
 {
-	qn_val_if_fail(s->LENGTH >= pos, false);
+	qn_return_when_fail(s->LENGTH >= pos, false);
 
 	if (len > 0)
-		qn_val_if_fail(s->LENGTH >= (pos + (size_t)len), false);
+		qn_return_when_fail(s->LENGTH >= (pos + (size_t)len), false);
 	else
 		len = (int)s->LENGTH - (int)pos;
 
@@ -2284,8 +2282,6 @@ INLINE bool qn_inl_bstr_sub_bstr(QnBstr* p, const QnBstr* s, size_t pos, int len
 	p->LENGTH = (size_t)len;
 	return true;
 }
-
-QN_EXTC_END
 
 #ifdef _MSC_VER
 #pragma warning(pop)

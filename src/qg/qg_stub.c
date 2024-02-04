@@ -82,7 +82,7 @@ static void shed_event_init(void)
 // 모두 제거
 static void shed_event_dispose(void)
 {
-	qn_ret_if_fail(shed_event.mutex != NULL);
+	qn_return_when_fail(shed_event.mutex != NULL, /*void*/);
 
 	// 예약 메모리
 	qn_parr_foreach_1(&shed_event.reserved_mems, qn_mem_free);
@@ -94,13 +94,13 @@ static void shed_event_dispose(void)
 	// 캐시
 	qn_nodelist_disp_cb(EventNodeList, &shed_event.cache, qn_mem_free);
 
-	qn_mutex_delete(shed_event.mutex);
+	qn_delete_mutex(shed_event.mutex);
 }
 
 // 하나 만들거나 캐시에서 꺼내서 큐에 넣기
 static bool shed_event_queue(const QgEvent* e)
 {
-	qn_val_if_fail(shed_event.mutex, false);
+	qn_return_when_fail(shed_event.mutex, false);
 	qn_mutex_enter(shed_event.mutex);
 
 	bool ret = false;
@@ -134,7 +134,7 @@ static bool shed_event_prior_queue_key_callback(const size_t key, const EventNod
 // 우선 큐에 키가 이미 있으면 내용을 갱신하거나, 캐시에서 꺼내던가 새로 할당해서 우선 큐에 넣기
 static void shed_event_prior_queue(const size_t key, const QgEvent* e)
 {
-	qn_ret_if_fail(shed_event.mutex);
+	qn_return_when_fail(shed_event.mutex, /*void*/);
 	qn_mutex_enter(shed_event.mutex);
 
 	EventNode* node;
@@ -327,7 +327,7 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 void qg_close_stub(void)
 {
 	const StubBase* self = qg_instance_stub;
-	qn_ret_if_fail(self);
+	qn_return_when_fail(self, /*void*/);
 
 	stub_system_finalize();
 
@@ -338,7 +338,7 @@ void qg_close_stub(void)
 
 	qn_list_disp(StubListEventCb, &self->callbacks);
 
-	qn_mutex_delete(self->mutex);
+	qn_delete_mutex(self->mutex);
 
 	shed_event_dispose();
 
@@ -356,50 +356,50 @@ int qg_feature(int features, bool enable)
 		count++;
 		if (QN_TMASK(self->features, QGFEATURE_DISABLE_ACS) != enable)
 			if (stub_system_disable_acs(enable))
-				QN_SMASK(&self->features, QGFEATURE_DISABLE_ACS, enable);
+				QN_SMASK(self->features, QGFEATURE_DISABLE_ACS, enable);
 	}
 	if (QN_TMASK(features, QGFEATURE_DISABLE_SCRSAVE))
 	{
 		count++;
 		if (QN_TMASK(self->features, QGFEATURE_DISABLE_SCRSAVE) != enable)
 			if (stub_system_disable_scr_save(enable))
-				QN_SMASK(&self->features, QGFEATURE_DISABLE_SCRSAVE, enable);
+				QN_SMASK(self->features, QGFEATURE_DISABLE_SCRSAVE, enable);
 	}
 	if (QN_TMASK(features, QGFEATURE_ENABLE_DROP))
 	{
 		count++;
 		if (QN_TMASK(self->features, QGFEATURE_ENABLE_DROP) != enable)
 			if (stub_system_enable_drop(enable))
-				QN_SMASK(&self->features, QGFEATURE_ENABLE_DROP, enable);
+				QN_SMASK(self->features, QGFEATURE_ENABLE_DROP, enable);
 	}
 	if (QN_TMASK(features, QGFEATURE_ENABLE_SYSWM))
 	{
 		count++;
-		QN_SMASK(&self->features, QGFEATURE_ENABLE_SYSWM, enable);
+		QN_SMASK(self->features, QGFEATURE_ENABLE_SYSWM, enable);
 	}
 	if (QN_TMASK(features, QGFEATURE_ENABLE_IDLE))
 	{
 		count++;
-		QN_SMASK(&self->features, QGFEATURE_ENABLE_IDLE, enable);
+		QN_SMASK(self->features, QGFEATURE_ENABLE_IDLE, enable);
 	}
 	if (QN_TMASK(features, QGFEATURE_RELATIVE_MOUSE))
 	{
 		count++;
 		if (QN_TMASK(self->features, QGFEATURE_RELATIVE_MOUSE) != enable)
 			if (stub_system_relative_mouse(enable))
-				QN_SMASK(&self->features, QGFEATURE_RELATIVE_MOUSE, enable);
+				QN_SMASK(self->features, QGFEATURE_RELATIVE_MOUSE, enable);
 	}
 	if (QN_TMASK(features, QGFEATURE_REMOVE_EVENTS))
 	{
 		count++;
-		QN_SMASK(&self->features, QGFEATURE_REMOVE_EVENTS, enable);
+		QN_SMASK(self->features, QGFEATURE_REMOVE_EVENTS, enable);
 	}
 	if (QN_TMASK(features, QGFEATURE_ENABLE_ASPECT))
 	{
 		count++;
 		if (enable)
 			stub_system_aspect();
-		QN_SMASK(&self->features, QGFEATURE_ENABLE_ASPECT, enable);
+		QN_SMASK(self->features, QGFEATURE_ENABLE_ASPECT, enable);
 	}
 
 	return count;
@@ -419,14 +419,14 @@ void qg_toggle_fullscreen(bool fullscreen)
 	{
 		if (QN_TMASK(stub->stats, QGSST_FULLSCREEN))
 			return;
-		QN_SMASK(&stub->stats, QGSST_FULLSCREEN, true);
+		QN_SMASK(stub->stats, QGSST_FULLSCREEN, true);
 		stub_system_fullscreen(true);
 	}
 	else
 	{
 		if (QN_TMASK(stub->stats, QGSST_FULLSCREEN) == false)
 			return;
-		QN_SMASK(&stub->stats, QGSST_FULLSCREEN, false);
+		QN_SMASK(stub->stats, QGSST_FULLSCREEN, false);
 		stub_system_fullscreen(false);
 	}
 }
@@ -447,7 +447,7 @@ void qg_set_title(const char* title)
 const QgUdevMonitor* qg_get_monitor(int index)
 {
 	const StubBase* stub = qg_instance_stub;
-	qn_val_if_fail((size_t)index < qn_pctnr_count(&stub->monitors), NULL);
+	qn_return_when_fail((size_t)index < qn_pctnr_count(&stub->monitors), NULL);
 	return qn_pctnr_nth(&stub->monitors, index);
 }
 
@@ -455,7 +455,7 @@ const QgUdevMonitor* qg_get_monitor(int index)
 const QgUdevMonitor* qg_get_current_monitor(void)
 {
 	const StubBase* stub = qg_instance_stub;
-	qn_assert(qn_pctnr_is_have(&stub->monitors), "아니 왜 모니터가 없어");
+	qn_debug_assert(qn_pctnr_is_have(&stub->monitors), "아니 왜 모니터가 없어");
 	const uint index = stub->display < qn_pctnr_count(&stub->monitors) ? stub->display : 0;
 	return qn_pctnr_nth(&stub->monitors, index);
 }
@@ -475,8 +475,8 @@ const QgUimMouse* qg_get_mouse_info(void)
 //
 bool qg_set_double_click_prop(const uint density, const uint interval)
 {
-	qn_val_if_fail(density < 50, false);
-	qn_val_if_fail(interval <= 5000, false);
+	qn_return_when_fail(density < 50, false);
+	qn_return_when_fail(interval <= 5000, false);
 
 	QgUimMouse* m = &qg_instance_stub->mouse;
 	m->lim.move = density * density;
@@ -487,49 +487,49 @@ bool qg_set_double_click_prop(const uint density, const uint interval)
 //
 void qg_set_key_state(const QikKey key, const bool down)
 {
-	qn_ret_if_fail((size_t)key < QIK_MAX_VALUE);
+	qn_return_when_fail((size_t)key < QIK_MAX_VALUE, /*void*/);
 	qg_instance_stub->key.key[key] = down;
 }
 
 //
 bool qg_get_key_state(const QikKey key)
 {
-	qn_val_if_fail((size_t)key < QIK_MAX_VALUE, false);
+	qn_return_when_fail((size_t)key < QIK_MAX_VALUE, false);
 	return qg_instance_stub->key.key[key];
 }
 
 //
 bool qg_get_key_press(const QikKey key)
 {
-	qn_val_if_fail((size_t)key < QIK_MAX_VALUE, false);
+	qn_return_when_fail((size_t)key < QIK_MAX_VALUE, false);
 	return qg_instance_stub->key.prev[key] == false && qg_instance_stub->key.key[key];
 }
 
 //
 bool qg_get_key_release(const QikKey key)
 {
-	qn_val_if_fail((size_t)key < QIK_MAX_VALUE, false);
+	qn_return_when_fail((size_t)key < QIK_MAX_VALUE, false);
 	return qg_instance_stub->key.prev[key] && qg_instance_stub->key.key[key] == false;
 }
 
 //
 bool qg_get_mouse_button_state(const QimButton button)
 {
-	qn_val_if_fail((size_t)button < QIM_MAX_VALUE, false);
+	qn_return_when_fail((size_t)button < QIM_MAX_VALUE, false);
 	return QN_TBIT(qg_instance_stub->mouse.mask, button);
 }
 
 //
 bool qg_get_mouse_button_press(const QimButton button)
 {
-	qn_val_if_fail((size_t)button < QIM_MAX_VALUE, false);
+	qn_return_when_fail((size_t)button < QIM_MAX_VALUE, false);
 	return QN_TBIT(qg_instance_stub->mouse.prev, button) == false && QN_TBIT(qg_instance_stub->mouse.mask, button);
 }
 
 //
 bool qg_get_mouse_button_release(const QimButton button)
 {
-	qn_val_if_fail((size_t)button < QIM_MAX_VALUE, false);
+	qn_return_when_fail((size_t)button < QIM_MAX_VALUE, false);
 	return QN_TBIT(qg_instance_stub->mouse.prev, button) && QN_TBIT(qg_instance_stub->mouse.mask, button) == false;
 }
 
@@ -586,8 +586,8 @@ int qg_left_events(void)
 //
 void qg_exit_loop(void)
 {
-	qn_ret_if_fail(qg_instance_stub);
-	QN_SMASK(&qg_instance_stub->stats, QGSST_EXIT, true);
+	qn_return_when_fail(qg_instance_stub, /*void*/);
+	QN_SMASK(qg_instance_stub->stats, QGSST_EXIT, true);
 	qg_add_signal_event(QGEV_EXIT, true);
 }
 
@@ -595,7 +595,7 @@ void qg_exit_loop(void)
 bool qg_loop(void)
 {
 	StubBase* stub = qg_instance_stub;
-	qn_val_if_fail(stub, false);
+	qn_return_when_fail(stub, false);
 
 	shed_event.loop.reset = true;
 	shed_event.loop.count++;
@@ -667,7 +667,7 @@ static void qg_dispatch_event(const QgEvent* ev)
 bool qg_poll(QgEvent* ev)
 {
 	const StubBase* stub = qg_instance_stub;
-	qn_val_if_fail(stub && ev, false);
+	qn_return_when_fail(stub && ev, false);
 	qg_poll_check_shed();
 	if (shed_event_transition(ev))
 	{
@@ -686,7 +686,7 @@ bool qg_poll(QgEvent* ev)
 void qg_dispatch(void)
 {
 	const StubBase* stub = qg_instance_stub;
-	qn_ret_if_fail(stub);
+	qn_return_when_fail(stub, /*void*/);
 	qg_poll_check_shed();
 
 	qn_mutex_enter(stub->mutex);
@@ -717,7 +717,7 @@ static void qg_emscripten_main_loop()
 //
 void qg_main_loop(paramfunc_t func, void* data)
 {
-	qn_ret_if_fail(qg_instance_stub);
+	qn_return_when_fail(qg_instance_stub, /*void*/);
 #ifndef _QN_EMSCRIPTEN_
 	while (qg_loop())
 	{
@@ -735,7 +735,7 @@ void qg_main_loop(paramfunc_t func, void* data)
 //
 nint qg_register_event_callback(QgEventCallback func, void* data)
 {
-	qn_val_if_fail(func, 0);
+	qn_return_when_fail(func, 0);
 	StubBase* stub = qg_instance_stub;
 
 	const StubEventCallback cb =
@@ -754,7 +754,7 @@ nint qg_register_event_callback(QgEventCallback func, void* data)
 //
 bool qg_unregister_event_callback(nint key)
 {
-	qn_val_if_fail(key != 0, false);
+	qn_return_when_fail(key != 0, false);
 	StubBase* stub = qg_instance_stub;
 	qn_mutex_enter(stub->mutex);
 
@@ -784,7 +784,7 @@ void qg_flush_event(void)
 //
 bool qg_pop_event(QgEvent * ev, bool peek)
 {
-	qn_val_if_fail(ev, false);
+	qn_return_when_fail(ev, false);
 	if (peek)
 		return shed_event_restore(ev);
 	return shed_event_transition(ev);
@@ -793,7 +793,7 @@ bool qg_pop_event(QgEvent * ev, bool peek)
 //
 int qg_add_event(const QgEvent * ev, const bool prior)
 {
-	qn_val_if_fail(ev, -1);
+	qn_return_when_fail(ev, -1);
 
 	if (prior)
 	{
@@ -820,8 +820,8 @@ int qg_add_signal_event(const QgEventType type, const bool prior)
 //
 int qg_add_key_event(const QgEvent * ev, const size_t key)
 {
-	qn_val_if_fail(ev, -1);
-	qn_val_if_fail(key != 0, -3);
+	qn_return_when_fail(ev, -1);
+	qn_return_when_fail(key != 0, -3);
 	shed_event_prior_queue(key, ev);
 	return qg_left_events();
 }
@@ -830,7 +830,7 @@ int qg_add_key_event(const QgEvent * ev, const size_t key)
 void stub_toggle_keys(const QikMask keymask, const bool on)
 {
 	QgUimKey* uk = &qg_instance_stub->key;
-	QN_SMASK(&uk->mask, keymask, on);
+	QN_SMASK(uk->mask, keymask, on);
 }
 
 //
@@ -956,10 +956,10 @@ bool stub_event_on_layout(bool enter)
 	if (enter != false)
 	{
 		// 레이아웃 시작 메시지 안보냄
-		QN_SMASK(&stub->stats, QGSST_LAYOUT, true);
+		QN_SMASK(stub->stats, QGSST_LAYOUT, true);
 		return false;
 	}
-	QN_SMASK(&stub->stats, QGSST_LAYOUT, false);
+	QN_SMASK(stub->stats, QGSST_LAYOUT, false);
 
 	QmSize prev = stub->client_size;
 	stub_system_update_bound();
@@ -984,12 +984,12 @@ bool stub_event_on_layout(bool enter)
 bool stub_event_on_focus(bool enter)
 {
 	StubBase* stub = qg_instance_stub;
-	qn_val_if_fail(QN_TMASK(stub->flags, QGFLAG_FOCUS), 0);
+	qn_return_when_fail(QN_TMASK(stub->flags, QGFLAG_FOCUS), 0);
 
 	const bool prev = QN_TMASK(stub->stats, QGSST_FOCUS);
 	if (prev != enter)
 	{
-		QN_SMASK(&stub->stats, QGSST_FOCUS, enter);
+		QN_SMASK(stub->stats, QGSST_FOCUS, enter);
 		return qg_add_signal_event(enter ? QGEV_ENTER : QGEV_LEAVE, false);
 	}
 
@@ -1006,8 +1006,8 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 		case QGWEV_SHOW:
 			if (QN_TMASK(stub->stats, QGSST_SHOW))
 				return false;
-			QN_SMASK(&stub->stats, QGSST_SHOW, true);
-			QN_SMASK(&stub->stats, QGSST_MINIMIZE, false);
+			QN_SMASK(stub->stats, QGSST_SHOW, true);
+			QN_SMASK(stub->stats, QGSST_MINIMIZE, false);
 			if (QN_TMASK(stub->flags, QGFLAG_FULLSCREEN))
 			{
 				// 풀스크린으로
@@ -1017,7 +1017,7 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 		case QGWEV_HIDE:
 			if (QN_TMASK(stub->stats, QGSST_SHOW) == false)
 				return false;
-			QN_SMASK(&stub->stats, QGSST_SHOW, false);
+			QN_SMASK(stub->stats, QGSST_SHOW, false);
 			if (QN_TMASK(stub->flags, QGFLAG_FULLSCREEN))
 			{
 				// 엥 풀스크린이었는데...
@@ -1030,22 +1030,22 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 		case QGWEV_RESTORED:
 			if (QN_TMASK(stub->stats, QGSST_SHOW) && QN_TMASK(stub->stats, QGSST_MAXIMIZE | QGSST_MINIMIZE) == false)
 				return false;
-			QN_SMASK(&stub->stats, QGSST_MINIMIZE, false);
-			QN_SMASK(&stub->stats, QGSST_MAXIMIZE, false);
+			QN_SMASK(stub->stats, QGSST_MINIMIZE, false);
+			QN_SMASK(stub->stats, QGSST_MAXIMIZE, false);
 			break;
 
 		case QGWEV_MAXIMIZED:
 			if (QN_TMASK(stub->stats, QGSST_MAXIMIZE))
 				return false;
-			QN_SMASK(&stub->stats, QGSST_MAXIMIZE, true);
-			QN_SMASK(&stub->stats, QGSST_MINIMIZE, false);
+			QN_SMASK(stub->stats, QGSST_MAXIMIZE, true);
+			QN_SMASK(stub->stats, QGSST_MINIMIZE, false);
 			break;
 
 		case QGWEV_MINIMIZED:
 			if (QN_TMASK(stub->stats, QGSST_MINIMIZE))
 				return false;
-			QN_SMASK(&stub->stats, QGSST_MAXIMIZE, false);
-			QN_SMASK(&stub->stats, QGSST_MINIMIZE, true);
+			QN_SMASK(stub->stats, QGSST_MAXIMIZE, false);
+			QN_SMASK(stub->stats, QGSST_MINIMIZE, true);
 			break;
 
 		case QGWEV_MOVED:
@@ -1076,11 +1076,11 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 			break;
 
 		case QGWEV_FOCUS:
-			QN_SMASK(&stub->stats, QGSST_FOCUS, true);
+			QN_SMASK(stub->stats, QGSST_FOCUS, true);
 			break;
 
 		case QGWEV_LOSTFOCUS:
-			QN_SMASK(&stub->stats, QGSST_FOCUS, false);
+			QN_SMASK(stub->stats, QGSST_FOCUS, false);
 			break;
 
 		case QGWEV_CLOSE:
@@ -1105,7 +1105,7 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 bool stub_event_on_text(const char* text)
 {
 	const StubBase* stub = qg_instance_stub;
-	qn_val_if_fail(QN_TMASK(stub->flags, QGFLAG_TEXT), 0);
+	qn_return_when_fail(QN_TMASK(stub->flags, QGFLAG_TEXT), 0);
 
 	QgEvent e = { .text.ev = QGEV_TEXTINPUT, };
 	bool ret = false;
@@ -1237,7 +1237,7 @@ bool stub_event_on_mouse_move(int x, int y)
 bool stub_event_on_mouse_button(const QimButton button, const bool down)
 {
 	QgUimMouse* um = &qg_instance_stub->mouse;
-	QN_SBIT(&um->mask, button, down);
+	QN_SBIT(um->mask, button, down);
 
 	const QgEvent e =
 	{
@@ -1340,7 +1340,7 @@ bool stub_event_on_drop(char* data, const int len, const bool finish)
 	if (s_enter == false)
 	{
 		s_enter = true;
-		QN_SMASK(&qg_instance_stub->stats, QGSST_DROP, true);
+		QN_SMASK(qg_instance_stub->stats, QGSST_DROP, true);
 		const QgEvent eb = { .drop.ev = QGEV_DROPBEGIN, };
 		if (qg_add_event(&eb, false) == 0)
 			return false;
@@ -1356,7 +1356,7 @@ bool stub_event_on_drop(char* data, const int len, const bool finish)
 
 	if (finish)
 	{
-		QN_SMASK(&qg_instance_stub->stats, QGSST_DROP, false);
+		QN_SMASK(qg_instance_stub->stats, QGSST_DROP, false);
 		s_enter = false;
 	}
 	return ret;

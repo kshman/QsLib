@@ -16,9 +16,10 @@
 #include <sys/sysctl.h>
 #endif
 #endif
+#include "PatrickPowell_snprintf.h"
 
 // 최대 파일 할당 크기
-static size_t max_file_alloc_size = 512ULL * 1024ULL * 1024ULL;
+static size_t max_file_alloc_size = 128ULL * 1024ULL * 1024ULL;
 
 //
 size_t qn_file_get_max_alloc_size(void)
@@ -27,15 +28,15 @@ size_t qn_file_get_max_alloc_size(void)
 }
 
 //
-void qn_file_set_max_alloc_size(const size_t n)
+void qn_file_set_max_alloc_size(const size_t size)
 {
-	max_file_alloc_size = n == 0 ? (512ULL * 1024ULL * 1024ULL) : n;
+	max_file_alloc_size = size == 0 ? (128ULL * 1024ULL * 1024ULL) : size;
 }
 
 //
-size_t qn_get_file_path(const char* filename, char* dest, size_t destsize)
+size_t qn_filepath(const char* RESTRICT filename, char* RESTRICT dest, size_t destsize)
 {
-	qn_val_if_fail(filename != NULL, 0);
+	qn_return_when_fail(filename != NULL, 0);
 
 	const char* p = filename + strlen(filename) - 1;
 	while (p >= filename && *p != '/' && *p != '\\')
@@ -60,7 +61,32 @@ size_t qn_get_file_path(const char* filename, char* dest, size_t destsize)
 }
 
 //
-char* qn_get_base_path(void)
+#if !defined _QN_WINDOWS_ && !defined __EMSCRIPTEN__
+static char* _qn_read_sym_link(const char* path)
+{
+	char* buf = NULL;
+	size_t len = 64;
+	ssize_t rc = -1;
+	while (true)
+	{
+		buf = qn_realloc(buf, len, char);
+		rc = readlink(path, buf, len);
+		if (rc == -1)
+			break;
+		else if (rc < (ssize_t)len)
+		{
+			buf[rc] = '\0';
+			return buf;
+		}
+		len *= 2;
+	}
+	qn_free(buf);
+	return NULL;
+}
+#endif
+
+//
+char* qn_basepath(void)
 {
 	char* path = NULL;
 #ifdef _QN_WINDOWS_
@@ -85,7 +111,7 @@ char* qn_get_base_path(void)
 		if (pw[i] == L'\\')
 			break;
 	}
-	qn_assert(i > 0, "probably invalid base path!");
+	qn_debug_assert(i > 0, "probably invalid base path!");
 	pw[i + 1] = L'\0';
 
 	path = qn_u16to8_dup(pw, 0);
@@ -145,28 +171,28 @@ static int qn_file_stream_exist(const char* filename);
 //
 QnStream* qn_open_file(QnMount* mount, const char* RESTRICT filename, const char* RESTRICT mode)
 {
-	qn_val_if_fail(filename != NULL, NULL);
+	qn_return_when_fail(filename != NULL, NULL);
 	if (mount != NULL)
-		return qn_cast_vt(mount, QNMOUNT)->mount_open(mount, filename, mode);
+		return qn_cast_vtable(mount, QNMOUNT)->mount_open(mount, filename, mode);
 	return qn_file_stream_open(NULL, filename, mode);
 }
 
 //
-int qn_file_exist(QnMount* mount, const char* filename)
+int qn_file_exist(QnMount* mount, const char* RESTRICT filename)
 {
-	qn_val_if_fail(filename != NULL, false);
+	qn_return_when_fail(filename != NULL, false);
 	if (mount != NULL)
-		return qn_cast_vt(mount, QNMOUNT)->mount_exist(mount, filename);
+		return qn_cast_vtable(mount, QNMOUNT)->mount_exist(mount, filename);
 	return qn_file_stream_exist(filename);
 }
 
 // 파일 한번에 읽기
-static void* qn_internal_file_alloc(const char* filename, int* size)
+static void* qn_internal_file_alloc(const char* RESTRICT filename, int* size)
 {
 #ifdef _QN_WINDOWS_
 	wchar uni[QN_MAX_PATH];
 	size_t uni_len = qn_u8to16(uni, QN_MAX_PATH, filename, 0);
-	qn_val_if_fail(uni_len < QN_MAX_PATH - QN_MAX_PATH_BIAS, NULL);
+	qn_return_when_fail(uni_len < QN_MAX_PATH - QN_MAX_PATH_BIAS, NULL);
 
 	HANDLE fd = CreateFile(uni, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (fd == NULL || fd == INVALID_HANDLE_VALUE)
@@ -225,24 +251,24 @@ static void* qn_internal_file_alloc(const char* filename, int* size)
 }
 
 //
-void* qn_file_alloc(QnMount* mount, const char* filename, int* size)
+void* qn_file_alloc(QnMount* mount, const char* RESTRICT filename, int* RESTRICT size)
 {
-	qn_val_if_fail(filename != NULL, NULL);
+	qn_return_when_fail(filename != NULL, NULL);
 	if (mount == NULL)
 		return qn_internal_file_alloc(filename, size);
 
 	/*
-	QnStream* stream = qn_cast_vt(mount, QNMOUNT)->mount_open(mount, filename, "rb");
+	QnStream* stream = qn_cast_vtable(mount, QNMOUNT)->mount_open(mount, filename, "rb");
 	if (stream == NULL)
 		return NULL;
-	const llong len = qn_cast_vt(stream, QNSTREAM)->stream_size(stream);
+	const llong len = qn_cast_vtable(stream, QNSTREAM)->stream_size(stream);
 	if (len <= 0 || (size_t)len > max_file_alloc_size)
 	{
 		qn_unload(stream);
 		return NULL;
 	}
 	byte* buf = qn_alloc(len, byte);
-	const int n = qn_cast_vt(stream, QNSTREAM)->stream_read(stream, buf, 0, (int)len);
+	const int n = qn_cast_vtable(stream, QNSTREAM)->stream_read(stream, buf, 0, (int)len);
 	qn_unload(stream);
 	if (n != (int)len)
 	{
@@ -253,11 +279,11 @@ void* qn_file_alloc(QnMount* mount, const char* filename, int* size)
 		*size = n;
 	return buf;
 	*/
-	return qn_cast_vt(mount, QNMOUNT)->mount_read(mount, filename, size);
+	return qn_cast_vtable(mount, QNMOUNT)->mount_read(mount, filename, size);
 }
 
 //
-static void qn_internal_detect_file_encoding(char* data, int size, int* length, int* codepage)
+static void qn_internal_detect_file_encoding(char* RESTRICT data, int size, int* RESTRICT length, int* RESTRICT codepage)
 {
 	char *ps, *pd;
 	if (*(uchar2*)data == 0xFEFF)
@@ -316,11 +342,11 @@ static void qn_internal_detect_file_encoding(char* data, int size, int* length, 
 }
 
 //
-char* qn_file_alloc_text(QnMount* mount, const char* filename, int* length, int* codepage)
+char* qn_file_alloc_text(QnMount* mount, const char* RESTRICT filename, int* RESTRICT length, int* RESTRICT codepage)
 {
 	int size;
 	char* data = qn_file_alloc(mount, filename, &size);
-	qn_val_if_fail(data, NULL);
+	qn_return_when_fail(data, NULL);
 	qn_internal_detect_file_encoding(data, size, length, codepage);
 	return data;
 }
@@ -330,87 +356,112 @@ char* qn_file_alloc_text(QnMount* mount, const char* filename, int* length, int*
 // 스트림
 
 //
-int qn_stream_read(QnStream * self, void* RESTRICT buffer, const int offset, const int size)
+int qn_stream_read(QnStream* self, void* RESTRICT buffer, const int offset, const int size)
 {
-	qn_val_if_fail(buffer != NULL, -1);
-	qn_val_if_fail(size >= 0, 0);
-	return qn_cast_vt(self, QNSTREAM)->stream_read(self, buffer, offset, size);
+	qn_return_when_fail(buffer != NULL, -1);
+	qn_return_when_fail(size >= 0, 0);
+	return qn_cast_vtable(self, QNSTREAM)->stream_read(self, buffer, offset, size);
 }
 
 //
-int qn_stream_write(QnStream * self, const void* RESTRICT buffer, const int offset, const int size)
+int qn_stream_write(QnStream* self, const void* RESTRICT buffer, const int offset, const int size)
 {
-	qn_val_if_fail(buffer != NULL, -1);
-	qn_val_if_fail(size >= 0, 0);
-	return qn_cast_vt(self, QNSTREAM)->stream_write(self, buffer, offset, size);
+	qn_return_when_fail(buffer != NULL, -1);
+	qn_return_when_fail(size >= 0, 0);
+	return qn_cast_vtable(self, QNSTREAM)->stream_write(self, buffer, offset, size);
 }
 
 //
-llong qn_stream_seek(QnStream * self, const llong offset, const QnSeek org)
+llong qn_stream_seek(QnStream* self, const llong offset, const QnSeek org)
 {
-	return qn_cast_vt(self, QNSTREAM)->stream_seek(self, offset, org);
+	return qn_cast_vtable(self, QNSTREAM)->stream_seek(self, offset, org);
 }
 
 //
-llong qn_stream_tell(QnStream * self)
+llong qn_stream_tell(QnStream* self)
 {
-	return qn_cast_vt(self, QNSTREAM)->stream_tell(self);
+	return qn_cast_vtable(self, QNSTREAM)->stream_tell(self);
 }
 
 //
-llong qn_stream_size(QnStream * self)
+llong qn_stream_size(QnStream* self)
 {
-	return qn_cast_vt(self, QNSTREAM)->stream_size(self);
+	return qn_cast_vtable(self, QNSTREAM)->stream_size(self);
 }
 
 //
-bool qn_stream_flush(QnStream * self)
+bool qn_stream_flush(QnStream* self)
 {
-	return qn_cast_vt(self, QNSTREAM)->stream_flush(self);
+	return qn_cast_vtable(self, QNSTREAM)->stream_flush(self);
 }
 
 //
-QnStream* qn_stream_dup(QnStream * self)
+QnStream* qn_stream_dup(QnStream* self)
 {
-	return qn_cast_vt(self, QNSTREAM)->stream_dup(self);
+	return qn_cast_vtable(self, QNSTREAM)->stream_dup(self);
 }
 
-//
-int qn_stream_printf(QnStream * self, const char* RESTRICT fmt, ...)
+// printf용 버퍼
+typedef struct STREAMPRINTFBUFFER
 {
-	va_list va, vq;
+	QnStream* stream;
+	char buffer[4096];
+	size_t loc;
+} StreamPrintfBuffer;
 
-	va_start(va, fmt);
-	va_copy(vq, va);
-	int len = qn_vsnprintf(NULL, 0, fmt, vq);
-	va_end(vq);
-
-	if (len <= 0)
+// 정리
+static void stream_printf_finish(PatrickPowellSprintfState* state)
+{
+	StreamPrintfBuffer* buffer = (StreamPrintfBuffer*)state->ptr;
+	if (buffer->loc > 0)
 	{
-		va_end(va);
-		return 0;
+		QnStream* stream = buffer->stream;
+		qn_cast_vtable(stream, QNSTREAM)->stream_write(stream, buffer->buffer, 0, (int)buffer->loc);
 	}
+	qn_free(buffer);
+}
 
-	char* buf = qn_alloc(len + 1, char);
-	qn_vsnprintf(buf, (size_t)len + 1, fmt, va);
-	va_end(va);
-	len = qn_cast_vt(self, QNSTREAM)->stream_write(self, buf, 0, len);
-	qn_free(buf);
-
-	return len;
+// 한글자씩 쓰기
+static void stream_printf_outch(PatrickPowellSprintfState* state, int ch)
+{
+	StreamPrintfBuffer* buffer = (StreamPrintfBuffer*)state->ptr;
+	qn_debug_verify(buffer->loc <= QN_COUNTOF(buffer->buffer));
+	if (buffer->loc == QN_COUNTOF(buffer->buffer))
+	{
+		QnStream* stream = buffer->stream;
+		qn_cast_vtable(stream, QNSTREAM)->stream_write(stream, buffer->buffer, 0, (int)QN_COUNTOF(buffer->buffer));
+		buffer->loc = 0;
+	}
+	buffer->buffer[buffer->loc++] = (char)ch;
+	state->currlen++;
 }
 
 //
-int qn_stream_vprintf(QnStream * self, const char* RESTRICT fmt, va_list va)
+int qn_stream_vprintf(QnStream* self, const char* RESTRICT fmt, va_list va)
 {
-	int len = qn_vsnprintf(NULL, 0, fmt, va);
-	if (len <= 0)
-		return 0;
-	char* buf = qn_alloc(len + 1, char);
-	qn_vsnprintf(buf, (size_t)len + 1, fmt, va);
-	len = qn_cast_vt(self, QNSTREAM)->stream_write(self, buf, 0, len);
-	qn_free(buf);
-	return len;
+	qn_return_when_fail(fmt, 0);
+
+	PatrickPowellSprintfState state =
+	{
+		stream_printf_outch,
+		stream_printf_finish,
+	};
+	StreamPrintfBuffer* buffer = qn_alloc_1(StreamPrintfBuffer);
+	buffer->stream = self;
+	buffer->loc = 0;
+	state.ptr = buffer;
+	dopr(&state, fmt, va);
+	return (int)state.currlen;
+}
+
+//
+int qn_stream_printf(QnStream* self, const char* RESTRICT fmt, ...)
+{
+	va_list va;
+	va_start(va, fmt);
+	const int ret = qn_stream_vprintf(self, fmt, va);
+	va_end(va);
+	return ret;
 }
 
 
@@ -418,34 +469,34 @@ int qn_stream_vprintf(QnStream * self, const char* RESTRICT fmt, va_list va)
 // 파일 리스트
 
 //
-const char* qn_file_list_read(QnFileList * self)
+const char* qn_dir_read(QnDir * self)
 {
-	return qn_cast_vt(self, QNFILELIST)->read(self);
+	return qn_cast_vtable(self, QNDIR)->read(self);
 }
 
 //
-bool qn_file_list_read_info(QnFileList * self, QnFileInfo * info)
+bool qn_dir_read_info(QnDir * self, QnFileInfo * info)
 {
-	qn_val_if_fail(info, false);
-	return qn_cast_vt(self, QNFILELIST)->read_info(self, info);
+	qn_return_when_fail(info, false);
+	return qn_cast_vtable(self, QNDIR)->read_info(self, info);
 }
 
 //
-void qn_file_list_rewind(QnFileList * self)
+void qn_dir_rewind(QnDir * self)
 {
-	qn_cast_vt(self, QNFILELIST)->rewind(self);
+	qn_cast_vtable(self, QNDIR)->rewind(self);
 }
 
 //
-void qn_file_list_seek(QnFileList * self, const int pos)
+void qn_dir_seek(QnDir * self, const int pos)
 {
-	qn_cast_vt(self, QNFILELIST)->seek(self, pos);
+	qn_cast_vtable(self, QNDIR)->seek(self, pos);
 }
 
 //
-int qn_file_list_tell(QnFileList * self)
+int qn_dir_tell(QnDir * self)
 {
-	return qn_cast_vt(self, QNFILELIST)->tell(self);
+	return qn_cast_vtable(self, QNDIR)->tell(self);
 }
 
 
@@ -453,57 +504,57 @@ int qn_file_list_tell(QnFileList * self)
 // 마운트
 
 //
-QnStream* qn_mount_open(QnMount* g, const char* RESTRICT filename, const char* RESTRICT mode)
+QnStream* qn_mount_open_stream(QnMount* g, const char* RESTRICT filename, const char* RESTRICT mode)
 {
-	qn_val_if_fail(filename, NULL);
-	return qn_cast_vt(g, QNMOUNT)->mount_open(g, filename, mode);
+	qn_return_when_fail(filename, NULL);
+	return qn_cast_vtable(g, QNMOUNT)->mount_open(g, filename, mode);
 }
 
 //
 void* qn_mount_read(QnMount* g, const char* RESTRICT filename, int* size)
 {
-	qn_val_if_fail(filename, NULL);
-	return qn_cast_vt(g, QNMOUNT)->mount_read(g, filename, size);
+	qn_return_when_fail(filename, NULL);
+	return qn_cast_vtable(g, QNMOUNT)->mount_read(g, filename, size);
 }
 
 //
-char* qn_mount_read_text(QnMount* g, const char* RESTRICT filename, int* length, int* codepage)
+char* qn_mount_read_text(QnMount* g, const char* RESTRICT filename, int* RESTRICT length, int* RESTRICT codepage)
 {
-	qn_val_if_fail(filename, NULL);
-	return qn_cast_vt(g, QNMOUNT)->mount_read_text(g, filename, length, codepage);
+	qn_return_when_fail(filename, NULL);
+	return qn_cast_vtable(g, QNMOUNT)->mount_read_text(g, filename, length, codepage);
 }
 
 //
 int qn_mount_exist(QnMount* g, const char* RESTRICT path)
 {
-	qn_val_if_fail(path, false);
-	return qn_cast_vt(g, QNMOUNT)->mount_exist(g, path);
+	qn_return_when_fail(path, false);
+	return qn_cast_vtable(g, QNMOUNT)->mount_exist(g, path);
 }
 
 //
 bool qn_mount_remove(QnMount* g, const char* RESTRICT path)
 {
-	qn_val_if_fail(path, false);
-	return qn_cast_vt(g, QNMOUNT)->mount_remove(g, path);
+	qn_return_when_fail(path, false);
+	return qn_cast_vtable(g, QNMOUNT)->mount_remove(g, path);
 }
 
 //
 bool qn_mount_chdir(QnMount* g, const char* RESTRICT directory)
 {
-	return qn_cast_vt(g, QNMOUNT)->mount_chdir(g, directory);
+	return qn_cast_vtable(g, QNMOUNT)->mount_chdir(g, directory);
 }
 
 //
 bool qn_mount_mkdir(QnMount* g, const char* RESTRICT directory)
 {
-	qn_val_if_fail(directory, false);
-	return qn_cast_vt(g, QNMOUNT)->mount_mkdir(g, directory);
+	qn_return_when_fail(directory, false);
+	return qn_cast_vtable(g, QNMOUNT)->mount_mkdir(g, directory);
 }
 
 //
-QnFileList* qn_mount_file_list(QnMount* g)
+QnDir* qn_mount_directory(QnMount* g)
 {
-	return qn_cast_vt(g, QNMOUNT)->mount_file_list(g);
+	return qn_cast_vtable(g, QNMOUNT)->mount_directory(g);
 }
 
 
@@ -528,7 +579,7 @@ static llong qn_mem_stream_size(QnGam g);
 static bool qn_mem_stream_flush(QnGam g);
 static QnStream* qn_mem_stream_dup(QnGam g);
 
-static qn_gam_vt(QNSTREAM) qn_mem_stream_vt =
+static QN_DECL_VTABLE(QNSTREAM) qn_mem_stream_vt =
 {
 	.base.name = "MemoryStream",
 	.base.dispose = qn_mem_stream_dispose,
@@ -542,7 +593,7 @@ static qn_gam_vt(QNSTREAM) qn_mem_stream_vt =
 };
 
 // 메모리 스트림 만들기
-QnStream* qn_create_mem_stream(const char* name, size_t initial_capacity)
+QnStream* qn_create_mem_stream(const char* RESTRICT name, size_t initial_capacity)
 {
 	QnMemStream* self = qn_alloc(1, QnMemStream);
 
@@ -564,7 +615,7 @@ QnStream* qn_create_mem_stream(const char* name, size_t initial_capacity)
 }
 
 // 메모리 스트림 외부 데이터로 만들기
-QnStream* qn_create_mem_stream_stored(const char* name, void* RESTRICT data, size_t size)
+QnStream* qn_create_mem_stream_stored(const char* RESTRICT name, void* RESTRICT data, size_t size)
 {
 	QnMemStream* self = qn_alloc(1, QnMemStream);
 
@@ -591,6 +642,7 @@ static void qn_mem_stream_dispose(QnGam g)
 static int qn_mem_stream_read(QnGam g, void* RESTRICT buffer, const int offset, const int size)
 {
 	QnMemStream* self = qn_cast_type(g, QnMemStream);
+
 	size_t n = self->size - self->loc;
 	n = QN_MIN(n, (size_t)size);
 	if (size == 0)
@@ -708,7 +760,7 @@ typedef struct QNFILESTREAM
 	QnFileAccess		acs;
 } QnFileStream;
 
-static void qn_file_stream_access_parse(const char* mode, QnFileAccess * acs, QnFileFlag * flags);
+static void qn_file_stream_access_parse(const char* mode, QnFileAccess* acs, QnFileFlag* flags);
 static char* qn_file_stream_get_real_path(char* RESTRICT dest, const QnMount* mount, const char* RESTRICT filename);
 static void qn_file_stream_dispose(QnGam g);
 static int qn_file_stream_read(QnGam g, void* RESTRICT buffer, const int offset, const int size);
@@ -719,7 +771,7 @@ static llong qn_file_stream_size(QnGam g);
 static bool qn_file_stream_flush(QnGam g);
 static QnStream* qn_file_stream_dup(QnGam g);
 
-static qn_gam_vt(QNSTREAM) qn_file_stream_vt =
+static QN_DECL_VTABLE(QNSTREAM) qn_file_stream_vt =
 {
 	.base.name = "FileStream",
 	.base.dispose = qn_file_stream_dispose,
@@ -739,7 +791,7 @@ static QnStream* qn_file_stream_open(QnMount* mount, const char* RESTRICT filena
 	if (mount != NULL)
 	{
 		filename = qn_file_stream_get_real_path(path, mount, filename);
-		qn_val_if_fail(filename, NULL);
+		qn_return_when_fail(filename, NULL);
 	}
 	QnFileStream* self = qn_alloc(1, QnFileStream);
 
@@ -782,7 +834,7 @@ static int qn_file_stream_exist(const char* path)
 #ifdef _QN_WINDOWS_
 	wchar uni[QN_MAX_PATH];
 	size_t uni_len = qn_u8to16(uni, QN_MAX_PATH, path, 0);
-	qn_val_if_fail(uni_len < QN_MAX_PATH - QN_MAX_PATH_BIAS, 0);
+	qn_return_when_fail(uni_len < QN_MAX_PATH - QN_MAX_PATH_BIAS, 0);
 	const DWORD attr = GetFileAttributes(uni);
 	int ret = attr == INVALID_FILE_ATTRIBUTES ? 0 : QN_TMASK(attr, FILE_ATTRIBUTE_DIRECTORY) ? 2 : 1;
 #else
@@ -794,7 +846,7 @@ static int qn_file_stream_exist(const char* path)
 }
 
 // 분석
-static void qn_file_stream_access_parse(const char* mode, QnFileAccess * acs, QnFileFlag * flags)
+static void qn_file_stream_access_parse(const char* mode, QnFileAccess* acs, QnFileFlag* flags)
 {
 #ifdef _QN_WINDOWS_
 	acs->mode = 0;
@@ -812,7 +864,7 @@ static void qn_file_stream_access_parse(const char* mode, QnFileAccess * acs, Qn
 				case 'a':
 					acs->mode = OPEN_ALWAYS;
 					acs->access = GENERIC_WRITE;
-					*flags = QNFF_WRITE | QNFF_SEEK;
+					*flags = QNFF_WRITE | QNFF_SEEK | QNFF_APPEND;
 					break;
 				case 'r':
 					acs->mode = OPEN_EXISTING;
@@ -858,7 +910,7 @@ static void qn_file_stream_access_parse(const char* mode, QnFileAccess * acs, Qn
 
 	if (acs->mode == 0)
 	{
-		*flags = QNFF_READ | QNFF_SEEK;
+		*flags = QNFF_READ | QNFF_SEEK |QNFF_APPEND;
 		acs->mode = OPEN_EXISTING;
 		acs->access = GENERIC_READ;
 		acs->attr = FILE_ATTRIBUTE_NORMAL;
@@ -878,7 +930,7 @@ static void qn_file_stream_access_parse(const char* mode, QnFileAccess * acs, Qn
 			{
 				case 'a':
 					acs->mode = O_WRONLY | O_APPEND | O_CREAT;
-					*flags = QNFF_WRITE | QNFF_SEEK;
+					*flags = QNFF_WRITE | QNFF_SEEK |QNFF_APPEND;
 					break;
 				case 'r':
 					acs->mode = O_RDONLY;
@@ -965,13 +1017,13 @@ static void qn_file_stream_access_parse(const char* mode, QnFileAccess * acs, Qn
 	if (acs->mode == 0)
 	{
 		acs->mode = O_RDONLY;
-		*flag = QNFF_READ | QNFF_SEEK;
+		*flag = QNFF_READ | QNFF_SEEK |QNFF_APPEND;
 	}
 
 	if (acs->access == 0 && (acs->mode & O_CREAT) != 0)
 		acs->access = (S_IRUSR | S_IWUSR) | (S_IRGRP | S_IWGRP) | (S_IROTH);
 #endif
-}
+	}
 
 // 실제 파일 경로 얻기
 static char* qn_file_stream_get_real_path(char* RESTRICT dest, const QnMount* mount, const char* RESTRICT filename)
@@ -1159,7 +1211,7 @@ static bool qn_diskfs_remove(QnGam g, const char* path);
 static bool qn_diskfs_ch_dir(QnGam g, const char* directory);
 static bool qn_diskfs_mk_dir(QnGam g, const char* directory);
 
-static qn_gam_vt(QNMOUNT) qn_diskfs_vt =
+static QN_DECL_VTABLE(QNMOUNT) qn_diskfs_vt =
 {
 	.base.name = "DiskFS",
 	.base.dispose = qn_diskfs_dispose,
@@ -1219,7 +1271,7 @@ static void* qn_diskfs_read(QnGam g, const char* filename, int* size)
 {
 	QnMount* self = qn_cast_type(g, QnMount);
 	char real[QN_MAX_PATH];
-	qn_val_if_fail(qn_file_stream_get_real_path(real, self, filename), NULL);
+	qn_return_when_fail(qn_file_stream_get_real_path(real, self, filename), NULL);
 	char* data = qn_internal_file_alloc(real, size);
 	return data;
 }
@@ -1229,7 +1281,7 @@ static char* qn_diskfs_read_text(QnGam g, const char* filename, int* length, int
 {
 	QnMount* self = qn_cast_type(g, QnMount);
 	char real[QN_MAX_PATH];
-	qn_val_if_fail(qn_file_stream_get_real_path(real, self, filename), NULL);
+	qn_return_when_fail(qn_file_stream_get_real_path(real, self, filename), NULL);
 	int size;
 	char* data = qn_internal_file_alloc(real, &size);
 	qn_internal_detect_file_encoding(data, size, length, codepage);
@@ -1241,7 +1293,7 @@ static int qn_diskfs_exist(QnGam g, const char* path)
 {
 	QnMount* self = qn_cast_type(g, QnMount);
 	char real[QN_MAX_PATH];
-	qn_val_if_fail(qn_file_stream_get_real_path(real, self, path), 0);
+	qn_return_when_fail(qn_file_stream_get_real_path(real, self, path), 0);
 	int ret = qn_file_stream_exist(real);
 	return ret;
 }
@@ -1251,12 +1303,12 @@ static bool qn_diskfs_remove(QnGam g, const char* path)
 {
 	QnMount* self = qn_cast_type(g, QnMount);
 	char real[QN_MAX_PATH];
-	qn_val_if_fail(qn_file_stream_get_real_path(real, self, path), false);
+	qn_return_when_fail(qn_file_stream_get_real_path(real, self, path), false);
 
 #ifdef _QN_WINDOWS_
 	wchar uni[QN_MAX_PATH];
 	size_t uni_len = qn_u8to16(uni, QN_MAX_PATH, real, 0);
-	qn_val_if_fail(uni_len < QN_MAX_PATH - QN_MAX_PATH_BIAS, false);
+	qn_return_when_fail(uni_len < QN_MAX_PATH - QN_MAX_PATH_BIAS, false);
 
 	bool ret = false;
 	const DWORD attr = GetFileAttributes(uni);
@@ -1305,20 +1357,20 @@ static bool qn_diskfs_ch_dir(QnGam g, const char* directory)
 	}
 
 	char real[QN_MAX_PATH];
-	qn_val_if_fail(qn_file_stream_get_real_path(real, self, directory), false);
+	qn_return_when_fail(qn_file_stream_get_real_path(real, self, directory), false);
 
 #ifdef _QN_WINDOWS_
 	wchar uni[QN_MAX_PATH];
 	size_t uni_len = qn_u8to16(uni, QN_MAX_PATH, real, 0);
-	qn_val_if_fail(uni_len < QN_MAX_PATH - QN_MAX_PATH_BIAS, false);
+	qn_return_when_fail(uni_len < QN_MAX_PATH - QN_MAX_PATH_BIAS, false);
 
 	wchar abspath[QN_MAX_PATH];
 	if (_wfullpath(abspath, uni, QN_MAX_PATH - QN_MAX_PATH_BIAS) == NULL)
 		return false;
 
 	DWORD attr = GetFileAttributes(abspath);
-	qn_val_if_fail(attr != INVALID_FILE_ATTRIBUTES, false);
-	qn_val_if_fail(QN_TMASK(attr, FILE_ATTRIBUTE_DIRECTORY), false);
+	qn_return_when_fail(attr != INVALID_FILE_ATTRIBUTES, false);
+	qn_return_when_fail(QN_TMASK(attr, FILE_ATTRIBUTE_DIRECTORY), false);
 
 	size_t len = wcslen(abspath);
 	if (abspath[len - 1] != L'\\' && abspath[len - 1] != L'/')
@@ -1332,14 +1384,14 @@ static bool qn_diskfs_ch_dir(QnGam g, const char* directory)
 	qn_bstr_set(&self->path, real);
 #else
 	chr abspath[QN_MAX_PATH];
-	qn_val_if_fail(realpath(real, abspath) != NULL, false);
+	qn_return_when_fail(realpath(real, abspath) != NULL, false);
 
 	struct stat st;
-	qn_val_if_fail(stat(abspath, &st) == 0, false);
-	qn_val_if_fail(S_ISDIR(st.st_mode), false);
+	qn_return_when_fail(stat(abspath, &st) == 0, false);
+	qn_return_when_fail(S_ISDIR(st.st_mode), false);
 
 	size_t len = strlen(abspath);
-	qn_val_if_fail(len < QN_MAX_PATH - QN_MAX_PATH_BIAS, false);
+	qn_return_when_fail(len < QN_MAX_PATH - QN_MAX_PATH_BIAS, false);
 
 	if (abspath[len - 1] != '/' && abspath[len - 1] != '\\')
 	{
@@ -1359,24 +1411,24 @@ static bool qn_diskfs_mk_dir(QnGam g, const char* directory)
 {
 	QnMount* self = qn_cast_type(g, QnMount);
 	char real[QN_MAX_PATH];
-	qn_val_if_fail(qn_file_stream_get_real_path(real, self, directory), false);
+	qn_return_when_fail(qn_file_stream_get_real_path(real, self, directory), false);
 
 #ifdef _QN_WINDOWS_
 	wchar uni[QN_MAX_PATH];
 	size_t uni_len = qn_u8to16(uni, QN_MAX_PATH, real, 0);
-	qn_val_if_fail(uni_len < QN_MAX_PATH - QN_MAX_PATH_BIAS, false);
+	qn_return_when_fail(uni_len < QN_MAX_PATH - QN_MAX_PATH_BIAS, false);
 
 	wchar abspath[QN_MAX_PATH];
 	if (_wfullpath(abspath, uni, QN_MAX_PATH - QN_MAX_PATH_BIAS) == NULL)
 		return false;
 
 	DWORD attr = GetFileAttributes(abspath);
-	qn_val_if_fail(attr == INVALID_FILE_ATTRIBUTES, false);
+	qn_return_when_fail(attr == INVALID_FILE_ATTRIBUTES, false);
 
 	return CreateDirectory(abspath, NULL) != 0;
 #else
 	struct stat st;
-	qn_val_if_fail(stat(real, &st) != 0, false);
+	qn_return_when_fail(stat(real, &st) != 0, false);
 
 	return mkdir(real, 0755) == 0;
 #endif
@@ -1393,7 +1445,7 @@ QnMount* qn_open_mount(const char* path, QnMountFlag flags)
 
 	if (path == NULL)
 	{
-		tmppath = qn_get_base_path();
+		tmppath = qn_basepath();
 		return qn_create_diskfs(tmppath, flags);
 	}
 

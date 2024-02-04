@@ -4,7 +4,7 @@
 //
 // 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
 // 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
-// SPDX-License-Identifier: UNLICENSE
+// SPDX-License-Identifier: BSD-2-Clause
 //
 #pragma once
 
@@ -40,14 +40,31 @@
 // libraries
 
 // include
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <salieri.h>
 #include <qs_qn.h>
 #include <qs_ctn.h>
 #include <qs_math.h>
 #include <qs_kmc.h>
 #include <qs_qg.h>
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef _MSC_VER
 #pragma warning(pop)
 #pragma comment(lib, "QsLib")
 #endif
+
+
+//////////////////////////////////////////////////////////////////////////
+// appendix
+
+// create로 시작하는 함수는 참조할 때 qn_load, 제거할 때 qn_unload를 사용할 수 있다
+// open으로 시작하는 함수는 제거할 때 close를 사용한다
+// new로 시작하는 함수는 제거할 때 delete를 사용한다
+//
+// 추가적으로 load로 시작하는 함수는 create와 동일하다
+// 예외적인 기능이 있다면 별도로 추가한다

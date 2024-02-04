@@ -226,9 +226,9 @@ typedef struct RDHBASE
 	QgNodeMukum			mukums[RDHNODE_MAX_VALUE];
 } RdhBase;
 
-qn_gam_vt(RDHBASE)
+QN_DECL_VTABLE(RDHBASE)
 {
-	qn_gam_vt(QNGAMBASE)	base;
+	QN_DECL_VTABLE(QNGAMBASE)	base;
 	void (*layout)(void);
 	void (*reset)(void);
 	void (*clear)(QgClear);

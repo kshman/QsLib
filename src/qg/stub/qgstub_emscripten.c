@@ -84,7 +84,7 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	if (QN_TMASK(flags, QGFLAG_FULLSCREEN))
 	{
 		stub_system_fullscreen(true);
-		QN_SMASK(&emStub.base.stats, QGSST_FULLSCREEN, true);
+		QN_SMASK(emStub.base.stats, QGSST_FULLSCREEN, true);
 	}
 
 	// 핸들러
@@ -115,7 +115,7 @@ void stub_system_actuate(void)
 	if (QN_TMASK(emStub.base.flags, QGFLAG_FULLSCREEN) && QN_TMASK(emStub.base.stats, QGSST_FULLSCREEN) == false)
 	{
 		// 풀스크린
-		QN_SMASK(&emStub.base.stats, QGSST_FULLSCREEN, true);
+		QN_SMASK(emStub.base.stats, QGSST_FULLSCREEN, true);
 		stub_system_fullscreen(true);
 	}
 }
@@ -237,7 +237,7 @@ static EM_BOOL handler_focus_blur(int eventType, const EmscriptenFocusEvent* foc
 // 풀스크린
 static EM_BOOL handler_fullscreen_change(int eventType, const EmscriptenFullscreenChangeEvent *fullscreenChangeEvent, void *userData)
 {
-	QN_SMASK(&emStub.base.stats, QGSST_FULLSCREEN, fullscreenChangeEvent->isFullscreen);
+	QN_SMASK(emStub.base.stats, QGSST_FULLSCREEN, fullscreenChangeEvent->isFullscreen);
 	return EM_TRUE;
 }
 
@@ -315,7 +315,7 @@ static EM_BOOL handler_mouse_button(int eventType, const EmscriptenMouseEvent* m
 		mouseEvent->button == 0 ? QIM_LEFT :
 		mouseEvent->button == 1 ? QIM_MIDDLE :
 		mouseEvent->button == 2 ? QIM_RIGHT : QIM_NONE;
-	qn_val_if_ok(button == QIM_NONE, EM_FALSE);
+	qn_return_on_ok(button == QIM_NONE, EM_FALSE);
 
 	bool down;
 	EM_BOOL prevent_event;

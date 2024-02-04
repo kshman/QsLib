@@ -310,7 +310,7 @@ QnTimer* qn_create_timer(void)
 	self->base.abstime = (double)self->curtime.q * self->tick;
 	self->cut = 9999999.0;  //10.0;
 
-	static qn_gam_vt(QNGAMBASE) qn_timer_vt =
+	static QN_DECL_VTABLE(QNGAMBASE) qn_timer_vt =
 	{
 		"TIMER",
 		qn_timer_dispose,

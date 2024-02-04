@@ -4,7 +4,7 @@
 //
 // 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
 // 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-2-Clause
 //
 // 자료형 읽는법:
 // - VEC1,2,3,4: 벡터 하나,둘,셋,넷
@@ -72,8 +72,6 @@
 #ifdef QM_USE_NEON
 #include <arm_neon.h>
 #endif
-
-QN_EXTC_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
 // constant & macro
@@ -421,6 +419,12 @@ INLINE bool qm_pot(uint v)
 	return (v & (v - 1)) == 0;
 }
 
+/// @brief power of 10
+INLINE double qm_pow10(int n)
+{
+	return exp(n * QM_L_LN10);
+}
+
 /// @brief 실수의 앱실론 비교
 INLINE bool qm_eqs(float a, float b, float epsilon)
 {
@@ -521,6 +525,12 @@ INLINE float qm_rsqrtf(float f)
 #else
 	return 1.0f / qm_sqrtf(f);
 #endif
+}
+
+/// @brief power of 10
+INLINE float qm_pow10f(int n)
+{
+	return expf(n * (float)QM_L_LN10);
 }
 
 /// @brief 각도를 호도로 변환
@@ -4261,7 +4271,7 @@ INLINE bool QM_VECTORCALL qm_mat4_isu(QmMat4 m)
 /// @param br 오른쪽 아래
 INLINE void QM_VECTORCALL qm_vec4_rect_rotate(_In_ QmVec4 rt, _In_ float angle, _Out_ QmVec2* tl, _Out_ QmVec2* tr, _Out_ QmVec2* bl, _Out_ QmVec2* br)
 {
-	qn_verify(tl != NULL && tr != NULL && bl != NULL && br != NULL);
+	qn_debug_verify(tl != NULL && tr != NULL && bl != NULL && br != NULL);
 	float s, c;
 	qm_sincosf(angle, &s, &c);
 	QmVec2 dt = qm_vec2((rt.Z - rt.X) * 0.5f, (rt.W - rt.Y) * 0.5f);
@@ -4698,7 +4708,7 @@ INLINE bool qm_rect_isz(const QmRect pv)
 /// @param br 오른쪽 아래
 INLINE void qm_rect_rotate(_In_ QmRect rt, _In_ float angle, _Out_ QmVec2* tl, _Out_ QmVec2* tr, _Out_ QmVec2* bl, _Out_ QmVec2* br)
 {
-	qn_verify(tl != NULL && tr != NULL && bl != NULL && br != NULL);
+	qn_debug_verify(tl != NULL && tr != NULL && bl != NULL && br != NULL);
 	float s, c;
 	qm_sincosf(angle, &s, &c);
 	QmVec2 dt = qm_vec2((float)(rt.Right - rt.Left) * 0.5f, (float)(rt.Bottom - rt.Top) * 0.5f);
@@ -4800,8 +4810,6 @@ INLINE RECT qm_rect_to_RECT(const QmRect rt)
 #define qm_clamp(v,n,x)	_Generic((v),\
 	float: qm_clampf,\
 	int: qm_clampi)(v,n,x)
-
-QN_EXTC_END
 
 #ifdef __clang__
 #pragma clang diagnotics pop
