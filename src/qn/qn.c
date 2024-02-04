@@ -96,6 +96,11 @@ static void qn_runtime_up(void)
 {
 	runtime_impl.inited = true;
 
+#ifdef _QN_WINDOWS_
+	// 콘솔창을 UTF-8로 설정!!!!!!!!
+	SetConsoleOutputCP(65001);
+#endif
+
 	qn_cycle_up();
 	qn_debug_up();
 	qn_mpf_up();

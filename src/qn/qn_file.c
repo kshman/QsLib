@@ -169,7 +169,7 @@ static QnStream* qn_file_stream_open(QnMount* mount, const char* RESTRICT filena
 static int qn_file_stream_exist(const char* filename);
 
 //
-QnStream* qn_open_file(QnMount* mount, const char* RESTRICT filename, const char* RESTRICT mode)
+QnStream* qn_open_stream(QnMount* mount, const char* RESTRICT filename, const char* RESTRICT mode)
 {
 	qn_return_when_fail(filename != NULL, NULL);
 	if (mount != NULL)
@@ -318,7 +318,7 @@ static void qn_internal_detect_file_encoding(char* RESTRICT data, int size, int*
 		}
 		*(uchar2*)pd = 0;
 	}
-	else if (data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF)
+	else if ((byte)data[0] == 0xEF && (byte)data[1] == 0xBB && (byte)data[2] == 0xBF)
 	{
 		// UTF-8
 		if (length != NULL)
@@ -426,7 +426,7 @@ static void stream_printf_outch(PatrickPowellSprintfState* state, int ch)
 {
 	StreamPrintfBuffer* buffer = (StreamPrintfBuffer*)state->ptr;
 	qn_debug_verify(buffer->loc <= QN_COUNTOF(buffer->buffer));
-	if (buffer->loc == QN_COUNTOF(buffer->buffer))
+	if (buffer->loc >= QN_COUNTOF(buffer->buffer))
 	{
 		QnStream* stream = buffer->stream;
 		qn_cast_vtable(stream, QNSTREAM)->stream_write(stream, buffer->buffer, 0, (int)QN_COUNTOF(buffer->buffer));
@@ -664,6 +664,8 @@ static int qn_mem_stream_write(QnGam g, const void* RESTRICT buffer, const int o
 	if ((int)sub < size)
 	{
 		sub = self->loc + size;
+		if (capa == 0)
+			capa = 16;
 		while (capa < sub)
 			capa <<= 1;
 		byte* data = qn_realloc(qn_get_gam_pointer(self), capa, byte);
@@ -744,7 +746,7 @@ static QnStream* qn_mem_stream_dup(QnGam g)
 }
 
 //
-void* qn_mem_stream_get_data(QnStream* self)
+const void* qn_mem_stream_get_data(QnStream* self)
 {
 	return QN_TMASK(self->flags, QNFFT_MEM) ? qn_get_gam_pointer(self) : NULL;
 }
@@ -910,7 +912,7 @@ static void qn_file_stream_access_parse(const char* mode, QnFileAccess* acs, QnF
 
 	if (acs->mode == 0)
 	{
-		*flags = QNFF_READ | QNFF_SEEK |QNFF_APPEND;
+		*flags = QNFF_READ | QNFF_SEEK;
 		acs->mode = OPEN_EXISTING;
 		acs->access = GENERIC_READ;
 		acs->attr = FILE_ATTRIBUTE_NORMAL;
@@ -930,7 +932,7 @@ static void qn_file_stream_access_parse(const char* mode, QnFileAccess* acs, QnF
 			{
 				case 'a':
 					acs->mode = O_WRONLY | O_APPEND | O_CREAT;
-					*flags = QNFF_WRITE | QNFF_SEEK |QNFF_APPEND;
+					*flags = QNFF_WRITE | QNFF_SEEK | QNFF_APPEND;
 					break;
 				case 'r':
 					acs->mode = O_RDONLY;
@@ -1017,13 +1019,13 @@ static void qn_file_stream_access_parse(const char* mode, QnFileAccess* acs, QnF
 	if (acs->mode == 0)
 	{
 		acs->mode = O_RDONLY;
-		*flag = QNFF_READ | QNFF_SEEK |QNFF_APPEND;
+		*flags = QNFF_READ | QNFF_SEEK;
 	}
 
 	if (acs->access == 0 && (acs->mode & O_CREAT) != 0)
 		acs->access = (S_IRUSR | S_IWUSR) | (S_IRGRP | S_IWGRP) | (S_IROTH);
 #endif
-	}
+}
 
 // 실제 파일 경로 얻기
 static char* qn_file_stream_get_real_path(char* RESTRICT dest, const QnMount* mount, const char* RESTRICT filename)
@@ -1074,7 +1076,7 @@ static void qn_file_stream_dispose(QnGam g)
 		CloseHandle(fd);
 #else
 	int fd = qn_get_gam_desc_int(self);
-	ifd(fd >= 0)
+	if (fd >= 0)
 		close(fd);
 #endif
 	qn_unload(self->base.mount);
@@ -1383,7 +1385,7 @@ static bool qn_diskfs_ch_dir(QnGam g, const char* directory)
 	qn_u16to8(real, QN_MAX_PATH, abspath, 0);
 	qn_bstr_set(&self->path, real);
 #else
-	chr abspath[QN_MAX_PATH];
+	char abspath[QN_MAX_PATH];
 	qn_return_when_fail(realpath(real, abspath) != NULL, false);
 
 	struct stat st;

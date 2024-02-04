@@ -59,7 +59,7 @@ struct QNMLU
 };
 
 //
-static void qn_mlu_dispose(QnGamBase* gam);
+static void qn_mlu_dispose(QnGam gam);
 static bool qn_create_mlu_from_buffer(QnMlu* self, const char* RESTRICT data, const int size);
 
 //
@@ -115,9 +115,9 @@ QnMlu* qn_create_mlu_buffer(const void* RESTRICT data, const int size)
 }
 
 //
-static void qn_mlu_dispose(QnGamBase* gam)
+static void qn_mlu_dispose(QnGam gam)
 {
-	QnMlu* self = (QnMlu*)gam;
+	QnMlu* self = qn_cast_type(gam, QnMlu);
 	qn_mlu_clean_tags(self);
 	qn_mlu_clean_errs(self);
 
@@ -538,7 +538,7 @@ bool qn_mlu_write_file(const QnMlu* self, QnMount* mount, const char* RESTRICT f
 {
 	qn_return_when_fail(qn_arr_count(&self->tags) > 0, false);
 
-	QnStream* file = qn_open_file(mount, filename, "w");
+	QnStream* file = qn_open_stream(mount, filename, "w");
 	qn_return_when_fail(file, false);
 	if (qn_stream_can_write(file) == false)
 	{

@@ -269,7 +269,7 @@ INLINE QmMat4 QM_VECTORCALL qgl_mat4_irrcht_texture(float radius, float cx, floa
 #undef VAR_CHK_NAME
 #define VAR_CHK_NAME	"QGLRDH"
 
-static void qgl_rdh_dispose(QnGamBase* g);
+static void qgl_rdh_dispose(QnGam g);
 static void qgl_rdh_layout(void);
 static void qgl_rdh_reset(void);
 static void qgl_rdh_flush(void);
@@ -449,7 +449,7 @@ RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 }
 
 //
-static void qgl_rdh_dispose(QnGamBase* g)
+static void qgl_rdh_dispose(QnGam g)
 {
 	QglRdh* self = qn_cast_type(g, QglRdh);
 	qn_return_on_ok(self->disposed, /*void*/);
@@ -897,8 +897,7 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 				case QGSCT_SAMPLER2D:
 				case QGSCT_SAMPLER3D:
 				case QGSCT_SAMPLERCUBE:
-					const GLint index = var->scauto - QGSCA_TEX1;
-					GLDEBUG(glUniform1i(var->offset, index));
+					GLDEBUG(glUniform1i(var->offset, var->scauto - QGSCA_TEX1));
 					break;
 				default:
 					qn_mesg(true, VAR_CHK_NAME, "invalid auto shader texture");
@@ -1262,7 +1261,7 @@ static void qgl_rdh_draw_sprite_ex(_In_ const QmRect* bound, _In_ float angle, _
 #define VAR_CHK_NAME "QGLBUFFER"
 
 //
-static void qgl_buffer_dispose(QnGamBase* g)
+static void qgl_buffer_dispose(QnGam g)
 {
 	QglBuffer* self = qn_cast_type(g, QglBuffer);
 	if (self->base.mapped)
@@ -1431,7 +1430,7 @@ static void qgl_render_delete_shader(const QglRenderState* self, bool check_rdh)
 }
 
 //
-static void qgl_render_dispose(QnGamBase* g)
+static void qgl_render_dispose(QnGam g)
 {
 	QglRenderState* self = qn_cast_type(g, QglRenderState);
 
@@ -1809,7 +1808,7 @@ pos_error:
 #define VAR_CHK_NAME "QGLTEXTURE"
 
 // 텍스쳐 제거
-static void qgl_texture_dispose(QnGamBase* g)
+static void qgl_texture_dispose(QnGam g)
 {
 	QglTexture* self = qn_cast_type(g, QglTexture);
 	const GLuint gl_handle = qn_get_gam_desc(self, GLuint);
@@ -1859,14 +1858,38 @@ INLINE QglTexFormat qgl_clrfmt_to_tex_enum(QgClrFmt fmt)
 		[QGCF_D32F] = { GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT },
 		[QGCF_D24S8] = { GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8 },
 
+#ifdef GL_COMPRESSED_RGB_S3TC_DXT1_EXT
 		[QGCF_DXT1] = { GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_NONE, GL_NONE },
+#else
+		[QGCF_DXT1] = { GL_NONE, GL_NONE, GL_NONE },
+#endif
+#ifdef GL_COMPRESSED_RGBA_S3TC_DXT3_EXT
 		[QGCF_DXT3] = { GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_NONE, GL_NONE },
+#else
+		[QGCF_DXT3] = { GL_NONE, GL_NONE, GL_NONE },
+#endif
+#ifdef GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
 		[QGCF_DXT5] = { GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_NONE, GL_NONE },
+#else
+		[QGCF_DXT5] = { GL_NONE, GL_NONE, GL_NONE },
+#endif
+#ifdef GL_COMPRESSED_RGB8_ETC1
 		[QGCF_EXT1] = { GL_COMPRESSED_RGB8_ETC1, GL_NONE, GL_NONE },
+#else
+		[QGCF_EXT1] = { GL_NONE, GL_NONE, GL_NONE },
+#endif
 		[QGCF_EXT2] = { GL_COMPRESSED_RGB8_ETC2, GL_NONE, GL_NONE },
 		[QGCF_EXT2_EAC] = { GL_COMPRESSED_RGBA8_ETC2_EAC, GL_NONE, GL_NONE },
+#ifdef GL_COMPRESSED_RGBA_ASTC_4x4
 		[QGCF_ASTC4] = { GL_COMPRESSED_RGBA_ASTC_4x4, GL_NONE, GL_NONE },
+#else
+		[QGCF_ASTC4] = { GL_NONE, GL_NONE, GL_NONE },
+#endif
+#ifdef GL_COMPRESSED_RGBA_ASTC_8x8
 		[QGCF_ASTC8] = { GL_COMPRESSED_RGBA_ASTC_8x8, GL_NONE, GL_NONE },
+#else
+		[QGCF_ASTC8] = { GL_NONE, GL_NONE, GL_NONE },
+#endif
 	};
 	return gl_enums[fmt];
 }
@@ -1919,7 +1942,11 @@ static QgTexture* qgl_create_texture(_In_ const char* name, _In_ const QgImage* 
 		flags |= QGTEXFS_COMPRESS;	// 압축 포맷이면 압축 플래그 추가 (압축 포맷이 아니면 무시됨)
 	}
 
+#ifdef GL_CLAMP_TO_BORDER
 	const GLenum gl_wrap = QN_TMASK(flags, QGTEXF_CLAMP) ? GL_CLAMP_TO_EDGE : QN_TMASK(flags, QGTEXF_BORDER) ? GL_CLAMP_TO_BORDER : GL_REPEAT;
+#else
+	const GLenum gl_wrap = QN_TMASK(flags, QGTEXF_CLAMP) ? GL_CLAMP_TO_EDGE : GL_REPEAT;
+#endif
 	GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl_wrap));
 	GLDEBUG(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl_wrap));
 

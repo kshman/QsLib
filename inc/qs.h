@@ -63,7 +63,7 @@ extern "C" {
 // appendix
 
 // create로 시작하는 함수는 참조할 때 qn_load, 제거할 때 qn_unload를 사용할 수 있다
-// open으로 시작하는 함수는 제거할 때 close를 사용한다
+// open으로 시작하는 함수는 제거할 때 close를 사용한다. close가 없으면 qn_unload를 사용할 수 있다
 // new로 시작하는 함수는 제거할 때 delete를 사용한다
 //
 // 추가적으로 load로 시작하는 함수는 create와 동일하다

@@ -360,7 +360,7 @@ static bool image_loader_astc(const byte* data, uint size, QgImage* image)
 #define VAR_CHK_NAME	"IMAGE"
 
 //
-static void qg_image_dispose(QnGamBase* gam)
+static void qg_image_dispose(QnGam gam)
 {
 	QgImage* self = qn_cast_type(gam, QgImage);
 	qn_free(self->data);

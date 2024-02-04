@@ -97,6 +97,7 @@
     <ClInclude Include="..\..\src\qg\stub\glad\wgl.h" />
     <ClInclude Include="..\..\src\qg\stub\glad\wglext.h" />
     <ClInclude Include="..\..\src\qg\stub\stb\stb_image.h" />
+    <ClInclude Include="..\..\src\qn\PatrickPowell_snprintf.h" />
     <ClInclude Include="..\..\src\qn\sdefl\sdefl.h" />
     <ClInclude Include="..\..\src\qn\sdefl\sinfl.h" />
     <ClInclude Include="..\..\src\qs_conf.h" />

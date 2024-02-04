@@ -1299,7 +1299,7 @@ typedef struct _VT_QNGAMBASE		QnGamBaseVT;
 QN_DECL_VTABLE(QNGAMBASE)
 {
 	const char* name;
-	void (*dispose)(QnGamBase*);
+	void (*dispose)(QnGam);
 };
 
 //
@@ -1641,7 +1641,7 @@ QSAPI char* qn_basepath(void);
 /// @param mode 모드
 /// @return 스트림
 /// mount 인수가 널이면 파일 시스템에서 파일을 연다
-QSAPI QnStream* qn_open_file(QnMount* mount, const char* RESTRICT filename, const char* RESTRICT mode);
+QSAPI QnStream* qn_open_stream(QnMount* mount, const char* RESTRICT filename, const char* RESTRICT mode);
 
 /// @brief 파일이 존재하는지 확인
 /// @param mount 마운트 (널이면 디스크 파일 시스템)
@@ -1779,7 +1779,7 @@ INLINE bool qn_stream_can_seek(QnStream* self) { return QN_TMASK(self->flags, QN
 /// @brief 메모리 스트림의 데이터 얻기
 /// @param self 스트림
 /// @return 메모리 포인터
-QSAPI void* qn_mem_stream_get_data(QnStream* self);
+QSAPI const void* qn_mem_stream_get_data(QnStream* self);
 
 // 디렉토리
 

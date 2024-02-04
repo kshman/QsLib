@@ -290,7 +290,7 @@ typedef struct QNREALTIMER
 } QnRealTimer;
 
 //
-static void qn_timer_dispose(QnGamBase* gam)
+static void qn_timer_dispose(QnGam gam)
 {
 	qn_free(gam);
 }

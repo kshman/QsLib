@@ -133,7 +133,7 @@ typedef enum QNMODFLAG
 // 단위 모듈 내용
 struct QNMODULE
 {
-	QnGamBase				base;
+	QN_GAM_BASE(QNGAMBASE);
 
 	char*				filename;
 	size_t				hash;
@@ -235,7 +235,7 @@ static void _qn_mod_free(QnModule* self, const bool dispose)
 }
 
 //
-static void qn_mod_dispose(QnGamBase* gam)
+static void qn_mod_dispose(QnGam gam)
 {
 	QnModule* self = qn_cast_type(gam, QnModule);
 	qn_return_on_ok(QN_TMASK(self->flags, QNMDF_SELF),/*void*/);
