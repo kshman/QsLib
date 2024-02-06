@@ -80,7 +80,7 @@ size_t qn_hash_func(const int prime8, const func_t func, const void* data)
  * @param[in] size 크기
  * @return 정수 값
  */
-static uint64_t qn_crc64(const byte* RESTRICT data, const size_t size)
+static uint64_t qn_crc64(const byte* data, const size_t size)
 {
 	// https://github.com/srned/baselib/blob/master/crc64.c
 	/* Redis uses the CRC64 variant with "Jones" coefficients and init value of 0.
@@ -201,7 +201,7 @@ static uint64_t qn_crc64(const byte* RESTRICT data, const size_t size)
  * @param[in] size 크기
  * @return 정수 값
  */
-static uint qn_crc32(const byte* RESTRICT data, const size_t size)
+static uint qn_crc32(const byte* data, const size_t size)
 {
 	static const uint crc32_table[] =
 	{
@@ -300,7 +300,7 @@ uint qn_prime_shift(const uint value, const uint min, uint* shift)
 // 메모리 조작
 
 //
-void* qn_memenc(void* RESTRICT dest, const void* RESTRICT src, const size_t size)
+void* qn_memenc(void* dest, const void* src, const size_t size)
 {
 	const byte* ps = (const byte*)src;
 	byte* pd = (byte*)dest;
@@ -315,7 +315,7 @@ void* qn_memenc(void* RESTRICT dest, const void* RESTRICT src, const size_t size
 }
 
 //
-void* qn_memdec(void* RESTRICT dest, const void* RESTRICT src, const size_t size)
+void* qn_memdec(void* dest, const void* src, const size_t size)
 {
 	const byte* ps = (const byte*)src;
 	byte* pd = (byte*)dest;
@@ -374,7 +374,7 @@ void* qn_memzucp_s(const void* src, const size_t srcsize, const size_t destsize)
 	qn_return_when_fail(srcsize > 0, NULL);
 	qn_return_when_fail(destsize > 0, NULL);
 	
-	byte* p = qn_alloc(destsize, byte);
+	byte* p = qn_alloc(destsize + 4, byte);
 	const int ret = sinflate(p, (int)destsize, src, (int)srcsize);
 	if (ret != (int)destsize)
 	{
@@ -408,7 +408,7 @@ char qn_memhrb(const size_t size, double* out)
 }
 
 //
-char* qn_memdmp(const void* RESTRICT ptr, const size_t size, char* RESTRICT outbuf, const size_t buflen)
+char* qn_memdmp(const void* ptr, const size_t size, char* outbuf, const size_t buflen)
 {
 	qn_return_when_fail(ptr != NULL, NULL);
 	qn_return_when_fail(outbuf != NULL, NULL);
@@ -821,7 +821,7 @@ static void printf_alloc_outch(PatrickPowellSprintfState* state, int ch)
 
 #ifdef QS_NO_MEMORY_PROFILE
 //
-static int qn_a_printf(char** RESTRICT out, const char* RESTRICT fmt, va_list va)
+static int qn_a_printf(char** out, const char* fmt, va_list va)
 {
 	PatrickPowellSprintfState state =
 	{
@@ -834,7 +834,7 @@ static int qn_a_printf(char** RESTRICT out, const char* RESTRICT fmt, va_list va
 }
 
 //
-int qn_a_vsprintf(char** RESTRICT out, const char* RESTRICT fmt, va_list va)
+int qn_a_vsprintf(char** out, const char* fmt, va_list va)
 {
 	if (out == NULL)
 		return qn_vsnprintf(NULL, 0, fmt, va);
@@ -843,7 +843,7 @@ int qn_a_vsprintf(char** RESTRICT out, const char* RESTRICT fmt, va_list va)
 }
 
 //
-char* qn_a_vpsprintf(const char* RESTRICT fmt, va_list va)
+char* qn_a_vpsprintf(const char* fmt, va_list va)
 {
 	qn_return_when_fail(fmt != NULL, NULL);
 	char* buf;
@@ -852,7 +852,7 @@ char* qn_a_vpsprintf(const char* RESTRICT fmt, va_list va)
 }
 
 //
-int qn_a_sprintf(char** RESTRICT out, const char* RESTRICT fmt, ...)
+int qn_a_sprintf(char** out, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -862,7 +862,7 @@ int qn_a_sprintf(char** RESTRICT out, const char* RESTRICT fmt, ...)
 }
 
 //
-char* qn_a_psprintf(const char* RESTRICT fmt, ...)
+char* qn_a_psprintf(const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -911,7 +911,7 @@ char* qn_a_str_dup_cat(const char* p, ...)
 	return str;
 }
 #else
-static int qn_a_i_printf(const char* desc, size_t line, char** RESTRICT out, const char* RESTRICT fmt, va_list va)
+static int qn_a_i_printf(const char* desc, size_t line, char** out, const char* fmt, va_list va)
 {
 	PatrickPowellSprintfState state =
 	{
@@ -925,7 +925,7 @@ static int qn_a_i_printf(const char* desc, size_t line, char** RESTRICT out, con
 }
 
 //
-int qn_a_i_vsprintf(const char* desc, size_t line, char** RESTRICT out, const char* RESTRICT fmt, va_list va)
+int qn_a_i_vsprintf(const char* desc, size_t line, char** out, const char* fmt, va_list va)
 {
 	if (out == NULL)
 		return qn_vsnprintf(NULL, 0, fmt, va);
@@ -934,7 +934,7 @@ int qn_a_i_vsprintf(const char* desc, size_t line, char** RESTRICT out, const ch
 }
 
 //
-char* qn_a_i_vpsprintf(const char* desc, size_t line, const char* RESTRICT fmt, va_list va)
+char* qn_a_i_vpsprintf(const char* desc, size_t line, const char* fmt, va_list va)
 {
 	qn_return_when_fail(fmt != NULL, NULL);
 	char* buf;
@@ -943,7 +943,7 @@ char* qn_a_i_vpsprintf(const char* desc, size_t line, const char* RESTRICT fmt, 
 }
 
 //
-int qn_a_i_sprintf(const char* desc, size_t line, char** RESTRICT out, const char* RESTRICT fmt, ...)
+int qn_a_i_sprintf(const char* desc, size_t line, char** out, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -953,7 +953,7 @@ int qn_a_i_sprintf(const char* desc, size_t line, char** RESTRICT out, const cha
 }
 
 //
-char* qn_a_i_psprintf(const char* desc, size_t line, const char* RESTRICT fmt, ...)
+char* qn_a_i_psprintf(const char* desc, size_t line, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -1004,7 +1004,7 @@ char* qn_a_i_str_dup_cat(const char* desc, size_t line, const char* p, ...)
 #endif
 
 //
-int qn_vsnprintf(char* RESTRICT out, size_t len, const char* RESTRICT fmt, va_list va)
+int qn_vsnprintf(char* out, size_t len, const char* fmt, va_list va)
 {
 	qn_return_when_fail(fmt != NULL, -1);
 	PatrickPowellSprintfState state =
@@ -1019,7 +1019,7 @@ int qn_vsnprintf(char* RESTRICT out, size_t len, const char* RESTRICT fmt, va_li
 }
 
 //
-int qn_snprintf(char* RESTRICT out, const size_t len, const char* RESTRICT fmt, ...)
+int qn_snprintf(char* out, const size_t len, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -1029,7 +1029,7 @@ int qn_snprintf(char* RESTRICT out, const size_t len, const char* RESTRICT fmt, 
 }
 
 //
-char* qn_strcpy(char* RESTRICT p, const char* RESTRICT src)
+char* qn_strcpy(char* p, const char* src)
 {
 #ifdef __GNUC__
 	return strcpy(p, src);
@@ -1041,7 +1041,7 @@ char* qn_strcpy(char* RESTRICT p, const char* RESTRICT src)
 }
 
 //
-char* qn_strncpy(char* RESTRICT p, const char* RESTRICT src, size_t len)
+char* qn_strncpy(char* p, const char* src, size_t len)
 {
 #ifdef __GNUC__
 	return strncpy(p, src, len);
@@ -1062,7 +1062,7 @@ char* qn_strncpy(char* RESTRICT p, const char* RESTRICT src, size_t len)
 }
 
 //
-char* qn_stpcpy(char* RESTRICT dest, const char* RESTRICT src)
+char* qn_stpcpy(char* dest, const char* src)
 {
 	do (*dest++ = *src);
 	while (*src++ != '\0');
@@ -1070,7 +1070,7 @@ char* qn_stpcpy(char* RESTRICT dest, const char* RESTRICT src)
 }
 
 //
-char* qn_strcat(char* RESTRICT dest, const char* RESTRICT src)
+char* qn_strcat(char* dest, const char* src)
 {
 #ifdef __GNUC__
 	return strcat(dest, src);
@@ -1083,7 +1083,7 @@ char* qn_strcat(char* RESTRICT dest, const char* RESTRICT src)
 }
 
 //
-char* qn_strncat(char* RESTRICT dest, const char* RESTRICT src, size_t len)
+char* qn_strncat(char* dest, const char* src, size_t len)
 {
 #ifdef __GNUC__
 	return strncat(dest, src, len);
@@ -1098,7 +1098,7 @@ char* qn_strncat(char* RESTRICT dest, const char* RESTRICT src, size_t len)
 }
 
 //
-char* qn_strconcat(size_t max_len, char* RESTRICT dest, ...)
+char* qn_strconcat(size_t max_len, char* dest, ...)
 {
 	va_list va;
 	char* c = dest;
@@ -1123,7 +1123,7 @@ pos_exit:
 }
 
 //
-size_t qn_strfll(char* RESTRICT dest, const size_t pos, const size_t end, const int ch)
+size_t qn_strfll(char* dest, const size_t pos, const size_t end, const int ch)
 {
 	if (pos >= end)
 		return pos;
@@ -1134,7 +1134,7 @@ size_t qn_strfll(char* RESTRICT dest, const size_t pos, const size_t end, const 
 }
 
 //
-size_t qn_strhash(const char* RESTRICT p)
+size_t qn_strhash(const char* p)
 {
 	const char* sz = p;
 	size_t h = (size_t)*sz++;
@@ -1148,7 +1148,7 @@ size_t qn_strhash(const char* RESTRICT p)
 }
 
 //
-size_t qn_strihash(const char* RESTRICT p)
+size_t qn_strihash(const char* p)
 {
 	const char* sz = p;
 	size_t h = (size_t)tolower(*sz);
@@ -1163,7 +1163,7 @@ size_t qn_strihash(const char* RESTRICT p)
 }
 
 //
-uint qn_strshash(const char* RESTRICT p)
+uint qn_strshash(const char* p)
 {
 	const char* sz = p;
 	uint h = (uint)tolower(*sz);
@@ -1400,7 +1400,7 @@ char* qn_strrchr(const char* p, int ch)
 }
 
 //
-char* qn_strtok(_Inout_opt_z_ char* RESTRICT p, _In_z_ const char* RESTRICT sep, _Inout_ char** RESTRICT ctx)
+char* qn_strtok(_Inout_opt_z_ char* p, _In_z_ const char* sep, _Inout_ char** ctx)
 {
 #if defined _MSC_VER
 	return strtok_s(p, sep, ctx);
@@ -1436,7 +1436,7 @@ char* qn_strtok(_Inout_opt_z_ char* RESTRICT p, _In_z_ const char* RESTRICT sep,
 }
 
 //
-const char* qn_strext(const char* RESTRICT p, const char* RESTRICT name, int separator)
+const char* qn_strext(const char* p, const char* name, int separator)
 {
 	size_t len = strlen(name);
 	for (;;)
@@ -1456,7 +1456,7 @@ const char* qn_strext(const char* RESTRICT p, const char* RESTRICT name, int sep
 }
 
 //
-char* qn_strmid(char* RESTRICT dest, const char* RESTRICT src, const size_t pos, const size_t len)
+char* qn_strmid(char* dest, const char* src, const size_t pos, const size_t len)
 {
 	const size_t size = strlen(src);
 	if (pos > size)
@@ -1499,7 +1499,7 @@ char* qn_strtrm(char* dest)
 }
 
 //
-char* qn_strrem(char* RESTRICT p, const char* RESTRICT rmlist)
+char* qn_strrem(char* p, const char* rmlist)
 {
 	const char* p1 = p;
 	char* p2 = p;
@@ -1996,7 +1996,7 @@ pos_done:
 		}
 
 //
-char* qn_u8ncpy(char* RESTRICT dest, const char* RESTRICT src, size_t len)
+char* qn_u8ncpy(char* dest, const char* src, size_t len)
 {
 	const char* t = src;
 
@@ -2014,7 +2014,7 @@ char* qn_u8ncpy(char* RESTRICT dest, const char* RESTRICT src, size_t len)
 }
 
 //
-size_t qn_u8lcpy(char* RESTRICT dest, const char* RESTRICT src, size_t len)
+size_t qn_u8lcpy(char* dest, const char* src, size_t len)
 {
 	const char* t = src;
 
@@ -2100,7 +2100,7 @@ int qn_u16ucb(const uchar2 high, const uchar2 low, char* out)
 // 문자열 변환
 
 //
-size_t qn_mbstowcs(wchar* RESTRICT outwcs, const size_t outsize, const char* RESTRICT inmbs, const size_t insize)
+size_t qn_mbstowcs(wchar* outwcs, const size_t outsize, const char* inmbs, const size_t insize)
 {
 #ifdef _QN_WINDOWS_
 	int len = MultiByteToWideChar(CP_THREAD_ACP, 0, inmbs, insize == 0 ? -1 : (int)insize, outwcs, (int)outsize);
@@ -2116,7 +2116,7 @@ size_t qn_mbstowcs(wchar* RESTRICT outwcs, const size_t outsize, const char* RES
 }
 
 //
-size_t qn_wcstombs(char* RESTRICT outmbs, const size_t outsize, const wchar* RESTRICT inwcs, const size_t insize)
+size_t qn_wcstombs(char* outmbs, const size_t outsize, const wchar* inwcs, const size_t insize)
 {
 #ifdef _QN_WINDOWS_
 	int len = WideCharToMultiByte(CP_THREAD_ACP, 0, inwcs, insize == 0 ? -1 : (int)insize, outmbs, (int)outsize, NULL, NULL);
@@ -2132,7 +2132,7 @@ size_t qn_wcstombs(char* RESTRICT outmbs, const size_t outsize, const wchar* RES
 }
 
 //
-size_t qn_u8to32(uchar4* RESTRICT dest, const size_t destsize, const char* RESTRICT src, const size_t srclen)
+size_t qn_u8to32(uchar4* dest, const size_t destsize, const char* src, const size_t srclen)
 {
 	qn_return_when_fail(src, 0);
 
@@ -2161,7 +2161,7 @@ size_t qn_u8to32(uchar4* RESTRICT dest, const size_t destsize, const char* RESTR
 }
 
 //
-size_t qn_u8to16(uchar2* RESTRICT dest, const size_t destsize, const char* RESTRICT src, const size_t srclen)
+size_t qn_u8to16(uchar2* dest, const size_t destsize, const char* src, const size_t srclen)
 {
 	qn_return_when_fail(src, 0);
 
@@ -2201,7 +2201,7 @@ size_t qn_u8to16(uchar2* RESTRICT dest, const size_t destsize, const char* RESTR
 }
 
 //
-size_t qn_u32to8(char* RESTRICT dest, size_t destsize, const uchar4* RESTRICT src, const size_t srclen)
+size_t qn_u32to8(char* dest, size_t destsize, const uchar4* src, const size_t srclen)
 {
 	qn_return_when_fail(src, 0);
 
@@ -2283,7 +2283,7 @@ size_t qn_u32to8(char* RESTRICT dest, size_t destsize, const uchar4* RESTRICT sr
 }
 
 //
-size_t qn_u16to8(char* RESTRICT dest, size_t destsize, const uchar2* RESTRICT src, const size_t srclen)
+size_t qn_u16to8(char* dest, size_t destsize, const uchar2* src, const size_t srclen)
 {
 	qn_return_when_fail(src, 0);
 
@@ -2446,7 +2446,7 @@ size_t qn_u16to8(char* RESTRICT dest, size_t destsize, const uchar2* RESTRICT sr
 }
 
 //
-size_t qn_u16to32(uchar4* RESTRICT dest, size_t destsize, const uchar2* RESTRICT src, const size_t srclen)
+size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, const size_t srclen)
 {
 	qn_return_when_fail(src, 0);
 
@@ -2592,7 +2592,7 @@ size_t qn_u16to32(uchar4* RESTRICT dest, size_t destsize, const uchar2* RESTRICT
 }
 
 //
-size_t qn_u32to16(uchar2* RESTRICT dest, size_t destsize, const uchar4* RESTRICT src, const size_t srclen)
+size_t qn_u32to16(uchar2* dest, size_t destsize, const uchar4* src, const size_t srclen)
 {
 	qn_return_when_fail(src, 0);
 
@@ -2668,13 +2668,13 @@ size_t qn_u32to16(uchar2* RESTRICT dest, size_t destsize, const uchar4* RESTRICT
 
 #ifdef QS_NO_MEMORY_PROFILE
 #define DEF_UTF_DUP(name, in_type, out_type)\
-	out_type* qn_a_##name(const in_type* RESTRICT src, size_t srclen) {\
+	out_type* qn_a_##name(const in_type* src, size_t srclen) {\
 		size_t len=qn_##name(NULL,0,src,srclen)+1; qn_return_on_ok(len<2,NULL);\
 		out_type* buf=qn_a_alloc(len*sizeof(out_type), false); qn_##name(buf,len,src,srclen);/* NOLINT */\
 		return buf; }
 #else
 #define DEF_UTF_DUP(name, in_type, out_type)\
-	out_type* qn_a_i_##name(const in_type* RESTRICT src, size_t srclen, const char* desc, size_t line) {\
+	out_type* qn_a_i_##name(const in_type* src, size_t srclen, const char* desc, size_t line) {\
 		size_t len=qn_##name(NULL,0,src,srclen)+1; qn_return_on_ok(len<2,NULL);\
 		out_type* buf=qn_a_i_alloc(len*sizeof(out_type), false, desc, line); qn_##name(buf,len,src,srclen);/* NOLINT */\
 		return buf; }

@@ -344,7 +344,7 @@ QnModule* qn_open_mod(const char* filename, const int flags)
 }
 
 //
-void* qn_mod_func(QnModule* self, const char* RESTRICT name)
+void* qn_mod_func(QnModule* self, const char* name)
 {
 	qn_return_when_fail(name != NULL && *name != '\0', NULL);
 #ifdef _QN_WINDOWS_
@@ -680,7 +680,7 @@ QnThread* qn_thread_self(void)
 }
 
 //
-QnThread* qn_new_thread(const char* RESTRICT name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
+QnThread* qn_new_thread(const char* name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
 {
 	QnRealThread* self = qn_alloc_zero_1(QnRealThread);
 
@@ -738,7 +738,7 @@ void qn_delete_thread(QnThread* self)
 }
 
 //
-bool qn_thread_once(const char* RESTRICT name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
+bool qn_thread_once(const char* name, const QnThreadCallback func, void* data, const uint stack_size, const int busy)
 {
 	QnRealThread* self = qn_alloc_zero_1(QnRealThread);
 
@@ -908,7 +908,7 @@ QnTls qn_tls(const paramfunc_t callback)
 }
 
 //
-void qn_tlsset(const QnTls tls, void* RESTRICT data)
+void qn_tlsset(const QnTls tls, void* data)
 {
 	const uint nth = (uint)tls;
 	qn_return_when_fail(nth < (uint)QN_COUNTOF(thread_impl.tls_callback),/*void*/);

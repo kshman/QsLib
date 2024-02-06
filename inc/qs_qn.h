@@ -117,15 +117,6 @@
 #define FINLINE							INLINE
 #endif
 #endif // FINLINE
-#ifndef RESTRICT
-#if defined (_MSC_VER)
-#define RESTRICT						__restrict
-#elif defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L
-#define RESTRICT						restrict
-#else
-#define RESTRICT
-#endif
-#endif // RESTRICT
 #ifndef NORETURN
 #if defined (_MSC_VER)
 #define NORETURN						__declspec(noreturn)
@@ -401,7 +392,7 @@ QSAPI const char* qn_p_unknown(int value, bool hex);
 /// @brief 프로퍼티를 설정한다
 /// @param name 프로퍼티 이름
 /// @param value 프로퍼티 값
-QSAPI void qn_set_prop(const char* RESTRICT name, const char* RESTRICT value);
+QSAPI void qn_set_prop(const char* name, const char* value);
 
 /// @brief 프로퍼티를 얻는다
 /// @param name 프로퍼티 이름
@@ -441,19 +432,19 @@ QSAPI nint qn_sym(const char* name);
 /// @param[in] filename 파일 이름이나 함수 이름
 /// @param[in] line 줄 번호
 /// @return 출력한 문자열 길이
-QSAPI int qn_asrt(const char* RESTRICT expr, const char* RESTRICT mesg, const char* RESTRICT filename, int line);
+QSAPI int qn_asrt(const char* expr, const char* mesg, const char* filename, int line);
 
 /// @brief HALT 메시지
 /// @param[in] head 머릿글
 /// @param[in] mesg 메시지
-QSAPI NORETURN void qn_halt(const char* RESTRICT head, const char* RESTRICT mesg);
+QSAPI NORETURN void qn_halt(const char* head, const char* mesg);
 
 /// @brief 디버그용 문자열 출력. 출력할 문자열의 끝에 개행문자가 붙는다
 /// @param[in] breakpoint 참이면 디버거 연결시 중단점 표시
 /// @param[in] head 머릿글
 /// @param[in] mesg 메시지
 /// @return 출력한 문자열 길이
-QSAPI int qn_mesg(bool breakpoint, const char* RESTRICT head, const char* RESTRICT mesg);
+QSAPI int qn_mesg(bool breakpoint, const char* head, const char* mesg);
 
 /// @brief 디버그용 문자열 포맷 출력. 출력할 문자열의 끝에 개행문자가 붙는다
 /// @param[in] breakpoint 참이면 디버거 연결시 중단점 표시
@@ -461,7 +452,7 @@ QSAPI int qn_mesg(bool breakpoint, const char* RESTRICT head, const char* RESTRI
 /// @param[in] fmt 문자열 포맷
 /// @param ... 인수
 /// @return 출력한 문자열 길이
-QSAPI int qn_mesgf(bool breakpoint, const char* RESTRICT head, const char* RESTRICT fmt, ...);
+QSAPI int qn_mesgf(bool breakpoint, const char* head, const char* fmt, ...);
 
 /// @brief 문자열을 콘솔 또는 지정한 리다이렉션으로 출력한다. 출력할 문자열의 끝에 개행문자가 붙는다
 /// @param[in] mesg 출력할 내용
@@ -516,14 +507,14 @@ typedef struct QNALLOCTABLE
 /// @param[in] src 복호할 메모리
 /// @param[in] size 크기
 /// @return dest 그대로
-QSAPI void* qn_memenc(void* RESTRICT dest, const void* RESTRICT src, size_t size);
+QSAPI void* qn_memenc(void* dest, const void* src, size_t size);
 
 /// @brief 복호화한 메모리를 되돌린다
 /// @param[out] dest 출력 대상
 /// @param[in] src 복호화 했던 메모리
 /// @param[in] size 크기
 /// @return dest 그대로
-QSAPI void* qn_memdec(void* RESTRICT dest, const void* RESTRICT src, size_t size);
+QSAPI void* qn_memdec(void* dest, const void* src, size_t size);
 
 /// @brief 메모리를 압축한다. qn_free()로 해제해야 한다
 /// @param[in] src 메모리 원본
@@ -561,7 +552,7 @@ QSAPI char qn_memhrb(size_t size, double* out);
 /// @param[out] outbuf 출력 버퍼
 /// @param[in] buflen 출력 버퍼의 크기
 /// @return outbuf 인수 그대로
-QSAPI char* qn_memdmp(const void* RESTRICT ptr, size_t size, char* RESTRICT outbuf, size_t buflen);
+QSAPI char* qn_memdmp(const void* ptr, size_t size, char* outbuf, size_t buflen);
 
 /// @brief 메모리 테이블을 등록한다
 /// @param[in] table 테이블
@@ -736,13 +727,13 @@ QSAPI void qn_qsortc(void* ptr, size_t count, size_t stride, int(*compfunc)(void
 #define qn_strdupcat(p,...)			qn_a_str_dup_cat(p,__VA_ARGS__)
 
 // qn_vasprintf 안쪽 
-QSAPI int qn_a_vsprintf(char** RESTRICT out, const char* RESTRICT fmt, va_list va);
+QSAPI int qn_a_vsprintf(char** out, const char* fmt, va_list va);
 // qn_vapsprintf 안쪽
-QSAPI char* qn_a_vpsprintf(const char* RESTRICT fmt, va_list va);
+QSAPI char* qn_a_vpsprintf(const char* fmt, va_list va);
 // qn_asprintf 안쪽
-QSAPI int qn_a_sprintf(char** RESTRICT out, const char* RESTRICT fmt, ...);
+QSAPI int qn_a_sprintf(char** out, const char* fmt, ...);
 // qn_apsprintf 안쪽
-QSAPI char* qn_a_psprintf(const char* RESTRICT fmt, ...);
+QSAPI char* qn_a_psprintf(const char* fmt, ...);
 // qn_strdup 안쪽
 QSAPI char* qn_a_str_dup(const char* p);
 // qn_strcat 안쪽
@@ -797,17 +788,17 @@ QSAPI char* qn_a_str_dup_cat(const char* p, ...);
 #define qn_strdupcat(p,...)			qn_a_i_str_dup_cat(__FUNCTION__, __LINE__, p, __VA_ARGS__)
 
 // qn_vasprintf 안쪽 
-QSAPI int qn_a_i_vsprintf(const char* RESTRICT desc, size_t line, char** RESTRICT out, const char* RESTRICT fmt, va_list va);
+QSAPI int qn_a_i_vsprintf(const char* desc, size_t line, char** out, const char* fmt, va_list va);
 // qn_vapsprintf 안쪽
-QSAPI char* qn_a_i_vpsprintf(const char* RESTRICT desc, size_t line, const char* RESTRICT fmt, va_list va);
+QSAPI char* qn_a_i_vpsprintf(const char* desc, size_t line, const char* fmt, va_list va);
 // qn_asprintf 안쪽
-QSAPI int qn_a_i_sprintf(const char* RESTRICT desc, size_t line, char** RESTRICT out, const char* RESTRICT fmt, ...);
+QSAPI int qn_a_i_sprintf(const char* desc, size_t line, char** out, const char* fmt, ...);
 // qn_apsprintf 안쪽
-QSAPI char* qn_a_i_psprintf(const char* RESTRICT desc, size_t line, const char* RESTRICT fmt, ...);
+QSAPI char* qn_a_i_psprintf(const char* desc, size_t line, const char* fmt, ...);
 // qn_strdup 안쪽
-QSAPI char* qn_a_i_str_dup(const char* RESTRICT desc, size_t line, const char* p);
+QSAPI char* qn_a_i_str_dup(const char* desc, size_t line, const char* p);
 // qn_strcat 안쪽
-QSAPI char* qn_a_i_str_dup_cat(const char* RESTRICT desc, size_t line, const char* p, ...);
+QSAPI char* qn_a_i_str_dup_cat(const char* desc, size_t line, const char* p, ...);
 #endif
 
 /// @brief 가변 포맷 문자열
@@ -816,7 +807,7 @@ QSAPI char* qn_a_i_str_dup_cat(const char* RESTRICT desc, size_t line, const cha
 /// @param[in] fmt 포맷 문자열
 /// @param[in] va 가변 인수
 /// @return 결과 문자열의 길이
-QSAPI int qn_vsnprintf(char* RESTRICT out, size_t len, const char* RESTRICT fmt, va_list va);
+QSAPI int qn_vsnprintf(char* out, size_t len, const char* fmt, va_list va);
 
 /// @brief 문자열을 포맷한다
 /// @param[out] out 출력 문자열의 버퍼 포인터. 문자열 길이만 얻으려면 NULL로 설정
@@ -824,47 +815,47 @@ QSAPI int qn_vsnprintf(char* RESTRICT out, size_t len, const char* RESTRICT fmt,
 /// @param[in] fmt 포맷 문자열
 /// @param ... 인수
 /// @return 결과 문자열의 길이
-QSAPI int qn_snprintf(char* RESTRICT out, size_t len, const char* RESTRICT fmt, ...);
+QSAPI int qn_snprintf(char* out, size_t len, const char* fmt, ...);
 
 /// @brief 문자열 복사
 /// @param p 대상
 /// @param src 원본
 /// @return 대상 포인터
-QSAPI char* qn_strcpy(char* RESTRICT p, const char* RESTRICT src);
+QSAPI char* qn_strcpy(char* p, const char* src);
 
 /// @brief 문자열 길이 만큼 복사
 /// @param p 대상
 /// @param src 원본
 /// @param len 복사할 길이
 /// @return 대상 포인터
-QSAPI char* qn_strncpy(char* RESTRICT p, const char* RESTRICT src, size_t len);
+QSAPI char* qn_strncpy(char* p, const char* src, size_t len);
 
 /// @brief 문자열을 복사하고 대상 문자열을 끝부분을 반환한다
 /// @param[in,out] dest 대상 문자열
 /// @param[in] src 복사할 문자열
 /// @return 복사한 다음 대상 문자열 끝부분
 /// @details strcpy(dest, src); dest = dest + strlen(src) 라고 보면 된다
-QSAPI char* qn_stpcpy(char* RESTRICT dest, const char* RESTRICT src);
+QSAPI char* qn_stpcpy(char* dest, const char* src);
 
 /// @brief 문자열을 뒤에 덧붙인다
 /// @param[in,out] dest 대상 문자열
 /// @param[in] src 덧붙일 문자열
 /// @return 대상 문자열
-QSAPI char* qn_strcat(char* RESTRICT dest, const char* RESTRICT src);
+QSAPI char* qn_strcat(char* dest, const char* src);
 
 /// @brief 문자열 길이 만큼 뒤에 덧붙인다
 /// @param[in,out] dest 대상 문자열
 /// @param[in] src 덧붙일 문자열
 /// @param[in] len 덧붙일 길이
 /// @return 대상 문자열
-QSAPI char* qn_strncat(char* RESTRICT dest, const char* RESTRICT src, size_t len);
+QSAPI char* qn_strncat(char* dest, const char* src, size_t len);
 
 /// @brief 문자열을 뒤에 덧붙인다
 /// @param[in] max_len 최대 길이
 /// @param[in,out] dest 대상 문자열
 /// @param[in] ... 덧붙일 문자열
 /// @return 대상 문자열
-QSAPI char* qn_strconcat(size_t max_len, char* RESTRICT dest, ...);
+QSAPI char* qn_strconcat(size_t max_len, char* dest, ...);
 
 /// @brief 글자로 채우기
 /// @param[in,out] dest 채울 대상 버퍼
@@ -872,22 +863,22 @@ QSAPI char* qn_strconcat(size_t max_len, char* RESTRICT dest, ...);
 /// @param[in] end 채울 끝 위치
 /// @param[in] ch 채울 문자
 /// @return 마지막으로 채운 곳 + 1의 위치
-QSAPI size_t qn_strfll(char* RESTRICT dest, size_t pos, size_t end, int ch);
+QSAPI size_t qn_strfll(char* dest, size_t pos, size_t end, int ch);
 
 /// @brief 문자열 해시
 /// @param[in] p 해시할 문자열
 /// @return 해시 값
-QSAPI size_t qn_strhash(const char* RESTRICT p);
+QSAPI size_t qn_strhash(const char* p);
 
 /// @brief 문자열 해시 (대소문자 구별 안함)
 /// @param[in] p 해시할 문자열
 /// @return 해시 값
-QSAPI size_t qn_strihash(const char* RESTRICT p);
+QSAPI size_t qn_strihash(const char* p);
 
 /// @brief 문자열 해시 (대소문자 구별 안함)
 /// @param[in] p 해시할 문자열
 /// @return 해시 값
-QSAPI uint qn_strshash(const char* RESTRICT p);
+QSAPI uint qn_strshash(const char* p);
 
 /// @brief 문자열 비교
 /// @param p1 문자열1
@@ -973,14 +964,14 @@ QSAPI char* qn_strrchr(const char* p, int ch);
 /// @param[in] sep 구분자
 /// @param[in,out] ctx 토큰화된 문자열의 위치
 /// @return 토큰화된 문자열
-QSAPI char* qn_strtok(_Inout_opt_z_ char* RESTRICT p, _In_z_ const char* RESTRICT sep, _Inout_ char** RESTRICT ctx);
+QSAPI char* qn_strtok(_Inout_opt_z_ char* p, _In_z_ const char* sep, _Inout_ char** ctx);
 
 /// @brief 구분자로 분리된 문자열에서 이름에 해당하는 문자열이 있는지 확인한다
 /// @param[in] p 대상 문자열
 /// @param[in] name 이름
 /// @param[in] separator 구분자
 /// @return 찾은 위치 포인터 (못 찾으면 NULL)
-QSAPI const char* qn_strext(const char* RESTRICT p, const char* RESTRICT name, int separator);
+QSAPI const char* qn_strext(const char* p, const char* name, int separator);
 
 /// @brief 문자열을 특정 위치에서 얻는다
 /// @param[in,out] dest 얻은 문자열 버퍼
@@ -988,7 +979,7 @@ QSAPI const char* qn_strext(const char* RESTRICT p, const char* RESTRICT name, i
 /// @param[in] pos 찾을 위치
 /// @param[in] len 얻을 길이
 /// @return 얻은 문자열 버퍼 그대로
-QSAPI char* qn_strmid(char* RESTRICT dest, const char* RESTRICT src, size_t pos, size_t len);
+QSAPI char* qn_strmid(char* dest, const char* src, size_t pos, size_t len);
 
 /// @brief 문자열에서 왼쪽 공백을 없앤다
 /// @param[in,out] dest 대상 문자열
@@ -1009,7 +1000,7 @@ QSAPI char* qn_strtrm(char* dest);
 /// @param[in,out] p 대상 문자열
 /// @param[in] rmlist 지울 문자 배열
 /// @return 대상 문자열 그대로
-QSAPI char* qn_strrem(char* RESTRICT p, const char* RESTRICT rmlist);
+QSAPI char* qn_strrem(char* p, const char* rmlist);
 
 /// @brief 문자열을 대문자로
 /// @param p 대문자로 바꿀 문자열
@@ -1093,14 +1084,14 @@ QSAPI size_t qn_u8len(const char* s);
 /// @param src 원본 문자열 
 /// @param len 복사할 길이
 /// @return 대상 문자열 버퍼 그대로
-QSAPI char* qn_u8ncpy(char* RESTRICT dest, const char* RESTRICT src, size_t len);
+QSAPI char* qn_u8ncpy(char* dest, const char* src, size_t len);
 
 /// @brief UTF-8 문자열 복사
 /// @param dest 대상 문자열
 /// @param src 원본 문자열
 /// @param len 복사할 길이
 /// @return 대상 문자열의 길이
-QSAPI size_t qn_u8lcpy(char* RESTRICT dest, const char* RESTRICT src, size_t len);
+QSAPI size_t qn_u8lcpy(char* dest, const char* src, size_t len);
 
 /// @brief UCS-4 문자를 UTF-8 문자로
 /// @param[in] c ucs4 문자.
@@ -1123,7 +1114,7 @@ QSAPI int qn_u16ucb(uchar2 high, uchar2 low, char* out);
 /// @return 와이드 문자열의 길이
 /// @remark 와이드 문자열 버퍼가 NULL이면 최종 문자열 길이만 얻는다
 /// @see mbstowcs
-QSAPI size_t qn_mbstowcs(wchar* RESTRICT outwcs, size_t outsize, const char* RESTRICT inmbs, size_t insize);
+QSAPI size_t qn_mbstowcs(wchar* outwcs, size_t outsize, const char* inmbs, size_t insize);
 
 /// @brief 와이드 문자열을 멀티바이트 문자열로 변환
 /// @param[out] outmbs 출력할 멀티바이트 문자열 버퍼 (NULL 가능)
@@ -1133,7 +1124,7 @@ QSAPI size_t qn_mbstowcs(wchar* RESTRICT outwcs, size_t outsize, const char* RES
 /// @return 멀티바이트 문자열의 길이
 /// @remark 멀티바이트 문자열 버퍼가 NULL이면 최종 문자열 길이만 얻는다
 /// @see wcstombs
-QSAPI size_t qn_wcstombs(char* RESTRICT outmbs, size_t outsize, const wchar* RESTRICT inwcs, size_t insize);
+QSAPI size_t qn_wcstombs(char* outmbs, size_t outsize, const wchar* inwcs, size_t insize);
 
 /// @brief utf8 -> ucs4 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
 /// @param[out]	dest (널값이 아니면) 대상 버퍼 (ucs4)
@@ -1141,7 +1132,7 @@ QSAPI size_t qn_wcstombs(char* RESTRICT outmbs, size_t outsize, const wchar* RES
 /// @param[in] src 원본 (utf8)
 /// @param[in] srclen 원본 길이. 0으로 지정할 수 있음
 /// @return	변환한 길이 또는 변환에 필요한 길이
-QSAPI size_t qn_u8to32(uchar4* RESTRICT dest, size_t destsize, const char* RESTRICT src, size_t srclen);
+QSAPI size_t qn_u8to32(uchar4* dest, size_t destsize, const char* src, size_t srclen);
 
 /// @brief utf8 -> utf16 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
 /// @param[out]	dest (널값이 아니면) 대상 버퍼 (utf16)
@@ -1149,7 +1140,7 @@ QSAPI size_t qn_u8to32(uchar4* RESTRICT dest, size_t destsize, const char* RESTR
 /// @param[in] src 원본 (utf8)
 /// @param[in] srclen 원본 길이. 0으로 지정할 수 있음
 /// @return	변환한 길이 또는 변환에 필요한 길이
-QSAPI size_t qn_u8to16(uchar2* RESTRICT dest, size_t destsize, const char* RESTRICT src, size_t srclen);
+QSAPI size_t qn_u8to16(uchar2* dest, size_t destsize, const char* src, size_t srclen);
 
 /// @brief ucs4 -> utf8 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
 /// @param[out]	dest (널값이 아니면) 대상 버퍼 (utf8)
@@ -1157,7 +1148,7 @@ QSAPI size_t qn_u8to16(uchar2* RESTRICT dest, size_t destsize, const char* RESTR
 /// @param[in] src 원본 (ucs4)
 /// @param[in] srclen 원본 길이. 0으로 지정할 수 있음
 /// @return	변환한 길이 또는 변환에 필요한 길이
-QSAPI size_t qn_u32to8(char* RESTRICT dest, size_t destsize, const uchar4* RESTRICT src, size_t srclen);
+QSAPI size_t qn_u32to8(char* dest, size_t destsize, const uchar4* src, size_t srclen);
 
 /// @brief utf16 -> utf8 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
 /// @param[out]	dest (널값이 아니면) 대상 버퍼 (utf8)
@@ -1165,7 +1156,7 @@ QSAPI size_t qn_u32to8(char* RESTRICT dest, size_t destsize, const uchar4* RESTR
 /// @param[in] src 원본 (utf16)
 /// @param[in] srclen 원본 길이. 0으로 지정할 수 있음
 /// @return	변환한 길이 또는 변환에 필요한 길이
-QSAPI size_t qn_u16to8(char* RESTRICT dest, size_t destsize, const uchar2* RESTRICT src, size_t srclen);
+QSAPI size_t qn_u16to8(char* dest, size_t destsize, const uchar2* src, size_t srclen);
 
 /// @brief utf16 -> ucs4 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
 /// @param[out]	dest (널값이 아니면) 대상 버퍼 (ucs4)
@@ -1173,7 +1164,7 @@ QSAPI size_t qn_u16to8(char* RESTRICT dest, size_t destsize, const uchar2* RESTR
 /// @param[in] src 원본 (utf16)
 /// @param[in] srclen 원본 길이. 0으로 지정할 수 있음
 /// @return	변환한 길이 또는 변환에 필요한 길이
-QSAPI size_t qn_u16to32(uchar4* RESTRICT dest, size_t destsize, const uchar2* RESTRICT src, size_t srclen);
+QSAPI size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, size_t srclen);
 
 /// @brief ucs4 -> utf16 대상 버퍼가 널값이면 변환에 필요한 길이를 반환
 /// @param[out]	dest (널값이 아니면) 대상 버퍼 (utf16)
@@ -1181,7 +1172,7 @@ QSAPI size_t qn_u16to32(uchar4* RESTRICT dest, size_t destsize, const uchar2* RE
 /// @param[in] src 원본 (ucs4)
 /// @param[in] srclen 원본 길이. 0으로 지정할 수 있음
 /// @return	변환한 길이 또는 변환에 필요한 길이
-QSAPI size_t qn_u32to16(uchar2* RESTRICT dest, size_t destsize, const uchar4* RESTRICT src, size_t srclen);
+QSAPI size_t qn_u32to16(uchar2* dest, size_t destsize, const uchar4* src, size_t srclen);
 
 #ifdef QS_NO_MEMORY_PROFILE
 /// @brief 멀티바이트 문자열 -> 와이드 문자열로 변환하고 버퍼 반환
@@ -1240,14 +1231,14 @@ QSAPI size_t qn_u32to16(uchar2* RESTRICT dest, size_t destsize, const uchar4* RE
 /// @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
 #define qn_u32to16_dup(src,srclen)		qn_a_u32to16(src,srclen)
 
-QSAPI wchar* qn_a_mbstowcs(const char* RESTRICT src, size_t srclen);
-QSAPI char* qn_a_wcstombs(const wchar* RESTRICT src, size_t srclen);
-QSAPI uchar4* qn_a_u8to32(const char* RESTRICT src, size_t srclen);
-QSAPI uchar2* qn_a_u8to16(const char* RESTRICT src, size_t srclen);
-QSAPI char* qn_a_u32to8(const uchar4* RESTRICT src, size_t srclen);
-QSAPI char* qn_a_u16to8(const uchar2* RESTRICT src, size_t srclen);
-QSAPI uchar4* qn_a_u16to32(const uchar2* RESTRICT src, size_t srclen);
-QSAPI uchar2* qn_a_u32to16(const uchar4* RESTRICT src, size_t srclen);
+QSAPI wchar* qn_a_mbstowcs(const char* src, size_t srclen);
+QSAPI char* qn_a_wcstombs(const wchar* src, size_t srclen);
+QSAPI uchar4* qn_a_u8to32(const char* src, size_t srclen);
+QSAPI uchar2* qn_a_u8to16(const char* src, size_t srclen);
+QSAPI char* qn_a_u32to8(const uchar4* src, size_t srclen);
+QSAPI char* qn_a_u16to8(const uchar2* src, size_t srclen);
+QSAPI uchar4* qn_a_u16to32(const uchar2* src, size_t srclen);
+QSAPI uchar2* qn_a_u32to16(const uchar4* src, size_t srclen);
 #else
 /// @brief 멀티바이트 문자열 -> 와이드 문자열로 변환하고 버퍼 반환
 /// @param src 원본 문자열
@@ -1305,14 +1296,14 @@ QSAPI uchar2* qn_a_u32to16(const uchar4* RESTRICT src, size_t srclen);
 /// @warning 반환한 버퍼는 qn_free 함수로 지워야 한다
 #define qn_u32to16_dup(src,srclen)		qn_a_i_u32to16(src,srclen,__FUNCTION__,__LINE__)
 
-QSAPI wchar* qn_a_i_mbstowcs(const char* RESTRICT src, size_t srclen, const char* RESTRICT desc, size_t line);
-QSAPI char* qn_a_i_wcstombs(const wchar* RESTRICT src, size_t srclen, const char* RESTRICT desc, size_t line);
-QSAPI uchar4* qn_a_i_u8to32(const char* RESTRICT src, size_t srclen, const char* RESTRICT desc, size_t line);
-QSAPI uchar2* qn_a_i_u8to16(const char* RESTRICT src, size_t srclen, const char* RESTRICT desc, size_t line);
-QSAPI char* qn_a_i_u32to8(const uchar4* RESTRICT src, size_t srclen, const char* RESTRICT desc, size_t line);
-QSAPI char* qn_a_i_u16to8(const uchar2* RESTRICT src, size_t srclen, const char* RESTRICT desc, size_t line);
-QSAPI uchar4* qn_a_i_u16to32(const uchar2* RESTRICT src, size_t srclen, const char* RESTRICT desc, size_t line);
-QSAPI uchar2* qn_a_i_u32to16(const uchar4* RESTRICT src, size_t srclen, const char* RESTRICT desc, size_t line);
+QSAPI wchar* qn_a_i_mbstowcs(const char* src, size_t srclen, const char* desc, size_t line);
+QSAPI char* qn_a_i_wcstombs(const wchar* src, size_t srclen, const char* desc, size_t line);
+QSAPI uchar4* qn_a_i_u8to32(const char* src, size_t srclen, const char* desc, size_t line);
+QSAPI uchar2* qn_a_i_u8to16(const char* src, size_t srclen, const char* desc, size_t line);
+QSAPI char* qn_a_i_u32to8(const uchar4* src, size_t srclen, const char* desc, size_t line);
+QSAPI char* qn_a_i_u16to8(const uchar2* src, size_t srclen, const char* desc, size_t line);
+QSAPI uchar4* qn_a_i_u16to32(const uchar2* src, size_t srclen, const char* desc, size_t line);
+QSAPI uchar2* qn_a_i_u32to16(const uchar4* src, size_t srclen, const char* desc, size_t line);
 #endif
 
 
@@ -1358,7 +1349,7 @@ struct QNGAMBASE
 /// @param g 현재 오브젝트
 /// @param vt 가상 테이블
 /// @return 현재 오브젝트 그대로
-QSAPI QnGam qn_sc_init(QnGam g, const void* RESTRICT vt);
+QSAPI QnGam qn_sc_init(QnGam g, const void* vt);
 
 /// @brief 참조를 추가한다.
 /// @param g 현재 오브젝트
@@ -1651,20 +1642,28 @@ typedef enum QNFILETYPE
 	QNFTYPE_PICTURE = 5,									/// @brief 그림
 	QNFTYPE_SOUND = 6,										/// @brief 소리
 	QNFTYPE_VIDEO = 7,										/// @brief 비디오
+	QNFTYPE_CODE = 8,										/// @brief 코드
+	QNFTYPE_PROGRAM = 9,									/// @brief 프로그램
+	QNFTYPE_SCRIPT = 10,									/// @brief 스크립트
+	QNFTYPE_ARCHIVE = 11,									/// @brief 아카이브
+	QNFTYPE_MARKUP = 12,									/// @brief 마크업
+	QNFTYPE_MARKDOWN = 13,									/// @brief 마크다운
+	QNFTYPE_JSON = 14,										/// @brief JSON
+	QNFTYPE_TOML = 15,										/// @brief TOML
 } QnFileType;
 
 /// @brief 파일 속성
 typedef enum QNFILEATTR
 {
-	QNFATTR_NONE = 0,										/// @brief 없음
+	QNFATTR_NONE = 0,										/// @brief 파일이 없음
 	QNFATTR_FILE = QN_BIT(0),								/// @brief 파일
 	QNFATTR_DIR = QN_BIT(1),								/// @brief 디렉토리
 	QNFATTR_SYSTEM = QN_BIT(2),								/// @brief 시스템
 	QNFATTR_HIDDEN = QN_BIT(3),								/// @brief 숨김 (윈도우만)
 	QNFATTR_RDONLY = QN_BIT(4),								/// @brief 읽기 전용 (윈도우만)
-	QNFATTR_LINK = QN_BIT(5),								/// @brief 링크 (유닉스만. 윈도우는 하는법을 못찾음)
-	QNFATTR_CMPR = QN_BIT(6),								/// @brief 압축 (HFS만)
-	QNFATTR_ENCR = QN_BIT(7),								/// @brief 암호화 (HFS만)
+	QNFATTR_LINK = QN_BIT(5),								/// @brief 링크
+	QNFATTR_CMPR = QN_BIT(6),								/// @brief 압축 (윈도우/HFS만)
+	QNFATTR_ENCR = QN_BIT(7),								/// @brief 암호화 (윈도우/HFS만)
 } QnFileAttr;
 
 /// @brief 마운트 플래그
@@ -1685,23 +1684,23 @@ QSAPI size_t qn_get_file_max_alloc_size(void);
 /// @brief 한번에 파일을 읽는 기능들의 최대 허용 크기 지정 (0으로 지정하면 128MB로 초기화)
 QSAPI void qn_set_file_max_alloc_size(const size_t size);
 
-/// @brief 파일 이름에서 경로를 뽑느다
-/// @param filename 대상 파일 이름
-/// @param dest 경로를 넣을 버퍼 (길이를 얻고 싶으면 이 값을 널로 지정)
-/// @param destsize 버퍼의 크기
-/// @return 경로의 길이. 버퍼의 크기보다 길더라도 버퍼의 크기-1 만큼만 반환한다
-QSAPI size_t qn_filepath(const char* RESTRICT filename, char* RESTRICT dest, size_t destsize);
-
-/// @brief 프로그램 기본 패스를 얻는다
-/// @return 기본 패스
-/// @warning 반환 값은 qn_free 함수로 해제해야한다
-QSAPI char* qn_basepath(void);
-
 /// @brief 파일 속성을 얻는다
 /// @param path 파일 경로
 /// @return 파일 속성
 /// @see QnFileAttr
 QSAPI QnFileAttr qn_get_file_attr(const char* path);
+
+/// @brief 파일 이름에서 경로를 뽑느다
+/// @param filename 대상 파일 이름
+/// @param dest 경로를 넣을 버퍼 (길이를 얻고 싶으면 이 값을 널로 지정)
+/// @param destsize 버퍼의 크기
+/// @return 경로의 길이. 버퍼의 크기보다 길더라도 버퍼의 크기-1 만큼만 반환한다
+QSAPI size_t qn_filepath(const char* filename, char* dest, size_t destsize);
+
+/// @brief 프로그램 기본 패스를 얻는다
+/// @return 기본 패스
+/// @warning 반환 값은 qn_free 함수로 해제해야한다
+QSAPI char* qn_basepath(void);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1766,7 +1765,7 @@ struct QNMOUNT
 QN_DECL_VTABLE(QNMOUNT)
 {
 	QN_GAM_VTABLE(QNGAMBASE);
-	QnStream* (*mount_open)(/*QnMount*/QnGam, const char* RESTRICT, const char* RESTRICT);
+	QnStream* (*mount_open)(/*QnMount*/QnGam, const char*, const char*);
 	void* (*mount_read)(/*QnMount*/QnGam, const char*, int*);
 	char* (*mount_read_text)(/*QnMount*/QnGam, const char*, int*, int*);
 	QnFileAttr (*mount_exist)(/*QnMount*/QnGam, const char*);
@@ -1776,29 +1775,21 @@ QN_DECL_VTABLE(QNMOUNT)
 	QnDir* (*mount_list)(/*QnMount*/QnGam);
 };
 
-// 스트림 + 마운트 보조 함수
-
-/// @brief 파일 스트림 열기
-/// @param mount 마운트 (널이면 디스크 파일 시스템)
-/// @param filename 파일 이름
-/// @param mode 모드
-/// @return 스트림
-/// mount 인수가 널이면 파일 시스템에서 파일을 연다
-QSAPI QnStream* qn_open_stream(QnMount* mount, const char* RESTRICT filename, const char* RESTRICT mode);
+// 스트림 보조 함수
 
 /// @brief 파일이 존재하는지 확인
 /// @param mount 마운트 (널이면 디스크 파일 시스템)
 /// @param filename 파일 이름
 /// @return 파일 속성
 /// @see QnFileAttr
-QSAPI QnFileAttr qn_file_attr(QnMount* mount, const char* RESTRICT filename);
+QSAPI QnFileAttr qn_file_attr(QnMount* mount, const char* filename);
 
 /// @brief 파일을 한번에 읽는다
 /// @param mount 마운트 (널이면 디스크 파일 시스템)
 /// @param filename 파일이름
 /// @param size 파일의 크기 (널 가능)
 /// @return 파일 데이터
-QSAPI void* qn_file_alloc(QnMount* mount, const char* RESTRICT filename, int* RESTRICT size);
+QSAPI void* qn_file_alloc(QnMount* mount, const char* filename, int* size);
 
 /// @brief 텍스트 파일을 한번에 읽는다
 /// @param mount 마운트 (널이면 디스크 파일 시스템)
@@ -1806,22 +1797,17 @@ QSAPI void* qn_file_alloc(QnMount* mount, const char* RESTRICT filename, int* RE
 /// @param length 텍스트의 길이
 /// @param codepage 코드 페이지 (1200=UTF-16LE, 1201=UTF-16BE, 65001=UTF-8, 0=ANSI/시스템로캘 또는 UTF-8) 
 /// @return 텍스트 데이터
-QSAPI char* qn_file_alloc_text(QnMount* mount, const char* RESTRICT filename, int* RESTRICT length, int* RESTRICT codepage);
+QSAPI char* qn_file_alloc_text(QnMount* mount, const char* filename, int* length, int* codepage);
 
 // 스트림
 
-/// @brief 메모리 스트림 만들기
-/// @param name 스트림 이름
-/// @param initial_capacity 초기 용량
-/// @return 만든 메모리 스트림
-QSAPI QnStream* qn_create_mem_stream(const char* RESTRICT name, size_t initial_capacity);
-
-/// @brief 메모리 스트림 외부 데이터로 만들기
-/// @param name 스트림 이름
-/// @param data 데이터로 사용할 버퍼
-/// @param size 버퍼의 크기
-/// @return 만든 메모리 스트림
-QSAPI QnStream* qn_create_mem_stream_stored(const char* RESTRICT name, void* RESTRICT data, size_t size);
+/// @brief 파일 스트림 열기
+/// @param mount 마운트 (널이면 디스크 파일 시스템)
+/// @param filename 파일 이름
+/// @param mode 모드
+/// @return 스트림
+/// mount 인수가 널이면 파일 시스템에서 파일을 연다
+QSAPI QnStream* qn_open_stream(QnMount* mount, const char* filename, const char* mode);
 
 /// @brief 스트림 읽기
 /// @param self 스트림
@@ -1829,7 +1815,7 @@ QSAPI QnStream* qn_create_mem_stream_stored(const char* RESTRICT name, void* RES
 /// @param offset 오프셋
 /// @param size 크기
 /// @return 읽은 크기
-QSAPI int qn_stream_read(QnStream* self, void* RESTRICT buffer, int offset, int size);
+QSAPI int qn_stream_read(QnStream* self, void* buffer, int offset, int size);
 
 /// @brief 스트림 쓰기
 /// @param self 스트림
@@ -1837,7 +1823,7 @@ QSAPI int qn_stream_read(QnStream* self, void* RESTRICT buffer, int offset, int 
 /// @param offset 오프셋
 /// @param size 크기
 /// @return 쓴 크기
-QSAPI int qn_stream_write(QnStream* self, const void* RESTRICT buffer, int offset, int size);
+QSAPI int qn_stream_write(QnStream* self, const void* buffer, int offset, int size);
 
 /// @brief 스트림 위치 찾기
 /// @param self 스트림
@@ -1871,13 +1857,13 @@ QSAPI QnStream* qn_stream_dup(QnStream* self);
 /// @param fmt 포맷
 /// @param va 가변 인수
 /// @return 쓴 크기
-QSAPI int qn_stream_vprintf(QnStream* self, const char* RESTRICT fmt, va_list va);
+QSAPI int qn_stream_vprintf(QnStream* self, const char* fmt, va_list va);
 
 /// @brief 스트림에 포맷하여 쓰기
 /// @param self 스트림
 /// @param fmt 포맷
 /// @return 쓴 크기
-QSAPI int qn_stream_printf(QnStream* self, const char* RESTRICT fmt, ...);
+QSAPI int qn_stream_printf(QnStream* self, const char* fmt, ...);
 
 /// @brief 스트림 이름 얻기
 /// @param self 스트림
@@ -1898,6 +1884,21 @@ INLINE bool qn_stream_can_write(QnStream* self) { return QN_TMASK(self->flags, Q
 /// @param self 스트림
 /// @return 참이면 위치 찾을 수 있다
 INLINE bool qn_stream_can_seek(QnStream* self) { return QN_TMASK(self->flags, QNFF_SEEK); }
+
+// 메모리 스트림
+
+/// @brief 메모리 스트림 만들기
+/// @param name 스트림 이름
+/// @param initial_capacity 초기 용량
+/// @return 만든 메모리 스트림
+QSAPI QnStream* qn_create_mem_stream(const char* name, size_t initial_capacity);
+
+/// @brief 메모리 스트림 외부 데이터로 만들기
+/// @param name 스트림 이름
+/// @param data 데이터로 사용할 버퍼
+/// @param size 버퍼의 크기
+/// @return 만든 메모리 스트림
+QSAPI QnStream* qn_create_mem_stream_stored(const char* name, void* data, size_t size);
 
 /// @brief 메모리 스트림의 데이터 얻기
 /// @param self 스트림
@@ -1936,6 +1937,7 @@ QSAPI int qn_dir_tell(QnDir* self);
 /// @param path 마운트 경로
 /// @param mode 모드 (h=HFS, m=메모리, c=만들기, +=읽고 쓰기)
 /// @return 만든 마운트
+/// @note path를 널 값으로 하여 파일 시스템을 열 때는 실행 파일이 있는 경로를 기준으로 한다
 QSAPI QnMount* qn_open_mount(const char* path, const char* mode);
 
 /// @brief 마운트에서 파일 열기
@@ -1943,14 +1945,14 @@ QSAPI QnMount* qn_open_mount(const char* path, const char* mode);
 /// @param filename 파일 이름
 /// @param mode 모드
 /// @return 파일 스트림
-QSAPI QnStream* qn_mount_open_stream(QnMount* self, const char* RESTRICT filename, const char* RESTRICT mode);
+QSAPI QnStream* qn_mount_open_stream(QnMount* self, const char* filename, const char* mode);
 
 /// @brief 마운트에서 파일 한꺼번에 읽기
 /// @param self 마운트
 /// @param filename 파일 이름
 /// @param size 파일 크기 (널 가능)
 /// @return 파일 데이터
-QSAPI void* qn_mount_read(QnMount* self, const char* RESTRICT filename, int* size);
+QSAPI void* qn_mount_read(QnMount* self, const char* filename, int* size);
 
 /// @brief 마운트에서 텍스트 파일 한꺼번에 읽기
 /// @param self 마운트
@@ -1958,32 +1960,33 @@ QSAPI void* qn_mount_read(QnMount* self, const char* RESTRICT filename, int* siz
 /// @param length 텍스트의 길이
 /// @param codepage 코드 페이지 (1200=UTF-16LE, 1201=UTF-16BE, 65001=UTF-8, 0=ANSI 또는 UTF-8)
 /// @return 텍스트 데이터
-QSAPI char* qn_mount_read_text(QnMount* self, const char* RESTRICT filename, int* RESTRICT length, int* RESTRICT codepage);
+/// UTF-32로 텍스트를 저장하는 일은 없어서 지원 안넣었슴
+QSAPI char* qn_mount_read_text(QnMount* self, const char* filename, int* length, int* codepage);
 
 /// @brief 마운트에서 파일이 있나 조사
 /// @param self 마운트
 /// @param path 파일 경로
 /// @return 파일 속성
 /// @see QnFileAttr
-QSAPI QnFileAttr qn_mount_exist(QnMount* self, const char* RESTRICT path);
+QSAPI QnFileAttr qn_mount_exist(QnMount* self, const char* path);
 
 /// @brief 마운트에서 파일 제거
 /// @param self 마운트
 /// @param path 파일 경로
 /// @return 성공했으면 참을 반환
-QSAPI bool qn_mount_remove(QnMount* self, const char* RESTRICT path);
+QSAPI bool qn_mount_remove(QnMount* self, const char* path);
 
 /// @brief 마운트에서 디렉토리 변경
 /// @param g 마운트
 /// @param directory 변경할 디렉토리 (널이면 기본 디렉토리로 변경)
 /// @return 성공했으면 참을 반환
-QSAPI bool qn_mount_chdir(QnMount* self, const char* RESTRICT directory);
+QSAPI bool qn_mount_chdir(QnMount* self, const char* directory);
 
 /// @brief 마운트에서 디렉토리 만들기
 /// @param self 마운트
 /// @param directory 디렉토리 이름
 /// @return 성공했으면 참을 반환
-QSAPI bool qn_mount_mkdir(QnMount* self, const char* RESTRICT directory);
+QSAPI bool qn_mount_mkdir(QnMount* self, const char* directory);
 
 /// @brief 마운트에서 파일 목록 얻기
 /// @param self 마운트
@@ -2002,6 +2005,7 @@ INLINE const char* qn_mount_get_path(QnMount* self) { return qn_cast_type(self, 
 
 // HFS
 
+#ifndef _QN_MOBILE_
 /// @brief HFS에 설명을 넣는다 (63자까지)
 /// @param mount 마운트
 /// @param desc 설명
@@ -2012,11 +2016,30 @@ QSAPI bool qn_hfs_set_desc(QnMount* mount, const char* desc);
 /// @param mount 마운트
 /// @param filename 파일 이름
 /// @param data 데이터
-/// @param size 크기
+/// @param size 크기 (최대 크기는 1.99GB로 2040MB)
 /// @param cmpr 압축 여부
 /// @param type 파일 타입
 /// @return 성공했으면 참을 반환
-QSAPI bool qn_hfs_store_buffer(QnMount* mount, const char* filename, const void* data, uint size, bool cmpr, QnFileType type);
+QSAPI bool qn_hfs_store_data(QnMount* mount, const char* filename, const void* data, uint size, bool cmpr, QnFileType type);
+
+/// @brief HFS에 스트림을 파일로 저장한다
+/// @param mount 마운트
+/// @param filename 파일 이름
+/// @param stream 스트림
+/// @param cmpr 압축 여부
+/// @param type 파일 타입
+/// @return 성공했으면 참을 반환
+QSAPI bool qn_hfs_store_stream(QnMount* mount, const char* filename, QnStream* stream, bool cmpr, QnFileType type);
+
+/// @brief HFS에 파일을 파일로 저장한다
+/// @param mount 마운트
+/// @param filename 파일 이름 (널이면 소스 파일 이름을 사용)
+/// @param srcfile 소스 파일 이름
+/// @param cmpr 압축 여부
+/// @param type 파일 타입
+/// @return 성공했으면 참을 반환
+QSAPI bool qn_hfs_store_file(QnMount* mount, const char* filename, const char* srcfile, bool cmpr, QnFileType type);
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -2070,7 +2093,7 @@ QSAPI QnTls qn_tls(paramfunc_t callback);
 /// @brief TLS에 값을 쓴다
 /// @param tls 대상 TLS
 /// @param data 넣을 값
-QSAPI void qn_tlsset(QnTls tls, void* RESTRICT data);
+QSAPI void qn_tlsset(QnTls tls, void* data);
 
 /// @brief TLS에서 값을 읽는다
 /// @param tls 대상 TLS
@@ -2215,7 +2238,7 @@ QSAPI QnThread* qn_thread_self(void);
 /// * | 0    | 보통     |
 /// * | 1    | 높음     |
 /// * | 2    | 아주 높음 |
-QSAPI QnThread* qn_new_thread(const char* RESTRICT name, QnThreadCallback func, void* data, uint stack_size, int busy);
+QSAPI QnThread* qn_new_thread(const char* name, QnThreadCallback func, void* data, uint stack_size, int busy);
 
 /// @brief 스레드를 제거한다. 실행 중이면 끝날 때 까지 대기한다
 /// @param self 스레드
@@ -2229,7 +2252,7 @@ QSAPI void qn_delete_thread(QnThread* self);
 /// @param busy 우선 순위
 /// @return 성공적으로 실행했으면 참
 /// @see qn_thread_new qn_thread_start
-QSAPI bool qn_thread_once(const char* RESTRICT name, QnThreadCallback func, void* data, uint stack_size, int busy);
+QSAPI bool qn_thread_once(const char* name, QnThreadCallback func, void* data, uint stack_size, int busy);
 
 /// @brief 스레드를 실행한다
 /// @param self 스레드
@@ -2278,7 +2301,7 @@ QSAPI QnModule* qn_open_mod(const char* filename, int flags);
 /// @param self 모듈
 /// @param name 읽을 함수 이름
 /// @return 함수 포인터
-QSAPI void* qn_mod_func(QnModule* self, const char* RESTRICT name);
+QSAPI void* qn_mod_func(QnModule* self, const char* name);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -2310,14 +2333,14 @@ QSAPI QnMlu* qn_create_mlu(void);
 /// @param[in] size	버퍼 크기
 /// @return 만들어진 RML 개체
 /// @retval NULL 문제가 있거나 실패했을 때
-QSAPI QnMlu* qn_create_mlu_buffer(const void* RESTRICT data, int size);
+QSAPI QnMlu* qn_create_mlu_buffer(const void* data, int size);
 
 /// @brief 파일에서 RML을 만든다
 /// @param[in] mount 마운트 (널이면 파일 시스템)
 /// @param[in] filename 파일의 이름
 /// @return 만들어진 RML 개체
 /// @retval NULL 문제가 있거나 실패했을 때
-QSAPI QnMlu* qn_open_mlu(QnMount* mount, const char* RESTRICT filename);
+QSAPI QnMlu* qn_open_mlu(QnMount* mount, const char* filename);
 
 /// @brief 모든 RML 태그를 삭제한다
 /// @param[in] self Mlu 개체
@@ -2334,7 +2357,7 @@ QSAPI void qn_mlu_clean_errs(QnMlu* self);
 /// @return 파일로 저장 성공 여부
 /// @retval true 저장 성공
 /// @retval false 저장할 수 없었다
-QSAPI bool qn_mlu_write_file(const QnMlu* self, QnMount* mount, const char* RESTRICT filename);
+QSAPI bool qn_mlu_write_file(const QnMlu* self, QnMount* mount, const char* filename);
 
 /// @brief 갖고 있는 최상위 태그의 갯수를 반환한다
 /// @param[in] self Mlu 개체
@@ -2353,7 +2376,7 @@ QSAPI const char* qn_mlu_get_err(const QnMlu* self, int at);
 /// @param[in] name 태그 이름
 /// @return	이름에 해당하는 태그 개체
 /// @retval NULL 이름에 해당하는 태그가 없다
-QSAPI QnMlTag* qn_mlu_get_tag(const QnMlu* self, const char* RESTRICT name);
+QSAPI QnMlTag* qn_mlu_get_tag(const QnMlu* self, const char* name);
 
 /// @brief 최상위 태그를 순번으로 얻는다
 /// @param[in] self Mlu 개체
@@ -2368,7 +2391,7 @@ QSAPI QnMlTag* qn_mlu_get_tag_nth(const QnMlu* self, int at);
 /// @param[in] if_not_exist 태그가 존재하지 않을 경우 반환할 값
 /// @return 태그 컨텍스트
 /// @retval if_not_exist 이름에 해당하는 태그가 없거나 문제가 있다
-QSAPI const char* qn_mlu_get_context(const QnMlu* self, const char* RESTRICT name, const char* RESTRICT if_not_exist);
+QSAPI const char* qn_mlu_get_context(const QnMlu* self, const char* name, const char* if_not_exist);
 
 /// @brief 최상위 태그가 갖고 있는 컨텍스트를 얻는다. 태그는 순번으로 검사한다
 /// @param[in] self 개체나 인터페이스의 자기 자신 값
@@ -2376,14 +2399,14 @@ QSAPI const char* qn_mlu_get_context(const QnMlu* self, const char* RESTRICT nam
 /// @param[in] if_not_exist 태그가 존재하지 않을 경우 반환할 값
 /// @return 태그 컨텍스트
 /// @retval if_not_exist 이름에 해당하는 태그가 없거나 문제가 있다
-QSAPI const char* qn_mlu_get_context_nth(const QnMlu* self, int at, const char* RESTRICT if_not_exist);
+QSAPI const char* qn_mlu_get_context_nth(const QnMlu* self, int at, const char* if_not_exist);
 
 /// @brief 지정한 태그가 있나 검사한다
 /// @param[in] self Mlu 개체
 /// @param[in] tag	(널값이 아님) 지정한 태그
 /// @return 지정한 태그가 몇번째 인가 반환
 /// @retval -1 지정한 태그가 없다
-QSAPI int qn_mlu_contains(const QnMlu* self, QnMlTag* RESTRICT tag);
+QSAPI int qn_mlu_contains(const QnMlu* self, QnMlTag* tag);
 
 /// @brief 최상위 태그에 대해 ForEach를 수행한다
 /// @param[in] self 개체나 인터페이스의 자기 자신 값
@@ -2403,21 +2426,21 @@ QSAPI void qn_mlu_each(const QnMlu* self, void(*func)(QnMlTag* tag));
 /// @param[in] line 줄번호
 /// @return 추가한 새 태그
 /// @retval NULL 태그를 추가할 수 없었다
-QSAPI QnMlTag* qn_mlu_add(QnMlu* self, const char* RESTRICT name, const char* RESTRICT context, int line);
+QSAPI QnMlTag* qn_mlu_add(QnMlu* self, const char* name, const char* context, int line);
 
 /// @brief 태그를 추가한다
 /// @param[in] self Ml 개체
 /// @param[in] tag	(널값이 아님) 추가할 태그
 /// @return 추가한 새 태그
 /// @retval NULL 태그를 추가할 수 없었다
-QSAPI QnMlTag* qn_mlu_add_tag(QnMlu* self, QnMlTag* RESTRICT tag);
+QSAPI QnMlTag* qn_mlu_add_tag(QnMlu* self, QnMlTag* tag);
 
 /// @brief 태그를 제거한다
 /// @param[in] self Mlu 개체
 /// @param[in] name 태그 이름
 /// @param[in] is_all 같은 이름 태그를 모두 지우려면 참으로 넣는다
 /// @return	지운 태그의 갯수
-QSAPI int qn_mlu_remove(QnMlu* self, const char* RESTRICT name, bool is_all);
+QSAPI int qn_mlu_remove(QnMlu* self, const char* name, bool is_all);
 
 /// @brief 태그를 순번으로 제거한다
 /// @param[in] self Mlu 개체
@@ -2434,18 +2457,18 @@ QSAPI bool qn_mlu_remove_nth(QnMlu* self, int at);
 /// @return	태그 제거 여부
 /// @retval true 태그 제거 성공
 /// @retval false 태그 제거 실패
-QSAPI bool qn_mlu_remove_tag(QnMlu* self, QnMlTag* RESTRICT tag, bool is_delete);
+QSAPI bool qn_mlu_remove_tag(QnMlu* self, QnMlTag* tag, bool is_delete);
 
 /// @brief 오류값을 추가한다
 /// @param[in] self Mlu 개체
 /// @param[in] msg 메시지
-QSAPI void qn_mlu_add_err(QnMlu* self, const char* RESTRICT msg);
+QSAPI void qn_mlu_add_err(QnMlu* self, const char* msg);
 
 /// @brief 오류값을 포맷 방식으로 추가한다
 /// @param[in] self Mlu 개체
 /// @param[in] fmt 포맷 문자열
 /// @param ...
-QSAPI void qn_mlu_add_errf(QnMlu* self, const char* RESTRICT fmt, ...);
+QSAPI void qn_mlu_add_errf(QnMlu* self, const char* fmt, ...);
 
 /// @brief 갖고 있는 오류를 디버그 콘솔로 출력한다
 /// @param[in] self Mlu 개체
@@ -2473,13 +2496,13 @@ QSAPI void qn_mltag_delete(QnMlTag* self);
 /// @param[in] ptr	MlTag 개체
 /// @param[in] cntx	   	컨텍스트
 /// @param[in] size	   	컨텍스트의 크기
-QSAPI void qn_mltag_add_context(QnMlTag* ptr, const char* RESTRICT cntx, int size);
+QSAPI void qn_mltag_add_context(QnMlTag* ptr, const char* cntx, int size);
 
 /// @brief 태그에 내용을 쓴다
 /// @param[in] ptr	MlTag 개체
 /// @param[in] cntx 컨텍스트
 /// @param[in] size 컨텍스트의 크기
-QSAPI void qn_mltag_set_context(QnMlTag* ptr, const char* RESTRICT cntx, int size);
+QSAPI void qn_mltag_set_context(QnMlTag* ptr, const char* cntx, int size);
 
 // tag - sub
 
@@ -2493,7 +2516,7 @@ QSAPI int qn_mltag_get_sub_count(QnMlTag* ptr);
 /// @param[in] name	   	찾을 태그 이름
 /// @return 이름에 해당하는 태그
 /// @retval NULL 이름에 해당하는 태그가 없다
-QSAPI QnMlTag* qn_mltag_get_sub(QnMlTag* ptr, const char* RESTRICT name);
+QSAPI QnMlTag* qn_mltag_get_sub(QnMlTag* ptr, const char* name);
 
 /// @brief 하부 태그를 순번으로 찾는다
 /// @param[in] ptr	MlTag 개체
@@ -2508,7 +2531,7 @@ QSAPI QnMlTag* qn_mltag_get_sub_nth(QnMlTag* ptr, int at);
 /// @param[in] if_not_exist 태그를 찾을 수 없으면 반환할 값
 /// @return 태그의 컨텍스트
 /// @retval if_not_exist 태그가 찾을 수 없다
-QSAPI const char* qn_mltag_get_sub_context(QnMlTag* ptr, const char* RESTRICT name, const char* RESTRICT if_not_exist);
+QSAPI const char* qn_mltag_get_sub_context(QnMlTag* ptr, const char* name, const char* if_not_exist);
 
 /// @brief 하부 태그의 컨텍스트를 순번으로 얻는다
 /// @param[in] ptr	MlTag 개체
@@ -2516,14 +2539,14 @@ QSAPI const char* qn_mltag_get_sub_context(QnMlTag* ptr, const char* RESTRICT na
 /// @param[in] if_not_exist 태그를 찾을 수 없으면 반환할 값
 /// @return	서브 컨텍스트 내용
 /// @retval if_not_exist 서브 컨텍스트를 찾을 수 없다
-QSAPI const char* qn_mltag_get_sub_context_nth(QnMlTag* ptr, int at, const char* RESTRICT if_not_exist);
+QSAPI const char* qn_mltag_get_sub_context_nth(QnMlTag* ptr, int at, const char* if_not_exist);
 
 /// @brief 지정한 태그를 하부 태그로 갖고 있나 조사
 /// @param[in] ptr	MlTag 개체
 /// @param[in] tag	찾을 태그
 /// @return 하부 태그의 인덱스 순번
 /// @retval -1 해당하는 태그가 없다
-QSAPI int qn_mltag_contains_sub(QnMlTag* RESTRICT ptr, QnMlTag* RESTRICT tag);
+QSAPI int qn_mltag_contains_sub(QnMlTag* ptr, QnMlTag* tag);
 
 /// @brief 하부 태그를 추가한다
 /// @param[in] ptr	MlTag 개체
@@ -2532,21 +2555,21 @@ QSAPI int qn_mltag_contains_sub(QnMlTag* RESTRICT ptr, QnMlTag* RESTRICT tag);
 /// @param[in] line	   	줄 번호
 /// @return 추가한 하부 태그
 /// @retval NULL 하부 태그를 추가할 수 없다
-QSAPI QnMlTag* qn_mltag_add_sub(QnMlTag* ptr, const char* RESTRICT name, const char* RESTRICT context, int line);
+QSAPI QnMlTag* qn_mltag_add_sub(QnMlTag* ptr, const char* name, const char* context, int line);
 
 /// @brief 하부 태그를 추가한다
 /// @param[in] ptr	MlTag 개체
 /// @param[in] tag	추가할 태그
 /// @return 추가한 하부 태그
 /// @retval NULL 하부 태그를 추가할 수 없다
-QSAPI QnMlTag* qn_mltag_add_sub_tag(QnMlTag* RESTRICT ptr, QnMlTag* RESTRICT tag);
+QSAPI QnMlTag* qn_mltag_add_sub_tag(QnMlTag* ptr, QnMlTag* tag);
 
 /// @brief 지정한 이름의 태그를 제거한다
 /// @param[in] ptr	MlTag 개체
 /// @param[in] name	   	태그 이름
 /// @param[in] is_all	   	같은 이름의 모든 태그를 지우려면 참으로 넣는다
 /// @return	지운 태그의 갯수
-QSAPI int qn_mltag_remove_sub(QnMlTag* ptr, const char* RESTRICT name, bool is_all);
+QSAPI int qn_mltag_remove_sub(QnMlTag* ptr, const char* name, bool is_all);
 
 /// @brief 지정한 순번의 하부 태그를 삭제한다
 /// @param[in] ptr	MlTag 개체
@@ -2563,7 +2586,7 @@ QSAPI bool qn_mltag_remove_sub_nth(QnMlTag* ptr, int at);
 /// @return 하부 태그 삭제 여부
 /// @retval true 태그를 지웠다
 /// @retval false 태그를 지울 수 없다
-QSAPI bool qn_mltag_remove_sub_tag(QnMlTag* RESTRICT ptr, QnMlTag* RESTRICT tag, bool is_delete);
+QSAPI bool qn_mltag_remove_sub_tag(QnMlTag* ptr, QnMlTag* tag, bool is_delete);
 
 /// @brief 하부 태그에 대해 ForEach 연산을 수행한다
 /// @param[in] ptr	MlTag 개체
@@ -2589,7 +2612,7 @@ QSAPI int qn_mltag_get_arity(QnMlTag* ptr);
 /// @param[in] if_not_exist 	인수를 찾지 못하면 반환할 값
 /// @return 이름에 해당하는 태그의 인수
 /// @retval if_not_exist 이름에 해당하는 인수 값이 없다
-QSAPI const char* qn_mltag_get_arg(QnMlTag* ptr, const char* RESTRICT name, const char* RESTRICT if_not_exist);
+QSAPI const char* qn_mltag_get_arg(QnMlTag* ptr, const char* name, const char* if_not_exist);
 
 /// @brief 다음 인수를 찾는다
 /// @param[in] ptr	MlTag 개체
@@ -2599,7 +2622,7 @@ QSAPI const char* qn_mltag_get_arg(QnMlTag* ptr, const char* RESTRICT name, cons
 /// @return 다음 인수의 존재 여부
 /// @retval true 다음 인수가 있다
 /// @retval false 다음 인수가 없다
-QSAPI bool qn_mltag_next_arg(QnMlTag* ptr, void** RESTRICT index, const char** RESTRICT name, const char** RESTRICT data);
+QSAPI bool qn_mltag_next_arg(QnMlTag* ptr, void** index, const char** name, const char** data);
 
 /// @brief 이름에 해당하는 인수가 있는지 조사한다
 /// @param[in] ptr	MlTag 개체
@@ -2607,7 +2630,7 @@ QSAPI bool qn_mltag_next_arg(QnMlTag* ptr, void** RESTRICT index, const char** R
 /// @return 이름에 해당하는 인수 존재 여부
 /// @retval true 인수가 있다
 /// @retval false 인수가 없다
-QSAPI bool qn_mltag_contains_arg(QnMlTag* ptr, const char* RESTRICT name);
+QSAPI bool qn_mltag_contains_arg(QnMlTag* ptr, const char* name);
 
 /// @brief 인수에 대해 ForEach 연산을 수행한다
 /// @param[in] ptr	MlTag 개체
@@ -2619,7 +2642,7 @@ QSAPI void qn_mltag_foreach_arg(QnMlTag* ptr, void(*func)(void* userdata, char* 
 /// @param[in] ptr	MlTag 개체
 /// @param[in] name	   	인수 이름
 /// @param[in] value	   	인수 값
-QSAPI void qn_mltag_set_arg(QnMlTag* ptr, const char* RESTRICT name, const char* RESTRICT value);
+QSAPI void qn_mltag_set_arg(QnMlTag* ptr, const char* name, const char* value);
 
 /// @brief 인수를 제거한다
 /// @param[in] ptr	MlTag 개체
@@ -2627,7 +2650,7 @@ QSAPI void qn_mltag_set_arg(QnMlTag* ptr, const char* RESTRICT name, const char*
 /// @return	인수 제거 여부
 /// @retval true 인수 제거의 성공
 /// @retval false 인수 제거의 실패
-QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* RESTRICT name);
+QSAPI bool qn_mltag_remove_arg(QnMlTag* ptr, const char* name);
 
 
 //////////////////////////////////////////////////////////////////////////

@@ -70,11 +70,49 @@ int main(void)
 		qn_mount_mkdir(mnt, "/test/456/thisislongfilenamedirectoryisitwork");
 
 		qn_mount_chdir(mnt, "/test");
-		qn_hfs_store_buffer(mnt, "osn_pure.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night), false, QNFTYPE_TEXT);
-		qn_hfs_store_buffer(mnt, "osn_pure.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night), false, QNFTYPE_TEXT);
-		qn_hfs_store_buffer(mnt, "osn_pure.cmpr", one_summer_night, (uint)QN_COUNTOF(one_summer_night), true, QNFTYPE_TEXT);
+		qn_hfs_store_file(mnt, "qlem.cmd", "QsLibEm.cmd", true, QNFTYPE_SCRIPT);
+		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night), false, QNFTYPE_TEXT);
+		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night), false, QNFTYPE_TEXT);
+		qn_hfs_store_data(mnt, "one summer night.cmpr", one_summer_night, (uint)QN_COUNTOF(one_summer_night), true, QNFTYPE_TEXT);
+		qn_hfs_store_file(mnt, NULL, "QsLib.vcxproj", true, QNFTYPE_MARKUP);
+		qn_hfs_store_file(mnt, "qlem.html", "QsLibEm.html", true, QNFTYPE_MARKUP);
 		qn_mount_chdir(mnt, "/");
 		qn_mount_chdir(mnt, "test");
+
+		qn_unload(mnt);
+	}
+
+	mnt = qn_open_mount("test.hfs", "hm");
+	if (mnt)
+	{
+		QnFileAttr attr = qn_mount_exist(mnt, "/test/qlem.cmd");
+		qn_outputf("qlem.cmd attribute: %d", attr);
+
+		qn_mount_chdir(mnt, "/test");
+
+		int size;
+		char *psz;
+		QnStream* stream = qn_mount_open_stream(mnt, "one summer night.txt", NULL);
+		if (stream)
+		{
+			size = (int)qn_stream_size(stream);
+			psz = qn_alloc(size + 1, char);
+			if (qn_stream_read(stream, psz, 0, size) == size)
+			{
+				psz[size] = 0;
+				qn_outputs(psz);
+			}
+			qn_free(psz);
+			qn_unload(stream);
+		}
+
+		psz = qn_mount_read(mnt, "one summer night.cmpr", &size);
+		qn_outputf("%*s", size, psz);
+		qn_free(psz);
+
+		psz = qn_mount_read_text(mnt, "/test/qlem.cmd", NULL, NULL);
+		qn_outputs(psz);
+		qn_free(psz);
 
 		qn_unload(mnt);
 	}

@@ -86,7 +86,7 @@ static void qn_dbg_buf_ch(const int ch)
 }
 
 //
-static void qn_dbg_buf_str(const char* RESTRICT s)
+static void qn_dbg_buf_str(const char* s)
 {
 	int len = (int)strlen(s);
 	if (len + debug_impl.out_pos > MAX_DEBUG_LENGTH - 1)
@@ -98,7 +98,7 @@ static void qn_dbg_buf_str(const char* RESTRICT s)
 }
 
 //
-static void qn_dbg_buf_va(const char* RESTRICT fmt, va_list va)
+static void qn_dbg_buf_va(const char* fmt, va_list va)
 {
 	const int len = qn_vsnprintf(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - (size_t)debug_impl.out_pos, fmt, va);
 	if (len > 0)
@@ -113,7 +113,7 @@ static void qn_dbg_buf_int(const int value)
 }
 
 //
-static void qn_dbg_buf_head(const char* RESTRICT head)
+static void qn_dbg_buf_head(const char* head)
 {
 	if (head == NULL)
 		return;
@@ -155,7 +155,7 @@ static int qn_dbg_buf_flush(bool debug_output)
 }
 
 //
-int qn_asrt(const char* RESTRICT expr, const char* RESTRICT mesg, const char* RESTRICT filename, const int line)
+int qn_asrt(const char* expr, const char* mesg, const char* filename, const int line)
 {
 	qn_return_when_fail(expr, -1);
 	qn_dbg_buf_str("ASSERT FAILED : ");
@@ -180,7 +180,7 @@ int qn_asrt(const char* RESTRICT expr, const char* RESTRICT mesg, const char* RE
 }
 
 //
-_Noreturn void qn_halt(const char* RESTRICT head, const char* RESTRICT mesg)
+_Noreturn void qn_halt(const char* head, const char* mesg)
 {
 	qn_dbg_buf_str("HALT ");
 	qn_dbg_buf_head(head);
@@ -193,7 +193,7 @@ _Noreturn void qn_halt(const char* RESTRICT head, const char* RESTRICT mesg)
 }
 
 //
-int qn_mesg(const bool breakpoint, const char* RESTRICT head, const char* RESTRICT mesg)
+int qn_mesg(const bool breakpoint, const char* head, const char* mesg)
 {
 	qn_dbg_buf_head(head);
 	qn_dbg_buf_str(mesg);
@@ -205,7 +205,7 @@ int qn_mesg(const bool breakpoint, const char* RESTRICT head, const char* RESTRI
 }
 
 //
-int qn_mesgf(const bool breakpoint, const char* RESTRICT head, const char* RESTRICT fmt, ...)
+int qn_mesgf(const bool breakpoint, const char* head, const char* fmt, ...)
 {
 	qn_dbg_buf_head(head);
 	va_list va;

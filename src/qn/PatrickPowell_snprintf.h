@@ -135,4 +135,4 @@ struct PATRICKPOWELL_SNPRINTF_STATE
 };
 
 //
-extern void dopr(_In_ PatrickPowellSprintfState* state, _In_ const char* RESTRICT format, _In_ va_list args);
+extern void dopr(_In_ PatrickPowellSprintfState* state, _In_ const char* format, _In_ va_list args);

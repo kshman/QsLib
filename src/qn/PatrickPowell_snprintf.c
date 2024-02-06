@@ -199,7 +199,7 @@ INLINE ullong pps_intpart(const double value)
 #endif
 
 // 32비트 숫자를 문자열로
-static size_t pps_atoi(uint value, char* RESTRICT buf, size_t size, nuint base, bool caps)
+static size_t pps_atoi(uint value, char* buf, size_t size, nuint base, bool caps)
 {
 	const char* table = qn_char_base_table(caps);
 	size_t pos = 0;
@@ -213,7 +213,7 @@ static size_t pps_atoi(uint value, char* RESTRICT buf, size_t size, nuint base, 
 }
 
 // 64비트 숫자를 문자열로
-static size_t pps_atoll(ullong value, char* RESTRICT buf, size_t size, nuint base, bool caps)
+static size_t pps_atoll(ullong value, char* buf, size_t size, nuint base, bool caps)
 {
 	const char* table = qn_char_base_table(caps);
 	size_t pos = 0;
@@ -243,7 +243,7 @@ static nint pps_quote(nint value, int flags, const LOCALE_TYPE* lc)
 }
 
 // 문자열 넣기
-static void pps_puts(PatrickPowellSprintfState* state, const char* RESTRICT value, nint len, int flags)
+static void pps_puts(PatrickPowellSprintfState* state, const char* value, nint len, int flags)
 {
 	nint padlen = state->vmin - len;
 	if (padlen < 0)
@@ -858,7 +858,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 }
 
 //
-void dopr(_In_ PatrickPowellSprintfState* state, _In_ const char* RESTRICT format, _In_ va_list args)
+void dopr(_In_ PatrickPowellSprintfState* state, _In_ const char* format, _In_ va_list args)
 {
 	qn_debug_verify(state != NULL);
 	int cmd = DP_S_DEFAULT;

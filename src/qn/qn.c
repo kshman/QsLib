@@ -186,7 +186,7 @@ const char* qn_p_unknown(int value, bool hex)
 }
 
 //
-void qn_set_prop(const char* RESTRICT name, const char* RESTRICT value)
+void qn_set_prop(const char* name, const char* value)
 {
 	qn_return_when_fail(runtime_impl.inited,/*void*/);
 	qn_return_when_fail(name != NULL,/*void*/);

@@ -120,6 +120,7 @@
     <Expand>
       <Item Name="[타입]">(QNFILETYPE)type</Item>
       <Item Name="[속성]">(QNFILEATTR)attr</Item>
+      <Item Name="[이름 길이]">len</Item>
       <Item Name="[크기]">size</Item>
       <Item Name="[압축]">cmpr</Item>
       <Item Name="[위치]">seek</Item>
@@ -130,10 +131,10 @@
   <Type Name="HFSFILE">
     <DisplayString>[&lt;{(QNFILETYPE)source.type}/{(QNFILEATTR)source.attr}&gt; (size={source.size})]</DisplayString>
     <Expand>
-      <Item Name="[이름 길이]">len</Item>
-      <Item Name="[해시]">hash</Item>
       <Item Name="[타입]">(QNFILETYPE)source.type</Item>
       <Item Name="[속성]">(QNFILEATTR)source.attr</Item>
+      <Item Name="[이름 길이]">source.len</Item>
+      <Item Name="[해시]">hash</Item>
       <Item Name="[크기]">source.size</Item>
       <Item Name="[압축]">source.cmpr</Item>
       <Item Name="[위치]">source.seek</Item>
@@ -147,11 +148,11 @@
   <Type Name="HFSINFO">
         <DisplayString>[{name,s} &lt;{(QNFILETYPE)file.source.type}/{(QNFILEATTR)file.source.attr}&gt; (size={file.source.size})]</DisplayString>
     <Expand>
-      <Item Name="[이름]">name,s</Item>
-      <Item Name="[이름 길이]">file.len</Item>
-      <Item Name="[해시]">file.hash</Item>
       <Item Name="[타입]">(QNFILETYPE)file.source.type</Item>
       <Item Name="[속성]">(QNFILEATTR)file.source.attr</Item>
+      <Item Name="[이름]">name,s</Item>
+      <Item Name="[이름 길이]">file.source.len</Item>
+      <Item Name="[해시]">file.hash</Item>
       <Item Name="[크기]">file.source.size</Item>
       <Item Name="[압축]">file.source.cmpr</Item>
       <Item Name="[위치]">file.source.seek</Item>

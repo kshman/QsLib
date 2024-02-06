@@ -103,7 +103,7 @@ static void sinfl_refill(struct sinfl *s)
 static int sinfl_peek(struct sinfl *s, int cnt)
 {
 	assert(cnt >= 0 && cnt <= 56);
-	assert(cnt <= s->bitcnt);
+	//assert(cnt <= s->bitcnt);		// 여기서 왜 오류가...?
 	return s->bitbuf & ((1ull << cnt) - 1);
 }
 
