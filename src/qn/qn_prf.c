@@ -452,15 +452,15 @@ static void qn_mpf_clear(void)
 	if (mem_impl.count == 0 && mem_impl.frst == NULL && mem_impl.last == NULL)
 		return;
 
-	qn_mesgf(false, "MEMORY PROFILER", "found %d allocations", mem_impl.count);
+	qn_mesgf(false, "MEMORY PROFILER", "found %d allocation(s)", mem_impl.count);
 
 	size_t sum = 0;
 	for (MemBlock* next = NULL, *node = mem_impl.frst; node; node = next)
 	{
 		if (node->line)
-			qn_mesgf(false, "MEMORY PROFILER", "\t%s(%Lu) : %Lu(%Lu) : 0x%p", node->desc, node->line, node->size, node->block, _memptr(node));
+			qn_mesgf(false, "MEMORY PROFILER", "\t%s(%Lu) : %Lu(%Lu) : %p", node->desc, node->line, node->size, node->block, _memptr(node));
 		else
-			qn_mesgf(false, "MEMORY PROFILER", "\t%Lu(%Lu) : 0x%p", node->size, node->block, _memptr(node));
+			qn_mesgf(false, "MEMORY PROFILER", "\t%Lu(%Lu) : %p", node->size, node->block, _memptr(node));
 		qn_memdmp(_memptr(node), QN_MIN(32, node->size), mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1);
 		qn_mesgf(false, "MEMORY PROFILER", "\t\t{%s}", mem_impl.dbg_buf);
 
@@ -565,7 +565,7 @@ static void* qn_internal_realloc(void* ptr, size_t size)
 
 	if (HeapValidate(mem_impl.heap, 0, ptr) == FALSE)
 	{
-		qn_snprintf(mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1, "try to realloc invalid memory : 0x%p", ptr);
+		qn_snprintf(mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1, "try to realloc invalid memory : %p", ptr);
 		qn_halt("MEMORY PROFILER", mem_impl.dbg_buf);
 	}
 
@@ -591,11 +591,11 @@ static void* qn_internal_realloc(void* ptr, size_t size)
 //
 static void qn_internal_free(void* ptr)
 {
-	qn_return_when_fail(ptr);
+	qn_return_when_fail(ptr,);
 
 	if (HeapValidate(mem_impl.heap, 0, ptr) == FALSE)
 	{
-		qn_mesgf(false, "MEMORY PROFILER", "try to free invalid memory : 0x%p", ptr);
+		qn_mesgf(false, "MEMORY PROFILER", "try to free invalid memory : %p", ptr);
 		qn_memdmp(ptr, 19, mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1);
 		qn_mesgf(true, "MEMORY PROFILER", "\t\t{%s}", mem_impl.dbg_buf);
 		return;
@@ -622,7 +622,7 @@ void qn_mpfdbgout(void)
 	if (mem_impl.count == 0 && mem_impl.frst == NULL && mem_impl.last == NULL)
 		return;
 
-	qn_mesgf(false, "MEMORY PROFILER", "found %d allocations", mem_impl.count);
+	qn_mesgf(false, "MEMORY PROFILER", "found %d allocation(s)", mem_impl.count);
 	qn_mesgf(false, "MEMORY PROFILER", " %-8s | %-8s | %-8s | %-s", "no", "size", "block", "desc");
 
 	QN_LOCK(mem_impl.lock);
@@ -771,7 +771,7 @@ static void* qn_mpf_realloc(void* ptr, size_t size, const char* desc, size_t lin
 #endif
 		node->sign != MEMORY_SIGN_HEAD)
 	{
-		qn_mesgf(false, "MEMORY PROFILER", "try to realloc invalid memory : 0x%p", ptr);
+		qn_mesgf(false, "MEMORY PROFILER", "try to realloc invalid memory : %p", ptr);
 		qn_mpf_access_violation(desc, line, size, 0);
 	}
 
@@ -823,7 +823,7 @@ static void qn_mpf_free(void* ptr)
 #endif
 		node->sign != MEMORY_SIGN_HEAD)
 	{
-		qn_mesgf(false, "MEMORY PROFILER", "try to realloc invalid memory : 0x%p", ptr);
+		qn_mesgf(false, "MEMORY PROFILER", "try to realloc invalid memory : %p", ptr);
 		qn_memdmp(ptr, 19, mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1);
 		qn_mesgf(true, "MEMORY PROFILER", "\t\t{%s}", mem_impl.dbg_buf);
 		return;

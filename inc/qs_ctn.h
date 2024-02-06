@@ -1472,9 +1472,6 @@ QN_DECL_HASH(QnInlineHash, size_t, size_t);
 /// @brief char* 키의 해시/비교
 #define QN_HASH_CHAR_PTR_KEY(name)		INLINE size_t name##_Hash(name##ConstKey* key) { return qn_strhash(*key); }\
 										INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return qn_streqv(*k1, *k2); }
-/// @brief wchar* 키의 해시/비교
-#define QN_HASH_WCHAR_PTR_KEY(name)		INLINE size_t name##_Hash(name##ConstKey* key) { return qn_wcshash(*key); }\
-										INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return qn_wcseqv(*k1, *k2); }
 
 /// @brief 아이템 갯수
 #define qn_hash_count(p)				((p)->COUNT)
@@ -1806,7 +1803,6 @@ QN_DECL_MUKUM(QnInlineMukum, size_t, size_t);
 #define QN_MUKUM_UINT_KEY				QN_HASH_UINT_KEY
 #define QN_MUKUM_SIZE_T_KEY				QN_HASH_SIZE_T_KEY
 #define QN_MUKUM_CHAR_PTR_KEY			QN_HASH_CHAR_PTR_KEY
-#define QN_MUKUM_WCHAR_PTR_KEY			QN_HASH_WCHAR_PTR_KEY
 
 /// @brief 아이템 갯수
 #define qn_mukum_count(p)				((p)->COUNT)
@@ -2109,6 +2105,11 @@ QN_DECL_BSTR(4k, 4096);
 		else { (p)->LENGTH=0; (p)->DATA[0]='\0'; }\
 	}QN_STMT_END
 
+#define qn_bstr_init_char(p,ch)\
+	QN_STMT_BEGIN{\
+		(p)->LENGTH=1; (p)->DATA[0]=ch; (p)->DATA[1]='\0';\
+	}QN_STMT_END
+
 #define qn_bstr_clear(p)\
 	QN_STMT_BEGIN{\
 		(p)->LENGTH=0; (p)->DATA[0]='\0';\
@@ -2156,13 +2157,13 @@ QN_DECL_BSTR(4k, 4096);
 
 #define qn_bstr_append(p, str)\
 	QN_STMT_BEGIN{\
-		qn_strcpy(&(p)->DATA[(p)->LENGTH], QN_COUNTOF((p)->DATA)-(p)->LENGTH, str);\
+		qn_strcpy(&(p)->DATA[(p)->LENGTH], str);\
 		(p)->LENGTH+=strlen(str);\
 	}QN_STMT_END
 
 #define qn_bstr_append_bstr(p, right)\
 	QN_STMT_BEGIN{\
-		qn_strcpy(&(p)->DATA[(p)->LENGTH], QN_COUNTOF((p)->DATA)-(p)->LENGTH, (right)->DATA);\
+		qn_strcpy(&(p)->DATA[(p)->LENGTH], (right)->DATA);\
 		(p)->LENGTH+=(right)->LENGTH;\
 	}QN_STMT_END
 

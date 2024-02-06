@@ -6,7 +6,7 @@
 #include "pch.h"
 
 // 만들었슴
-QnGam qn_sc_init(QnGam g, void* RESTRICT vt)
+QnGam qn_sc_init(QnGam g, const void* RESTRICT vt)
 {
 	QnGamBase* base = qn_cast_type(g, QnGamBase);
 	base->vt = vt;

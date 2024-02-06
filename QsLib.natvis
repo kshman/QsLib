@@ -12,6 +12,7 @@
     <AlternativeType Name="QnByteCtn"/>
     <AlternativeType Name="QnIntCtn"/>
     <AlternativeType Name="QnAnyCtn"/>
+    <AlternativeType Name="HfsArrInfo"/>
     <AlternativeType Name="ErrorArray"/>
     <AlternativeType Name="SubArray"/>
     <AlternativeType Name="StubMonitorCtnr"/>
@@ -84,7 +85,7 @@
   </Type>
 
   <!-- 데이트 타임 -->
-  <Type Name="QnDateTime">
+  <Type Name="QNDATETIME">
     <DisplayString>[{year}-{month}-{day} {hour}:{minute}:{second}.{millisecond}]</DisplayString>
   </Type>
 
@@ -97,7 +98,7 @@
   <Type Name="QNMOUNT">
     <DisplayString>[{path.DATA,s} ({flags} &lt;{base.ref}&gt;)</DisplayString>
     <Expand>
-      <Item Name="[기본 위치]">name,s</Item>
+      <Item Name="[이름/기본]">name,s</Item>
       <Item Name="[현재 경로]">path.DATA,s</Item>
       <Item Name="[플래그]">flags</Item>
     </Expand>
@@ -110,6 +111,53 @@
       <Item Name="[이름]">name,s</Item>
       <Item Name="[플래그]">flags</Item>
       <Item Name="[마운트]">mount</Item>
+    </Expand>
+  </Type>
+  
+  <!-- HFSSOURCE -->
+  <Type Name="HFSSOURCE">
+    <DisplayString>[&lt;{(QNFILETYPE)type}/{(QNFILEATTR)attr}&gt; (size={size}, seek={seek})]</DisplayString>
+    <Expand>
+      <Item Name="[타입]">(QNFILETYPE)type</Item>
+      <Item Name="[속성]">(QNFILEATTR)attr</Item>
+      <Item Name="[크기]">size</Item>
+      <Item Name="[압축]">cmpr</Item>
+      <Item Name="[위치]">seek</Item>
+    </Expand>
+  </Type>
+  
+  <!-- HFSFILE -->
+  <Type Name="HFSFILE">
+    <DisplayString>[&lt;{(QNFILETYPE)source.type}/{(QNFILEATTR)source.attr}&gt; (size={source.size})]</DisplayString>
+    <Expand>
+      <Item Name="[이름 길이]">len</Item>
+      <Item Name="[해시]">hash</Item>
+      <Item Name="[타입]">(QNFILETYPE)source.type</Item>
+      <Item Name="[속성]">(QNFILEATTR)source.attr</Item>
+      <Item Name="[크기]">source.size</Item>
+      <Item Name="[압축]">source.cmpr</Item>
+      <Item Name="[위치]">source.seek</Item>
+      <Item Name="[메타]">meta</Item>
+      <Item Name="[다음]">next</Item>
+      <Item Name="[만든날짜]">stc</Item>
+    </Expand>
+  </Type>
+  
+  <!-- HFSINFO -->
+  <Type Name="HFSINFO">
+        <DisplayString>[{name,s} &lt;{(QNFILETYPE)file.source.type}/{(QNFILEATTR)file.source.attr}&gt; (size={file.source.size})]</DisplayString>
+    <Expand>
+      <Item Name="[이름]">name,s</Item>
+      <Item Name="[이름 길이]">file.len</Item>
+      <Item Name="[해시]">file.hash</Item>
+      <Item Name="[타입]">(QNFILETYPE)file.source.type</Item>
+      <Item Name="[속성]">(QNFILEATTR)file.source.attr</Item>
+      <Item Name="[크기]">file.source.size</Item>
+      <Item Name="[압축]">file.source.cmpr</Item>
+      <Item Name="[위치]">file.source.seek</Item>
+      <Item Name="[메타]">file.meta</Item>
+      <Item Name="[다음]">file.next</Item>
+      <Item Name="[만든날짜]">file.stc</Item>
     </Expand>
   </Type>
 

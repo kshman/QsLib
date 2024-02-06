@@ -41,6 +41,7 @@
 #include <mmsystem.h>
 #include <commctrl.h>
 #include <shellapi.h>
+#include <lmcons.h>
 #include <intrin.h>
 #endif
 

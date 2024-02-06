@@ -368,6 +368,23 @@ void* qn_memzucp(const void* src, const size_t srcsize, /*NULLABLE*/size_t* dest
 }
 
 //
+void* qn_memzucp_s(const void* src, const size_t srcsize, const size_t destsize)
+{
+	qn_return_when_fail(src != NULL, NULL);
+	qn_return_when_fail(srcsize > 0, NULL);
+	qn_return_when_fail(destsize > 0, NULL);
+	
+	byte* p = qn_alloc(destsize, byte);
+	const int ret = sinflate(p, (int)destsize, src, (int)srcsize);
+	if (ret != (int)destsize)
+	{
+		qn_free(p);
+		return NULL;
+	}
+	return p;
+}
+
+//
 char qn_memhrb(const size_t size, double* out)
 {
 	qn_return_when_fail(out != NULL, ' ');
@@ -1106,7 +1123,7 @@ pos_exit:
 }
 
 //
-size_t qn_strfll(char* dest, const size_t pos, const size_t end, const int ch)
+size_t qn_strfll(char* RESTRICT dest, const size_t pos, const size_t end, const int ch)
 {
 	if (pos >= end)
 		return pos;
@@ -1117,7 +1134,7 @@ size_t qn_strfll(char* dest, const size_t pos, const size_t end, const int ch)
 }
 
 //
-size_t qn_strhash(const char* p)
+size_t qn_strhash(const char* RESTRICT p)
 {
 	const char* sz = p;
 	size_t h = (size_t)*sz++;
@@ -1131,7 +1148,7 @@ size_t qn_strhash(const char* p)
 }
 
 //
-size_t qn_strihash(const char* p)
+size_t qn_strihash(const char* RESTRICT p)
 {
 	const char* sz = p;
 	size_t h = (size_t)tolower(*sz);
@@ -1141,6 +1158,21 @@ size_t qn_strihash(const char* p)
 	sz++;
 	for (c = 0; *sz && c < 256; sz++, c++)
 		h = (h << 5) - h + (size_t)tolower(*sz);
+	h = (h << 5) - h + c;
+	return h;
+}
+
+//
+uint qn_strshash(const char* RESTRICT p)
+{
+	const char* sz = p;
+	uint h = (uint)tolower(*sz);
+	if (!h)
+		return 0;
+	uint c;
+	sz++;
+	for (c = 0; *sz && c < 256; sz++, c++)
+		h = (h << 5) - h + (uint)tolower(*sz);
 	h = (h << 5) - h + c;
 	return h;
 }
@@ -1733,6 +1765,91 @@ int qn_lltoa(char* p, const llong n, const uint base, bool upper)
 	return place;
 }
 
+//
+void qn_divpath(const char* p, char* dir, char* filename)
+{
+	const char* end = p;
+	const char* sep = NULL;
+	while (*end)
+	{
+		if (*end == '/' || *end == '\\')
+			sep = end;
+		++end;
+	}
+	if (sep)
+	{
+		if (dir)
+			qn_strncpy(dir, p, sep - p + 1);
+		if (filename)
+			qn_strcpy(filename, sep + 1);
+	}
+	else
+	{
+		if (dir)
+			*dir = '\0';
+		if (filename)
+			qn_strcpy(filename, p);
+	}
+}
+
+//
+void qn_splitpath(const char* p, char* drive, char* dir, char* name, char* ext)
+{
+	const char* path = p;
+	const char* s = path;
+	const char* end = path;
+	const char* dot = NULL;
+	const char* sep = NULL;
+	while (*end)
+	{
+		if (*end == '/' || *end == '\\')
+			sep = end;
+		else if (*end == '.')
+			dot = end;
+		++end;
+	}
+	if (sep)
+	{
+		if (drive)
+		{
+			if (sep - s > 1 && s[1] == ':')
+			{
+				if (drive)
+					qn_strncpy(drive, path, 2);
+				s += 2;
+			}
+			else
+				*drive = '\0';
+		}
+		if (dir)
+			qn_strncpy(dir, path, sep - path + 1);
+	}
+	else
+	{
+		if (drive)
+			*drive = '\0';
+		if (dir)
+			*dir = '\0';
+	}
+	if (dot && dot >= sep)
+	{
+		if (name)
+			qn_strncpy(name, sep + 1, dot - sep - 1);
+		if (ext)
+		{
+			qn_strcpy(ext, dot);
+			ext[dot - sep] = '\0';
+		}
+	}
+	else
+	{
+		if (name)
+			qn_strcpy(name, sep + 1);
+		if (ext)
+			*ext = '\0';
+	}
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // 유니코드 변환
@@ -1876,7 +1993,7 @@ pos_done:
 	return ((size_t)(t - s) - cnt);
 #undef MASK
 #endif
-}
+		}
 
 //
 char* qn_u8ncpy(char* RESTRICT dest, const char* RESTRICT src, size_t len)
@@ -2547,7 +2664,7 @@ size_t qn_u32to16(uchar2* RESTRICT dest, size_t destsize, const uchar4* RESTRICT
 	}
 
 	return size;
-}
+		}
 
 #ifdef QS_NO_MEMORY_PROFILE
 #define DEF_UTF_DUP(name, in_type, out_type)\
