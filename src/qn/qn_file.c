@@ -1255,7 +1255,7 @@ static const char* _disk_list_read(QnGam g)
 		return self->path;
 	}
 #else
-	DIR* dir = qn_get_gam_desc(self);
+	DIR* dir = qn_get_gam_desc(self, DIR*);
 	struct dirent* ent = readdir(dir);
 	while (ent != NULL)
 	{
@@ -1342,7 +1342,7 @@ static bool _disk_list_read_info(QnGam g, QnFileInfo2* info)
 		return true;
 	}
 #else
-	DIR* dir = qn_get_gam_desc(self);
+	DIR* dir = qn_get_gam_desc(self, DIR*);
 	struct dirent* ent = readdir(dir);
 	while (ent != NULL)
 	{
@@ -1353,7 +1353,7 @@ static bool _disk_list_read_info(QnGam g, QnFileInfo2* info)
 	if (ent == NULL)
 		return false;
 
-	qn_strconcat(self->path, self->base.name, ent->d_name, NULL);
+	qn_strconcat(2048, self->path, self->base.name, ent->d_name, NULL);
 	struct stat st;
 	if (stat(self->path, &st) < 0)
 		return false;
@@ -1381,7 +1381,7 @@ static void _disk_list_rewind(QnGam g)
 	qn_set_gam_desc(self, INVALID_HANDLE_VALUE);
 	self->stat = 0;
 #else
-	DIR* dir = qn_get_gam_desc(self);
+	DIR* dir = qn_get_gam_desc(self, DIR*);
 	if (dir != NULL)
 		rewinddir(dir);
 #endif
@@ -1409,13 +1409,13 @@ static void _disk_list_seek(QnGam g, int position)
 	}
 #else
 #ifdef _QN_ANDROID_
-	DIR* dir = qn_get_gam_desc(self);
+	DIR* dir = qn_get_gam_desc(self, DIR*);
 	int cnt = 0;
 	_disk_list_rewind(self);
 	while (cnt < position && readdir(dir) != NULL)
 		cnt++;
 #else
-	DIR* dir = qn_get_gam_desc(self);
+	DIR* dir = qn_get_gam_desc(self, DIR*);
 	seekdir(dir, position);
 #endif
 #endif
@@ -1431,7 +1431,7 @@ static int _disk_list_tell(QnGam g)
 #ifdef _QN_ANDROID_
 	return -1;
 #else
-	DIR* dir = qn_get_gam_desc(self);
+	DIR* dir = qn_get_gam_desc(self, DIR*);
 	return (int)telldir(dir);
 #endif
 #endif
@@ -1447,7 +1447,7 @@ static void _disk_list_dispose(QnGam g)
 		FindClose(fd);
 	qn_free(self->wname);
 #else
-	DIR* dir = qn_get_gam_desc(self);
+	DIR* dir = qn_get_gam_desc(self, DIR*);
 	if (dir != NULL)
 		closedir(dir);
 #endif
@@ -1483,7 +1483,7 @@ static QnDir* _disk_list_open(_In_ QnMount* mount)
 	DIR* dir = opendir(mount->path.DATA);
 	qn_return_when_fail(dir != NULL, NULL);
 
-	QnDiskdir* self = qn_alloc_zero_1(DiskDir);
+	DiskDir* self = qn_alloc_zero_1(DiskDir);
 	self->base.mount = qn_load(mount);
 	self->base.name = qn_strdup(mount->path.DATA);
 	qn_set_gam_desc(self, dir);
