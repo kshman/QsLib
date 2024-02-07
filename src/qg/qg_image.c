@@ -18,7 +18,7 @@
 #define STBI_NO_STDIO
 #define STBI_NO_THREAD_LOCALS
 #define STB_IMAGE_IMPLEMENTATION
-#include "stub/stb/stb_image.h"
+#include "stb/stb_image.h"
 
 //////////////////////////////////////////////////////////////////////////
 // 블릿

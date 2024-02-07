@@ -1,121 +1,311 @@
-﻿// 스프라이트 테스트
+﻿// HFS 테스트
 #include <qs.h>
 
-static const char one_summer_night[] =
-"One summer night, the stars were shining bright\n"
-"One summer dream made with fancy whims\n"
-"That summer night, my whole world tumbled down\n"
-"I could have died, if not for you\n"
-"\n"
-"Each night I'd pray for you\n"
-"My heart would cry for you\n"
-"The sun won't shine again\n"
-"Since you have gone\n"
-"\n"
-"Each time I'd think of you\n"
-"My heart would beat for you\n"
-"You are the one for me\n"
-"Set me free like sparrows up the trees\n"
-"\n"
-"Give a sign\n"
-"So I would ease my mind\n"
-"Just say a word\n"
-"And I'll come running wild\n"
-"\n"
-"Give me a chance to live again\n"
-"Each night I'd pray for you\n"
-"My heart would cry for you\n"
-"\n"
-"The sun won't shine again\n"
-"Since you have gone\n"
-"\n"
-"Each time I'd think of you\n"
-"My heart would beat for you\n"
-"You are the one for me\n";
+#define TEST_STR 0
+
+bool qn_inteqv(int left, int right)
+{
+	return left == right;
+}
+
+#if TEST_STR
+#define KEYTYPE		char*
+#define VALUETYPE	char*
+#define KEYHASH		qn_strihash
+#define KEYEQ		qn_strieqv
+#define KEYFREE		qn_mem_free
+#define VALUEFREE	qn_mem_free_ptr
+#else
+#define KEYTYPE		int
+#define VALUETYPE	int
+#define KEYHASH		(int)
+#define KEYEQ		qn_inteqv
+#define KEYFREE		(void)
+#define VALUEFREE	(void)
+#endif
+typedef struct QN_CONCAT(TYPENAME, Node) { struct QN_CONCAT(TYPENAME, Node) *SIB, *NEXT, *PREV; size_t HASH; KEYTYPE KEY; VALUETYPE VALUE; } QN_CONCAT(TYPENAME, Node);
+typedef struct TYPENAME { size_t COUNT, REVISION, BUCKET; QN_CONCAT(TYPENAME, Node) **NODES, *HEAD, *TAIL; } TYPENAME;
+FINLINE void QN_CONCAT(TYPENAME, _init)(TYPENAME *hash)
+{
+	hash->COUNT = hash->REVISION = 0;
+	hash->BUCKET = QN_MIN_HASH;
+	hash->NODES = qn_alloc_zero(QN_MIN_HASH, QN_CONCAT(TYPENAME, Node)*);
+	hash->HEAD = hash->TAIL = NULL;
+}
+FINLINE void QN_CONCAT(TYPENAME, _init_fast)(TYPENAME *hash)
+{
+	qn_debug_assert(hash->REVISION == 0 && hash->COUNT == 0 && hash->NODES == NULL, "cannot use fast init, use just init");
+	hash->BUCKET = QN_MIN_HASH;
+	hash->NODES = qn_alloc_zero(QN_MIN_HASH, QN_CONCAT(TYPENAME, Node)*);
+}
+FINLINE void QN_CONCAT(TYPENAME, _dispose)(TYPENAME *hash)
+{
+	for (QN_CONCAT(TYPENAME, Node) *next, *node = hash->HEAD; node; node = next)
+	{
+		next = node->NEXT;
+		KEYFREE(node->KEY);
+		VALUEFREE(&node->VALUE);
+		qn_free(node);
+	}
+	qn_free(hash->NODES);
+}
+FINLINE size_t QN_CONCAT(TYPENAME, _count)(TYPENAME *hash)
+{
+	return hash->COUNT;
+}
+FINLINE size_t QN_CONCAT(TYPENAME, _revision)(TYPENAME *hash)
+{
+	return hash->REVISION;
+}
+FINLINE size_t QN_CONCAT(TYPENAME, _bucket)(TYPENAME *hash)
+{
+	return hash->BUCKET;
+}
+FINLINE bool QN_CONCAT(TYPENAME, _is_have)(TYPENAME *hash)
+{
+	return hash->COUNT != 0;
+}
+FINLINE bool QN_CONCAT(TYPENAME, _is_empty)(TYPENAME *hash)
+{
+	return hash->COUNT == 0;
+}
+FINLINE QN_CONCAT(TYPENAME, Node)* QN_CONCAT(TYPENAME, _node_head)(TYPENAME *hash)
+{
+	return hash->HEAD;
+}
+FINLINE QN_CONCAT(TYPENAME, Node)* QN_CONCAT(TYPENAME, _node_tail)(TYPENAME *hash)
+{
+	return hash->TAIL;
+}
+FINLINE void QN_CONCAT(TYPENAME, _internal_test_size)(TYPENAME *hash)
+{
+	if ((hash->BUCKET >= 3 * hash->COUNT && hash->BUCKET > QN_MIN_HASH) ||
+		(3 * hash->BUCKET <= hash->COUNT && hash->BUCKET < QN_MAX_HASH))
+	{
+		size_t new_bucket = qn_prime_near((uint)hash->COUNT);
+		new_bucket = QN_CLAMP(new_bucket, QN_MIN_HASH, QN_MAX_HASH);
+		QN_CONCAT(TYPENAME, Node)** new_nodes = qn_alloc_zero(new_bucket, QN_CONCAT(TYPENAME, Node)*);
+		for (size_t i = 0; i < hash->BUCKET; ++i)
+		{
+			QN_CONCAT(TYPENAME, Node)* node = hash->NODES[i];
+			while (node)
+			{
+				QN_CONCAT(TYPENAME, Node)* next = node->SIB;
+				const size_t index = node->HASH % new_bucket;
+				node->SIB = new_nodes[index];
+				new_nodes[index] = node;
+				node = next;
+			}
+		}
+		qn_free(hash->NODES);
+		hash->NODES = new_nodes;
+		hash->BUCKET = new_bucket;
+	}
+}
+FINLINE QN_CONCAT(TYPENAME, Node)** QN_CONCAT(TYPENAME, _internal_lookup)(TYPENAME* hash, KEYTYPE key)
+{
+	const size_t lh = KEYHASH(key);
+	QN_CONCAT(TYPENAME, Node) *lnn, **ln = &hash->NODES[lh % hash->BUCKET];
+	while ((lnn = *ln) != NULL)
+	{
+		if (lnn->HASH == lh && KEYEQ(lnn->KEY, key))
+			break;
+		ln = &lnn->SIB;
+	}
+	return ln;
+}
+FINLINE QN_CONCAT(TYPENAME, Node)** QN_CONCAT(TYPENAME, _internal_lookup_hash)(TYPENAME* hash, KEYTYPE key, size_t* ret_hash)
+{
+	const size_t lh = KEYHASH(key);
+	QN_CONCAT(TYPENAME, Node) *lnn, **ln = &hash->NODES[lh % hash->BUCKET];
+	while ((lnn = *ln) != NULL)
+	{
+		if (lnn->HASH == lh && KEYEQ(lnn->KEY, key))
+			break;
+		ln = &lnn->SIB;
+	}
+	*ret_hash = lh;
+	return ln;
+}
+FINLINE void QN_CONCAT(TYPENAME, _internal_set)(TYPENAME* hash, KEYTYPE key, VALUETYPE* valueptr, bool replace)
+{
+	size_t ah;
+	QN_CONCAT(TYPENAME, Node)** an = QN_CONCAT(TYPENAME, _internal_lookup_hash)(hash, key, &ah);
+	QN_CONCAT(TYPENAME, Node)* ann = *an;
+	if (ann != NULL)
+	{
+		KEYFREE(ann->KEY);
+		VALUEFREE(&ann->VALUE);
+		if (replace)
+		{
+			ann->KEY = key;
+			ann->VALUE = *valueptr;
+		}
+	}
+	else
+	{
+		ann = qn_alloc_1(QN_CONCAT(TYPENAME, Node));
+		ann->SIB = NULL;
+		ann->HASH = ah;
+		ann->KEY = key;
+		ann->VALUE = *valueptr;
+		ann->NEXT = NULL;
+		ann->PREV = hash->TAIL;
+		if (hash->TAIL)
+			hash->TAIL->NEXT = ann;
+		else
+			hash->HEAD = ann;
+		hash->TAIL = ann;
+		*an = ann;
+		hash->REVISION++;
+		hash->COUNT++;
+		QN_CONCAT(TYPENAME, _internal_test_size)(hash);
+	}
+}
+FINLINE void QN_CONCAT(TYPENAME, _internal_erase_node)(TYPENAME* hash, QN_CONCAT(TYPENAME, Node)** en)
+{
+	QN_CONCAT(TYPENAME, Node)* enn = *en;
+	*en = enn->SIB;
+	if (enn->PREV)
+		enn->PREV->NEXT = enn->NEXT;
+	else
+		hash->HEAD = enn->NEXT;
+	if (enn->NEXT)
+		enn->NEXT->PREV = enn->PREV;
+	else
+		hash->TAIL = enn->PREV;
+	const size_t ebk = enn->HASH % hash->BUCKET;
+	if (hash->NODES[ebk] == enn)
+		hash->NODES[ebk] = NULL;
+	KEYFREE(enn->KEY);
+	VALUEFREE(&enn->VALUE);
+	qn_free(enn);
+	hash->REVISION++;
+	hash->COUNT--;
+}
+FINLINE bool QN_CONCAT(TYPENAME, _internal_erase)(TYPENAME* hash, KEYTYPE key)
+{
+	QN_CONCAT(TYPENAME, Node)** rn = QN_CONCAT(TYPENAME, _internal_lookup)(hash, key);
+	if (*rn == NULL)
+		return false;
+	QN_CONCAT(TYPENAME, _internal_erase_node)(hash, rn);
+	return true;
+}
+FINLINE void QN_CONCAT(TYPENAME, _internal_erase_all)(TYPENAME* hash)
+{
+	for (QN_CONCAT(TYPENAME, Node) *next, *node = hash->HEAD; node; node = next)
+	{
+		next = node->NEXT;
+		KEYFREE(node->KEY);
+		VALUEFREE(&node->VALUE);
+		qn_free(node);
+	}
+	hash->HEAD = hash->TAIL = NULL;
+	hash->COUNT = 0;
+	memset(hash->NODES, 0, hash->BUCKET * sizeof(QN_CONCAT(TYPENAME, Node)*));
+}
+FINLINE void QN_CONCAT(TYPENAME, _clear)(TYPENAME* hash)
+{
+	QN_CONCAT(TYPENAME, _internal_erase_all)(hash);
+	QN_CONCAT(TYPENAME, _internal_test_size)(hash);
+}
+FINLINE void QN_CONCAT(TYPENAME, _remove_node)(TYPENAME* hash, QN_CONCAT(TYPENAME, Node)* node)
+{
+	QN_CONCAT(TYPENAME, _internal_erase_node)(hash, &node);
+	QN_CONCAT(TYPENAME, _internal_test_size)(hash);
+}
+FINLINE VALUETYPE* QN_CONCAT(TYPENAME, _get)(TYPENAME* hash, KEYTYPE key)
+{
+	QN_CONCAT(TYPENAME, Node)** gn = QN_CONCAT(TYPENAME, _internal_lookup)(hash, key);
+	return *gn ? &(*gn)->VALUE : NULL;
+}
+FINLINE void QN_CONCAT(TYPENAME, _add)(TYPENAME* hash, KEYTYPE key, VALUETYPE value)
+{
+	QN_CONCAT(TYPENAME, _internal_set)(hash, key, &value, false);
+}
+FINLINE void QN_CONCAT(TYPENAME, _set)(TYPENAME* hash, KEYTYPE key, VALUETYPE value)
+{
+	QN_CONCAT(TYPENAME, _internal_set)(hash, key, &value, true);
+}
+FINLINE void QN_CONCAT(TYPENAME, _add_ptr)(TYPENAME* hash, KEYTYPE key, VALUETYPE* value)
+{
+	QN_CONCAT(TYPENAME, _internal_set)(hash, key, value, false);
+}
+FINLINE void QN_CONCAT(TYPENAME, _set_ptr)(TYPENAME* hash, KEYTYPE key, VALUETYPE* value)
+{
+	QN_CONCAT(TYPENAME, _internal_set)(hash, key, value, true);
+}
+FINLINE bool QN_CONCAT(TYPENAME, _remove)(TYPENAME* hash, KEYTYPE key)
+{
+	if (QN_CONCAT(TYPENAME, _internal_erase)(hash, key) == false)
+		return false;
+	QN_CONCAT(TYPENAME, _internal_test_size)(hash);
+	return true;
+}
+FINLINE KEYTYPE QN_CONCAT(TYPENAME, _find)(TYPENAME* hash, bool(*func)(void*, KEYTYPE, void*), void* context)
+{
+	for (QN_CONCAT(TYPENAME, Node) *node = hash->HEAD; node; node = node->NEXT)
+	{
+		if (func(context, node->KEY, &node->VALUE))
+			return node->KEY;
+	}
+	return (KEYTYPE)0;
+}
+FINLINE void QN_CONCAT(TYPENAME, _foreach_2)(TYPENAME* hash, void(*func)(KEYTYPE, void*))
+{
+	for (QN_CONCAT(TYPENAME, Node) *node = hash->HEAD; node; node = node->NEXT)
+		func(node->KEY, &node->VALUE);
+}
+FINLINE void QN_CONCAT(TYPENAME, _foreach_3)(TYPENAME* hash, void(*func)(void*, KEYTYPE, void*), void* context)
+{
+	for (QN_CONCAT(TYPENAME, Node) *node = hash->HEAD; node; node = node->NEXT)
+		func(context, node->KEY, &node->VALUE);
+}
+
+#define HASH_FOREACH(hash, node)\
+	QN_CONCAT(TYPENAME, Node) *QN_CONCAT(NEXT,__LINE__);\
+	for ((node) = (hash).HEAD; (node) && (QN_CONCAT(NEXT,__LINE__)=(node)->NEXT, true); (node) = QN_CONCAT(NEXT,__LINE__))
+
+QN_DECLIMPL_INT_PCHAR_HASH(IntHash, int_hash);
 
 int main(void)
 {
 	qn_runtime();
 
-	QnMount* mnt = qn_open_mount("test.hfs", "hc");
-	if (mnt != NULL)
-	{
-		qn_outputs("test 디렉토리 만들기");
-		qn_mount_mkdir(mnt, "test");
-		qn_outputs("000 디렉토리 만들기");
-		qn_mount_mkdir(mnt, "000");
-		qn_outputs("test 디렉토리 들어가기");
-		qn_mount_chdir(mnt, "test");
-		qn_outputs("부모 디렉토리로 돌아가기");
-		qn_mount_chdir(mnt, "..");
-		qn_outputs("최상위 디렉토리로 돌아가기");
-		qn_mount_chdir(mnt, "/");
+	TYPENAME hash;
+	TYPENAME_init(&hash);
+#if TEST_STR
+	TYPENAME_set(&hash, qn_strdup("123"), qn_strdup("456"));
+	TYPENAME_set(&hash, qn_strdup("abc"), qn_strdup("def"));
+	TYPENAME_set(&hash, qn_strdup("000"), qn_strdup("111"));
+	TYPENAMENode* node;
+	HASH_FOREACH(hash, node)
+		qn_outputf("%s => %s", node->KEY, node->VALUE);
+	TYPENAME_set(&hash, qn_strdup("000"), qn_strdup("(SET)"));
+	HASH_FOREACH(hash, node)
+		qn_outputf("%s => %s", node->KEY, node->VALUE);
+#else
+	TYPENAME_set(&hash, 123, 456);
+	TYPENAME_set(&hash, 789, 555);
+	TYPENAME_set(&hash, 999, 111);
+	TYPENAMENode* node;
+	HASH_FOREACH(hash, node)
+		qn_outputf("%d => %d", node->KEY, node->VALUE);
+	TYPENAME_set(&hash, 999, 000);
+	HASH_FOREACH(hash, node)
+		qn_outputf("%d => %d", node->KEY, node->VALUE);
+#endif
+	TYPENAME_dispose(&hash);
 
-		qn_outputs("test 디렉토리 들어가기");
-		qn_mount_chdir(mnt, "test");
-
-		qn_outputs("123 / 456 디렉토리 만들기");
-		qn_mount_mkdir(mnt, "123");
-		qn_mount_mkdir(mnt, "456");
-		qn_mount_chdir(mnt, "456");
-		qn_mount_mkdir(mnt, "3rd step directory");
-		qn_mount_chdir(mnt, "..");
-
-		qn_outputs("zzz(없는파일) 지우기");
-		qn_mount_remove(mnt, "zzz");
-		qn_outputs("123 디렉토리 지우기");
-		qn_mount_remove(mnt, "123");
-		qn_mount_chdir(mnt, "/");
-		qn_mount_chdir(mnt, "/test/456/3rd step directory");
-		qn_mount_mkdir(mnt, "/test/456/thisislongfilenamedirectoryisitwork");
-
-		qn_mount_chdir(mnt, "/test");
-		qn_hfs_store_file(mnt, "qlem.cmd", "QsLibEm.cmd", true, QNFTYPE_SCRIPT);
-		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night), false, QNFTYPE_TEXT);
-		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night), false, QNFTYPE_TEXT);
-		qn_hfs_store_data(mnt, "one summer night.cmpr", one_summer_night, (uint)QN_COUNTOF(one_summer_night), true, QNFTYPE_TEXT);
-		qn_hfs_store_file(mnt, NULL, "QsLib.vcxproj", true, QNFTYPE_MARKUP);
-		qn_hfs_store_file(mnt, "qlem.html", "QsLibEm.html", true, QNFTYPE_MARKUP);
-		qn_mount_chdir(mnt, "/");
-		qn_mount_chdir(mnt, "test");
-
-		qn_unload(mnt);
-	}
-
-	mnt = qn_open_mount("test.hfs", "hm");
-	if (mnt)
-	{
-		QnFileAttr attr = qn_mount_exist(mnt, "/test/qlem.cmd");
-		qn_outputf("qlem.cmd attribute: %d", attr);
-
-		qn_mount_chdir(mnt, "/test");
-
-		int size;
-		char *psz;
-		QnStream* stream = qn_mount_open_stream(mnt, "one summer night.txt", NULL);
-		if (stream)
-		{
-			size = (int)qn_stream_size(stream);
-			psz = qn_alloc(size + 1, char);
-			if (qn_stream_read(stream, psz, 0, size) == size)
-			{
-				psz[size] = 0;
-				qn_outputs(psz);
-			}
-			qn_free(psz);
-			qn_unload(stream);
-		}
-
-		psz = qn_mount_read(mnt, "one summer night.cmpr", &size);
-		qn_outputf("%*s", size, psz);
-		qn_free(psz);
-
-		psz = qn_mount_read_text(mnt, "/test/qlem.cmd", NULL, NULL);
-		qn_outputs(psz);
-		qn_free(psz);
-
-		qn_unload(mnt);
-	}
+	IntHash inthash;
+	int_hash_init(&inthash);
+	int_hash_set(&inthash, 1234, qn_strdup("웬더 샤도 폴스 다운 어폰미"));
+	int_hash_set(&inthash, 5678, qn_strdup("잇 콜링미 섬웨인더월"));
+	int_hash_set(&inthash, 9999, qn_strdup("Feeling bitter and twisted all alone!"));
+	IntHashNode* inthashnode;
+	QN_HASH_FOREACH(inthash, inthashnode)
+		qn_outputf("%d => %s", inthashnode->KEY, inthashnode->VALUE);
+	int_hash_dispose(&inthash);
 
 	return 0;
 }

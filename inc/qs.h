@@ -16,6 +16,16 @@
 #pragma warning(disable:4820)		// 'bytes'바이트 채움 문자가 construct 'member_name' 뒤에 추가되었습니다. (패딩)
 #endif
 
+// __STDC_VERSION__
+// C89 199409L
+// C99 199901L
+// C11 201112L
+// C17 201710L
+#if !defined __STDC_VERSION__ || __STDC_VERSION__ < 199901L
+#error unknown c version! need at least c99 
+#endif
+
+
 //////////////////////////////////////////////////////////////////////////
 // API
 #ifndef QSAPI

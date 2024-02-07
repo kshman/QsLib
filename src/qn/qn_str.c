@@ -8,9 +8,11 @@
 #include "pch.h"
 #include <ctype.h>
 #include <wctype.h>
-#include "sdefl/sdefl.h"
-#include "sdefl/sinfl.h"
 #include "PatrickPowell_snprintf.h"
+#define SINFL_IMPLEMENTATION
+#define SDEFL_IMPLEMENTATION
+#include "vurtun/sdefl.h"
+#include "vurtun/sinfl.h"
 
 //////////////////////////////////////////////////////////////////////////
 // 해시
@@ -774,7 +776,7 @@ const byte* qn_num_base_table(void)
 }
 
 // 숫자를 문자로 바꾸기 (32진수까지)
-const char* qn_char_base_table(const bool upper)
+const char* qn_char_base_table(bool upper)
 {
 	static const char* nchar_table[] =
 	{
@@ -1090,7 +1092,7 @@ char* qn_strncat(char* dest, const char* src, size_t len)
 #else
 	char* o = dest;
 	while (*dest) dest++;
-	while (len && (*dest++ = *src++))
+	while (len && ((*dest++ = *src++)))
 		--len;
 	*dest = '\0';
 	return o;
@@ -1438,7 +1440,7 @@ char* qn_strtok(_Inout_opt_z_ char* p, _In_z_ const char* sep, _Inout_ char** ct
 //
 const char* qn_strext(const char* p, const char* name, int separator)
 {
-	size_t len = strlen(name);
+	const size_t len = strlen(name);
 	for (;;)
 	{
 		const char* t = strstr(p, name);
@@ -1816,7 +1818,6 @@ void qn_splitpath(const char* p, char* drive, char* dir, char* name, char* ext)
 			{
 				if (drive)
 					qn_strncpy(drive, path, 2);
-				s += 2;
 			}
 			else
 				*drive = '\0';

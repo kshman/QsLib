@@ -121,8 +121,8 @@ static void qn_mlu_dispose(QnGam gam)
 	qn_mlu_clean_tags(self);
 	qn_mlu_clean_errs(self);
 
-	qn_arr_disp(&self->tags);
-	qn_arr_disp(&self->errs);
+	qn_arr_dispose(&self->tags);
+	qn_arr_dispose(&self->errs);
 
 	qn_free(self);
 }
@@ -522,7 +522,7 @@ pos_exit:
 		qn_mlu_clean_tags(self);
 	}
 
-	qn_slist_disp(StackList, stack);
+	qn_slist_dispose(StackList, stack);
 	qn_free(cd);
 	qn_free(btag);
 	qn_free(bname);
@@ -765,9 +765,9 @@ static void _qn_realtag_delete_ptr(QnRealTag** ptr)
 	qn_free(self->base.context);
 
 	qn_arr_foreach_ptr_1(&self->subs, _qn_realtag_delete_ptr);
-	qn_arr_disp(&self->subs);
+	qn_arr_dispose(&self->subs);
 
-	qn_hash_disp(ArgHash, &self->args);
+	qn_hash_dispose(ArgHash, &self->args);
 
 	qn_free(self);
 }
@@ -1258,7 +1258,7 @@ bool qn_mltag_next_arg(QnMlTag* ptr, void** index, const char** name, const char
 		return false;
 
 	const QnRealTag* self = (QnRealTag*)ptr;
-	const ArgHashNode* node = !*index ? self->args.FIRST : (ArgHashNode*)*index;
+	const ArgHashNode* node = !*index ? self->args.HEAD : (ArgHashNode*)*index;
 
 	if (name) *name = node->KEY;
 	if (data) *data = node->VALUE;

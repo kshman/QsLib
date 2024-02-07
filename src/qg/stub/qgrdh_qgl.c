@@ -964,9 +964,9 @@ static bool qgl_commit_shader_layout(const QglRenderState* rdr)
 
 	// 유니폼 값 넣고
 	size_t s, i;
-	qn_ctnr_foreach(&rdr->shader.uniforms, i)
+	QN_CTNR_FOREACH(rdr->shader.uniforms, i)
 	{
-		const QgVarShader* var = &qn_ctnr_nth(&rdr->shader.uniforms, i);
+		const QgVarShader* var = qgl_uni_ctnr_nth_ptr(&rdr->shader.uniforms, i);
 		qgl_process_shader_variable(var);
 	}
 
@@ -1435,9 +1435,9 @@ static void qgl_render_dispose(QnGam g)
 	QglRenderState* self = qn_cast_type(g, QglRenderState);
 
 	qgl_render_delete_shader(self, true);
-	qn_ctnr_disp(&self->shader.uniforms);
-	qn_ctnr_disp(&self->shader.attrs);
-	qn_ctnr_disp(&self->layout.inputs);
+	qgl_uni_ctnr_dispose(&self->shader.uniforms);
+	qgl_attr_ctnr_dispose(&self->shader.attrs);
+	qgl_li_ctnr_dispose(&self->layout.inputs);
 
 	rdh_internal_unlink_node(RDHNODE_RENDER, self);
 	qn_free(self);
@@ -1606,7 +1606,7 @@ static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData * vert
 	gl_count = qgl_get_program_iv(self->shader.program, GL_ACTIVE_UNIFORMS);
 	if (gl_count > 0)
 	{
-		qn_ctnr_init(QglCtnUniform, &self->shader.uniforms, gl_count);
+		qgl_uni_ctnr_init(&self->shader.uniforms, gl_count);
 		for (index = i = 0; i < gl_count; i++)
 		{
 			GLDEBUG(glGetActiveUniform(self->shader.program, i, QN_COUNTOF(sz), NULL, &gl_size, &gl_type, sz));
@@ -1621,7 +1621,7 @@ static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData * vert
 			if (sctype == QGSCT_UNKNOWN)
 				qn_mesgf(true, VAR_CHK_NAME, "unsupported uniform type: %s (type: %X)", sz, gl_type);
 
-			QgVarShader* var = &qn_ctnr_nth(&self->shader.uniforms, index++);
+			QgVarShader* var = qgl_uni_ctnr_nth_ptr(&self->shader.uniforms, index++);
 			qn_strcpy(var->name, sz);
 			var->hash = qn_strihash(sz);
 			var->offset = (ushort)glGetUniformLocation(self->shader.program, sz); GLDEBUG((void)0);
@@ -1638,7 +1638,7 @@ static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData * vert
 	gl_count = qgl_get_program_iv(self->shader.program, GL_ACTIVE_ATTRIBUTES);
 	if (gl_count > 0)
 	{
-		qn_ctnr_init(QglCtnAttr, &self->shader.attrs, gl_count);
+		qgl_attr_ctnr_init(&self->shader.attrs, gl_count);
 		for (index = i = 0; i < gl_count; i++)
 		{
 			GLDEBUG(glGetActiveAttrib(self->shader.program, i, QN_COUNTOF(sz), NULL, &gl_size, &gl_type, sz));
@@ -1653,7 +1653,7 @@ static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData * vert
 			if (sctype == QGSCT_UNKNOWN)
 				qn_mesgf(true, VAR_CHK_NAME, "unsupported attribute type: %s (type: %X)", sz, gl_type);
 
-			QglVarAttr* var = &qn_ctnr_nth(&self->shader.attrs, index++);
+			QglVarAttr* var = qgl_attr_ctnr_nth_ptr(&self->shader.attrs, index++);
 			qn_strcpy(var->name, sz);
 			var->hash = qn_strihash(sz);
 			var->attrib = gl_index;
@@ -1722,8 +1722,8 @@ static bool qgl_render_bind_layout_input(QglRenderState* self, const QgLayoutDat
 	}
 
 	// 레이아웃
-	qn_ctnr_init(QglCtnLayoutInput, &self->layout.inputs, layout->count);
-	QglLayoutInput* pstage = qn_ctnr_data(&self->layout.inputs);
+	qgl_li_ctnr_init(&self->layout.inputs, layout->count);
+	QglLayoutInput* pstage = qgl_li_ctnr_data(&self->layout.inputs);
 	QglLayoutInput* stages[QGLOS_MAX_VALUE];
 	for (i = 0; i < QGLOS_MAX_VALUE; i++)
 	{
@@ -1793,9 +1793,9 @@ QgRenderState* qgl_create_render(_In_ const char* name, _In_ const QgPropRender*
 
 pos_error:
 	qgl_render_delete_shader(self, false);
-	qn_ctnr_disp(&self->shader.uniforms);
-	qn_ctnr_disp(&self->shader.attrs);
-	qn_ctnr_disp(&self->layout.inputs);
+	qgl_uni_ctnr_dispose(&self->shader.uniforms);
+	qgl_attr_ctnr_dispose(&self->shader.attrs);
+	qgl_li_ctnr_dispose(&self->layout.inputs);
 	qn_free(self);
 	return NULL;
 }

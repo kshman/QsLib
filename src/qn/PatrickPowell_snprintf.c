@@ -128,7 +128,7 @@
 
 // 숫자 변환 아스키/유니코드 공용
 extern const byte* qn_num_base_table(void);
-extern const char* qn_char_base_table(const bool upper);
+extern const char* qn_char_base_table(bool upper);
 #define char_to_int(p)	(int)((p) - '0')
 
 //
@@ -159,6 +159,7 @@ INLINE double pps_round(double value)
 //
 INLINE bool pps_isnan(const double value)
 {
+	// ReSharper disable once CppIdenticalOperandsInBinaryExpression
 	return value != value;
 }
 
@@ -369,7 +370,7 @@ static void pps_int32(PatrickPowellSprintfState* state, int flags, const LOCALE_
 		}
 	}
 
-	place = pps_atoi(uvalue, convert, MAX_CONVERT_PLACES - 1, state->base, flags & DP_F_UP);
+	place = (nint)pps_atoi(uvalue, convert, MAX_CONVERT_PLACES - 1, state->base, flags & DP_F_UP);
 
 	// '#'이 있을때 접두사 처리
 	if (!((flags & DP_F_NUM) && uvalue != 0))
@@ -497,11 +498,12 @@ static void pps_int64(PatrickPowellSprintfState* state, int flags, const LOCALE_
 		}
 	}
 
-	place = pps_atoll(uvalue, convert, MAX_CONVERT_PLACES - 1, state->base, flags & DP_F_UP);
+	place = (nint)pps_atoll(uvalue, convert, MAX_CONVERT_PLACES - 1, state->base, flags & DP_F_UP);
 
 	// '#'이 있을때 접두사 처리
 	if (!((flags & DP_F_NUM) && uvalue != 0))
 		hexprefix = '\0';
+	else
 	{
 		if (state->base == 16)
 			hexprefix = flags & DP_F_UP ? 'X' : 'x';
@@ -600,7 +602,6 @@ static void pps_double(PatrickPowellSprintfState* state, int flags, const LOCALE
 	char fconvert[311];
 	char econvert[10];
 	char signvalue;
-	char esignvalue;
 	nint iplace;
 	nint fplace;
 	nint eplace;
@@ -682,8 +683,8 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 	if (etype)
 		uvalue /= pps_pow10(exponent);
 	intpart = pps_intpart(uvalue);
-	mask = (ullong)pps_pow10((int)state->vmax);
-	fracpart = (ullong)pps_round((double)mask * (uvalue - (double)intpart));
+	mask = (ullong)pps_pow10((int)state->vmax);  // NOLINT(clang-diagnostic-bad-function-cast)
+	fracpart = (ullong)pps_round((double)mask * (uvalue - (double)intpart));  // NOLINT(clang-diagnostic-bad-function-cast)
 
 	if (fracpart >= mask)
 	{
@@ -709,6 +710,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 
 	if (etype)
 	{
+		char esignvalue;
 		if (exponent < 0)
 		{
 			exponent = -exponent;
@@ -717,7 +719,7 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 		else
 			esignvalue = '+';
 
-		eplace = pps_atoi((uint)exponent, econvert, 2, 10, false);
+		eplace = (nint)pps_atoi((uint)exponent, econvert, 2, 10, false);
 
 		if (eplace == 1)
 		{
@@ -730,17 +732,14 @@ pos_exp_again: // 이 루프는 확실한 반올림 지수를 얻기 위함 -> '
 		econvert[eplace] = '\0';
 	}
 	else
-	{
-		esignvalue = '\0';
 		eplace = 0;
-	}
 
 	// 정수부 처리
-	iplace = pps_atoll(intpart, iconvert, 311 - 1, 10, false);
+	iplace = (nint)pps_atoll(intpart, iconvert, 311 - 1, 10, false);
 
 	// 실수부 처리
 	// iplace=1 이면 fracpart==0 임.
-	fplace = fracpart == 0 ? 0 : pps_atoll(fracpart, fconvert, 311 - 1, 10, false);
+	fplace = fracpart == 0 ? 0 : (nint)pps_atoll(fracpart, fconvert, 311 - 1, 10, false);
 
 	// 지수부 처리
 	zleadfrac = state->vmax - fplace;

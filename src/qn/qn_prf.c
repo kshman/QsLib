@@ -866,6 +866,15 @@ void qn_mem_free(void* ptr)
 	mem_impl.table._free(ptr);
 }
 
+//
+void qn_mem_free_ptr(void* pptr)
+{
+	void** ptr = (void**)pptr;
+	if (ptr == NULL)
+		return;
+	mem_impl.table._free(*ptr);
+}
+
 #ifdef QS_NO_MEMORY_PROFILE
 //
 void* qn_a_alloc(const size_t size, const bool zero)

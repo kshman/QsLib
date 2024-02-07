@@ -7,9 +7,6 @@
 //////////////////////////////////////////////////////////////////////////
 // 스터브
 
-// 모니터 타입
-QN_DECL_CTNR(StubMonitorCtnr, QgUdevMonitor*);
-
 // 이벤트 핸들러 페어
 typedef struct STUBEVENTCALLBACK
 {
@@ -17,7 +14,10 @@ typedef struct STUBEVENTCALLBACK
 	void*				data;
 	size_t				key;
 } StubEventCallback;
-QN_DECL_LIST(StubListEventCb, StubEventCallback);
+
+// 컨테이너
+QN_DECLIMPL_LIST(StubListEventCb, StubEventCallback, eventcb_list);
+QN_DECLIMPL_CTNR(StubMonitorCtnr, QgUdevMonitor*, monitor_ctnr);
 
 // 스터브 베이스
 typedef struct STUBBASE
@@ -56,7 +56,7 @@ typedef struct STUBBASE
 // 스터브 인스턴스 
 extern StubBase* qg_instance_stub;
 
-#define STUB				(qg_instance_stub)		
+#define STUB	(qg_instance_stub)		
 
 // 시스템 스터브를 연다
 extern bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags, QgFeature features);
@@ -215,12 +215,12 @@ typedef struct RENDERERPARAM
 // 렌더러 디바이스
 typedef struct RDHBASE
 {
-	QnGamBase				base;
+	QN_GAM_BASE(QNGAMBASE);
 
 	RendererInfo		info;
 
-	RendererTransform		tm;
-	RendererParam			param;
+	RendererTransform	tm;
+	RendererParam		param;
 	RendererInvoke		invokes;
 
 	QgNodeMukum			mukums[RDHNODE_MAX_VALUE];

@@ -82,8 +82,8 @@ static void qn_runtime_down(void)
 	}
 	QN_UNLOCK(runtime_impl.lock);
 
-	qn_mukum_disp(QnPropMukum, &runtime_impl.props);
-	qn_mukum_disp(QnSymMukum, &runtime_impl.symbols);
+	qn_mukum_dispose(QnPropMukum, &runtime_impl.props);
+	qn_mukum_dispose(QnSymMukum, &runtime_impl.symbols);
 
 	qn_thread_down();
 	qn_module_down();

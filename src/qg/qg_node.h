@@ -37,14 +37,14 @@ INLINE void qg_node_mukum_init_fast(QgNodeMukum* mukum)
 INLINE QnPtrCtnr qg_node_mukum_to_ctnr(QgNodeMukum* mukum)
 {
 	QnPtrCtnr ctnr = { mukum->COUNT, qn_alloc(mukum->COUNT, void*) };
-	QgNode** ptr = (QgNode**)qn_ctnr_data(&ctnr);
+	QgNode** ptr = (QgNode**)qn_pctnr_data(&ctnr);
 	for (QgNode* node = mukum->FIRST; node; node = node->NEXT)
 		*ptr++ = node;
 	return ctnr;
 }
 
 /// @brief 해제
-INLINE void qg_node_mukum_disp(QgNodeMukum* mukum)
+INLINE void qg_node_mukum_dispose(QgNodeMukum* mukum)
 {
 	for (QgNode *next, *node = mukum->FIRST; node; node = next)
 	{
@@ -61,9 +61,9 @@ INLINE void qg_node_mukum_disp_safe(QgNodeMukum* mukum)
 	{
 		QnPtrCtnr ctnr = qg_node_mukum_to_ctnr(mukum);
 		size_t i;
-		qn_ctnr_foreach(&ctnr, i)
-			qn_unload(qn_ctnr_nth(&ctnr, i));
-		qn_ctnr_disp(&ctnr);
+		QN_CTNR_FOREACH(ctnr, i)
+			qn_unload(qn_pctnr_nth(&ctnr, i));
+		qn_pctnr_dispose(&ctnr);
 	}
 	qn_free(mukum->NODES);
 }
@@ -74,8 +74,8 @@ INLINE void qg_internal_node_mukum_test_size(QgNodeMukum* mukum)
 	if ((mukum->BUCKET >= 3 * mukum->COUNT && mukum->BUCKET > QN_MIN_HASH) ||
 		(3 * mukum->BUCKET <= mukum->COUNT && mukum->BUCKET < QN_MAX_HASH))
 	{
-		size_t pnear = qn_prime_near((uint)mukum->COUNT);
-		size_t new_bucket = QN_CLAMP(pnear, QN_MIN_HASH, QN_MAX_HASH);
+		const size_t prime_near = qn_prime_near((uint)mukum->COUNT);
+		const size_t new_bucket = QN_CLAMP(prime_near, QN_MIN_HASH, QN_MAX_HASH);
 		QgNode** new_nodes = qn_alloc_zero(new_bucket, QgNode*);
 		for (size_t i = 0; i < mukum->BUCKET; ++i)
 		{
@@ -83,7 +83,7 @@ INLINE void qg_internal_node_mukum_test_size(QgNodeMukum* mukum)
 			while (node)
 			{
 				QgNode* next = node->SIBLING;
-				size_t hash = node->HASH % new_bucket;
+				const size_t hash = node->HASH % new_bucket;
 				node->SIBLING = new_nodes[hash];
 				new_nodes[hash] = node;
 				node = next;
@@ -204,7 +204,7 @@ INLINE void qg_internal_node_mukum_input(QgNodeMukum* mukum, QgNode* item, bool 
 /// @brief 노드 제거, 링크만 해제하고 노드 자체를 해제하지 않는다
 INLINE void qg_internal_node_mukum_unlink(QgNodeMukum* mukum, QgNode** pnode)
 {
-	QgNode* node = *pnode;
+	const QgNode* node = *pnode;
 	*pnode = node->SIBLING;
 	if (node->NEXT)
 		node->NEXT->PREV = node->PREV;
@@ -220,7 +220,7 @@ INLINE void qg_internal_node_mukum_unlink(QgNodeMukum* mukum, QgNode** pnode)
 		qn_debug_assert(mukum->FIRST == node, "invalid first node");
 		mukum->FIRST = node->NEXT;
 	}
-	size_t hash = node->HASH % mukum->BUCKET;
+	const size_t hash = node->HASH % mukum->BUCKET;
 	if (mukum->NODES[hash] == node)
 		mukum->NODES[hash] = node->SIBLING;
 	mukum->COUNT--;
@@ -241,7 +241,7 @@ INLINE bool qg_internal_node_mukum_erase(QgNodeMukum* mukum, size_t hash, const 
 /// @brief 노드 얻기, 참조 처리 하지 않는다!
 INLINE void* qg_node_mukum_get(QgNodeMukum* mukum, const char* name)
 {
-	size_t hash = qn_strhash(name);
+	const size_t hash = qn_strhash(name);
 	QgNode** pnode = qg_internal_node_mukum_lookup(mukum, hash, name);
 	return *pnode;
 }
@@ -261,7 +261,7 @@ INLINE void qg_node_mukum_set(QgNodeMukum* mukum, QgNode* node)
 /// @brief 노드 제거, 실제 노드를 제거한다!
 INLINE void qg_node_mukum_remove(QgNodeMukum* mukum, const char* name)
 {
-	size_t hash = qn_strhash(name);
+	const size_t hash = qn_strhash(name);
 	qg_internal_node_mukum_erase(mukum, hash, name);
 	qg_internal_node_mukum_test_size(mukum);
 }

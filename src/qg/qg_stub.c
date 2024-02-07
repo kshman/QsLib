@@ -34,7 +34,9 @@ struct EventNode
 	size_t				key;
 	/* 32비트에서 4바이트 패딩 */
 };
-QN_DECL_NODELIST(EventNodeList, EventNode);
+
+// 컨테이너
+QN_DECLIMPL_LNODE(EventNodeList, EventNode, event_lnode);
 
 // 이벤트 창고
 struct ShedEvent
@@ -50,7 +52,7 @@ struct ShedEvent
 	EventNodeList		queue;					// 현재 메시지 큐
 	EventNodeList		prior;					// 현재 우선 순위 메시지 큐
 	EventNodeList		cache;					// 캐시
-	QnPtrArr			reserved_mems;			// 할당자가 있는 메시지의 데이터 저장소
+	QnPtrArray			reserved_mems;			// 할당자가 있는 메시지의 데이터 저장소
 } shed_event =
 {
 	.mutex = NULL,
@@ -70,13 +72,13 @@ static void shed_event_init(void)
 	shed_event.loop.poll = 0;
 	// 큐
 	shed_event.max_queue = 0;
-	qn_nodelist_init(&shed_event.queue);
+	event_lnode_init(&shed_event.queue);
 	// 우선 순위 큐
-	qn_nodelist_init(&shed_event.prior);
+	event_lnode_init(&shed_event.prior);
 	// 캐시
-	qn_nodelist_init(&shed_event.cache);
+	event_lnode_init(&shed_event.cache);
 	// 예약 메모리
-	qn_parr_init(&shed_event.reserved_mems, 0);
+	qn_parray_init(&shed_event.reserved_mems, 0);
 }
 
 // 모두 제거
@@ -85,14 +87,14 @@ static void shed_event_dispose(void)
 	qn_return_when_fail(shed_event.mutex != NULL, /*void*/);
 
 	// 예약 메모리
-	qn_parr_foreach_1(&shed_event.reserved_mems, qn_mem_free);
-	qn_parr_disp(&shed_event.reserved_mems);
+	qn_parray_foreach_1(&shed_event.reserved_mems, qn_mem_free);
+	qn_parray_dispose(&shed_event.reserved_mems);
 	// 우선 순위 큐
-	qn_nodelist_disp_cb(EventNodeList, &shed_event.prior, qn_mem_free);
+	event_lnode_dispose_callback(&shed_event.prior, qn_mem_free);
 	// 큐
-	qn_nodelist_disp_cb(EventNodeList, &shed_event.queue, qn_mem_free);
+	event_lnode_dispose_callback(&shed_event.queue, qn_mem_free);
 	// 캐시
-	qn_nodelist_disp_cb(EventNodeList, &shed_event.cache, qn_mem_free);
+	event_lnode_dispose_callback(&shed_event.cache, qn_mem_free);
 
 	qn_delete_mutex(shed_event.mutex);
 }
@@ -104,17 +106,17 @@ static bool shed_event_queue(const QgEvent* e)
 	qn_mutex_enter(shed_event.mutex);
 
 	bool ret = false;
-	if (qn_nodelist_count(&shed_event.queue) < QGMAX_EVENTS)
+	if (event_lnode_count(&shed_event.queue) < QGMAX_EVENTS)
 	{
-		EventNode* node = qn_nodelist_first(&shed_event.cache);
+		EventNode* node = event_lnode_head(&shed_event.cache);
 		if (node == NULL)
 			node = qn_alloc_1(EventNode);
 		else
-			qn_nodelist_remove_first(EventNodeList, &shed_event.cache);
+			event_lnode_remove_head(&shed_event.cache, false);
 
-		qn_nodelist_append(EventNodeList, &shed_event.queue, node);
-		if (shed_event.max_queue < qn_nodelist_count(&shed_event.queue))
-			shed_event.max_queue = qn_nodelist_count(&shed_event.queue);
+		event_lnode_append(&shed_event.queue, node);
+		if (shed_event.max_queue < event_lnode_count(&shed_event.queue))
+			shed_event.max_queue = event_lnode_count(&shed_event.queue);
 
 		node->key = 0;
 		node->event = *e;
@@ -126,8 +128,10 @@ static bool shed_event_queue(const QgEvent* e)
 }
 
 // 우선 큐에서 찾기 콜백
-static bool shed_event_prior_queue_key_callback(const size_t key, const EventNode* node)
+static bool shed_event_prior_queue_key_callback(void* keyptr, void* nodeptr)
 {
+	const size_t key = (size_t)keyptr;
+	const EventNode* node = (const EventNode*)nodeptr;
 	return key == node->key;
 }
 
@@ -137,18 +141,17 @@ static void shed_event_prior_queue(const size_t key, const QgEvent* e)
 	qn_return_when_fail(shed_event.mutex, /*void*/);
 	qn_mutex_enter(shed_event.mutex);
 
-	EventNode* node;
-	qn_nodelist_find(EventNodeList, &shed_event.prior, shed_event_prior_queue_key_callback, key, &node);
+	EventNode* node = event_lnode_find(&shed_event.prior, shed_event_prior_queue_key_callback, (void*)key);
 
 	if (node == NULL)
 	{
-		node = qn_nodelist_first(&shed_event.cache);
+		node = event_lnode_head(&shed_event.cache);
 		if (node == NULL)
 			node = qn_alloc_1(EventNode);
 		else
-			qn_nodelist_remove_first(EventNodeList, &shed_event.cache);
+			event_lnode_remove_head(&shed_event.cache, false);
 
-		qn_nodelist_append(EventNodeList, &shed_event.prior, node);
+		event_lnode_append(&shed_event.prior, node);
 		node->key = key;
 	}
 
@@ -163,20 +166,20 @@ static bool shed_event_transition(QgEvent* e)
 	bool ret = false;
 	qn_mutex_enter(shed_event.mutex);
 
-	if (qn_nodelist_is_have(&shed_event.prior))
+	if (event_lnode_is_have(&shed_event.prior))
 	{
-		EventNode* node = qn_nodelist_first(&shed_event.prior);
-		qn_nodelist_remove_first(EventNodeList, &shed_event.prior);
-		qn_nodelist_append(EventNodeList, &shed_event.cache, node);
+		EventNode* node = event_lnode_head(&shed_event.prior);
+		event_lnode_remove_head(&shed_event.prior, false);
+		event_lnode_append(&shed_event.cache, node);
 
 		*e = node->event;
 		ret = true;
 	}
-	else if (qn_nodelist_is_have(&shed_event.queue))
+	else if (event_lnode_is_have(&shed_event.queue))
 	{
-		EventNode* node = qn_nodelist_first(&shed_event.queue);
-		qn_nodelist_remove_first(EventNodeList, &shed_event.queue);
-		qn_nodelist_append(EventNodeList, &shed_event.cache, node);
+		EventNode* node = event_lnode_head(&shed_event.queue);
+		event_lnode_remove_head(&shed_event.queue, false);
+		event_lnode_append(&shed_event.cache, node);
 
 		*e = node->event;
 		ret = true;
@@ -192,15 +195,15 @@ static bool shed_event_restore(QgEvent* e)
 	bool ret = false;
 	qn_mutex_enter(shed_event.mutex);
 
-	if (qn_nodelist_is_have(&shed_event.prior))
+	if (event_lnode_is_have(&shed_event.prior))
 	{
-		const EventNode* node = qn_nodelist_first(&shed_event.prior);
+		const EventNode* node = event_lnode_head(&shed_event.prior);
 		*e = node->event;
 		ret = true;
 	}
-	else if (qn_nodelist_is_have(&shed_event.queue))
+	else if (event_lnode_is_have(&shed_event.queue))
 	{
-		const EventNode* node = qn_nodelist_first(&shed_event.queue);
+		const EventNode* node = event_lnode_head(&shed_event.queue);
 		*e = node->event;
 		ret = true;
 	}
@@ -210,24 +213,25 @@ static bool shed_event_restore(QgEvent* e)
 }
 
 // 큐 비울 때 캐시로 옮기기
-static void shed_event_flush_callback(EventNode* node)
+static void shed_event_flush_callback(void* nodeptr)
 {
-	qn_nodelist_append(EventNodeList, &shed_event.cache, node);
+	EventNode* node = (EventNode*)nodeptr;
+	event_lnode_append(&shed_event.cache, node);
 }
 
 // 큐 비우기
 static void shed_event_flush(void)
 {
 	qn_mutex_enter(shed_event.mutex);
-	if (qn_nodelist_is_have(&shed_event.prior))
+	if (event_lnode_is_have(&shed_event.prior))
 	{
-		qn_nodelist_foreach_1(EventNodeList, &shed_event.prior, shed_event_flush_callback);
-		qn_nodelist_clear_nodes(&shed_event.prior);
+		event_lnode_foreach_1(&shed_event.prior, shed_event_flush_callback);
+		event_lnode_reset(&shed_event.prior);
 	}
-	if (qn_nodelist_is_have(&shed_event.queue))
+	if (event_lnode_is_have(&shed_event.queue))
 	{
-		qn_nodelist_foreach_1(EventNodeList, &shed_event.queue, shed_event_flush_callback);
-		qn_nodelist_clear_nodes(&shed_event.queue);
+		event_lnode_foreach_1(&shed_event.queue, shed_event_flush_callback);
+		event_lnode_reset(&shed_event.queue);
 	}
 	qn_mutex_leave(shed_event.mutex);
 }
@@ -236,7 +240,7 @@ static void shed_event_flush(void)
 static void shed_event_reserved_mem(void* ptr)
 {
 	qn_mutex_enter(shed_event.mutex);
-	qn_parr_add(&shed_event.reserved_mems, ptr);
+	qn_parray_add(&shed_event.reserved_mems, ptr);
 	qn_mutex_leave(shed_event.mutex);
 }
 
@@ -244,10 +248,10 @@ static void shed_event_reserved_mem(void* ptr)
 static void shed_event_clear_reserved_mem(void)
 {
 	qn_mutex_enter(shed_event.mutex);
-	if (qn_parr_is_have(&shed_event.reserved_mems))
+	if (qn_parray_is_have(&shed_event.reserved_mems))
 	{
-		qn_parr_foreach_1(&shed_event.reserved_mems, qn_free);
-		qn_parr_clear(&shed_event.reserved_mems);
+		qn_parray_foreach_1(&shed_event.reserved_mems, qn_mem_free);
+		qn_parray_clear(&shed_event.reserved_mems);
 	}
 	qn_mutex_leave(shed_event.mutex);
 }
@@ -305,8 +309,8 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 	stub->mutex = qn_new_mutex();
 
 	stub->flags = flags;
-	stub->features = QGFEATURE_NONE;						// 나중에 설정해야 하므로 NONE
-	stub->stats = (QgStubStat)(QGSST_ACTIVE | QGSST_CURSOR);	// 기본으로 활성 상태랑 커서는 켠다
+	stub->features = QGFEATURE_NONE;				// 나중에 설정해야 하므로 NONE
+	stub->stats = QGSST_ACTIVE | QGSST_CURSOR;		// 기본으로 활성 상태랑 커서는 켠다
 
 	stub->aspect = 9.0f / 16.0f;
 
@@ -315,28 +319,28 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 	stub->active = stub->timer->abstime;
 	stub->frames = 1.0 / 60.0;
 
-	stub->mouse.lim.move = 10 * 10 + 10 * 10;				// 제한 이동 거리(포인트)의 제곱
-	stub->mouse.lim.tick = 500;								// 제한 클릭 시간(밀리초)
+	stub->mouse.lim.move = 10 * 10 + 10 * 10;		// 제한 이동 거리(포인트)의 제곱
+	stub->mouse.lim.tick = 500;						// 제한 클릭 시간(밀리초)
 
-	qn_pctnr_init(&stub->monitors, 0);
-
-	qn_list_init(StubListEventCb, &stub->callbacks);
+	monitor_ctnr_init(&stub->monitors, 0);
+	eventcb_list_init(&stub->callbacks);
 }
 
 //
 void qg_close_stub(void)
 {
-	const StubBase* self = qg_instance_stub;
+	StubBase* self = qg_instance_stub;
 	qn_return_when_fail(self, /*void*/);
 
 	stub_system_finalize();
 
 	qn_unloadu(self->timer);
 
-	qn_pctnr_foreach_1(&self->monitors, qn_mem_free);
-	qn_pctnr_disp(&self->monitors);
-
-	qn_list_disp(StubListEventCb, &self->callbacks);
+	size_t i;
+	QN_CTNR_FOREACH(self->monitors, i)
+		qn_free(monitor_ctnr_nth(&self->monitors, i));
+	monitor_ctnr_dispose(&self->monitors);
+	eventcb_list_dispose(&self->callbacks);
 
 	qn_delete_mutex(self->mutex);
 
@@ -447,17 +451,17 @@ void qg_set_title(const char* title)
 const QgUdevMonitor* qg_get_monitor(int index)
 {
 	const StubBase* stub = qg_instance_stub;
-	qn_return_when_fail((size_t)index < qn_pctnr_count(&stub->monitors), NULL);
-	return qn_pctnr_nth(&stub->monitors, index);
+	qn_return_when_fail((size_t)index < monitor_ctnr_count(&stub->monitors), NULL);
+	return monitor_ctnr_nth(&stub->monitors, index);
 }
 
 //
 const QgUdevMonitor* qg_get_current_monitor(void)
 {
 	const StubBase* stub = qg_instance_stub;
-	qn_debug_assert(qn_pctnr_is_have(&stub->monitors), "아니 왜 모니터가 없어");
-	const uint index = stub->display < qn_pctnr_count(&stub->monitors) ? stub->display : 0;
-	return qn_pctnr_nth(&stub->monitors, index);
+	qn_debug_assert(monitor_ctnr_is_have(&stub->monitors), "아니 왜 모니터가 없어");
+	const uint index = stub->display < monitor_ctnr_count(&stub->monitors) ? stub->display : 0;
+	return monitor_ctnr_nth(&stub->monitors, index);
 }
 
 //
@@ -580,7 +584,7 @@ void qg_get_size(_Out_ QmSize* size)
 //
 int qg_left_events(void)
 {
-	return (int)(qn_nodelist_count(&shed_event.queue) + qn_nodelist_count(&shed_event.prior));
+	return (int)(event_lnode_count(&shed_event.queue) + event_lnode_count(&shed_event.prior));
 }
 
 //
@@ -655,8 +659,8 @@ static void qg_dispatch_event(const QgEvent* ev)
 {
 	const StubBase* stub = qg_instance_stub;
 	const QgEventType type = ev->ev;
-	qn_ctn_name_node(StubListEventCb)* node;
-	qn_list_foreach(StubListEventCb, &stub->callbacks, node)
+	StubListEventCbNode *node, *next;
+	QN_LIST_FOREACH(stub->callbacks, node, next)
 	{
 		if (node->DATA.func(node->DATA.data, type, ev) > 0)
 			break;
@@ -671,7 +675,7 @@ bool qg_poll(QgEvent* ev)
 	qg_poll_check_shed();
 	if (shed_event_transition(ev))
 	{
-		if (qn_list_is_have(&stub->callbacks))
+		if (eventcb_list_is_have(&stub->callbacks))
 		{
 			qn_mutex_enter(stub->mutex);
 			qg_dispatch_event(ev);
@@ -690,7 +694,7 @@ void qg_dispatch(void)
 	qg_poll_check_shed();
 
 	qn_mutex_enter(stub->mutex);
-	if (qn_list_is_have(&stub->callbacks))
+	if (eventcb_list_is_have(&stub->callbacks))
 	{
 		QgEvent ev;
 		while (shed_event_transition(&ev))
@@ -745,7 +749,7 @@ nint qg_register_event_callback(QgEventCallback func, void* data)
 		.key = qn_p_index()
 	};
 	qn_mutex_enter(stub->mutex);
-	qn_list_prepend(StubListEventCb, &stub->callbacks, cb);
+	eventcb_list_prepend(&stub->callbacks, cb);
 	qn_mutex_leave(stub->mutex);
 
 	return (nint)cb.key;
@@ -759,8 +763,8 @@ bool qg_unregister_event_callback(nint key)
 	qn_mutex_enter(stub->mutex);
 
 	bool ret = false;
-	qn_ctn_name_node(StubListEventCb)* node;
-	qn_list_foreach(StubListEventCb, &stub->callbacks, node)
+	StubListEventCbNode* node, *next;
+	QN_LIST_FOREACH(stub->callbacks, node, next)
 	{
 		if (node->DATA.key != (size_t)key)
 			continue;
@@ -769,7 +773,7 @@ bool qg_unregister_event_callback(nint key)
 	}
 
 	if (ret)
-		qn_list_remove_node(StubListEventCb, &stub->callbacks, node);
+		eventcb_list_remove_node(&stub->callbacks, node);
 
 	qn_mutex_leave(stub->mutex);
 	return ret;
@@ -908,22 +912,21 @@ bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary,
 	if (connected)
 	{
 		if (primary)
-			qn_pctnr_insert(&stub->monitors, 0, monitor);
+			monitor_ctnr_insert(&stub->monitors, 0, monitor);
 		else
-			qn_pctnr_add(&stub->monitors, monitor);
+			monitor_ctnr_add(&stub->monitors, monitor);
 	}
 	else
 	{
-		int nth;
-		qn_pctnr_contains(&stub->monitors, monitor, &nth);
-		if (nth >= 0)
-			qn_pctnr_remove_nth(&stub->monitors, nth);
+		size_t nth = monitor_ctnr_contains(&stub->monitors, monitor);
+		if (nth != (size_t)-1)
+			monitor_ctnr_remove_nth(&stub->monitors, nth);
 	}
 
 	// 모니터 번호 재할당
 	size_t i;
-	qn_pctnr_foreach(&stub->monitors, i)
-		qn_pctnr_nth(&stub->monitors, i)->no = (int)i;
+	QN_CTNR_FOREACH(stub->monitors, i)
+		monitor_ctnr_nth(&stub->monitors, i)->no = (int)i;
 
 	// 이벤트
 	bool ret = true;
@@ -1054,18 +1057,18 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 			if (stub->bound.Left == param1 && stub->bound.Top == param2)
 				return false;
 			stub->bound = qm_rect_move(stub->bound, param1, param2);
-			if (qn_pctnr_count(&stub->monitors) > 1)
+			if (monitor_ctnr_count(&stub->monitors) > 1)
 			{
 				size_t i;
-				qn_pctnr_foreach(&stub->monitors, i)
+				QN_CTNR_FOREACH(stub->monitors, i)
 				{
-					const QgUdevMonitor* mon = qn_pctnr_nth(&stub->monitors, i);
+					const QgUdevMonitor* mon = monitor_ctnr_nth(&stub->monitors, i);
 					const QmRect bound = qm_rect_size((int)mon->x, (int)mon->y, (int)mon->width, (int)mon->height);
 					if (qm_rect_include(bound, stub->bound))
 						break;
 				}
-				if (i < qn_pctnr_count(&stub->monitors))
-					stub_event_on_active_monitor(qn_pctnr_nth(&stub->monitors, i));
+				if (i < monitor_ctnr_count(&stub->monitors))
+					stub_event_on_active_monitor(monitor_ctnr_nth(&stub->monitors, i));
 			}
 			break;
 

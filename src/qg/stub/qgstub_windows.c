@@ -4,8 +4,6 @@
 //
 
 // TODO: 마우스 감추고 보이기 + 커서 처리
-// TODO: 화면 종횡비 맞추기
-// TODO: DPI 추정
 
 // ReSharper disable CppParameterMayBeConst
 // ReSharper disable CppParameterMayBeConstPtrOrRef
@@ -120,7 +118,7 @@ static bool windows_dll_init(void)
 #pragma region 스터브 선언
 
 static const GUID GUID_DEVINTERFACE_HID = { 0x4D1E55B2, 0xF16F, 0x11CF,{ 0x88,0xCB,0x00,0x11,0x11,0x00,0x00,0x30 } };
-static const GUID GUID_DEVINTERFACE_MONITOR = { 0xE6F07B5F, 0xEE97, 0x4a90,{ 0xB0,0x4E,0x82,0x42,0x33,0x28,0x25,0x96 } };
+//static const GUID GUID_DEVINTERFACE_MONITOR = { 0xE6F07B5F, 0xEE97, 0x4a90,{ 0xB0,0x4E,0x82,0x42,0x33,0x28,0x25,0x96 } };
 
 // 윈도우 모니터 > QgUdevMonitor
 typedef struct WINDOWSMONITOR
@@ -283,8 +281,8 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	}
 
 	// 사용할 모니터 (모니터 번호는 정렬되어 있어서 그냥 순번 ㅇㅋ)
-	const WindowsMonitor* mon = (const WindowsMonitor*)qn_pctnr_nth(&wStub.base.monitors,
-		(size_t)display < qn_pctnr_count(&wStub.base.monitors) ? display : 0);
+	const WindowsMonitor* mon = (const WindowsMonitor*)monitor_ctnr_nth(&wStub.base.monitors,
+		(size_t)display < monitor_ctnr_count(&wStub.base.monitors) ? display : 0);
 	wStub.base.display = mon->base.no;
 
 	// 크기와 위치 (윈도우 크기, 화면 크기)
@@ -925,7 +923,7 @@ static WindowsMonitor* windows_get_monitor_info(DISPLAY_DEVICE* adapter_device, 
 static bool windows_detect_displays(void)
 {
 	StubMonitorCtnr	keep;
-	qn_pctnr_init_copy(&keep, &wStub.base.monitors);
+	monitor_ctnr_init_copy(&keep, &wStub.base.monitors);
 
 	WindowsFriendlyMonitor* friendly_monitors;
 	const UINT32 friendly_count = windows_friendly_monitors(&friendly_monitors);
@@ -948,16 +946,16 @@ static bool windows_detect_displays(void)
 			if (QN_TMASK(display_device.StateFlags, DISPLAY_DEVICE_ACTIVE) == false)
 				break;
 
-			qn_pctnr_foreach(&keep, i)
+			QN_CTNR_FOREACH(keep, i)
 			{
-				const WindowsMonitor * mon = (WindowsMonitor*)qn_pctnr_nth(&keep, i);
+				const WindowsMonitor * mon = (WindowsMonitor*)monitor_ctnr_nth(&keep, i);
 				if (mon == NULL || wcscmp(mon->display, display_device.DeviceName) != 0)
 					continue;
-				qn_pctnr_set(&keep, i, NULL);
-				EnumDisplayMonitors(NULL, NULL, windows_enum_display_callback, (LPARAM)&qn_pctnr_nth(&wStub.base.monitors, i));
+				monitor_ctnr_set(&keep, i, NULL);
+				EnumDisplayMonitors(NULL, NULL, windows_enum_display_callback, (LPARAM)monitor_ctnr_nth(&wStub.base.monitors, i));  // NOLINT(clang-diagnostic-bad-function-cast)
 				break;
 			}
-			if (i < qn_pctnr_count(&keep))
+			if (i < monitor_ctnr_count(&keep))
 				continue;
 
 			WindowsMonitor* mon = windows_get_monitor_info(&adapter_device, &display_device, friendly_monitors, friendly_count);
@@ -967,15 +965,15 @@ static bool windows_detect_displays(void)
 
 		if (display == 0)
 		{
-			qn_pctnr_foreach(&keep, i)
+			QN_CTNR_FOREACH(keep, i)
 			{
-				const WindowsMonitor* mon = (const WindowsMonitor*)qn_pctnr_nth(&keep, i);
+				const WindowsMonitor* mon = (const WindowsMonitor*)monitor_ctnr_nth(&keep, i);
 				if (mon == NULL || wcscmp(mon->adapter, adapter_device.DeviceName) != 0)
 					continue;
-				qn_pctnr_set(&keep, i, NULL);
+				monitor_ctnr_set(&keep, i, NULL);
 				break;
 			}
-			if (i < qn_pctnr_count(&keep))
+			if (i < monitor_ctnr_count(&keep))
 				continue;
 
 			WindowsMonitor* mon = windows_get_monitor_info(&adapter_device, NULL, friendly_monitors, friendly_count);
@@ -984,17 +982,17 @@ static bool windows_detect_displays(void)
 		}
 	}
 
-	qn_pctnr_foreach(&keep, i)
+	QN_CTNR_FOREACH(keep, i)
 	{
-		QgUdevMonitor* mon = qn_pctnr_nth(&keep, i);
+		QgUdevMonitor* mon = monitor_ctnr_nth(&keep, i);
 		if (mon != NULL)
 			stub_event_on_monitor(mon, false, false, false);
 	}
-	qn_pctnr_disp(&keep);
+	monitor_ctnr_dispose(&keep);
 
 	qn_free(friendly_monitors);
 
-	return qn_pctnr_is_have(&wStub.base.monitors);
+	return monitor_ctnr_is_have(&wStub.base.monitors);
 }
 
 //
