@@ -1,66 +1,122 @@
 ﻿// HFS 테스트
 #include <qs.h>
 
-QN_DECLIMPL_INT_PCHAR_HASH(IntHash, int_hash);
-QN_DECLIMPL_PCHAR_INT_HASH(StrHash, str_hash);
-QN_DECLIMPL_PCHAR_PCHAR_MUKUM(StrMukum, str_mukum);
-QN_DECLIMPL_INT_INT_MUKUM(IntMukum, int_mukum);
+static const char one_summer_night[] =
+"One summer night, the stars were shining bright\n"
+"One summer dream made with fancy whims\n"
+"That summer night, my whole world tumbled down\n"
+"I could have died, if not for you\n"
+"\n"
+"Each night I'd pray for you\n"
+"My heart would cry for you\n"
+"The sun won't shine again\n"
+"Since you have gone\n"
+"\n"
+"Each time I'd think of you\n"
+"My heart would beat for you\n"
+"You are the one for me\n"
+"Set me free like sparrows up the trees\n"
+"\n"
+"Give a sign\n"
+"So I would ease my mind\n"
+"Just say a word\n"
+"And I'll come running wild\n"
+"\n"
+"Give me a chance to live again\n"
+"Each night I'd pray for you\n"
+"My heart would cry for you\n"
+"\n"
+"The sun won't shine again\n"
+"Since you have gone\n"
+"\n"
+"Each time I'd think of you\n"
+"My heart would beat for you\n"
+"You are the one for me\n";
 
 int main(void)
 {
 	qn_runtime();
 
-	qn_outputf("\n정수-문자열 해시 테스트");
-	IntHash inthash;
-	int_hash_init(&inthash);
-	int_hash_set(&inthash, 1234, qn_strdup("웬더 샤도 폴스 다운 어폰미"));
-	int_hash_set(&inthash, 5678, qn_strdup("잇 콜링미 섬웨인더월"));
-	int_hash_set(&inthash, 9999, qn_strdup("Feeling bitter and twisted all alone!"));
-	IntHashNode* inthashnode;
-	QN_HASH_FOREACH(inthash, inthashnode)
-		qn_outputf("%d => %s", inthashnode->KEY, inthashnode->VALUE);
-	int_hash_dispose(&inthash);
+	QnMount* mnt = qn_open_mount("test.hfs", "hc");
+	if (mnt != NULL)
+	{
+		qn_outputs("test 디렉토리 만들기");
+		qn_mount_mkdir(mnt, "test");
+		qn_outputs("000 디렉토리 만들기");
+		qn_mount_mkdir(mnt, "000");
+		qn_outputs("test 디렉토리 들어가기");
+		qn_mount_chdir(mnt, "test");
+		qn_outputs("부모 디렉토리로 돌아가기");
+		qn_mount_chdir(mnt, "..");
+		qn_outputs("최상위 디렉토리로 돌아가기");
+		qn_mount_chdir(mnt, "/");
 
-	qn_outputf("\n문자열-정수 해시 테스트");
-	StrHash strhash;
-	str_hash_init(&strhash);
-	str_hash_set(&strhash, qn_strdup("웬더 샤도 폴스 다운 어폰미"), 1234);
-	str_hash_set(&strhash, qn_strdup("잇 콜링미 섬웨인더월"), 5678);
-	str_hash_set(&strhash, qn_strdup("Feeling bitter and twisted all alone!"), 9999);
-	StrHashNode* strhashnode;
-	QN_HASH_FOREACH(strhash, strhashnode)
-		qn_outputf("%s => %d", strhashnode->KEY, strhashnode->VALUE);
-	str_hash_dispose(&strhash);
+		qn_outputs("test 디렉토리 들어가기");
+		qn_mount_chdir(mnt, "test");
 
-	qn_outputf("\n문자열-문자열 묶음 테스트");
-	StrMukum strmukum;
-	str_mukum_init(&strmukum);
-	str_mukum_set(&strmukum, qn_strdup("123"), qn_strdup("456"));
-	str_mukum_set(&strmukum, qn_strdup("abc"), qn_strdup("def"));
-	str_mukum_set(&strmukum, qn_strdup("000"), qn_strdup("111"));
-	StrMukumNode* strmukumnode;
-	QN_MUKUM_FOREACH(strmukum, strmukumnode)
-		qn_outputf("%s => %s", strmukumnode->KEY, strmukumnode->VALUE);
-	str_mukum_set(&strmukum, qn_strdup("000"), qn_strdup("(SET)"));
-	str_mukum_remove(&strmukum, "abc");
-	QN_MUKUM_FOREACH(strmukum, strmukumnode)
-		qn_outputf("%s => %s", strmukumnode->KEY, strmukumnode->VALUE);
-	str_mukum_dispose(&strmukum);
+		qn_outputs("123 / 456 디렉토리 만들기");
+		qn_mount_mkdir(mnt, "123");
+		qn_mount_mkdir(mnt, "456");
+		qn_mount_chdir(mnt, "456");
+		qn_mount_mkdir(mnt, "3rd step directory");
+		qn_mount_chdir(mnt, "..");
 
-	qn_outputf("\n정수-정수 묶음 테스트");
-	IntMukum intmukum;
-	int_mukum_init(&intmukum);
-	int_mukum_set(&intmukum, 123, 456);
-	int_mukum_set(&intmukum, 789, 555);
-	int_mukum_set(&intmukum, 999, 111);
-	IntMukumNode* intmukumnode;
-	QN_MUKUM_FOREACH(intmukum, intmukumnode)
-		qn_outputf("%d => %d", intmukumnode->KEY, intmukumnode->VALUE);
-	int_mukum_set(&intmukum, 999, 000);
-	int_mukum_remove(&intmukum, 789);
-	QN_MUKUM_FOREACH(intmukum, intmukumnode)
-		qn_outputf("%d => %d", intmukumnode->KEY, intmukumnode->VALUE);
-	int_mukum_dispose(&intmukum);
+		qn_outputs("zzz(없는파일) 지우기");
+		qn_mount_remove(mnt, "zzz");
+		qn_outputs("123 디렉토리 지우기");
+		qn_mount_remove(mnt, "123");
+		qn_mount_chdir(mnt, "/");
+		qn_mount_chdir(mnt, "/test/456/3rd step directory");
+		qn_mount_mkdir(mnt, "/test/456/thisislongfilenamedirectoryisitwork");
+
+		qn_mount_chdir(mnt, "/test");
+		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night), false, QNFTYPE_TEXT);
+		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night), false, QNFTYPE_TEXT);
+		qn_hfs_store_data(mnt, "one summer night.cmpr", one_summer_night, (uint)QN_COUNTOF(one_summer_night), true, QNFTYPE_TEXT);
+		qn_hfs_store_file(mnt, NULL, "QsLib.vcxproj", true, QNFTYPE_MARKUP);
+		qn_hfs_store_file(mnt, "qlem.html", "QsLibEm.html", true, QNFTYPE_MARKUP);
+		qn_hfs_store_file(mnt, "qlem.cmd", "QsLibEm.cmd", true, QNFTYPE_SCRIPT);
+		qn_mount_chdir(mnt, "/");
+		qn_mount_chdir(mnt, "test");
+
+		qn_unload(mnt);
+	}
+
+	mnt = qn_open_mount("test.hfs", "hm");
+	if (mnt)
+	{
+		QnFileAttr attr = qn_mount_exist(mnt, "/test/qlem.cmd");
+		qn_outputf("qlem.cmd attribute: %d", attr);
+
+		qn_mount_chdir(mnt, "/test");
+
+		int size;
+		char *psz;
+		QnStream* stream = qn_mount_open_stream(mnt, "one summer night.txt", NULL);
+		if (stream)
+		{
+			size = (int)qn_stream_size(stream);
+			psz = qn_alloc(size + 1, char);
+			if (qn_stream_read(stream, psz, 0, size) == size)
+			{
+				psz[size] = 0;
+				qn_outputs(psz);
+			}
+			qn_free(psz);
+			qn_unload(stream);
+		}
+
+		psz = qn_mount_read(mnt, "one summer night.cmpr", &size);
+		qn_outputf("%*s", size, psz);
+		qn_free(psz);
+
+		psz = qn_mount_read_text(mnt, "/test/qlem.cmd", NULL, NULL);
+		qn_outputs(psz);
+		qn_free(psz);
+
+		qn_unload(mnt);
+	}
 
 	return 0;
 }
+

@@ -18,7 +18,7 @@
 
 #define HFS_DEBUG_TRACE 1
 
-QN_IMPL_BSTR(QNPATHSTR, QN_MAX_PATH, qn_path_str);
+QN_IMPL_BSTR(QnPathStr, QN_MAX_PATH, qn_path_str);
 
 // 최대 파일 할당 크기
 static size_t max_file_alloc_size = 128ULL * 1024ULL * 1024ULL;
@@ -1964,7 +1964,7 @@ static bool _hfs_chdir(QnGam g, const char* directory)
 //
 static bool _hfs_save_dir(Hfs* self, const QnPathStr* dir, QnPathStr* save)
 {
-	if (qn_path_str_is_empty(dir) || qn_path_str_compare_bstr(dir, &self->base.path, true) == 0)
+	if (qn_path_str_is_empty(dir) || qn_path_str_icmp_bstr(dir, &self->base.path) == 0)
 	{
 		qn_path_str_clear(save);
 		return true;
@@ -2008,7 +2008,7 @@ static bool _hfs_mkdir(QnGam g, const char* directory)
 	QN_CTNR_FOREACH(self->infos, i)
 	{
 		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
-		if (hash == info->file.hash && qn_path_str_compare(&name, info->name, true) == 0)
+		if (hash == info->file.hash && qn_path_str_icmp(&name, info->name) == 0)
 		{
 			// UNDONE: 옛날 주석에 의하면 패스 잡는 방법이 틀혔다고 함
 			_hfs_restore_dir(self, &save);
@@ -2079,7 +2079,7 @@ static bool _hfs_remove(QnGam g, const char* path)
 	QN_CTNR_FOREACH(self->infos, i)
 	{
 		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
-		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_compare(&name, info->name, true) == 0)
+		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_icmp(&name, info->name) == 0)
 		{
 			found = info;
 			break;
@@ -2158,7 +2158,7 @@ static void* _hfs_read(QnGam g, const char* filename, int* size)
 	QN_CTNR_FOREACH(self->infos, i)
 	{
 		HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
-		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_compare(&name, info->name, true) == 0)
+		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_icmp(&name, info->name) == 0)
 		{
 			found = info;
 			break;
@@ -2228,7 +2228,7 @@ static QnFileAttr _hfs_exist(QnGam g, const char* path)
 	QN_CTNR_FOREACH(self->infos, i)
 	{
 		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
-		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_compare(&name, info->name, true) == 0)
+		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_icmp(&name, info->name) == 0)
 		{
 			attr = info->file.source.attr;
 			break;
@@ -2494,7 +2494,7 @@ bool _hfs_store_buffer(Hfs* self, const char* filename, const void* data, uint s
 	QN_CTNR_FOREACH(self->infos, i)
 	{
 		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
-		if (hash == info->file.hash && qn_path_str_compare(&name, info->name, true) == 0)
+		if (hash == info->file.hash && qn_path_str_icmp(&name, info->name) == 0)
 		{
 			_hfs_restore_dir(self, &save);
 			errno = EEXIST;

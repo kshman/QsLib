@@ -128,7 +128,7 @@ static bool shed_event_queue(const QgEvent* e)
 }
 
 // 우선 큐에서 찾기 콜백
-static bool shed_event_prior_queue_key_callback(void* keyptr, void* nodeptr)
+static bool shed_event_prior_queue_key_callback(void* keyptr, const void* nodeptr)
 {
 	const size_t key = (size_t)keyptr;
 	const EventNode* node = (const EventNode*)nodeptr;

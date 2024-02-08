@@ -232,6 +232,13 @@
 typedef void* pointer_t;												/// @brief 포인터 타입
 typedef void (*func_t)(void);											/// @brief 함수 핸들러
 typedef void (*paramfunc_t)(void*);										/// @brief 파라미터 있는 함수 핸들러
+typedef void (*paramfunc2_t)(void*,void*);								/// @brief 파라미터 2개 있는 함수 핸들러
+
+typedef bool (*eqfunc_t)(const void*,const void*);						/// @brief 같은지 비교 함수 핸들러
+typedef bool (*eqcfunc_t)(void*, const void*);							/// @brief 같은지 비교 함수 핸들러(컨텍스트)
+typedef int (*compfunc_t)(const void*,const void*);						/// @brief 비교 함수 핸들러
+typedef int (*sortfunc_t)(const void*,const void*);						/// @brief 정렬 함수 핸들러
+typedef int (*sortcfunc_t)(void*,const void*,const void*);				/// @brief 정렬 함수 핸들러(컨텍스트)
 
 // aliases
 typedef int8_t							sbyte;							/// @brief 8비트 부호 있는 정수
@@ -416,6 +423,9 @@ QSAPI void qn_syssym(const char** names, int count, nint start_sym);
 /// @param name 심볼 이름
 ///	@return 심볼 값	
 QSAPI nint qn_sym(const char* name);
+
+/// @brief 심볼 디버그 출력
+QSAPI void qn_symdbgout(void);
 
 /// @brief 디버그용 검사 출력
 /// @param[in] expr 검사한 표현
@@ -659,7 +669,7 @@ QSAPI uint qn_prime_shift(uint value, uint min, uint* shift);
 /// @param[in] count 데이터의 갯수
 /// @param[in] stride 데이터의 폭
 /// @param[in] compfunc 비교 연산 콜백 함수
-QSAPI void qn_qsort(void* ptr, size_t count, size_t stride, int(*compfunc)(const void*, const void*));
+QSAPI void qn_qsort(void* ptr, size_t count, size_t stride, sortfunc_t compfunc);
 
 /// @brief 콘텍스트 입력 받는 퀵정렬
 /// @param[in,out] ptr 정렬할 데이터의 포인터
@@ -667,7 +677,7 @@ QSAPI void qn_qsort(void* ptr, size_t count, size_t stride, int(*compfunc)(const
 /// @param[in] stride 데이터의 폭
 /// @param[in] compfunc 비교 연산 콜백 함수
 /// @param[in] context 콜백 함수용 콘텍스트
-QSAPI void qn_qsortc(void* ptr, size_t count, size_t stride, int(*compfunc)(void*, const void*, const void*), void* context);
+QSAPI void qn_qsortc(void* ptr, size_t count, size_t stride, sortcfunc_t compfunc, void* context);
 
 
 //////////////////////////////////////////////////////////////////////////

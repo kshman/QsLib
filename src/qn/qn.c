@@ -16,7 +16,6 @@ extern void qn_module_down(void);
 extern void qn_thread_up(void);
 extern void qn_thread_down(void);
 
-
 // 심볼
 QN_DECLIMPL_PCHAR_MUKUM(SymMukum, nint, (void), sym_mukum);
 // 프로퍼티
@@ -104,6 +103,10 @@ static void qn_runtime_up(void)
 
 	sym_mukum_init_fast(&runtime_impl.symbols);
 	prop_mukum_init_fast(&runtime_impl.props);
+
+	sym_mukum_set(&runtime_impl.symbols, qn_strdup("QS"), 10001);
+	sym_mukum_set(&runtime_impl.symbols, qn_strdup("QSLIB"), 10002);
+	sym_mukum_set(&runtime_impl.symbols, qn_strdup("KIM"), 10003);
 
 #if defined _LIB || defined _STATIC
 	(void)atexit(qn_runtime_down);
@@ -241,7 +244,7 @@ void qn_syssym(const char** names, int count, nint start_sym)
 //
 nint qn_sym(const char* name)
 {
-	static nint sym = 10000;
+	static nint sym = 10005;
 	qn_return_when_fail(runtime_impl.inited, 0);
 	qn_return_when_fail(name != NULL, 0);
 	QN_LOCK(runtime_impl.lock);
@@ -255,6 +258,19 @@ nint qn_sym(const char* name)
 	sym_mukum_set(&runtime_impl.symbols, qn_strdup(name), value);
 	QN_UNLOCK(runtime_impl.lock);
 	return value;
+}
+
+//
+void qn_symdbgout(void)
+{
+	qn_return_when_fail(runtime_impl.inited,/*void*/);
+	QN_LOCK(runtime_impl.lock);
+	qn_mesgf(false, "SYMBOL", " %-16s | %-s", "symbol", "string");
+	SymMukumNode* node;
+	QN_MUKUM_FOREACH(runtime_impl.symbols, node)
+		qn_mesgf(false, "SYMBOL", " %-16d | %-s", node->VALUE, node->KEY);
+	qn_mesgf(false, "SYMBOL", "total symbols: %zu", sym_mukum_count(&runtime_impl.symbols));
+	QN_UNLOCK(runtime_impl.lock);
 }
 
 //

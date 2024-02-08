@@ -186,4 +186,7 @@
   <ItemGroup>
     <Natvis Include="..\..\QsLib.natvis" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
+  </ItemGroup>
 </Project>

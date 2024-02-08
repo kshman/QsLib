@@ -472,7 +472,7 @@ static void qsort_short_context(byte* lo, byte* hi, const size_t stride, int(*fu
 }
 
 //
-void qn_qsortc(void* ptr, const size_t count, const size_t stride, int(*compfunc)(void*, const void*, const void*), void* context)
+void qn_qsortc(void* ptr, size_t count, size_t stride, sortcfunc_t compfunc, void* context)
 {
 	qn_return_when_fail(ptr,/*void*/);
 	qn_return_when_fail(count > 1,/*void*/);
@@ -622,7 +622,7 @@ static void qsort_short(byte* lo, byte* hi, const size_t stride, int(*func)(cons
 }
 
 //
-void qn_qsort(void* ptr, const size_t count, const size_t stride, int(*compfunc)(const void*, const void*))
+void qn_qsort(void* ptr, size_t count, size_t stride, sortfunc_t compfunc)
 {
 	qn_return_when_fail(ptr,/*void*/);
 	qn_return_when_fail(count > 1,/*void*/);

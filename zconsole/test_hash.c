@@ -1,82 +1,66 @@
 ﻿// 해시
 #include <qs.h>
 
-QN_DECL_HASH(StrHash, char*, char*);
-QN_HASH_HASH(StrHash, qn_strhash);
-QN_HASH_EQ(StrHash, qn_streqv);
-QN_HASH_KEY_FREE(StrHash);
-QN_HASH_VALUE_FREE(StrHash);
-
-QN_DECL_HASH(StaticHash, char*, char*);
-QN_HASH_CHAR_PTR_KEY(StaticHash);
-QN_HASH_KEY_NONE(StaticHash);
-QN_HASH_VALUE_NONE(StaticHash);
-
-QN_DECL_HASH(IntHash, int, double);
-QN_HASH_INT_KEY(IntHash);
-QN_HASH_KEY_NONE(IntHash);
-QN_HASH_VALUE_NONE(IntHash);
-
-void str_for_each(void* dummy, char** key, char** value)
-{
-	qn_outputf("%s -> %s", *key, *value);
-}
-
-void int_for_loop(int* key, double* value)
-{
-	qn_outputf("%d -> %f", *key, *value);
-}
+QN_DECLIMPL_INT_PCHAR_HASH(IntHash, int_hash);
+QN_DECLIMPL_PCHAR_INT_HASH(StrHash, str_hash);
+QN_DECLIMPL_PCHAR_PCHAR_MUKUM(StrMukum, str_mukum);
+QN_DECLIMPL_INT_INT_MUKUM(IntMukum, int_mukum);
 
 int main(void)
 {
 	qn_runtime();
 
-	char** ps;
+	qn_outputf("\n정수-문자열 해시 테스트");
+	IntHash inthash;
+	int_hash_init(&inthash);
+	int_hash_set(&inthash, 1234, qn_strdup("웬더 샤도 폴스 다운 어폰미"));
+	int_hash_set(&inthash, 5678, qn_strdup("잇 콜링미 섬웨인더월"));
+	int_hash_set(&inthash, 9999, qn_strdup("Feeling bitter and twisted all alone!"));
+	IntHashNode* inthashnode;
+	QN_HASH_FOREACH(inthash, inthashnode)
+		qn_outputf("%d => %s", inthashnode->KEY, inthashnode->VALUE);
+	int_hash_dispose(&inthash);
 
-	// 스트링 해시
-	StrHash shash;
-	qn_hash_init(StrHash, &shash);
-	qn_hash_set(StrHash, &shash, qn_strdup("test"), qn_strdup("value"));
-	qn_hash_set(StrHash, &shash, qn_strdup("bruce"), qn_strdup("kim"));
-	qn_hash_foreach(StrHash, &shash, str_for_each, NULL);
-	char **shash_keyptr, **shash_valueptr;
-	qn_hash_each(StrHash, &shash, shash_keyptr, shash_valueptr)
-	{
-		qn_outputf("%s -> %s", *shash_keyptr, *shash_valueptr);
-	}
-	qn_hash_set(StrHash, &shash, qn_strdup("test"), qn_strdup("changed"));
-	qn_hash_get(StrHash, &shash, "test", &ps);
-	qn_outputf("test -> %s\n", ps == NULL ? "(null)" : *ps);
-	qn_hash_disp(StrHash, &shash);
+	qn_outputf("\n문자열-정수 해시 테스트");
+	StrHash strhash;
+	str_hash_init(&strhash);
+	str_hash_set(&strhash, qn_strdup("웬더 샤도 폴스 다운 어폰미"), 1234);
+	str_hash_set(&strhash, qn_strdup("잇 콜링미 섬웨인더월"), 5678);
+	str_hash_set(&strhash, qn_strdup("Feeling bitter and twisted all alone!"), 9999);
+	StrHashNode* strhashnode;
+	QN_HASH_FOREACH(strhash, strhashnode)
+		qn_outputf("%s => %d", strhashnode->KEY, strhashnode->VALUE);
+	str_hash_dispose(&strhash);
 
-	// 스태틱 해시
-	StaticHash thash;
-	qn_hash_init(StaticHash, &thash);
-	qn_hash_set(StaticHash, &thash, "test", "value");
-	qn_hash_set(StaticHash, &thash, "bruce", "kim");
-	qn_hash_foreach(StaticHash, &thash, str_for_each, NULL);
-	qn_hash_set(StaticHash, &thash, "test", "changed");
-	qn_hash_get(StaticHash, &thash, "test", &ps);
-	qn_outputf("test -> %s\n", ps == NULL ? "(null)" : *ps);
-	qn_hash_disp(StaticHash, &thash);
+	qn_outputf("\n문자열-문자열 묶음 테스트");
+	StrMukum strmukum;
+	str_mukum_init(&strmukum);
+	str_mukum_set(&strmukum, qn_strdup("123"), qn_strdup("456"));
+	str_mukum_set(&strmukum, qn_strdup("abc"), qn_strdup("def"));
+	str_mukum_set(&strmukum, qn_strdup("000"), qn_strdup("111"));
+	StrMukumNode* strmukumnode;
+	QN_MUKUM_FOREACH(strmukum, strmukumnode)
+		qn_outputf("%s => %s", strmukumnode->KEY, strmukumnode->VALUE);
+	str_mukum_set(&strmukum, qn_strdup("000"), qn_strdup("(SET)"));
+	str_mukum_remove(&strmukum, "abc");
+	QN_MUKUM_FOREACH(strmukum, strmukumnode)
+		qn_outputf("%s => %s", strmukumnode->KEY, strmukumnode->VALUE);
+	str_mukum_dispose(&strmukum);
 
-	// 정수 해시
-	IntHash ihash;
-	qn_hash_init(IntHash, &ihash);
-	qn_hash_set(IntHash, &ihash, 10, 123.0);
-	qn_hash_set(IntHash, &ihash, 20, 987.0);
-	int *ihash_keyptr;
-	double *ihash_valueptr;
-	qn_hash_each(IntHash, &ihash, ihash_keyptr, ihash_valueptr)
-	{
-		qn_outputf("%d -> %f", *ihash_valueptr, *ihash_valueptr);
-	}
-	qn_hash_set(IntHash, &ihash, 20, 999.0);
-	double* pi;
-	qn_hash_get(IntHash, &ihash, 20, &pi);
-	qn_outputf("20 -> %f\n", pi == NULL ? 0.0 : *pi);
-	qn_hash_disp(IntHash, &ihash);
+	qn_outputf("\n정수-정수 묶음 테스트");
+	IntMukum intmukum;
+	int_mukum_init(&intmukum);
+	int_mukum_set(&intmukum, 123, 456);
+	int_mukum_set(&intmukum, 789, 555);
+	int_mukum_set(&intmukum, 999, 111);
+	IntMukumNode* intmukumnode;
+	QN_MUKUM_FOREACH(intmukum, intmukumnode)
+		qn_outputf("%d => %d", intmukumnode->KEY, intmukumnode->VALUE);
+	int_mukum_set(&intmukum, 999, 000);
+	int_mukum_remove(&intmukum, 789);
+	QN_MUKUM_FOREACH(intmukum, intmukumnode)
+		qn_outputf("%d => %d", intmukumnode->KEY, intmukumnode->VALUE);
+	int_mukum_dispose(&intmukum);
 
 	return 0;
 }
-
