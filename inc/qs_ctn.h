@@ -24,342 +24,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-// common
-
-// 공통
-#define qn_ctn_name_type(name)			name##Type
-#define qn_ctn_name_node(name)			name##Node
-#define qn_ctn_sizeof_type(name)		sizeof(name##Type)
-#define qn_ctn_sizeof_node(name)		sizeof(name##Node)
-
-
-//////////////////////////////////////////////////////////////////////////
-// mukum
-
-/// @brief 묶음 정의
-/// @param name 묶음 이름
-/// @param keytype 키 타입
-/// @param valuetype 값 타입
-#define QN_DECL_MUKUM(name,keytype,valuetype)\
-	typedef keytype name##Key; typedef const keytype name##ConstKey;\
-	typedef valuetype name##Value; typedef const valuetype name##ConstValue;\
-	typedef struct name##Node { struct name##Node* SIB; size_t HASH; name##Key KEY; name##Value VALUE; } name##Node;\
-	typedef struct name { size_t REVISION; size_t BUCKET; size_t COUNT; name##Node** NODES; } name
-QN_DECL_MUKUM(QnInlineMukum, size_t, size_t);
-
-/// @brief 키 해시
-#define QN_HASH_HASH(name,fn1)			INLINE size_t name##_Hash(name##ConstKey* key) { return fn1(*key); }
-/// @brief 키 비교
-#define QN_HASH_EQ(name,fn2)			INLINE bool name##_Equal(name##ConstKey* l, name##ConstKey const* r) { return fn2(*l, *r); }
-/// @brief 키 지우기
-#define QN_HASH_KEY(name,fn1)			INLINE void name##_Key(name##Key* key) { fn1(*key); }
-#define QN_HASH_KEY_FREE(name)			INLINE void name##_Key(name##Key* key) { qn_free(*key); }
-#define QN_HASH_KEY_NONE(name)			INLINE void name##_Key(name##Key* key) { QN_DUMMY(key); }
-/// @brief 값 지우기
-#define QN_HASH_VALUE(name,fn1)			INLINE void name##_Value(name##Value* value) { fn1(*value); }
-#define QN_HASH_VALUE_FREE(name)		INLINE void name##_Value(name##Value* value) { qn_free(*value); }
-#define QN_HASH_VALUE_NONE(name)		INLINE void name##_Value(name##Value* value) { QN_DUMMY(value); }
-/// @brief 정수 키의 해시/비교
-#define QN_HASH_INT_KEY(name)			INLINE size_t name##_Hash(name##ConstKey* key) { return (size_t)(*key); }\
-										INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return (*k1)==(*k2); }
-/// @brief 부호없는 정수 키의 해시/비교
-#define QN_HASH_UINT_KEY(name)			INLINE size_t name##_Hash(name##ConstKey* key) { return (size_t)(*key); }\
-										INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return *k1==*k2; }
-/// @brief size_t 키의 해시/비교
-#define QN_HASH_SIZE_T_KEY(name)		INLINE size_t name##_Hash(name##ConstKey* key) { return *key; }\
-										INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return (*k1)==(*k2); }
-/// @brief char* 키의 해시/비교
-#define QN_HASH_CHAR_PTR_KEY(name)		INLINE size_t name##_Hash(name##ConstKey* key) { return qn_strhash(*key); }\
-										INLINE bool name##_Equal(name##ConstKey* k1, name##ConstKey* k2) { return qn_streqv(*k1, *k2); }
-
-#define QN_MUKUM_HASH					QN_HASH_HASH
-#define QN_MUKUM_EQ						QN_HASH_EQ
-#define QN_MUKUM_KEY					QN_HASH_KEY
-#define QN_MUKUM_KEY_FREE				QN_HASH_KEY_FREE
-#define QN_MUKUM_KEY_NONE				QN_HASH_KEY_NONE
-#define QN_MUKUM_VALUE					QN_HASH_VALUE
-#define QN_MUKUM_VALUE_FREE				QN_HASH_VALUE_FREE
-#define QN_MUKUM_VALUE_NONE				QN_HASH_VALUE_NONE
-#define QN_MUKUM_INT_KEY				QN_HASH_INT_KEY
-#define QN_MUKUM_UINT_KEY				QN_HASH_UINT_KEY
-#define QN_MUKUM_SIZE_T_KEY				QN_HASH_SIZE_T_KEY
-#define QN_MUKUM_CHAR_PTR_KEY			QN_HASH_CHAR_PTR_KEY
-
-/// @brief 묶음 초기화
-#define qn_mukum_init(name,p)\
-	QN_STMT_BEGIN{\
-		(p)->REVISION=0;\
-		(p)->COUNT=0;\
-		(p)->BUCKET=QN_MIN_HASH;\
-		(p)->NODES=qn_alloc_zero(QN_MIN_HASH, name##Node*);\
-	}QN_STMT_END
-
-/// @brief 묶음 제거
-#define qn_mukum_dispose(name,p)\
-	QN_STMT_BEGIN{\
-		for (size_t __i=0; __i<(p)->BUCKET; __i++)\
-			for (name##Node *__next, *__node=(p)->NODES[__i]; __node; __node=__next) {\
-				__next=__node->SIB;\
-				name##_Key(&__node->KEY);\
-				name##_Value(&__node->VALUE);\
-				qn_free(__node);\
-			}\
-		qn_free((p)->NODES);\
-	}QN_STMT_END
-
-/// @brief 묶음 비우기
-#define qn_mukum_clear(name,p)\
-	QN_STMT_BEGIN{\
-		qn_inl_mukum_erase_all(name,p);\
-		qn_inl_mukum_test_size(name,p);\
-	}QN_STMT_END
-
-/// @brief 아이템 갯수
-#define qn_mukum_count(p)				((p)->COUNT)
-/// @brief 묶음 버킷수
-#define qn_mukum_bucket(p)				((p)->BUCKET)
-/// @brief 묶음 변경치
-#define qn_mukum_revision(p)			((p)->REVISION)
-/// @brief 항목이 있다
-#define qn_mukum_is_have(p)				((p)->COUNT>0)
-
-/// @brief 묶음 loop each
-/// @param func2 loop each 함수 포인터. 인수는(keyptr,valueptr)
-/// @return
-#define qn_mukum_foreach_2(name,p,func2)\
-	QN_STMT_BEGIN{\
-		for (size_t __i=0; __i<(p)->BUCKET; __i++)\
-			for (name##Node* __node=(p)->NODES[__i]; __node; __node=__node->SIB)\
-				func2(&__node->KEY, &__node->VALUE);\
-	}QN_STMT_END
-
-/// @brief 묶음 for each
-/// @param func3 for each 함수 포인터. 인수는(data,keyptr,valueptr)
-/// @param data for each 함수 포인터 첫 인수
-/// @return
-#define qn_mukum_foreach_3(name,p,func3,userdata)\
-	QN_STMT_BEGIN{\
-		for (size_t __i=0; __i<(p)->BUCKET; __i++)\
-			for (name##Node* __node=(p)->NODES[__i]; __node; __node=__node->SIB)\
-				func3(userdata, &__node->KEY, &__node->VALUE);\
-	}QN_STMT_END
-
-/// @brief 묶음 얻기
-/// @param keyptr 키 포인터
-/// @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 것
-/// @return
-#define qn_mukum_get_ptr(name,p,keyptr,retval)\
-	QN_STMT_BEGIN{\
-		name##Node **__gn, *__node;\
-		qn_inl_mukum_lookup(name,p,keyptr,__gn);\
-		__node=*__gn;\
-		*(retval)=(__node) ? &__node->VALUE : NULL;\
-	}QN_STMT_END
-
-/// @brief 묶음 추가 (중복 항목 안 덮어씀)
-#define qn_mukum_add_ptr(name,p,keyptr,valueptr)\
-	qn_inl_mukum_set(name,p,keyptr,valueptr,false);
-
-/// @brief 묶음 설정 (중복 항목 덮어씀)
-#define qn_mukum_set_ptr(name,p,keyptr,valueptr)\
-	qn_inl_mukum_set(name,p,keyptr,valueptr,true);\
-
-/// @brief 묶음 삭제
-/// @param keyptr 키 포인터
-/// @param ret_bool_ptr 삭제 결과를 담을 bool 타입 포인터. 필요없으면 NULL
-#define qn_mukum_remove_ptr(name,p,keyptr,ret_bool_ptr)\
-	QN_STMT_BEGIN{\
-		qn_inl_mukum_erase(name,p,keyptr,ret_bool_ptr);\
-		qn_inl_mukum_test_size(name,p);\
-	}QN_STMT_END
-
-/// @brief 묶음 얻기
-/// @param key 키
-/// @param retval 값의 포인터. NULL 이면 해당 키에 대한 값이 없는 것
-/// @return
-#define qn_mukum_get(name,p,key,retval)\
-	QN_STMT_BEGIN{\
-		name##ConstKey __k = (name##ConstKey)(key); name##ConstKey* __kp = &__k;\
-		qn_mukum_get_ptr(name,p,__kp,retval);\
-	}QN_STMT_END
-
-/// @brief 묶음 추가 (중복 항목 안 덮어씀)
-#define qn_mukum_add(name,p,key,value)\
-	QN_STMT_BEGIN{\
-		name##Key __key = key; name##Value __value = value;\
-		qn_mukum_add_ptr(name,p,&__key,&__value);\
-	}QN_STMT_END
-
-/// @brief 묶음 설정 (중복 항목 덮어씀)
-#define qn_mukum_set(name,p,key,value)\
-	QN_STMT_BEGIN{\
-		name##Key __key = key; name##Value __value = value;\
-		qn_mukum_set_ptr(name,p,&__key,&__value);\
-	}QN_STMT_END
-
-/// @brief 묶음 삭제
-/// @param key 키
-/// @param ret_bool_ptr 삭제 결과를 담을 bool 타입 포인터. 필요없으면 NULL
-#define qn_mukum_remove(name,p,key,ret_bool_ptr)\
-	QN_STMT_BEGIN{\
-		name##ConstKey* __kp = (name##ConstKey*)&(key);\
-		qn_mukum_remove_ptr(name,p,__kp,ret_bool_ptr);\
-	}QN_STMT_END
-
-/// @brief 묶음 검색
-/// @param func3 bool (data, keyptr, valueptr) 타입의 검색 함수
-/// @param data 검색 함수 첫 항목
-/// @param ret_key_ptr 반환 키 포인터
-#define qn_mukum_find(name,p,func3,data,ret_key_ptr)\
-	QN_STMT_BEGIN{\
-		for (size_t __i=0; __i<(p)->BUCKET; __i++) {\
-			for (name##Node* __node=(p)->NODES[__i]; __node; __node=__node->SIB) {\
-				if (func3(data, &__node->KEY, &__node->VALUE)) {\
-					(ret_key_ptr)=&__node->KEY;\
-					goto QN_CONCAT(pos_mukum_find_exit,__LINE__);\
-				}\
-			}\
-		}\
-		(ret_key_ptr)=NULL;\
-		QN_CONCAT(pos_mukum_find_exit,__LINE__):;\
-	}QN_STMT_END
-
-// 묶음 룩업
-#define qn_inl_mukum_lookup(name,p,keyptr,ret_node)\
-	size_t __lh=name##_Hash(keyptr);\
-	name##Node *__lnn, **__ln=&(p)->NODES[__lh%(p)->BUCKET];\
-	while ((__lnn=*__ln)!=NULL) {\
-		if (__lnn->HASH==__lh && name##_Equal((name##ConstKey*)&__lnn->KEY, keyptr)) break;\
-		__ln=&__lnn->SIB;\
-	}\
-	(ret_node)=__ln
-
-// 묶음 룩업
-#define qn_inl_mukum_lookup_hash(name,p,keyptr,ret_node,ret_hash)\
-	/*qn_debug_assert((p)->NODES!=NULL, "uninitialized memory");*/\
-	size_t __lh=name##_Hash((name##ConstKey*)(keyptr));\
-	name##Node *__lnn, **__ln=&(p)->NODES[__lh%(p)->BUCKET];\
-	while ((__lnn=*__ln)!=NULL) {\
-		if (__lnn->HASH==__lh && name##_Equal((name##ConstKey*)&__lnn->KEY, (name##ConstKey*)(keyptr))) break;\
-		__ln=&__lnn->SIB;\
-	}\
-	(ret_node)=__ln;\
-	(ret_hash)=__lh
-
-// 묶음 설정
-#define qn_inl_mukum_set(name,p,keyptr,valueptr,replace)\
-	QN_STMT_BEGIN{\
-		size_t __ah; name##Node** __an;\
-		qn_inl_mukum_lookup_hash(name,p,keyptr,__an,__ah);\
-		name##Node* __ann=*__an;\
-		if (__ann) {\
-			if (replace) {\
-				name##_Key(&__ann->KEY);		__ann->KEY=*(keyptr);\
-				name##_Value(&__ann->VALUE);	__ann->VALUE=*(valueptr);\
-			} else {\
-				name##_Key(keyptr);\
-				name##_Value(valueptr);\
-			}\
-		} else {\
-			/* step 1*/\
-			__ann=qn_alloc_1(name##Node);\
-			__ann->SIB=NULL;\
-			__ann->HASH=__ah;\
-			__ann->KEY=*(keyptr);\
-			__ann->VALUE=*(valueptr);\
-			/* step 2 */\
-			*__an=__ann;\
-			(p)->REVISION++;\
-			(p)->COUNT++;\
-			/* step 3 */\
-			qn_inl_mukum_test_size(name,p);\
-		}\
-	}QN_STMT_END
-
-// 묶음 삭제
-#define qn_inl_mukum_erase(name,p,keyptr,ret_bool_ptr)\
-	QN_STMT_BEGIN{\
-		name##Node** __rn;\
-		qn_inl_mukum_lookup(name,p,keyptr,__rn);\
-		if (*__rn==NULL) {\
-			if (ret_bool_ptr) {\
-				bool* __c=ret_bool_ptr;\
-				*__c=false;\
-			}\
-		} else {\
-			qn_inl_mukum_erase_node(name,p,&__rn);\
-			if (ret_bool_ptr) {\
-				bool* __c=ret_bool_ptr;\
-				*__c=true;\
-			}\
-		}\
-	}QN_STMT_END
-
-// 묶음 노드 삭제
-#define qn_inl_mukum_erase_node(name,p,pppnode)\
-	QN_STMT_BEGIN{\
-		name##Node** __en=*(pppnode);\
-		name##Node* __enn=*__en;\
-		/* step 1 */\
-		*__en=__enn->SIB;\
-		/* step 2 */\
-		size_t __ebkt=__enn->HASH%(p)->BUCKET;\
-		if ((p)->NODES[__ebkt]==__enn) (p)->NODES[__ebkt] = NULL;\
-		name##_Key(&__enn->KEY);\
-		name##_Value(&__enn->VALUE);\
-		qn_free(__enn);\
-		(p)->COUNT--;\
-		(p)->REVISION++;\
-	}QN_STMT_END
-
-// 모두 삭제
-#define qn_inl_mukum_erase_all(name,p)\
-	QN_STMT_BEGIN{\
-		for (size_t __i=0; __i<(p)->BUCKET; __i++)\
-			for (name##Node *__next, *__node=(p)->NODES[__i]; __node; __node=__next) {\
-				__next=__node->SIB;\
-				name##_Key(&__node->KEY);\
-				name##_Value(&__node->VALUE);\
-				qn_free(__node);\
-			}\
-		(p)->COUNT=0;\
-		(p)->REVISION++;\
-		memset((p)->NODES, 0, (p)->BUCKET*sizeof(name##Node*));\
-	}QN_STMT_END
-
-// 묶음 크기 검사
-#define qn_inl_mukum_test_size(name,p)\
-	QN_STMT_BEGIN{\
-		size_t __cnt=(p)->COUNT;\
-		size_t __bkt=(p)->BUCKET;\
-		if ((__bkt>=3*__cnt && __bkt>QN_MIN_HASH) ||\
-			(3*__bkt<=__cnt && __bkt<QN_MAX_HASH))\
-			qn_inl_mukum_resize((QnInlineMukum*)(p));\
-	}QN_STMT_END
-
-// 묶음 리사이즈
-INLINE void qn_inl_mukum_resize(QnInlineMukum* p)
-{
-	size_t newbucket = qn_prime_near((uint)p->COUNT);
-	newbucket = QN_CLAMP(newbucket, QN_MIN_HASH, QN_MAX_HASH);
-	QnInlineMukumNode** newnodes = qn_alloc_zero(newbucket, QnInlineMukumNode*);
-	if (!newnodes)
-		return;
-	for (size_t i = 0; i < p->BUCKET; i++) {
-		for (QnInlineMukumNode *node = p->NODES[i], *next; node; node = next) {
-			next = node->SIB;
-			const size_t hashmask = node->HASH % newbucket;
-			node->SIB = newnodes[hashmask];
-			newnodes[hashmask] = node;
-		}
-	}
-	qn_free(p->NODES);
-	p->NODES = newnodes;
-	p->BUCKET = newbucket;
-}
-
-
-//////////////////////////////////////////////////////////////////////////
 // 파랑 문자열 인라인
 
 /// @brief 파랑 문자열 인라인
@@ -1394,6 +1058,147 @@ QN_DECLIMPL_ARRAY(QnPtrArray, pointer_t, qn_parray);
 #define QN_HASH_FOREACH(hash, node)	\
 	for ((node) = (hash).HEAD; (node); (node) = (node)->NEXT)
 
+/// @brief 묶음용 foreach
+#define QN_MUKUM_FOREACH(mukum, node)	\
+	for (size_t mukum_iter = 0; mukum_iter < (mukum).BUCKET; ++mukum_iter)	\
+		for ((node) = (mukum).NODES[mukum_iter]; (node); (node) = (node)->SIB)
+
+/// @brief 해시 함수 만들기 (정수형)
+#define QN_DECL_HASH_FUNC(TYPE, PFX)	\
+	FINLINE bool PFX##_eqv(TYPE left, TYPE right) { return left == right; }	\
+	FINLINE size_t PFX##_hash(TYPE key) { return (size_t)key; }
+/// @brief 해시용 정수 비교
+QN_DECL_HASH_FUNC(int, qn_ctn_int);
+/// @brief 해시용 부호없는 정수 비교
+QN_DECL_HASH_FUNC(uint, qn_ctn_uint);
+/// @brief 해시용 플랫폼 정수 비교
+QN_DECL_HASH_FUNC(nint, qn_ctn_nint);
+/// @brief 해시용 플랫폼 부호없는 정수 비교
+QN_DECL_HASH_FUNC(nuint, qn_ctn_nuint);
+/// @brief 해시용 size_t 비교
+QN_DECL_HASH_FUNC(size_t, qn_ctn_size);
+
+// 해시 공용
+#define QN_IMPL_HASH_COMMON(TYPENAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PREFIX)	\
+	FINLINE void QN_CONCAT(PREFIX, _internal_erase_all)(TYPENAME* hash);	\
+	FINLINE void QN_CONCAT(PREFIX, _internal_erase_node)(TYPENAME* hash, QN_CONCAT(TYPENAME, Node)** en);	\
+	FINLINE void QN_CONCAT(PREFIX, _internal_set)(TYPENAME* hash, KEYTYPE key, VALUETYPE* valueptr, bool replace);	\
+	FINLINE size_t QN_CONCAT(PREFIX, _count)(const TYPENAME *hash)	\
+	{	\
+		return hash->COUNT;	\
+	}	\
+	FINLINE size_t QN_CONCAT(PREFIX, _revision)(const TYPENAME *hash)	\
+	{	\
+		return hash->REVISION;	\
+	}	\
+	FINLINE size_t QN_CONCAT(PREFIX, _bucket)(const TYPENAME *hash)	\
+	{	\
+		return hash->BUCKET;	\
+	}	\
+	FINLINE bool QN_CONCAT(PREFIX, _is_have)(const TYPENAME *hash)	\
+	{	\
+		return hash->COUNT != 0;	\
+	}	\
+	FINLINE bool QN_CONCAT(PREFIX, _is_empty)(const TYPENAME *hash)	\
+	{	\
+		return hash->COUNT == 0;	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _internal_test_size)(TYPENAME *hash)	\
+	{	\
+		if ((hash->BUCKET >= 3 * hash->COUNT && hash->BUCKET > QN_MIN_HASH) ||	\
+			(3 * hash->BUCKET <= hash->COUNT && hash->BUCKET < QN_MAX_HASH))	\
+		{	\
+			size_t new_bucket = qn_prime_near((uint)hash->COUNT);	\
+			new_bucket = QN_CLAMP(new_bucket, QN_MIN_HASH, QN_MAX_HASH);	\
+			QN_CONCAT(TYPENAME, Node)** new_nodes = qn_alloc_zero(new_bucket, QN_CONCAT(TYPENAME, Node)*);	\
+			for (size_t i = 0; i < hash->BUCKET; ++i)	\
+			{	\
+				for (QN_CONCAT(TYPENAME, Node) *next, *node = hash->NODES[i]; node; node = next)	\
+				{	\
+					next = node->SIB;	\
+					const size_t index = node->HASH % new_bucket;	\
+					node->SIB = new_nodes[index];	\
+					new_nodes[index] = node;	\
+				}	\
+			}	\
+			qn_free(hash->NODES);	\
+			hash->NODES = new_nodes;	\
+			hash->BUCKET = new_bucket;	\
+		}	\
+	}	\
+	FINLINE QN_CONCAT(TYPENAME, Node)** QN_CONCAT(PREFIX, _internal_lookup)(const TYPENAME* hash, const KEYTYPE key)	\
+	{	\
+		const size_t lh = KEYHASH(key);	\
+		QN_CONCAT(TYPENAME, Node) *lnn, **ln = &hash->NODES[lh % hash->BUCKET];	\
+		while ((lnn = *ln) != NULL)	\
+		{	\
+			if (lnn->HASH == lh && KEYEQ(lnn->KEY, key))	\
+				break;	\
+			ln = &lnn->SIB;	\
+		}	\
+		return ln;	\
+	}	\
+	FINLINE QN_CONCAT(TYPENAME, Node)** QN_CONCAT(PREFIX, _internal_lookup_hash)(const TYPENAME* hash, const KEYTYPE key, size_t* ret_hash)	\
+	{	\
+		const size_t lh = KEYHASH(key);	\
+		QN_CONCAT(TYPENAME, Node) *lnn, **ln = &hash->NODES[lh % hash->BUCKET];	\
+		while ((lnn = *ln) != NULL)	\
+		{	\
+			if (lnn->HASH == lh && KEYEQ(lnn->KEY, key))	\
+				break;	\
+			ln = &lnn->SIB;	\
+		}	\
+		*ret_hash = lh;	\
+		return ln;	\
+	}	\
+	FINLINE bool QN_CONCAT(PREFIX, _internal_erase)(TYPENAME* hash, const KEYTYPE key)	\
+	{	\
+		QN_CONCAT(TYPENAME, Node)** rn = QN_CONCAT(PREFIX, _internal_lookup)(hash, key);	\
+		if (*rn == NULL)	\
+			return false;	\
+		QN_CONCAT(PREFIX, _internal_erase_node)(hash, rn);	\
+		return true;	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _clear)(TYPENAME* hash)	\
+	{	\
+		QN_CONCAT(PREFIX, _internal_erase_all)(hash);	\
+		QN_CONCAT(PREFIX, _internal_test_size)(hash);	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _remove_node)(TYPENAME* hash, QN_CONCAT(TYPENAME, Node)* node)	\
+	{	\
+		QN_CONCAT(PREFIX, _internal_erase_node)(hash, &node);	\
+		QN_CONCAT(PREFIX, _internal_test_size)(hash);	\
+	}	\
+	FINLINE VALUETYPE* QN_CONCAT(PREFIX, _get)(const TYPENAME* hash, const KEYTYPE key)	\
+	{	\
+		QN_CONCAT(TYPENAME, Node)** gn = QN_CONCAT(PREFIX, _internal_lookup)(hash, key);	\
+		return *gn ? &(*gn)->VALUE : NULL;	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _add)(TYPENAME* hash, KEYTYPE key, VALUETYPE value)	\
+	{	\
+		QN_CONCAT(PREFIX, _internal_set)(hash, key, &value, false);	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _set)(TYPENAME* hash, KEYTYPE key, VALUETYPE value)	\
+	{	\
+		QN_CONCAT(PREFIX, _internal_set)(hash, key, &value, true);	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _add_ptr)(TYPENAME* hash, KEYTYPE key, VALUETYPE* value)	\
+	{	\
+		QN_CONCAT(PREFIX, _internal_set)(hash, key, value, false);	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _set_ptr)(TYPENAME* hash, KEYTYPE key, VALUETYPE* value)	\
+	{	\
+		QN_CONCAT(PREFIX, _internal_set)(hash, key, value, true);	\
+	}	\
+	FINLINE bool QN_CONCAT(PREFIX, _remove)(TYPENAME* hash, const KEYTYPE key)	\
+	{	\
+		if (QN_CONCAT(PREFIX, _internal_erase)(hash, key) == false)	\
+			return false;	\
+		QN_CONCAT(PREFIX, _internal_test_size)(hash);	\
+		return true;	\
+	}
+
+
 /// @brief 해시 인라인
 ///	@param TYPENAME 해시 이름
 ///	@param KEYTYPE 키 타입
@@ -1412,6 +1217,7 @@ QN_DECLIMPL_ARRAY(QnPtrArray, pointer_t, qn_parray);
 ///	@param VALUEFREE 값 해제 함수
 ///	@param PREFIX 함수 접두사
 #define QN_IMPL_HASH(TYPENAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PREFIX)	\
+	QN_IMPL_HASH_COMMON(TYPENAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PREFIX)	\
 	FINLINE void QN_CONCAT(PREFIX, _init)(TYPENAME *hash)	\
 	{	\
 		hash->COUNT = hash->REVISION = 0;	\
@@ -1436,83 +1242,13 @@ QN_DECLIMPL_ARRAY(QnPtrArray, pointer_t, qn_parray);
 		}	\
 		qn_free(hash->NODES);	\
 	}	\
-	FINLINE size_t QN_CONCAT(PREFIX, _count)(TYPENAME *hash)	\
-	{	\
-		return hash->COUNT;	\
-	}	\
-	FINLINE size_t QN_CONCAT(PREFIX, _revision)(TYPENAME *hash)	\
-	{	\
-		return hash->REVISION;	\
-	}	\
-	FINLINE size_t QN_CONCAT(PREFIX, _bucket)(TYPENAME *hash)	\
-	{	\
-		return hash->BUCKET;	\
-	}	\
-	FINLINE bool QN_CONCAT(PREFIX, _is_have)(TYPENAME *hash)	\
-	{	\
-		return hash->COUNT != 0;	\
-	}	\
-	FINLINE bool QN_CONCAT(PREFIX, _is_empty)(TYPENAME *hash)	\
-	{	\
-		return hash->COUNT == 0;	\
-	}	\
-	FINLINE QN_CONCAT(TYPENAME, Node)* QN_CONCAT(PREFIX, _node_head)(TYPENAME *hash)	\
+	FINLINE QN_CONCAT(TYPENAME, Node)* QN_CONCAT(PREFIX, _node_head)(const TYPENAME *hash)	\
 	{	\
 		return hash->HEAD;	\
 	}	\
-	FINLINE QN_CONCAT(TYPENAME, Node)* QN_CONCAT(PREFIX, _node_tail)(TYPENAME *hash)	\
+	FINLINE QN_CONCAT(TYPENAME, Node)* QN_CONCAT(PREFIX, _node_tail)(const TYPENAME *hash)	\
 	{	\
 		return hash->TAIL;	\
-	}	\
-	FINLINE void QN_CONCAT(PREFIX, _internal_test_size)(TYPENAME *hash)	\
-	{	\
-		if ((hash->BUCKET >= 3 * hash->COUNT && hash->BUCKET > QN_MIN_HASH) ||	\
-			(3 * hash->BUCKET <= hash->COUNT && hash->BUCKET < QN_MAX_HASH))	\
-		{	\
-			size_t new_bucket = qn_prime_near((uint)hash->COUNT);	\
-			new_bucket = QN_CLAMP(new_bucket, QN_MIN_HASH, QN_MAX_HASH);	\
-			QN_CONCAT(TYPENAME, Node)** new_nodes = qn_alloc_zero(new_bucket, QN_CONCAT(TYPENAME, Node)*);	\
-			for (size_t i = 0; i < hash->BUCKET; ++i)	\
-			{	\
-				QN_CONCAT(TYPENAME, Node)* node = hash->NODES[i];	\
-				while (node)	\
-				{	\
-					QN_CONCAT(TYPENAME, Node)* next = node->SIB;	\
-					const size_t index = node->HASH % new_bucket;	\
-					node->SIB = new_nodes[index];	\
-					new_nodes[index] = node;	\
-					node = next;	\
-				}	\
-			}	\
-			qn_free(hash->NODES);	\
-			hash->NODES = new_nodes;	\
-			hash->BUCKET = new_bucket;	\
-		}	\
-	}	\
-	FINLINE QN_CONCAT(TYPENAME, Node)** QN_CONCAT(PREFIX, _internal_lookup)(TYPENAME* hash, KEYTYPE key)	\
-	{	\
-		const size_t lh = KEYHASH(key);	\
-		QN_CONCAT(TYPENAME, Node) *lnn, **ln = &hash->NODES[lh % hash->BUCKET];	\
-		while ((lnn = *ln) != NULL)	\
-		{	\
-			if (lnn->HASH == lh && KEYEQ(lnn->KEY, key))	\
-				break;	\
-			ln = &lnn->SIB;	\
-		}	\
-		return ln;	\
-	}	\
-	FINLINE QN_CONCAT(TYPENAME, Node)** QN_CONCAT(PREFIX, _internal_lookup_hash)(TYPENAME* hash, KEYTYPE key, size_t* ret_hash)	\
-	{	\
-		const size_t lh = KEYHASH(key);	\
-		QN_CONCAT(TYPENAME, Node) *lnn, **ln = &hash->NODES[lh % hash->BUCKET];	\
-		while ((lnn = *ln) != NULL)	\
-		{	\
-			if (lnn->HASH == lh && KEYEQ(lnn->KEY, key))	\
-				break;	\
-			ln = &lnn->SIB;	\
-		}	\
-		*ret_hash = lh;	\
-		return ln;	\
 	}	\
 	FINLINE void QN_CONCAT(PREFIX, _internal_set)(TYPENAME* hash, KEYTYPE key, VALUETYPE* valueptr, bool replace)	\
 	{	\
@@ -1521,12 +1257,17 @@ QN_DECLIMPL_ARRAY(QnPtrArray, pointer_t, qn_parray);
 		QN_CONCAT(TYPENAME, Node)* ann = *an;	\
 		if (ann != NULL)	\
 		{	\
-			KEYFREE(ann->KEY);	\
-			VALUEFREE(&ann->VALUE);	\
 			if (replace)	\
 			{	\
+				KEYFREE(ann->KEY);	\
+				VALUEFREE(&ann->VALUE);	\
 				ann->KEY = key;	\
 				ann->VALUE = *valueptr;	\
+			}	\
+			else	\
+			{	\
+				KEYFREE(key);	\
+				VALUEFREE(valueptr);	\
 			}	\
 		}	\
 		else	\
@@ -1570,14 +1311,6 @@ QN_DECLIMPL_ARRAY(QnPtrArray, pointer_t, qn_parray);
 		hash->REVISION++;	\
 		hash->COUNT--;	\
 	}	\
-	FINLINE bool QN_CONCAT(PREFIX, _internal_erase)(TYPENAME* hash, KEYTYPE key)	\
-	{	\
-		QN_CONCAT(TYPENAME, Node)** rn = QN_CONCAT(PREFIX, _internal_lookup)(hash, key);	\
-		if (*rn == NULL)	\
-			return false;	\
-		QN_CONCAT(PREFIX, _internal_erase_node)(hash, rn);	\
-		return true;	\
-	}	\
 	FINLINE void QN_CONCAT(PREFIX, _internal_erase_all)(TYPENAME* hash)	\
 	{	\
 		for (QN_CONCAT(TYPENAME, Node) *next, *node = hash->HEAD; node; node = next)	\
@@ -1588,48 +1321,11 @@ QN_DECLIMPL_ARRAY(QnPtrArray, pointer_t, qn_parray);
 			qn_free(node);	\
 		}	\
 		hash->HEAD = hash->TAIL = NULL;	\
+		hash->REVISION++;	\
 		hash->COUNT = 0;	\
 		memset(hash->NODES, 0, hash->BUCKET * sizeof(QN_CONCAT(TYPENAME, Node)*));	\
 	}	\
-	FINLINE void QN_CONCAT(PREFIX, _clear)(TYPENAME* hash)	\
-	{	\
-		QN_CONCAT(PREFIX, _internal_erase_all)(hash);	\
-		QN_CONCAT(PREFIX, _internal_test_size)(hash);	\
-	}	\
-	FINLINE void QN_CONCAT(PREFIX, _remove_node)(TYPENAME* hash, QN_CONCAT(TYPENAME, Node)* node)	\
-	{	\
-		QN_CONCAT(PREFIX, _internal_erase_node)(hash, &node);	\
-		QN_CONCAT(PREFIX, _internal_test_size)(hash);	\
-	}	\
-	FINLINE VALUETYPE* QN_CONCAT(PREFIX, _get)(TYPENAME* hash, KEYTYPE key)	\
-	{	\
-		QN_CONCAT(TYPENAME, Node)** gn = QN_CONCAT(PREFIX, _internal_lookup)(hash, key);	\
-		return *gn ? &(*gn)->VALUE : NULL;	\
-	}	\
-	FINLINE void QN_CONCAT(PREFIX, _add)(TYPENAME* hash, KEYTYPE key, VALUETYPE value)	\
-	{	\
-		QN_CONCAT(PREFIX, _internal_set)(hash, key, &value, false);	\
-	}	\
-	FINLINE void QN_CONCAT(PREFIX, _set)(TYPENAME* hash, KEYTYPE key, VALUETYPE value)	\
-	{	\
-		QN_CONCAT(PREFIX, _internal_set)(hash, key, &value, true);	\
-	}	\
-	FINLINE void QN_CONCAT(PREFIX, _add_ptr)(TYPENAME* hash, KEYTYPE key, VALUETYPE* value)	\
-	{	\
-		QN_CONCAT(PREFIX, _internal_set)(hash, key, value, false);	\
-	}	\
-	FINLINE void QN_CONCAT(PREFIX, _set_ptr)(TYPENAME* hash, KEYTYPE key, VALUETYPE* value)	\
-	{	\
-		QN_CONCAT(PREFIX, _internal_set)(hash, key, value, true);	\
-	}	\
-	FINLINE bool QN_CONCAT(PREFIX, _remove)(TYPENAME* hash, KEYTYPE key)	\
-	{	\
-		if (QN_CONCAT(PREFIX, _internal_erase)(hash, key) == false)	\
-			return false;	\
-		QN_CONCAT(PREFIX, _internal_test_size)(hash);	\
-		return true;	\
-	}	\
-	FINLINE KEYTYPE QN_CONCAT(PREFIX, _find)(TYPENAME* hash, bool(*func)(void*, KEYTYPE, void*), void* context)	\
+	FINLINE KEYTYPE QN_CONCAT(PREFIX, _find)(const TYPENAME* hash, bool(*func)(void*, KEYTYPE, void*), void* context)	\
 	{	\
 		for (QN_CONCAT(TYPENAME, Node) *node = hash->HEAD; node; node = node->NEXT)	\
 		{	\
@@ -1638,12 +1334,12 @@ QN_DECLIMPL_ARRAY(QnPtrArray, pointer_t, qn_parray);
 		}	\
 		return (KEYTYPE)0;	\
 	}	\
-	FINLINE void QN_CONCAT(PREFIX, _foreach_2)(TYPENAME* hash, void(*func)(KEYTYPE, void*))	\
+	FINLINE void QN_CONCAT(PREFIX, _foreach_2)(const TYPENAME* hash, void(*func)(KEYTYPE, void*))	\
 	{	\
 		for (QN_CONCAT(TYPENAME, Node) *node = hash->HEAD; node; node = node->NEXT)	\
 			func(node->KEY, &node->VALUE);	\
 	}	\
-	FINLINE void QN_CONCAT(PREFIX, _foreach_3)(TYPENAME* hash, void(*func)(void*, KEYTYPE, void*), void* context)	\
+	FINLINE void QN_CONCAT(PREFIX, _foreach_3)(const TYPENAME* hash, void(*func)(void*, KEYTYPE, void*), void* context)	\
 	{	\
 		for (QN_CONCAT(TYPENAME, Node) *node = hash->HEAD; node; node = node->NEXT)	\
 			func(context, node->KEY, &node->VALUE);	\
@@ -1654,12 +1350,9 @@ QN_DECLIMPL_ARRAY(QnPtrArray, pointer_t, qn_parray);
 	QN_DECL_HASH(TYPENAME, KEYTYPE, VALUETYPE);	\
 	QN_IMPL_HASH(TYPENAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PREFIX)
 
-FINLINE bool qn_ctn_inteqv(int left, int right) { return left == right; }
-FINLINE bool qn_ctn_uinteqv(uint left, uint right) { return left == right; }
-
 // 키 정수
 #define QN_DECLIMPL_INT_HASH(TYPENAME, VALUETYPE, VALUEFREE, PREFIX)\
-	QN_DECLIMPL_HASH(TYPENAME, int, VALUETYPE, (int), qn_ctn_inteqv, (void), VALUEFREE, PREFIX)
+	QN_DECLIMPL_HASH(TYPENAME, int, VALUETYPE, (int), qn_ctn_int_eqv, (void), VALUEFREE, PREFIX)
 // 키 정수 / 값 정수
 #define QN_DECLIMPL_INT_INT_HASH(TYPENAME, PREFIX)\
 	QN_DECLIMPL_INT_HASH(TYPENAME, int, (void), PREFIX)
@@ -1669,7 +1362,7 @@ FINLINE bool qn_ctn_uinteqv(uint left, uint right) { return left == right; }
 
 // 키 부호없는 정수
 #define QN_DECLIMPL_UINT_HASH(TYPENAME, VALUETYPE, VALUEFREE, PREFIX)\
-	QN_DECLIMPL_HASH(TYPENAME, uint, VALUETYPE, (uint), qn_ctn_uinteqv, (void), VALUEFREE, PREFIX)
+	QN_DECLIMPL_HASH(TYPENAME, uint, VALUETYPE, (uint), qn_ctn_uint_eqv, (void), VALUEFREE, PREFIX)
 // 키 부호없는 정수 / 값 부호없는 정수
 #define QN_DECLIMPL_UINT_UINT_HASH(TYPENAME, PREFIX)\
 	QN_DECLIMPL_UINT_HASH(TYPENAME, uint, (void), PREFIX)
@@ -1686,6 +1379,170 @@ FINLINE bool qn_ctn_uinteqv(uint left, uint right) { return left == right; }
 // 키 문자열 / 값 문자열
 #define QN_DECLIMPL_PCHAR_PCHAR_HASH(TYPENAME, PREFIX)\
 	QN_DECLIMPL_PCHAR_HASH(TYPENAME, char*, qn_mem_free_ptr, PREFIX)
+
+
+/// @brief 묶음 인라인
+///	@param TYPENAME 묶음 이름
+/// @param KEYTYPE 키 타입
+/// @param VALUETYPE 값 타입
+#define QN_DECL_MUKUM(TYPENAME, KEYTYPE, VALUETYPE)	\
+	typedef struct QN_CONCAT(TYPENAME, Node) { struct QN_CONCAT(TYPENAME, Node) *SIB; size_t HASH; KEYTYPE KEY; VALUETYPE VALUE; } QN_CONCAT(TYPENAME, Node);	\
+	typedef struct TYPENAME { size_t COUNT, REVISION, BUCKET; QN_CONCAT(TYPENAME, Node) **NODES; } TYPENAME;	\
+
+/// @brief 묶음 함수
+///	@param TYPENAME 묶음 이름
+/// @param KEYTYPE 키 타입
+/// @param VALUETYPE 값 타입
+/// @param KEYHASH 키 해시 함수
+/// @param KEYEQ 키 비교 함수
+/// @param KEYFREE 키 해제 함수
+/// @param VALUEFREE 값 해제 함수
+/// @param PREFIX 함수 접두사
+#define QN_IMPL_MUKUM(TYPENAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PREFIX)	\
+	QN_IMPL_HASH_COMMON(TYPENAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PREFIX)	\
+	FINLINE void QN_CONCAT(PREFIX, _init)(TYPENAME *mukum)	\
+	{	\
+		mukum->COUNT = mukum->REVISION = 0;	\
+		mukum->BUCKET = QN_MIN_HASH;	\
+		mukum->NODES = qn_alloc_zero(QN_MIN_HASH, QN_CONCAT(TYPENAME, Node)*);	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _init_fast)(TYPENAME *mukum)	\
+	{	\
+		qn_debug_assert(mukum->REVISION == 0 && mukum->COUNT == 0 && mukum->NODES == NULL, "cannot use fast init, use just init");	\
+		mukum->BUCKET = QN_MIN_HASH;	\
+		mukum->NODES = qn_alloc_zero(QN_MIN_HASH, QN_CONCAT(TYPENAME, Node)*);	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _dispose)(TYPENAME *mukum)	\
+	{	\
+		for (size_t i = 0; i < mukum->BUCKET; ++i)	\
+		{	\
+			for (QN_CONCAT(TYPENAME, Node) *next, *node = mukum->NODES[i]; node; node = next)	\
+			{	\
+				next = node->SIB;	\
+				KEYFREE(node->KEY);	\
+				VALUEFREE(&node->VALUE);	\
+				qn_free(node);	\
+			}	\
+		}	\
+		qn_free(mukum->NODES);	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _internal_set)(TYPENAME* mukum, KEYTYPE key, VALUETYPE* valueptr, bool replace)	\
+	{	\
+		size_t ah;	\
+		QN_CONCAT(TYPENAME, Node)** an = QN_CONCAT(PREFIX, _internal_lookup_hash)(mukum, key, &ah);	\
+		QN_CONCAT(TYPENAME, Node)* ann = *an;	\
+		if (ann != NULL)	\
+		{	\
+			if (replace)	\
+			{	\
+				KEYFREE(ann->KEY);	\
+				VALUEFREE(&ann->VALUE);	\
+				ann->KEY = key;	\
+				ann->VALUE = *valueptr;	\
+			}	\
+			else	\
+			{	\
+				KEYFREE(key);	\
+				VALUEFREE(valueptr);	\
+			}	\
+		}	\
+		else	\
+		{	\
+			ann = qn_alloc_1(QN_CONCAT(TYPENAME, Node));	\
+			ann->SIB = NULL;	\
+			ann->HASH = ah;	\
+			ann->KEY = key;	\
+			ann->VALUE = *valueptr;	\
+			*an = ann;	\
+			mukum->REVISION++;	\
+			mukum->COUNT++;	\
+			QN_CONCAT(PREFIX, _internal_test_size)(mukum);	\
+		}	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _internal_erase_node)(TYPENAME* mukum, QN_CONCAT(TYPENAME, Node)** en)	\
+	{	\
+		QN_CONCAT(TYPENAME, Node)* enn = *en;	\
+		*en = enn->SIB;	\
+		const size_t ebk = enn->HASH % mukum->BUCKET;	\
+		if (mukum->NODES[ebk] == enn)	\
+			mukum->NODES[ebk] = NULL;	\
+		KEYFREE(enn->KEY);	\
+		VALUEFREE(&enn->VALUE);	\
+		qn_free(enn);	\
+		mukum->REVISION++;	\
+		mukum->COUNT--;	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _internal_erase_all)(TYPENAME* mukum)	\
+	{	\
+		for (size_t i = 0; i < mukum->BUCKET; ++i)	\
+		{	\
+			for (QN_CONCAT(TYPENAME, Node) *next, *node = mukum->NODES[i]; node; node = next)	\
+			{	\
+				next = node->SIB;	\
+				KEYFREE(node->KEY);	\
+				VALUEFREE(&node->VALUE);	\
+				qn_free(node);	\
+			}	\
+		}	\
+		mukum->REVISION++;	\
+		mukum->COUNT = 0;	\
+		memset(mukum->NODES, 0, mukum->BUCKET * sizeof(QN_CONCAT(TYPENAME, Node)*));	\
+	}	\
+	FINLINE KEYTYPE QN_CONCAT(PREFIX, _find)(const TYPENAME* mukum, bool(*func)(void*, KEYTYPE, void*), void* context)	\
+	{	\
+		for (size_t i = 0; i < mukum->BUCKET; ++i)	\
+			for (QN_CONCAT(TYPENAME, Node) *next, *node = mukum->NODES[i]; node; node = next)	\
+				if (func(context, node->KEY, &node->VALUE))	\
+					return node->KEY;	\
+		return (KEYTYPE)0;	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _foreach_2)(const TYPENAME* mukum, void(*func)(KEYTYPE, void*))	\
+	{	\
+		for (size_t i = 0; i < mukum->BUCKET; ++i)	\
+			for (QN_CONCAT(TYPENAME, Node) *next, *node = mukum->NODES[i]; node; node = next)	\
+				func(node->KEY, &node->VALUE);	\
+	}	\
+	FINLINE void QN_CONCAT(PREFIX, _foreach_3)(const TYPENAME* mukum, void(*func)(void*, KEYTYPE, void*), void* context)	\
+	{	\
+		for (size_t i = 0; i < mukum->BUCKET; ++i)	\
+			for (QN_CONCAT(TYPENAME, Node) *next, *node = mukum->NODES[i]; node; node = next)	\
+				func(context, node->KEY, &node->VALUE);	\
+	}	\
+	typedef struct TYPENAME QN_CONCAT(TYPENAME, Type)
+
+#define QN_DECLIMPL_MUKUM(TYPENAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PREFIX)	\
+	QN_DECL_MUKUM(TYPENAME, KEYTYPE, VALUETYPE);	\
+	QN_IMPL_MUKUM(TYPENAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PREFIX)
+
+// 키 정수
+#define QN_DECLIMPL_INT_MUKUM(TYPENAME, VALUETYPE, VALUEFREE, PREFIX)\
+	QN_DECLIMPL_MUKUM(TYPENAME, int, VALUETYPE, (int), qn_ctn_int_eqv, (void), VALUEFREE, PREFIX)
+// 키 정수 / 값 정수
+#define QN_DECLIMPL_INT_INT_MUKUM(TYPENAME, PREFIX)\
+	QN_DECLIMPL_INT_MUKUM(TYPENAME, int, (void), PREFIX)
+// 키 정수 / 값 문자열
+#define QN_DECLIMPL_INT_PCHAR_MUKUM(TYPENAME, PREFIX)\
+	QN_DECLIMPL_INT_MUKUM(TYPENAME, char*, qn_mem_free_ptr, PREFIX)
+
+// 키 부호없는 정수
+#define QN_DECLIMPL_UINT_MUKUM(TYPENAME, VALUETYPE, VALUEFREE, PREFIX)\
+	QN_DECLIMPL_MUKUM(TYPENAME, uint, VALUETYPE, (uint), qn_ctn_uint_eqv, (void), VALUEFREE, PREFIX)
+// 키 부호없는 정수 / 값 부호없는 정수
+#define QN_DECLIMPL_UINT_UINT_MUKUM(TYPENAME, PREFIX)\
+	QN_DECLIMPL_UINT_MUKUM(TYPENAME, uint, (void), PREFIX)
+// 키 부호없는 정수 / 값 문자열
+#define QN_DECLIMPL_UINT_PCHAR_MUKUM(TYPENAME, PREFIX)\
+	QN_DECLIMPL_UINT_MUKUM(TYPENAME, char*, qn_mem_free_ptr, PREFIX)
+
+// 키 문자열
+#define QN_DECLIMPL_PCHAR_MUKUM(TYPENAME, VALUETYPE, VALUEFREE, PREFIX)\
+	QN_DECLIMPL_MUKUM(TYPENAME, char*, VALUETYPE, qn_strhash, qn_streqv, qn_mem_free, VALUEFREE, PREFIX)
+// 키 문자열 / 값 정수
+#define QN_DECLIMPL_PCHAR_INT_MUKUM(TYPENAME, PREFIX)\
+	QN_DECLIMPL_PCHAR_MUKUM(TYPENAME, int, (void), PREFIX)
+// 키 문자열 / 값 문자열
+#define QN_DECLIMPL_PCHAR_PCHAR_MUKUM(TYPENAME, PREFIX)\
+	QN_DECLIMPL_PCHAR_MUKUM(TYPENAME, char*, qn_mem_free_ptr, PREFIX)
 
 #ifdef _MSC_VER
 #pragma warning(pop)
