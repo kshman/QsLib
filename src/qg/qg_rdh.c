@@ -76,7 +76,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	RDH = rdh;
 
 	// 한번 설정하면 바뀔일이 없거나 신경 안써도 되는것
-	RenderTransform* tm = &rdh->tm;
+	RendererTransform* tm = &rdh->tm;
 	tm->world = qm_mat4_unit();
 	tm->view = qm_mat4_unit();
 	tm->invv = qm_mat4_unit();
@@ -86,7 +86,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	tm->Near = 1.0f;										// Z깊이
 	tm->Far = 100000.0f;
 
-	RenderParam* param = &rdh->param;
+	RendererParam* param = &rdh->param;
 	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)		// 벡터 인수
 		param->v[i] = qm_vec_zero();
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)		// 행렬 인수
@@ -98,8 +98,8 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 		qg_node_mukum_init_fast(&rdh->mukums[i]);
 
 	// 
-	qn_cast_vt(rdh, RDHBASE)->layout();						// 레이아웃 재설정
-	qn_cast_vt(rdh, RDHBASE)->reset();						// 장치 리셋
+	qn_cast_vtable(rdh, RDHBASE)->layout();						// 레이아웃 재설정
+	qn_cast_vtable(rdh, RDHBASE)->reset();						// 장치 리셋
 	qn_timer_reset(STUB->timer);							// 타이머도 리셋해둔다
 	return true;
 }
@@ -138,7 +138,7 @@ void rdh_internal_layout(void)
 	const float aspect = qm_size_get_aspect(client_size);
 
 	// tm
-	RenderTransform* tm = RDH_TRANSFORM;
+	RendererTransform* tm = RDH_TRANSFORM;
 	tm->size = client_size;
 	tm->proj = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->Near, tm->Far);
 	tm->view_proj = qm_mat4_mul(tm->view, tm->proj);
@@ -149,7 +149,7 @@ void rdh_internal_layout(void)
 void rdh_internal_reset(void)
 {
 	// param
-	RenderParam* param = RDH_PARAM;
+	RendererParam* param = RDH_PARAM;
 	param->bone_ptr = NULL;									// 뼈대 포인터는 메모리 안전을 위해 초기화
 	param->bone_count = 0;									// 뼈대 가중치 개수도 초기화
 }
@@ -158,7 +158,7 @@ void rdh_internal_reset(void)
 void rdh_internal_invoke_reset(void)
 {
 	RdhBase* rdh = RDH;
-	RenderInvoke* ivk = &rdh->invokes;
+	RendererInvoke* ivk = &rdh->invokes;
 	ivk->invokes = 0;
 	ivk->begins = 0;
 	ivk->ends = 0;
@@ -180,7 +180,7 @@ void rdh_internal_check_layout(void)
 	const int height = (int)rdh->tm.size.Height;
 	if (size.Width == width && size.Height == height)
 		return;
-	qn_cast_vt(rdh, RDHBASE)->layout();
+	qn_cast_vtable(rdh, RDHBASE)->layout();
 }
 
 //
@@ -202,7 +202,7 @@ void rdh_internal_unlink_node(RenderNodeShed shed, void* node)
 //
 void qg_set_shader_var_callback(QgVarShaderFunc func, void* data)
 {
-	RenderParam* param = RDH_PARAM;
+	RendererParam* param = RDH_PARAM;
 	param->callback_func = func;
 	param->callback_data = data;
 }
@@ -214,7 +214,7 @@ bool qg_begin_render(bool clear)
 	rdh->invokes.invokes++;
 	rdh->invokes.begins++;
 	rdh->invokes.flush = false;
-	return qn_cast_vt(rdh, RDHBASE)->begin(clear);
+	return qn_cast_vtable(rdh, RDHBASE)->begin(clear);
 }
 
 //
@@ -224,9 +224,9 @@ void qg_end_render(bool flush)
 	rdh->invokes.invokes++;
 	rdh->invokes.ends++;
 	rdh->invokes.flush = true;
-	qn_cast_vt(rdh, RDHBASE)->end();
+	qn_cast_vtable(rdh, RDHBASE)->end();
 	if (flush)
-		qn_cast_vt(rdh, RDHBASE)->flush();
+		qn_cast_vtable(rdh, RDHBASE)->flush();
 }
 
 //
@@ -235,10 +235,10 @@ void qg_flush(void)
 	RdhBase* rdh = RDH;
 	if (!rdh->invokes.flush)
 	{
-		qn_debug_outputs(true, "RDH", "call end() before flush");
+		qn_mesg(true, "RDH", "call end() before flush");
 		qg_end_render(false);
 	}
-	qn_cast_vt(rdh, RDHBASE)->flush();
+	qn_cast_vtable(rdh, RDHBASE)->flush();
 	rdh->invokes.invokes++;
 	rdh->invokes.frames++;
 }
@@ -248,7 +248,7 @@ void qg_rdh_reset(void)
 {
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	qn_cast_vt(rdh, RDHBASE)->reset();
+	qn_cast_vtable(rdh, RDHBASE)->reset();
 }
 
 //
@@ -256,7 +256,7 @@ void qg_clear_render(QgClear clear)
 {
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	qn_cast_vt(rdh, RDHBASE)->clear(clear);
+	qn_cast_vtable(rdh, RDHBASE)->clear(clear);
 }
 
 //
@@ -356,7 +356,7 @@ QgBuffer* qg_create_buffer(QgBufferType type, uint count, uint stride, const voi
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qn_cast_vt(rdh, RDHBASE)->create_buffer(type, count, stride, initial_data);
+	return qn_cast_vtable(rdh, RDHBASE)->create_buffer(type, count, stride, initial_data);
 }
 
 //
@@ -380,7 +380,7 @@ QgRenderState* qg_create_render_state(const char* name, const QgPropRender* rend
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qn_cast_vt(rdh, RDHBASE)->create_render(name, render, shader);
+	return qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, shader);
 }
 
 //
@@ -392,7 +392,7 @@ QgTexture* qg_create_texture(const char* name, const QgImage* image, QgTexFlag f
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qn_cast_vt(rdh, RDHBASE)->create_texture(name, image, flags);
+	return qn_cast_vtable(rdh, RDHBASE)->create_texture(name, image, flags);
 }
 
 //
@@ -407,7 +407,7 @@ QgTexture* qg_load_texture(int fuse, const char* filename, QgTexFlag flags)
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qn_cast_vt(rdh, RDHBASE)->create_texture(filename, image, flags | QGTEXF_DISCARD_IMAGE);
+	return qn_cast_vtable(rdh, RDHBASE)->create_texture(filename, image, flags | QGTEXF_DISCARD_IMAGE);
 }
 
 //
@@ -417,7 +417,7 @@ bool qg_set_index(QgBuffer* buffer)
 	VAR_CHK_IF_COND(buffer->type != QGBUFFER_INDEX, "cannot set non-index buffer as index buffer", false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qn_cast_vt(rdh, RDHBASE)->set_index(buffer);
+	return qn_cast_vtable(rdh, RDHBASE)->set_index(buffer);
 }
 
 //
@@ -428,7 +428,7 @@ bool qg_set_vertex(QgLayoutStage stage, QgBuffer* buffer)
 	VAR_CHK_IF_MAX(stage, QGLOS_MAX_VALUE, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qn_cast_vt(rdh, RDHBASE)->set_vertex(stage, buffer);
+	return qn_cast_vtable(rdh, RDHBASE)->set_vertex(stage, buffer);
 }
 
 //
@@ -437,7 +437,7 @@ bool qg_set_render_state(QgRenderState * render)
 	VAR_CHK_IF_NULL(render, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qn_cast_vt(rdh, RDHBASE)->set_render(render);
+	return qn_cast_vtable(rdh, RDHBASE)->set_render(render);
 }
 
 //
@@ -447,7 +447,7 @@ bool qg_set_render_named(const char* name)
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	QgRenderState* rdr = qg_node_mukum_get(&rdh->mukums[RDHNODE_RENDER], name);
-	return rdr == NULL ? false : qn_cast_vt(rdh, RDHBASE)->set_render(rdr);
+	return rdr == NULL ? false : qn_cast_vtable(rdh, RDHBASE)->set_render(rdr);
 }
 
 //
@@ -456,7 +456,7 @@ bool qg_set_texture(int stage, QgTexture* texture)
 	VAR_CHK_IF_MAX(stage, 8/*RDH_INFO->max_tex_count*/, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qn_cast_vt(rdh, RDHBASE)->set_texture(stage, texture);
+	return qn_cast_vtable(rdh, RDHBASE)->set_texture(stage, texture);
 }
 
 //
@@ -467,7 +467,7 @@ bool qg_draw(QgTopology tpg, int vertices)
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	return qn_cast_vt(rdh, RDHBASE)->draw(tpg, vertices);
+	return qn_cast_vtable(rdh, RDHBASE)->draw(tpg, vertices);
 }
 
 //
@@ -478,7 +478,7 @@ bool qg_draw_indexed(QgTopology tpg, int indices)
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	return qn_cast_vt(rdh, RDHBASE)->draw_indexed(tpg, indices);
+	return qn_cast_vtable(rdh, RDHBASE)->draw_indexed(tpg, indices);
 }
 
 //
@@ -492,7 +492,7 @@ void qg_draw_sprite(const QmRect* bound, const QmColor* color, QgTexture* textur
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	qn_cast_vt(rdh, RDHBASE)->draw_sprite(bound, color, texture, coord);
+	qn_cast_vtable(rdh, RDHBASE)->draw_sprite(bound, color, texture, coord);
 }
 
 //
@@ -506,7 +506,7 @@ void qg_draw_sprite_ex(const QmRect* bound, float angle, const QmColor* color, Q
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	qn_cast_vt(rdh, RDHBASE)->draw_sprite_ex(bound, angle, color, texture, coord);
+	qn_cast_vtable(rdh, RDHBASE)->draw_sprite_ex(bound, angle, color, texture, coord);
 }
 
 
@@ -541,14 +541,14 @@ void qg_node_set_name(QgNode * self, const char* name)
 void* qg_buffer_map(QgBuffer * self)
 {
 	VAR_CHK_IF_COND(self->mapped != false, "buffer already mapped", NULL);
-	return qn_cast_vt(self, QGBUFFER)->map(self);
+	return qn_cast_vtable(self, QGBUFFER)->map(self);
 }
 
 //
 bool qg_buffer_unmap(QgBuffer * self)
 {
 	VAR_CHK_IF_COND(self->mapped == false, "buffer not mapped", false);
-	return qn_cast_vt(self, QGBUFFER)->unmap(self);
+	return qn_cast_vtable(self, QGBUFFER)->unmap(self);
 }
 
 //
@@ -556,5 +556,5 @@ bool qg_buffer_data(QgBuffer * self, int size, const void* data)
 {
 	VAR_CHK_IF_COND(self->mapped != false, "buffer already mapped", false);
 	VAR_CHK_IF_NULL(data, false);
-	return qn_cast_vt(self, QGBUFFER)->data(self, size, data);
+	return qn_cast_vtable(self, QGBUFFER)->data(self, size, data);
 }

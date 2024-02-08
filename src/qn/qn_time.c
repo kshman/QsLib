@@ -29,72 +29,70 @@ void qn_gmtime(struct tm* ptm, const time_t tt)
 #endif
 }
 
+#ifdef _QN_WINDOWS_
+// 윈도우 SYSTEMTIME을 타임스탬프로 변환
+QnTimeStamp qn_system_time_to_timestamp(const SYSTEMTIME* pst)
+{
+	QnDateTime dt;
+	dt.year = pst->wYear;
+	dt.month = pst->wMonth;
+	dt.day = pst->wDay;
+	dt.dow = pst->wDayOfWeek;
+	dt.hour = pst->wHour;
+	dt.minute = pst->wMinute;
+	dt.second = pst->wSecond;
+	dt.millisecond = pst->wMilliseconds;
+	return dt.stamp;
+}
+#endif
+
+#ifdef _QN_UNIX_
+// tm을 타임스탬프로 변환
+QnTimeStamp qn_tm_to_timestamp(struct tm* ptm)
+{
+	QnDateTime dt;
+	dt.year = (uint)ptm->tm_year + 1900;
+	dt.month = (uint)ptm->tm_mon + 1;
+	dt.day = (uint)ptm->tm_mday;
+	dt.dow = (uint)ptm->tm_wday;
+	dt.hour = (uint)ptm->tm_hour;
+	dt.minute = (uint)ptm->tm_min;
+	dt.second = (uint)ptm->tm_sec;
+	dt.millisecond = 0;
+	return dt.stamp;
+}
+#endif
+
 //
 QnTimeStamp qn_now(void)
 {
-	QnDateTime dt;
 #ifdef _QN_WINDOWS_
 	SYSTEMTIME st;
 	GetLocalTime(&st);
-
-	dt.year = st.wYear;
-	dt.month = st.wMonth;
-	dt.day = st.wDay;
-	dt.dow = st.wDayOfWeek;
-	dt.hour = st.wHour;
-	dt.minute = st.wMinute;
-	dt.second = st.wSecond;
-	dt.millisecond = st.wMilliseconds;
+	return qn_system_time_to_timestamp(&st);
 #else
 	struct timeval tv;
 	struct tm tm;
 	gettimeofday(&tv, NULL);
-	qn_localtime(&tm, tv.tv_sec);
-
-	dt.year = (uint)tm.tm_year + 1900;
-	dt.month = (uint)tm.tm_mon + 1;
-	dt.day = (uint)tm.tm_mday;
-	dt.dow = (uint)tm.tm_wday;
-	dt.hour = (uint)tm.tm_hour;
-	dt.minute = (uint)tm.tm_min;
-	dt.second = (uint)tm.tm_sec;
-	dt.millisecond = (uint)tv.tv_usec / 1000;
+	(void)gmtime_r(&tv.tv_sec, &tm);
+	return qn_tm_to_timestamp(&tm);
 #endif
-	return dt.stamp;
 }
 
 //
 QnTimeStamp qn_utc(void)
 {
-	QnDateTime dt;
 #ifdef _QN_WINDOWS_
 	SYSTEMTIME st;
 	GetSystemTime(&st);
-
-	dt.year = st.wYear;
-	dt.month = st.wMonth;
-	dt.day = st.wDay;
-	dt.dow = st.wDayOfWeek;
-	dt.hour = st.wHour;
-	dt.minute = st.wMinute;
-	dt.second = st.wSecond;
-	dt.millisecond = st.wMilliseconds;
+	return qn_system_time_to_timestamp(&st);
 #else
 	struct timeval tv;
 	struct tm tm;
 	gettimeofday(&tv, NULL);
-	qn_gmtime(&tm, tv.tv_sec);
-
-	dt.year = (uint)tm.tm_year + 1900;
-	dt.month = (uint)tm.tm_mon + 1;
-	dt.day = (uint)tm.tm_mday;
-	dt.dow = (uint)tm.tm_wday;
-	dt.hour = (uint)tm.tm_hour;
-	dt.minute = (uint)tm.tm_min;
-	dt.second = (uint)tm.tm_sec;
-	dt.millisecond = (uint)tv.tv_usec / 1000;
+	(void)gmtime_r(&tv.tv_sec, &tm);
+	return qn_tm_to_timestamp(&tm);
 #endif
-	return dt.stamp;
 }
 
 //
@@ -290,13 +288,13 @@ typedef struct QNREALTIMER
 } QnRealTimer;
 
 //
-static void qn_timer_dispose(QnGam* gam)
+static void qn_timer_dispose(QnGam gam)
 {
 	qn_free(gam);
 }
 
 //
-QnTimer* qn_new_timer(void)
+QnTimer* qn_create_timer(void)
 {
 	QnRealTimer* self = qn_alloc_zero_1(QnRealTimer);
 
@@ -310,12 +308,12 @@ QnTimer* qn_new_timer(void)
 	self->base.abstime = (double)self->curtime.q * self->tick;
 	self->cut = 9999999.0;  //10.0;
 
-	static qn_gam_vt(QNGAM) qn_timer_vt =
+	static QN_DECL_VTABLE(QNGAMBASE) qn_timer_vt =
 	{
 		"TIMER",
 		qn_timer_dispose,
 	};
-	return qn_gam_init(self, QnTimer, &qn_timer_vt);
+	return qn_gam_init(self, qn_timer_vt);
 }
 
 //

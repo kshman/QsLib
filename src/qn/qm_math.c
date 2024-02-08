@@ -38,13 +38,13 @@ nuint qm_rand(QmRandom* r)
 //
 float qm_randf(QmRandom* r)
 {
-	return (float)qm_rand(r) / (float)UINTPTR_MAX;
+	return (float)qm_rand(r) / (float)UINTPTR_MAX;  // NOLINT(clang-diagnostic-bad-function-cast)
 }
 
 //
 double qm_randd(QmRandom* r)
 {
-	return (double)qm_rand(r) / (double)UINTPTR_MAX;
+	return (double)qm_rand(r) / (double)UINTPTR_MAX;  // NOLINT(clang-diagnostic-bad-function-cast)
 }
 
 

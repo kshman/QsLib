@@ -723,7 +723,7 @@ PFNGLPUSHDEBUGGROUPKHRPROC glad_glPushDebugGroupKHR = NULL;
 static void glad_version_sscanf(const char* version, int* major, int* minor)
 {
 	const float f = qn_strtof(version);
-	*major = (int)floorf(f);
+	*major = (int)floorf(f);	// NOLINT
 	*minor = (int)(qm_fractf(f) * 10.0f);
 }
 
@@ -734,26 +734,24 @@ static void glad_gl_free_extensions(char **exts_i) {
 			qn_free((void *)(exts_i[index]));
 		}
 		qn_free((void *)exts_i);
-		exts_i = NULL;
 	}
 }
 
 static int glad_gl_get_extensions(const char **out_exts, char ***out_exts_i) {
 #if defined(GL_ES_VERSION_3_0) || defined(GL_VERSION_3_0)
 	if (glad_glGetStringi != NULL && glad_glGetIntegerv != NULL) {
-		unsigned int index = 0;
+		unsigned int index;
 		unsigned int num_exts_i = 0;
-		char **exts_i = NULL;
 		glad_glGetIntegerv(GL_NUM_EXTENSIONS, (int*)&num_exts_i);
-		exts_i = qn_alloc(num_exts_i + 1, char*);
+		char** exts_i = qn_alloc(num_exts_i + 1, char*);
 		if (exts_i == NULL) {
 			return 0;
 		}
 		for (index = 0; index < num_exts_i; index++) {
 			const char *gl_str_tmp = (const char*)glad_glGetStringi(GL_EXTENSIONS, index);
-			size_t len = strlen(gl_str_tmp) + 1;
+			const size_t len = strlen(gl_str_tmp) + 1;
 
-			char *local_str = qn_alloc(len, char);;
+			char *local_str = qn_alloc(len, char);
 			if (local_str == NULL) {
 				exts_i[index] = NULL;
 				glad_gl_free_extensions(exts_i);

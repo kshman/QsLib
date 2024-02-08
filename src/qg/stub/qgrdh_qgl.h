@@ -62,7 +62,6 @@ typedef struct QGLCONFIG
 	bool				core;
 	void*				handle;
 } QglConfig;
-QN_DECL_CTNR(QglCtnConfig, QglConfig);
 
 // 레이아웃 요소
 typedef struct QGLLAYOUTINPUT
@@ -74,7 +73,6 @@ typedef struct QGLLAYOUTINPUT
 	GLuint				count : 16;
 	GLboolean			normalized;
 } QglLayoutInput;
-QN_DECL_CTNR(QglCtnLayoutInput, QglLayoutInput);
 
 // 레이아웃 프로퍼티
 typedef struct QGLLAYOUTPROPERTY
@@ -86,9 +84,6 @@ typedef struct QGLLAYOUTPROPERTY
 	GLuint				count : 16;
 	GLboolean			normalized;
 } QglLayoutProperty;
-
-// 세이더 유니폼
-QN_DECL_CTNR(QglCtnUniform, QgVarShader);
 
 // 세이더 어트리뷰트
 typedef struct QGLVARATTR
@@ -106,7 +101,12 @@ typedef struct QGLVARATTR
 	QgLayoutUsage		usage : 8;			// 최대 24(2024-01-20 시점)으로 괜춘
 	QgScType			sctype : 8;			// 최대 22(2032-01-20 시점)으로 괜춘		
 } QglVarAttr;
-QN_DECL_CTNR(QglCtnAttr, QglVarAttr);
+
+// 컨터이너
+QN_DECLIMPL_CTNR(QglCtnConfig, QglConfig, qgl_cfg_ctnr);			// 컨피그
+QN_DECLIMPL_CTNR(QglCtnLayoutInput, QglLayoutInput, qgl_li_ctnr);	// 레이아웃 입력
+QN_DECLIMPL_CTNR(QglCtnUniform, QgVarShader, qgl_uni_ctnr);			// 세이더 유니폼
+QN_DECLIMPL_CTNR(QglCtnAttr, QglVarAttr, qgl_attr_ctnr);			// 세이더 어트리뷰트
 
 // 컬러 포맷을 텍스쳐 포맷으로 구조체
 typedef struct QGLTEXFORMAT
@@ -191,6 +191,7 @@ struct QGLRDH
 #ifdef _QN_WINDOWS_
 	HGLRC				context;
 #endif
+	GLuint				vao;
 
 	bool				disposed;
 };

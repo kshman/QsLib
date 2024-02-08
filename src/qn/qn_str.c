@@ -8,8 +8,16 @@
 #include "pch.h"
 #include <ctype.h>
 #include <wctype.h>
-#include "sdefl/sdefl.h"
-#include "sdefl/sinfl.h"
+#include "PatrickPowell_snprintf.h"
+#define SINFL_IMPLEMENTATION
+#define SDEFL_IMPLEMENTATION
+#include "vurtun/sdefl.h"
+#include "vurtun/sinfl.h"
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4706)
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 // 해시
@@ -79,7 +87,7 @@ size_t qn_hash_func(const int prime8, const func_t func, const void* data)
  * @param[in] size 크기
  * @return 정수 값
  */
-static uint64_t qn_crc64(const byte* RESTRICT data, const size_t size)
+static uint64_t qn_crc64(const byte* data, const size_t size)
 {
 	// https://github.com/srned/baselib/blob/master/crc64.c
 	/* Redis uses the CRC64 variant with "Jones" coefficients and init value of 0.
@@ -200,7 +208,7 @@ static uint64_t qn_crc64(const byte* RESTRICT data, const size_t size)
  * @param[in] size 크기
  * @return 정수 값
  */
-static uint qn_crc32(const byte* RESTRICT data, const size_t size)
+static uint qn_crc32(const byte* data, const size_t size)
 {
 	static const uint crc32_table[] =
 	{
@@ -299,7 +307,7 @@ uint qn_prime_shift(const uint value, const uint min, uint* shift)
 // 메모리 조작
 
 //
-void* qn_memenc(void* RESTRICT dest, const void* RESTRICT src, const size_t size)
+void* qn_memenc(void* dest, const void* src, const size_t size)
 {
 	const byte* ps = (const byte*)src;
 	byte* pd = (byte*)dest;
@@ -314,7 +322,7 @@ void* qn_memenc(void* RESTRICT dest, const void* RESTRICT src, const size_t size
 }
 
 //
-void* qn_memdec(void* RESTRICT dest, const void* RESTRICT src, const size_t size)
+void* qn_memdec(void* dest, const void* src, const size_t size)
 {
 	const byte* ps = (const byte*)src;
 	byte* pd = (byte*)dest;
@@ -331,8 +339,8 @@ void* qn_memdec(void* RESTRICT dest, const void* RESTRICT src, const size_t size
 //
 void* qn_memzcpr(const void* src, const size_t srcsize, /*NULLABLE*/size_t* destsize)
 {
-	qn_val_if_fail(src != NULL, NULL);
-	qn_val_if_fail(srcsize > 0, NULL);
+	qn_return_when_fail(src != NULL, NULL);
+	qn_return_when_fail(srcsize > 0, NULL);
 
 	struct sdefl* s = qn_alloc_zero_1(struct sdefl);
 	const int bound = sdefl_bound((int)srcsize);
@@ -348,8 +356,8 @@ void* qn_memzcpr(const void* src, const size_t srcsize, /*NULLABLE*/size_t* dest
 //
 void* qn_memzucp(const void* src, const size_t srcsize, /*NULLABLE*/size_t* destsize)
 {
-	qn_val_if_fail(src != NULL, NULL);
-	qn_val_if_fail(srcsize > 0, NULL);
+	qn_return_when_fail(src != NULL, NULL);
+	qn_return_when_fail(srcsize > 0, NULL);
 
 	int size = (int)(srcsize * 3 + 12);
 	byte* p = NULL;
@@ -367,9 +375,26 @@ void* qn_memzucp(const void* src, const size_t srcsize, /*NULLABLE*/size_t* dest
 }
 
 //
+void* qn_memzucp_s(const void* src, const size_t srcsize, const size_t destsize)
+{
+	qn_return_when_fail(src != NULL, NULL);
+	qn_return_when_fail(srcsize > 0, NULL);
+	qn_return_when_fail(destsize > 0, NULL);
+	
+	byte* p = qn_alloc(destsize + 4, byte);
+	const int ret = sinflate(p, (int)destsize, src, (int)srcsize);
+	if (ret != (int)destsize)
+	{
+		qn_free(p);
+		return NULL;
+	}
+	return p;
+}
+
+//
 char qn_memhrb(const size_t size, double* out)
 {
-	qn_val_if_fail(out != NULL, ' ');
+	qn_return_when_fail(out != NULL, ' ');
 	if (size > 1024ULL * 1024ULL * 1024ULL)
 	{
 		*out = (double)size / (double)(1024ULL * 1024ULL * 1024ULL);
@@ -390,10 +415,10 @@ char qn_memhrb(const size_t size, double* out)
 }
 
 //
-char* qn_memdmp(const void* RESTRICT ptr, const size_t size, char* RESTRICT outbuf, const size_t buflen)
+char* qn_memdmp(const void* ptr, const size_t size, char* outbuf, const size_t buflen)
 {
-	qn_val_if_fail(ptr != NULL, NULL);
-	qn_val_if_fail(outbuf != NULL, NULL);
+	qn_return_when_fail(ptr != NULL, NULL);
+	qn_return_when_fail(outbuf != NULL, NULL);
 
 	if (size == 0 || buflen == 0)
 	{
@@ -452,12 +477,12 @@ static void qsort_short_context(byte* lo, byte* hi, const size_t stride, int(*fu
 }
 
 //
-void qn_qsortc(void* ptr, const size_t count, const size_t stride, int(*compfunc)(void*, const void*, const void*), void* context)
+void qn_qsortc(void* ptr, size_t count, size_t stride, sortcfunc_t compfunc, void* context)
 {
-	qn_ret_if_fail(ptr);
-	qn_ret_if_fail(count > 1);
-	qn_ret_if_fail(stride);
-	qn_ret_if_fail(compfunc);
+	qn_return_when_fail(ptr,/*void*/);
+	qn_return_when_fail(count > 1,/*void*/);
+	qn_return_when_fail(stride,/*void*/);
+	qn_return_when_fail(compfunc,/*void*/);
 
 	// 스택&리미트 초기화
 	int_fast32_t stkptr = 0;
@@ -602,12 +627,12 @@ static void qsort_short(byte* lo, byte* hi, const size_t stride, int(*func)(cons
 }
 
 //
-void qn_qsort(void* ptr, const size_t count, const size_t stride, int(*compfunc)(const void*, const void*))
+void qn_qsort(void* ptr, size_t count, size_t stride, sortfunc_t compfunc)
 {
-	qn_ret_if_fail(ptr);
-	qn_ret_if_fail(count > 1);
-	qn_ret_if_fail(stride);
-	qn_ret_if_fail(compfunc);
+	qn_return_when_fail(ptr,/*void*/);
+	qn_return_when_fail(count > 1,/*void*/);
+	qn_return_when_fail(stride,/*void*/);
+	qn_return_when_fail(compfunc,/*void*/);
 
 	// 스택&리미트 초기화
 	int_fast32_t stkptr = 0;
@@ -756,7 +781,7 @@ const byte* qn_num_base_table(void)
 }
 
 // 숫자를 문자로 바꾸기 (32진수까지)
-const char* qn_char_base_table(const bool upper)
+const char* qn_char_base_table(bool upper)
 {
 	static const char* nchar_table[] =
 	{
@@ -766,48 +791,75 @@ const char* qn_char_base_table(const bool upper)
 	return nchar_table[upper == false ? 0 : 1];
 }
 
+
 //////////////////////////////////////////////////////////////////////////
 // 아스키/멀티바이트 버전
 
-extern size_t dopr(char* RESTRICT buffer, size_t maxlen, const char* RESTRICT format, va_list args);
+// DOPR 정리 공용
+static void printf_finish(PatrickPowellSprintfState* state)
+{
+	if (state->maxlen > 0)
+		state->buf[state->currlen < state->maxlen - 1 ? state->currlen : state->maxlen - 1] = '\0';
+}
+
+// DOPR 고정 문자열 버전
+static void printf_outch(PatrickPowellSprintfState* state, int ch)
+{
+	if (state->currlen < state->maxlen)
+		state->buf[state->currlen] = (char)ch;
+	state->currlen++;
+}
+
+// DOPR 할당 문자열 버전
+static void printf_alloc_outch(PatrickPowellSprintfState* state, int ch)
+{
+	if (state->currlen >= state->maxlen)
+	{
+		state->maxlen = state->currlen + 256;
+#ifdef QS_NO_MEMORY_PROFILE
+		state->buf = (char*)qn_a_realloc(state->buf, state->maxlen);
+#else
+		state->buf = (char*)qn_a_i_realloc(state->buf, state->maxlen, state->desc, state->line);
+#endif
+	}
+	state->buf[state->currlen] = (char)ch;
+	state->currlen++;
+}
 
 #ifdef QS_NO_MEMORY_PROFILE
 //
-int qn_a_vsprintf(char** RESTRICT out, const char* RESTRICT fmt, va_list va)
+static int qn_a_printf(char** out, const char* fmt, va_list va)
 {
-	qn_val_if_fail(out != NULL, -2);
-	qn_val_if_fail(fmt != NULL, -1);
-	va_list vq;
-	va_copy(vq, va);
-	size_t len = dopr(NULL, 0, fmt, vq);
-	va_end(vq);
-	if (len == 0)
-		*out = NULL;
-	else
+	PatrickPowellSprintfState state =
 	{
-		*out = (char*)qn_a_alloc(len + 1, false);
-		len = dopr(*out, len + 1, fmt, va);
-	}
-	return (int)len;
+		printf_alloc_outch,
+		printf_finish,
+	};
+	dopr(&state, fmt, va);
+	*out = state.buf;
+	return (int)state.currlen;
 }
 
 //
-char* qn_a_vpsprintf(const char* RESTRICT fmt, va_list va)
+int qn_a_vsprintf(char** out, const char* fmt, va_list va)
 {
-	qn_val_if_fail(fmt != NULL, NULL);
-	va_list vq;
-	va_copy(vq, va);
-	const size_t len = dopr(NULL, 0, fmt, vq);
-	va_end(vq);
-	if (len == 0)
-		return NULL;
-	char* ret = (char*)qn_a_alloc(len + 1, false);
-	dopr(ret, len + 1, fmt, va);
-	return ret;
+	if (out == NULL)
+		return qn_vsnprintf(NULL, 0, fmt, va);
+	qn_return_when_fail(fmt != NULL, -1);
+	return qn_a_printf(out, fmt, va);
 }
 
 //
-int qn_a_sprintf(char** RESTRICT out, const char* RESTRICT fmt, ...)
+char* qn_a_vpsprintf(const char* fmt, va_list va)
+{
+	qn_return_when_fail(fmt != NULL, NULL);
+	char* buf;
+	qn_a_printf(&buf, fmt, va);
+	return buf;
+}
+
+//
+int qn_a_sprintf(char** out, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -817,19 +869,20 @@ int qn_a_sprintf(char** RESTRICT out, const char* RESTRICT fmt, ...)
 }
 
 //
-char* qn_a_psprintf(const char* RESTRICT fmt, ...)
+char* qn_a_psprintf(const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
-	char* ret = qn_a_vpsprintf(fmt, va);
+	char* buf;
+	qn_a_printf(&buf, fmt, va);
 	va_end(va);
-	return ret;
+	return buf;
 }
 
 //
 char* qn_a_str_dup(const char* p)
 {
-	qn_val_if_fail(p != NULL, NULL);
+	qn_return_when_fail(p != NULL, NULL);
 	const size_t len = strlen(p) + 1;
 	char* d = (char*)qn_a_alloc(len, false);
 	qn_strcpy(d, p);
@@ -837,7 +890,7 @@ char* qn_a_str_dup(const char* p)
 }
 
 //
-char* qn_a_str_cat(const char* p, ...)
+char* qn_a_str_dup_cat(const char* p, ...)
 {
 	va_list va, vq;
 	va_start(va, p);
@@ -865,42 +918,39 @@ char* qn_a_str_cat(const char* p, ...)
 	return str;
 }
 #else
-//
-int qn_a_i_vsprintf(const char* desc, size_t line, char** RESTRICT out, const char* RESTRICT fmt, va_list va)
+static int qn_a_i_printf(const char* desc, size_t line, char** out, const char* fmt, va_list va)
 {
-	qn_val_if_fail(out != NULL, -2);
-	qn_val_if_fail(fmt != NULL, -1);
-	va_list vq;
-	va_copy(vq, va);
-	size_t len = dopr(NULL, 0, fmt, vq);
-	va_end(vq);
-	if (len == 0)
-		*out = NULL;
-	else
+	PatrickPowellSprintfState state =
 	{
-		*out = (char*)qn_a_i_alloc(len + 1, false, desc, line);
-		len = dopr(*out, len + 1, fmt, va);
-	}
-	return (int)len;
+		printf_alloc_outch,
+		printf_finish,
+		desc, line,
+	};
+	dopr(&state, fmt, va);
+	*out = state.buf;
+	return (int)state.currlen;
 }
 
 //
-char* qn_a_i_vpsprintf(const char* desc, size_t line, const char* RESTRICT fmt, va_list va)
+int qn_a_i_vsprintf(const char* desc, size_t line, char** out, const char* fmt, va_list va)
 {
-	qn_val_if_fail(fmt != NULL, NULL);
-	va_list vq;
-	va_copy(vq, va);
-	const size_t len = dopr(NULL, 0, fmt, vq);
-	va_end(vq);
-	if (len == 0)
-		return NULL;
-	char* ret = (char*)qn_a_i_alloc(len + 1, false, desc, line);
-	dopr(ret, len + 1, fmt, va);
-	return ret;
+	if (out == NULL)
+		return qn_vsnprintf(NULL, 0, fmt, va);
+	qn_return_when_fail(fmt != NULL, -1);
+	return qn_a_i_printf(desc, line, out, fmt, va);
 }
 
 //
-int qn_a_i_sprintf(const char* desc, size_t line, char** RESTRICT out, const char* RESTRICT fmt, ...)
+char* qn_a_i_vpsprintf(const char* desc, size_t line, const char* fmt, va_list va)
+{
+	qn_return_when_fail(fmt != NULL, NULL);
+	char* buf;
+	qn_a_i_printf(desc, line, &buf, fmt, va);
+	return buf;
+}
+
+//
+int qn_a_i_sprintf(const char* desc, size_t line, char** out, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -910,19 +960,20 @@ int qn_a_i_sprintf(const char* desc, size_t line, char** RESTRICT out, const cha
 }
 
 //
-char* qn_a_i_psprintf(const char* desc, size_t line, const char* RESTRICT fmt, ...)
+char* qn_a_i_psprintf(const char* desc, size_t line, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
-	char* ret = qn_a_i_vpsprintf(desc, line, fmt, va);
+	char* buf;
+	qn_a_i_printf(desc, line, &buf, fmt, va);
 	va_end(va);
-	return ret;
+	return buf;
 }
 
 //
 char* qn_a_i_str_dup(const char* desc, size_t line, const char* p)
 {
-	qn_val_if_fail(p != NULL, NULL);
+	qn_return_when_fail(p != NULL, NULL);
 	const size_t len = strlen(p) + 1;
 	char* d = (char*)qn_a_i_alloc(len, false, desc, line);
 	qn_strcpy(d, p);
@@ -930,7 +981,7 @@ char* qn_a_i_str_dup(const char* desc, size_t line, const char* p)
 }
 
 //
-char* qn_a_i_str_cat(const char* desc, size_t line, const char* p, ...)
+char* qn_a_i_str_dup_cat(const char* desc, size_t line, const char* p, ...)
 {
 	va_list va, vq;
 	va_start(va, p);
@@ -960,17 +1011,22 @@ char* qn_a_i_str_cat(const char* desc, size_t line, const char* p, ...)
 #endif
 
 //
-int qn_vsnprintf(char* RESTRICT out, size_t len, const char* RESTRICT fmt, va_list va)
+int qn_vsnprintf(char* out, size_t len, const char* fmt, va_list va)
 {
-	qn_val_if_fail(fmt != NULL, -1);
-	const size_t res = dopr(out, len, fmt, va);
-	if (len)
-		len--;
-	return out ? (int)QN_MIN(res, len) : (int)res;
+	qn_return_when_fail(fmt != NULL, -1);
+	PatrickPowellSprintfState state =
+	{
+		printf_outch,
+		printf_finish,
+	};
+	state.maxlen = out != NULL ? len : 0;
+	state.buf = out;
+	dopr(&state, fmt, va);
+	return (int)state.currlen;
 }
 
 //
-int qn_snprintf(char* RESTRICT out, const size_t len, const char* RESTRICT fmt, ...)
+int qn_snprintf(char* out, const size_t len, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -980,7 +1036,7 @@ int qn_snprintf(char* RESTRICT out, const size_t len, const char* RESTRICT fmt, 
 }
 
 //
-char* qn_strcpy(char* RESTRICT p, const char* RESTRICT src)
+char* qn_strcpy(char* p, const char* src)
 {
 #ifdef __GNUC__
 	return strcpy(p, src);
@@ -992,7 +1048,7 @@ char* qn_strcpy(char* RESTRICT p, const char* RESTRICT src)
 }
 
 //
-char* qn_strncpy(char* RESTRICT p, const char* RESTRICT src, size_t len)
+char* qn_strncpy(char* p, const char* src, size_t len)
 {
 #ifdef __GNUC__
 	return strncpy(p, src, len);
@@ -1001,21 +1057,76 @@ char* qn_strncpy(char* RESTRICT p, const char* RESTRICT src, size_t len)
 	while (len && ((*p++ = *src++)))
 		--len;
 	*p = '\0';
+#if false
 	if (len)
 	{
 		while (--len)
 			*p++ = '\0';
 	}
+#endif
 	return o;
 #endif
 }
 
 //
-char* qn_stpcpy(char* RESTRICT dest, const char* RESTRICT src)
+char* qn_stpcpy(char* dest, const char* src)
 {
 	do (*dest++ = *src);
 	while (*src++ != '\0');
 	return dest - 1;
+}
+
+//
+char* qn_strcat(char* dest, const char* src)
+{
+#ifdef __GNUC__
+	return strcat(dest, src);
+#else
+	char* o = dest;
+	while (*dest) dest++;
+	while ((*dest++ = *src++)) {}
+	return o;
+#endif
+}
+
+//
+char* qn_strncat(char* dest, const char* src, size_t len)
+{
+#ifdef __GNUC__
+	return strncat(dest, src, len);
+#else
+	char* o = dest;
+	while (*dest) dest++;
+	while (len && ((*dest++ = *src++)))
+		--len;
+	*dest = '\0';
+	return o;
+#endif
+}
+
+//
+char* qn_strconcat(size_t max_len, char* dest, ...)
+{
+	va_list va;
+	char* c = dest;
+	char* s;
+
+	va_start(va, dest);
+	s = va_arg(va, char*);
+	while (s)
+	{
+		while (*s)
+		{
+			if (--max_len == 0)
+				goto pos_exit;
+			*c++ = *s++;
+		}
+		s = va_arg(va, char*);
+	}
+pos_exit:
+	va_end(va);
+	*c = '\0';
+	return dest;
 }
 
 //
@@ -1054,6 +1165,21 @@ size_t qn_strihash(const char* p)
 	sz++;
 	for (c = 0; *sz && c < 256; sz++, c++)
 		h = (h << 5) - h + (size_t)tolower(*sz);
+	h = (h << 5) - h + c;
+	return h;
+}
+
+//
+uint qn_strshash(const char* p)
+{
+	const char* sz = p;
+	uint h = (uint)tolower(*sz);
+	if (!h)
+		return 0;
+	uint c;
+	sz++;
+	for (c = 0; *sz && c < 256; sz++, c++)
+		h = (h << 5) - h + (uint)tolower(*sz);
 	h = (h << 5) - h + c;
 	return h;
 }
@@ -1281,16 +1407,16 @@ char* qn_strrchr(const char* p, int ch)
 }
 
 //
-char* qn_strtok(_Inout_opt_z_ char* RESTRICT p, _In_z_ const char* RESTRICT sep, _Inout_ char** RESTRICT ctx)
+char* qn_strtok(_Inout_opt_z_ char* p, _In_z_ const char* sep, _Inout_ char** ctx)
 {
 #if defined _MSC_VER
 	return strtok_s(p, sep, ctx);
 #elif defined __GNUC__
 	return strtok_r(p, sep, ctx);
 #else
-	qn_val_if_fail(p != NULL, NULL);
-	qn_val_if_fail(sep != NULL, NULL);
-	qn_val_if_fail(ctx != NULL, NULL);
+	qn_return_when_fail(p != NULL, NULL);
+	qn_return_when_fail(sep != NULL, NULL);
+	qn_return_when_fail(ctx != NULL, NULL);
 	if (p)
 		*ctx = (char*)p;
 	else if (!*ctx)
@@ -1319,7 +1445,7 @@ char* qn_strtok(_Inout_opt_z_ char* RESTRICT p, _In_z_ const char* RESTRICT sep,
 //
 const char* qn_strext(const char* p, const char* name, int separator)
 {
-	size_t len = strlen(name);
+	const size_t len = strlen(name);
 	for (;;)
 	{
 		const char* t = strstr(p, name);
@@ -1337,7 +1463,7 @@ const char* qn_strext(const char* p, const char* name, int separator)
 }
 
 //
-char* qn_strmid(char* RESTRICT dest, const char* RESTRICT src, const size_t pos, const size_t len)
+char* qn_strmid(char* dest, const char* src, const size_t pos, const size_t len)
 {
 	const size_t size = strlen(src);
 	if (pos > size)
@@ -1380,7 +1506,7 @@ char* qn_strtrm(char* dest)
 }
 
 //
-char* qn_strrem(char* RESTRICT p, const char* RESTRICT rmlist)
+char* qn_strrem(char* p, const char* rmlist)
 {
 	const char* p1 = p;
 	char* p2 = p;
@@ -1429,8 +1555,8 @@ char* qn_strlwr(char* p)
 //
 int qn_strtoi(const char* p, const uint base)
 {
-	qn_val_if_fail(p != NULL, 0);
-	qn_val_if_fail(base >= 2 && base < 32, 0);
+	qn_return_when_fail(p != NULL, 0);
+	qn_return_when_fail(base >= 2 && base < 32, 0);
 	const byte* table = qn_num_base_table();
 	uint v = 0;
 	int sign = 1;
@@ -1454,8 +1580,8 @@ int qn_strtoi(const char* p, const uint base)
 //
 llong qn_strtoll(const char* p, const uint base)
 {
-	qn_val_if_fail(p != NULL, 0);
-	qn_val_if_fail(base >= 2 && base < 32, 0);
+	qn_return_when_fail(p != NULL, 0);
+	qn_return_when_fail(base >= 2 && base < 32, 0);
 	const byte* table = qn_num_base_table();
 	ullong v = 0;
 	llong sign = 1LL;
@@ -1593,7 +1719,7 @@ double qn_strtod(const char* p)
 //
 int qn_itoa(char* p, const int n, const uint base, bool upper)
 {
-	qn_val_if_fail(base <= 32, -1);
+	qn_return_when_fail(base <= 32, -1);
 	const char* table = qn_char_base_table(upper);
 	char conv[32];
 	int place = 0;
@@ -1621,7 +1747,7 @@ int qn_itoa(char* p, const int n, const uint base, bool upper)
 //
 int qn_lltoa(char* p, const llong n, const uint base, bool upper)
 {
-	qn_val_if_fail(base <= 32, -1);
+	qn_return_when_fail(base <= 32, -1);
 	const char* table = qn_char_base_table(upper);
 	char conv[64];
 	int place = 0;
@@ -1646,823 +1772,88 @@ int qn_lltoa(char* p, const llong n, const uint base, bool upper)
 	return place;
 }
 
-
-//////////////////////////////////////////////////////////////////////////
-// 유니코드 버전
-
-#ifndef _MSC_VER
-#ifndef towupper
-#define towupper(c)					((((c)>=L'a') && ((c)<=L'z')) ? ((c)-L'a'+L'A') : (c))
-#endif
-#ifndef towlower
-#define towlower(c)					((((c)>=L'A') && ((c)<=L'Z')) ? ((c)-L'A'+L'a') : (c))
-#endif
-#endif
-
-extern size_t doprw(wchar* RESTRICT buffer, size_t maxlen, const wchar* RESTRICT format, va_list args);
-
-#ifdef QS_NO_MEMORY_PROFILE
 //
-int qn_a_vswprintf(wchar** out, const wchar* fmt, va_list va)
+void qn_divpath(const char* p, char* dir, char* filename)
 {
-	qn_val_if_fail(out != NULL, -2);
-	qn_val_if_fail(fmt != NULL, -1);
-	size_t len = doprw(NULL, 0, fmt, va);
-	if (len == 0)
-		*out = NULL;
+	const char* end = p;
+	const char* sep = NULL;
+	while (*end)
+	{
+		if (*end == '/' || *end == '\\')
+			sep = end;
+		++end;
+	}
+	if (sep)
+	{
+		if (dir)
+			qn_strncpy(dir, p, sep - p + 1);
+		if (filename)
+			qn_strcpy(filename, sep + 1);
+	}
 	else
 	{
-		*out = qn_a_alloc((len + 1) * sizeof(wchar), false);
-		len = doprw(*out, len + 1, fmt, va);
+		if (dir)
+			*dir = '\0';
+		if (filename)
+			qn_strcpy(filename, p);
 	}
-	return (int)len;
 }
 
 //
-wchar* qn_a_vpswprintf(const wchar* fmt, va_list va)
+void qn_splitpath(const char* p, char* drive, char* dir, char* name, char* ext)
 {
-	qn_val_if_fail(fmt != NULL, NULL);
-	const size_t len = doprw(NULL, 0, fmt, va);
-	if (len == 0)
-		return NULL;
-	wchar* ret = qn_a_alloc((len + 1) * sizeof(wchar), false);
-	doprw(ret, len + 1, fmt, va);
-	return ret;
-}
-
-//
-int qn_a_swprintf(wchar** out, const wchar* RESTRICT fmt, ...)
-{
-	va_list va;
-	va_start(va, fmt);
-	const int ret = qn_a_vswprintf(out, fmt, va);
-	va_end(va);
-	return ret;
-}
-
-//
-wchar* qn_a_pswprintf(const wchar* fmt, ...)
-{
-	va_list va;
-	va_start(va, fmt);
-	wchar* ret = qn_a_vpswprintf(fmt, va);
-	va_end(va);
-	return ret;
-}
-
-//
-wchar* qn_a_wcs_dup(const wchar* p)
-{
-	qn_val_if_fail(p != NULL, NULL);
-	const size_t len = wcslen(p) + 1;
-	wchar* d = (wchar*)qn_a_alloc(len * sizeof(wchar), false);
-	qn_wcscpy(d, p);
-	return d;
-}
-
-//
-wchar* qn_a_wcs_cat(const wchar* p, ...)
-{
-	va_list va, vq;
-	va_start(va, p);
-	va_copy(vq, va);
-
-	size_t size = wcslen(p) + 1;
-	const wchar* s = va_arg(va, wchar*);
-	while (s)
+	const char* path = p;
+	const char* s = path;
+	const char* end = path;
+	const char* dot = NULL;
+	const char* sep = NULL;
+	while (*end)
 	{
-		size += wcslen(s);
-		s = va_arg(va, wchar*);
+		if (*end == '/' || *end == '\\')
+			sep = end;
+		else if (*end == '.')
+			dot = end;
+		++end;
 	}
-
-	wchar* str = (wchar*)qn_a_alloc(size * sizeof(wchar), false);
-	wchar* c = qn_wcpcpy(str, p);
-	s = va_arg(vq, wchar*);
-	while (s)
+	if (sep)
 	{
-		c = qn_wcpcpy(c, s);
-		s = va_arg(vq, wchar*);
-	}
-	va_end(vq);
-
-	va_end(va);
-	return str;
-}
-#else
-//
-int qn_a_i_vswprintf(const char* desc, size_t line, wchar** out, const wchar* fmt, va_list va)
-{
-	qn_val_if_fail(out != NULL, -2);
-	qn_val_if_fail(fmt != NULL, -1);
-	size_t len = doprw(NULL, 0, fmt, va);
-	if (len == 0)
-		*out = NULL;
-	else
-	{
-		*out = qn_a_i_alloc((len + 1) * sizeof(wchar), false, desc, line);
-		len = doprw(*out, len + 1, fmt, va);
-	}
-	return (int)len;
-}
-
-//
-wchar* qn_a_i_vpswprintf(const char* desc, size_t line, const wchar* fmt, va_list va)
-{
-	qn_val_if_fail(fmt != NULL, NULL);
-	const size_t len = doprw(NULL, 0, fmt, va);
-	if (len == 0)
-		return NULL;
-	wchar* ret = qn_a_i_alloc((len + 1) * sizeof(wchar), false, desc, line);
-	doprw(ret, len + 1, fmt, va);
-	return ret;
-}
-
-//
-int qn_a_i_swprintf(const char* desc, size_t line, wchar** out, const wchar* RESTRICT fmt, ...)
-{
-	va_list va;
-	va_start(va, fmt);
-	const int ret = qn_a_i_vswprintf(desc, line, out, fmt, va);
-	va_end(va);
-	return ret;
-}
-
-//
-wchar* qn_a_i_pswprintf(const char* desc, size_t line, const wchar* fmt, ...)
-{
-	va_list va;
-	va_start(va, fmt);
-	wchar* ret = qn_a_i_vpswprintf(desc, line, fmt, va);
-	va_end(va);
-	return ret;
-}
-
-//
-wchar* qn_a_i_wcs_dup(const char* desc, size_t line, const wchar* p)
-{
-	qn_val_if_fail(p != NULL, NULL);
-	const size_t len = wcslen(p) + 1;
-	wchar* d = (wchar*)qn_a_i_alloc(len * sizeof(wchar), false, desc, line);
-	qn_wcscpy(d, p);
-	return d;
-}
-
-//
-wchar* qn_a_i_wcs_cat(const char* desc, size_t line, const wchar* p, ...)
-{
-	va_list va, vq;
-	va_start(va, p);
-	va_copy(vq, va);
-
-	size_t size = wcslen(p) + 1;
-	const wchar* s = va_arg(va, wchar*);
-	while (s)
-	{
-		size += wcslen(s);
-		s = va_arg(va, wchar*);
-	}
-
-	wchar* str = (wchar*)qn_a_i_alloc(size * sizeof(wchar), false, desc, line);
-	wchar* c = qn_wcpcpy(str, p);
-	s = va_arg(vq, wchar*);
-	while (s)
-	{
-		c = qn_wcpcpy(c, s);
-		s = va_arg(vq, wchar*);
-	}
-	va_end(vq);
-
-	va_end(va);
-	return str;
-}
-#endif
-
-//
-int qn_vsnwprintf(wchar* RESTRICT out, size_t len, const wchar* RESTRICT fmt, va_list va)
-{
-	qn_val_if_fail(fmt != NULL, -1);
-	const size_t res = doprw(out, len, fmt, va);
-	if (len)
-		len--;
-	return out ? (int)QN_MIN(res, len) : (int)res;
-}
-
-//
-int qn_snwprintf(wchar* RESTRICT out, const size_t len, const wchar* RESTRICT fmt, ...)
-{
-	va_list va;
-	va_start(va, fmt);
-	const int ret = qn_vsnwprintf(out, len, fmt, va);
-	va_end(va);
-	return ret;
-}
-
-//
-wchar* qn_wcscpy(wchar* RESTRICT p, const wchar* RESTRICT src)
-{
-#ifdef __GNUC__
-	return wcscpy(p, src);
-#else
-	wchar* o = p;
-	while ((*p++ = *src++)) {}
-	return o;
-#endif
-}
-
-//
-wchar* qn_wcsncpy(wchar* RESTRICT p, const wchar* RESTRICT src, size_t len)
-{
-#ifdef __GNUC__
-	return wcsncpy(p, src, len);
-#else
-	wchar* o = p;
-	while (len && ((*p++ = *src++)))
-		--len;
-	*p = '\0';
-	if (len)
-	{
-		while (--len)
-			*p++ = '\0';
-	}
-	return o;
-#endif
-}
-
-//
-wchar* qn_wcpcpy(wchar* RESTRICT dest, const wchar* RESTRICT src)
-{
-	do (*dest++ = *src);
-	while (*src++ != L'\0');
-	return dest - 1;
-}
-
-//
-size_t qn_wcsfll(wchar* dest, const size_t pos, const size_t end, const wint_t ch)
-{
-	if (pos >= end)
-		return pos;
-	const size_t cnt = end - pos;
-	for (size_t i = 0; i < cnt; i++)
-		dest[pos + i] = (wchar)ch;
-	return pos + cnt;
-}
-
-//
-size_t qn_wcshash(const wchar* p)
-{
-	const wchar* sz = p;
-	size_t h = (size_t)*sz++;
-	if (!h)
-		return 0;
-	size_t c;
-	for (c = 0; *sz && c < 256; sz++, c++)
-		h = (h << 5) - h + (size_t)*sz;
-	h = (h << 5) - h + c;
-	return h;
-}
-
-//
-size_t qn_wcsihash(const wchar* p)
-{
-	const wchar* sz = p;
-	size_t h = (size_t)towlower(*sz);
-	if (!h)
-		return 0;
-	size_t c;
-	sz++;
-	for (c = 0; *sz && c < 256; sz++, c++)
-		h = (h << 5) - h + (size_t)towlower(*sz);
-	h = (h << 5) - h + c;
-	return h;
-}
-
-//
-int qn_wcscmp(const wchar* p1, const wchar* p2)
-{
-#if defined _MSC_VER || defined __GNUC__
-	return wcscmp(p1, p2);
-#else
-	while (*p1 && *p1 == *p2)
-		++p1, ++p2;
-	return *p1 - *p2;
-#endif
-}
-
-//
-int qn_wcsncmp(const wchar* p1, const wchar* p2, size_t len)
-{
-#if defined _MSC_VER || defined __GNUC__
-	return wcsncmp(p1, p2, len);
-#else
-	if (!len)
-		return 0;
-	while (--len && *p1 && *p1 == *p2)
-		++p1, ++p2;
-	return (int)(*p1 - *p2);
-#endif
-}
-
-//
-int qn_wcsicmp(const wchar* p1, const wchar* p2)
-{
-#ifdef _MSC_VER
-	return _wcsicmp(p1, p2);
-#elif defined __GNUC__
-	return wcscasecmp(p1, p2);
-#else
-	wchar f, l;
-	do
-	{
-		f = (wchar)towlower(*p1);
-		l = (wchar)towlower(*p2);
-		++p1;
-		++p2;
-	} while (f && (f == l));
-	return (int)(f - l);
-#endif
-}
-
-//
-int qn_wcsnicmp(const wchar* p1, const wchar* p2, size_t len)
-{
-#ifdef _MSC_VER
-	return _wcsnicmp(p1, p2, len);
-#elif defined __GNUC__
-	return wcsncasecmp(p1, p2, len);
-#else
-	wchar f, l;
-	while (len && *p1 && *p2)
-	{
-		--len;
-		f = (wchar)towlower(*p1);
-		l = (wchar)towlower(*p2);
-		if (f != l) return (f - l);
-		++p1;
-		++p2;
-	}
-
-	return (len) ? (int)(p1 - p2) : 0;
-#endif
-}
-
-//
-int qn_wcsfnd(const wchar* src, const wchar* find, const size_t index)
-{
-	const wchar* p = src + index;
-	while (*p)
-	{
-		const wchar* s1 = p;
-		const wchar* s2 = find;
-		while (*s1 && *s2 && !(*s1 - *s2))
+		if (drive)
 		{
-			++s1;
-			++s2;
-		}
-		if (!*s2)
-			return (int)(src + index - p);
-	}
-	return -1;
-}
-
-//
-bool qn_wcswcm(const wchar* string, const wchar* wild)
-{
-	const wchar *cp = NULL, *mp = NULL;
-	while ((*string) && (*wild != L'*'))
-	{
-		if ((*wild != *string) && (*wild != L'?'))
-			return false;
-		wild++;
-		string++;
-	}
-	while (*string)
-	{
-		if (*wild == L'*')
-		{
-			if (!*++wild)
-				return 1;
-			mp = wild;
-			cp = string + 1;
-		}
-		else if ((*wild == *string) || (*wild == L'?'))
-		{
-			wild++;
-			string++;
-		}
-		else
-		{
-			wild = mp;
-			string = cp++;
-		}
-	}
-	while (*wild == L'*')
-		wild++;
-	return *wild != L'\0';
-}
-
-//
-bool qn_wcsiwcm(const wchar* string, const wchar* wild)
-{
-	const wchar *cp = NULL, *mp = NULL;
-	while ((*string) && (*wild != L'*'))
-	{
-		if ((towupper(*wild) != towupper(*string)) && (*wild != L'?'))
-			return 0;
-		wild++;
-		string++;
-	}
-	while (*string)
-	{
-		if (*wild == L'*')
-		{
-			if (!*++wild)
-				return 1;
-			mp = wild;
-			cp = string + 1;
-		}
-		else if ((towupper(*wild) == towupper(*string)) || (*wild == L'?'))
-		{
-			wild++;
-			string++;
-		}
-		else
-		{
-			wild = mp;
-			string = cp++;
-		}
-	}
-	while (*wild == L'*')
-		wild++;
-	return *wild != L'\0';
-}
-
-//
-bool qn_wcseqv(const wchar* p1, const wchar* p2)
-{
-	return p1 == p2 ? true : qn_wcscmp(p1, p2) == 0;
-}
-
-//
-bool qn_wcsieqv(const wchar* p1, const wchar* p2)
-{
-	return p1 == p2 ? true : qn_wcsicmp(p1, p2) == 0;
-}
-
-//
-const wchar* qn_wcsbrk(const wchar* p, const wchar* c)
-{
-#if defined _MSC_VER || defined __GNUC__
-	return wcspbrk(p, c);
-#else
-	while (*p)
-	{
-		for (const wchar* t = c; *t; t++)
-		{
-			if (*t == *p)
-				return p;
-		}
-		p++;
-	}
-	return NULL;
-#endif
-}
-
-//
-wchar* qn_wcschr(const wchar* p, wchar ch)
-{
-#if defined _MSC_VER || defined __GNUC__
-	return wcschr(p, ch);
-#else
-	while (*p && *p != (wchar)ch) p++;
-	return (*p == (wchar)ch) ? (wchar*)p : NULL;
-#endif
-}
-
-//
-wchar* qn_wcsrchr(const wchar* p, wchar ch)
-{
-#if defined _MSC_VER || defined __GNUC__
-	return wcsrchr(p, ch);
-#else
-	wchar* s = (wchar*)p;
-	while (*s++) {}
-	while (--s != p && *s != (wchar)ch) {}
-	return (*s == (wchar)ch) ? (wchar*)s : NULL;
-#endif
-}
-
-//
-wchar* qn_wcsmid(wchar* RESTRICT dest, const wchar* RESTRICT src, const size_t pos, const size_t len)
-{
-	const size_t size = wcslen(src);
-	if (pos > size)
-		*dest = L'\0';
-	else
-	{
-		qn_wcsncpy(dest, src + pos, len);
-		*(dest + len) = L'\0';
-	}
-	return dest;
-}
-
-//
-wchar* qn_wcsltm(wchar* dest)
-{
-	wchar* s;
-	for (s = dest; *s && iswspace((wint_t)*s); s++) {}
-	if (dest != s)
-		memmove(dest, s, (wcslen(s) + 1) * sizeof(wchar));
-	return dest;
-}
-
-//
-wchar* qn_wcsrtm(wchar* dest)
-{
-	size_t len = wcslen(dest);
-	while (len--)
-	{
-		if (!iswspace((wint_t)dest[len]))
-			break;
-		dest[len] = L'\0';
-	}
-	return dest;
-}
-
-//
-wchar* qn_wcstrm(wchar* dest)
-{
-	return qn_wcsrtm(qn_wcsltm(dest));
-}
-
-//
-wchar* qn_wcsrem(wchar* RESTRICT p, const wchar* RESTRICT rmlist)
-{
-	const wchar* p1 = p;
-	wchar* p2 = p;
-	while (*p1)
-	{
-		const wchar* ps = rmlist;
-		bool b = false;
-		while (*ps)
-		{
-			if (*p1 == *ps)
+			if (sep - s > 1 && s[1] == ':')
 			{
-				b = true;
-				break;
+				if (drive)
+					qn_strncpy(drive, path, 2);
 			}
-			++ps;
+			else
+				*drive = '\0';
 		}
-		if (!b)
-		{
-			*p2 = *p1;
-			++p2;
-		}
-		++p1;
+		if (dir)
+			qn_strncpy(dir, path, sep - path + 1);
 	}
-	*p2 = L'\0';
-	return p;
-}
-
-//
-wchar* qn_wcsupr(wchar* p)
-{
-	for (wchar* s = p; *s; ++s)
-		if ((*s >= L'a') && (*s <= L'z'))
-			*s -= (wchar)(L'a' - L'A');
-	return p;
-}
-
-//
-wchar* qn_wcslwr(wchar* p)
-{
-	for (wchar* s = p; *s; ++s)
-		if ((*s >= L'A') && (*s <= L'Z'))
-			*s += (wchar)(L'a' - L'A');
-	return p;
-}
-
-//
-int qn_wcstoi(const wchar* p, const uint base)
-{
-	qn_val_if_fail(p != NULL, 0);
-	qn_val_if_fail(base >= 2 && base < 32, 0);
-	const byte* table = qn_num_base_table();
-	uint v = 0;
-	int sign = 1;
-	while (*p == L' ' || *p == L'\n' || *p == L'\r' || *p == L'\t') ++p;
-	if (*p == L'+')
-		p++;
-	else if (*p == L'-')
-	{
-		sign = -1;
-		p++;
-	}
-	uint rc = *p++;
-	uint ch = rc < 256 ? table[rc] : 255;
-	while (ch < base)
-	{
-		v = v * base + ch;
-		rc = *p++;
-		ch = rc < 256 ? table[rc] : 255;
-	}
-	return sign * (int)v;
-}
-
-//
-llong qn_wcstoll(const wchar* p, const uint base)
-{
-	qn_val_if_fail(p != NULL, 0);
-	qn_val_if_fail(base >= 2 && base < 32, 0);
-	const byte* table = qn_num_base_table();
-	ullong v = 0;
-	llong sign = 1LL;
-	while (*p == L' ' || *p == L'\n' || *p == L'\r' || *p == L'\t') ++p;
-	if (*p == L'+')
-		p++;
-	else if (*p == L'-')
-	{
-		sign = -1LL;
-		p++;
-	}
-	uint rc = *p++;
-	uint ch = rc < 256 ? table[rc] : 255;
-	while (ch < base)
-	{
-		v = v * base + ch;
-		rc = *p++;
-		ch = rc < 256 ? table[rc] : 255;
-	}
-	return sign * (llong)v;
-}
-
-//
-float qn_wcstof(const wchar* p)
-{
-	float f = 0.0f;
-	int rsign = 1;
-	int e = 0;
-	wint_t ch;
-	while (*p == L' ' || *p == L'\n' || *p == L'\r' || *p == L'\t') ++p;
-	if (*p == '+')
-		p++;
-	else if (*p == '-')
-	{
-		rsign = -1;
-		p++;
-	}
-	while ((ch = (wint_t)*p++) != L'\0' && iswdigit(ch))
-		f = f * 10.0f + (float)(ch - L'0');
-	if (ch == L'.')
-	{
-		while ((ch = (wint_t)*p++) != L'\0' && iswdigit(ch))
-		{
-			f = f * 10.0f + (float)(ch - L'0');
-			e--;
-		}
-	}
-	if (ch == L'e' || ch == L'E')
-	{
-		int sign = 1;
-		int n = 0;
-		ch = (wint_t)*p++;
-		if (ch == L'+')
-			ch = (wint_t)*p++;
-		else if (ch == L'-')
-		{
-			ch = (wint_t)*p++;
-			sign = -1;
-		}
-		while (iswdigit(ch))
-		{
-			n = n * 10 + (ch - L'0');
-			ch = (wint_t)*p++;
-		}
-		e += n * sign;
-	}
-	while (e > 0)
-	{
-		f *= 10.0f;
-		e--;
-	}
-	while (e < 0)
-	{
-		f *= 0.1f;
-		e++;
-	}
-	return rsign < 0 ? -f : f;
-}
-
-//
-double qn_wcstod(const wchar* p)
-{
-	double d = 0.0;
-	int rsign = 1;
-	int e = 0;
-	wint_t ch;
-	while (*p == L' ' || *p == L'\n' || *p == L'\r' || *p == L'\t') ++p;
-	if (*p == '+')
-		p++;
-	else if (*p == '-')
-	{
-		rsign = -1;
-		p++;
-	}
-	while ((ch = (wint_t)*p++) != L'\0' && iswdigit(ch))
-		d = d * 10.0 + (ch - L'0');
-	if (ch == L'.')
-	{
-		while ((ch = *p++) != L'\0' && iswdigit(ch))
-		{
-			d = d * 10.0 + (ch - L'0');
-			e--;
-		}
-	}
-	if (ch == L'e' || ch == L'E')
-	{
-		int sign = 1;
-		int n = 0;
-		ch = (wint_t)*p++;
-		if (ch == L'+')
-			ch = (wint_t)*p++;
-		else if (ch == L'-')
-		{
-			ch = (wint_t)*p++;
-			sign = -1;
-		}
-		while (iswdigit(ch))
-		{
-			n = n * 10 + (ch - L'0');
-			ch = (wint_t)*p++;
-		}
-		e += n * sign;
-	}
-	while (e > 0)
-	{
-		d *= 10.0;
-		e--;
-	}
-	while (e < 0)
-	{
-		d *= 0.1;
-		e++;
-	}
-	return rsign < 0 ? -d : d;
-}
-
-//
-int qn_itow(wchar* p, const int n, const uint base, bool upper)
-{
-	qn_val_if_fail(base <= 32, -1);
-	const char* table = qn_char_base_table(upper);
-	wchar conv[32];
-	int place = 0;
-	uint uvalue;
-	if (n >= 0 || base != 10)
-		uvalue = (uint)n;
 	else
 	{
-		conv[place++] = L'-';
-		uvalue = (uint)-n;
+		if (drive)
+			*drive = '\0';
+		if (dir)
+			*dir = '\0';
 	}
-	do
+	if (dot && dot >= sep)
 	{
-		conv[place++] = (wchar)table[uvalue % base];
-		uvalue = uvalue / base;
-	} while (uvalue && place < (int)QN_COUNTOF(conv));
-	if (place == (int)QN_COUNTOF(conv))
-		place--;
-	conv[place] = L'\0';
-	if (p != NULL)
-		qn_wcscpy(p, conv);
-	return place;
-}
-
-//
-int qn_lltow(wchar* p, const llong n, const uint base, bool upper)
-{
-	qn_val_if_fail(base <= 32, -1);
-	const char* table = qn_char_base_table(upper);
-	wchar conv[64];
-	int place = 0;
-	ullong uvalue;
-	if (n >= 0 || base != 10)
-		uvalue = (ullong)n;
+		if (name)
+			qn_strncpy(name, sep + 1, dot - sep - 1);
+		if (ext)
+		{
+			qn_strcpy(ext, dot);
+			ext[dot - sep] = '\0';
+		}
+	}
 	else
 	{
-		conv[place++] = L'-';
-		uvalue = (ullong)-n;
+		if (name)
+			qn_strcpy(name, sep + 1);
+		if (ext)
+			*ext = '\0';
 	}
-	do
-	{
-		conv[place++] = (wchar)table[uvalue % base];
-		uvalue = uvalue / base;
-	} while (uvalue && place < (int)QN_COUNTOF(conv));
-	if (place == (int)QN_COUNTOF(conv))
-		place--;
-	conv[place] = L'\0';
-	if (p != NULL)
-		qn_wcscpy(p, conv);
-	return place;
 }
 
 
@@ -2554,7 +1945,7 @@ const char* qn_u8nch(const char* s)
 //
 size_t qn_u8len(const char* s)
 {
-#if true
+#if false
 	// 새니타이저에 안걸리는 방법
 	size_t cnt = 0;
 	while (*s)
@@ -2608,10 +1999,10 @@ pos_done:
 	return ((size_t)(t - s) - cnt);
 #undef MASK
 #endif
-}
+		}
 
 //
-char* qn_u8ncpy(char* RESTRICT dest, const char* RESTRICT src, size_t len)
+char* qn_u8ncpy(char* dest, const char* src, size_t len)
 {
 	const char* t = src;
 
@@ -2629,7 +2020,7 @@ char* qn_u8ncpy(char* RESTRICT dest, const char* RESTRICT src, size_t len)
 }
 
 //
-size_t qn_u8lcpy(char* RESTRICT dest, const char* RESTRICT src, size_t len)
+size_t qn_u8lcpy(char* dest, const char* src, size_t len)
 {
 	const char* t = src;
 
@@ -2715,7 +2106,7 @@ int qn_u16ucb(const uchar2 high, const uchar2 low, char* out)
 // 문자열 변환
 
 //
-size_t qn_mbstowcs(wchar* RESTRICT outwcs, const size_t outsize, const char* RESTRICT inmbs, const size_t insize)
+size_t qn_mbstowcs(wchar* outwcs, const size_t outsize, const char* inmbs, const size_t insize)
 {
 #ifdef _QN_WINDOWS_
 	int len = MultiByteToWideChar(CP_THREAD_ACP, 0, inmbs, insize == 0 ? -1 : (int)insize, outwcs, (int)outsize);
@@ -2731,7 +2122,7 @@ size_t qn_mbstowcs(wchar* RESTRICT outwcs, const size_t outsize, const char* RES
 }
 
 //
-size_t qn_wcstombs(char* RESTRICT outmbs, const size_t outsize, const wchar* RESTRICT inwcs, const size_t insize)
+size_t qn_wcstombs(char* outmbs, const size_t outsize, const wchar* inwcs, const size_t insize)
 {
 #ifdef _QN_WINDOWS_
 	int len = WideCharToMultiByte(CP_THREAD_ACP, 0, inwcs, insize == 0 ? -1 : (int)insize, outmbs, (int)outsize, NULL, NULL);
@@ -2747,9 +2138,9 @@ size_t qn_wcstombs(char* RESTRICT outmbs, const size_t outsize, const wchar* RES
 }
 
 //
-size_t qn_u8to32(uchar4* RESTRICT dest, const size_t destsize, const char* RESTRICT src, const size_t srclen)
+size_t qn_u8to32(uchar4* dest, const size_t destsize, const char* src, const size_t srclen)
 {
-	qn_val_if_fail(src, 0);
+	qn_return_when_fail(src, 0);
 
 	if (dest == NULL || destsize == 0)
 	{
@@ -2759,7 +2150,7 @@ size_t qn_u8to32(uchar4* RESTRICT dest, const size_t destsize, const char* RESTR
 	else
 	{
 		const size_t slen = srclen == 0 ? qn_u8len(src) : srclen;
-		const size_t size = QN_MIN(destsize, slen);
+		const size_t size = QN_MIN(destsize - 1, slen);
 
 		const char* t;
 		size_t i;
@@ -2776,9 +2167,9 @@ size_t qn_u8to32(uchar4* RESTRICT dest, const size_t destsize, const char* RESTR
 }
 
 //
-size_t qn_u8to16(uchar2* RESTRICT dest, const size_t destsize, const char* RESTRICT src, const size_t srclen)
+size_t qn_u8to16(uchar2* dest, const size_t destsize, const char* src, const size_t srclen)
 {
-	qn_val_if_fail(src, 0);
+	qn_return_when_fail(src, 0);
 
 	if (dest == NULL || destsize == 0)
 	{
@@ -2790,7 +2181,7 @@ size_t qn_u8to16(uchar2* RESTRICT dest, const size_t destsize, const char* RESTR
 	else
 	{
 		const size_t slen = srclen == 0 ? qn_u8len(src) : srclen;
-		const size_t size = QN_MIN(destsize, slen);
+		const size_t size = QN_MIN(destsize - 1, slen);
 
 		const char* t;
 		size_t i;
@@ -2816,9 +2207,9 @@ size_t qn_u8to16(uchar2* RESTRICT dest, const size_t destsize, const char* RESTR
 }
 
 //
-size_t qn_u32to8(char* RESTRICT dest, const size_t destsize, const uchar4* RESTRICT src, const size_t srclen)
+size_t qn_u32to8(char* dest, size_t destsize, const uchar4* src, const size_t srclen)
 {
-	qn_val_if_fail(src, 0);
+	qn_return_when_fail(src, 0);
 
 	const nint slen = (nint)srclen;
 	size_t n, size;
@@ -2827,6 +2218,7 @@ size_t qn_u32to8(char* RESTRICT dest, const size_t destsize, const uchar4* RESTR
 
 	if (destsize > 0)
 	{
+		destsize--;
 		for (size = 0, i = 0; slen == 0 || i < slen; i++)
 		{
 			uc = src[i];
@@ -2850,7 +2242,7 @@ size_t qn_u32to8(char* RESTRICT dest, const size_t destsize, const uchar4* RESTR
 
 			const size_t z = size + n;
 
-			if (z > destsize)
+			if (z >= destsize)
 				break;
 
 			size = z;
@@ -2897,9 +2289,9 @@ size_t qn_u32to8(char* RESTRICT dest, const size_t destsize, const uchar4* RESTR
 }
 
 //
-size_t qn_u16to8(char* RESTRICT dest, const size_t destsize, const uchar2* RESTRICT src, const size_t srclen)
+size_t qn_u16to8(char* dest, size_t destsize, const uchar2* src, const size_t srclen)
 {
-	qn_val_if_fail(src, 0);
+	qn_return_when_fail(src, 0);
 
 	const uchar2* cp = src;
 	uchar4 hsg = 0;
@@ -2910,6 +2302,7 @@ size_t qn_u16to8(char* RESTRICT dest, const size_t destsize, const uchar2* RESTR
 
 	if (destsize > 0)
 	{
+		destsize--;
 		for (; (srclen == 0 || (size_t)(cp - src) < srclen) && *cp; cp++)
 		{
 			ch = *cp;
@@ -2957,7 +2350,7 @@ size_t qn_u16to8(char* RESTRICT dest, const size_t destsize, const uchar2* RESTR
 				6;
 
 			const size_t z = size + n;
-			if (z > destsize)
+			if (z >= destsize)
 				break;
 			size = z;
 		}
@@ -3059,15 +2452,16 @@ size_t qn_u16to8(char* RESTRICT dest, const size_t destsize, const uchar2* RESTR
 }
 
 //
-size_t qn_u16to32(uchar4* RESTRICT dest, const size_t destsize, const uchar2* RESTRICT src, const size_t srclen)
+size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, const size_t srclen)
 {
-	qn_val_if_fail(src, 0);
+	qn_return_when_fail(src, 0);
 
 	uchar4 hsg = 0;
 	size_t size = 0;
 
 	if (destsize > 0)
 	{
+		destsize--;
 		for (const uchar2* cp = src; (srclen == 0 || (size_t)(cp - src) < srclen) && *cp; cp++)
 		{
 			const uchar2 ch = *cp;
@@ -3107,7 +2501,7 @@ size_t qn_u16to32(uchar4* RESTRICT dest, const size_t destsize, const uchar2* RE
 
 			const size_t z = size + 1;
 
-			if (z > destsize)
+			if (z >= destsize)
 				break;
 
 			size = z;
@@ -3204,9 +2598,9 @@ size_t qn_u16to32(uchar4* RESTRICT dest, const size_t destsize, const uchar2* RE
 }
 
 //
-size_t qn_u32to16(uchar2* RESTRICT dest, const size_t destsize, const uchar4* RESTRICT src, const size_t srclen)
+size_t qn_u32to16(uchar2* dest, size_t destsize, const uchar4* src, const size_t srclen)
 {
-	qn_val_if_fail(src, 0);
+	qn_return_when_fail(src, 0);
 
 	size_t size = 0;
 	const intptr_t slen = (intptr_t)srclen;
@@ -3215,6 +2609,7 @@ size_t qn_u32to16(uchar2* RESTRICT dest, const size_t destsize, const uchar4* RE
 
 	if (destsize > 0)
 	{
+		destsize--;
 		for (i = 0; (slen == 0 || i < slen) && src[i]; i++)
 		{
 			const uchar4 uc = src[i];
@@ -3231,7 +2626,7 @@ size_t qn_u32to16(uchar2* RESTRICT dest, const size_t destsize, const uchar4* RE
 				return 0;
 
 			z += size;
-			if (z > destsize)
+			if (z >= destsize)
 				break;
 			size = z;
 		}
@@ -3275,18 +2670,18 @@ size_t qn_u32to16(uchar2* RESTRICT dest, const size_t destsize, const uchar4* RE
 	}
 
 	return size;
-}
+		}
 
 #ifdef QS_NO_MEMORY_PROFILE
 #define DEF_UTF_DUP(name, in_type, out_type)\
 	out_type* qn_a_##name(const in_type* src, size_t srclen) {\
-		size_t len=qn_##name(NULL,0,src,srclen)+1; qn_val_if_ok(len<2,NULL);\
+		size_t len=qn_##name(NULL,0,src,srclen)+1; qn_return_on_ok(len<2,NULL);\
 		out_type* buf=qn_a_alloc(len*sizeof(out_type), false); qn_##name(buf,len,src,srclen);/* NOLINT */\
 		return buf; }
 #else
 #define DEF_UTF_DUP(name, in_type, out_type)\
 	out_type* qn_a_i_##name(const in_type* src, size_t srclen, const char* desc, size_t line) {\
-		size_t len=qn_##name(NULL,0,src,srclen)+1; qn_val_if_ok(len<2,NULL);\
+		size_t len=qn_##name(NULL,0,src,srclen)+1; qn_return_on_ok(len<2,NULL);\
 		out_type* buf=qn_a_i_alloc(len*sizeof(out_type), false, desc, line); qn_##name(buf,len,src,srclen);/* NOLINT */\
 		return buf; }
 #endif
@@ -3299,3 +2694,7 @@ DEF_UTF_DUP(u16to8, uchar2, char)
 DEF_UTF_DUP(u16to32, uchar2, uchar4)
 DEF_UTF_DUP(u32to16, uchar4, uchar2)
 #undef DEF_UTF_DUP
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

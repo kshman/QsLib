@@ -94,13 +94,14 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\inc;..\..\src;..\..\src\supp</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -116,7 +117,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\inc;..\..\src;..\..\src\supp</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -127,6 +128,7 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -143,13 +145,14 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\inc;..\..\src;..\..\src\supp</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -165,7 +168,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\..\inc;..\..\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\inc;..\..\src;..\..\src\supp</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -176,6 +179,7 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -193,20 +197,21 @@
     <ClInclude Include="..\..\inc\salieri.h" />
     <ClInclude Include="..\..\src\pch.h" />
     <ClInclude Include="..\..\src\qg\qg_node.h" />
-    <ClInclude Include="..\..\src\qg\stub\glad\wgl.h" />
-    <ClInclude Include="..\..\src\qg\stub\glad\wglext.h" />
-    <ClInclude Include="..\..\src\qg\stub\stb\stb_image.h" />
-    <ClInclude Include="..\..\src\qn\sdefl\sdefl.h" />
-    <ClInclude Include="..\..\src\qn\sdefl\sinfl.h" />
+    <ClInclude Include="..\..\src\qn\PatrickPowell_snprintf.h" />
     <ClInclude Include="..\..\src\qs_conf.h" />
     <ClInclude Include="..\..\src\qs_proxy.h" />
     <ClInclude Include="..\..\src\qg\qg_stub.h" />
-    <ClInclude Include="..\..\src\qg\stub\glad\egl.h" />
-    <ClInclude Include="..\..\src\qg\stub\glad\gl.h" />
     <ClInclude Include="..\..\src\qg\stub\qgrdh_qgl.h" />
     <ClInclude Include="..\..\src\qg\stub\qgstub_win_func.h" />
     <ClInclude Include="..\..\src\qg\stub\qgstub_wlx_func.h" />
     <ClInclude Include="..\..\src\qs_supp.h" />
+    <ClInclude Include="..\..\src\supp\glad\egl.h" />
+    <ClInclude Include="..\..\src\supp\glad\gl.h" />
+    <ClInclude Include="..\..\src\supp\glad\wgl.h" />
+    <ClInclude Include="..\..\src\supp\glad\wglext.h" />
+    <ClInclude Include="..\..\src\supp\stb\stb_image.h" />
+    <ClInclude Include="..\..\src\supp\vurtun\sdefl.h" />
+    <ClInclude Include="..\..\src\supp\vurtun\sinfl.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\pch.c">
@@ -233,13 +238,13 @@
     <ClCompile Include="..\..\src\qn\qn_file.c" />
     <ClCompile Include="..\..\src\qn\qn_gam.c" />
     <ClCompile Include="..\..\src\qn\qm_math.c" />
-    <ClCompile Include="..\..\src\qn\qn_mlu.c" />
     <ClCompile Include="..\..\src\qn\qn_str.c" />
-    <ClCompile Include="..\..\src\qn\sdefl\sdefl.c" />
-    <ClCompile Include="..\..\src\qn\sdefl\sinfl.c" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\..\QsLib.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

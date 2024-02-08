@@ -7,9 +7,6 @@
 //////////////////////////////////////////////////////////////////////////
 // 스터브
 
-// 모니터 타입
-QN_DECL_CTNR(StubMonitorCtnr, QgUdevMonitor*);
-
 // 이벤트 핸들러 페어
 typedef struct STUBEVENTCALLBACK
 {
@@ -17,7 +14,10 @@ typedef struct STUBEVENTCALLBACK
 	void*				data;
 	size_t				key;
 } StubEventCallback;
-QN_DECL_LIST(StubListEventCb, StubEventCallback);
+
+// 컨테이너
+QN_DECLIMPL_LIST(StubListEventCb, StubEventCallback, eventcb_list);
+QN_DECLIMPL_CTNR(StubMonitorCtnr, QgUdevMonitor*, monitor_ctnr);
 
 // 스터브 베이스
 typedef struct STUBBASE
@@ -56,7 +56,7 @@ typedef struct STUBBASE
 // 스터브 인스턴스 
 extern StubBase* qg_instance_stub;
 
-#define STUB				(qg_instance_stub)		
+#define STUB	(qg_instance_stub)		
 
 // 시스템 스터브를 연다
 extern bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags, QgFeature features);
@@ -165,7 +165,7 @@ typedef struct RENDERERINFO
 } RendererInfo;
 
 // 렌더 추적 정보
-typedef struct RENDERINVOKE
+typedef struct RENDERERINVOKE
 {
 	uint				frames;
 	uint				creations;
@@ -181,10 +181,10 @@ typedef struct RENDERINVOKE
 	uint				primitives;
 
 	bool				flush;
-} RenderInvoke;
+} RendererInvoke;
 
 // 렌더 트랜스포메이션
-typedef struct RENDERTRANSFORM
+typedef struct RENDERERTRANSFORM
 {
 	QmSize				size;
 	float				Near, Far;
@@ -197,10 +197,10 @@ typedef struct RENDERTRANSFORM
 	QmMat4				frm;								// tex formation
 	QmMat4				tex[4];
 	QmRect				scissor;
-} RenderTransform;
+} RendererTransform;
 
 // 렌더 인수
-typedef struct RENDERPARAM
+typedef struct RENDERERPARAM
 {
 	QmVec4				v[4];
 	QmMat4				m[4];
@@ -210,25 +210,25 @@ typedef struct RENDERPARAM
 
 	QgVarShaderFunc		callback_func;
 	void*				callback_data;
-} RenderParam;
+} RendererParam;
 
 // 렌더러 디바이스
 typedef struct RDHBASE
 {
-	QnGam				base;
+	QN_GAM_BASE(QNGAMBASE);
 
 	RendererInfo		info;
 
-	RenderTransform		tm;
-	RenderParam			param;
-	RenderInvoke		invokes;
+	RendererTransform	tm;
+	RendererParam		param;
+	RendererInvoke		invokes;
 
 	QgNodeMukum			mukums[RDHNODE_MAX_VALUE];
 } RdhBase;
 
-qn_gam_vt(RDHBASE)
+QN_DECL_VTABLE(RDHBASE)
 {
-	qn_gam_vt(QNGAM)	base;
+	QN_DECL_VTABLE(QNGAMBASE)	base;
 	void (*layout)(void);
 	void (*reset)(void);
 	void (*clear)(QgClear);
@@ -260,6 +260,7 @@ extern RdhBase* qg_instance_rdh;
 #define RDH_TRANSFORM		(&qg_instance_rdh->tm)
 #define RDH_PARAM			(&qg_instance_rdh->param)
 #define RDH_INVOKES			(&qg_instance_rdh->invokes)
+#define RDH_VERSION			(qg_instance_rdh->info.renderer_version)
 
 #define rdh_set_flush(v)	(qg_instance_rdh->invokes.flush=(v))
 #define rdh_inc_ends()		(qg_instance_rdh->invokes.ends++)
@@ -299,8 +300,6 @@ extern const char* qg_clrfmt_to_str(QgClrFmt fmt);
 extern const char* qg_layout_usage_to_str(const QgLayoutUsage usage);
 // 세이더 자동 상수 문자열로 변환
 extern const char* qg_shader_const_auto_to_str(const QgScAuto sca);
-// 알수 없음을 문자열로
-extern const char* qg_unknown_str(int value, bool hex);
 
 
 //////////////////////////////////////////////////////////////////////////

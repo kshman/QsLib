@@ -207,22 +207,6 @@ int main(void)
 	if (mnt)
 	{
 		subdirectory_list(mnt, "/");
-
-		// 간접 파일	읽기
-		QnStream* stream = qn_mount_open_stream(mnt, "/test/one summer night.txt", "");
-		if (stream)
-		{
-			int size = (int)qn_stream_size(stream);
-			char* psz = qn_alloc(size + 1, char);
-			if (qn_stream_read(stream, psz, 0, size) == size)
-			{
-				psz[size] = 0;
-				qn_outputs(psz);
-			}
-			qn_free(psz);
-			qn_unload(stream);
-		}
-
 		qn_unload(mnt);
 	}
 

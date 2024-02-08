@@ -16,17 +16,10 @@ extern void qn_module_down(void);
 extern void qn_thread_up(void);
 extern void qn_thread_down(void);
 
+// 심볼
+QN_DECLIMPL_PCHAR_MUKUM(SymMukum, nint, (void), sym_mukum);
 // 프로퍼티
-QN_DECL_MUKUM(QnPropMukum, char*, char*);
-QN_MUKUM_CHAR_PTR_KEY(QnPropMukum)
-QN_MUKUM_KEY_FREE(QnPropMukum)
-QN_MUKUM_VALUE_FREE(QnPropMukum)
-
-// 키워드
-QN_DECL_MUKUM(QnKeyMukum, char*, nint);
-QN_MUKUM_CHAR_PTR_KEY(QnKeyMukum);
-QN_MUKUM_KEY_FREE(QnKeyMukum);
-QN_MUKUM_VALUE_NONE(QnKeyMukum);
+QN_DECLIMPL_PCHAR_PCHAR_MUKUM(PropMukum, prop_mukum);
 
 // 닫아라
 typedef struct CLOSURE
@@ -46,10 +39,8 @@ static struct RUNTIMEIMPL
 	Closure*		closures;
 	Closure*		preclosures;
 
-	QnTls			error;
-
-	QnPropMukum		props;
-	QnKeyMukum		keys;
+	PropMukum		props;
+	SymMukum		symbols;
 } runtime_impl =
 {
 	.inited = false,
@@ -65,7 +56,7 @@ static void qn_runtime_attach(void)
 // 런타임 내림
 static void qn_runtime_down(void)
 {
-	qn_ret_if_fail(runtime_impl.inited);
+	qn_return_when_fail(runtime_impl.inited,/*void*/);
 	runtime_impl.inited = false;
 
 	QN_LOCK(runtime_impl.lock);
@@ -84,8 +75,8 @@ static void qn_runtime_down(void)
 	}
 	QN_UNLOCK(runtime_impl.lock);
 
-	qn_mukum_disp(QnPropMukum, &runtime_impl.props);
-	qn_mukum_disp(QnKeyMukum, &runtime_impl.keys);
+	prop_mukum_dispose(&runtime_impl.props);
+	sym_mukum_dispose(&runtime_impl.symbols);
 
 	qn_thread_down();
 	qn_module_down();
@@ -98,15 +89,24 @@ static void qn_runtime_up(void)
 {
 	runtime_impl.inited = true;
 
+#ifdef _QN_WINDOWS_
+	// 콘솔창을 UTF-8로 설정!!!!!!!!
+	SetConsoleOutputCP(65001);
+#endif
+
 	qn_cycle_up();
 	qn_debug_up();
 	qn_mpf_up();
 	qn_module_up();
 	qn_thread_up();
+	qm_srand(NULL, 0);
 
-	runtime_impl.error = qn_tls(qn_mem_free);
+	sym_mukum_init_fast(&runtime_impl.symbols);
+	prop_mukum_init_fast(&runtime_impl.props);
 
-	qn_mukum_init(QnPropMukum, &runtime_impl.props);
+	sym_mukum_set(&runtime_impl.symbols, qn_strdup("QS"), 10001);
+	sym_mukum_set(&runtime_impl.symbols, qn_strdup("QSLIB"), 10002);
+	sym_mukum_set(&runtime_impl.symbols, qn_strdup("KIM"), 10003);
 
 #if defined _LIB || defined _STATIC
 	(void)atexit(qn_runtime_down);
@@ -116,7 +116,7 @@ static void qn_runtime_up(void)
 // 
 void qn_runtime(void)
 {
-	qn_ret_if_ok(runtime_impl.inited);
+	qn_return_on_ok(runtime_impl.inited,/*void*/);
 	qn_runtime_up();
 }
 
@@ -132,11 +132,11 @@ const char* qn_version(void)
 //
 void qn_atexit(paramfunc_t func, void* data)
 {
-	qn_ret_if_fail(runtime_impl.inited);
-	qn_ret_if_fail(func);
+	qn_return_when_fail(runtime_impl.inited,/*void*/);
+	qn_return_when_fail(func,/*void*/);
 
 	Closure* node = qn_alloc_1(Closure);
-	qn_ret_if_fail(node);
+	qn_return_when_fail(node,/*void*/);
 
 	node->fp.func = func;
 	node->fp.data = data;
@@ -150,11 +150,11 @@ void qn_atexit(paramfunc_t func, void* data)
 //
 void qn_p_atexit(paramfunc_t func, void* data)
 {
-	qn_ret_if_fail(runtime_impl.inited);
-	qn_ret_if_fail(func);
+	qn_return_when_fail(runtime_impl.inited,/*void*/);
+	qn_return_when_fail(func,/*void*/);
 
 	Closure* node = qn_alloc_1(Closure);
-	qn_ret_if_fail(node);
+	qn_return_when_fail(node,/*void*/);
 
 	node->fp.func = func;
 	node->fp.data = data;
@@ -172,27 +172,37 @@ size_t qn_p_index(void)
 	return ++s;
 }
 
-//
-void qn_set_prop(const char* RESTRICT name, const char* RESTRICT value)
+// 모를 때 쓰는 문자열 (스레드 완전 위험)
+const char* qn_p_unknown(int value, bool hex)
 {
-	qn_ret_if_fail(runtime_impl.inited);
-	qn_ret_if_fail(name != NULL);
+	static char unknown_text[64];
+	if (hex)
+		qn_snprintf(unknown_text, QN_COUNTOF(unknown_text), "UNKNOWN(0x%X)", value);
+	else
+		qn_snprintf(unknown_text, QN_COUNTOF(unknown_text), "UNKNOWN(%d)", value);
+	return unknown_text;
+}
+
+//
+void qn_set_prop(const char* name, const char* value)
+{
+	qn_return_when_fail(runtime_impl.inited,/*void*/);
+	qn_return_when_fail(name != NULL,/*void*/);
 	QN_LOCK(runtime_impl.lock);
 	if (value == NULL || *value == '\0')
-		qn_mukum_remove(QnPropMukum, &runtime_impl.props, name, NULL);
+		prop_mukum_remove(&runtime_impl.props, name);
 	else
-		qn_mukum_set(QnPropMukum, &runtime_impl.props, qn_strdup(name), qn_strdup(value));
+		prop_mukum_set(&runtime_impl.props, qn_strdup(name), qn_strdup(value));
 	QN_UNLOCK(runtime_impl.lock);
 }
 
 //
 const char* qn_get_prop(const char* name)
 {
-	qn_val_if_fail(runtime_impl.inited, NULL);
-	qn_val_if_fail(name != NULL, NULL);
-	char** ret;
+	qn_return_when_fail(runtime_impl.inited, NULL);
+	qn_return_when_fail(name != NULL, NULL);
 	QN_LOCK(runtime_impl.lock);
-	qn_mukum_get(QnPropMukum, &runtime_impl.props, name, &ret);
+	char** ret = prop_mukum_get(&runtime_impl.props, name);
 	QN_UNLOCK(runtime_impl.lock);
 	return ret == NULL ? NULL : *ret;
 }
@@ -203,7 +213,7 @@ int qn_get_prop_int(const char* name, int default_value, int min_value, int max_
 	const char* v = qn_get_prop(name);
 	if (v == NULL)
 		return default_value;
-	int i = qn_strtoi(v, 10);
+	const int i = qn_strtoi(v, 10);
 	return QN_CLAMP(i, min_value, max_value);
 }
 
@@ -213,86 +223,54 @@ float qn_get_prop_float(const char* name, float default_value, float min_value, 
 	const char* v = qn_get_prop(name);
 	if (v == NULL)
 		return default_value;
-	float f = qn_strtof(v);
+	const float f = qn_strtof(v);
 	return QN_CLAMP(f, min_value, max_value);
 }
 
 //
-void qn_set_key(const char* RESTRICT name, const nint value)
+void qn_syssym(const char** names, int count, nint start_sym)
 {
-	qn_ret_if_fail(runtime_impl.inited);
-	qn_ret_if_fail(name != NULL);
+	qn_return_when_fail(runtime_impl.inited,/*void*/);
+	qn_return_when_fail(names != NULL,/*void*/);
+	qn_return_when_fail(count > 0,/*void*/);
+	qn_return_when_fail(start_sym + count < 10000,/*void*/);
+
 	QN_LOCK(runtime_impl.lock);
-	qn_mukum_set(QnKeyMukum, &runtime_impl.keys, qn_strdup(name), value);
+	for (nint i = 0; i < count; i++)
+		sym_mukum_set(&runtime_impl.symbols, qn_strdup(names[i]), start_sym + i);
 	QN_UNLOCK(runtime_impl.lock);
 }
 
 //
-nint qn_get_key(const char* name)
+nint qn_sym(const char* name)
 {
-	qn_val_if_fail(runtime_impl.inited, 0);
-	qn_val_if_fail(name != NULL, 0);
-	nint* ret;
+	static nint sym = 10005;
+	qn_return_when_fail(runtime_impl.inited, 0);
+	qn_return_when_fail(name != NULL, 0);
 	QN_LOCK(runtime_impl.lock);
-	qn_mukum_get(QnKeyMukum, &runtime_impl.keys, name, &ret);
+	nint* ret = sym_mukum_get(&runtime_impl.symbols, name);
+	if (ret != NULL)
+	{
+		QN_UNLOCK(runtime_impl.lock);
+		return *ret;
+	}
+	const nint value = sym++;
+	sym_mukum_set(&runtime_impl.symbols, qn_strdup(name), value);
 	QN_UNLOCK(runtime_impl.lock);
-	return ret == NULL ? 0 : *ret;
+	return value;
 }
 
 //
-const char* qn_get_error(void)
+void qn_symdbgout(void)
 {
-	const char* mesg = (const char*)qn_tlsget(runtime_impl.error);
-	return mesg;
-}
-
-//
-void qn_set_error(const char* mesg)
-{
-	char* prev = (char*)qn_tlsget(runtime_impl.error);
-	qn_free(prev);
-	qn_tlsset(runtime_impl.error, qn_strdup(mesg));
-}
-
-//
-bool qn_set_syserror(const int errcode)
-{
-	char* prev = (char*)qn_tlsget(runtime_impl.error);
-	qn_free(prev);
-
-#ifdef _QN_WINDOWS_
-	DWORD ec = errcode == 0 ? GetLastError() : (DWORD)errcode;
-#else
-	int ec = errcode == 0 ? errno : errcode;
-#endif
-	if (ec == 0)
-	{
-		qn_tlsset(runtime_impl.error, NULL);
-		return false;	// 에러가 없다
-	}
-
-	char* buf;
-#ifdef _QN_WINDOWS_
-	DWORD dw = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
-		NULL, ec, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), NULL, 0, NULL) + 1;
-	if (dw == 1)
-		buf = qn_apsprintf("unknown error: %u", ec);
-	else
-	{
-		wchar* pw = qn_alloc(dw, wchar);
-		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
-			NULL, ec, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), pw, dw, NULL);
-		dw -= 2;
-		pw[dw] = L'\0';
-		buf = qn_wcstombs_dup(pw, dw); // u16to8이 좋을지도 모르겠지만 윈도우 기본 출력은 멀티바이트 스트링
-		qn_free(pw);
-	}
-#else
-	const char* psz = strerror(ec);
-	buf = psz == NULL ? qn_apsprintf("unknown error: %d", ec) : qn_strdup(psz);
-#endif
-	qn_tlsset(runtime_impl.error, buf);
-	return true;
+	qn_return_when_fail(runtime_impl.inited,/*void*/);
+	QN_LOCK(runtime_impl.lock);
+	qn_mesgf(false, "SYMBOL", " %-16s | %-s", "symbol", "string");
+	SymMukumNode* node;
+	QN_MUKUM_FOREACH(runtime_impl.symbols, node)
+		qn_mesgf(false, "SYMBOL", " %-16d | %-s", node->VALUE, node->KEY);
+	qn_mesgf(false, "SYMBOL", "total symbols: %zu", sym_mukum_count(&runtime_impl.symbols));
+	QN_UNLOCK(runtime_impl.lock);
 }
 
 //

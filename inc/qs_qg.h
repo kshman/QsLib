@@ -4,7 +4,7 @@
 //
 // 이 라이브러리는 연구용입니다. 사용 여부는 사용자 본인의 의사에 달려 있습니다.
 // 라이브러리의 일부 또는 전부를 사용자 임의로 전제하거나 사용할 수 있습니다.
-// SPDX-License-Identifier: UNLICENSE
+// SPDX-License-Identifier: BSD-2-Clause
 //
 
 #pragma once
@@ -13,9 +13,6 @@
 #include <qs_qn.h>
 #include <qs_math.h>
 #include <qs_kmc.h>
-
-QN_EXTC_BEGIN
-
 
 //////////////////////////////////////////////////////////////////////////
 // property
@@ -1125,7 +1122,7 @@ QSAPI void qg_draw_sprite_ex(const QmRect* bound, float angle, const QmColor* co
 /// @brief 노드
 struct QGNODE
 {
-	QnGam				base;
+	QN_GAM_BASE(QNGAMBASE);
 
 	char				NAME[64];
 	size_t				HASH;
@@ -1142,7 +1139,7 @@ QSAPI void qg_node_set_name(QgNode * self, const char* name);
 /// @brief 버퍼
 struct QGBUFFER
 {
-	QnGam				base;
+	QN_GAM_BASE(QNGAMBASE);
 
 	QgBufferType		type;
 	uint				size;
@@ -1152,9 +1149,9 @@ struct QGBUFFER
 	bool16				mapped;
 };
 
-qn_gam_vt(QGBUFFER)
+QN_DECL_VTABLE(QGBUFFER)
 {
-	qn_gam_vt(QNGAM)	base;
+	QN_DECL_VTABLE(QNGAMBASE)	base;
 	void*(*map)(void*);
 	bool (*unmap)(void*);
 	bool (*data)(void*, int, const void*);
@@ -1182,7 +1179,7 @@ QSAPI bool qg_buffer_data(QgBuffer* g, int size, const void* data);
 /// @brief 렌더 파이프라인 상태
 struct QGRENDERSTATE
 {
-	QgNode				base;
+	QN_GAM_BASE(QGNODE);
 
 	nuint				ref;
 };
@@ -1190,7 +1187,7 @@ struct QGRENDERSTATE
 /// @brief 텍스쳐
 struct QGTEXTURE
 {
-	QnGam				base;
+	QN_GAM_BASE(QNGAMBASE);
 
 	QgPropPixel			prop;
 	int					width;
@@ -1199,9 +1196,9 @@ struct QGTEXTURE
 	QgTexFlag			flags;
 };
 
-qn_gam_vt(QGTEXTURE)
+QN_DECL_VTABLE(QGTEXTURE)
 {
-	qn_gam_vt(QNGAM)	base;
+	QN_DECL_VTABLE(QNGAMBASE)	base;
 	bool (*bind)(QgTexture*, int);
 };
 
@@ -1212,7 +1209,7 @@ qn_gam_vt(QGTEXTURE)
 // 이미지
 struct QGIMAGE
 {
-	QnGam				base;
+	QN_GAM_BASE(QNGAMBASE);
 
 	QgPropPixel			prop;
 	int					width;
@@ -1222,16 +1219,29 @@ struct QGIMAGE
 	byte*				data;
 };
 
-QSAPI QgImage* qg_new_image(QgClrFmt fmt, int width, int height);
-QSAPI QgImage* qg_new_image_filled(int width, int height, const QmColor* color);
-QSAPI QgImage* qg_new_image_gradient_linear(int width, int height, const QmColor* begin, const QmColor* end, float direction);
-QSAPI QgImage* qg_new_image_gradient_radial(int width, int height, const QmColor* inner, const QmColor* outer, float density);
-QSAPI QgImage* qg_new_image_check_pattern(int width, int height, const QmColor* oddColor, const QmColor* evenColor, int checkWidth, int checkHeight);
+/// @brief 빈 이미지를 만든다
+QSAPI QgImage* qg_create_image(QgClrFmt fmt, int width, int height);
 
-QSAPI QgImage* qg_create_image(const void* data, int size);
+/// @brief 색깔로 채운 이미지를 만든다
+QSAPI QgImage* qg_create_image_filled(int width, int height, const QmColor* color);
+
+/// @brief 선형 그라디언트 이미지를 만든다
+QSAPI QgImage* qg_create_image_gradient_linear(int width, int height, const QmColor* begin, const QmColor* end, float direction);
+
+/// @brief 원형 그라디언트 이미지를 만든다
+QSAPI QgImage* qg_create_image_gradient_radial(int width, int height, const QmColor* inner, const QmColor* outer, float density);
+
+/// @brief 격자 패턴	이미지를 만든다
+QSAPI QgImage* qg_create_image_check_pattern(int width, int height, const QmColor* oddColor, const QmColor* evenColor, int checkWidth, int checkHeight);
+
+/// @brief 이미지를 이미지 형식이 담긴 데이터로 부터 만든다
+QSAPI QgImage* qg_load_image_buffer(const void* data, int size);
+
+/// @brief 이미지를 파일에서 읽어 만든다
 QSAPI QgImage* qg_load_image(int fuse, const char* filename);
 
-QSAPI bool qg_image_set_pixel(QgImage* self, int x, int y, const QmColor* color);
+/// @brief 이미지에 점을 찍는다
+QSAPI bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* color);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1248,5 +1258,3 @@ QSAPI bool qg_image_set_pixel(QgImage* self, int x, int y, const QmColor* color)
 		.format.rtv[0] = QGCF_R8G8B8A8,\
 		.topology = QGTPG_TRI,\
 	}
-
-QN_EXTC_END

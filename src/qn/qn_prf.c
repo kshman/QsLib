@@ -36,10 +36,10 @@ static struct DEBUGIMPL
 	char			out_buf[MAX_DEBUG_LENGTH];
 	int				out_pos;
 
+	QnTls			error;
+
 	bool			debugger;
 	bool			redirect;
-	bool			__dummy1;
-	bool			__dummy2;
 } debug_impl =
 {
 #ifdef _QN_WINDOWS_
@@ -86,7 +86,7 @@ static void qn_dbg_buf_ch(const int ch)
 }
 
 //
-static void qn_dbg_buf_str(const char* RESTRICT s)
+static void qn_dbg_buf_str(const char* s)
 {
 	int len = (int)strlen(s);
 	if (len + debug_impl.out_pos > MAX_DEBUG_LENGTH - 1)
@@ -98,10 +98,11 @@ static void qn_dbg_buf_str(const char* RESTRICT s)
 }
 
 //
-static void qn_dbg_buf_va(const char* RESTRICT fmt, va_list va)
+static void qn_dbg_buf_va(const char* fmt, va_list va)
 {
 	const int len = qn_vsnprintf(debug_impl.out_buf + debug_impl.out_pos, MAX_DEBUG_LENGTH - (size_t)debug_impl.out_pos, fmt, va);
-	debug_impl.out_pos += len;
+	if (len > 0)
+		debug_impl.out_pos += len;
 }
 
 //
@@ -112,19 +113,19 @@ static void qn_dbg_buf_int(const int value)
 }
 
 //
-static void qn_dbg_buf_head(const char* RESTRICT head)
+static void qn_dbg_buf_head(const char* head)
 {
 	if (head == NULL)
-		head = "(unknown)";
+		return;
 	qn_dbg_buf_ch('[');
 	qn_dbg_buf_str(head);
 	qn_dbg_buf_str("] ");
 }
 
 //
-static int qn_dbg_buf_flush(void)
+static int qn_dbg_buf_flush(bool debug_output)
 {
-	qn_val_if_fail(debug_impl.out_pos > 0, 0);
+	qn_return_when_fail(debug_impl.out_pos > 0, 0);
 	debug_impl.out_buf[debug_impl.out_pos] = '\0';
 #ifdef _QN_WINDOWS_
 	if (debug_impl.handle != NULL)
@@ -133,17 +134,19 @@ static int qn_dbg_buf_flush(void)
 		if (debug_impl.redirect || WriteConsoleA(debug_impl.handle, debug_impl.out_buf, debug_impl.out_pos, &wtn, NULL) == 0)
 			WriteFile(debug_impl.handle, debug_impl.out_buf, debug_impl.out_pos, &wtn, NULL);
 	}
-	if (debug_impl.debugger)
+	if (debug_impl.debugger && debug_output)
 		OutputDebugStringA(debug_impl.out_buf);
 #else
 	if (debug_impl.fp != NULL)
 		fputs(debug_impl.out_buf, debug_impl.fp);
 #ifdef __EMSCRIPTEN__
 	// 콘솔에 두번 나오니깐 한번만 출력하자
-	//emscripten_console_log(debug_impl.out_buf);
+	//if (debug_output)
+	//	emscripten_console_log(debug_impl.out_buf);
 #endif
 #ifdef _QN_ANDROID_
-	__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, debug_impl.out_buf);
+	if (debug_output)
+		__android_log_print(ANDROID_LOG_VERBOSE, debug_impl.tag, debug_impl.out_buf);
 #endif
 #endif
 	const int ret = debug_impl.out_pos;
@@ -152,9 +155,9 @@ static int qn_dbg_buf_flush(void)
 }
 
 //
-int qn_debug_assert(const char* RESTRICT expr, const char* RESTRICT mesg, const char* RESTRICT filename, const int line)
+int qn_asrt(const char* expr, const char* mesg, const char* filename, const int line)
 {
-	qn_val_if_fail(expr, -1);
+	qn_return_when_fail(expr, -1);
 	qn_dbg_buf_str("ASSERT FAILED : ");
 	qn_dbg_buf_str(" (filename=\"");
 	qn_dbg_buf_str(filename);
@@ -170,39 +173,39 @@ int qn_debug_assert(const char* RESTRICT expr, const char* RESTRICT mesg, const 
 		qn_dbg_buf_str(mesg);
 		qn_dbg_buf_str("]\n");
 	}
-	qn_dbg_buf_flush();
+	qn_dbg_buf_flush(true);
 
 	DEBUG_BREAK(debug_impl.debugger);
 	return 0;
 }
 
 //
-_Noreturn void qn_debug_halt(const char* RESTRICT head, const char* RESTRICT mesg)
+_Noreturn void qn_halt(const char* head, const char* mesg)
 {
 	qn_dbg_buf_str("HALT ");
 	qn_dbg_buf_head(head);
 	qn_dbg_buf_str(mesg);
 	qn_dbg_buf_ch('\n');
-	qn_dbg_buf_flush();
+	qn_dbg_buf_flush(true);
 
 	DEBUG_BREAK(debug_impl.debugger);
 	abort();
 }
 
 //
-int qn_debug_outputs(const bool breakpoint, const char* RESTRICT head, const char* RESTRICT mesg)
+int qn_mesg(const bool breakpoint, const char* head, const char* mesg)
 {
 	qn_dbg_buf_head(head);
 	qn_dbg_buf_str(mesg);
 	qn_dbg_buf_ch('\n');
-	const int len = qn_dbg_buf_flush();
+	const int len = qn_dbg_buf_flush(true);
 
 	DEBUG_BREAK(breakpoint && debug_impl.debugger);
 	return len;
 }
 
 //
-int qn_debug_outputf(const bool breakpoint, const char* RESTRICT head, const char* RESTRICT fmt, ...)
+int qn_mesgf(const bool breakpoint, const char* head, const char* fmt, ...)
 {
 	qn_dbg_buf_head(head);
 	va_list va;
@@ -210,17 +213,10 @@ int qn_debug_outputf(const bool breakpoint, const char* RESTRICT head, const cha
 	qn_dbg_buf_va(fmt, va);
 	va_end(va);
 	qn_dbg_buf_ch('\n');
-	const int len = qn_dbg_buf_flush();
+	const int len = qn_dbg_buf_flush(true);
 
 	DEBUG_BREAK(breakpoint && debug_impl.debugger);
 	return len;
-}
-
-//
-int qn_debug_output_error(const bool breakpoint, const char* head)
-{
-	const char* err = qn_get_error();
-	return qn_debug_outputs(breakpoint, head, err);
 }
 
 //
@@ -228,19 +224,132 @@ int qn_outputs(const char* mesg)
 {
 	qn_dbg_buf_str(mesg);
 	qn_dbg_buf_ch('\n');
-	return qn_dbg_buf_flush();
+	return qn_dbg_buf_flush(false);
 }
 
 //
 int qn_outputf(const char* fmt, ...)
 {
+	qn_return_when_fail(fmt != NULL, -1);
 	va_list va;
 	va_start(va, fmt);
 	qn_dbg_buf_va(fmt, va);
 	va_end(va);
 	qn_dbg_buf_ch('\n');
-	return qn_dbg_buf_flush();
+	return qn_dbg_buf_flush(false);
 }
+
+
+#if false
+//////////////////////////////////////////////////////////////////////////
+// 오류 처리 (사용 안함)
+
+static struct ERRORIMPL
+{
+	QnTls			error;
+} error_impl;
+
+//
+void qn_error_up(void)
+{
+	error_impl.error = qn_tls(qn_mem_free);
+}
+
+//
+void qn_error_down(void)
+{
+	error_impl.error = 0;
+}
+
+//
+const char* qn_error(void)
+{
+	qn_return_when_fail(error_impl.error != 0, NULL);
+	const char* mesg = qn_tlsget(error_impl.error);
+	return mesg;
+}
+
+//
+void qn_seterr(const char* mesg, bool debug_break)
+{
+	qn_return_when_fail(error_impl.error != 0);
+	char* prev = qn_tlsget(error_impl.error);
+	qn_free(prev);
+	if (mesg != NULL)
+	{
+#ifdef _DEBUG
+		qn_mesg(false, "ERROR", mesg == NULL ? "unknown" : mesg);
+#endif
+		DEBUG_BREAK(debug_break && debug_impl.debugger);
+	}
+	qn_tlsset(error_impl.error, qn_strdup(mesg));
+}
+
+//
+bool qn_syserr(int errcode, bool debug_break)
+{
+	qn_return_when_fail(error_impl.error != 0, false);
+	char* prev = qn_tlsget(error_impl.error);
+	qn_free(prev);
+
+	char *buf;
+#ifdef _QN_WINDOWS_
+	if (errcode == 0)
+	{
+		const DWORD ec = GetLastError();
+		if (ec == 0)
+			buf = NULL;
+		else
+		{
+			DWORD dw = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
+				NULL, ec, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), NULL, 0, NULL) + 1;
+			if (dw == 1)
+				buf = qn_apsprintf("unknown windows error: %u", ec);
+			else
+			{
+				wchar* pw = qn_alloc(dw, wchar);
+				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
+					NULL, ec, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), pw, dw, NULL);
+				dw -= 2;
+				pw[dw] = L'\0';
+				buf = qn_wcstombs_dup(pw, dw); // u16to8이 좋을지도 모르겠지만 윈도우 기본 출력은 멀티바이트 스트링
+				qn_free(pw);
+			}
+		}
+	}
+	else
+	{
+		errno = errcode;
+		buf = qn_alloc(1024, char);
+		_strerror_s(buf, 1024, NULL);
+	}
+#else
+	if (errcode == 0)
+		errcode = errno;
+#if defeind _QN_EMSCRIPTEN_ && !defined _DEBUG
+	if (errcode == 0)
+		buf = NULL;
+	else
+	{
+		static char sz[64];
+		qn_snprintf(sz, 64, "error: %d", errcode);
+		buf = sz;
+	}
+#else
+	buf = errcode == 0 ? NULL : strerror(errcode);
+#endif
+#endif
+	if (buf != NULL)
+	{
+#ifdef _DEBUG
+		qn_mesg(false, "SYSERR", buf);
+#endif
+		DEBUG_BREAK(debug_break && debug_impl.debugger);
+	}
+	qn_tlsset(error_impl.error, buf);
+	return true;
+}
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -343,17 +452,17 @@ static void qn_mpf_clear(void)
 	if (mem_impl.count == 0 && mem_impl.frst == NULL && mem_impl.last == NULL)
 		return;
 
-	qn_debug_outputf(false, "MEMORY PROFILER", "found %d allocations", mem_impl.count);
+	qn_mesgf(false, "MEMORY PROFILER", "found %d allocation(s)", mem_impl.count);
 
 	size_t sum = 0;
 	for (MemBlock* next = NULL, *node = mem_impl.frst; node; node = next)
 	{
 		if (node->line)
-			qn_debug_outputf(false, "MEMORY PROFILER", "\t%s(%Lu) : %Lu(%Lu) : 0x%p", node->desc, node->line, node->size, node->block, _memptr(node));
+			qn_mesgf(false, "MEMORY PROFILER", "\t%s(%Lu) : %Lu(%Lu) : %p", node->desc, node->line, node->size, node->block, _memptr(node));
 		else
-			qn_debug_outputf(false, "MEMORY PROFILER", "\t%Lu(%Lu) : 0x%p", node->size, node->block, _memptr(node));
+			qn_mesgf(false, "MEMORY PROFILER", "\t%Lu(%Lu) : %p", node->size, node->block, _memptr(node));
 		qn_memdmp(_memptr(node), QN_MIN(32, node->size), mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1);
-		qn_debug_outputf(false, "MEMORY PROFILER", "\t\t{%s}", mem_impl.dbg_buf);
+		qn_mesgf(false, "MEMORY PROFILER", "\t\t{%s}", mem_impl.dbg_buf);
 
 		next = node->next;
 		sum += node->block;
@@ -368,9 +477,9 @@ static void qn_mpf_clear(void)
 	double size;
 	const char usage = qn_memhrb(sum, &size);
 	if (usage == ' ')
-		qn_debug_outputf(true, "MEMORY PROFILER", "total block size: %Lu bytes", sum);
+		qn_mesgf(true, "MEMORY PROFILER", "total block size: %Lu bytes", sum);
 	else
-		qn_debug_outputf(true, "MEMORY PROFILER", "total block size: %.2f %cbytes", size, usage);
+		qn_mesgf(true, "MEMORY PROFILER", "total block size: %.2f %cbytes", size, usage);
 }
 #endif
 
@@ -386,7 +495,7 @@ void qn_mpf_down(void)
 	{
 		SIZE_T s;
 		if (HeapQueryInformation(mem_impl.heap, HeapEnableTerminationOnCorruption, NULL, 0, &s))
-			qn_debug_outputf(true, "MEMORY PROFILER", "heap allocation left: %Lu bytes", s);
+			qn_mesgf(true, "MEMORY PROFILER", "heap allocation left: %Lu bytes", s);
 		HeapDestroy(mem_impl.heap);
 	}
 #endif
@@ -401,13 +510,13 @@ static DWORD qn_internal_memory_exception(const DWORD ex, const size_t size, con
 	if (ex == STATUS_NO_MEMORY)
 	{
 		qn_snprintf(mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1, "out of memory : size=%Lu(%Lu)", size, block);
-		qn_debug_halt("MEMORY PROFILER", mem_impl.dbg_buf);
+		qn_halt("MEMORY PROFILER", mem_impl.dbg_buf);
 		return EXCEPTION_EXECUTE_HANDLER;
 	}
 	if (ex == STATUS_ACCESS_VIOLATION)
 	{
 		qn_snprintf(mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1, "access violation : size=%Lu(%Lu)", size, block);
-		qn_debug_halt("MEMORY PROFILER", mem_impl.dbg_buf);
+		qn_halt("MEMORY PROFILER", mem_impl.dbg_buf);
 		return EXCEPTION_EXECUTE_HANDLER;
 	}
 	return EXCEPTION_CONTINUE_SEARCH;
@@ -418,7 +527,7 @@ static DWORD qn_internal_memory_exception(const DWORD ex, const size_t size, con
 //
 static void* qn_internal_alloc(size_t size, bool zero)
 {
-	qn_val_if_fail(size > 0, NULL);
+	qn_return_when_fail(size > 0, NULL);
 
 #ifdef _QN_WINDOWS_
 	size_t block = _memsize(size);
@@ -434,7 +543,7 @@ static void* qn_internal_alloc(size_t size, bool zero)
 	if (ptr == NULL)
 	{
 		qn_snprintf(mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1, "out of memory : size=%Lu(%Lu)", size, block);
-		qn_debug_halt("MEMORY PROFILER", mem_impl.dbg_buf);
+		qn_halt("MEMORY PROFILER", mem_impl.dbg_buf);
 	}
 	return ptr;
 #else
@@ -456,8 +565,8 @@ static void* qn_internal_realloc(void* ptr, size_t size)
 
 	if (HeapValidate(mem_impl.heap, 0, ptr) == FALSE)
 	{
-		qn_snprintf(mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1, "try to realloc invalid memory : 0x%p", ptr);
-		qn_debug_halt("MEMORY PROFILER", mem_impl.dbg_buf);
+		qn_snprintf(mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1, "try to realloc invalid memory : %p", ptr);
+		qn_halt("MEMORY PROFILER", mem_impl.dbg_buf);
 	}
 
 	size_t block = _memsize(size);
@@ -474,7 +583,7 @@ static void* qn_internal_realloc(void* ptr, size_t size)
 	{
 		HeapFree(mem_impl.heap, 0, ptr);
 		qn_snprintf(mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1, "out of memory : size=%Lu(%Lu)", size, block);
-		qn_debug_halt("MEMORY PROFILER", mem_impl.dbg_buf);
+		qn_halt("MEMORY PROFILER", mem_impl.dbg_buf);
 	}
 	return newptr;
 }
@@ -482,13 +591,13 @@ static void* qn_internal_realloc(void* ptr, size_t size)
 //
 static void qn_internal_free(void* ptr)
 {
-	qn_ret_if_fail(ptr);
+	qn_return_when_fail(ptr,);
 
 	if (HeapValidate(mem_impl.heap, 0, ptr) == FALSE)
 	{
-		qn_debug_outputf(false, "MEMORY PROFILER", "try to free invalid memory : 0x%p", ptr);
+		qn_mesgf(false, "MEMORY PROFILER", "try to free invalid memory : %p", ptr);
 		qn_memdmp(ptr, 19, mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1);
-		qn_debug_outputf(true, "MEMORY PROFILER", "\t\t{%s}", mem_impl.dbg_buf);
+		qn_mesgf(true, "MEMORY PROFILER", "\t\t{%s}", mem_impl.dbg_buf);
 		return;
 	}
 	HeapFree(mem_impl.heap, 0, ptr);
@@ -505,16 +614,16 @@ size_t qn_mpfsize(void)
 size_t qn_mpfcnt(void)
 {
 	return mem_impl.count;
-}
+	}
 
 //
-void qn_mpfdbgprint(void)
+void qn_mpfdbgout(void)
 {
 	if (mem_impl.count == 0 && mem_impl.frst == NULL && mem_impl.last == NULL)
 		return;
 
-	qn_debug_outputf(false, "MEMORY PROFILER", "found %d allocations", mem_impl.count);
-	qn_debug_outputf(false, "MEMORY PROFILER", " %-8s | %-8s | %-8s | %-s", "no", "size", "block", "desc");
+	qn_mesgf(false, "MEMORY PROFILER", "found %d allocation(s)", mem_impl.count);
+	qn_mesgf(false, "MEMORY PROFILER", " %-8s | %-8s | %-8s | %-s", "no", "size", "block", "desc");
 
 	QN_LOCK(mem_impl.lock);
 	size_t sum = 0, cnt = 1;
@@ -522,13 +631,13 @@ void qn_mpfdbgprint(void)
 	{
 		if (node->line)
 		{
-			qn_debug_outputf(false, "MEMORY PROFILER", " %-8d | %-8zu | % -8zu | \"%s:%d\"",
+			qn_mesgf(false, "MEMORY PROFILER", " %-8d | %-8zu | % -8zu | \"%s:%d\"",
 				cnt, node->size, node->block, node->desc, (int)node->line);
 		}
 		else
 		{
 			qn_memdmp(_memptr(node), QN_MIN(32, node->size), mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1);
-			qn_debug_outputf(false, "MEMORY PROFILER", " %-8d | %-8zu | % -8zu | <%s>",
+			qn_mesgf(false, "MEMORY PROFILER", " %-8d | %-8zu | % -8zu | <%s>",
 				cnt, node->size, node->block, mem_impl.dbg_buf);
 		}
 		next = node->next;
@@ -538,7 +647,7 @@ void qn_mpfdbgprint(void)
 
 	double size;
 	const char usage = qn_memhrb(sum, &size);
-	qn_debug_outputf(false, "MEMORY PROFILER", "block size: %.3g%cbytes", size, usage);
+	qn_mesgf(false, "MEMORY PROFILER", "block size: %.3g%cbytes", size, usage);
 }
 
 //
@@ -580,14 +689,14 @@ static void qn_mpf_node_unlink(const MemBlock* node)
 _Noreturn static void qn_mpf_out_of_memory(const char* desc, const size_t line, const size_t size, const size_t block)
 {
 	qn_snprintf(mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1, "out of memory : %s(%Lu) : %Lu(%Lu)", desc, line, size, block);
-	qn_debug_halt("MEMORY PROFILER", mem_impl.dbg_buf);
+	qn_halt("MEMORY PROFILER", mem_impl.dbg_buf);
 }
 
 //
 _Noreturn static void qn_mpf_access_violation(const char* desc, const size_t line, const size_t size, const size_t block)
 {
 	qn_snprintf(mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1, "access violation : %s(%Lu) : %Lu(%Lu)", desc, line, size, block);
-	qn_debug_halt("MEMORY PROFILER", mem_impl.dbg_buf);
+	qn_halt("MEMORY PROFILER", mem_impl.dbg_buf);
 }
 
 #ifdef _QN_WINDOWS_
@@ -613,7 +722,7 @@ static DWORD qn_mpf_windows_exception(const DWORD ex, const char* desc, const si
 //
 static void* qn_mpf_alloc(size_t size, bool zero, const char* desc, size_t line)
 {
-	qn_val_if_fail(size > 0, NULL);
+	qn_return_when_fail(size > 0, NULL);
 
 	size_t block = _memsize(size);
 	MemBlock* node;
@@ -642,7 +751,7 @@ static void* qn_mpf_alloc(size_t size, bool zero, const char* desc, size_t line)
 		qn_mpf_node_link(node);
 	}
 	return _memptr(node);
-	}
+}
 
 //
 static void* qn_mpf_realloc(void* ptr, size_t size, const char* desc, size_t line)
@@ -662,7 +771,7 @@ static void* qn_mpf_realloc(void* ptr, size_t size, const char* desc, size_t lin
 #endif
 		node->sign != MEMORY_SIGN_HEAD)
 	{
-		qn_debug_outputf(false, "MEMORY PROFILER", "try to realloc invalid memory : 0x%p", ptr);
+		qn_mesgf(false, "MEMORY PROFILER", "try to realloc invalid memory : %p", ptr);
 		qn_mpf_access_violation(desc, line, size, 0);
 	}
 
@@ -705,7 +814,7 @@ static void* qn_mpf_realloc(void* ptr, size_t size, const char* desc, size_t lin
 //
 static void qn_mpf_free(void* ptr)
 {
-	qn_ret_if_fail(ptr);
+	qn_return_when_fail(ptr,/*void*/);
 
 	MemBlock* node = _memhdr(ptr);
 	if (node == NULL ||
@@ -714,9 +823,9 @@ static void qn_mpf_free(void* ptr)
 #endif
 		node->sign != MEMORY_SIGN_HEAD)
 	{
-		qn_debug_outputf(false, "MEMORY PROFILER", "try to realloc invalid memory : 0x%p", ptr);
+		qn_mesgf(false, "MEMORY PROFILER", "try to realloc invalid memory : %p", ptr);
 		qn_memdmp(ptr, 19, mem_impl.dbg_buf, QN_COUNTOF(mem_impl.dbg_buf) - 1);
-		qn_debug_outputf(true, "MEMORY PROFILER", "\t\t{%s}", mem_impl.dbg_buf);
+		qn_mesgf(true, "MEMORY PROFILER", "\t\t{%s}", mem_impl.dbg_buf);
 		return;
 	}
 
@@ -757,6 +866,15 @@ void qn_mem_free(void* ptr)
 	mem_impl.table._free(ptr);
 }
 
+//
+void qn_mem_free_ptr(void* pptr)
+{
+	void** ptr = (void**)pptr;
+	if (ptr == NULL)
+		return;
+	mem_impl.table._free(*ptr);
+}
+
 #ifdef QS_NO_MEMORY_PROFILE
 //
 void* qn_a_alloc(const size_t size, const bool zero)
@@ -773,7 +891,7 @@ void* qn_a_realloc(void* ptr, const size_t size)
 //
 void* qn_a_mem_dup(const void* ptr, size_t size_or_zero_if_psz)
 {
-	qn_val_if_fail(ptr != NULL, NULL);
+	qn_return_when_fail(ptr != NULL, NULL);
 	if (size_or_zero_if_psz > 0)
 	{
 		byte* m = (byte*)qn_a_alloc(size_or_zero_if_psz, false);
@@ -801,7 +919,7 @@ void* qn_a_i_realloc(void* ptr, const size_t size, const char* desc, const size_
 //
 void* qn_a_i_mem_dup(const void* ptr, size_t size_or_zero_if_psz, const char* desc, size_t line)
 {
-	qn_val_if_fail(ptr != NULL, NULL);
+	qn_return_when_fail(ptr != NULL, NULL);
 	if (size_or_zero_if_psz > 0)
 	{
 		byte* m = (byte*)qn_a_i_alloc(size_or_zero_if_psz, false, desc, line);
