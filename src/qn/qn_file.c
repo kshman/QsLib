@@ -35,16 +35,10 @@ void qn_set_file_max_alloc_size(const size_t size)
 	max_file_alloc_size = size == 0 ? (128ULL * 1024ULL * 1024ULL) : size;
 }
 
-// 파일 속성 얻기
-QnFileAttr qn_get_file_attr(const char* path)
-{
+// 파일 속성 변환
 #ifdef _QN_WINDOWS_
-	wchar uni[QN_MAX_PATH];
-	const size_t uni_len = qn_u8to16(uni, QN_MAX_PATH, path, 0);
-	qn_return_when_fail(uni_len < QN_MAX_PATH - QN_MAX_PATH_BIAS, 0);
-	const DWORD attr = GetFileAttributes(uni);
-	if (attr == INVALID_FILE_ATTRIBUTES)
-		return QNFATTR_NONE;
+static QnFileAttr _file_attr_convert(const DWORD attr)
+{
 	int ret = QNFATTR_FILE;
 	if (QN_TMASK(attr, FILE_ATTRIBUTE_DIRECTORY))
 		ret |= QNFATTR_DIR;
@@ -60,18 +54,52 @@ QnFileAttr qn_get_file_attr(const char* path)
 		ret |= QNFATTR_CMPR;
 	if (QN_TMASK(attr, FILE_ATTRIBUTE_ENCRYPTED))
 		ret |= QNFATTR_ENCR;
+	return ret;
+}
+#else
+static QnFileAttr _file_attr_convert(const struct stat* st)
+{
+	int ret = QNFATTR_FILE;
+	if (S_ISDIR(st->st_mode))
+		ret |= QNFATTR_DIR;
+	if (S_ISLNK(st->st_mode))
+		ret |= QNFATTR_LINK;
+	return ret;
+}
+#endif
+
+// 파일 핸들 복제
+static nint _file_handle_dup(nint fd)
+{
+#ifdef _QN_WINDOWS_
+	const HANDLE process = GetCurrentProcess();
+	HANDLE dup;
+	if (!DuplicateHandle(process, (HANDLE)fd, process, &dup, 0, FALSE, DUPLICATE_SAME_ACCESS))
+		return -1;
+	return (nint)dup;
+#else
+	return (nint)fcntl((int)fd, F_DUPFD_CLOEXEC, 0);
+#endif
+}
+
+// 파일 속성 얻기
+QnFileAttr qn_get_file_attr(const char* path)
+{
+#ifdef _QN_WINDOWS_
+	wchar uni[QN_MAX_PATH];
+	const size_t uni_len = qn_u8to16(uni, QN_MAX_PATH, path, 0);
+	qn_return_when_fail(uni_len < QN_MAX_PATH - QN_MAX_PATH_BIAS, 0);
+	const DWORD attr = GetFileAttributes(uni);
+	if (attr == INVALID_FILE_ATTRIBUTES)
+		return QNFATTR_NONE;
+	return _file_attr_convert(attr);
 #else
 	struct stat st;
 	int n = stat(path, &st);
 	if (n < 0)
 		return QNFATTR_NONE;
-	int ret = QNFATTR_FILE;
-	if (S_ISDIR(st.st_mode))
-		ret |= QNFATTR_DIR;
-	if (S_ISLNK(st.st_mode))
-		ret |= QNFATTR_LINK;
+	return _file_attr_convert(&st);
 #endif
-	return ret;
 }
 
 //
@@ -516,7 +544,7 @@ const char* qn_dir_read(QnDir* self)
 }
 
 //
-bool qn_dir_read_info(QnDir* self, QnFileInfo2* info)
+bool qn_dir_read_info(QnDir* self, QnFileInfo* info)
 {
 	qn_return_when_fail(info, false);
 	return qn_cast_vtable(self, QNDIR)->dir_read_info(self, info);
@@ -711,8 +739,13 @@ static void _mem_stream_dispose(QnGam g)
 	qn_free(self);
 }
 
-//
-static QnStream* _mem_stream_dup(QnGam g);
+// 메모리 스트림 복제
+static QnStream* _mem_stream_dup(QnGam g)
+{
+	// 윈도우든 유닉스든 파일 핸들은 복제되도 기능을 공유한다.
+	// 그러므로 메모리 스트림도 똑같이 해도 된다 즉, 참조 처리면 될듯.
+	return qn_load(g);
+}
 
 // 메모리 스트림 만들기 공용
 static QnStream* _mem_stream_init(MemStream* self, QnMount* mount, const char* name, void* data, size_t capa, size_t size, QnFileFlag flags)
@@ -740,18 +773,6 @@ static QnStream* _mem_stream_init(MemStream* self, QnMount* mount, const char* n
 	return qn_gam_init(self, _mem_stream_vt);
 }
 
-// 메모리 스트림 복제
-static QnStream* _mem_stream_dup(QnGam g)
-{
-	MemStream* source = qn_cast_type(g, MemStream);
-	MemStream* self = qn_alloc_1(MemStream);
-
-	byte* data = qn_alloc(source->size, byte);
-	memcpy(data, qn_get_gam_pointer(source), source->size);
-
-	return _mem_stream_init(self, source->base.mount, source->base.name, data, source->size, source->size, source->base.flags);
-}
-
 // 메모리 스트림 만들기
 QnStream* qn_create_mem_stream(const char* name, size_t initial_capacity)
 {
@@ -770,7 +791,7 @@ QnStream* qn_create_mem_stream(const char* name, size_t initial_capacity)
 }
 
 // 메모리 스트림 외부 데이터로 만들기
-QnStream* qn_create_mem_stream_stored(const char* name, void* data, size_t size)
+QnStream* qn_create_mem_stream_data(const char* name, void* data, size_t size)
 {
 	MemStream* self = qn_alloc_1(MemStream);
 	return _mem_stream_init(self, NULL, name, data, size, size, QNFF_READ | QNFF_WRITE | QNFF_SEEK | QNFFT_MEM);
@@ -968,7 +989,7 @@ static void _file_stream_access_parse(const char* mode, QnFileAccess* acs, QnFil
 	if (acs->access == 0 && (acs->mode & O_CREAT) != 0)
 		acs->access = (S_IRUSR | S_IWUSR) | (S_IRGRP | S_IWGRP) | (S_IROTH);
 #endif
-	}
+}
 
 // 실제 파일 경로 얻기
 static char* _file_stream_get_real_path(char* dest, const QnMount* mount, const char* filename)
@@ -1129,29 +1150,17 @@ static QnStream* _file_stream_dup(QnGam g)
 	FileStream* source = qn_cast_type(g, FileStream);
 	FileStream* self = qn_alloc(1, FileStream);
 
-#ifdef _QN_WINDOWS_
-	const HANDLE process = GetCurrentProcess();
-	HANDLE fd = qn_get_gam_handle(source);
-	HANDLE dup;
-	if (!DuplicateHandle(process, fd, process, &dup, 0, FALSE, DUPLICATE_SAME_ACCESS))
+	nint fd = _file_handle_dup(qn_get_gam_desc(source, nint));
+	if (fd == -1)
 	{
 		qn_free(self);
 		return NULL;
 	}
-#else
-	int fd = qn_get_gam_desc_int(source);
-	int dup = fcntl(fd, F_DUPFD_CLOEXEC, 0);
-	if (dup < 0)
-	{
-		qn_free(self);
-		return NULL;
-	}
-#endif
 
 	self->base.mount = qn_load(source->base.mount);
 	self->base.name = qn_strdup(source->base.name);
 	self->base.flags = source->base.flags;
-	qn_set_gam_desc(self, dup);
+	qn_set_gam_desc(self, fd);
 
 	return qn_gam_init(self, _file_stream_vt);
 }
@@ -1174,7 +1183,7 @@ static QnStream* _file_stream_open(QnMount* mount, const char* filename, const c
 	{
 		// 쓰기 모드는 지원하지 않는다
 		return NULL;
-}
+	}
 #endif
 
 #ifdef _QN_WINDOWS_
@@ -1202,6 +1211,178 @@ static QnStream* _file_stream_open(QnMount* mount, const char* filename, const c
 	qn_set_gam_desc(self, fd);
 
 	return qn_gam_init(self, _file_stream_vt);
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// 간접 스트림
+
+//
+typedef struct INDIRECTSTREAM
+{
+	QnStream			base;
+	llong				offset;
+	size_t				loc;
+	size_t				size;
+} IndirectStream;
+
+//
+static int _indirect_stream_read(QnGam g, void* buffer, const int offset, const int size)
+{
+	IndirectStream* self = qn_cast_type(g, IndirectStream);
+	byte* ptr = (byte*)buffer + offset;
+	int ret;
+
+#ifdef _QN_WINDOWS_
+	HANDLE fd = qn_get_gam_handle(self);
+	const LARGE_INTEGER cli = { .QuadPart = self->offset + self->loc };
+	SetFilePointerEx(fd, cli, NULL, FILE_BEGIN);
+
+	DWORD dw;
+	if (ReadFile(fd, ptr, size, &dw, NULL) == FALSE)
+		return -1;
+	ret = (int)dw;
+#else
+	int fd = qn_get_gam_desc_int(self);
+	lseek(fd, (off_t)(self->offset + self->loc), SEEK_SET);
+
+	ret = read(fd, ptr, (size_t)size);
+	if (ret < 0)
+		return -1;
+#endif
+
+	self->loc += ret;
+	if (self->loc > self->size)
+		self->loc = self->size;
+	return ret;
+}
+
+//
+static int _indirect_stream_write(QnGam g, const void* buffer, const int offset, const int size)
+{
+	QN_DUMMY(g); QN_DUMMY(buffer); QN_DUMMY(offset); QN_DUMMY(size);
+	qn_mesgf(true, "IndirectStream", "write not supported");
+	return -1;
+}
+
+//
+static llong _indirect_stream_seek(QnGam g, const llong offset, const QnSeek org)
+{
+	IndirectStream* self = qn_cast_type(g, IndirectStream);
+	llong loc;
+	switch ((int)org)
+	{
+		case QNSEEK_BEGIN:
+			loc = offset;
+			break;
+		case QNSEEK_CUR:
+			loc = (llong)self->loc + offset;
+			break;
+		case QNSEEK_END:
+			loc = (llong)self->size + offset;
+			break;
+		default:
+			return -1;
+	}
+	self->loc = (size_t)loc <= self->size ? (size_t)loc : self->size;
+	return (llong)self->loc;
+}
+
+//
+static llong _indirect_stream_tell(QnGam g)
+{
+	IndirectStream* self = qn_cast_type(g, IndirectStream);
+	return (llong)self->loc;
+}
+
+//
+static llong _indirect_stream_size(QnGam g)
+{
+	IndirectStream* self = qn_cast_type(g, IndirectStream);
+	return (llong)self->size;
+}
+
+//
+static bool _indirect_stream_flush(QnGam g)
+{
+	QN_DUMMY(g);
+	return true;
+}
+
+// 파일 스트림 닫기
+static void _indirect_stream_dispose(QnGam g)
+{
+	IndirectStream* self = qn_cast_type(g, IndirectStream);
+#ifdef _QN_WINDOWS_
+	HANDLE fd = qn_get_gam_handle(self);
+	if (fd != NULL && fd != INVALID_HANDLE_VALUE)
+		CloseHandle(fd);
+#else
+	int fd = qn_get_gam_desc_int(self);
+	if (fd >= 0)
+		close(fd);
+#endif
+	qn_unload(self->base.mount);
+	qn_free(self->base.name);
+	qn_free(self);
+}
+
+//
+static QnStream* _indirect_stream_dup(QnGam g);
+
+//
+static const QN_DECL_VTABLE(QNSTREAM) _indirect_stream_vt =
+{
+	.base.name = "IndirectStream",
+	.base.dispose = _indirect_stream_dispose,
+	.stream_read = _indirect_stream_read,
+	.stream_write = _indirect_stream_write,
+	.stream_seek = _indirect_stream_seek,
+	.stream_tell = _indirect_stream_tell,
+	.stream_size = _indirect_stream_size,
+	.stream_flush = _indirect_stream_flush,
+	.stream_dup = _indirect_stream_dup,
+};
+
+// 간접 스트림 복제
+static QnStream* _indirect_stream_dup(QnGam g)
+{
+	IndirectStream* source = qn_cast_type(g, IndirectStream);
+	nint fd = _file_handle_dup(qn_get_gam_desc(source, nint));
+	if (fd == -1)
+		return NULL;
+
+	IndirectStream* self = qn_alloc(1, IndirectStream);
+	self->base.mount = qn_load(source->base.mount);
+	self->base.name = qn_strdup(source->base.name);
+	self->base.flags = source->base.flags;
+	self->offset = source->offset;
+	self->loc = 0;
+	self->size = source->size;
+	qn_set_gam_desc(self, fd);
+
+	return qn_gam_init(self, _indirect_stream_vt);
+}
+
+// 미리 정의
+struct HFS;
+
+// 간접 스트림 열기
+static QnStream* _indirect_stream_open(struct HFS* hfs, const char* filename, llong offset, size_t size)
+{
+	FileStream* stream = qn_get_gam_desc(hfs, FileStream*);
+	nint fd = _file_handle_dup(qn_get_gam_desc(stream, nint));
+
+	IndirectStream* self = qn_alloc(1, IndirectStream);
+	self->base.mount = qn_load(hfs);
+	self->base.name = qn_strdup(filename);
+	self->base.flags = QNFF_READ | QNFF_SEEK | QNFFT_INDIRECT;
+	self->offset = offset;
+	self->loc = 0;
+	self->size = size;
+	qn_set_gam_desc(self, fd);
+
+	return qn_gam_init(self, _indirect_stream_vt);
 }
 
 
@@ -1294,7 +1475,7 @@ static QnTimeStamp _stat_to_timestamp(time_t tt)
 #endif
 
 //
-static bool _disk_list_read_info(QnGam g, QnFileInfo2* info)
+static bool _disk_list_read_info(QnGam g, QnFileInfo* info)
 {
 	DiskDir* self = qn_cast_type(g, DiskDir);
 #ifdef _QN_WINDOWS_
@@ -1331,10 +1512,9 @@ static bool _disk_list_read_info(QnGam g, QnFileInfo2* info)
 		if (self->data.cFileName[0] == '.' && (self->data.cFileName[1] == '\0' || (self->data.cFileName[1] == '.' && self->data.cFileName[2] == '\0')))
 			continue;
 
-		info->type = QN_TMASK(self->data.dwFileAttributes, FILE_ATTRIBUTE_DIRECTORY) ? 0 : 1;
-		info->len = (ushort)qn_u16to8(self->path, QN_MAX_PATH, self->data.cFileName, 0);
-		info->extra = 0;
-		info->size = (uint)(self->data.nFileSizeLow | ((llong)self->data.nFileSizeHigh << 32));
+		info->attr = _file_attr_convert(self->data.dwFileAttributes);
+		info->len = (uint)qn_u16to8(self->path, QN_MAX_PATH, self->data.cFileName, 0);
+		info->size = (llong)(self->data.nFileSizeLow | ((llong)self->data.nFileSizeHigh << 32));
 		info->cmpr = 0;
 		info->stc = _filetime_to_timestamp(&self->data.ftCreationTime);
 		info->stw = _filetime_to_timestamp(&self->data.ftLastWriteTime);
@@ -1358,17 +1538,16 @@ static bool _disk_list_read_info(QnGam g, QnFileInfo2* info)
 	if (stat(self->path, &st) < 0)
 		return false;
 
-	info->type = S_ISDIR(st.st_mode) ? 0 : 1;
-	info->len = (ushort)strlen(ent->d_name);
-	info->extra = 0;
-	info->size = (uint)st.st_size;
+	info->attr = _file_attr_convert(&st);
+	info->len = (uint)strlen(ent->d_name);
+	info->size = (llong)st.st_size;
 	info->cmpr = 0;
 	info->stc = _stat_to_timestamp(st.st_ctime);
 	info->stw = _stat_to_timestamp(st.st_mtime);
 	info->name = ent->d_name;
 	return true;
 #endif
-	}
+}
 
 //
 static void _disk_list_rewind(QnGam g)
@@ -1419,7 +1598,7 @@ static void _disk_list_seek(QnGam g, int position)
 	seekdir(dir, position);
 #endif
 #endif
-		}
+}
 
 //
 static int _disk_list_tell(QnGam g)
@@ -1760,6 +1939,7 @@ static QnMount* _create_diskfs(char* path)
 
 #define HFS_MAX_NAME	260
 
+//
 typedef struct HFSHEADER
 {
 	uint				header;		// 헤더
@@ -1771,6 +1951,7 @@ typedef struct HFSHEADER
 	char				desc[64];	// 설명
 } HfsHeader;
 
+//
 typedef struct HFSSOURCE
 {
 	byte				type;		// 타입
@@ -1781,6 +1962,7 @@ typedef struct HFSSOURCE
 	uint				seek;		// 파일 위치
 } HfsSource;
 
+//
 typedef struct HFSFILE
 {
 	HfsSource			source;
@@ -1790,6 +1972,7 @@ typedef struct HFSFILE
 	uint				next;		// 다음 파일 위치
 } HfsFile;
 
+//
 typedef struct HFSINFO
 {
 	HfsFile				file;
@@ -1798,6 +1981,14 @@ typedef struct HFSINFO
 QN_DECL_ARRAY(HfsArrInfo, HfsInfo);
 QN_IMPL_ARRAY(HfsArrInfo, HfsInfo, _hfs_infos);
 
+//
+typedef struct HFSDIR
+{
+	QnDir				base;
+	HfsArrInfo			infos;
+} HfsDir;
+
+//
 typedef struct HFS
 {
 	QnMount				base;
@@ -1897,7 +2088,6 @@ static bool _hfs_chdir(QnGam g, const char* directory)
 	if (qn_stricmp(directory, self->base.path.DATA) == 0)
 		return true;
 
-	llong pos = qn_stream_tell(stream);
 	if (_hfs_infos_is_have(&self->infos))
 	{
 		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, 0);
@@ -1918,46 +2108,38 @@ static bool _hfs_chdir(QnGam g, const char* directory)
 	{
 		const uint hash = qn_strshash(tok);
 		if (_hfs_find_directory(&info, tok, hash, stream) == false)
-		{
-			qn_stream_seek(stream, pos, QNSEEK_BEGIN);
 			return false;
-		}
 		qn_stream_seek(stream, info.file.meta, QNSEEK_BEGIN);
 		_hfs_make_directory_name(&self->base.path, tok);
 	}
-#ifdef HFS_DEBUG_TRACE
+#if HFS_DEBUG_TRACE
 	qn_outputf("\tHFS: current directory is %s", self->base.path.DATA);
 	qn_outputs("\t=type=|=attr=|=filename=====================================");
 	int fc = 0;
 #endif
 
 	_hfs_infos_clear(&self->infos);
-	pos = qn_stream_tell(stream);
-	for (uint srt = (uint)pos; srt; srt = info.file.next)
+	for (uint srt = (uint)qn_stream_tell(stream); srt; srt = info.file.next)
 	{
 		if (qn_stream_read(stream, &info, 0, sizeof(HfsFile)) != sizeof(HfsFile) ||
 			qn_stream_read(stream, info.name, 0, info.file.source.len) != info.file.source.len)
-		{
-			qn_stream_seek(stream, pos, QNSEEK_BEGIN);
 			return false;
-		}
 		info.name[info.file.source.len] = '\0';
 
 		qn_stream_seek(stream, info.file.next, QNSEEK_BEGIN);
 		info.file.source.seek = srt;
 		_hfs_infos_add(&self->infos, info);
 
-#ifdef HFS_DEBUG_TRACE
+#if HFS_DEBUG_TRACE
 		qn_outputf("\t %04X | %04X | (%d/%d) %s", info.file.source.type, info.file.source.attr,
 			info.file.source.seek, info.file.meta, info.name);
 		fc++;
 #endif
 	}
-#ifdef HFS_DEBUG_TRACE
+#if HFS_DEBUG_TRACE
 	qn_outputf("\tHFS: %d files", fc);
 #endif
 
-	qn_stream_seek(stream, pos, QNSEEK_BEGIN);
 	return true;
 }
 
@@ -2190,26 +2372,66 @@ static char* _hfs_read_text(QnGam g, const char* filename, int* length, int* cod
 // 파일 열기
 static QnStream* _hfs_open_stream(QnGam g, const char* filename, const char* mode)
 {
+	Hfs* self = qn_cast_type(g, Hfs);
+	QnStream* hfs_stream = qn_get_gam_desc(self, QnStream*);
+	bool indirect = QN_TMASK(hfs_stream->flags, QNFFT_FILE);
+
 	if (mode)
 	{
 		for (const char* p = mode; *p; p++)
 		{
 			if (*p == 'w' || *p == 'a' || *p == '+')
 			{
-				qn_mesgf(true, "HFS", "file write mode is not supported: %s (%s)", filename, mode);
+				qn_mesgf(true, "Hfs", "file write mode is not supported: %s (%s)", filename, mode);
 				return NULL;
+			}
+			if (*p == 'm')
+			{
+				// m 모드는 메모리 스트림으로
+				indirect = false;
 			}
 		}
 	}
 
-	Hfs* self = qn_cast_type(g, Hfs);
-
-	int size;
-	byte* data = (byte*)_hfs_read(self, filename, &size);
-	if (data == NULL)
+	QnPathStr dir, name, save;
+	_hfs_split_path(filename, &dir, &name);
+	if (qn_path_str_is_empty(&name) || name.DATA[0] == '.')
+		return NULL;
+	if (_hfs_save_dir(self, &dir, &save) == false)
 		return NULL;
 
-	return _create_mem_stream_hfs(qn_cast_type(self, QnMount), filename, data, size);
+	const uint hash = qn_path_str_shash(&name);
+	HfsInfo* found = NULL;
+	size_t i;
+	QN_CTNR_FOREACH(self->infos, i)
+	{
+		HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
+		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_icmp(&name, info->name) == 0)
+		{
+			found = info;
+			break;
+		}
+	}
+	if (found == NULL)
+	{
+		_hfs_restore_dir(self, &save);
+		return NULL;
+	}
+
+	QnStream* stream;
+	if (QN_TMASK(found->file.source.attr, QNFATTR_CMPR) || indirect == false)
+	{
+		void* data = _hfs_source_read(self, &found->file.source);
+		stream = data == NULL ? NULL : _create_mem_stream_hfs(qn_cast_type(self, QnMount), filename, data, found->file.source.size);
+	}
+	else
+	{
+		llong offset = found->file.source.seek + sizeof(HfsFile) + found->file.source.len;
+		stream = _indirect_stream_open(self, filename, offset, found->file.source.size);
+	}
+
+	_hfs_restore_dir(self, &save);
+	return stream;
 }
 
 // 파일 있나
@@ -2239,8 +2461,96 @@ static QnFileAttr _hfs_exist(QnGam g, const char* path)
 	return attr;
 }
 
+//
+static const HfsInfo* _hfs_list_internal_read_info(HfsDir* self)
+{
+	if (self->base.base.desc >= _hfs_infos_count(&self->infos))
+		return NULL;
+	return _hfs_infos_nth_ptr(&self->infos, self->base.base.desc++);
+}
 
-//.mount_list = _disk_fs_list,
+//
+static const char* _hfs_list_read(QnGam g)
+{
+	HfsDir* self = qn_cast_type(g, HfsDir);
+	const HfsInfo* hi = _hfs_list_internal_read_info(self);
+	return hi == NULL ? NULL : hi->name;
+}
+
+//
+static bool _hfs_list_read_info(QnGam g, QnFileInfo* info)
+{
+	HfsDir* self = qn_cast_type(g, HfsDir);
+	const HfsInfo* hi = _hfs_list_internal_read_info(self);
+	if (hi == NULL)
+		return false;
+
+	info->attr = hi->file.source.attr;
+	info->len = hi->file.source.len;
+	info->size = hi->file.source.size;
+	info->cmpr = hi->file.source.cmpr;
+	info->stc = hi->file.stc.stamp;
+	info->stw = hi->file.stc.stamp;
+	info->name = hi->name;
+	return true;
+}
+
+//
+static void _hfs_list_rewind(QnGam g)
+{
+	HfsDir* self = qn_cast_type(g, HfsDir);
+	self->base.base.desc = 0;
+}
+
+//
+static void _hfs_list_seek(QnGam g, int position)
+{
+	HfsDir* self = qn_cast_type(g, HfsDir);
+	if ((size_t)position < _hfs_infos_count(&self->infos))
+		self->base.base.desc = position;
+}
+
+//
+static int _hfs_list_tell(QnGam g)
+{
+	HfsDir* self = qn_cast_type(g, HfsDir);
+	return (int)self->base.base.desc;
+}
+
+//
+static void _hfs_list_dispose(QnGam g)
+{
+	HfsDir* self = qn_cast_type(g, HfsDir);
+	_hfs_infos_dispose(&self->infos);
+	qn_unload(self->base.mount);
+	qn_free(self->base.name);
+	qn_free(self);
+}
+
+//
+static QnDir* _hfs_list_open(_In_ QnMount* mount)
+{
+	Hfs* hfs = qn_cast_type(mount, Hfs);
+	HfsDir* self = qn_alloc_zero_1(HfsDir);
+
+	_hfs_infos_init_copy(&self->infos, &hfs->infos);
+
+	self->base.mount = qn_load(mount);
+	self->base.name = qn_strdup(mount->path.DATA);	// VS는 여기 널이라고 우기지만 mount는 널이 아니므로 무시
+	qn_set_gam_desc(self, 0);
+
+	static const QN_DECL_VTABLE(QNDIR) _hfs_list_vt =
+	{
+		.base.name = "HfsList",
+		.base.dispose = _hfs_list_dispose,
+		.dir_read = _hfs_list_read,
+		.dir_read_info = _hfs_list_read_info,
+		.dir_rewind = _hfs_list_rewind,
+		.dir_seek = _hfs_list_seek,
+		.dir_tell = _hfs_list_tell,
+	};
+	return qn_gam_init(self, _hfs_list_vt);
+}
 
 // HFS 만들기
 static bool _hfs_create_file(_In_ QnStream* st, char* desc)
@@ -2447,7 +2757,7 @@ static QnMount* _create_hfs(const char* filename, const char* mode)
 
 	static const QN_DECL_VTABLE(QNMOUNT) _hfs_vt =
 	{
-		.base.name = "HFS",
+		.base.name = "Hfs",
 		.base.dispose = _hfs_dispose,
 		.mount_open = _hfs_open_stream,
 		.mount_read = _hfs_read,
@@ -2456,7 +2766,7 @@ static QnMount* _create_hfs(const char* filename, const char* mode)
 		.mount_remove = _hfs_remove,
 		.mount_chdir = _hfs_chdir,
 		.mount_mkdir = _hfs_mkdir,
-		//.mount_list = _disk_fs_list,
+		.mount_list = _hfs_list_open,
 	};
 	return qn_gam_init(self, _hfs_vt);
 }
@@ -2698,6 +3008,149 @@ bool qn_hfs_store_file(QnMount* mount, const char* filename, const char* srcfile
 	const bool ret = _hfs_store_buffer(self, filename, data, size, cmpr, type);
 	qn_free(data);
 	qn_unload(stream);
+	return ret;
+}
+
+// 최적화용 파일 읽기
+static void* _hfs_optimize_read(Hfs* hfs, HfsSource* source, uint* ret_size)
+{
+	QnStream* stream = qn_get_gam_desc(hfs, QnStream*);
+	if (qn_stream_seek(stream, (llong)(source->seek + sizeof(HfsFile) + source->len), QNSEEK_BEGIN) < 0)
+		return NULL;
+
+	uint size = QN_TMASK(source->attr, QNFATTR_CMPR) ? source->cmpr : source->size;
+	byte* data = qn_alloc(size, byte);
+	if (qn_stream_read(stream, data, 0, (int)size) != (int)size)
+	{
+		qn_free(data);
+		return NULL;
+	}
+	*ret_size = size;
+	return data;
+}
+
+// 최적화 진행
+static bool _hfs_optimize_process(HfsOptimizeData* od)
+{
+	Hfs* input = qn_cast_type(od->input, Hfs);
+	Hfs* output = qn_cast_type(od->output, Hfs);
+	HfsOptimizeParam* param = od->param;
+
+	HfsArrInfo infos;
+	_hfs_infos_init_copy(&infos, &input->infos);
+
+	if (param->callback)
+	{
+		char path[QN_MAX_PATH];
+		qn_strncpy(path, input->base.path.DATA, input->base.path.LENGTH - 1);
+		qn_divpath(path, NULL, od->name);
+		od->size = 0;
+		od->count++;
+		param->callback(param->userdata, od);
+	}
+
+	size_t i;
+	QN_CTNR_FOREACH(infos, i)
+	{
+		HfsInfo* info = _hfs_infos_nth_ptr(&infos, i);
+		if (info->name[0] == '.')
+			continue;
+		if (QN_TMASK(info->file.source.attr, QNFATTR_DIR))
+		{
+			_hfs_mkdir(output, info->name);
+			_hfs_chdir(output, info->name);
+			_hfs_chdir(input, info->name);
+
+			od->stack++;
+			if (_hfs_optimize_process(od) == false)
+			{
+				_hfs_infos_dispose(&infos);
+				return false;
+			}
+
+			od->stack--;
+			_hfs_chdir(output, "..");
+			_hfs_chdir(input, "..");
+		}
+		else
+		{
+			if (param->callback)
+			{
+				qn_strcpy(od->name, info->name);
+				od->size = info->file.source.size;
+				od->count++;
+				param->callback(param->userdata, od);
+			}
+
+			uint size;
+			void* data = _hfs_optimize_read(input, &info->file.source, &size);
+			if (data == NULL)
+			{
+				_hfs_infos_dispose(&infos);
+				return false;
+			}
+
+			QnStream* stream = qn_get_gam_desc(output, QnStream*);
+			qn_stream_seek(stream, 0, QNSEEK_END);
+			const uint next = (uint)qn_stream_tell(stream);
+
+			HfsInfo file;
+			memcpy(&file.file, &info->file, sizeof(HfsFile));
+
+			if (_hfs_write_file_header(stream, &file.file, info->name, info->file.source.len) &&
+				qn_stream_write(stream, data, 0, size) != (int)size)
+			{
+				qn_free(data);
+				_hfs_infos_dispose(&infos);
+				return false;
+			}
+			qn_free(data);
+
+			HfsInfo* last = _hfs_infos_inv_ptr(&output->infos, 0);
+			last->file.next = next;
+			qn_stream_seek(stream, HFSAT_NEXT + last->file.source.seek, QNSEEK_BEGIN);
+			qn_stream_write(stream, &next, 0, (int)sizeof(uint));
+
+			file.file.source.seek = next;
+			qn_strcpy(file.name, info->name);
+			_hfs_infos_add(&output->infos, file);
+		}
+	}
+
+	_hfs_infos_dispose(&infos);
+	return true;
+}
+
+//
+bool qn_hfs_optimize(QnMount* mount, HfsOptimizeParam* param)
+{
+	qn_return_when_fail(QN_TMASK(mount->flags, QNMFT_HFS), false);
+	qn_return_when_fail(param != NULL, false);
+
+	Hfs* outhfs = qn_cast_type(_create_hfs(param->filename, "c"), Hfs);
+	qn_return_when_fail(outhfs != NULL, false);
+
+	if (param->desc[0] != '\0')
+		qn_hfs_set_desc(qn_cast_type(outhfs, QnMount), param->desc);
+
+	HfsOptimizeData od =
+	{
+		.stack = 1,
+		.input = mount,
+		.output = outhfs,
+		.param = param,
+	};
+
+	Hfs* self = qn_cast_type(mount, Hfs);
+	QnPathStr dir, save;
+	qn_path_str_set_char(&dir, '/');
+	_hfs_save_dir(self, &dir, &save);
+
+	bool ret = _hfs_optimize_process(&od);
+
+	_hfs_restore_dir(self, &save);
+
+	qn_unload(outhfs);
 	return ret;
 }
 #endif

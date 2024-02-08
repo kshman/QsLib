@@ -61,6 +61,7 @@
 #ifdef _MSC_VER
 #pragma warning(disable:4061)		// 열거형 '열거형' 스위치의 열거자 'identifier'는 사례 레이블에 의해 명시적으로 처리되지 않습니다.
 #pragma warning(disable:4062)		// 열거형 '열거형' 스위치의 열거자 'identifier'가 처리되지 않음
+#pragma warning(disable:4100)		// 'identifier': 함수 매개 변수가 참조되지 않았습니다.
 #pragma warning(disable:4710)		// 'function': 함수가 인라인되지 않음
 #pragma warning(disable:4711)		// 인라인 확장을 위해 'function' 함수가 선택되었습니다.
 #pragma warning(disable:4820)		// 'bytes'바이트 채움 문자가 construct 'member_name' 뒤에 추가되었습니다. (패딩)

@@ -217,7 +217,7 @@
 #define QN_MIN_HASH						11								/// @brief 최소 해시 갯수
 #define QN_MAX_HASH						13845163						/// @brief 최대 해시 갯수
 #define QN_MAX_RAND						0x7FFF							/// @brief 최대 난수
-#define QN_MAX_PATH						2048							/// @brief 경로의 최대 길이
+#define QN_MAX_PATH						1024							/// @brief 경로의 최대 길이
 #define QN_MAX_PATH_BIAS				8								/// @brief 경로의 최대 길이 보정
 #ifdef _QN_WINDOWS_
 #define QN_PATH_SEP						'\\'							/// @brief 경로 분리 문자
@@ -232,13 +232,13 @@
 typedef void* pointer_t;												/// @brief 포인터 타입
 typedef void (*func_t)(void);											/// @brief 함수 핸들러
 typedef void (*paramfunc_t)(void*);										/// @brief 파라미터 있는 함수 핸들러
-typedef void (*paramfunc2_t)(void*,void*);								/// @brief 파라미터 2개 있는 함수 핸들러
+typedef void (*paramfunc2_t)(void*, void*);								/// @brief 파라미터 2개 있는 함수 핸들러
 
-typedef bool (*eqfunc_t)(const void*,const void*);						/// @brief 같은지 비교 함수 핸들러
+typedef bool (*eqfunc_t)(const void*, const void*);						/// @brief 같은지 비교 함수 핸들러
 typedef bool (*eqcfunc_t)(void*, const void*);							/// @brief 같은지 비교 함수 핸들러(컨텍스트)
-typedef int (*compfunc_t)(const void*,const void*);						/// @brief 비교 함수 핸들러
-typedef int (*sortfunc_t)(const void*,const void*);						/// @brief 정렬 함수 핸들러
-typedef int (*sortcfunc_t)(void*,const void*,const void*);				/// @brief 정렬 함수 핸들러(컨텍스트)
+typedef int (*compfunc_t)(const void*, const void*);						/// @brief 비교 함수 핸들러
+typedef int (*sortfunc_t)(const void*, const void*);						/// @brief 정렬 함수 핸들러
+typedef int (*sortcfunc_t)(void*, const void*, const void*);				/// @brief 정렬 함수 핸들러(컨텍스트)
 
 // aliases
 typedef int8_t							sbyte;							/// @brief 8비트 부호 있는 정수
@@ -1569,52 +1569,6 @@ INLINE double qn_timer_get_fps(const QnTimer* self) { return self->fps; }
 //////////////////////////////////////////////////////////////////////////
 // disk i/o
 
-/// @brief 패스 전용 문자열
-typedef struct QNPATHSTR
-{
-	size_t LENGTH;
-	char DATA[QN_MAX_PATH];
-} QnPathStr;
-
-/// @brief 파일 정보
-typedef struct QNFILEINFO
-{
-	ushort			type;									/// @brief 파일 타입
-	ushort			len;									/// @brief 파일 이름 길이
-	uint			extra;
-	uint			size;									/// @brief 파일 크기
-	uint			cmpr;									/// @brief 압축된 크기
-	QnTimeStamp		stc;									/// @brief 만든 날짜 타임 스탬프
-	QnTimeStamp		stw;									/// @brief 마지막 기록한 타임 스탬프
-} QnFileInfo;
-
-/// @brief 파일 정보2
-typedef struct QNFILEINFO2
-{
-	ushort			type;									/// @brief 파일 타입 (0=디렉토리, 1=파일)
-	ushort			len;									/// @brief 파일 이름 길이
-	uint			extra;
-	uint			size;									/// @brief 파일 크기
-	uint			cmpr;									/// @brief 압축된 크기
-	QnTimeStamp		stc;									/// @brief 만든 날짜 타임 스탬프
-	QnTimeStamp		stw;									/// @brief 마지막 기록한 타임 스탬프
-	const char*		name;									/// @brief 파일 이름
-} QnFileInfo2;
-
-/// @brief 파일 제어
-typedef struct QNFILEACCESS
-{
-#ifdef _MSC_VER
-	uint			mode;									/// @brief 제어 모드
-	uint			share;									/// @brief 공유 모드
-	uint			access;									/// @brief 제어 방법
-	uint			attr;									/// @brief 파일 속성
-#else
-	int				mode;
-	uint			access;
-#endif
-} QnFileAccess;
-
 /// @brief 파일에서 위치 찾기
 typedef enum QNSEEK
 {
@@ -1637,6 +1591,7 @@ typedef enum QNFILEFLAG
 	QNFFT_FILE = QN_BIT(16),								/// @brief 디스크 파일 시스템 파일
 	QNFFT_HFS = QN_BIT(17),									/// @brief HFS 파일
 	QNFFT_MEM = QN_BIT(18),									/// @brief 메모리 파일
+	QNFFT_INDIRECT = QN_BIT(19),							/// @brief 간접 파일
 } QnFileFlag;
 
 /// @brief 파일 타입
@@ -1683,6 +1638,39 @@ typedef enum QNMOUNTFLAG
 	QNMFT_MEM = QN_BIT(17),									/// @brief 메모리 파일 시스템
 	QNMFT_HFS = QN_BIT(18),									/// @brief HFS 파일 시스템
 } QnMountFlag;
+
+/// @brief 패스 전용 문자열
+typedef struct QNPATHSTR
+{
+	size_t LENGTH;
+	char DATA[QN_MAX_PATH];
+} QnPathStr;
+
+/// @brief 파일 정보
+typedef struct QNFILEINFO
+{
+	QnFileAttr		attr;									/// @brief 파일 속성
+	uint			len;									/// @brief 파일 이름 길이
+	llong			size;									/// @brief 파일 크기
+	llong			cmpr;									/// @brief 압축된 크기
+	QnTimeStamp		stc;									/// @brief 만든 날짜 타임 스탬프
+	QnTimeStamp		stw;									/// @brief 마지막 기록한 타임 스탬프
+	const char*		name;									/// @brief 파일 이름
+} QnFileInfo;
+
+/// @brief 파일 제어
+typedef struct QNFILEACCESS
+{
+#ifdef _MSC_VER
+	uint			mode;									/// @brief 제어 모드
+	uint			share;									/// @brief 공유 모드
+	uint			access;									/// @brief 제어 방법
+	uint			attr;									/// @brief 파일 속성
+#else
+	int				mode;
+	uint			access;
+#endif
+} QnFileAccess;
 
 /// @brief 한번에 파일을 읽는 기능들에 대해 최대 허용 크기 (초기값은 128MB)
 QSAPI size_t qn_get_file_max_alloc_size(void);
@@ -1752,7 +1740,7 @@ QN_DECL_VTABLE(QNDIR)
 {
 	QN_GAM_VTABLE(QNGAMBASE);
 	const char* (*dir_read)(/*QnDir*/QnGam);
-	bool (*dir_read_info)(/*QnDir*/QnGam, QnFileInfo2*);
+	bool (*dir_read_info)(/*QnDir*/QnGam, QnFileInfo*);
 	void (*dir_rewind)(/*QnDir*/QnGam);
 	void (*dir_seek)(/*QnDir*/QnGam, int);
 	int (*dir_tell)(/*QnDir*/QnGam);
@@ -1774,7 +1762,7 @@ QN_DECL_VTABLE(QNMOUNT)
 	QnStream* (*mount_open)(/*QnMount*/QnGam, const char*, const char*);
 	void* (*mount_read)(/*QnMount*/QnGam, const char*, int*);
 	char* (*mount_read_text)(/*QnMount*/QnGam, const char*, int*, int*);
-	QnFileAttr (*mount_exist)(/*QnMount*/QnGam, const char*);
+	QnFileAttr(*mount_exist)(/*QnMount*/QnGam, const char*);
 	bool (*mount_remove)(/*QnMount*/QnGam, const char*);
 	bool (*mount_chdir)(/*QnMount*/QnGam, const char*);
 	bool (*mount_mkdir)(/*QnMount*/QnGam, const char*);
@@ -1905,7 +1893,7 @@ QSAPI QnStream* qn_create_mem_stream(const char* name, size_t initial_capacity);
 /// @param data 데이터로 사용할 버퍼
 /// @param size 버퍼의 크기
 /// @return 만든 메모리 스트림
-QSAPI QnStream* qn_create_mem_stream_stored(const char* name, void* data, size_t size);
+QSAPI QnStream* qn_create_mem_stream_data(const char* name, void* data, size_t size);
 
 /// @brief 메모리 스트림의 데이터 얻기
 /// @param self 스트림
@@ -1922,7 +1910,7 @@ QSAPI const char* qn_dir_read(QnDir* self);
 /// @brief 파일 목록에서 항목의 정보 읽기
 /// @param self 디렉토리
 /// @param info 항목 정보
-QSAPI bool qn_dir_read_info(QnDir* self, QnFileInfo2* info);
+QSAPI bool qn_dir_read_info(QnDir* self, QnFileInfo* info);
 
 /// @brief 파일 목록을 처음으로 감기
 /// @param self 디렉토리
@@ -2014,13 +2002,13 @@ INLINE const char* qn_mount_get_path(QnMount* self) { return qn_cast_type(self, 
 
 #ifndef _QN_MOBILE_
 /// @brief HFS에 설명을 넣는다 (63자까지)
-/// @param mount 마운트
+/// @param mount HFS 마운트
 /// @param desc 설명
 /// @return 실패 했다면 마운트가 HFS가 아니거나 쓰기 모드가 아님
 QSAPI bool qn_hfs_set_desc(QnMount* mount, const char* desc);
 
 /// @brief HFS에 버퍼를 파일로 저장한다
-/// @param mount 마운트
+/// @param mount HFS 마운트
 /// @param filename 파일 이름
 /// @param data 데이터
 /// @param size 크기 (최대 크기는 1.99GB로 2040MB)
@@ -2030,7 +2018,7 @@ QSAPI bool qn_hfs_set_desc(QnMount* mount, const char* desc);
 QSAPI bool qn_hfs_store_data(QnMount* mount, const char* filename, const void* data, uint size, bool cmpr, QnFileType type);
 
 /// @brief HFS에 스트림을 파일로 저장한다
-/// @param mount 마운트
+/// @param mount HFS 마운트
 /// @param filename 파일 이름
 /// @param stream 스트림
 /// @param cmpr 압축 여부
@@ -2039,13 +2027,47 @@ QSAPI bool qn_hfs_store_data(QnMount* mount, const char* filename, const void* d
 QSAPI bool qn_hfs_store_stream(QnMount* mount, const char* filename, QnStream* stream, bool cmpr, QnFileType type);
 
 /// @brief HFS에 파일을 파일로 저장한다
-/// @param mount 마운트
+/// @param mount HFS 마운트
 /// @param filename 파일 이름 (널이면 소스 파일 이름을 사용)
 /// @param srcfile 소스 파일 이름
 /// @param cmpr 압축 여부
 /// @param type 파일 타입
 /// @return 성공했으면 참을 반환
 QSAPI bool qn_hfs_store_file(QnMount* mount, const char* filename, const char* srcfile, bool cmpr, QnFileType type);
+
+// HFS 최적화 상태 미리 정의
+struct HFSOPTIMIZEDATA;
+
+/// @brief HFS 최적화 파라미터
+typedef struct HFSOPTIMIZEPARAM
+{
+	char				filename[260];						/// @brief 파일 이름
+	char				desc[64];							/// @brief HFS에 기록할 설명
+	void*				userdata;							/// @brief 사용자 데이터 (널 가능)
+	void(*callback)(void*, const struct HFSOPTIMIZEDATA*);	/// @brief 콜백 (널 가능)
+} HfsOptimizeParam;
+
+/// @brief HFS 최적화 상태
+typedef struct HFSOPTIMIZEDATA
+{
+	char				name[260];							/// @brief 파일 이름
+	uint				size;								/// @brief 파일 크기
+
+	uint				count;								/// @brief 총 진행 파일 수
+	uint				stack;								/// @brief 스택 크기
+	void*				input;								/// @brief 입력 HFS 개체
+	void*				output;								/// @brief 출력 HFS 개체
+
+	HfsOptimizeParam*	param;								/// @brief 최적화 파라미터
+} HfsOptimizeData;
+
+/// @brief HFS 최적화
+/// @param mount HFS 마운트
+/// @param output 
+/// @param callback 
+/// @param data 
+/// @return 
+QSAPI bool qn_hfs_optimize(QnMount* mount, HfsOptimizeParam* param);
 #endif
 
 

@@ -22,7 +22,7 @@ int main(void)
 	QnDir* dir = qn_mount_list(mnt);
 	if (dir != NULL)
 	{
-		QnFileInfo2 fi;
+		QnFileInfo fi;
 		while (qn_dir_read_info(dir, &fi))
 		{
 			int pos = qn_dir_tell(dir);

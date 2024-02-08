@@ -33,6 +33,63 @@ static const char one_summer_night[] =
 "My heart would beat for you\n"
 "You are the one for me\n";
 
+static void optimize_callback(void* userdata, const struct HFSOPTIMIZEDATA* data)
+{
+	qn_outputf("진행파일#%u: %s (크기: %u)", data->count, data->name, data->size);
+}
+
+QN_IMPL_BSTR(QnPathStr, QN_MAX_PATH, qn_path_str);
+QN_DECLIMPL_ARRAY(FileInfoArray, QnPathStr, file_infos);
+
+static void subdirectory_list(QnMount* mnt, const char* path)
+{
+	qn_mount_chdir(mnt, path);
+	QnDir* dir = qn_mount_list(mnt);
+	if (dir == NULL)
+		return;
+
+	size_t i;
+	FileInfoArray files;
+	file_infos_init(&files, 0);
+
+	QnFileInfo fi;
+	while (qn_dir_read_info(dir, &fi))
+	{
+		int pos = qn_dir_tell(dir);
+		QnDateTime ft = { fi.stc };
+		if (QN_TMASK(fi.attr, QNFATTR_DIR))
+		{
+			if (fi.name[0] != '.')
+			{
+				QnPathStr s;
+				qn_path_str_set(&s, fi.name);
+				file_infos_add(&files, s);
+			}
+
+			qn_outputf("%d, [디렉토리] %s [%04d-%02d-%02d %02d:%02d:%02d]",
+				pos, fi.name,
+				ft.year, ft.month, ft.day, ft.hour, ft.minute, ft.second);
+		}
+		else
+		{
+			qn_outputf("%d, [파일] %s (%u) [%04d-%02d-%02d %02d:%02d:%02d]",
+				pos, fi.name, fi.size,
+				ft.year, ft.month, ft.day, ft.hour, ft.minute, ft.second);
+		}
+	}
+
+	QN_CTNR_FOREACH(files, i)
+	{
+		QnPathStr* s = file_infos_nth_ptr(&files, i);
+		qn_outputf("하위 디렉토리: %s", s->DATA);
+		subdirectory_list(mnt, s->DATA);
+	}
+
+	file_infos_dispose(&files);
+	qn_unload(dir);
+	qn_mount_chdir(mnt, "..");
+}
+
 int main(void)
 {
 	qn_runtime();
@@ -76,12 +133,14 @@ int main(void)
 		qn_hfs_store_file(mnt, NULL, "QsLib.vcxproj", true, QNFTYPE_MARKUP);
 		qn_hfs_store_file(mnt, "qlem.html", "QsLibEm.html", true, QNFTYPE_MARKUP);
 		qn_hfs_store_file(mnt, "qlem.cmd", "QsLibEm.cmd", true, QNFTYPE_SCRIPT);
+		qn_mount_remove(mnt, "qlem.html");
 		qn_mount_chdir(mnt, "/");
 		qn_mount_chdir(mnt, "test");
 
 		qn_unload(mnt);
 	}
 
+	// 만든 hfs 열어서 테스트 (메모리로 올리기)
 	mnt = qn_open_mount("test.hfs", "hm");
 	if (mnt)
 	{
@@ -113,6 +172,56 @@ int main(void)
 		psz = qn_mount_read_text(mnt, "/test/qlem.cmd", NULL, NULL);
 		qn_outputs(psz);
 		qn_free(psz);
+
+		// 파일 목록 테스트
+		QnDir* dir = qn_mount_list(mnt);
+		if (dir != NULL)
+		{
+			QnFileInfo fi;
+			while (qn_dir_read_info(dir, &fi))
+			{
+				int pos = qn_dir_tell(dir);
+				QnDateTime ft = { fi.stc };
+				qn_outputf("%d, [%s] %s (%u) [%04d-%02d-%02d %02d:%02d:%02d]",
+					pos, QN_TMASK(fi.attr, QNFATTR_DIR) ? "디렉토리" : "파일", fi.name, fi.size,
+					ft.year, ft.month, ft.day, ft.hour, ft.minute, ft.second);
+			}
+			qn_unload(dir);
+		}
+
+		// HS 최적화 테스트
+		HfsOptimizeParam param =
+		{
+			"test_opt.hfs",
+			"optimized hfs",
+			NULL,
+			optimize_callback
+		};
+		qn_hfs_optimize(mnt, &param);
+
+		qn_unload(mnt);
+	}
+
+	// 옵티마이즈 파일 목록 확인
+	mnt = qn_open_mount("test_opt.hfs", "h");
+	if (mnt)
+	{
+		subdirectory_list(mnt, "/");
+
+		// 간접 파일	읽기
+		QnStream* stream = qn_mount_open_stream(mnt, "/test/one summer night.txt", "");
+		if (stream)
+		{
+			int size = (int)qn_stream_size(stream);
+			char* psz = qn_alloc(size + 1, char);
+			if (qn_stream_read(stream, psz, 0, size) == size)
+			{
+				psz[size] = 0;
+				qn_outputs(psz);
+			}
+			qn_free(psz);
+			qn_unload(stream);
+		}
 
 		qn_unload(mnt);
 	}

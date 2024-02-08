@@ -14,6 +14,11 @@
 #include "vurtun/sdefl.h"
 #include "vurtun/sinfl.h"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4706)
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 // 해시
 
@@ -2689,3 +2694,7 @@ DEF_UTF_DUP(u16to8, uchar2, char)
 DEF_UTF_DUP(u16to32, uchar2, uchar4)
 DEF_UTF_DUP(u32to16, uchar4, uchar2)
 #undef DEF_UTF_DUP
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

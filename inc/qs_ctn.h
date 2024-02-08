@@ -570,6 +570,12 @@
 			self->DATA = NULL;																		\
 		}																							\
 	}																								\
+	/* @brief 컨테이너 복사 */																		\
+	FINLINE void PFX##_init_copy(NAME* self, const NAME* src)										\
+	{																								\
+		self->CAPA = self->COUNT = src->COUNT;														\
+		self->DATA = qn_memdup(src->DATA, sizeof(TYPE) * src->COUNT);								\
+	}																								\
 	/* @brief 갯수와 데이터를 가지고 배열 초기화 */														\
 	FINLINE void PFX##_init_data(NAME* self, size_t count, TYPE* data)								\
 	{																								\
