@@ -212,8 +212,8 @@
 #define QN_VERSION						(QN_VERSION_MAJOR * 100 + QN_VERSION_MINER)
 
 #define QN_MSEC_PER_SEC					1000							/// @brief 초당 밀리초
-#define QN_USEC_PER_SEC					1000000							/// @brief 초당 마이크로초 
-#define QN_NSEC_PER_SEC					1000000000						/// @brief 초당 나노초 
+#define QN_USEC_PER_SEC					1000000							/// @brief 초당 마이크로초
+#define QN_NSEC_PER_SEC					1000000000						/// @brief 초당 나노초
 #define QN_MIN_HASH						11								/// @brief 최소 해시 갯수
 #define QN_MAX_HASH						13845163						/// @brief 최대 해시 갯수
 #define QN_MAX_RAND						0x7FFF							/// @brief 최대 난수
@@ -236,9 +236,8 @@ typedef void (*paramfunc2_t)(void*, void*);								/// @brief 파라미터 2개 
 
 typedef bool (*eqfunc_t)(const void*, const void*);						/// @brief 같은지 비교 함수 핸들러
 typedef bool (*eqcfunc_t)(void*, const void*);							/// @brief 같은지 비교 함수 핸들러(컨텍스트)
-typedef int (*compfunc_t)(const void*, const void*);						/// @brief 비교 함수 핸들러
-typedef int (*sortfunc_t)(const void*, const void*);						/// @brief 정렬 함수 핸들러
-typedef int (*sortcfunc_t)(void*, const void*, const void*);				/// @brief 정렬 함수 핸들러(컨텍스트)
+typedef int (*cmpfunc_t)(const void*, const void*);						/// @brief 비교/정렬 함수 핸들러
+typedef int (*cmpcfunc_t)(void*, const void*, const void*);				/// @brief 비교/정렬 함수 핸들러(컨텍스트)
 
 // aliases
 typedef int8_t							sbyte;							/// @brief 8비트 부호 있는 정수
@@ -421,7 +420,7 @@ QSAPI void qn_syssym(const char** names, int count, nint start_sym);
 
 /// @brief 심볼을 얻는다
 /// @param name 심볼 이름
-///	@return 심볼 값	
+///	@return 심볼 값
 QSAPI nint qn_sym(const char* name);
 
 /// @brief 심볼 디버그 출력
@@ -669,7 +668,7 @@ QSAPI uint qn_prime_shift(uint value, uint min, uint* shift);
 /// @param[in] count 데이터의 갯수
 /// @param[in] stride 데이터의 폭
 /// @param[in] compfunc 비교 연산 콜백 함수
-QSAPI void qn_qsort(void* ptr, size_t count, size_t stride, sortfunc_t compfunc);
+QSAPI void qn_qsort(void* ptr, size_t count, size_t stride, cmpfunc_t compfunc);
 
 /// @brief 콘텍스트 입력 받는 퀵정렬
 /// @param[in,out] ptr 정렬할 데이터의 포인터
@@ -677,7 +676,7 @@ QSAPI void qn_qsort(void* ptr, size_t count, size_t stride, sortfunc_t compfunc)
 /// @param[in] stride 데이터의 폭
 /// @param[in] compfunc 비교 연산 콜백 함수
 /// @param[in] context 콜백 함수용 콘텍스트
-QSAPI void qn_qsortc(void* ptr, size_t count, size_t stride, sortcfunc_t compfunc, void* context);
+QSAPI void qn_qsortc(void* ptr, size_t count, size_t stride, cmpcfunc_t compfunc, void* context);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -732,7 +731,7 @@ QSAPI void qn_qsortc(void* ptr, size_t count, size_t stride, sortcfunc_t compfun
 /// @warning 마지막 인수는 반드시 NULL이어야 한다
 #define qn_strdupcat(p,...)			qn_a_str_dup_cat(p,__VA_ARGS__)
 
-// qn_vasprintf 안쪽 
+// qn_vasprintf 안쪽
 QSAPI int qn_a_vsprintf(char** out, const char* fmt, va_list va);
 // qn_vapsprintf 안쪽
 QSAPI char* qn_a_vpsprintf(const char* fmt, va_list va);
@@ -793,7 +792,7 @@ QSAPI char* qn_a_str_dup_cat(const char* p, ...);
 /// @warning 마지막 인수는 반드시 NULL이어야 한다
 #define qn_strdupcat(p,...)			qn_a_i_str_dup_cat(__FUNCTION__, __LINE__, p, __VA_ARGS__)
 
-// qn_vasprintf 안쪽 
+// qn_vasprintf 안쪽
 QSAPI int qn_a_i_vsprintf(const char* desc, size_t line, char** out, const char* fmt, va_list va);
 // qn_vapsprintf 안쪽
 QSAPI char* qn_a_i_vpsprintf(const char* desc, size_t line, const char* fmt, va_list va);
@@ -1087,7 +1086,7 @@ QSAPI size_t qn_u8len(const char* s);
 
 /// @brief UTF-8 문자열 복사
 /// @param dest 대상 문자열
-/// @param src 원본 문자열 
+/// @param src 원본 문자열
 /// @param len 복사할 길이
 /// @return 대상 문자열 버퍼 그대로
 QSAPI char* qn_u8ncpy(char* dest, const char* src, size_t len);
@@ -1490,7 +1489,7 @@ QSAPI QnTimeStamp qn_utc(void);
 QSAPI QnTimeStamp qn_stod(double sec);
 
 /// @brief 밀리초를 시간으로
-/// @param msec 밀리초 
+/// @param msec 밀리초
 /// @return 계산된 타임스탬프
 QSAPI QnTimeStamp qn_mstod(uint msec);
 
@@ -1531,7 +1530,7 @@ QSAPI bool qn_timer_update(QnTimer* self, bool manual);
 /// @brief 타이머 갱신
 /// @param self 타이머 개체
 /// @param manual FPS를 자동으로 계산하려면 false, 아니면 true
-/// @param target_fps 목표 FPS 
+/// @param target_fps 목표 FPS
 /// @return 성공 여부
 bool qn_timer_update_fps(QnTimer* self, bool manual, double target_fps);
 
@@ -1600,17 +1599,23 @@ typedef enum QNFILETYPE
 	QNFTYPE_UNKNOWN = 0,									/// @brief 알 수 없음
 	QNFTYPE_SYSTEM = 1,										/// @brief 시스템
 	QNFTYPE_TEXT = 4,										/// @brief 텍스트
-	QNFTYPE_PICTURE = 5,									/// @brief 그림
+	QNFTYPE_IMAGE = 5,										/// @brief 그림
 	QNFTYPE_SOUND = 6,										/// @brief 소리
 	QNFTYPE_VIDEO = 7,										/// @brief 비디오
-	QNFTYPE_CODE = 8,										/// @brief 코드
-	QNFTYPE_PROGRAM = 9,									/// @brief 프로그램
-	QNFTYPE_SCRIPT = 10,									/// @brief 스크립트
-	QNFTYPE_ARCHIVE = 11,									/// @brief 아카이브
-	QNFTYPE_MARKUP = 12,									/// @brief 마크업
-	QNFTYPE_MARKDOWN = 13,									/// @brief 마크다운
-	QNFTYPE_JSON = 14,										/// @brief JSON
-	QNFTYPE_TOML = 15,										/// @brief TOML
+	QNFTYPE_TEXTURE = 8,									/// @brief 텍스쳐
+	QNFTYPE_SNDEFF = 9,										/// @brief 사운드 이펙트
+	QNFTYPE_CODE = 10,										/// @brief 코드
+	QNFTYPE_PROGRAM = 11,									/// @brief 프로그램
+	QNFTYPE_SCRIPT = 12,									/// @brief 스크립트
+	QNFTYPE_ARCHIVE = 13,									/// @brief 아카이브
+	QNFTYPE_MARKUP = 14,									/// @brief 마크업
+	QNFTYPE_MARKDOWN = 15,									/// @brief 마크다운
+	QNFTYPE_JSON = 16,										/// @brief JSON
+	QNFTYPE_DATATEXT = 17,									/// @brief 데이터 텍스트
+	QNFTYPE_DOC = 18,										/// @brief 문서
+	QNFTYPE_MODEL = 19,										/// @brief 모델
+	QNFTYPE_ANIM = 20,										/// @brief 애니메이션
+	QNFTYPE_ASSOCIATE = 255,								/// @brief 운영체제 등록 연관 파일
 } QnFileType;
 
 /// @brief 파일 속성
@@ -1637,6 +1642,7 @@ typedef enum QNMOUNTFLAG
 	QNMFT_DISKFS = QN_BIT(16),								/// @brief 디스크 파일 시스템
 	QNMFT_MEM = QN_BIT(17),									/// @brief 메모리 파일 시스템
 	QNMFT_HFS = QN_BIT(18),									/// @brief HFS 파일 시스템
+	QNMFT_NORESTORE = QN_BIT(19),							/// @brief 복원하지 않음
 } QnMountFlag;
 
 /// @brief 패스 전용 문자열
@@ -1695,6 +1701,12 @@ QSAPI size_t qn_filepath(const char* filename, char* dest, size_t destsize);
 /// @return 기본 패스
 /// @warning 반환 값은 qn_free 함수로 해제해야한다
 QSAPI char* qn_basepath(void);
+
+/// @brief 시스템 현재 디렉토리를 얻는다
+/// @return 현재 디렉토리
+/// @warning 반환 값은 qn_free 함수로 해제해야한다
+QSAPI char* qn_getcwd(void);
+
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1789,7 +1801,7 @@ QSAPI void* qn_file_alloc(QnMount* mount, const char* filename, int* size);
 /// @param mount 마운트 (널이면 디스크 파일 시스템)
 /// @param filename 파일이름
 /// @param length 텍스트의 길이
-/// @param codepage 코드 페이지 (1200=UTF-16LE, 1201=UTF-16BE, 65001=UTF-8, 0=ANSI/시스템로캘 또는 UTF-8) 
+/// @param codepage 코드 페이지 (1200=UTF-16LE, 1201=UTF-16BE, 65001=UTF-8, 0=ANSI/시스템로캘 또는 UTF-8)
 /// @return 텍스트 데이터
 QSAPI char* qn_file_alloc_text(QnMount* mount, const char* filename, int* length, int* codepage);
 
@@ -1930,9 +1942,12 @@ QSAPI int qn_dir_tell(QnDir* self);
 
 /// @brief 마운트 열기
 /// @param path 마운트 경로
-/// @param mode 모드 (h=HFS, m=메모리, c=만들기, +=읽고 쓰기)
+/// @param mode 모드 (h=HFS, m=메모리, c=만들기, +=읽고 쓰기, f=HFS전용 디렉토리 복구 안함)
 /// @return 만든 마운트
 /// @note path를 널 값으로 하여 파일 시스템을 열 때는 실행 파일이 있는 경로를 기준으로 한다
+///
+/// 모드에서 'f'는 HFS전용으로 open/read에서 디렉토리를 복구하지 않는다. 즉,
+/// 경로를 사용해서 파일을 읽고 열 때 해당 경로로 변경된다.
 QSAPI QnMount* qn_open_mount(const char* path, const char* mode);
 
 /// @brief 마운트에서 파일 열기
@@ -2063,10 +2078,10 @@ typedef struct HFSOPTIMIZEDATA
 
 /// @brief HFS 최적화
 /// @param mount HFS 마운트
-/// @param output 
-/// @param callback 
-/// @param data 
-/// @return 
+/// @param output
+/// @param callback
+/// @param data
+/// @return
 QSAPI bool qn_hfs_optimize(QnMount* mount, HfsOptimizeParam* param);
 #endif
 

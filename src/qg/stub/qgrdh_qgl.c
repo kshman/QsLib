@@ -1913,7 +1913,7 @@ static QgTexture* qgl_create_texture(_In_ const char* name, _In_ const QgImage* 
 	GLDEBUG(glGenTextures(1, &gl_id));
 	GLDEBUG(glBindTexture(GL_TEXTURE_2D, gl_id));
 	ss->texture.handle[0] = GL_INVALID_HANDLE;
-	ss->texture.target[0] = 0;
+	ss->texture.target[0] = GL_TEXTURE_2D;
 
 	int mcount;
 	if (gl_enum.format != GL_NONE)

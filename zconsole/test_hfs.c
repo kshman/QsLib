@@ -99,6 +99,10 @@ int main(void)
 	{
 		qn_outputs("test 디렉토리 만들기");
 		qn_mount_mkdir(mnt, "test");
+		qn_mount_chdir(mnt, "test");
+		qn_mount_chdir(mnt, "/");
+
+
 		qn_outputs("000 디렉토리 만들기");
 		qn_mount_mkdir(mnt, "000");
 		qn_outputs("test 디렉토리 들어가기");
@@ -127,9 +131,9 @@ int main(void)
 		qn_mount_mkdir(mnt, "/test/456/thisislongfilenamedirectoryisitwork");
 
 		qn_mount_chdir(mnt, "/test");
-		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night), false, QNFTYPE_TEXT);
-		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night), false, QNFTYPE_TEXT);
-		qn_hfs_store_data(mnt, "one summer night.cmpr", one_summer_night, (uint)QN_COUNTOF(one_summer_night), true, QNFTYPE_TEXT);
+		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night)-1, false, QNFTYPE_TEXT);
+		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night)-1, false, QNFTYPE_TEXT);
+		qn_hfs_store_data(mnt, "one summer night.cmpr", one_summer_night, (uint)QN_COUNTOF(one_summer_night)-1, true, QNFTYPE_TEXT);
 		qn_hfs_store_file(mnt, NULL, "QsLib.vcxproj", true, QNFTYPE_MARKUP);
 		qn_hfs_store_file(mnt, "qlem.html", "QsLibEm.html", true, QNFTYPE_MARKUP);
 		qn_hfs_store_file(mnt, "qlem.cmd", "QsLibEm.cmd", true, QNFTYPE_SCRIPT);
@@ -141,7 +145,7 @@ int main(void)
 	}
 
 	// 만든 hfs 열어서 테스트 (메모리로 올리기)
-	mnt = qn_open_mount("test.hfs", "hm");
+	mnt = qn_open_mount("test.hfs", "hmf");
 	if (mnt)
 	{
 		QnFileAttr attr = qn_mount_exist(mnt, "/test/qlem.cmd");
@@ -166,7 +170,8 @@ int main(void)
 		}
 
 		psz = qn_mount_read(mnt, "one summer night.cmpr", &size);
-		qn_outputf("%*s", size, psz);
+		psz[size]='\0';
+		qn_outputs(psz);
 		qn_free(psz);
 
 		psz = qn_mount_read_text(mnt, "/test/qlem.cmd", NULL, NULL);
@@ -203,10 +208,26 @@ int main(void)
 	}
 
 	// 옵티마이즈 파일 목록 확인
-	mnt = qn_open_mount("test_opt.hfs", "h");
+	mnt = qn_open_mount("test_opt.hfs", "hf");
 	if (mnt)
 	{
 		subdirectory_list(mnt, "/");
+
+		// 간접 파일	읽기
+		QnStream* stream = qn_mount_open_stream(mnt, "/test/one summer night.txt", "");
+		if (stream)
+		{
+			int size = (int)qn_stream_size(stream);
+			char* psz = qn_alloc(size + 1, char);
+			if (qn_stream_read(stream, psz, 0, size) == size)
+			{
+				psz[size] = 0;
+				qn_outputs(psz);
+			}
+			qn_free(psz);
+			qn_unload(stream);
+		}
+
 		qn_unload(mnt);
 	}
 

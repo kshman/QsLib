@@ -134,7 +134,7 @@ size_t qn_filepath(const char* filename, char* dest, size_t destsize)
 static char* _read_sym_link(const char* path)
 {
 	char* buf = NULL;
-	size_t len = 64;
+	size_t len = 256;
 	ssize_t rc = -1;
 	while (true)
 	{
@@ -159,7 +159,7 @@ char* qn_basepath(void)
 {
 	char* path = NULL;
 #ifdef _QN_WINDOWS_
-	DWORD len, dw = 128;
+	DWORD len, dw = 256;
 	wchar* pw = NULL;
 	while (true)
 	{
@@ -228,6 +228,34 @@ char* qn_basepath(void)
 	path = "/";
 #endif
 	return path;
+}
+
+//
+char* qn_getcwd(void)
+{
+#ifdef _QN_WINDOWS_
+	wchar uni[QN_MAX_PATH];
+	const DWORD len = GetCurrentDirectory(QN_MAX_PATH, uni);
+	if (len == 0)
+		return NULL;
+	return qn_u16to8_dup(uni, 0);
+#else
+	char* buf = NULL;
+	size_t len = 256;
+	ssize_t rc = -1;
+	while (true)
+	{
+		buf = qn_realloc(buf, len, char);
+		rc = getcwd(buf, len);
+		if (rc != -1)
+			return buf;
+		if (errno != ERANGE)
+			break;
+		len *= 2;
+	}
+	qn_free(buf);
+	return NULL;
+#endif
 }
 
 
@@ -2148,17 +2176,19 @@ static bool _hfs_save_dir(Hfs* self, const QnPathStr* dir, QnPathStr* save)
 {
 	if (qn_path_str_is_empty(dir) || qn_path_str_icmp_bstr(dir, &self->base.path) == 0)
 	{
-		qn_path_str_clear(save);
+		if (save != NULL)
+			qn_path_str_clear(save);
 		return true;
 	}
-	qn_path_str_set_bstr(save, &self->base.path);
+	if (save != NULL)
+		qn_path_str_set_bstr(save, &self->base.path);
 	return _hfs_chdir(self, dir->DATA);
 }
 
 //
 static void _hfs_restore_dir(Hfs* self, const QnPathStr* save)
 {
-	if (qn_path_str_is_have(save))
+	if (save != NULL && qn_path_str_is_have(save))
 		_hfs_chdir(self, save->DATA);
 }
 
@@ -2327,11 +2357,11 @@ static void* _hfs_read(QnGam g, const char* filename, int* size)
 {
 	Hfs* self = qn_cast_type(g, Hfs);
 
-	QnPathStr dir, name, save;
+	QnPathStr dir, name, keep, *save = QN_TMASK(self->base.flags, QNMFT_NORESTORE) ? NULL : &keep;
 	_hfs_split_path(filename, &dir, &name);
 	if (qn_path_str_is_empty(&name) || name.DATA[0] == '.')
 		return NULL;
-	if (_hfs_save_dir(self, &dir, &save) == false)
+	if (_hfs_save_dir(self, &dir, save) == false)
 		return NULL;
 
 	const uint hash = qn_path_str_shash(&name);
@@ -2348,7 +2378,7 @@ static void* _hfs_read(QnGam g, const char* filename, int* size)
 	}
 	if (found == NULL)
 	{
-		_hfs_restore_dir(self, &save);
+		_hfs_restore_dir(self, save);
 		return NULL;
 	}
 
@@ -2356,7 +2386,7 @@ static void* _hfs_read(QnGam g, const char* filename, int* size)
 	if (size)
 		*size = (int)found->file.source.size;
 
-	_hfs_restore_dir(self, &save);
+	_hfs_restore_dir(self, save);
 	return data;
 }
 
@@ -2393,11 +2423,11 @@ static QnStream* _hfs_open_stream(QnGam g, const char* filename, const char* mod
 		}
 	}
 
-	QnPathStr dir, name, save;
+	QnPathStr dir, name, keep, *save = QN_TMASK(self->base.flags, QNMFT_NORESTORE) ? NULL : &keep;
 	_hfs_split_path(filename, &dir, &name);
 	if (qn_path_str_is_empty(&name) || name.DATA[0] == '.')
 		return NULL;
-	if (_hfs_save_dir(self, &dir, &save) == false)
+	if (_hfs_save_dir(self, &dir, save) == false)
 		return NULL;
 
 	const uint hash = qn_path_str_shash(&name);
@@ -2414,7 +2444,7 @@ static QnStream* _hfs_open_stream(QnGam g, const char* filename, const char* mod
 	}
 	if (found == NULL)
 	{
-		_hfs_restore_dir(self, &save);
+		_hfs_restore_dir(self, save);
 		return NULL;
 	}
 
@@ -2430,7 +2460,7 @@ static QnStream* _hfs_open_stream(QnGam g, const char* filename, const char* mod
 		stream = _indirect_stream_open(self, filename, offset, found->file.source.size);
 	}
 
-	_hfs_restore_dir(self, &save);
+	_hfs_restore_dir(self, save);
 	return stream;
 }
 
@@ -2439,9 +2469,9 @@ static QnFileAttr _hfs_exist(QnGam g, const char* path)
 {
 	Hfs* self = qn_cast_type(g, Hfs);
 
-	QnPathStr dir, name, save;
+	QnPathStr dir, name, keep, *save = QN_TMASK(self->base.flags, QNMFT_NORESTORE) ? NULL : &keep;
 	_hfs_split_path(path, &dir, &name);
-	if (_hfs_save_dir(self, &dir, &save) == false)
+	if (_hfs_save_dir(self, &dir, save) == false)
 		return 0;
 
 	const uint hash = qn_path_str_shash(&name);
@@ -2457,7 +2487,7 @@ static QnFileAttr _hfs_exist(QnGam g, const char* path)
 		}
 	}
 
-	_hfs_restore_dir(self, &save);
+	_hfs_restore_dir(self, save);
 	return attr;
 }
 
@@ -2717,7 +2747,7 @@ static void _hfs_dispose(QnGam g)
 // 진짜 만들기
 static QnMount* _create_hfs(const char* filename, const char* mode)
 {
-	bool can_write = false, use_mem = false, is_create = false;
+	bool can_write = false, use_mem = false, is_create = false, no_restore = false;
 	if (mode != NULL)
 	{
 		for (const char* p = mode; *p != '\0'; p++)
@@ -2734,6 +2764,8 @@ static QnMount* _create_hfs(const char* filename, const char* mode)
 				use_mem = true;
 				can_write = true;
 			}
+			else if (*p == 'f')
+				no_restore = true;
 			else if (*p == '+')
 				can_write = true;
 		}
@@ -2752,6 +2784,8 @@ static QnMount* _create_hfs(const char* filename, const char* mode)
 		self->base.flags |= QNMFT_MEM;
 	if (can_write)
 		self->base.flags |= QNMF_WRITE;
+	if (no_restore)
+		self->base.flags |= QNMFT_NORESTORE;
 	qn_set_gam_desc(self, stream);
 	_hfs_chdir(qn_cast_type(self, QnMount), "/");
 
@@ -2783,7 +2817,7 @@ bool qn_hfs_set_desc(QnMount* mount, const char* desc)
 }
 
 // 버퍼 넣기 메인
-bool _hfs_store_buffer(Hfs* self, const char* filename, const void* data, uint size, bool cmpr, QnFileType type)
+static bool _hfs_store_buffer(Hfs* self, const char* filename, const void* data, uint size, bool cmpr, QnFileType type)
 {
 	QnPathStr dir, name, save;
 	_hfs_split_path(filename, &dir, &name);
@@ -3097,7 +3131,7 @@ static bool _hfs_optimize_process(HfsOptimizeData* od)
 			HfsInfo file;
 			memcpy(&file.file, &info->file, sizeof(HfsFile));
 
-			if (_hfs_write_file_header(stream, &file.file, info->name, info->file.source.len) &&
+			if (_hfs_write_file_header(stream, &file.file, info->name, info->file.source.len) == false ||
 				qn_stream_write(stream, data, 0, size) != (int)size)
 			{
 				qn_free(data);
@@ -3179,7 +3213,11 @@ QnMount* qn_open_mount(const char* path, const char* mode)
 		if (hfs)
 			return _create_hfs(NULL, mode);
 		// HFS가 아니라면 현재 기본 경로를 연다
+#if false
 		tmppath = qn_basepath();
+#else
+		tmppath = qn_getcwd();
+#endif
 		return _create_diskfs(tmppath);
 	}
 

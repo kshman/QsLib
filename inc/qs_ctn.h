@@ -351,12 +351,12 @@
 		return self->COUNT != 0;																	\
 	}																								\
 	/* @brief 컨테이너 정렬하기 */																		\
-	FINLINE void PFX##_sort(NAME* self, sortfunc_t func)											\
+	FINLINE void PFX##_sort(NAME* self, cmpfunc_t func)											\
 	{																								\
 		qn_qsort(self->DATA, self->COUNT, sizeof(TYPE), func);										\
 	}																								\
 	/* @brief 컨테이너 정렬하기(컨텍스트) */															\
-	FINLINE void PFX##_sortc(NAME* self, sortcfunc_t func, void* context)							\
+	FINLINE void PFX##_sortc(NAME* self, cmpcfunc_t func, void* context)							\
 	{																								\
 		qn_qsortc(self->DATA, self->COUNT, sizeof(TYPE), func, context);							\
 	}																								\

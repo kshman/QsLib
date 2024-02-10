@@ -43,14 +43,14 @@ int main(void)
 
 	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA;
 	int features = QGFEATURE_NONE;
-	if (qg_open_rdh(NULL, "RDH", 0, 0, 0, flags, features) == false)
+	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 
 	QgPropRender prop_render = QG_DEFAULT_PROP_RENDER;
 	QgPropShader prop_shader = { { layouts, QN_COUNTOF(layouts) }, { vs, 0 }, { ps, 0 } };
-	QgRender* render = qg_rdh_create_render("named", &prop_render, &prop_shader);
-	QgBuffer* vertexbuf = qg_rdh_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(vertices), sizeof(float), vertices);
-	QgBuffer* colorbuf = qg_rdh_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(colors), sizeof(float), colors);
+	QgRenderState* render = qg_create_render_state("named", &prop_render, &prop_shader);
+	QgBuffer* vertexbuf = qg_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(vertices), sizeof(float), vertices);
+	QgBuffer* colorbuf = qg_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(colors), sizeof(float), colors);
 
 	while (qg_loop())
 	{
@@ -61,20 +61,20 @@ int main(void)
 				qg_exit_loop();
 		}
 
-		if (qg_rdh_begin(true))
+		if (qg_begin_render(true))
 		{
-			qg_rdh_set_render(render);
-			qg_rdh_set_vertex(QGLOS_1, vertexbuf);
-			qg_rdh_set_vertex(QGLOS_2, colorbuf);
-			qg_rdh_draw(QGTPG_TRI, 3);
+			qg_set_render_state(render);
+			qg_set_vertex(QGLOS_1, vertexbuf);
+			qg_set_vertex(QGLOS_2, colorbuf);
+			qg_draw(QGTPG_TRI, 3);
 
-			qg_rdh_end(true);
+			qg_end_render(true);
 		}
 	}
 
-	qs_unload(vertexbuf);
-	qs_unload(colorbuf);
-	qs_unload(render);
+	qn_unload(vertexbuf);
+	qn_unload(colorbuf);
+	qn_unload(render);
 	qg_close_rdh();
 
 	return 0;

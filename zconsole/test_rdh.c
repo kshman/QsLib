@@ -5,8 +5,8 @@ int main(void)
 {
 	qn_runtime();
 
-	int flags = /*QGFLAG_BORDERLESS |*/ QGFLAG_RESIZABLE | QGFLAG_VSYNC | QGFLAG_MSAA;
-	if (qg_open_rdh(NULL, "RDH", 0, 0, 0, flags) == false)
+	int flags = /*QGFLAG_BORDERLESS |*/ QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA;
+	if (qg_open_rdh(NULL, "RDH", 0, 0, 0, flags, 0) == false)
 		return -1;
 
 	while (qg_loop())
@@ -18,10 +18,10 @@ int main(void)
 				qg_exit_loop();
 		}
 
-		if (qg_rdh_begin(true))
+		if (qg_begin_render(true))
 		{
-			qg_rdh_end();
-			qg_rdh_flush();
+			qg_end_render(false);
+			qg_flush();
 		}
 	}
 

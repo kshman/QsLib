@@ -1228,8 +1228,7 @@ bool stub_event_on_mouse_move(int x, int y)
 	{
 		.mmove.ev = QGEV_MOUSEMOVE,
 		.mmove.mask = um->mask,
-		.mmove.pt.X = x,
-		.mmove.pt.Y = y,
+		.mmove.pt = um->pt,
 		.mmove.delta.X = um->last.X - x,
 		.mmove.delta.Y = um->last.Y - y,
 	};

@@ -477,7 +477,7 @@ static void qsort_short_context(byte* lo, byte* hi, const size_t stride, int(*fu
 }
 
 //
-void qn_qsortc(void* ptr, size_t count, size_t stride, sortcfunc_t compfunc, void* context)
+void qn_qsortc(void* ptr, size_t count, size_t stride, cmpcfunc_t compfunc, void* context)
 {
 	qn_return_when_fail(ptr,/*void*/);
 	qn_return_when_fail(count > 1,/*void*/);
@@ -627,7 +627,7 @@ static void qsort_short(byte* lo, byte* hi, const size_t stride, int(*func)(cons
 }
 
 //
-void qn_qsort(void* ptr, size_t count, size_t stride, sortfunc_t compfunc)
+void qn_qsort(void* ptr, size_t count, size_t stride, cmpfunc_t compfunc)
 {
 	qn_return_when_fail(ptr,/*void*/);
 	qn_return_when_fail(count > 1,/*void*/);
@@ -2242,7 +2242,7 @@ size_t qn_u32to8(char* dest, size_t destsize, const uchar4* src, const size_t sr
 
 			const size_t z = size + n;
 
-			if (z >= destsize)
+			if (z > destsize)
 				break;
 
 			size = z;
@@ -2350,7 +2350,7 @@ size_t qn_u16to8(char* dest, size_t destsize, const uchar2* src, const size_t sr
 				6;
 
 			const size_t z = size + n;
-			if (z >= destsize)
+			if (z > destsize)
 				break;
 			size = z;
 		}
@@ -2501,7 +2501,7 @@ size_t qn_u16to32(uchar4* dest, size_t destsize, const uchar2* src, const size_t
 
 			const size_t z = size + 1;
 
-			if (z >= destsize)
+			if (z > destsize)
 				break;
 
 			size = z;
@@ -2626,7 +2626,7 @@ size_t qn_u32to16(uchar2* dest, size_t destsize, const uchar4* src, const size_t
 				return 0;
 
 			z += size;
-			if (z >= destsize)
+			if (z > destsize)
 				break;
 			size = z;
 		}
