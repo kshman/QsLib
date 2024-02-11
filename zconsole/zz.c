@@ -16,7 +16,11 @@ int main(void)
 
 	QgImage* img_puru = qg_load_image(0, "/image/ff14_puru.jpg");
 	QgTexture* tex_puru = qg_create_texture("puru", img_puru, QGTEXF_DISCARD_IMAGE | QGTEXF_MIPMAP);
+#ifdef _QN_EMSCRIPTEN_
+	QgTexture* tex_autumn = qg_load_texture(0, "/image/ff14_autumn.bmp", QGTEXF_LINEAR);
+#else
 	QgTexture* tex_autumn = qg_load_texture(0, "/image/ff14_autumn.dds", QGTEXF_LINEAR);
+#endif
 
 	float f = 0.0f, angle = 0.0f;
 	while (qg_loop())
@@ -28,7 +32,7 @@ int main(void)
 			{
 				qn_sym_dbgout();
 				qn_prop_dbgout();
-				qn_mpf_dbgout();
+				//qn_mpf_dbgout();
 				qg_exit_loop();
 			}
 			else if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_F1)

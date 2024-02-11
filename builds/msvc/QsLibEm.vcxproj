@@ -57,6 +57,7 @@
       <GenerateDebugInformation>MoreDebugInformation</GenerateDebugInformation>
       <HtmlShellFile>$(ProjectDir)QsLibEm.html;%(HtmlShellFile)</HtmlShellFile>
       <AdditionalOptions>-sASSERTIONS -sASYNCIFY -sEXPORTED_RUNTIME_METHODS=ccall -sFULL_ES3=1 -sUSE_WEBGL2=1 %(AdditionalOptions)</AdditionalOptions>
+      <EmbedFile>res.hfs</EmbedFile>
     </Link>
     <PostBuildEvent>
       <Command>emdwp -e $(OutDir)$(ProjectName).wasm -o $(OutDir)$(ProjectName).wasm.dwp
@@ -82,14 +83,13 @@
       <AdditionalOptions>-sASYNCIFY -sEXPORTED_RUNTIME_METHODS=ccall -sFULL_ES3=1 -sUSE_WEBGL2=1 %(AdditionalOptions)</AdditionalOptions>
       <HtmlShellFile>$(ProjectDir)QsLibEm.html;%(HtmlShellFile)</HtmlShellFile>
       <RunJavaScriptOptimization>JavaScriptOptimization</RunJavaScriptOptimization>
+      <EmbedFile>res.hfs</EmbedFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\inc\qs.h" />
     <ClInclude Include="..\..\inc\qs_qn.h" />
-    <ClInclude Include="..\..\inc\qs_ctn.h" />
     <ClInclude Include="..\..\inc\qs_math.h" />
-    <ClInclude Include="..\..\inc\qs_kmc.h" />
     <ClInclude Include="..\..\inc\qs_qg.h" />
     <ClInclude Include="..\..\inc\salieri.h" />
     <ClInclude Include="..\..\src\pch.h" />

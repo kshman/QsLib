@@ -2369,9 +2369,9 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 
 // 해시 공용
 #define QN_IMPL_HASH_COMMON(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PFX)		\
-	typedef bool(*PFX##_find_t)(void*, const KEYTYPE*, void*);										\
-	typedef void(*PFX##_each2_t)(const KEYTYPE*, void*);											\
-	typedef void(*PFX##_each3_t)(void*, const KEYTYPE*, void*);										\
+	typedef bool(*PFX##_find_t)(void*, KEYTYPE*, void*);											\
+	typedef void(*PFX##_each2_t)(KEYTYPE*, void*);													\
+	typedef void(*PFX##_each3_t)(void*, KEYTYPE*, void*);											\
 	FINLINE void PFX##_sp_erase_all(NAME* hash);													\
 	FINLINE void PFX##_sp_erase_node(NAME* hash, NAME##Node** en);									\
 	FINLINE void PFX##_sp_set(NAME* hash, KEYTYPE* pkey, VALUETYPE* pvalue, bool replace);			\
@@ -2420,7 +2420,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 		const size_t lh = KEYHASH(pkey);															\
 		NAME##Node *lnn, **ln = &hash->NODES[lh % hash->BUCKET];									\
 		while ((lnn = *ln) != NULL) {																\
-			if (lnn->HASH == lh && KEYEQ(&lnn->KEY, pkey))											\
+			if (lnn->HASH == lh && KEYEQ((const KEYTYPE*)&lnn->KEY, pkey))							\
 				break;																				\
 			ln = &lnn->SIB;																			\
 		}																							\
@@ -2431,7 +2431,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 		const size_t lh = KEYHASH(pkey);															\
 		NAME##Node *lnn, **ln = &hash->NODES[lh % hash->BUCKET];									\
 		while ((lnn = *ln) != NULL) {																\
-			if (lnn->HASH == lh && KEYEQ(&lnn->KEY, pkey))											\
+			if (lnn->HASH == lh && KEYEQ((const KEYTYPE*)&lnn->KEY, pkey))							\
 				break;																				\
 			ln = &lnn->SIB;																			\
 		}																							\
@@ -2559,7 +2559,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 	FINLINE bool PFX##_node_add(NAME* hash, NAME##Node* node)										\
 	{																								\
 		size_t ah;																					\
-		NAME##Node** an = PFX##_sp_lookhash(hash, &node->KEY, &ah);									\
+		NAME##Node** an = PFX##_sp_lookhash(hash, (const KEYTYPE*)&node->KEY, &ah);					\
 		NAME##Node* ann = *an;																		\
 		if (ann != NULL)																			\
 			return false;																			\
@@ -2584,7 +2584,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 	FINLINE void PFX##_sp_set(NAME* hash, KEYTYPE* pkey, VALUETYPE* pvalue, bool replace)			\
 	{																								\
 		size_t ah;																					\
-		NAME##Node** an = PFX##_sp_lookhash(hash, pkey, &ah);										\
+		NAME##Node** an = PFX##_sp_lookhash(hash, (const KEYTYPE*)pkey, &ah);						\
 		NAME##Node* ann = *an;																		\
 		if (ann != NULL) {																			\
 			if (replace) {																			\
@@ -2759,7 +2759,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 	FINLINE bool PFX##_node_add(NAME* mukum, NAME##Node* node)										\
 	{																								\
 		size_t ah;																					\
-		NAME##Node** an = PFX##_sp_lookhash(mukum, &node->KEY, &ah);								\
+		NAME##Node** an = PFX##_sp_lookhash(mukum, (const KEYTYPE*)&node->KEY, &ah);				\
 		NAME##Node* ann = *an;																		\
 		if (ann != NULL)																			\
 			return false;																			\
@@ -2777,7 +2777,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 	FINLINE void PFX##_sp_set(NAME* mukum, KEYTYPE* pkey, VALUETYPE* pvalue, bool replace)			\
 	{																								\
 		size_t ah;																					\
-		NAME##Node** an = PFX##_sp_lookhash(mukum, pkey, &ah);										\
+		NAME##Node** an = PFX##_sp_lookhash(mukum, (const KEYTYPE*)pkey, &ah);						\
 		NAME##Node* ann = *an;																		\
 		if (ann != NULL) {																			\
 			if (replace) {																			\
@@ -2945,10 +2945,6 @@ QSAPI QnGam qn_sc_load(QnGam g);
 /// @param g 현재 오브젝트
 /// @return 현재 오브젝트 그대로
 QSAPI QnGam qn_sc_unload(QnGam g);
-
-/// @brief 참조를 제거한다. 참조가 0이 되면 제거한다 (Gam의 포인터를 받음)
-/// @param g 오브젝트의 포인터
-QSAPI void qn_sc_unload_ptr(QnGam* pg);
 
 /// @brief 참조를 얻는다
 /// @param g 현재 오브젝트

@@ -72,12 +72,6 @@
     <ClInclude Include="..\..\inc\qs.h">
       <Filter>헤더 파일\inc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\inc\qs_ctn.h">
-      <Filter>헤더 파일\inc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\inc\qs_kmc.h">
-      <Filter>헤더 파일\inc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\inc\qs_math.h">
       <Filter>헤더 파일\inc</Filter>
     </ClInclude>

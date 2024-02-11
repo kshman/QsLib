@@ -270,12 +270,11 @@ char* qn_getcwd(void)
 #else
 	char* buf = NULL;
 	size_t len = 256;
-	ssize_t rc = -1;
 	while (true)
 	{
 		buf = qn_realloc(buf, len, char);
-		rc = getcwd(buf, len);
-		if (rc != -1)
+		char* res = getcwd(buf, len);
+		if (res != NULL)
 			return buf;
 		if (errno != ERANGE)
 			break;
@@ -2591,15 +2590,15 @@ static void _hfs_list_dispose(QnGam g)
 }
 
 //
-static QnDir* _hfs_list_open(_In_ QnMount* mount)
+static QnDir* _hfs_list_open(QnGam g)
 {
-	Hfs* hfs = qn_cast_type(mount, Hfs);
+	Hfs* hfs = qn_cast_type(g, Hfs);
 	HfsDir* self = qn_alloc_zero_1(HfsDir);
 
 	_hfs_infos_init_copy(&self->infos, &hfs->infos);
 
-	self->base.mount = qn_load(mount);
-	self->base.name = qn_strdup(mount->path.DATA);	// VS는 여기 널이라고 우기지만 mount는 널이 아니므로 무시
+	self->base.mount = qn_load(hfs);
+	self->base.name = qn_strdup(hfs->base.path.DATA);	// VS는 여기 널이라고 우기지만 mount는 널이 아니므로 무시
 	qn_set_gam_desc(self, 0);
 
 	static const QN_DECL_VTABLE(QNDIR) _hfs_list_vt =
@@ -3305,10 +3304,16 @@ typedef struct FUSESOURCE
 	char			name[260];
 } FuseSource;
 
+// Hfs 언로드
+INLINE void _hfs_unload_ptr(Hfs** hfs)
+{
+	qn_unload(*hfs);
+}
+
 // 파일 소스 해시
 QN_DECLIMPL_MUKUM(FsMukum, char*, FuseSource, qn_str_phash, qn_str_peqv, (void), (void), _fs_mukum);
 // 마운트 해시
-QN_DECLIMPL_MUKUM(HfsMukum, char*, Hfs*, qn_str_phash, qn_str_peqv, (void), qn_sc_unload_ptr, _hfs_mukum);
+QN_DECLIMPL_MUKUM(HfsMukum, char*, Hfs*, qn_str_phash, qn_str_peqv, (void), _hfs_unload_ptr, _hfs_mukum);
 
 // 퓨즈
 typedef struct FUSE

@@ -11,6 +11,7 @@
 #define STBI_MALLOC(x) qn_alloc(x, byte)
 #define STBI_REALLOC(x, y) qn_realloc(x, y, byte)
 #define STBI_FREE(x) qn_free(x)
+#define STBI_ASSERT qn_debug_verify
 #define STBI_NO_GIF
 #define STBI_NO_PIC
 #define STBI_NO_HDR

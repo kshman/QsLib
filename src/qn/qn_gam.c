@@ -40,12 +40,6 @@ QnGam qn_sc_unload(QnGam g)
 }
 
 //
-void qn_sc_unload_ptr(QnGam* pg)
-{
-	qn_sc_unload(*pg);
-}
-
-//
 nint qn_sc_get_ref(const QnGam g)
 {
 	QnGamBase* base = qn_cast_type(g, QnGamBase);
