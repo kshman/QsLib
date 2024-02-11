@@ -55,9 +55,6 @@ extern "C" {
 #endif
 #include <salieri.h>
 #include <qs_qn.h>
-#include <qs_ctn.h>
-#include <qs_math.h>
-#include <qs_kmc.h>
 #include <qs_qg.h>
 #ifdef __cplusplus
 }

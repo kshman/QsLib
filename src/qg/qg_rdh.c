@@ -95,7 +95,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 
 	// 묶음
 	for (size_t i = 0; i < QN_COUNTOF(rdh->mukums); i++)
-		qg_node_mukum_init_fast(&rdh->mukums[i]);
+		qn_node_mukum_init_fast(&rdh->mukums[i]);
 
 	// 
 	qn_cast_vtable(rdh, RDHBASE)->layout();						// 레이아웃 재설정
@@ -115,7 +115,7 @@ void rdh_internal_clean(void)
 {
 	RdhBase* rdh = RDH;
 	for (size_t i = 0; i < QN_COUNTOF(rdh->mukums); i++)
-		qg_node_mukum_disp_safe(&rdh->mukums[i]);
+		qn_node_mukum_safe_dispose(&rdh->mukums[i]);
 }
 
 //
@@ -188,7 +188,7 @@ void rdh_internal_add_node(RenderNodeShed shed, void* node)
 {
 	VAR_CHK_IF_MAX(shed, RDHNODE_MAX_VALUE, );
 	RdhBase* rdh = RDH;
-	qg_node_mukum_set(&rdh->mukums[shed], qn_loadu(node, QgNode));
+	qn_node_mukum_set(&rdh->mukums[shed], qn_loadu(node, QnGamNode));
 }
 
 //
@@ -196,7 +196,7 @@ void rdh_internal_unlink_node(RenderNodeShed shed, void* node)
 {
 	VAR_CHK_IF_MAX(shed, RDHNODE_MAX_VALUE, );
 	RdhBase* rdh = RDH;
-	qg_node_mukum_unlink(&rdh->mukums[shed], qn_cast_type(node, QgNode));
+	qn_node_mukum_unlink(&rdh->mukums[shed], qn_cast_type(node, QnGamNode));
 }
 
 //
@@ -446,7 +446,7 @@ bool qg_set_render_named(const char* name)
 	VAR_CHK_IF_NULL(name, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	QgRenderState* rdr = qg_node_mukum_get(&rdh->mukums[RDHNODE_RENDER], name);
+	QgRenderState* rdr = qn_node_mukum_get(&rdh->mukums[RDHNODE_RENDER], name);
 	return rdr == NULL ? false : qn_cast_vtable(rdh, RDHBASE)->set_render(rdr);
 }
 
@@ -507,27 +507,6 @@ void qg_draw_sprite_ex(const QmRect* bound, float angle, const QmColor* color, Q
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
 	qn_cast_vtable(rdh, RDHBASE)->draw_sprite_ex(bound, angle, color, texture, coord);
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-// 노드
-
-//
-void qg_node_set_name(QgNode * self, const char* name)
-{
-	if (name)
-	{
-		qn_strncpy(self->NAME, name, QN_COUNTOF(self->NAME) - 1);
-		self->HASH = qn_strhash(self->NAME);
-	}
-	else
-	{
-		size_t i = qn_p_index();
-		qn_snprintf(self->NAME, QN_COUNTOF(self->NAME), "node_%zu", i);
-		// 이름 없는 노드는 관리하지 않으므로 해시가 없다
-		self->HASH = 0;
-	}
 }
 
 

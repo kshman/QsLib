@@ -1766,7 +1766,7 @@ static bool qgl_render_bind_layout_input(QglRenderState* self, const QgLayoutDat
 QgRenderState* qgl_create_render(_In_ const char* name, _In_ const QgPropRender* prop, const _In_ QgPropShader* shader)
 {
 	QglRenderState* self = qn_alloc_zero_1(QglRenderState);
-	qg_node_set_name(qn_cast_type(self, QgNode), name);
+	qn_node_set_name(qn_cast_type(self, QnGamNode), name);
 
 	// 세이더
 	if (qgl_render_bind_shader(self, &shader->vertex, &shader->pixel) == false)

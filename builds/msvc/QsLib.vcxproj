@@ -190,9 +190,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\inc\qs.h" />
     <ClInclude Include="..\..\inc\qs_qn.h" />
-    <ClInclude Include="..\..\inc\qs_ctn.h" />
     <ClInclude Include="..\..\inc\qs_math.h" />
-    <ClInclude Include="..\..\inc\qs_kmc.h" />
     <ClInclude Include="..\..\inc\qs_qg.h" />
     <ClInclude Include="..\..\inc\salieri.h" />
     <ClInclude Include="..\..\src\pch.h" />

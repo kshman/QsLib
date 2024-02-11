@@ -1,5 +1,5 @@
 ﻿//
-// qgwin_stub.c - 윈도우 스터브
+// qgstub_windows.c - 윈도우 스터브
 // 2023-12-13 by kim
 //
 
@@ -11,7 +11,6 @@
 #include "pch.h"
 #ifdef _QN_WINDOWS_
 #include "qs_qg.h"
-#include "qs_kmc.h"
 #include "qg/qg_stub.h"
 #include <windowsx.h>
 #include <Xinput.h>

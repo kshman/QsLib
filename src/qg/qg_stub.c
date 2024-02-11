@@ -37,6 +37,8 @@ struct EventNode
 
 // 컨테이너
 QN_DECLIMPL_LNODE(EventNodeList, EventNode, event_lnode);
+// 배열
+QN_IMPL_ARRAY(QnPtrArray, void*, reserved_mems);
 
 // 이벤트 창고
 struct ShedEvent
@@ -78,7 +80,7 @@ static void shed_event_init(void)
 	// 캐시
 	event_lnode_init(&shed_event.cache);
 	// 예약 메모리
-	qn_parray_init(&shed_event.reserved_mems, 0);
+	reserved_mems_init(&shed_event.reserved_mems, 0);
 }
 
 // 모두 제거
@@ -87,8 +89,8 @@ static void shed_event_dispose(void)
 	qn_return_when_fail(shed_event.mutex != NULL, /*void*/);
 
 	// 예약 메모리
-	qn_parray_foreach_1(&shed_event.reserved_mems, qn_mem_free);
-	qn_parray_dispose(&shed_event.reserved_mems);
+	reserved_mems_foreach_1(&shed_event.reserved_mems, qn_mem_free);
+	reserved_mems_dispose(&shed_event.reserved_mems);
 	// 우선 순위 큐
 	event_lnode_dispose_callback(&shed_event.prior, qn_mem_free);
 	// 큐
@@ -240,7 +242,7 @@ static void shed_event_flush(void)
 static void shed_event_reserved_mem(void* ptr)
 {
 	qn_mutex_enter(shed_event.mutex);
-	qn_parray_add(&shed_event.reserved_mems, ptr);
+	reserved_mems_add(&shed_event.reserved_mems, ptr);
 	qn_mutex_leave(shed_event.mutex);
 }
 
@@ -248,10 +250,10 @@ static void shed_event_reserved_mem(void* ptr)
 static void shed_event_clear_reserved_mem(void)
 {
 	qn_mutex_enter(shed_event.mutex);
-	if (qn_parray_is_have(&shed_event.reserved_mems))
+	if (reserved_mems_is_have(&shed_event.reserved_mems))
 	{
-		qn_parray_foreach_1(&shed_event.reserved_mems, qn_mem_free);
-		qn_parray_clear(&shed_event.reserved_mems);
+		reserved_mems_foreach_1(&shed_event.reserved_mems, qn_mem_free);
+		reserved_mems_clear(&shed_event.reserved_mems);
 	}
 	qn_mutex_leave(shed_event.mutex);
 }

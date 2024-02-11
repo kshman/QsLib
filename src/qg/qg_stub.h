@@ -1,8 +1,6 @@
 ﻿#pragma once
 
-#include <qs_ctn.h>
 #include <qs_qg.h>
-#include "qg_node.h"
 
 //////////////////////////////////////////////////////////////////////////
 // 스터브
@@ -223,7 +221,7 @@ typedef struct RDHBASE
 	RendererParam		param;
 	RendererInvoke		invokes;
 
-	QgNodeMukum			mukums[RDHNODE_MAX_VALUE];
+	QnNodeMukum			mukums[RDHNODE_MAX_VALUE];
 } RdhBase;
 
 QN_DECL_VTABLE(RDHBASE)
