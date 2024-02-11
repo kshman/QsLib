@@ -3286,6 +3286,13 @@ QSAPI QnFileAttr qn_get_file_attr(const char* path);
 /// @return 경로의 길이. 버퍼의 크기보다 길더라도 버퍼의 크기-1 만큼만 반환한다
 QSAPI size_t qn_filepath(const char* filename, char* dest, size_t destsize);
 
+/// @brief 파일 이름에서 파일 이름을 뽑느다
+/// @param filename 대상 파일 이름
+/// @param dest 파일 이름을 넣을 버퍼 (길이를 얻고 싶으면 이 값을 널로 지정)
+/// @param destsize 버퍼의 크기
+/// @return 파일 이름의 길이. 버퍼의 크기보다 길더라도 버퍼의 크기-1 만큼만 반환한다
+QSAPI size_t qn_filename(const char* filename, char* dest, size_t destsize);
+
 /// @brief 프로그램 기본 패스를 얻는다
 /// @return 기본 패스
 /// @warning 반환 값은 qn_free 함수로 해제해야한다

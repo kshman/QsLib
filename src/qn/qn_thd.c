@@ -135,8 +135,8 @@ struct QNMODULE
 {
 	QN_GAM_BASE(QNGAMBASE);
 
-	char*				filename;
 	size_t				hash;
+	char				name[64];
 	QnModFlag			flags;
 
 	QnModule*			next;
@@ -164,33 +164,29 @@ void qn_module_down(void)
 	{
 		QnModule* next = node->next;
 		if (QN_TMASK(node->flags, QNMDF_SYSTEM | QNMDF_RESIDENT | QNMDF_MULTIPLE) == false)
-			qn_mesgf(false, "MODULE", "'%s' not unloaded (ref: %d)", node->filename, qn_gam_ref(node));
+			qn_mesgf(false, "MODULE", "'%s' not unloaded (ref: %d)", node->name, qn_gam_ref(node));
 		if (QN_TMASK(node->flags, QNMDF_RESIDENT) == false && qn_get_gam_pointer(node) != NULL)
 #ifdef _QN_WINDOWS_
 			FreeLibrary(qn_get_gam_handle(node));
 #else
 			dlclose(qn_get_gam_pointer(node));
 #endif
-		qn_free(node->filename);
 		qn_free(node);
 		node = next;
 	}
 
 	if (module_impl.self != NULL)
-	{
-		qn_free(module_impl.self->filename);
 		qn_free(module_impl.self);
-	}
 }
 
 //
-static QnModule* _qn_module_find(const char* filename, const size_t hash)
+static QnModule* _qn_module_find(const char* name, const size_t hash)
 {
 	QnModule* find = NULL;
 	QN_LOCK(module_impl.lock);
 	for (QnModule* node = module_impl.modules; node; node = node->next)
 	{
-		if (hash != node->hash || qn_streqv(node->filename, filename) == false)
+		if (hash != node->hash || qn_streqv(node->name, name) == false)
 			continue;
 		find = node;
 		break;
@@ -228,10 +224,7 @@ static void _qn_mod_free(QnModule* self, const bool dispose)
 			_qn_module_set_error();
 	}
 	if (dispose)
-	{
-		qn_free(self->filename);
 		qn_free(self);
-	}
 }
 
 //
@@ -300,8 +293,11 @@ QnModule* qn_open_mod(const char* filename, const int flags)
 {
 	qn_return_when_fail(filename != NULL, NULL);
 
-	const size_t hash = qn_strhash(filename);
-	QnModule* self = _qn_module_find(filename, hash);
+	char name[64];
+	qn_filename(filename, name, QN_COUNTOF(name));
+
+	const size_t hash = qn_strhash(name);
+	QnModule* self = _qn_module_find(name, hash);
 	if (self != NULL)
 	{
 		QN_SMASK(self->flags, QNMDF_MULTIPLE, true);
@@ -332,8 +328,8 @@ QnModule* qn_open_mod(const char* filename, const int flags)
 
 	self = qn_alloc_1(QnModule);
 	self->hash = hash;
-	self->filename = qn_strdup(filename);
 	self->flags = mod_flag;
+	qn_strcpy(self->name, name);
 	qn_set_gam_desc(self, handle);
 
 	QN_LOCK(module_impl.lock);

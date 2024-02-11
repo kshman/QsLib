@@ -130,6 +130,34 @@ size_t qn_filepath(const char* filename, char* dest, size_t destsize)
 }
 
 //
+size_t qn_filename(const char* filename, char* dest, size_t destsize)
+{
+	qn_return_when_fail(filename != NULL, 0);
+
+	size_t len = strlen(filename);
+	const char* p = filename + len - 1;
+	while (p >= filename && *p != '/' && *p != '\\')
+		p--;
+
+	if (p < filename)
+	{
+		if (dest)
+			qn_strncpy(dest, filename, QN_MIN(destsize, len));
+		return len;
+	}
+
+	len = strlen(p + 1);
+	if (dest)
+	{
+		const size_t maxlen = QN_MIN(len, destsize - 1);
+		memcpy(dest, p + 1, maxlen);
+		dest[maxlen] = '\0';
+		return maxlen;
+	}
+	return len;
+}
+
+//
 #if !defined _QN_WINDOWS_ && !defined __EMSCRIPTEN__
 static char* _read_sym_link(const char* path)
 {
