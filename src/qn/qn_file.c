@@ -1980,11 +1980,11 @@ static QnMount* _create_diskfs(char* path)
 #define HFSAT_ROOT_STW	QN_OFFSETOF(HfsHeader, stw)
 #define HFSAT_ROOT_REV 	QN_OFFSETOF(HfsHeader, revision)
 #define HFSAT_ROOT_DESC	QN_OFFSETOF(HfsHeader, desc)
-#define HFSAT_TYPE		QN_OFFSETOF(HfsSource, type)
-#define HFSAT_ATTR		QN_OFFSETOF(HfsSource, attr)
-#define HFSAT_SIZE		QN_OFFSETOF(HfsSource, size)
-#define HFSAT_CMPR		QN_OFFSETOF(HfsSource, cmpr)
-#define HFSAT_SOURCE	QN_OFFSETOF(HfsSource, source)
+#define HFSAT_TYPE		QN_OFFSETOF(QnFileSource, type)
+#define HFSAT_ATTR		QN_OFFSETOF(QnFileSource, attr)
+#define HFSAT_SIZE		QN_OFFSETOF(QnFileSource, size)
+#define HFSAT_CMPR		QN_OFFSETOF(QnFileSource, cmpr)
+#define HFSAT_SOURCE	QN_OFFSETOF(QnFileSource, source)
 #define HFSAT_EXT		QN_OFFSETOF(HfsFile, ext)
 #define HFSAT_LEN		QN_OFFSETOF(HfsFile, len)
 #define HFSAT_HASH		QN_OFFSETOF(HfsFile, hash)
@@ -2008,20 +2008,9 @@ typedef struct HFSHEADER
 } HfsHeader;
 
 //
-typedef struct HFSSOURCE
-{
-	byte				type;		// 타입
-	byte 				attr;		// 속성
-	ushort				len;		// 파일 이름 길이
-	uint				size;		// 원래 크기
-	uint				cmpr;		// 압축된 크기
-	uint				seek;		// 파일 위치
-} HfsSource;
-
-//
 typedef struct HFSFILE
 {
-	HfsSource			source;
+	QnFileSource		source;
 	QnDateTime			stc;		// 만든 타임스탬프
 	uint				hash;		// 파일 이름 해시
 	uint				meta;		// 메타(디렉토리) 위치
@@ -2348,7 +2337,7 @@ static bool _hfs_remove(QnGam g, const char* path)
 }
 
 // 소스로 읽기
-static void* _hfs_source_read(Hfs* hfs, HfsSource* source)
+static void* _hfs_source_read(Hfs* hfs, QnFileSource* source)
 {
 	QnStream* stream = qn_get_gam_desc(hfs, QnStream*);
 	if (qn_stream_seek(stream, (llong)(source->seek + sizeof(HfsFile) + source->len), QNSEEK_BEGIN) < 0)
@@ -3074,7 +3063,7 @@ bool qn_hfs_store_file(QnMount* mount, const char* filename, const char* srcfile
 }
 
 // 최적화용 파일 읽기
-static void* _hfs_optimize_read(Hfs* hfs, HfsSource* source, uint* ret_size)
+static void* _hfs_optimize_read(Hfs* hfs, QnFileSource* source, uint* ret_size)
 {
 	QnStream* stream = qn_get_gam_desc(hfs, QnStream*);
 	if (qn_stream_seek(stream, (llong)(source->seek + sizeof(HfsFile) + source->len), QNSEEK_BEGIN) < 0)
@@ -3286,4 +3275,242 @@ QnMount* qn_open_mount(const char* path, const char* mode)
 	}
 
 	return NULL;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// 퓨즈
+
+// 퓨즈 소스
+typedef struct FUSESOURCE
+{
+	Hfs*			hfs;
+	QnFileSource	source;
+	char			name[260];
+} FuseSource;
+
+// 파일 소스 해시
+QN_DECLIMPL_MUKUM(FsMukum, char*, FuseSource, qn_str_phash, qn_str_peqv, (void), (void), _fs_mukum);
+// 마운트 해시
+QN_DECLIMPL_MUKUM(HfsMukum, char*, Hfs*, qn_str_phash, qn_str_peqv, (void), qn_sc_unload_ptr, _hfs_mukum);
+
+// 퓨즈
+typedef struct FUSE
+{
+	QN_GAM_BASE(QNMOUNT);
+	HfsMukum			hfss;
+	FsMukum				fss;
+	bool				diskfs;
+} Fuse;
+
+//
+static QnStream* _fuse_open(QnGam g, const char* filename, const char* mode)
+{
+	return _file_stream_open(qn_cast_type(g, QnMount), filename, mode);
+}
+
+//
+static void* _fuse_read(QnGam g, const char* filename, int* size)
+{
+	const Fuse* self = qn_cast_type(g, Fuse);
+	char real[QN_MAX_PATH];
+	qn_return_when_fail(_file_stream_get_real_path(real, qn_cast_type(self, QnMount), filename), NULL);
+	char* data = _internal_file_alloc(real, size);
+	return data;
+}
+
+//
+static char* _fuse_read_text(QnGam g, const char* filename, int* length, int* codepage)
+{
+	const Fuse* self = qn_cast_type(g, Fuse);
+	char real[QN_MAX_PATH];
+	qn_return_when_fail(_file_stream_get_real_path(real, qn_cast_type(self, QnMount), filename), NULL);
+	int size;
+	char* data = _internal_file_alloc(real, &size);
+	_internal_detect_file_encoding(data, size, length, codepage);
+	return data;
+}
+
+//
+static QnFileAttr _fuse_exist(QnGam g, const char* path)
+{
+	Fuse* self = qn_cast_type(g, Fuse);
+	if (self->diskfs)
+	{
+		QnFileAttr attr = _disk_fs_exist(self, path);
+		if (attr != QNFATTR_NONE)
+			return attr;
+	}
+	FuseSource* pfs = _fs_mukum_get(&self->fss, path);
+	return pfs != NULL ? pfs->source.attr : QNFATTR_NONE;
+}
+
+//
+static bool _fuse_remove(QnGam g, const char* path)
+{
+	Fuse* self = qn_cast_type(g, Fuse);
+	if (self->diskfs)
+	{
+		if (_disk_fs_remove(self, path))
+			return true;
+	}
+
+	FuseSource* pfs = _fs_mukum_get(&self->fss, path);
+	if (pfs == NULL)
+		return false;
+
+	_hfs_remove(pfs->hfs, path);
+	return _fs_mukum_remove(&self->fss, path);
+}
+
+//
+static void _fuse_dispose(QnGam g)
+{
+	Fuse* self = qn_cast_type(g, Fuse);
+
+	_fs_mukum_dispose(&self->fss);
+	_hfs_mukum_dispose(&self->hfss);
+	qn_free(self->base.name);
+	qn_free(self);
+}
+
+// HFS 분석
+static void _fuse_parse_hfs(Fuse* self, Hfs* hfs, const char* dir)
+{
+	HfsArrInfo infos;
+	_hfs_infos_init_copy(&infos, &hfs->infos);
+
+	QnPathStr bs;
+	qn_path_str_set(&bs, dir);
+	size_t bpos = qn_path_str_len(&bs);
+
+	size_t i;
+	QN_ARRAY_FOREACH(infos, i)
+	{
+		HfsInfo* info = _hfs_infos_nth_ptr(&infos, i);
+		if (info->name[0] == '.')
+			continue;
+
+		qn_path_str_append(&bs, info->name);
+		if (QN_TMASK(info->file.source.attr, QNFATTR_DIR))
+		{
+			qn_path_str_append_char(&bs, '/');
+			_hfs_chdir(hfs, bs.DATA);
+			_fuse_parse_hfs(self, hfs, bs.DATA);
+			_hfs_chdir(hfs, "..");
+		}
+		else
+		{
+			FsMukumNode* node = qn_alloc_1(FsMukumNode);
+			node->VALUE.hfs = hfs;
+			node->VALUE.source = info->file.source;
+			qn_strcpy(node->VALUE.name, bs.DATA);
+			node->KEY = node->VALUE.name;
+			if (!_fs_mukum_node_add(&self->fss, node))
+				qn_free(node);
+		}
+		qn_path_str_trunc(&bs, bpos);
+	}
+
+	_hfs_infos_dispose(&infos);
+}
+
+// HFS 추가
+static bool _fuse_add_hfs(Fuse* self, const char* name)
+{
+	Hfs* hfs = (Hfs*)_create_hfs(name, "f");
+	if (hfs == NULL)
+		return false;
+	_hfs_mukum_add(&self->hfss, hfs->base.name, hfs);
+	_fuse_parse_hfs(self, hfs, "/");
+	return true;
+}
+
+//
+bool qn_fuse_add_hfs(QnMount* mount, const char* name)
+{
+	qn_return_when_fail(QN_TMASK(mount->flags, QNMFT_FUSE), false);
+
+	Fuse* self = qn_cast_type(mount, Fuse);
+	return _fuse_add_hfs(self, name);
+}
+
+// 디스크 파일 시스템 마운트 만들기, path에 대한 오류처리는 하고 왔을 것이다
+QnMount* qn_create_fuse(char* path, bool diskfs, bool loadall)
+{
+	Fuse* self = qn_alloc_zero_1(Fuse);
+
+	if (path == NULL)
+	{
+		char* cwd = qn_getcwd();
+#ifdef _QN_WINDOWS_
+		self->base.name = qn_strdupcat(cwd, "\\", NULL);
+#else
+		self->base.name = qn_strdupcat(cwd, "/", NULL);
+#endif
+		self->base.name_len = strlen(self->base.name);
+		qn_free(cwd);
+	}
+	else
+	{
+		const size_t len = strlen(path);
+		if (path[len - 1] == '/' || path[len - 1] == '\\')
+		{
+			self->base.name = qn_strdup(path);
+			self->base.name_len = len;
+		}
+		else
+		{
+#ifdef _QN_WINDOWS_
+			self->base.name = qn_strdupcat(path, "\\", NULL);
+#else
+			self->base.name = qn_strdupcat(path, "/", NULL);
+#endif
+			self->base.name_len = len + 1;
+		}
+	}
+
+	_hfs_mukum_init_fast(&self->hfss);
+	_fs_mukum_init_fast(&self->fss);
+	qn_path_str_set_len(&self->base.path, self->base.name, self->base.name_len);
+	self->base.flags = QNMFT_DISKFS | QNMFT_FUSE;
+	self->diskfs = diskfs;
+
+	//
+	static const QN_DECL_VTABLE(QNMOUNT) _fuse_vt =
+	{
+		.base.name = "DiskFS",
+		.base.dispose = _fuse_dispose,
+		.mount_open = _fuse_open,
+		.mount_read = _fuse_read,
+		.mount_read_text = _fuse_read_text,
+		.mount_exist = _fuse_exist,
+		.mount_remove = _fuse_remove,
+		.mount_chdir = _disk_fs_ch_dir,
+		.mount_mkdir = _disk_fs_mk_dir,
+		.mount_list = _disk_fs_list,
+	};
+	qn_gam_init(self, _fuse_vt);
+
+	if (loadall)
+	{
+		// 모든 파일을 읽어들인다
+		QnDir* dir = _disk_fs_list(self);
+		if (dir != NULL)
+		{
+			QnFileInfo info;
+			while (_disk_list_read_info(dir, &info))
+			{
+				if (QN_TMASK(info.attr, QNFATTR_DIR))
+					continue;
+				char ext[QN_MAX_FILENAME];
+				qn_splitpath(info.name, NULL, NULL, NULL, ext);
+				if (ext[0] == '\0' || qn_stricmp(ext, ".hfs") == 0)
+					_fuse_add_hfs(self, info.name);
+			}
+			qn_unload(dir);
+		}
+	}
+
+	return qn_cast_type(self, QnMount);
 }

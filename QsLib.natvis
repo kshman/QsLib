@@ -4,14 +4,9 @@
   <!-- ==================== QNCTN (+QN+QG) ==================== -->
 
   <!-- 배열 / 컨테이너 / 슬라이스 -->
-  <Type Name="QnPtrArr">
-    <AlternativeType Name="QnByteArr"/>
-    <AlternativeType Name="QnIntArr"/>
-    <AlternativeType Name="QnAnyArr"/>
-    <AlternativeType Name="QnPtrCtnr"/>
-    <AlternativeType Name="QnByteCtn"/>
-    <AlternativeType Name="QnIntCtn"/>
-    <AlternativeType Name="QnAnyCtn"/>
+  <Type Name="QnPtrCtnr">
+    <AlternativeType Name="QnPtrArray"/>
+    <AlternativeType Name="SymArray"/>
     <AlternativeType Name="HfsArrInfo"/>
     <AlternativeType Name="ErrorArray"/>
     <AlternativeType Name="SubArray"/>
@@ -46,10 +41,25 @@
       </LinkedListItems>
     </Expand>
   </Type>
+  
+  <!-- 해시 -->
+  <Type Name ="QnHash">
+    <DisplayString>[갯수: {COUNT} (리비전: {REVISION}, 바구니: {BUCKET})]</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>HEAD</HeadPointer>
+        <NextPointer>NEXT</NextPointer>
+        <ValueNode>this</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
 
-  <!-- 해시 노드 -->
-  <Type Name="QnInlineHashNode">
-    <DisplayString>[key={KEY}, value={NEXT}]</DisplayString>
+  <!-- 묶음 노드 -->
+  <Type Name="SymMukumNode">
+    <AlternativeType Name="PropMukumNode"/>
+    <AlternativeType Name="FsMukumNode"/>
+    <AlternativeType Name="HfsMukumNode"/>
+    <DisplayString>[key={KEY}, value={VALUE}]</DisplayString>
     <Expand>
       <LinkedListItems>
         <HeadPointer>this</HeadPointer>
@@ -59,8 +69,11 @@
     </Expand>
   </Type>
 
-  <!-- 해시 -->
-  <Type Name="QnInlineHash">
+  <!-- 묶음 -->
+  <Type Name="SymMukum">
+    <AlternativeType Name="PropMukum"/>
+    <AlternativeType Name="FsMukum"/>
+    <AlternativeType Name="HfsMukum"/>
     <DisplayString>[갯수: {COUNT} (리비전: {REVISION}, 바구니: {BUCKET})]</DisplayString>
     <Expand>
       <Item Name="[갯수]">COUNT</Item>
@@ -81,6 +94,31 @@
     <Expand>
       <Item Name="[타입]">((QNGAM*)this)-&gt;vt-&gt;name</Item>
       <Item Name="[참조]">((QNGAM*)this)-&gt;ref</Item>
+    </Expand>
+  </Type>
+
+  <!-- 노드 -->
+  <Type Name="QNGAMNODE">
+    <DisplayString>[{((QNGAM*)this)-&gt;vt-&gt;name,s} / {NAME,s} (ref:{((QNGAM*)this)-&gt;ref})]</DisplayString>
+    <Expand>
+      <Item Name="[타입]">((QNGAM*)this)-&gt;vt-&gt;name</Item>
+      <Item Name="[참조]">((QNGAM*)this)-&gt;ref</Item>
+      <Item Name="[해시]">HASH,X</Item>
+      <Item Name="[이름]">NAME</Item>
+    </Expand>
+  </Type>
+
+  <!-- QGNODEMUKUM -->
+  <Type Name="QNNODEMUKUM">
+    <DisplayString>[갯수: {COUNT}]</DisplayString>
+    <Expand>
+      <Item Name="[갯수]">COUNT</Item>
+      <LinkedListItems>
+        <Size>COUNT</Size>
+        <HeadPointer>HEAD</HeadPointer>
+        <NextPointer>NEXT</NextPointer>
+        <ValueNode>this</ValueNode>
+      </LinkedListItems>
     </Expand>
   </Type>
 
@@ -114,8 +152,8 @@
     </Expand>
   </Type>
   
-  <!-- HFSSOURCE -->
-  <Type Name="HFSSOURCE">
+  <!-- QNFILESOURCE -->
+  <Type Name="QNFILESOURCE">
     <DisplayString>[&lt;{(QNFILETYPE)type}/{(QNFILEATTR)attr}&gt; (size={size}, seek={seek})]</DisplayString>
     <Expand>
       <Item Name="[타입]">(QNFILETYPE)type</Item>
@@ -343,31 +381,6 @@
   <!-- StubEventCallback -->
   <Type Name="StubEventCallback">
     <DisplayString>[키: {key} ({func} / {data}]</DisplayString>
-  </Type>
-
-  <!-- 노드 -->
-  <Type Name="QGNODE">
-    <DisplayString>[{((QNGAM*)this)-&gt;vt-&gt;name,s} / {NAME,s} (ref:{((QNGAM*)this)-&gt;ref})]</DisplayString>
-    <Expand>
-      <Item Name="[타입]">((QNGAM*)this)-&gt;vt-&gt;name</Item>
-      <Item Name="[참조]">((QNGAM*)this)-&gt;ref</Item>
-      <Item Name="[해시]">HASH,X</Item>
-      <Item Name="[이름]">NAME</Item>
-    </Expand>
-  </Type>
-
-  <!-- QGNODEMUKUM -->
-  <Type Name="QGNODEMUKUM">
-    <DisplayString>[갯수: {COUNT}]</DisplayString>
-    <Expand>
-      <Item Name="[갯수]">COUNT</Item>
-      <LinkedListItems>
-        <Size>COUNT</Size>
-        <HeadPointer>FIRST</HeadPointer>
-        <NextPointer>NEXT</NextPointer>
-        <ValueNode>this</ValueNode>
-      </LinkedListItems>
-    </Expand>
   </Type>
 
   <!-- QGBUFFER -->

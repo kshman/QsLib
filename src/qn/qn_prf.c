@@ -605,19 +605,19 @@ static void qn_internal_free(void* ptr)
 #endif
 #else
 //
-size_t qn_mpfsize(void)
+size_t qn_mpf_size(void)
 {
 	return mem_impl.block_size;
 }
 
 //
-size_t qn_mpfcnt(void)
+size_t qn_mpf_count(void)
 {
 	return mem_impl.count;
 	}
 
 //
-void qn_mpfdbgout(void)
+void qn_mpf_dbgout(void)
 {
 	if (mem_impl.count == 0 && mem_impl.frst == NULL && mem_impl.last == NULL)
 		return;
