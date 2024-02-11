@@ -945,7 +945,7 @@ static bool windows_detect_displays(void)
 			if (QN_TMASK(display_device.StateFlags, DISPLAY_DEVICE_ACTIVE) == false)
 				break;
 
-			QN_CTNR_FOREACH(keep, i)
+			QN_CTNR_FOREACH(keep, 0, i)
 			{
 				const WindowsMonitor * mon = (WindowsMonitor*)monitor_ctnr_nth(&keep, i);
 				if (mon == NULL || wcscmp(mon->display, display_device.DeviceName) != 0)
@@ -964,7 +964,7 @@ static bool windows_detect_displays(void)
 
 		if (display == 0)
 		{
-			QN_CTNR_FOREACH(keep, i)
+			QN_CTNR_FOREACH(keep, 0, i)
 			{
 				const WindowsMonitor* mon = (const WindowsMonitor*)monitor_ctnr_nth(&keep, i);
 				if (mon == NULL || wcscmp(mon->adapter, adapter_device.DeviceName) != 0)
@@ -981,7 +981,7 @@ static bool windows_detect_displays(void)
 		}
 	}
 
-	QN_CTNR_FOREACH(keep, i)
+	QN_CTNR_FOREACH(keep, 0, i)
 	{
 		QgUdevMonitor* mon = monitor_ctnr_nth(&keep, i);
 		if (mon != NULL)

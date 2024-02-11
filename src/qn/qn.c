@@ -27,7 +27,7 @@ typedef struct SYMDATA
 	nint			value;
 } SymData;
 QN_DECLIMPL_MUKUM(SymMukum, char*, SymData, qn_str_phash, qn_str_peqv, (void), (void), _sym_mukum);
-QN_DECLIMPL_ARRAY(SymArray, char*, _sym_array);
+QN_DECLIMPL_ARRAY(SymArray, SymMukumNode*, _sym_array);
 
 // 프로퍼티
 typedef struct PROPDATA
@@ -220,7 +220,7 @@ static nint _sym_set(const char* name)
 		qn_free(node);
 		return 0;
 	}
-	_sym_array_add(&runtime_impl.symarray, node->VALUE.key);
+	_sym_array_add(&runtime_impl.symarray, node);
 
 	return sym++;
 }
@@ -230,7 +230,7 @@ static const char* _sym_get(nint value)
 {
 	if ((size_t)value >= _sym_array_count(&runtime_impl.symarray))
 		return NULL;
-	return _sym_array_nth(&runtime_impl.symarray, value);
+	return _sym_array_nth(&runtime_impl.symarray, value)->KEY;
 }
 
 //
@@ -281,8 +281,8 @@ void qn_sym_dbgout(void)
 		qn_mesgf(false, "SYMBOL", " %-8d | %-s", node->VALUE.value, node->KEY);
 #else
 	size_t i;
-	QN_ARRAY_FOREACH(runtime_impl.symarray, i)
-		qn_mesgf(false, "SYMBOL", " %-8d | %-s", i, _sym_array_nth(&runtime_impl.symarray, i));
+	QN_ARRAY_FOREACH(runtime_impl.symarray, 1, i)
+		qn_mesgf(false, "SYMBOL", " %-8d | %-s", i, _sym_array_nth(&runtime_impl.symarray, i)->KEY);
 #endif
 	qn_mesgf(false, "SYMBOL", "total symbols: %zu", _sym_mukum_count(&runtime_impl.symbols));
 	QN_UNLOCK(runtime_impl.lock);

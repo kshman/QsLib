@@ -1252,7 +1252,16 @@ static QnStream* _file_stream_open(QnMount* mount, const char* filename, const c
 	}
 	HANDLE fd = CreateFile(uni, acs.access, acs.share, NULL, acs.mode, acs.attr, NULL);
 	if (fd == NULL || fd == INVALID_HANDLE_VALUE)
+	{
+#if defined _DEBUG && false
+		WCHAR wz[256];
+		FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), 0, wz, QN_COUNTOF(wz), NULL);
+		char sz[256];
+		qn_u16to8(sz, 256, wz, 0);
+		qn_mesgf(false, "FileStream", "CreateFile failed: %s", sz);
+#endif
 		return NULL;
+	}
 #else
 	int fd = acs.access == 0 ? open(filename, acs.mode) : open(filename, acs.mode, acs.access);
 	if (fd < 0)
@@ -1765,7 +1774,8 @@ static char* _disk_fs_read_text(QnGam g, const char* filename, int* length, int*
 	qn_return_when_fail(_file_stream_get_real_path(real, self, filename), NULL);
 	int size;
 	char* data = _internal_file_alloc(real, &size);
-	_internal_detect_file_encoding(data, size, length, codepage);
+	if (data != NULL)
+		_internal_detect_file_encoding(data, size, length, codepage);
 	return data;
 }
 
@@ -2234,7 +2244,7 @@ static bool _hfs_mkdir(QnGam g, const char* directory)
 
 	const uint hash = qn_path_str_shash(&name);
 	size_t i;
-	QN_CTNR_FOREACH(self->infos, i)
+	QN_CTNR_FOREACH(self->infos, 0, i)
 	{
 		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
 		if (hash == info->file.hash && qn_path_str_icmp(&name, info->name) == 0)
@@ -2305,7 +2315,7 @@ static bool _hfs_remove(QnGam g, const char* path)
 	const uint hash = qn_path_str_shash(&name);
 	const HfsInfo* found = NULL;
 	size_t i;
-	QN_CTNR_FOREACH(self->infos, i)
+	QN_CTNR_FOREACH(self->infos, 0, i)
 	{
 		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
 		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_icmp(&name, info->name) == 0)
@@ -2369,6 +2379,23 @@ static void* _hfs_source_read(Hfs* hfs, QnFileSource* source)
 	return data;
 }
 
+// 소스로 열기
+static QnStream* _hfs_source_open(Hfs* hfs, QnFileSource* source, const char* filename, bool indirect)
+{
+	QnStream* stream;
+	if (QN_TMASK(source->attr, QNFATTR_CMPR) || indirect == false)
+	{
+		void* data = _hfs_source_read(hfs, source);
+		stream = data == NULL ? NULL : _create_mem_stream_hfs(qn_cast_type(hfs, QnMount), filename, data, source->size);
+	}
+	else
+	{
+		llong offset = source->seek + sizeof(HfsFile) + source->len;
+		stream = _indirect_stream_open(hfs, filename, offset, source->size);
+	}
+	return stream;
+}
+
 // 파일 읽기
 static void* _hfs_read(QnGam g, const char* filename, int* size)
 {
@@ -2384,7 +2411,7 @@ static void* _hfs_read(QnGam g, const char* filename, int* size)
 	const uint hash = qn_path_str_shash(&name);
 	HfsInfo* found = NULL;
 	size_t i;
-	QN_CTNR_FOREACH(self->infos, i)
+	QN_CTNR_FOREACH(self->infos, 0, i)
 	{
 		HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
 		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_icmp(&name, info->name) == 0)
@@ -2450,7 +2477,7 @@ static QnStream* _hfs_open_stream(QnGam g, const char* filename, const char* mod
 	const uint hash = qn_path_str_shash(&name);
 	HfsInfo* found = NULL;
 	size_t i;
-	QN_CTNR_FOREACH(self->infos, i)
+	QN_CTNR_FOREACH(self->infos, 0, i)
 	{
 		HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
 		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_icmp(&name, info->name) == 0)
@@ -2465,18 +2492,7 @@ static QnStream* _hfs_open_stream(QnGam g, const char* filename, const char* mod
 		return NULL;
 	}
 
-	QnStream* stream;
-	if (QN_TMASK(found->file.source.attr, QNFATTR_CMPR) || indirect == false)
-	{
-		void* data = _hfs_source_read(self, &found->file.source);
-		stream = data == NULL ? NULL : _create_mem_stream_hfs(qn_cast_type(self, QnMount), filename, data, found->file.source.size);
-	}
-	else
-	{
-		llong offset = found->file.source.seek + sizeof(HfsFile) + found->file.source.len;
-		stream = _indirect_stream_open(self, filename, offset, found->file.source.size);
-	}
-
+	QnStream* stream = _hfs_source_open(self, &found->file.source, filename, indirect);
 	_hfs_restore_dir(self, save);
 	return stream;
 }
@@ -2494,7 +2510,7 @@ static QnFileAttr _hfs_exist(QnGam g, const char* path)
 	const uint hash = qn_path_str_shash(&name);
 	QnFileAttr attr = QNFATTR_NONE;
 	size_t i;
-	QN_CTNR_FOREACH(self->infos, i)
+	QN_CTNR_FOREACH(self->infos, 0, i)
 	{
 		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
 		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_icmp(&name, info->name) == 0)
@@ -2852,7 +2868,7 @@ static bool _hfs_store_buffer(Hfs* self, const char* filename, const void* data,
 	//
 	const uint hash = qn_path_str_shash(&name);
 	size_t i;
-	QN_CTNR_FOREACH(self->infos, i)
+	QN_CTNR_FOREACH(self->infos, 0, i)
 	{
 		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
 		if (hash == info->file.hash && qn_path_str_icmp(&name, info->name) == 0)
@@ -3101,7 +3117,7 @@ static bool _hfs_optimize_process(HfsOptimizeData* od)
 	}
 
 	size_t i;
-	QN_CTNR_FOREACH(infos, i)
+	QN_CTNR_FOREACH(infos, 0, i)
 	{
 		HfsInfo* info = _hfs_infos_nth_ptr(&infos, i);
 		if (info->name[0] == '.')
@@ -3300,34 +3316,75 @@ typedef struct FUSE
 	QN_GAM_BASE(QNMOUNT);
 	HfsMukum			hfss;
 	FsMukum				fss;
+	QnSpinLock			lock;
 	bool				diskfs;
 } Fuse;
 
 //
 static QnStream* _fuse_open(QnGam g, const char* filename, const char* mode)
 {
-	return _file_stream_open(qn_cast_type(g, QnMount), filename, mode);
+	Fuse* self = qn_cast_type(g, Fuse);
+	QnStream* stream;
+	QN_LOCK(self->lock);
+	if (self->diskfs)
+	{
+		stream = _file_stream_open(qn_cast_type(self, QnMount), filename, mode);
+		if (stream != NULL)
+		{
+			QN_UNLOCK(self->lock);
+			return stream;
+		}
+	}
+
+	FuseSource* pfs = _fs_mukum_get(&self->fss, filename);
+	if (pfs == NULL)
+		stream = NULL;
+	else
+	{
+		bool indirect = mode != NULL && qn_strchr(mode, 'm') == NULL;
+		stream = _hfs_source_open(pfs->hfs, &pfs->source, pfs->name, indirect);
+	}
+	QN_UNLOCK(self->lock);
+	return stream;
 }
 
 //
 static void* _fuse_read(QnGam g, const char* filename, int* size)
 {
-	const Fuse* self = qn_cast_type(g, Fuse);
-	char real[QN_MAX_PATH];
-	qn_return_when_fail(_file_stream_get_real_path(real, qn_cast_type(self, QnMount), filename), NULL);
-	char* data = _internal_file_alloc(real, size);
+	Fuse* self = qn_cast_type(g, Fuse);
+	void* data;
+	QN_LOCK(self->lock);
+	if (self->diskfs)
+	{
+		data = _disk_fs_read(self, filename, size);
+		if (data != NULL)
+		{
+			QN_UNLOCK(self->lock);
+			return data;
+		}
+	}
+
+	FuseSource* pfs = _fs_mukum_get(&self->fss, filename);
+	if (pfs == NULL)
+		data = NULL;
+	else
+	{
+		data = _hfs_source_read(pfs->hfs, &pfs->source);
+		if (data != NULL)
+			*size = pfs->source.size;
+	}
+	QN_UNLOCK(self->lock);
 	return data;
 }
 
 //
 static char* _fuse_read_text(QnGam g, const char* filename, int* length, int* codepage)
 {
-	const Fuse* self = qn_cast_type(g, Fuse);
-	char real[QN_MAX_PATH];
-	qn_return_when_fail(_file_stream_get_real_path(real, qn_cast_type(self, QnMount), filename), NULL);
+	Fuse* self = qn_cast_type(g, Fuse);
 	int size;
-	char* data = _internal_file_alloc(real, &size);
-	_internal_detect_file_encoding(data, size, length, codepage);
+	char* data = _fuse_read(self, filename, &size);
+	if (data != NULL)
+		_internal_detect_file_encoding(data, size, length, codepage);
 	return data;
 }
 
@@ -3335,32 +3392,48 @@ static char* _fuse_read_text(QnGam g, const char* filename, int* length, int* co
 static QnFileAttr _fuse_exist(QnGam g, const char* path)
 {
 	Fuse* self = qn_cast_type(g, Fuse);
+	QnFileAttr attr;
+	QN_LOCK(self->lock);
 	if (self->diskfs)
 	{
-		QnFileAttr attr = _disk_fs_exist(self, path);
+		attr = _disk_fs_exist(self, path);
 		if (attr != QNFATTR_NONE)
+		{
+			QN_UNLOCK(self->lock);
 			return attr;
+		}
 	}
 	FuseSource* pfs = _fs_mukum_get(&self->fss, path);
-	return pfs != NULL ? pfs->source.attr : QNFATTR_NONE;
+	attr = pfs != NULL ? pfs->source.attr : QNFATTR_NONE;
+	QN_UNLOCK(self->lock);
+	return attr;
 }
 
 //
 static bool _fuse_remove(QnGam g, const char* path)
 {
 	Fuse* self = qn_cast_type(g, Fuse);
+	QN_LOCK(self->lock);
 	if (self->diskfs)
 	{
 		if (_disk_fs_remove(self, path))
+		{
+			QN_UNLOCK(self->lock);
 			return true;
+		}
 	}
 
+	bool ret;
 	FuseSource* pfs = _fs_mukum_get(&self->fss, path);
 	if (pfs == NULL)
-		return false;
-
-	_hfs_remove(pfs->hfs, path);
-	return _fs_mukum_remove(&self->fss, path);
+		ret = false;
+	else
+	{
+		_hfs_remove(pfs->hfs, path);
+		ret = _fs_mukum_remove(&self->fss, path);
+	}
+	QN_UNLOCK(self->lock);
+	return ret;
 }
 
 //
@@ -3385,7 +3458,7 @@ static void _fuse_parse_hfs(Fuse* self, Hfs* hfs, const char* dir)
 	size_t bpos = qn_path_str_len(&bs);
 
 	size_t i;
-	QN_ARRAY_FOREACH(infos, i)
+	QN_ARRAY_FOREACH(infos, 0, i)
 	{
 		HfsInfo* info = _hfs_infos_nth_ptr(&infos, i);
 		if (info->name[0] == '.')
@@ -3418,6 +3491,9 @@ static void _fuse_parse_hfs(Fuse* self, Hfs* hfs, const char* dir)
 // HFS 추가
 static bool _fuse_add_hfs(Fuse* self, const char* name)
 {
+	Hfs** phfs = _hfs_mukum_get(&self->hfss, name);
+	qn_return_when_fail(phfs == NULL, false);
+
 	Hfs* hfs = (Hfs*)_create_hfs(name, "f");
 	if (hfs == NULL)
 		return false;
@@ -3432,11 +3508,38 @@ bool qn_fuse_add_hfs(QnMount* mount, const char* name)
 	qn_return_when_fail(QN_TMASK(mount->flags, QNMFT_FUSE), false);
 
 	Fuse* self = qn_cast_type(mount, Fuse);
-	return _fuse_add_hfs(self, name);
+	QN_LOCK(self->lock);
+	bool ret = _fuse_add_hfs(self, name);
+	QN_UNLOCK(self->lock);
+	return ret;
+}
+
+//
+int qn_fuse_get_hfs_count(QnMount* mount)
+{
+	qn_return_when_fail(QN_TMASK(mount->flags, QNMFT_FUSE), -1);
+	Fuse* self = qn_cast_type(mount, Fuse);
+	return (int)_hfs_mukum_count(&self->hfss);
+}
+
+//
+bool qn_fuse_get_disk_fs_enabled(QnMount* mount)
+{
+	qn_return_when_fail(QN_TMASK(mount->flags, QNMFT_FUSE), false);
+	Fuse* self = qn_cast_type(mount, Fuse);
+	return self->diskfs;
+}
+
+//
+void qn_fuse_set_disk_fs_enabled(QnMount* mount, bool enabled)
+{
+	qn_return_when_fail(QN_TMASK(mount->flags, QNMFT_FUSE), );
+	Fuse* self = qn_cast_type(mount, Fuse);
+	self->diskfs = enabled;
 }
 
 // 디스크 파일 시스템 마운트 만들기, path에 대한 오류처리는 하고 왔을 것이다
-QnMount* qn_create_fuse(char* path, bool diskfs, bool loadall)
+QnMount* qn_create_fuse(const char* path, bool diskfs, bool loadall)
 {
 	Fuse* self = qn_alloc_zero_1(Fuse);
 
@@ -3458,7 +3561,7 @@ QnMount* qn_create_fuse(char* path, bool diskfs, bool loadall)
 		{
 			self->base.name = qn_strdup(path);
 			self->base.name_len = len;
-		}
+	}
 		else
 		{
 #ifdef _QN_WINDOWS_
@@ -3468,7 +3571,7 @@ QnMount* qn_create_fuse(char* path, bool diskfs, bool loadall)
 #endif
 			self->base.name_len = len + 1;
 		}
-	}
+}
 
 	_hfs_mukum_init_fast(&self->hfss);
 	_fs_mukum_init_fast(&self->fss);
@@ -3506,11 +3609,14 @@ QnMount* qn_create_fuse(char* path, bool diskfs, bool loadall)
 				char ext[QN_MAX_FILENAME];
 				qn_splitpath(info.name, NULL, NULL, NULL, ext);
 				if (ext[0] == '\0' || qn_stricmp(ext, ".hfs") == 0)
-					_fuse_add_hfs(self, info.name);
+				{
+					if (_fuse_add_hfs(self, info.name) == false)
+						qn_mesgf(true, "Fuse", "Failed to load HFS file: %s (check opened by other program)", info.name);
+				}
 			}
 			qn_unload(dir);
 		}
 	}
 
 	return qn_cast_type(self, QnMount);
-}
+	}

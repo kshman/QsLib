@@ -23,6 +23,7 @@ typedef struct STUBBASE
 	void*				handle;								// 시스템 스터브 관리
 	QnMutex*			mutex;
 	QnTimer*			timer;
+	QnMount*			mount[10];
 
 	QgFlag				flags;								// 플래그
 	QgFeature			features;							// 사양

@@ -336,15 +336,17 @@ void qg_close_stub(void)
 
 	stub_system_finalize();
 
-	qn_unloadu(self->timer);
-
 	size_t i;
-	QN_CTNR_FOREACH(self->monitors, i)
+	QN_CTNR_FOREACH(self->monitors, 0, i)
 		qn_free(monitor_ctnr_nth(&self->monitors, i));
 	monitor_ctnr_dispose(&self->monitors);
 	eventcb_list_dispose(&self->callbacks);
 
 	qn_delete_mutex(self->mutex);
+	qn_unloadu(self->timer);
+
+	for (i = 0; i < QN_COUNTOF(self->mount); i++)
+		qn_unload(self->mount[i]);
 
 	shed_event_dispose();
 
@@ -447,6 +449,36 @@ bool qg_get_fullscreen_state(void)
 void qg_set_title(const char* title)
 {
 	stub_system_set_title(title);
+}
+
+//
+bool qg_mount(int index, const char* path, const char* mode)
+{
+	StubBase* stub = qg_instance_stub;
+	qn_return_when_fail((size_t)index < QN_COUNTOF(stub->mount), false);
+
+	qn_unload(stub->mount[index]);
+	stub->mount[index] = qn_open_mount(path, mode);
+	return stub->mount[index] != NULL;
+}
+
+//
+bool qg_fuse(int index, const char* path, bool diskfs, bool preload)
+{
+	StubBase* stub = qg_instance_stub;
+	qn_return_when_fail((size_t)index < QN_COUNTOF(stub->mount), false);
+
+	qn_unload(stub->mount[index]);
+	stub->mount[index] = qn_create_fuse(path, diskfs, preload);
+	return stub->mount[index] != NULL;
+}
+
+//
+QnMount* qg_get_mount(int index)
+{
+	const StubBase* stub = qg_instance_stub;
+	qn_return_when_fail((size_t)index < QN_COUNTOF(stub->mount), NULL);
+	return stub->mount[index];
 }
 
 //
@@ -927,7 +959,7 @@ bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary,
 
 	// 모니터 번호 재할당
 	size_t i;
-	QN_CTNR_FOREACH(stub->monitors, i)
+	QN_CTNR_FOREACH(stub->monitors, 0, i)
 		monitor_ctnr_nth(&stub->monitors, i)->no = (int)i;
 
 	// 이벤트
@@ -1062,7 +1094,7 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 			if (monitor_ctnr_count(&stub->monitors) > 1)
 			{
 				size_t i;
-				QN_CTNR_FOREACH(stub->monitors, i)
+				QN_CTNR_FOREACH(stub->monitors, 0, i)
 				{
 					const QgUdevMonitor* mon = monitor_ctnr_nth(&stub->monitors, i);
 					const QmRect bound = qm_rect_size((int)mon->x, (int)mon->y, (int)mon->width, (int)mon->height);

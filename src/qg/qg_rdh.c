@@ -396,11 +396,11 @@ QgTexture* qg_create_texture(const char* name, const QgImage* image, QgTexFlag f
 }
 
 //
-QgTexture* qg_load_texture(int fuse, const char* filename, QgTexFlag flags)
+QgTexture* qg_load_texture(int mount, const char* filename, QgTexFlag flags)
 {
 	VAR_CHK_IF_NULL(filename, NULL);
 
-	QgImage* image = qg_load_image(fuse, filename);
+	QgImage* image = qg_load_image(mount, filename);
 	VAR_CHK_IF_NULL(image, NULL);
 	VAR_CHK_IF_NULL2(image, data, NULL);
 

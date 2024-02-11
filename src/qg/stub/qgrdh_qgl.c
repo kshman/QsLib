@@ -964,7 +964,7 @@ static bool qgl_commit_shader_layout(const QglRenderState* rdr)
 
 	// 유니폼 값 넣고
 	size_t s, i;
-	QN_CTNR_FOREACH(rdr->shader.uniforms, i)
+	QN_CTNR_FOREACH(rdr->shader.uniforms, 0, i)
 	{
 		const QgVarShader* var = qgl_uni_ctnr_nth_ptr(&rdr->shader.uniforms, i);
 		qgl_process_shader_variable(var);

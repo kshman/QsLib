@@ -138,7 +138,7 @@ void qn_node_mukum_safe_dispose(QnNodeMukum* mukum)
 	{
 		QnPtrCtnr ctnr = qn_node_mukum_to_ctnr(mukum);
 		size_t i;
-		QN_CTNR_FOREACH(ctnr, i)
+		QN_CTNR_FOREACH(ctnr, 0, i)
 			qn_unload(qn_pctnr_nth(&ctnr, i));
 		qn_pctnr_dispose(&ctnr);
 	}

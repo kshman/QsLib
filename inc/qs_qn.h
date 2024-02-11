@@ -1336,14 +1336,14 @@ QSAPI uchar2* qn_a_i_u32to16(const uchar4* src, size_t srclen, const char* desc,
 // 컨테이너
 
 /// @brief 컨테이너 foreach
-#define QN_CTNR_FOREACH(CTNR, INDEX)																\
+#define QN_CTNR_FOREACH(CTNR, START, INDEX)															\
 	size_t QN_CONCAT(COUNT,__LINE__) = (CTNR).COUNT;												\
-	for ((INDEX) = 0; (INDEX) < QN_CONCAT(COUNT,__LINE__); (INDEX)++)
+	for ((INDEX) = (START); (INDEX) < QN_CONCAT(COUNT,__LINE__); (INDEX)++)
 
 /// @brief 배열 foreach
-#define QN_ARRAY_FOREACH(CTNR, INDEX)																\
+#define QN_ARRAY_FOREACH(CTNR, START, INDEX)														\
 	size_t QN_CONCAT(COUNT,__LINE__) = (CTNR).COUNT;												\
-	for ((INDEX) = 0; (INDEX) < QN_CONCAT(COUNT,__LINE__); (INDEX)++)
+	for ((INDEX) = (START); (INDEX) < QN_CONCAT(COUNT,__LINE__); (INDEX)++)
 
 /// @brief 리스트용 foreach
 #define QN_LIST_FOREACH(LIST,NODE,NEXTNODE)															\
@@ -3799,7 +3799,28 @@ QSAPI bool qn_hfs_optimize(QnMount* mount, HfsOptimizeParam* param);
 /// @param diskfs 디스크 파일 시스템 사용
 /// @param loadall 모든 HFS 마운트 미리 로드
 /// @return 만든 마운트
-QSAPI QnMount* qn_create_fuse(char* path, bool diskfs, bool loadall);
+QSAPI QnMount* qn_create_fuse(const char* path, bool diskfs, bool loadall);
+
+/// @brief 퓨즈에 HFS 추가
+/// @param mount 퓨즈 마운트
+/// @param name HFS 이름
+/// @return 성공했으면 참을 반환. HFS 파일이 없거나 이미 로드 되있으면 거짓을 반환
+QSAPI bool qn_fuse_add_hfs(QnMount* mount, const char* name);
+
+/// @brief 퓨즈가 HFS를 몇개 갖고 있는지 얻는다
+/// @param mount 퓨즈 마운트
+/// @return HFS 개수
+QSAPI int qn_fuse_get_hfs_count(QnMount* mount);
+
+/// @brief 퓨즈가 디스크 파일 시스템을 사용하는지 얻는다
+/// @param mount 퓨즈 마운트
+/// @return 사용하면 참을 반환
+QSAPI bool qn_fuse_get_disk_fs_enabled(QnMount* mount);
+
+/// @brief 퓨즈에서 디스크 파일 시스템을 사용할지 설정한다
+/// @param mount 퓨즈 마운트
+/// @param enabled 사용할지 여부
+QSAPI void qn_fuse_set_disk_fs_enabled(QnMount* mount, bool enabled);
 
 
 //////////////////////////////////////////////////////////////////////////

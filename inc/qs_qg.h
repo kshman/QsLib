@@ -1009,6 +1009,26 @@ QSAPI bool qg_get_fullscreen_state(void);
 /// @param title 타이틀 문자열(UTF-8)
 QSAPI void qg_set_title(const char* title);
 
+/// @brief 파일 시스템을 마운트 한다
+/// @param index 마운트 번호 (0~9)
+/// @param path 마운트 경로 (널이면 현재 디렉토리)
+/// @param mode 마운트 모드
+/// @return 마운트에 성공하면 참
+QSAPI bool qg_mount(int index, const char* path, const char* mode);
+
+/// @brief 퓨즈 마운트로 마운트 한다
+/// @param index 마운트 번호 (0~9)
+/// @param path 마운트 경로 (널이면 현재 디렉토리)
+/// @param diskfs 디스크 파일 시스템으로 마운트 할 것인가
+/// @param preload HFS를 미리 로드 할 것인가
+/// @return 마운트에 성공하면 참
+QSAPI bool qg_fuse(int index, const char* path, bool diskfs, bool preload);
+
+/// @brief 번호에 해당하는 마운트를 얻는다
+/// @param index 마운트 순번. 이 값은 0과 9사이의 값을 갖는다
+/// @return 해당하는 마운트 포인터를 반환하는데, 인덱스에 해당하는 마운트가 없으면 NULL이며 그 이상으로는 없음
+QSAPI QnMount* qg_get_mount(int index);
+
 /// @brief 모니터 정보를 얻는다
 /// @param index 모니터 순번
 /// @return 모니터 정보를 반환하는데, 인덱스에 해당하는 모니터가 없으면 NULL이며 그 이상으로는 없음
@@ -1310,11 +1330,11 @@ QSAPI QgRenderState* qg_create_render_state(const char* name, const QgPropRender
 QSAPI QgTexture* qg_create_texture(const char* name, const QgImage* image, QgTexFlag flags);
 
 /// @brief 텍스쳐를 파일에서 읽어 만든다
-/// @param fuse 퓨즈 번호
+/// @param mount 마운트 번호
 /// @param filename 파일 이름
 /// @param flags 텍스쳐 플래그
 /// @return 읽어서 만든 텍스쳐
-QSAPI QgTexture* qg_load_texture(int fuse, const char* filename, QgTexFlag flags);
+QSAPI QgTexture* qg_load_texture(int mount, const char* filename, QgTexFlag flags);
 
 /// @brief 정점 버퍼를 설정한다
 /// @param stage 버퍼를 지정할 스테이지
@@ -1478,7 +1498,10 @@ QSAPI QgImage* qg_create_image_check_pattern(int width, int height, const QmColo
 QSAPI QgImage* qg_load_image_buffer(const void* data, int size);
 
 /// @brief 이미지를 파일에서 읽어 만든다
-QSAPI QgImage* qg_load_image(int fuse, const char* filename);
+/// @param mount 마운트 번호
+/// @param filename 파일 이름
+/// @return 읽어서 만든 이미지
+QSAPI QgImage* qg_load_image(int mount, const char* filename);
 
 /// @brief 이미지에 점을 찍는다
 QSAPI bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* color);
