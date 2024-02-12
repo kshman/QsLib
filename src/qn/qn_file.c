@@ -16,7 +16,9 @@
 #endif
 #include "PatrickPowell_snprintf.h"
 
+#ifdef _DEBUG
 #define HFS_DEBUG_TRACE 1
+#endif
 
 QN_IMPL_BSTR(QnPathStr, QN_MAX_PATH, _path_str);
 
@@ -1989,7 +1991,7 @@ static QnMount* _create_diskfs(char* path)
 #define HFSAT_EXT		QN_OFFSETOF(HfsFile, ext)
 #define HFSAT_LEN		QN_OFFSETOF(HfsFile, len)
 #define HFSAT_HASH		QN_OFFSETOF(HfsFile, hash)
-#define HFSAT_META		QN_OFFSETOF(HfsFile, meta)
+#define HFSAT_SUBP		QN_OFFSETOF(HfsFile, subp)
 #define HFSAT_NEXT		QN_OFFSETOF(HfsFile, next)
 #define HFSAT_STZ		QN_OFFSETOF(HfsFile, stc)
 
@@ -2168,7 +2170,7 @@ static bool _hfs_chdir(QnGam g, const char* directory)
 		qn_stream_seek(stream, info.file.subp, QNSEEK_BEGIN);
 		_hfs_make_directory_name(&self->base.path, tok);
 	}
-#if HFS_DEBUG_TRACE
+#ifdef HFS_DEBUG_TRACE
 	qn_outputf("\tHFS: current directory is %s", self->base.path.DATA);
 	qn_outputs("\t\t=attr=|=type=|=filename=====================================");
 	int fc = 0;
@@ -2186,7 +2188,7 @@ static bool _hfs_chdir(QnGam g, const char* directory)
 		info.file.source.seek = srt;
 		_hfs_infos_add(&self->infos, info);
 
-#if HFS_DEBUG_TRACE
+#ifdef HFS_DEBUG_TRACE
 		if (info.file.source.type == QNFTYPE_DIR)
 			qn_outputf("\t\t %04X | %4d | [%s] <%d>", info.file.source.attr, info.file.source.type, info.name, info.file.subp);
 		else
@@ -2194,7 +2196,7 @@ static bool _hfs_chdir(QnGam g, const char* directory)
 		fc++;
 #endif
 	}
-#if HFS_DEBUG_TRACE
+#ifdef HFS_DEBUG_TRACE
 	qn_outputf("\tHFS: %d files", fc);
 #endif
 

@@ -1012,7 +1012,7 @@ QSAPI void qg_set_title(const char* title);
 /// @brief 파일 시스템을 마운트 한다
 /// @param index 마운트 번호 (0~9)
 /// @param path 마운트 경로 (널이면 현재 디렉토리)
-/// @param mode 마운트 모드
+/// @param mode 마운트 모드 (HFS를 읽으려면 반드시 "h"를 포함해야 한다)
 /// @return 마운트에 성공하면 참
 QSAPI bool qg_mount(int index, const char* path, const char* mode);
 

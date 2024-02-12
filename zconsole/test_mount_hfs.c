@@ -38,7 +38,7 @@ static void optimize_callback(void* userdata, const struct HFSOPTIMIZEDATA* data
 	qn_outputf("진행파일#%u: %s (크기: %u)", data->count, data->name, data->size);
 }
 
-QN_IMPL_BSTR(QnPathStr, QN_MAX_PATH, qn_path_str);
+QN_IMPL_BSTR(QnPathStr, QN_MAX_PATH, path_str);
 QN_DECLIMPL_ARRAY(FileInfoArray, QnPathStr, file_infos);
 
 static void subdirectory_list(QnMount* mnt, const char* path)
@@ -62,7 +62,7 @@ static void subdirectory_list(QnMount* mnt, const char* path)
 			if (fi.name[0] != '.')
 			{
 				QnPathStr s;
-				qn_path_str_set(&s, fi.name);
+				path_str_set(&s, fi.name);
 				file_infos_add(&files, s);
 			}
 
@@ -78,7 +78,7 @@ static void subdirectory_list(QnMount* mnt, const char* path)
 		}
 	}
 
-	QN_CTNR_FOREACH(files, i)
+	QN_CTNR_FOREACH(files, 0, i)
 	{
 		QnPathStr* s = file_infos_nth_ptr(&files, i);
 		qn_outputf("하위 디렉토리: %s", s->DATA);
@@ -101,7 +101,8 @@ int main(void)
 		qn_mount_mkdir(mnt, "test");
 		qn_mount_chdir(mnt, "test");
 		qn_mount_chdir(mnt, "/");
-
+		qn_mount_chdir(mnt, "test");
+		qn_mount_chdir(mnt, "..");
 
 		qn_outputs("000 디렉토리 만들기");
 		qn_mount_mkdir(mnt, "000");
@@ -129,11 +130,12 @@ int main(void)
 		qn_mount_chdir(mnt, "/");
 		qn_mount_chdir(mnt, "/test/456/3rd step directory");
 		qn_mount_mkdir(mnt, "/test/456/thisislongfilenamedirectoryisitwork");
+		qn_mount_chdir(mnt, "/test/456");
 
 		qn_mount_chdir(mnt, "/test");
-		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night)-1, false, QNFTYPE_TEXT);
-		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night)-1, false, QNFTYPE_TEXT);
-		qn_hfs_store_data(mnt, "one summer night.cmpr", one_summer_night, (uint)QN_COUNTOF(one_summer_night)-1, true, QNFTYPE_TEXT);
+		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night) - 1, false, QNFTYPE_TEXT);
+		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night) - 1, false, QNFTYPE_TEXT);
+		qn_hfs_store_data(mnt, "one summer night.cmpr", one_summer_night, (uint)QN_COUNTOF(one_summer_night) - 1, true, QNFTYPE_TEXT);
 		qn_hfs_store_file(mnt, NULL, "QsLib.vcxproj", true, QNFTYPE_MARKUP);
 		qn_hfs_store_file(mnt, "qlem.html", "QsLibEm.html", true, QNFTYPE_MARKUP);
 		qn_hfs_store_file(mnt, "qlem.cmd", "QsLibEm.cmd", true, QNFTYPE_SCRIPT);
@@ -170,7 +172,7 @@ int main(void)
 		}
 
 		psz = qn_mount_read(mnt, "one summer night.cmpr", &size);
-		psz[size]='\0';
+		psz[size] = '\0';
 		qn_outputs(psz);
 		qn_free(psz);
 
