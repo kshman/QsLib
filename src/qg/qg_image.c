@@ -11,6 +11,7 @@
 #define STBI_MALLOC(x) qn_alloc(x, byte)
 #define STBI_REALLOC(x, y) qn_realloc(x, y, byte)
 #define STBI_FREE(x) qn_free(x)
+#define STBI_ASSERT qn_debug_verify
 #define STBI_NO_GIF
 #define STBI_NO_PIC
 #define STBI_NO_HDR
@@ -513,12 +514,10 @@ pos_exit:
 }
 
 //
-QgImage* qg_load_image(int fuse, const char* filename)
+QgImage* qg_load_image(int mount, const char* filename)
 {
-	QN_DUMMY(fuse);
-
 	int size;
-	byte* data = qn_file_alloc(NULL, filename, &size);
+	byte* data = qn_file_alloc(qg_get_mount(mount), filename, &size);
 	qn_return_when_fail(data != NULL, NULL);
 
 	QgImage* self = qg_load_image_buffer(data, size);

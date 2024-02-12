@@ -964,7 +964,7 @@ static bool qgl_commit_shader_layout(const QglRenderState* rdr)
 
 	// 유니폼 값 넣고
 	size_t s, i;
-	QN_CTNR_FOREACH(rdr->shader.uniforms, i)
+	QN_CTNR_FOREACH(rdr->shader.uniforms, 0, i)
 	{
 		const QgVarShader* var = qgl_uni_ctnr_nth_ptr(&rdr->shader.uniforms, i);
 		qgl_process_shader_variable(var);
@@ -1766,7 +1766,7 @@ static bool qgl_render_bind_layout_input(QglRenderState* self, const QgLayoutDat
 QgRenderState* qgl_create_render(_In_ const char* name, _In_ const QgPropRender* prop, const _In_ QgPropShader* shader)
 {
 	QglRenderState* self = qn_alloc_zero_1(QglRenderState);
-	qg_node_set_name(qn_cast_type(self, QgNode), name);
+	qn_node_set_name(qn_cast_type(self, QnGamNode), name);
 
 	// 세이더
 	if (qgl_render_bind_shader(self, &shader->vertex, &shader->pixel) == false)
@@ -1913,7 +1913,7 @@ static QgTexture* qgl_create_texture(_In_ const char* name, _In_ const QgImage* 
 	GLDEBUG(glGenTextures(1, &gl_id));
 	GLDEBUG(glBindTexture(GL_TEXTURE_2D, gl_id));
 	ss->texture.handle[0] = GL_INVALID_HANDLE;
-	ss->texture.target[0] = 0;
+	ss->texture.target[0] = GL_TEXTURE_2D;
 
 	int mcount;
 	if (gl_enum.format != GL_NONE)

@@ -30,7 +30,7 @@ static const QglConfig* qgl_detect_config(_In_ const QglConfig* wanted, _In_ con
 	uint least_extra = UINT_MAX;
 	const QglConfig* found = NULL;
 	size_t i;
-	QN_CTNR_FOREACH(*configs, i)
+	QN_CTNR_FOREACH(*configs, 0, i)
 	{
 		const QglConfig* c = qgl_cfg_ctnr_nth_ptr(configs, i);
 		if (c->handle == NULL)

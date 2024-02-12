@@ -77,5 +77,4 @@
 //
 #include "qs_conf.h"
 #include "qs_qn.h"
-#include "qs_ctn.h"
 #include "qs_math.h"

@@ -4,15 +4,10 @@
   <!-- ==================== QNCTN (+QN+QG) ==================== -->
 
   <!-- 배열 / 컨테이너 / 슬라이스 -->
-  <Type Name="QnPtrArr">
-    <AlternativeType Name="QnByteArr"/>
-    <AlternativeType Name="QnIntArr"/>
-    <AlternativeType Name="QnAnyArr"/>
-    <AlternativeType Name="QnPtrCtnr"/>
-    <AlternativeType Name="QnByteCtn"/>
-    <AlternativeType Name="QnIntCtn"/>
-    <AlternativeType Name="QnAnyCtn"/>
-    <AlternativeType Name="HfsArrInfo"/>
+  <Type Name="QnPtrCtnr">
+    <AlternativeType Name="QnPtrArray"/>
+    <AlternativeType Name="SymArray"/>
+    <AlternativeType Name="HfsInfoArray"/>
     <AlternativeType Name="ErrorArray"/>
     <AlternativeType Name="SubArray"/>
     <AlternativeType Name="StubMonitorCtnr"/>
@@ -47,9 +42,24 @@
     </Expand>
   </Type>
 
-  <!-- 해시 노드 -->
-  <Type Name="QnInlineHashNode">
-    <DisplayString>[key={KEY}, value={NEXT}]</DisplayString>
+  <!-- 해시 -->
+  <Type Name ="QnHash">
+    <DisplayString>[갯수: {COUNT} (리비전: {REVISION}, 바구니: {BUCKET})]</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>HEAD</HeadPointer>
+        <NextPointer>NEXT</NextPointer>
+        <ValueNode>this</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
+  <!-- 묶음 노드 -->
+  <Type Name="SymMukumNode">
+    <AlternativeType Name="PropMukumNode"/>
+    <AlternativeType Name="FsMukumNode"/>
+    <AlternativeType Name="HfsMukumNode"/>
+    <DisplayString>[key={KEY}, value={VALUE}]</DisplayString>
     <Expand>
       <LinkedListItems>
         <HeadPointer>this</HeadPointer>
@@ -59,8 +69,11 @@
     </Expand>
   </Type>
 
-  <!-- 해시 -->
-  <Type Name="QnInlineHash">
+  <!-- 묶음 -->
+  <Type Name="SymMukum">
+    <AlternativeType Name="PropMukum"/>
+    <AlternativeType Name="FsMukum"/>
+    <AlternativeType Name="HfsMukum"/>
     <DisplayString>[갯수: {COUNT} (리비전: {REVISION}, 바구니: {BUCKET})]</DisplayString>
     <Expand>
       <Item Name="[갯수]">COUNT</Item>
@@ -84,6 +97,31 @@
     </Expand>
   </Type>
 
+  <!-- 노드 -->
+  <Type Name="QNGAMNODE">
+    <DisplayString>[{((QNGAM*)this)-&gt;vt-&gt;name,s} / {NAME,s} (ref:{((QNGAM*)this)-&gt;ref})]</DisplayString>
+    <Expand>
+      <Item Name="[타입]">((QNGAM*)this)-&gt;vt-&gt;name</Item>
+      <Item Name="[참조]">((QNGAM*)this)-&gt;ref</Item>
+      <Item Name="[해시]">HASH,X</Item>
+      <Item Name="[이름]">NAME</Item>
+    </Expand>
+  </Type>
+
+  <!-- QGNODEMUKUM -->
+  <Type Name="QNNODEMUKUM">
+    <DisplayString>[갯수: {COUNT}]</DisplayString>
+    <Expand>
+      <Item Name="[갯수]">COUNT</Item>
+      <LinkedListItems>
+        <Size>COUNT</Size>
+        <HeadPointer>HEAD</HeadPointer>
+        <NextPointer>NEXT</NextPointer>
+        <ValueNode>this</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
   <!-- 데이트 타임 -->
   <Type Name="QNDATETIME">
     <DisplayString>[{year}-{month}-{day} {hour}:{minute}:{second}.{millisecond}]</DisplayString>
@@ -93,7 +131,7 @@
   <Type Name="QnTimer">
     <DisplayString>[실행: {runtime} (FPS: {fps})]</DisplayString>
   </Type>
-  
+
   <!-- 마운트 -->
   <Type Name="QNMOUNT">
     <DisplayString>[{path.DATA,s} ({flags} &lt;{base.ref}&gt;)</DisplayString>
@@ -103,7 +141,7 @@
       <Item Name="[플래그]">flags</Item>
     </Expand>
   </Type>
-  
+
   <!-- 스트림 -->
   <Type Name="QNSTREAM">
     <DisplayString>[{name,s} ({flags} &lt;{base.ref}&gt;)</DisplayString>
@@ -113,50 +151,51 @@
       <Item Name="[마운트]">mount</Item>
     </Expand>
   </Type>
-  
+
   <!-- HFSSOURCE -->
   <Type Name="HFSSOURCE">
-    <DisplayString>[&lt;{(QNFILETYPE)type}/{(QNFILEATTR)attr}&gt; (size={size}, seek={seek})]</DisplayString>
+    <DisplayString>[size={size}, &lt;{{(QNFILEATTR)attr}/(QNFILETYPE)type}&gt;]</DisplayString>
     <Expand>
-      <Item Name="[타입]">(QNFILETYPE)type</Item>
+      <Item Name="[길이]">len</Item>
       <Item Name="[속성]">(QNFILEATTR)attr</Item>
-      <Item Name="[이름 길이]">len</Item>
+      <Item Name="[타입]">(QNFILETYPE)type</Item>
       <Item Name="[크기]">size</Item>
       <Item Name="[압축]">cmpr</Item>
       <Item Name="[위치]">seek</Item>
     </Expand>
   </Type>
-  
+
   <!-- HFSFILE -->
   <Type Name="HFSFILE">
-    <DisplayString>[&lt;{(QNFILETYPE)source.type}/{(QNFILEATTR)source.attr}&gt; (size={source.size})]</DisplayString>
+    <DisplayString>[size={source.size}, &lt;{(QNFILEATTR)source.attr}/{(QNFILETYPE)source.type}&gt;]</DisplayString>
     <Expand>
-      <Item Name="[타입]">(QNFILETYPE)source.type</Item>
-      <Item Name="[속성]">(QNFILEATTR)source.attr</Item>
-      <Item Name="[이름 길이]">source.len</Item>
+      <Item Name="[길이]">source.len</Item>
       <Item Name="[해시]">hash</Item>
+      <Item Name="[속성]">(QNFILEATTR)source.attr</Item>
+      <Item Name="[타입]">(QNFILETYPE)source.type</Item>
       <Item Name="[크기]">source.size</Item>
       <Item Name="[압축]">source.cmpr</Item>
       <Item Name="[위치]">source.seek</Item>
-      <Item Name="[메타]">meta</Item>
+      <Item Name="[디렉토리]">subp</Item>
       <Item Name="[다음]">next</Item>
       <Item Name="[만든날짜]">stc</Item>
     </Expand>
   </Type>
-  
+
   <!-- HFSINFO -->
   <Type Name="HFSINFO">
-        <DisplayString>[{name,s} &lt;{(QNFILETYPE)file.source.type}/{(QNFILEATTR)file.source.attr}&gt; (size={file.source.size})]</DisplayString>
+    <DisplayString Condition="file.source.type == 1">[{name,s} (디렉토리, &lt;{(QNFILEATTR)file.source.attr}/{(QNFILETYPE)file.source.type}&gt;)]</DisplayString>
+    <DisplayString Condition="file.source.type != 1">[{name,s} (size={file.source.size}, &lt;{(QNFILEATTR)file.source.attr}/{(QNFILETYPE)file.source.type}&gt;)]</DisplayString>
     <Expand>
-      <Item Name="[타입]">(QNFILETYPE)file.source.type</Item>
-      <Item Name="[속성]">(QNFILEATTR)file.source.attr</Item>
       <Item Name="[이름]">name,s</Item>
-      <Item Name="[이름 길이]">file.source.len</Item>
+      <Item Name="[길이]">file.source.len</Item>
       <Item Name="[해시]">file.hash</Item>
+      <Item Name="[속성]">(QNFILEATTR)file.source.attr</Item>
+      <Item Name="[타입]">(QNFILETYPE)file.source.type</Item>
       <Item Name="[크기]">file.source.size</Item>
       <Item Name="[압축]">file.source.cmpr</Item>
       <Item Name="[위치]">file.source.seek</Item>
-      <Item Name="[메타]">file.meta</Item>
+      <Item Name="[디렉토리]">file.subp</Item>
       <Item Name="[다음]">file.next</Item>
       <Item Name="[만든날짜]">file.stc</Item>
     </Expand>
@@ -345,38 +384,13 @@
     <DisplayString>[키: {key} ({func} / {data}]</DisplayString>
   </Type>
 
-  <!-- 노드 -->
-  <Type Name="QGNODE">
-    <DisplayString>[{((QNGAM*)this)-&gt;vt-&gt;name,s} / {NAME,s} (ref:{((QNGAM*)this)-&gt;ref})]</DisplayString>
-    <Expand>
-      <Item Name="[타입]">((QNGAM*)this)-&gt;vt-&gt;name</Item>
-      <Item Name="[참조]">((QNGAM*)this)-&gt;ref</Item>
-      <Item Name="[해시]">HASH,X</Item>
-      <Item Name="[이름]">NAME</Item>
-    </Expand>
-  </Type>
-
-  <!-- QGNODEMUKUM -->
-  <Type Name="QGNODEMUKUM">
-    <DisplayString>[갯수: {COUNT}]</DisplayString>
-    <Expand>
-      <Item Name="[갯수]">COUNT</Item>
-      <LinkedListItems>
-        <Size>COUNT</Size>
-        <HeadPointer>FIRST</HeadPointer>
-        <NextPointer>NEXT</NextPointer>
-        <ValueNode>this</ValueNode>
-      </LinkedListItems>
-    </Expand>
-  </Type>
-
   <!-- QGBUFFER -->
   <Type Name="QGBUFFER">
     <AlternativeType Name="QGLBUFFER"/>
     <DisplayString Condition="((QGBUFFER*)this)-&gt;mapped == 0">[{((QGBUFFER*)this)-&gt;type} (count:{((QGBUFFER*)this)-&gt;count}, stride:{((QGBUFFER*)this)-&gt;stride})]</DisplayString>
     <DisplayString Condition="((QGBUFFER*)this)-&gt;mapped != 0">[매핑중 {((QGBUFFER*)this)-&gt;type} (count:{((QGBUFFER*)this)-&gt;count}, stride:{((QGBUFFER*)this)-&gt;stride})]</DisplayString>
   </Type>
-  
+
   <!-- QGVARSHADER -->
   <Type Name="QGVARSHADER">
     <DisplayString>[{offset}/{name,s} ({sctype}/{scauto})]</DisplayString>
@@ -400,7 +414,7 @@
       <Item Name="[이름]">((QGNODE*)this)-&gt;NAME</Item>
     </Expand>
   </Type>
-  
+
   <!-- QGIMAGE -->
   <Type Name="QGIMAGE">
     <DisplayString>[(이미지) {width}x{height}+{mipmaps} ({prop.format},{prop.bpp},ref:{((QNGAM*)this)-&gt;ref})</DisplayString>
@@ -414,7 +428,7 @@
       <Item Name="[참조]">((QNGAM*)this)-&gt;ref</Item>
     </Expand>
   </Type>
-  
+
   <!-- QGTEXTURE -->
   <Type Name="QGTEXTURE">
     <DisplayString>[(텍스쳐) {width}x{height}+{mipmaps} ({prop.format},{prop.bpp},ref:{((QNGAM*)this)-&gt;ref})</DisplayString>
@@ -430,12 +444,12 @@
   </Type>
 
   <!-- ==================== GL ==================== -->
-  
+
   <!-- QGLCONFIG -->
   <Type Name="QGLCONFIG">
     <DisplayString>[{(int)red}/{(int)green}/{(int)blue}/{(int)alpha}, {(int)depth}/{(int)stencil} ({(int)samples})]</DisplayString>
   </Type>
-  
+
   <!-- QGLVARATTR -->
   <Type Name="QGLVARATTR">
     <DisplayString>[{name,s} ({attrib}/{usage},{sctype})]</DisplayString>

@@ -5,31 +5,22 @@ int main(void)
 {
 	qn_runtime();
 
-	QnMount* mnt = qn_open_mount(NULL, 0);
-	const char* name = qn_mount_get_name(mnt);
-	qn_outputf("Mount name: %s\n", name);
-	const char* path = qn_mount_get_path(mnt);
-	qn_outputf("Mount path: %s\n", path);
-	qn_mount_mkdir(mnt, "test");
-	qn_mount_chdir(mnt, "test");
-	qn_mount_chdir(mnt, "..");
-	qn_mount_remove(mnt, "test");
-	qn_mount_chdir(mnt, "..");
-	qn_mount_chdir(mnt, NULL);
-	qn_unload(mnt);
-
-
 	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA;
 	int features = QGFEATURE_NONE;
-	if (qg_open_rdh("gl", "RDH", 0, 0, 0, flags, features) == false)
+	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
+	qg_fuse(0, NULL, false, true);
 
 	QmVec bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
 	qg_set_background(&bgc);
 
-	QgImage* img_puru = qg_load_image(0, "../res/image/ff14_puru.jpg");
+	QgImage* img_puru = qg_load_image(0, "/image/ff14_puru.jpg");
 	QgTexture* tex_puru = qg_create_texture("puru", img_puru, QGTEXF_DISCARD_IMAGE | QGTEXF_MIPMAP);
-	QgTexture* tex_autumn = qg_load_texture(0, "../res/image/ff14_autumn.dds", QGTEXF_LINEAR);
+#ifdef _QN_EMSCRIPTEN_
+	QgTexture* tex_autumn = qg_load_texture(0, "/image/ff14_autumn.bmp", QGTEXF_LINEAR);
+#else
+	QgTexture* tex_autumn = qg_load_texture(0, "/image/ff14_autumn.dds", QGTEXF_LINEAR);
+#endif
 
 	float f = 0.0f, angle = 0.0f;
 	while (qg_loop())
@@ -39,7 +30,9 @@ int main(void)
 		{
 			if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_ESC)
 			{
-				qn_mpfdbgout();
+				qn_sym_dbgout();
+				qn_prop_dbgout();
+				//qn_mpf_dbgout();
 				qg_exit_loop();
 			}
 			else if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_F1)

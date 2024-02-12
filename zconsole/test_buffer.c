@@ -52,8 +52,8 @@ int main(void)
 
 	QgPropRender prop_render = QG_DEFAULT_PROP_RENDER;
 	QgPropShader prop_shader = { { layouts, QN_COUNTOF(layouts) }, { vs, 0 }, { ps, 0 } };
-	QgRender* render = qg_rdh_create_render("named", &prop_render, &prop_shader);
-	QgBuffer* buffer = qg_rdh_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(vertices), sizeof(struct vertextype), vertices);
+	QgRenderState* render = qg_create_render_state("named", &prop_render, &prop_shader);
+	QgBuffer* buffer = qg_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(vertices), sizeof(struct vertextype), vertices);
 
 	while (qg_loop())
 	{
@@ -64,18 +64,18 @@ int main(void)
 				qg_exit_loop();
 		}
 
-		if (qg_rdh_begin(true))
+		if (qg_begin_render(true))
 		{
-			qg_rdh_set_render(render);
-			qg_rdh_set_vertex(QGLOS_1, buffer);
-			qg_rdh_draw(QGTPG_TRI, 3);
+			qg_set_render_state(render);
+			qg_set_vertex(QGLOS_1, buffer);
+			qg_draw(QGTPG_TRI, 3);
 
-			qg_rdh_end(true);
+			qg_end_render(true);
 		}
 	}
 
-	qs_unload(buffer);
-	qs_unload(render);
+	qn_unload(buffer);
+	qn_unload(render);
 	qg_close_rdh();
 
 	return 0;

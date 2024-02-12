@@ -16,9 +16,11 @@
 #endif
 #include "PatrickPowell_snprintf.h"
 
+#ifdef _DEBUG
 #define HFS_DEBUG_TRACE 1
+#endif
 
-QN_IMPL_BSTR(QnPathStr, QN_MAX_PATH, qn_path_str);
+QN_IMPL_BSTR(QnPathStr, QN_MAX_PATH, _path_str);
 
 // 최대 파일 할당 크기
 static size_t max_file_alloc_size = 128ULL * 1024ULL * 1024ULL;
@@ -39,9 +41,7 @@ void qn_set_file_max_alloc_size(const size_t size)
 #ifdef _QN_WINDOWS_
 static QnFileAttr _file_attr_convert(const DWORD attr)
 {
-	int ret = QNFATTR_FILE;
-	if (QN_TMASK(attr, FILE_ATTRIBUTE_DIRECTORY))
-		ret |= QNFATTR_DIR;
+	int ret = QN_TMASK(attr, FILE_ATTRIBUTE_DIRECTORY) ? QNFATTR_DIR : QNFATTR_FILE;
 	if (QN_TMASK(attr, FILE_ATTRIBUTE_READONLY))
 		ret |= QNFATTR_RDONLY;
 	if (QN_TMASK(attr, FILE_ATTRIBUTE_HIDDEN))
@@ -59,9 +59,7 @@ static QnFileAttr _file_attr_convert(const DWORD attr)
 #else
 static QnFileAttr _file_attr_convert(const struct stat* st)
 {
-	int ret = QNFATTR_FILE;
-	if (S_ISDIR(st->st_mode))
-		ret |= QNFATTR_DIR;
+	int ret = S_ISDIR(st->st_mode) ? QNFATTR_DIR : QNFATTR_FILE;
 	if (S_ISLNK(st->st_mode))
 		ret |= QNFATTR_LINK;
 	return ret;
@@ -130,11 +128,39 @@ size_t qn_filepath(const char* filename, char* dest, size_t destsize)
 }
 
 //
+size_t qn_filename(const char* filename, char* dest, size_t destsize)
+{
+	qn_return_when_fail(filename != NULL, 0);
+
+	size_t len = strlen(filename);
+	const char* p = filename + len - 1;
+	while (p >= filename && *p != '/' && *p != '\\')
+		p--;
+
+	if (p < filename)
+	{
+		if (dest)
+			qn_strncpy(dest, filename, QN_MIN(destsize, len));
+		return len;
+	}
+
+	len = strlen(p + 1);
+	if (dest)
+	{
+		const size_t maxlen = QN_MIN(len, destsize - 1);
+		memcpy(dest, p + 1, maxlen);
+		dest[maxlen] = '\0';
+		return maxlen;
+	}
+	return len;
+}
+
+//
 #if !defined _QN_WINDOWS_ && !defined __EMSCRIPTEN__
 static char* _read_sym_link(const char* path)
 {
 	char* buf = NULL;
-	size_t len = 64;
+	size_t len = 256;
 	ssize_t rc = -1;
 	while (true)
 	{
@@ -159,7 +185,7 @@ char* qn_basepath(void)
 {
 	char* path = NULL;
 #ifdef _QN_WINDOWS_
-	DWORD len, dw = 128;
+	DWORD len, dw = 256;
 	wchar* pw = NULL;
 	while (true)
 	{
@@ -228,6 +254,33 @@ char* qn_basepath(void)
 	path = "/";
 #endif
 	return path;
+}
+
+//
+char* qn_getcwd(void)
+{
+#ifdef _QN_WINDOWS_
+	wchar uni[QN_MAX_PATH];
+	const DWORD len = GetCurrentDirectory(QN_MAX_PATH, uni);
+	if (len == 0)
+		return NULL;
+	return qn_u16to8_dup(uni, 0);
+#else
+	char* buf = NULL;
+	size_t len = 256;
+	while (true)
+	{
+		buf = qn_realloc(buf, len, char);
+		char* res = getcwd(buf, len);
+		if (res != NULL)
+			return buf;
+		if (errno != ERANGE)
+			break;
+		len *= 2;
+	}
+	qn_free(buf);
+	return NULL;
+#endif
 }
 
 
@@ -824,170 +877,165 @@ typedef struct FILESTREAM
 // 분석
 static void _file_stream_access_parse(const char* mode, QnFileAccess* acs, QnFileFlag* flags)
 {
+	bool at = false;
+
 #ifdef _QN_WINDOWS_
-	acs->mode = 0;
-
-	if (mode)
-	{
-		acs->access = 0;
-		acs->share = FILE_SHARE_READ;
-		acs->attr = FILE_ATTRIBUTE_NORMAL;
-
-		for (char ch; *mode; ++mode)
-		{
-			switch (*mode)
-			{
-				case 'a':
-					acs->mode = OPEN_ALWAYS;
-					acs->access = GENERIC_WRITE;
-					*flags = QNFF_WRITE | QNFF_SEEK | QNFF_APPEND;
-					break;
-				case 'r':
-					acs->mode = OPEN_EXISTING;
-					acs->access = GENERIC_READ;
-					*flags = QNFF_READ | QNFF_SEEK;
-					break;
-				case 'w':
-					acs->mode = CREATE_ALWAYS;
-					acs->access = GENERIC_WRITE;
-					*flags = QNFF_WRITE | QNFF_SEEK;
-					break;
-				case '+':
-					acs->access = GENERIC_WRITE | GENERIC_READ;
-					*flags = QNFF_READ | QNFF_WRITE | QNFF_SEEK;
-					break;
-				case '@':
-					ch = *(mode + 1);
-					if (ch != '\0')
-					{
-						if (ch == 'R')
-						{
-							acs->share = FILE_SHARE_READ;
-							++mode;
-						}
-						else if (ch == 'W')
-						{
-							acs->share = FILE_SHARE_WRITE;
-							++mode;
-						}
-						else if (ch == '+')
-						{
-							acs->share = FILE_SHARE_READ | FILE_SHARE_WRITE;
-							++mode;
-						}
-					} break;
-				case '!':
-					if (acs->mode == CREATE_ALWAYS)
-						acs->attr |= FILE_FLAG_DELETE_ON_CLOSE;
-					break;
-				case 't':
-					*flags |= QNFF_TEXT;
-					break;
-				case 'b':
-					*flags |= QNFF_BINARY;
-					break;
-				default:
-					break;
-			}
-		}
-	}
-
-	if (acs->mode == 0)
-	{
-		*flags = QNFF_READ | QNFF_SEEK;
-		acs->mode = OPEN_EXISTING;
-		acs->access = GENERIC_READ;
-		acs->attr = FILE_ATTRIBUTE_NORMAL;
-		acs->share = FILE_SHARE_READ;
-	}
-#else
-	char ch;
-
-	acs->mode = 0;
-	acs->access = 0;
+	acs->mode = OPEN_EXISTING;
+	acs->access = GENERIC_READ;
+	acs->attr = FILE_ATTRIBUTE_NORMAL;
+	acs->share = FILE_SHARE_READ;
+	*flags = QNFF_READ | QNFF_SEEK;
 
 	if (mode)
 	{
 		for (; *mode; ++mode)
 		{
-			switch (*mode)
+			if (at == false)
 			{
-				case 'a':
-					acs->mode = O_WRONLY | O_APPEND | O_CREAT;
-					*flags = QNFF_WRITE | QNFF_SEEK | QNFF_APPEND;
-					break;
-				case 'r':
-					acs->mode = O_RDONLY;
-					*flags = QNFF_READ | QNFF_SEEK;
-					break;
-				case 'w':
-					acs->mode = O_WRONLY | O_TRUNC | O_CREAT;
-					*flags = QNFF_WRITE | QNFF_SEEK;
-					break;
-				case '+':
-					acs->mode |= O_RDWR;
-					*flags = QNFF_READ | QNFF_WRITE | QNFF_SEEK;
-					break;
-				case '@':
-					ch = *(mode + 1);
-					if (ch != '\0')
-					{
-						if (ch == 'R')
+				switch (*mode)
+				{
+					case 'a':
+						acs->mode = OPEN_ALWAYS;
+						acs->access = GENERIC_WRITE;
+						*flags = QNFF_WRITE | QNFF_SEEK | QNFF_APPEND;
+						break;
+#if false
+					case 'r':
+						acs->mode = OPEN_EXISTING;
+						acs->access = GENERIC_READ;
+						*flags = QNFF_READ | QNFF_SEEK;
+						break;
+#endif
+					case 'w':
+						acs->mode = CREATE_ALWAYS;
+						acs->access = GENERIC_WRITE;
+						*flags = QNFF_WRITE | QNFF_SEEK;
+						break;
+					case '+':
+						acs->access = GENERIC_WRITE | GENERIC_READ;
+						*flags = QNFF_READ | QNFF_WRITE | QNFF_SEEK;
+						break;
+					case '!':
+						if (acs->mode == CREATE_ALWAYS)
+							acs->attr = FILE_FLAG_DELETE_ON_CLOSE;
+						break;
+					case 't':
+						*flags |= QNFF_TEXT;
+						break;
+					case 'b':
+						*flags |= QNFF_BINARY;
+						break;
+					case '@':
+						at = true;
+						break;
+					default:
+						break;
+				}
+			}
+			else
+			{
+				switch (*mode)
+				{
+#if false
+					case 'R':
+						acs->share = FILE_SHARE_READ;
+						break;
+#endif
+					case 'W':
+						acs->share = FILE_SHARE_WRITE;
+						break;
+					case '+':
+						acs->share = FILE_SHARE_READ | FILE_SHARE_WRITE;
+						break;
+					default:
+						break;
+				}
+			}
+		}
+	}
+#else
+	acs->mode = O_RDONLY;
+	acs->access = 0;
+	*flags = QNFF_READ | QNFF_SEEK;
+
+	if (mode)
+	{
+		for (; *mode; ++mode)
+		{
+			if (at == false)
+			{
+				switch (*mode)
+				{
+					case 'a':
+						acs->mode = O_WRONLY | O_APPEND | O_CREAT;
+						*flags = QNFF_WRITE | QNFF_SEEK | QNFF_APPEND;
+						break;
+#if false
+					case 'r':
+						acs->mode = O_RDONLY;
+						*flags = QNFF_READ | QNFF_SEEK;
+						break;
+#endif
+					case 'w':
+						acs->mode = O_WRONLY | O_TRUNC | O_CREAT;
+						*flags = QNFF_WRITE | QNFF_SEEK;
+						break;
+					case '+':
+						acs->mode |= O_RDWR;
+						*flags = QNFF_READ | QNFF_WRITE | QNFF_SEEK;
+						break;
+					case 't':
+						*flags |= QNFF_TEXT;
+						break;
+					case 'b':
+						*flags |= QNFF_BINARY;
+						break;
+					case '@':
+						at = true;
+						break;
+					case '!':
+					default:
+						break;
+				}
+			}
+			else
+			{
+				switch (*mode)
+				{
+					case 'R':
+						acs->access |= S_IRUSR;
+						break;
+					case 'W':
+						acs->access |= S_IWUSR;
+						break;
+					case 'X':
+						acs->access |= S_IXUSR;
+						break;
+					case '+':
+						acs->access |= S_IRUSR | S_IWUSR;
+						break;
+					default:
+						if (*mode >= '0' && *mode <= '7')
 						{
-							acs->access |= S_IRUSR;
-							mode++;
-						}
-						else if (ch == 'W')
-						{
-							acs->access |= S_IWUSR;
-							mode++;
-						}
-						else if (ch == 'X')
-						{
-							acs->access |= S_IXUSR;
-							mode++;
-						}
-						else if (ch == '+')
-						{
-							acs->access |= S_IRUSR | S_IWUSR;
-							mode++;
-						}
-						else if (isdigit(ch))
-						{
-							const char* p = mode + 2;
-							while (isdigit(*p))
+							const char* p = mode + 1;
+							while (*mode >= '0' && *mode <= '7')
 								p++;
-							if ((p - (mode + 1)) < 63)
+							if ((p - mode) < 8)
 							{
-								char sz[64];
-								qn_strncpy(sz, (mode + 1), (size_t)(p - (mode + 1)));
+								char sz[10];
+								qn_strncpy(sz, mode, (size_t)(p - mode));
 								acs->access = qn_strtoi(sz, 8);
 							}
 							mode = p;
 						}
-					} break;
-				case '!':
-					break;
-				case 't':
-					*flags |= QNFF_TEXT;
-					break;
-				case 'b':
-					*flags |= QNFF_BINARY;
-					break;
-				default:
-					break;
+						break;
+				}
 			}
 		}
 	}
 
-	if (acs->mode == 0)
-	{
-		acs->mode = O_RDONLY;
-		*flags = QNFF_READ | QNFF_SEEK;
-	}
-
-	if (acs->access == 0 && (acs->mode & O_CREAT) != 0)
-		acs->access = (S_IRUSR | S_IWUSR) | (S_IRGRP | S_IWGRP) | (S_IROTH);
+	if (acs->access == 0)
+		acs->access = QN_TMASK(acs->mode, O_CREAT) ? (S_IRUSR | S_IWUSR) | S_IRGRP | S_IROTH : S_IRUSR | S_IRGRP | S_IROTH;
 #endif
 }
 
@@ -1196,7 +1244,16 @@ static QnStream* _file_stream_open(QnMount* mount, const char* filename, const c
 	}
 	HANDLE fd = CreateFile(uni, acs.access, acs.share, NULL, acs.mode, acs.attr, NULL);
 	if (fd == NULL || fd == INVALID_HANDLE_VALUE)
+	{
+#if defined _DEBUG && false
+		WCHAR wz[256];
+		FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), 0, wz, QN_COUNTOF(wz), NULL);
+		char sz[256];
+		qn_u16to8(sz, 256, wz, 0);
+		qn_mesgf(false, "FileStream", "CreateFile failed: %s", sz);
+#endif
 		return NULL;
+	}
 #else
 	int fd = acs.access == 0 ? open(filename, acs.mode) : open(filename, acs.mode, acs.access);
 	if (fd < 0)
@@ -1709,7 +1766,8 @@ static char* _disk_fs_read_text(QnGam g, const char* filename, int* length, int*
 	qn_return_when_fail(_file_stream_get_real_path(real, self, filename), NULL);
 	int size;
 	char* data = _internal_file_alloc(real, &size);
-	_internal_detect_file_encoding(data, size, length, codepage);
+	if (data != NULL)
+		_internal_detect_file_encoding(data, size, length, codepage);
 	return data;
 }
 
@@ -1776,7 +1834,7 @@ static bool _disk_fs_ch_dir(QnGam g, const char* directory)
 
 	if (directory == NULL || directory[0] == '/' || directory[0] == '\\' && directory[1] == '\0')
 	{
-		qn_path_str_set_len(&self->path, self->name, self->name_len);
+		_path_str_set_len(&self->path, self->name, self->name_len);
 		return true;
 	}
 
@@ -1804,7 +1862,7 @@ static bool _disk_fs_ch_dir(QnGam g, const char* directory)
 	}
 
 	qn_u16to8(real, QN_MAX_PATH, abspath, 0);
-	qn_path_str_set(&self->path, real);
+	_path_str_set(&self->path, real);
 #else
 	char abspath[QN_MAX_PATH];
 	qn_return_when_fail(realpath(real, abspath) != NULL, false);
@@ -1823,7 +1881,7 @@ static bool _disk_fs_ch_dir(QnGam g, const char* directory)
 		len++;
 	}
 
-	qn_path_str_set_len(&self->path, abspath, len);
+	_path_str_set_len(&self->path, abspath, len);
 #endif
 
 	return true;
@@ -1893,7 +1951,7 @@ static QnMount* _create_diskfs(char* path)
 		qn_free(path);
 	}
 
-	qn_path_str_set_len(&self->path, self->name, self->name_len);
+	_path_str_set_len(&self->path, self->name, self->name_len);
 	self->flags = QNMFT_DISKFS;
 
 	//
@@ -1918,8 +1976,9 @@ static QnMount* _create_diskfs(char* path)
 // HFS
 
 #define HFS_HEADER		QN_FOURCC('H', 'F', 'S', '\0')
-#define HFS_VERSION		200
+#define HFS_VERSION		14
 
+#define HFSAT_ROOT		sizeof(HfsHeader)
 #define HFSAT_ROOT_STC	QN_OFFSETOF(HfsHeader, stc)
 #define HFSAT_ROOT_STW	QN_OFFSETOF(HfsHeader, stw)
 #define HFSAT_ROOT_REV 	QN_OFFSETOF(HfsHeader, revision)
@@ -1932,60 +1991,59 @@ static QnMount* _create_diskfs(char* path)
 #define HFSAT_EXT		QN_OFFSETOF(HfsFile, ext)
 #define HFSAT_LEN		QN_OFFSETOF(HfsFile, len)
 #define HFSAT_HASH		QN_OFFSETOF(HfsFile, hash)
-#define HFSAT_META		QN_OFFSETOF(HfsFile, meta)
+#define HFSAT_SUBP		QN_OFFSETOF(HfsFile, subp)
 #define HFSAT_NEXT		QN_OFFSETOF(HfsFile, next)
 #define HFSAT_STZ		QN_OFFSETOF(HfsFile, stc)
-#define HFSAT_ROOT		sizeof(HfsHeader)
 
 #define HFS_MAX_NAME	260
 
-//
+// HFS 헤더
 typedef struct HFSHEADER
 {
-	uint				header;		// 헤더
-	ushort				version;	// 버전
-	ushort				notuse;		// 사용하지 않음
-	QnDateTime			stc;		// 만든 타임스탬프
-	QnDateTime			stw;		// 수정 타임스탬프
-	uint				revision;	// 리비전
-	char				desc[64];	// 설명
+	uint				header;				// 헤더
+	ushort				version;			// 버전
+	ushort				notuse;				// 사용하지 않음
+	QnDateTime			stc;				// 만든 타임스탬프
+	QnDateTime			stw;				// 수정 타임스탬프
+	uint				revision;			// 리비전
+	char				desc[64];			// 설명
 } HfsHeader;
 
-//
+// HFS 파일 소스
 typedef struct HFSSOURCE
 {
-	byte				type;		// 타입
-	byte 				attr;		// 속성
-	ushort				len;		// 파일 이름 길이
-	uint				size;		// 원래 크기
-	uint				cmpr;		// 압축된 크기
-	uint				seek;		// 파일 위치
+	byte 				attr;				// 속성
+	byte				type;				// 타입
+	ushort				len;				// 파일 이름 길이
+	uint				size;				// 원래 크기
+	uint				cmpr;				// 압축된 크기
+	uint				seek;				// 파일 위치
 } HfsSource;
 
-//
+// HFS 파일
 typedef struct HFSFILE
 {
 	HfsSource			source;
-	QnDateTime			stc;		// 만든 타임스탬프
-	uint				hash;		// 파일 이름 해시
-	uint				meta;		// 메타(디렉토리) 위치
-	uint				next;		// 다음 파일 위치
+	QnDateTime			stc;				// 만든 타임스탬프
+	uint				hash;				// 파일 이름 해시
+	uint				zzzz;				// 메타 데이터
+	uint				subp;				// 디렉토리 위치
+	uint				next;				// 다음 파일 위치
 } HfsFile;
 
-//
+// HFS 파일 정보
 typedef struct HFSINFO
 {
 	HfsFile				file;
 	char				name[HFS_MAX_NAME];
 } HfsInfo;
-QN_DECL_ARRAY(HfsArrInfo, HfsInfo);
-QN_IMPL_ARRAY(HfsArrInfo, HfsInfo, _hfs_infos);
+QN_DECLIMPL_ARRAY(HfsInfoArray, HfsInfo, _hfs_infos);
 
 //
 typedef struct HFSDIR
 {
 	QnDir				base;
-	HfsArrInfo			infos;
+	HfsInfoArray		infos;
 } HfsDir;
 
 //
@@ -1993,7 +2051,7 @@ typedef struct HFS
 {
 	QnMount				base;
 	HfsHeader			header;
-	HfsArrInfo			infos;
+	HfsInfoArray		infos;
 	uint				touch;
 } Hfs;
 
@@ -2001,38 +2059,39 @@ typedef struct HFS
 static void _hfs_split_path(const char* path, QnPathStr* dir, QnPathStr* file)
 {
 	qn_divpath(path, dir->DATA, file->DATA);
-	qn_path_str_intern(dir);
-	qn_path_str_intern(file);
+	_path_str_intern(dir);
+	_path_str_intern(file);
 }
 
 // 파일 헤더
-static bool _hfs_write_file_header(QnStream* st, HfsFile* info, const char* name, size_t name_len)
+static bool _hfs_write_file_header(QnStream* stream, HfsFile* file, const char* name, size_t name_len, uint hash)
 {
-	info->source.len = (ushort)name_len;
-	info->hash = qn_strshash(name);
-	if (qn_stream_write(st, info, 0, sizeof(HfsFile)) != sizeof(HfsFile) ||
-		qn_stream_write(st, name, 0, (int)name_len) != (int)name_len)
+	file->hash = hash == 0 ? qn_strshash(name) : hash;
+	file->source.len = (ushort)(name_len == 0 ? strlen(name) : name_len);
+	if (qn_stream_write(stream, file, 0, sizeof(HfsFile)) != sizeof(HfsFile) ||
+		qn_stream_write(stream, name, 0, (int)name_len) != (int)name_len)
 		return false;
 	return true;
 }
 
 // 디렉토리
-static ushort _hfs_write_directory(QnStream* st, const char* name, size_t name_len, uint next, uint meta, QnTimeStamp stc)
+//static ushort _hfs_write_directory(QnStream* st, const char* name, size_t name_len, uint next, uint meta, QnTimeStamp stc)
+static ushort _hfs_write_directory(QnStream* stream, const char* name, size_t name_len, uint hash, QnTimeStamp stc, uint subp, uint next)
 {
 	if (stc == 0)
 		stc = qn_now();
 	HfsFile info =
 	{
-		.source.type = QNFTYPE_SYSTEM,
 		.source.attr = QNFATTR_DIR,
+		.source.type = QNFTYPE_DIR,
 		.source.size = (uint)qm_rand(NULL),
 		.source.cmpr = (uint)qm_rand(NULL),
 		.source.seek = (uint)qm_rand(NULL),
-		.meta = meta,
-		.next = next,
 		.stc.stamp = stc,
+		.subp = subp,
+		.next = next,
 	};
-	return _hfs_write_file_header(st, &info, name, name_len);
+	return _hfs_write_file_header(stream, &info, name, name_len, hash);
 }
 
 // 디렉토리 이름 만들기
@@ -2057,24 +2116,23 @@ static void _hfs_make_directory_name(QnPathStr* dir, const char* name)
 			return;
 		}
 	}
-	qn_path_str_append(dir, name);
-	qn_path_str_append_char(dir, '/');
+	_path_str_append(dir, name);
+	_path_str_append_char(dir, '/');
 }
 
 // 디렉토리 찾기
-static bool _hfs_find_directory(HfsInfo* info, const char* name, uint hash, QnStream* st)
+static bool _hfs_find_directory(QnStream* stream, HfsInfo* info, const char* name, size_t name_len, uint hash)
 {
-	const ushort len = (ushort)strlen(name);
-	while (qn_stream_read(st, info, 0, sizeof(HfsFile)) == sizeof(HfsFile))
+	while (qn_stream_read(stream, info, 0, sizeof(HfsFile)) == sizeof(HfsFile))
 	{
-		if (info->file.source.attr == QNFATTR_DIR && info->file.source.len == len && info->file.hash == hash)
+		if (info->file.source.attr == QNFATTR_DIR && info->file.hash == hash && info->file.source.len == name_len)
 		{
-			if (qn_stream_read(st, info->name, 0, len) == len && qn_strncmp(info->name, name, len) == 0)
+			if (qn_stream_read(stream, info->name, 0, (int)name_len) == (int)name_len && qn_strncmp(info->name, name, name_len) == 0)
 				return true;
 		}
 		if (info->file.next == 0)
 			break;
-		if (qn_stream_seek(st, info->file.next, QNSEEK_BEGIN) != info->file.next)
+		if (qn_stream_seek(stream, info->file.next, QNSEEK_BEGIN) != info->file.next)
 			break;
 	}
 	return false;
@@ -2095,11 +2153,11 @@ static bool _hfs_chdir(QnGam g, const char* directory)
 	}
 
 	QnPathStr tmp;
-	qn_path_str_set(&tmp, directory);
-	if (qn_path_str_nth(&tmp, 0) == '/')
+	_path_str_set(&tmp, directory);
+	if (_path_str_nth(&tmp, 0) == '/')
 	{
 		qn_stream_seek(stream, HFSAT_ROOT, QNSEEK_BEGIN);
-		qn_path_str_set_char(&self->base.path, '/');
+		_path_str_set_char(&self->base.path, '/');
 	}
 
 	HfsInfo info;
@@ -2107,14 +2165,14 @@ static bool _hfs_chdir(QnGam g, const char* directory)
 	for (const char* tok = qn_strtok(tmp.DATA, "\\/\x0\n\r\t", &stk); tok; tok = qn_strtok(NULL, "\\/\x0\n\r\t", &stk))
 	{
 		const uint hash = qn_strshash(tok);
-		if (_hfs_find_directory(&info, tok, hash, stream) == false)
+		if (_hfs_find_directory(stream, &info, tok, strlen(tok), hash) == false)
 			return false;
-		qn_stream_seek(stream, info.file.meta, QNSEEK_BEGIN);
+		qn_stream_seek(stream, info.file.subp, QNSEEK_BEGIN);
 		_hfs_make_directory_name(&self->base.path, tok);
 	}
-#if HFS_DEBUG_TRACE
+#ifdef HFS_DEBUG_TRACE
 	qn_outputf("\tHFS: current directory is %s", self->base.path.DATA);
-	qn_outputs("\t=type=|=attr=|=filename=====================================");
+	qn_outputs("\t\t=attr=|=type=|=filename=====================================");
 	int fc = 0;
 #endif
 
@@ -2130,13 +2188,15 @@ static bool _hfs_chdir(QnGam g, const char* directory)
 		info.file.source.seek = srt;
 		_hfs_infos_add(&self->infos, info);
 
-#if HFS_DEBUG_TRACE
-		qn_outputf("\t %04X | %04X | (%d/%d) %s", info.file.source.type, info.file.source.attr,
-			info.file.source.seek, info.file.meta, info.name);
+#ifdef HFS_DEBUG_TRACE
+		if (info.file.source.type == QNFTYPE_DIR)
+			qn_outputf("\t\t %04X | %4d | [%s] <%d>", info.file.source.attr, info.file.source.type, info.name, info.file.subp);
+		else
+			qn_outputf("\t\t %04X | %4d | %s <%d>", info.file.source.attr, info.file.source.type, info.name, info.file.source.seek);
 		fc++;
 #endif
 	}
-#if HFS_DEBUG_TRACE
+#ifdef HFS_DEBUG_TRACE
 	qn_outputf("\tHFS: %d files", fc);
 #endif
 
@@ -2146,28 +2206,39 @@ static bool _hfs_chdir(QnGam g, const char* directory)
 //
 static bool _hfs_save_dir(Hfs* self, const QnPathStr* dir, QnPathStr* save)
 {
-	if (qn_path_str_is_empty(dir) || qn_path_str_icmp_bstr(dir, &self->base.path) == 0)
+	if (_path_str_is_empty(dir) || _path_str_icmp_bstr(dir, &self->base.path) == 0)
 	{
-		qn_path_str_clear(save);
+		if (save != NULL)
+			_path_str_clear(save);
 		return true;
 	}
-	qn_path_str_set_bstr(save, &self->base.path);
+	if (save != NULL)
+		_path_str_set_bstr(save, &self->base.path);
 	return _hfs_chdir(self, dir->DATA);
 }
 
 //
 static void _hfs_restore_dir(Hfs* self, const QnPathStr* save)
 {
-	if (qn_path_str_is_have(save))
+	if (save != NULL && _path_str_is_have(save))
 		_hfs_chdir(self, save->DATA);
 }
 
 //
 static bool _hfs_mkdir(QnGam g, const char* directory)
 {
-	qn_return_on_ok(directory[0] == '.', false);
-	qn_return_on_ok(directory[0] == '/' && directory[1] == '\0', true);
-	qn_return_when_fail(strlen(directory) < QN_MAX_PATH, false);
+	if (directory[0] == '.')
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (directory[0] == '/' && directory[1] == '\0')
+		return true;
+	if (strlen(directory) >= QN_MAX_PATH - 1)
+	{
+		errno = ENAMETOOLONG;
+		return false;
+	}
 
 	Hfs* self = qn_cast_type(g, Hfs);
 	QnStream* stream = qn_get_gam_desc(self, QnStream*);
@@ -2185,12 +2256,12 @@ static bool _hfs_mkdir(QnGam g, const char* directory)
 		return false;
 	}
 
-	const uint hash = qn_path_str_shash(&name);
+	const uint hash = _path_str_shash(&name);
 	size_t i;
-	QN_CTNR_FOREACH(self->infos, i)
+	QN_CTNR_FOREACH(self->infos, 1, i)	// 0번은 현재 디렉토리
 	{
 		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
-		if (hash == info->file.hash && qn_path_str_icmp(&name, info->name) == 0)
+		if (hash == info->file.hash && name.LENGTH == info->file.source.len && _path_str_icmp(&name, info->name) == 0)
 		{
 			// UNDONE: 옛날 주석에 의하면 패스 잡는 방법이 틀혔다고 함
 			_hfs_restore_dir(self, &save);
@@ -2205,17 +2276,16 @@ static bool _hfs_mkdir(QnGam g, const char* directory)
 		return false;
 	}
 
-	// 새 디렉토리
+	// 디렉토리 만들고 "." 추가
 	const uint next = (uint)qn_stream_tell(stream);
-	_hfs_write_directory(stream, name.DATA, name.LENGTH, 0, (uint)(next + sizeof(HfsFile) + name.LENGTH), 0);
+	const uint subp = (uint)(next + sizeof(HfsFile) + name.LENGTH);
+	const QnTimeStamp stc = qn_now();
+	_hfs_write_directory(stream, name.DATA, name.LENGTH, hash, stc, subp, 0);
+	_hfs_write_directory(stream, ".", 1, 0, stc, subp, (uint)(subp + sizeof(HfsFile) + 1));
 
-	// 현재 디렉토리
-	const uint curr = (uint)qn_stream_tell(stream);
-	_hfs_write_directory(stream, ".", 1, (uint)(curr + sizeof(HfsFile) + 1), (uint)(next + sizeof(HfsFile) + name.LENGTH), 0);
-
-	// 상위 디렉토리
+	// ".." 디렉토리
 	const HfsInfo* parent = _hfs_infos_nth_ptr(&self->infos, 0);
-	_hfs_write_directory(stream, "..", 2, 0, parent->file.source.seek, parent->file.stc.stamp);
+	_hfs_write_directory(stream, "..", 2, 0, parent->file.stc.stamp, parent->file.source.seek, 0);
 
 	// 지금꺼 갱신
 	const HfsInfo* last = _hfs_infos_inv_ptr(&self->infos, 0);
@@ -2223,8 +2293,8 @@ static bool _hfs_mkdir(QnGam g, const char* directory)
 	qn_stream_write(stream, &next, 0, (int)sizeof(uint));
 
 	//
-	if (qn_path_str_is_empty(&save))
-		qn_path_str_set_char(&save, '.');
+	if (_path_str_is_empty(&save))
+		_path_str_set_char(&save, '.');
 	_hfs_restore_dir(self, &save);
 
 	self->touch++;
@@ -2234,6 +2304,12 @@ static bool _hfs_mkdir(QnGam g, const char* directory)
 // 제거
 static bool _hfs_remove(QnGam g, const char* path)
 {
+	if (strlen(path) >= QN_MAX_PATH - 1)
+	{
+		errno = ENAMETOOLONG;
+		return false;
+	}
+
 	Hfs* self = qn_cast_type(g, Hfs);
 	QnStream* stream = qn_get_gam_desc(self, QnStream*);
 
@@ -2255,13 +2331,13 @@ static bool _hfs_remove(QnGam g, const char* path)
 		return false;
 	}
 
-	const uint hash = qn_path_str_shash(&name);
+	const uint hash = _path_str_shash(&name);
 	const HfsInfo* found = NULL;
 	size_t i;
-	QN_CTNR_FOREACH(self->infos, i)
+	QN_CTNR_FOREACH(self->infos, 1, i)	// 0번은 현재 디렉토리
 	{
 		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
-		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_icmp(&name, info->name) == 0)
+		if (hash == info->file.hash && name.LENGTH == info->file.source.len && _path_str_icmp(&name, info->name) == 0)
 		{
 			found = info;
 			break;
@@ -2322,25 +2398,54 @@ static void* _hfs_source_read(Hfs* hfs, HfsSource* source)
 	return data;
 }
 
+// 소스로 열기
+static QnStream* _hfs_source_open(Hfs* hfs, HfsSource* source, const char* filename)
+{
+	QnStream* stream;
+	if (QN_TMASK(source->attr, QNFATTR_CMPR) || QN_TMASK(source->attr, QNFATTR_INDIRECT) == false)
+	{
+		void* data = _hfs_source_read(hfs, source);
+		stream = data == NULL ? NULL : _create_mem_stream_hfs(qn_cast_type(hfs, QnMount), filename, data, source->size);
+	}
+	else
+	{
+		llong offset = source->seek + sizeof(HfsFile) + source->len;
+		stream = _indirect_stream_open(hfs, filename, offset, source->size);
+	}
+	return stream;
+}
+
 // 파일 읽기
 static void* _hfs_read(QnGam g, const char* filename, int* size)
 {
+	if (strlen(filename) >= QN_MAX_PATH - 1)
+	{
+		errno = ENAMETOOLONG;
+		return NULL;
+	}
+
 	Hfs* self = qn_cast_type(g, Hfs);
 
-	QnPathStr dir, name, save;
+	QnPathStr dir, name, keep, *save = QN_TMASK(self->base.flags, QNMFT_NORESTORE) ? NULL : &keep;
 	_hfs_split_path(filename, &dir, &name);
-	if (qn_path_str_is_empty(&name) || name.DATA[0] == '.')
+	if (_path_str_is_empty(&name) || name.DATA[0] == '.')
+	{
+		errno = EINVAL;
 		return NULL;
-	if (_hfs_save_dir(self, &dir, &save) == false)
+	}
+	if (_hfs_save_dir(self, &dir, save) == false)
+	{
+		errno = ENOENT;
 		return NULL;
+	}
 
-	const uint hash = qn_path_str_shash(&name);
+	const uint hash = _path_str_shash(&name);
 	HfsInfo* found = NULL;
 	size_t i;
-	QN_CTNR_FOREACH(self->infos, i)
+	QN_CTNR_FOREACH(self->infos, 1, i)	// 0번은 현재 디렉토리
 	{
 		HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
-		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_icmp(&name, info->name) == 0)
+		if (hash == info->file.hash && name.LENGTH == info->file.source.len && _path_str_icmp(&name, info->name) == 0)
 		{
 			found = info;
 			break;
@@ -2348,7 +2453,8 @@ static void* _hfs_read(QnGam g, const char* filename, int* size)
 	}
 	if (found == NULL)
 	{
-		_hfs_restore_dir(self, &save);
+		_hfs_restore_dir(self, save);
+		errno = ENOENT;
 		return NULL;
 	}
 
@@ -2356,7 +2462,7 @@ static void* _hfs_read(QnGam g, const char* filename, int* size)
 	if (size)
 		*size = (int)found->file.source.size;
 
-	_hfs_restore_dir(self, &save);
+	_hfs_restore_dir(self, save);
 	return data;
 }
 
@@ -2372,10 +2478,11 @@ static char* _hfs_read_text(QnGam g, const char* filename, int* length, int* cod
 // 파일 열기
 static QnStream* _hfs_open_stream(QnGam g, const char* filename, const char* mode)
 {
-	Hfs* self = qn_cast_type(g, Hfs);
-	QnStream* hfs_stream = qn_get_gam_desc(self, QnStream*);
-	bool indirect = QN_TMASK(hfs_stream->flags, QNFFT_FILE);
-
+	if (strlen(filename) >= QN_MAX_PATH - 1)
+	{
+		errno = ENAMETOOLONG;
+		return NULL;
+	}
 	if (mode)
 	{
 		for (const char* p = mode; *p; p++)
@@ -2383,30 +2490,34 @@ static QnStream* _hfs_open_stream(QnGam g, const char* filename, const char* mod
 			if (*p == 'w' || *p == 'a' || *p == '+')
 			{
 				qn_mesgf(true, "Hfs", "file write mode is not supported: %s (%s)", filename, mode);
+				errno = EACCES;
 				return NULL;
-			}
-			if (*p == 'm')
-			{
-				// m 모드는 메모리 스트림으로
-				indirect = false;
 			}
 		}
 	}
 
-	QnPathStr dir, name, save;
-	_hfs_split_path(filename, &dir, &name);
-	if (qn_path_str_is_empty(&name) || name.DATA[0] == '.')
-		return NULL;
-	if (_hfs_save_dir(self, &dir, &save) == false)
-		return NULL;
+	Hfs* self = qn_cast_type(g, Hfs);
 
-	const uint hash = qn_path_str_shash(&name);
+	QnPathStr dir, name, keep, *save = QN_TMASK(self->base.flags, QNMFT_NORESTORE) ? NULL : &keep;
+	_hfs_split_path(filename, &dir, &name);
+	if (_path_str_is_empty(&name) || name.DATA[0] == '.')
+	{
+		errno = EINVAL;
+		return NULL;
+	}
+	if (_hfs_save_dir(self, &dir, save) == false)
+	{
+		errno = ENOENT;
+		return NULL;
+	}
+
+	const uint hash = _path_str_shash(&name);
 	HfsInfo* found = NULL;
 	size_t i;
-	QN_CTNR_FOREACH(self->infos, i)
+	QN_CTNR_FOREACH(self->infos, 1, i)	// 0번은 현재 디렉토리
 	{
 		HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
-		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_icmp(&name, info->name) == 0)
+		if (hash == info->file.hash && name.LENGTH == info->file.source.len && _path_str_icmp(&name, info->name) == 0)
 		{
 			found = info;
 			break;
@@ -2414,50 +2525,49 @@ static QnStream* _hfs_open_stream(QnGam g, const char* filename, const char* mod
 	}
 	if (found == NULL)
 	{
-		_hfs_restore_dir(self, &save);
+		_hfs_restore_dir(self, save);
+		errno = ENOENT;
 		return NULL;
 	}
 
-	QnStream* stream;
-	if (QN_TMASK(found->file.source.attr, QNFATTR_CMPR) || indirect == false)
-	{
-		void* data = _hfs_source_read(self, &found->file.source);
-		stream = data == NULL ? NULL : _create_mem_stream_hfs(qn_cast_type(self, QnMount), filename, data, found->file.source.size);
-	}
-	else
-	{
-		llong offset = found->file.source.seek + sizeof(HfsFile) + found->file.source.len;
-		stream = _indirect_stream_open(self, filename, offset, found->file.source.size);
-	}
-
-	_hfs_restore_dir(self, &save);
+	QnStream* stream = _hfs_source_open(self, &found->file.source, filename);
+	_hfs_restore_dir(self, save);
 	return stream;
 }
 
 // 파일 있나
 static QnFileAttr _hfs_exist(QnGam g, const char* path)
 {
+	if (strlen(path) >= QN_MAX_PATH - 1)
+	{
+		errno = ENAMETOOLONG;
+		return QNFATTR_NONE;
+	}
+
 	Hfs* self = qn_cast_type(g, Hfs);
 
-	QnPathStr dir, name, save;
+	QnPathStr dir, name, keep, *save = QN_TMASK(self->base.flags, QNMFT_NORESTORE) ? NULL : &keep;
 	_hfs_split_path(path, &dir, &name);
-	if (_hfs_save_dir(self, &dir, &save) == false)
-		return 0;
+	if (_hfs_save_dir(self, &dir, save) == false)
+	{
+		errno = ENOENT;
+		return QNFATTR_NONE;
+	}
 
-	const uint hash = qn_path_str_shash(&name);
+	const uint hash = _path_str_shash(&name);
 	QnFileAttr attr = QNFATTR_NONE;
 	size_t i;
-	QN_CTNR_FOREACH(self->infos, i)
+	QN_CTNR_FOREACH(self->infos, 1, i)	// 0번은 현재 디렉토리
 	{
 		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
-		if (hash == info->file.hash && name.LENGTH == info->file.source.len && qn_path_str_icmp(&name, info->name) == 0)
+		if (hash == info->file.hash && name.LENGTH == info->file.source.len && _path_str_icmp(&name, info->name) == 0)
 		{
 			attr = info->file.source.attr;
 			break;
 		}
 	}
 
-	_hfs_restore_dir(self, &save);
+	_hfs_restore_dir(self, save);
 	return attr;
 }
 
@@ -2473,25 +2583,25 @@ static const HfsInfo* _hfs_list_internal_read_info(HfsDir* self)
 static const char* _hfs_list_read(QnGam g)
 {
 	HfsDir* self = qn_cast_type(g, HfsDir);
-	const HfsInfo* hi = _hfs_list_internal_read_info(self);
-	return hi == NULL ? NULL : hi->name;
+	const HfsInfo* info = _hfs_list_internal_read_info(self);
+	return info == NULL ? NULL : info->name;
 }
 
 //
-static bool _hfs_list_read_info(QnGam g, QnFileInfo* info)
+static bool _hfs_list_read_info(QnGam g, QnFileInfo* ret)
 {
 	HfsDir* self = qn_cast_type(g, HfsDir);
-	const HfsInfo* hi = _hfs_list_internal_read_info(self);
-	if (hi == NULL)
+	const HfsInfo* info = _hfs_list_internal_read_info(self);
+	if (info == NULL)
 		return false;
 
-	info->attr = hi->file.source.attr;
-	info->len = hi->file.source.len;
-	info->size = hi->file.source.size;
-	info->cmpr = hi->file.source.cmpr;
-	info->stc = hi->file.stc.stamp;
-	info->stw = hi->file.stc.stamp;
-	info->name = hi->name;
+	ret->attr = info->file.source.attr;
+	ret->len = info->file.source.len;
+	ret->size = info->file.source.size;
+	ret->cmpr = info->file.source.cmpr;
+	ret->stc = info->file.stc.stamp;
+	ret->stw = info->file.stc.stamp;
+	ret->name = info->name;
 	return true;
 }
 
@@ -2528,15 +2638,15 @@ static void _hfs_list_dispose(QnGam g)
 }
 
 //
-static QnDir* _hfs_list_open(_In_ QnMount* mount)
+static QnDir* _hfs_list_open(_In_ QnGam g)
 {
-	Hfs* hfs = qn_cast_type(mount, Hfs);
+	Hfs* hfs = qn_cast_type(g, Hfs);
 	HfsDir* self = qn_alloc_zero_1(HfsDir);
 
 	_hfs_infos_init_copy(&self->infos, &hfs->infos);
 
-	self->base.mount = qn_load(mount);
-	self->base.name = qn_strdup(mount->path.DATA);	// VS는 여기 널이라고 우기지만 mount는 널이 아니므로 무시
+	self->base.mount = qn_load(hfs);
+	self->base.name = qn_strdup(hfs->base.path.DATA);	// VS는 여기 널이라고 우기지만 mount는 널이 아니므로 무시
 	qn_set_gam_desc(self, 0);
 
 	static const QN_DECL_VTABLE(QNDIR) _hfs_list_vt =
@@ -2553,7 +2663,7 @@ static QnDir* _hfs_list_open(_In_ QnMount* mount)
 }
 
 // HFS 만들기
-static bool _hfs_create_file(_In_ QnStream* st, char* desc)
+static bool _hfs_create_file(_In_ QnStream* stream, char* desc)
 {
 	QnDateTime dt = { qn_now() };
 	HfsHeader header =
@@ -2595,11 +2705,10 @@ static bool _hfs_create_file(_In_ QnStream* st, char* desc)
 				user, hostname, dt.year, dt.month, dt.day);
 	}
 #endif
-	if (qn_stream_write(st, &header, 0, sizeof(HfsHeader)) != sizeof(HfsHeader))
+	if (qn_stream_write(stream, &header, 0, sizeof(HfsHeader)) != sizeof(HfsHeader))
 		return false;
 
-	_hfs_write_directory(st, ".", 1, 0, HFSAT_ROOT, 0);
-
+	_hfs_write_directory(stream, ".", 1, 0, 0, HFSAT_ROOT, 0);
 	return true;
 }
 
@@ -2649,10 +2758,11 @@ static QnStream* _hfs_open_file(const char* filename, bool can_write, bool use_m
 				return NULL;
 			}
 
-			byte* buffer = qn_alloc(2LL * 1024LL * 1024LL, byte);
+			// 버퍼 사이즈에 관한 참고: https://github.com/dotnet/runtime/discussions/74405
+			byte* buffer = qn_alloc(16LL * 1024LL, byte);
 			for (;;)
 			{
-				const int read = _file_stream_read(filestream, buffer, 0, 2LL * 1024LL * 1024LL);
+				const int read = _file_stream_read(filestream, buffer, 0, 16LL * 1024LL);
 				if (read <= 0)
 					break;
 				_mem_stream_write(stream, buffer, 0, read);
@@ -2717,7 +2827,7 @@ static void _hfs_dispose(QnGam g)
 // 진짜 만들기
 static QnMount* _create_hfs(const char* filename, const char* mode)
 {
-	bool can_write = false, use_mem = false, is_create = false;
+	bool can_write = false, use_mem = false, is_create = false, no_restore = false;
 	if (mode != NULL)
 	{
 		for (const char* p = mode; *p != '\0'; p++)
@@ -2734,6 +2844,8 @@ static QnMount* _create_hfs(const char* filename, const char* mode)
 				use_mem = true;
 				can_write = true;
 			}
+			else if (*p == 'f')
+				no_restore = true;
 			else if (*p == '+')
 				can_write = true;
 		}
@@ -2752,6 +2864,8 @@ static QnMount* _create_hfs(const char* filename, const char* mode)
 		self->base.flags |= QNMFT_MEM;
 	if (can_write)
 		self->base.flags |= QNMF_WRITE;
+	if (no_restore)
+		self->base.flags |= QNMFT_NORESTORE;
 	qn_set_gam_desc(self, stream);
 	_hfs_chdir(qn_cast_type(self, QnMount), "/");
 
@@ -2783,7 +2897,7 @@ bool qn_hfs_set_desc(QnMount* mount, const char* desc)
 }
 
 // 버퍼 넣기 메인
-bool _hfs_store_buffer(Hfs* self, const char* filename, const void* data, uint size, bool cmpr, QnFileType type)
+static bool _hfs_store_buffer(Hfs* self, const char* filename, const void* data, uint size, bool cmpr, QnFileType type)
 {
 	QnPathStr dir, name, save;
 	_hfs_split_path(filename, &dir, &name);
@@ -2799,12 +2913,12 @@ bool _hfs_store_buffer(Hfs* self, const char* filename, const void* data, uint s
 	}
 
 	//
-	const uint hash = qn_path_str_shash(&name);
+	const uint hash = _path_str_shash(&name);
 	size_t i;
-	QN_CTNR_FOREACH(self->infos, i)
+	QN_CTNR_FOREACH(self->infos, 1, i)	// 0번은 현재 디렉토리
 	{
 		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
-		if (hash == info->file.hash && qn_path_str_icmp(&name, info->name) == 0)
+		if (hash == info->file.hash && name.LENGTH == info->file.source.len && _path_str_icmp(&name, info->name) == 0)
 		{
 			_hfs_restore_dir(self, &save);
 			errno = EEXIST;
@@ -2825,11 +2939,6 @@ bool _hfs_store_buffer(Hfs* self, const char* filename, const void* data, uint s
 		}
 		else
 		{
-#if defined _DEBUG && false
-			byte* tmp = qn_memzucp_s(bufcmpr, sizecmpr, size);
-			qn_free(tmp);
-#endif
-
 			// 압축 크기가 96% 이상이면 그냥 넣는다 (예컨데 압축파일)
 			const double d = size * 0.96;
 			if ((double)sizecmpr >= d)
@@ -2848,16 +2957,15 @@ bool _hfs_store_buffer(Hfs* self, const char* filename, const void* data, uint s
 
 	HfsInfo file =
 	{
-		.file.source.type = (byte)type,
 		.file.source.attr = QNFATTR_FILE,
+		.file.source.type = (byte)type,
 		.file.source.size = size,
 		.file.source.cmpr = 0,
 		.file.source.seek = 0,
 		.file.stc.stamp = qn_now(),
-		//.file.len = name.LENGTH,	// len, hash는 _hfs_write_file_header()에서 채워진다
-		//.file.hash = hash,
-		.file.meta = 0,
+		.file.subp = 0,
 		.file.next = 0,
+		// len, hash는 _hfs_write_file_header()에서 채워진다
 	};
 
 	bool isok = false;
@@ -2865,14 +2973,14 @@ bool _hfs_store_buffer(Hfs* self, const char* filename, const void* data, uint s
 	{
 		file.file.source.attr |= QNFATTR_CMPR;
 		file.file.source.cmpr = (uint)sizecmpr;
-		if (_hfs_write_file_header(stream, &file.file, name.DATA, name.LENGTH) &&
+		if (_hfs_write_file_header(stream, &file.file, name.DATA, name.LENGTH, hash) &&
 			qn_stream_write(stream, bufcmpr, 0, (int)sizecmpr) == (int)sizecmpr)
 			isok = true;
 		qn_free(bufcmpr);
 	}
 	else
 	{
-		if (_hfs_write_file_header(stream, &file.file, name.DATA, name.LENGTH) &&
+		if (_hfs_write_file_header(stream, &file.file, name.DATA, name.LENGTH, hash) &&
 			qn_stream_write(stream, data, 0, (int)size) == (int)size)
 			isok = true;
 	}
@@ -2911,6 +3019,11 @@ bool qn_hfs_store_data(QnMount* mount, const char* filename, const void* data, u
 		errno = EINVAL;
 		return false;
 	}
+	if (strlen(filename) >= QN_MAX_PATH - 1)
+	{
+		errno = ENAMETOOLONG;
+		return false;
+	}
 	if (size == 0 || size > (2040U * 1024U * 1024U))	// 1.99GB(2040MB) 이상은 안된다
 	{
 		errno = EINVAL;
@@ -2932,6 +3045,11 @@ bool qn_hfs_store_stream(QnMount* mount, const char* filename, QnStream* stream,
 	if (filename == NULL || *filename == '\0' || stream == NULL)
 	{
 		errno = EINVAL;
+		return false;
+	}
+	if (strlen(filename) >= QN_MAX_PATH - 1)
+	{
+		errno = ENAMETOOLONG;
 		return false;
 	}
 
@@ -2969,6 +3087,14 @@ bool qn_hfs_store_file(QnMount* mount, const char* filename, const char* srcfile
 		return false;
 	}
 
+	if (filename == NULL)
+		filename = srcfile;
+	if (strlen(filename) >= QN_MAX_PATH - 1)
+	{
+		errno = ENAMETOOLONG;
+		return false;
+	}
+
 	const QnFileAttr attr = qn_get_file_attr(srcfile);
 	if (attr == QNFATTR_NONE)
 	{
@@ -3000,9 +3126,6 @@ bool qn_hfs_store_file(QnMount* mount, const char* filename, const char* srcfile
 		qn_unload(stream);
 		return false;
 	}
-
-	if (filename == NULL)
-		filename = srcfile;
 
 	Hfs* self = qn_cast_type(mount, Hfs);
 	const bool ret = _hfs_store_buffer(self, filename, data, size, cmpr, type);
@@ -3036,7 +3159,7 @@ static bool _hfs_optimize_process(HfsOptimizeData* od)
 	Hfs* output = qn_cast_type(od->output, Hfs);
 	HfsOptimizeParam* param = od->param;
 
-	HfsArrInfo infos;
+	HfsInfoArray infos;
 	_hfs_infos_init_copy(&infos, &input->infos);
 
 	if (param->callback)
@@ -3050,7 +3173,7 @@ static bool _hfs_optimize_process(HfsOptimizeData* od)
 	}
 
 	size_t i;
-	QN_CTNR_FOREACH(infos, i)
+	QN_CTNR_FOREACH(infos, 1, i)	// 0번은 현재 디렉토리
 	{
 		HfsInfo* info = _hfs_infos_nth_ptr(&infos, i);
 		if (info->name[0] == '.')
@@ -3097,7 +3220,7 @@ static bool _hfs_optimize_process(HfsOptimizeData* od)
 			HfsInfo file;
 			memcpy(&file.file, &info->file, sizeof(HfsFile));
 
-			if (_hfs_write_file_header(stream, &file.file, info->name, info->file.source.len) &&
+			if (_hfs_write_file_header(stream, &file.file, info->name, info->file.source.len, info->file.hash) == false ||
 				qn_stream_write(stream, data, 0, size) != (int)size)
 			{
 				qn_free(data);
@@ -3143,7 +3266,7 @@ bool qn_hfs_optimize(QnMount* mount, HfsOptimizeParam* param)
 
 	Hfs* self = qn_cast_type(mount, Hfs);
 	QnPathStr dir, save;
-	qn_path_str_set_char(&dir, '/');
+	_path_str_set_char(&dir, '/');
 	_hfs_save_dir(self, &dir, &save);
 
 	bool ret = _hfs_optimize_process(&od);
@@ -3179,7 +3302,11 @@ QnMount* qn_open_mount(const char* path, const char* mode)
 		if (hfs)
 			return _create_hfs(NULL, mode);
 		// HFS가 아니라면 현재 기본 경로를 연다
+#if false
 		tmppath = qn_basepath();
+#else
+		tmppath = qn_getcwd();
+#endif
 		return _create_diskfs(tmppath);
 	}
 
@@ -3220,4 +3347,332 @@ QnMount* qn_open_mount(const char* path, const char* mode)
 	}
 
 	return NULL;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// 퓨즈
+
+// 퓨즈 소스
+typedef struct FUSESOURCE
+{
+	Hfs*			hfs;
+	HfsSource		source;
+	char			name[260];
+} FuseSource;
+
+// Hfs 언로드
+INLINE void _hfs_unload_ptr(Hfs** hfs)
+{
+	qn_unload(*hfs);
+}
+
+// 파일 소스 해시
+QN_DECLIMPL_MUKUM(FsMukum, char*, FuseSource, qn_str_phash, qn_str_peqv, (void), (void), _fs_mukum);
+// 마운트 해시
+QN_DECLIMPL_MUKUM(HfsMukum, char*, Hfs*, qn_str_phash, qn_str_peqv, (void), _hfs_unload_ptr, _hfs_mukum);
+
+// 퓨즈
+typedef struct FUSE
+{
+	QN_GAM_BASE(QNMOUNT);
+	HfsMukum			hfss;
+	FsMukum				fss;
+	QnSpinLock			lock;
+	bool				diskfs;
+} Fuse;
+
+//
+static QnStream* _fuse_open(QnGam g, const char* filename, const char* mode)
+{
+	Fuse* self = qn_cast_type(g, Fuse);
+	QnStream* stream;
+	QN_LOCK(self->lock);
+	if (self->diskfs)
+	{
+		stream = _file_stream_open(qn_cast_type(self, QnMount), filename, mode);
+		if (stream != NULL)
+		{
+			QN_UNLOCK(self->lock);
+			return stream;
+		}
+	}
+
+	FuseSource* pfs = _fs_mukum_get(&self->fss, filename);
+	stream = pfs == NULL ? NULL : _hfs_source_open(pfs->hfs, &pfs->source, pfs->name);
+	QN_UNLOCK(self->lock);
+	return stream;
+}
+
+//
+static void* _fuse_read(QnGam g, const char* filename, int* size)
+{
+	Fuse* self = qn_cast_type(g, Fuse);
+	void* data;
+	QN_LOCK(self->lock);
+	if (self->diskfs)
+	{
+		data = _disk_fs_read(self, filename, size);
+		if (data != NULL)
+		{
+			QN_UNLOCK(self->lock);
+			return data;
+		}
+	}
+
+	FuseSource* pfs = _fs_mukum_get(&self->fss, filename);
+	if (pfs == NULL)
+		data = NULL;
+	else
+	{
+		data = _hfs_source_read(pfs->hfs, &pfs->source);
+		if (data != NULL)
+			*size = pfs->source.size;
+	}
+	QN_UNLOCK(self->lock);
+	return data;
+}
+
+//
+static char* _fuse_read_text(QnGam g, const char* filename, int* length, int* codepage)
+{
+	Fuse* self = qn_cast_type(g, Fuse);
+	int size;
+	char* data = _fuse_read(self, filename, &size);
+	if (data != NULL)
+		_internal_detect_file_encoding(data, size, length, codepage);
+	return data;
+}
+
+//
+static QnFileAttr _fuse_exist(QnGam g, const char* path)
+{
+	Fuse* self = qn_cast_type(g, Fuse);
+	QnFileAttr attr;
+	QN_LOCK(self->lock);
+	if (self->diskfs)
+	{
+		attr = _disk_fs_exist(self, path);
+		if (attr != QNFATTR_NONE)
+		{
+			QN_UNLOCK(self->lock);
+			return attr;
+		}
+	}
+	FuseSource* pfs = _fs_mukum_get(&self->fss, path);
+	attr = pfs != NULL ? pfs->source.attr : QNFATTR_NONE;
+	QN_UNLOCK(self->lock);
+	return attr;
+}
+
+//
+static bool _fuse_remove(QnGam g, const char* path)
+{
+	Fuse* self = qn_cast_type(g, Fuse);
+	QN_LOCK(self->lock);
+	if (self->diskfs)
+	{
+		if (_disk_fs_remove(self, path))
+		{
+			QN_UNLOCK(self->lock);
+			return true;
+		}
+	}
+
+	bool ret;
+	FuseSource* pfs = _fs_mukum_get(&self->fss, path);
+	if (pfs == NULL)
+		ret = false;
+	else
+	{
+		_hfs_remove(pfs->hfs, path);
+		ret = _fs_mukum_remove(&self->fss, path);
+	}
+	QN_UNLOCK(self->lock);
+	return ret;
+}
+
+//
+static void _fuse_dispose(QnGam g)
+{
+	Fuse* self = qn_cast_type(g, Fuse);
+
+	_fs_mukum_dispose(&self->fss);
+	_hfs_mukum_dispose(&self->hfss);
+	qn_free(self->base.name);
+	qn_free(self);
+}
+
+// HFS 분석
+static void _fuse_parse_hfs(Fuse* self, Hfs* hfs, const char* dir)
+{
+	HfsInfoArray infos;
+	_hfs_infos_init_copy(&infos, &hfs->infos);
+
+	QnPathStr bs;
+	_path_str_set(&bs, dir);
+	size_t bpos = _path_str_len(&bs);
+
+	size_t i;
+	QN_ARRAY_FOREACH(infos, 1, i)	// 0번은 현재 디렉토리
+	{
+		HfsInfo* info = _hfs_infos_nth_ptr(&infos, i);
+		if (info->name[0] == '.')
+			continue;
+
+		_path_str_append(&bs, info->name);
+		if (QN_TMASK(info->file.source.attr, QNFATTR_DIR))
+		{
+			_path_str_append_char(&bs, '/');
+			_hfs_chdir(hfs, bs.DATA);
+			_fuse_parse_hfs(self, hfs, bs.DATA);
+			_hfs_chdir(hfs, "..");
+		}
+		else
+		{
+			FsMukumNode* node = qn_alloc_1(FsMukumNode);
+			node->VALUE.hfs = hfs;
+			node->VALUE.source = info->file.source;
+			qn_strcpy(node->VALUE.name, bs.DATA);
+			node->KEY = node->VALUE.name;
+			if (!_fs_mukum_node_add(&self->fss, node))
+				qn_free(node);
+		}
+		_path_str_trunc(&bs, bpos);
+	}
+
+	_hfs_infos_dispose(&infos);
+}
+
+// HFS 추가
+static bool _fuse_add_hfs(Fuse* self, const char* name)
+{
+	Hfs** phfs = _hfs_mukum_get(&self->hfss, name);
+	qn_return_when_fail(phfs == NULL, false);
+
+	Hfs* hfs = (Hfs*)_create_hfs(name, "f");
+	if (hfs == NULL)
+		return false;
+	_hfs_mukum_add(&self->hfss, hfs->base.name, hfs);
+	_fuse_parse_hfs(self, hfs, "/");
+	return true;
+}
+
+//
+bool qn_fuse_add_hfs(QnMount* mount, const char* name)
+{
+	qn_return_when_fail(QN_TMASK(mount->flags, QNMFT_FUSE), false);
+
+	Fuse* self = qn_cast_type(mount, Fuse);
+	QN_LOCK(self->lock);
+	bool ret = _fuse_add_hfs(self, name);
+	QN_UNLOCK(self->lock);
+	return ret;
+}
+
+//
+int qn_fuse_get_hfs_count(QnMount* mount)
+{
+	qn_return_when_fail(QN_TMASK(mount->flags, QNMFT_FUSE), -1);
+	Fuse* self = qn_cast_type(mount, Fuse);
+	return (int)_hfs_mukum_count(&self->hfss);
+}
+
+//
+bool qn_fuse_get_disk_fs_enabled(QnMount* mount)
+{
+	qn_return_when_fail(QN_TMASK(mount->flags, QNMFT_FUSE), false);
+	Fuse* self = qn_cast_type(mount, Fuse);
+	return self->diskfs;
+}
+
+//
+void qn_fuse_set_disk_fs_enabled(QnMount* mount, bool enabled)
+{
+	qn_return_when_fail(QN_TMASK(mount->flags, QNMFT_FUSE), );
+	Fuse* self = qn_cast_type(mount, Fuse);
+	self->diskfs = enabled;
+}
+
+// 디스크 파일 시스템 마운트 만들기, path에 대한 오류처리는 하고 왔을 것이다
+QnMount* qn_create_fuse(const char* path, bool diskfs, bool loadall)
+{
+	Fuse* self = qn_alloc_zero_1(Fuse);
+
+	if (path == NULL)
+	{
+		char* cwd = qn_getcwd();
+#ifdef _QN_WINDOWS_
+		self->base.name = qn_strdupcat(cwd, "\\", NULL);
+#else
+		self->base.name = qn_strdupcat(cwd, "/", NULL);
+#endif
+		self->base.name_len = strlen(self->base.name);
+		qn_free(cwd);
+	}
+	else
+	{
+		const size_t len = strlen(path);
+		if (path[len - 1] == '/' || path[len - 1] == '\\')
+		{
+			self->base.name = qn_strdup(path);
+			self->base.name_len = len;
+		}
+		else
+		{
+#ifdef _QN_WINDOWS_
+			self->base.name = qn_strdupcat(path, "\\", NULL);
+#else
+			self->base.name = qn_strdupcat(path, "/", NULL);
+#endif
+			self->base.name_len = len + 1;
+		}
+	}
+
+	_hfs_mukum_init_fast(&self->hfss);
+	_fs_mukum_init_fast(&self->fss);
+	_path_str_set_len(&self->base.path, self->base.name, self->base.name_len);
+	self->base.flags = QNMFT_DISKFS | QNMFT_FUSE;
+	self->diskfs = diskfs;
+
+	//
+	static const QN_DECL_VTABLE(QNMOUNT) _fuse_vt =
+	{
+		.base.name = "DiskFS",
+		.base.dispose = _fuse_dispose,
+		.mount_open = _fuse_open,
+		.mount_read = _fuse_read,
+		.mount_read_text = _fuse_read_text,
+		.mount_exist = _fuse_exist,
+		.mount_remove = _fuse_remove,
+		.mount_chdir = _disk_fs_ch_dir,
+		.mount_mkdir = _disk_fs_mk_dir,
+		.mount_list = _disk_fs_list,
+	};
+	qn_gam_init(self, _fuse_vt);
+
+	if (loadall)
+	{
+		// 모든 파일을 읽어들인다
+		QnDir* dir = _disk_fs_list(self);
+		if (dir != NULL)
+		{
+			QnFileInfo info;
+			while (_disk_list_read_info(dir, &info))
+			{
+				if (QN_TMASK(info.attr, QNFATTR_DIR))
+					continue;
+				char ext[QN_MAX_FILENAME];
+				qn_splitpath(info.name, NULL, NULL, NULL, ext);
+				if (ext[0] == '\0' || qn_stricmp(ext, ".hfs") == 0)
+				{
+					if (_fuse_add_hfs(self, info.name) == false)
+						qn_mesgf(true, "Fuse", "Failed to load HFS file: %s (check opened by other program)", info.name);
+				}
+			}
+			qn_unload(dir);
+		}
+	}
+
+	return qn_cast_type(self, QnMount);
 }

@@ -37,6 +37,8 @@ struct EventNode
 
 // 컨테이너
 QN_DECLIMPL_LNODE(EventNodeList, EventNode, event_lnode);
+// 배열
+QN_IMPL_ARRAY(QnPtrArray, void*, reserved_mems);
 
 // 이벤트 창고
 struct ShedEvent
@@ -78,7 +80,7 @@ static void shed_event_init(void)
 	// 캐시
 	event_lnode_init(&shed_event.cache);
 	// 예약 메모리
-	qn_parray_init(&shed_event.reserved_mems, 0);
+	reserved_mems_init(&shed_event.reserved_mems, 0);
 }
 
 // 모두 제거
@@ -87,8 +89,8 @@ static void shed_event_dispose(void)
 	qn_return_when_fail(shed_event.mutex != NULL, /*void*/);
 
 	// 예약 메모리
-	qn_parray_foreach_1(&shed_event.reserved_mems, qn_mem_free);
-	qn_parray_dispose(&shed_event.reserved_mems);
+	reserved_mems_foreach_1(&shed_event.reserved_mems, qn_mem_free);
+	reserved_mems_dispose(&shed_event.reserved_mems);
 	// 우선 순위 큐
 	event_lnode_dispose_callback(&shed_event.prior, qn_mem_free);
 	// 큐
@@ -240,7 +242,7 @@ static void shed_event_flush(void)
 static void shed_event_reserved_mem(void* ptr)
 {
 	qn_mutex_enter(shed_event.mutex);
-	qn_parray_add(&shed_event.reserved_mems, ptr);
+	reserved_mems_add(&shed_event.reserved_mems, ptr);
 	qn_mutex_leave(shed_event.mutex);
 }
 
@@ -248,10 +250,10 @@ static void shed_event_reserved_mem(void* ptr)
 static void shed_event_clear_reserved_mem(void)
 {
 	qn_mutex_enter(shed_event.mutex);
-	if (qn_parray_is_have(&shed_event.reserved_mems))
+	if (reserved_mems_is_have(&shed_event.reserved_mems))
 	{
-		qn_parray_foreach_1(&shed_event.reserved_mems, qn_mem_free);
-		qn_parray_clear(&shed_event.reserved_mems);
+		reserved_mems_foreach_1(&shed_event.reserved_mems, qn_mem_free);
+		reserved_mems_clear(&shed_event.reserved_mems);
 	}
 	qn_mutex_leave(shed_event.mutex);
 }
@@ -334,15 +336,17 @@ void qg_close_stub(void)
 
 	stub_system_finalize();
 
-	qn_unloadu(self->timer);
-
 	size_t i;
-	QN_CTNR_FOREACH(self->monitors, i)
+	QN_CTNR_FOREACH(self->monitors, 0, i)
 		qn_free(monitor_ctnr_nth(&self->monitors, i));
 	monitor_ctnr_dispose(&self->monitors);
 	eventcb_list_dispose(&self->callbacks);
 
 	qn_delete_mutex(self->mutex);
+	qn_unloadu(self->timer);
+
+	for (i = 0; i < QN_COUNTOF(self->mount); i++)
+		qn_unload(self->mount[i]);
 
 	shed_event_dispose();
 
@@ -445,6 +449,36 @@ bool qg_get_fullscreen_state(void)
 void qg_set_title(const char* title)
 {
 	stub_system_set_title(title);
+}
+
+//
+bool qg_mount(int index, const char* path, const char* mode)
+{
+	StubBase* stub = qg_instance_stub;
+	qn_return_when_fail((size_t)index < QN_COUNTOF(stub->mount), false);
+
+	qn_unload(stub->mount[index]);
+	stub->mount[index] = qn_open_mount(path, mode);
+	return stub->mount[index] != NULL;
+}
+
+//
+bool qg_fuse(int index, const char* path, bool diskfs, bool preload)
+{
+	StubBase* stub = qg_instance_stub;
+	qn_return_when_fail((size_t)index < QN_COUNTOF(stub->mount), false);
+
+	qn_unload(stub->mount[index]);
+	stub->mount[index] = qn_create_fuse(path, diskfs, preload);
+	return stub->mount[index] != NULL;
+}
+
+//
+QnMount* qg_get_mount(int index)
+{
+	const StubBase* stub = qg_instance_stub;
+	qn_return_when_fail((size_t)index < QN_COUNTOF(stub->mount), NULL);
+	return stub->mount[index];
 }
 
 //
@@ -912,7 +946,7 @@ bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary,
 	if (connected)
 	{
 		if (primary)
-			monitor_ctnr_insert(&stub->monitors, 0, monitor);
+			monitor_ctnr_ins(&stub->monitors, 0, monitor);
 		else
 			monitor_ctnr_add(&stub->monitors, monitor);
 	}
@@ -925,7 +959,7 @@ bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary,
 
 	// 모니터 번호 재할당
 	size_t i;
-	QN_CTNR_FOREACH(stub->monitors, i)
+	QN_CTNR_FOREACH(stub->monitors, 0, i)
 		monitor_ctnr_nth(&stub->monitors, i)->no = (int)i;
 
 	// 이벤트
@@ -1060,7 +1094,7 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 			if (monitor_ctnr_count(&stub->monitors) > 1)
 			{
 				size_t i;
-				QN_CTNR_FOREACH(stub->monitors, i)
+				QN_CTNR_FOREACH(stub->monitors, 0, i)
 				{
 					const QgUdevMonitor* mon = monitor_ctnr_nth(&stub->monitors, i);
 					const QmRect bound = qm_rect_size((int)mon->x, (int)mon->y, (int)mon->width, (int)mon->height);
@@ -1228,8 +1262,7 @@ bool stub_event_on_mouse_move(int x, int y)
 	{
 		.mmove.ev = QGEV_MOUSEMOVE,
 		.mmove.mask = um->mask,
-		.mmove.pt.X = x,
-		.mmove.pt.Y = y,
+		.mmove.pt = um->pt,
 		.mmove.delta.X = um->last.X - x,
 		.mmove.delta.Y = um->last.Y - y,
 	};

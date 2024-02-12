@@ -6,7 +6,6 @@
 #include "pch.h"
 #ifdef _QN_EMSCRIPTEN_
 #include "qs_qg.h"
-#include "qs_kmc.h"
 #include "qg/qg_stub.h"
 #include <EGL/egl.h>
 #include <EGL/eglext.h>

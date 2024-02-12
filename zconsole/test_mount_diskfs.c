@@ -1,4 +1,4 @@
-﻿// 스프라이트 테스트
+﻿// DISK FS 테스트
 #include <qs.h>
 
 int main(void)
@@ -28,7 +28,7 @@ int main(void)
 			int pos = qn_dir_tell(dir);
 			QnDateTime ft = { fi.stc };
 			qn_outputf("%d, [%s] %s (%u) [%04d-%02d-%02d %02d:%02d:%02d]",
-				pos, fi.type == 0 ? "디렉토리" : "파일", fi.name, fi.size,
+				pos, QN_TMASK(fi.attr, QNFATTR_DIR) ? "디렉토리" : "파일", fi.name, fi.size,
 				ft.year, ft.month, ft.day, ft.hour, ft.minute, ft.second);
 		}
 		qn_unload(dir);
