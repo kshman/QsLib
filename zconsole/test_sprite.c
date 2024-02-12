@@ -7,15 +7,20 @@ int main(void)
 
 	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA;
 	int features = QGFEATURE_NONE;
-	if (qg_open_rdh("gl", "RDH", 0, 0, 0, flags, features) == false)
+	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
+	qg_fuse(0, NULL, false, true);
 
 	QmVec bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
 	qg_set_background(&bgc);
 
-	QgImage* img_puru = qg_load_image(0, "../res/image/ff14_puru.jpg");
+	QgImage* img_puru = qg_load_image(0, "/image/ff14_puru.jpg");
 	QgTexture* tex_puru = qg_create_texture("puru", img_puru, QGTEXF_DISCARD_IMAGE | QGTEXF_MIPMAP);
-	QgTexture* tex_autumn = qg_load_texture(0, "../res/image/ff14_autumn.dds", QGTEXF_LINEAR);
+#ifdef _QN_EMSCRIPTEN_
+	QgTexture* tex_autumn = qg_load_texture(0, "/image/ff14_autumn.bmp", QGTEXF_LINEAR);
+#else
+	QgTexture* tex_autumn = qg_load_texture(0, "/image/ff14_autumn.dds", QGTEXF_LINEAR);
+#endif
 
 	float f = 0.0f, angle = 0.0f;
 	while (qg_loop())
@@ -25,7 +30,9 @@ int main(void)
 		{
 			if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_ESC)
 			{
-				qn_mpfdbgout();
+				qn_sym_dbgout();
+				qn_prop_dbgout();
+				//qn_mpf_dbgout();
 				qg_exit_loop();
 			}
 			else if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_F1)

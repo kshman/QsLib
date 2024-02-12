@@ -237,6 +237,7 @@
 // types
 
 typedef void* pointer_t;												/// @brief 포인터 타입
+typedef const void* cpointer_t;											/// @brief 상수 포인터 타입
 typedef void (*func_t)(void);											/// @brief 함수 핸들러
 typedef void (*paramfunc_t)(void*);										/// @brief 파라미터 있는 함수 핸들러
 typedef void (*paramfunc2_t)(void*, void*);								/// @brief 파라미터 2개 있는 함수 핸들러
@@ -1374,6 +1375,10 @@ QN_DECL_HASH_FUNC(uint, qn_uint);
 QN_DECL_HASH_FUNC(nint, qn_nint);
 /// @brief 해시용 플랫폼 부호없는 정수 비교
 QN_DECL_HASH_FUNC(nuint, qn_nuint);
+/// @brief 해시용 긴 정수 비교
+QN_DECL_HASH_FUNC(llong, qn_llong);
+/// @brief 해시용 부호없는 긴 정수 비교
+QN_DECL_HASH_FUNC(ullong, qn_ullong);
 /// @brief 해시용 size_t 비교
 QN_DECL_HASH_FUNC(size_t, qn_size);
 
@@ -1887,7 +1892,7 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 		self->DATA[self->COUNT - 1] = value;														\
 	}																								\
 	/* @brief 컨테이너에 항목 삽입 */																	\
-	FINLINE void PFX##_insert(NAME* self, size_t nth, TYPE value)									\
+	FINLINE void PFX##_ins(NAME* self, size_t nth, TYPE value)										\
 	{																								\
 		qn_debug_assert(nth <= self->COUNT, "index overflow");										\
 		PFX##_expand(self, 1);																		\
@@ -1896,6 +1901,23 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 			memmove(ptr + 1, ptr, sizeof(TYPE) * (self->COUNT - nth));								\
 		}																							\
 		self->DATA[nth] = value;																	\
+	}																								\
+	/* @brief 컨테이너에 항목 추가 */																	\
+	FINLINE void PFX##_add_ptr(NAME* self, TYPE* pvalue)											\
+	{																								\
+		PFX##_expand(self, 1);																		\
+		self->DATA[self->COUNT - 1] = *pvalue;														\
+	}																								\
+	/* @brief 컨테이너에 항목 삽입 */																	\
+	FINLINE void PFX##_ins_ptr(NAME* self, size_t nth, TYPE* pvalue)								\
+	{																								\
+		qn_debug_assert(nth <= self->COUNT, "index overflow");										\
+		PFX##_expand(self, 1);																		\
+		if (nth != self->COUNT - 1) {																\
+			TYPE* ptr = self->DATA + nth;															\
+			memmove(ptr + 1, ptr, sizeof(TYPE) * (self->COUNT - nth));								\
+		}																							\
+		self->DATA[nth] = *pvalue;																	\
 	}																								\
 	typedef NAME NAME##Type
 
@@ -1982,7 +2004,7 @@ QN_DECL_CTNR(QnPtrCtnr, pointer_t);
 		self->DATA[self->COUNT++] = value;															\
 	}																								\
 	/* @brief 배열에 항목 삽입 */																		\
-	FINLINE void PFX##_insert(NAME* self, size_t nth, TYPE value)									\
+	FINLINE void PFX##_ins(NAME* self, size_t nth, TYPE value)										\
 	{																								\
 		qn_debug_assert(nth <= self->COUNT, "index overflow");										\
 		PFX##_sp_expand(self, 1);																	\
@@ -1991,6 +2013,24 @@ QN_DECL_CTNR(QnPtrCtnr, pointer_t);
 			memmove(ptr + 1, ptr, sizeof(TYPE) * (self->COUNT - nth));								\
 		}																							\
 		self->DATA[nth] = value;																	\
+		self->COUNT++;																				\
+	}																								\
+	/* @brief 배열에 항목 추가 */																		\
+	FINLINE void PFX##_add_ptr(NAME* self, TYPE* pvalue)											\
+	{																								\
+		PFX##_sp_expand(self, 1);																	\
+		self->DATA[self->COUNT++] = *pvalue;														\
+	}																								\
+	/* @brief 배열에 항목 삽입 */																		\
+	FINLINE void PFX##_ins_ptr(NAME* self, size_t nth, TYPE* pvalue)								\
+	{																								\
+		qn_debug_assert(nth <= self->COUNT, "index overflow");										\
+		PFX##_sp_expand(self, 1);																	\
+		if (nth != self->COUNT - 1) {																\
+			TYPE* ptr = self->DATA + nth;															\
+			memmove(ptr + 1, ptr, sizeof(TYPE) * (self->COUNT - nth));								\
+		}																							\
+		self->DATA[nth] = *pvalue;																	\
 		self->COUNT++;																				\
 	}																								\
 	typedef NAME NAME##Type
@@ -3281,11 +3321,27 @@ typedef enum QNFILEFLAG
 	QNFFT_INDIRECT = QN_BIT(19),							/// @brief 간접 파일
 } QnFileFlag;
 
+/// @brief 파일 속성
+typedef enum QNFILEATTR
+{
+	QNFATTR_NONE = 0,										/// @brief 파일이 없음
+	QNFATTR_FILE = QN_BIT(0),								/// @brief 파일
+	QNFATTR_DIR = QN_BIT(1),								/// @brief 디렉토리
+	QNFATTR_LINK = QN_BIT(2),								/// @brief 링크
+	QNFATTR_CMPR = QN_BIT(3),								/// @brief 압축 (윈도우/HFS만)
+	QNFATTR_ENCR = QN_BIT(4),								/// @brief 암호화 (윈도우/HFS만)
+	QNFATTR_INDIRECT = QN_BIT(5),							/// @brief 간접 파일 (HFS만)
+	// 확장 (16비트값)
+	QNFATTR_SYSTEM = QN_BIT(8),								/// @brief 시스템 (윈도우만)
+	QNFATTR_HIDDEN = QN_BIT(9),								/// @brief 숨김 (윈도우만)
+	QNFATTR_RDONLY = QN_BIT(10),							/// @brief 읽기 전용 (윈도우만)
+} QnFileAttr;
+
 /// @brief 파일 타입
 typedef enum QNFILETYPE
 {
 	QNFTYPE_UNKNOWN = 0,									/// @brief 알 수 없음
-	QNFTYPE_SYSTEM = 1,										/// @brief 시스템
+	QNFTYPE_DIR = 1,										/// @brief 디렉토리
 	QNFTYPE_TEXT = 4,										/// @brief 텍스트
 	QNFTYPE_IMAGE = 5,										/// @brief 그림
 	QNFTYPE_SOUND = 6,										/// @brief 소리
@@ -3303,22 +3359,7 @@ typedef enum QNFILETYPE
 	QNFTYPE_DOC = 18,										/// @brief 문서
 	QNFTYPE_MODEL = 19,										/// @brief 모델
 	QNFTYPE_ANIM = 20,										/// @brief 애니메이션
-	QNFTYPE_ASSOCIATE = 255,								/// @brief 운영체제 등록 연관 파일
 } QnFileType;
-
-/// @brief 파일 속성
-typedef enum QNFILEATTR
-{
-	QNFATTR_NONE = 0,										/// @brief 파일이 없음
-	QNFATTR_FILE = QN_BIT(0),								/// @brief 파일
-	QNFATTR_DIR = QN_BIT(1),								/// @brief 디렉토리
-	QNFATTR_SYSTEM = QN_BIT(2),								/// @brief 시스템
-	QNFATTR_HIDDEN = QN_BIT(3),								/// @brief 숨김 (윈도우만)
-	QNFATTR_RDONLY = QN_BIT(4),								/// @brief 읽기 전용 (윈도우만)
-	QNFATTR_LINK = QN_BIT(5),								/// @brief 링크
-	QNFATTR_CMPR = QN_BIT(6),								/// @brief 압축 (윈도우/HFS만)
-	QNFATTR_ENCR = QN_BIT(7),								/// @brief 암호화 (윈도우/HFS만)
-} QnFileAttr;
 
 /// @brief 마운트 플래그
 typedef enum QNMOUNTFLAG
@@ -3359,17 +3400,6 @@ typedef struct QNFILEACCESS
 	uint			access;
 #endif
 } QnFileAccess;
-
-/// @brief 파일 소스
-typedef struct QNFILESOURCE
-{
-	byte				type;								/// @brief 타입
-	byte 				attr;								/// @brief 속성
-	ushort				len;								/// @brief 파일 이름 길이
-	uint				size;								/// @brief 원래 크기
-	uint				cmpr;								/// @brief 압축된 크기
-	uint				seek;								/// @brief 파일 위치
-} QnFileSource;
 
 /// @brief 한번에 파일을 읽는 기능들에 대해 최대 허용 크기 (초기값은 128MB)
 QSAPI size_t qn_get_file_max_alloc_size(void);

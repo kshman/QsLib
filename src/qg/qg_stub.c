@@ -946,7 +946,7 @@ bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary,
 	if (connected)
 	{
 		if (primary)
-			monitor_ctnr_insert(&stub->monitors, 0, monitor);
+			monitor_ctnr_ins(&stub->monitors, 0, monitor);
 		else
 			monitor_ctnr_add(&stub->monitors, monitor);
 	}
