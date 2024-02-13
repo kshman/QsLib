@@ -530,6 +530,8 @@ static void qgl_rdh_reset(void)
 	ss->buffer.uniform = GL_INVALID_HANDLE;
 	ss->depth = QGDEPTH_LE;
 	ss->stencil = QGSTENCIL_OFF;
+	qn_zero(ss->blend, QGRVS_MAX_VALUE, QglBlend);
+	qn_zero_1(&ss->rasz);
 
 	// 트랜스폼
 	tm->frm = qgl_mat4_irrcht_texture(0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -1.0f);
@@ -552,14 +554,7 @@ static void qgl_rdh_reset(void)
 	}
 	GLDEBUG(glDisable(GL_STENCIL_TEST));
 
-	// 래스터라이즈
-	GLDEBUG(glEnable(GL_CULL_FACE));
-	GLDEBUG(glCullFace(GL_BACK));
-	GLDEBUG(glDisable(GL_CULL_FACE));
-
-	GLDEBUG(glDisable(GL_POLYGON_OFFSET_FILL));
-
-	// 브랜드
+	// 블렌드
 #ifdef QGL_MAYBE_GL_CORE
 	if (QGL_CORE && info->renderer_version >= 400)
 	{
@@ -583,6 +578,20 @@ static void qgl_rdh_reset(void)
 		GLDEBUG(glDisable(GL_BLEND));
 		GLDEBUG(glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE));
 	}
+
+	// 래스터라이저
+	GLDEBUG(glEnable(GL_CULL_FACE));
+	GLDEBUG(glCullFace(GL_BACK));
+	GLDEBUG(glDisable(GL_CULL_FACE));
+
+	GLDEBUG(glDisable(GL_POLYGON_OFFSET_FILL));
+#ifdef QGL_MAYBE_GL_CORE
+	if (QGL_CORE)
+	{
+		GLDEBUG(glDisable(GL_POLYGON_OFFSET_LINE));
+		GLDEBUG(glDisable(GL_POLYGON_OFFSET_POINT));
+	}
+#endif
 
 	// 텍스쳐
 	for (i = 0; i < info->max_tex_count; i++)
@@ -649,7 +658,7 @@ static void qgl_rdh_reset(void)
 		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT4, false },
 		{ QGLOS_1, QGLOU_COLOR1, QGLOT_FLOAT4, false },
 	};
-	static QgPropRender render_ortho = QG_DEFAULT_PROP_RENDER;
+	static QgPropRender render_ortho = QGL_PROP_RENDER_BLEND;
 
 	QglResource* res = QGL_RESOURCE;
 
@@ -1111,6 +1120,158 @@ static void qgl_commit_depth_stencil(const QglRenderState* rdr)
 	}
 }
 
+// 블랜드 & 래스터라이저 커밋
+static void qgl_commit_blend_rasz(const QglRenderState* rdr)
+{
+	static QglBlendValue gl_blend_values[] =
+	{
+		[QGBLEND_OFF] = { GL_ONE, GL_ZERO, GL_FUNC_ADD, GL_ONE, GL_ZERO, GL_FUNC_ADD },
+		[QGBLEND_BLEND] = { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_FUNC_ADD, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_FUNC_ADD },
+		[QGBLEND_ADD] = { GL_SRC_ALPHA, GL_ONE, GL_FUNC_ADD, GL_ZERO, GL_ONE, GL_FUNC_ADD },
+		[QGBLEND_SUB] = { GL_SRC_ALPHA, GL_ONE, GL_FUNC_SUBTRACT, GL_ZERO, GL_ONE, GL_FUNC_SUBTRACT },
+		[QGBLEND_REV_SUB] = { GL_SRC_ALPHA, GL_ONE, GL_FUNC_REVERSE_SUBTRACT, GL_ZERO, GL_ONE, GL_FUNC_REVERSE_SUBTRACT },
+		[QGBLEND_MOD] = { GL_ZERO, GL_SRC_COLOR, GL_FUNC_ADD, GL_ZERO, GL_ONE, GL_FUNC_ADD },
+		[QGBLEND_MUL] = { GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA, GL_FUNC_ADD, GL_ZERO, GL_ONE, GL_FUNC_ADD },
+	};
+
+	const RendererInfo* info = RDH_INFO;
+	QglPending* pd = QGL_PENDING;
+	QglSession* ss = QGL_SESSION;
+	const size_t max_off_count = QN_MIN(QGRVS_MAX_VALUE, info->max_off_count);
+
+	// 블랜드
+	const QgPropBlend* blend = &rdr->blend;
+#ifdef QGL_MAYBE_GL_CORE
+	if (QGL_CORE && info->renderer_version >= 300 && blend->separate)
+	{
+		for (GLuint i = 0; i < max_off_count; i++)
+		{
+			QglBlend* ssbnd = &ss->blend[i];
+
+			if (i > 0 && pd->off.buffer[i] == NULL)
+			{
+				if (ssbnd->state != QGBLEND_OFF)
+				{
+					GLDEBUG(glDisablei(GL_BLEND, i));
+					ssbnd->state = QGBLEND_OFF;
+				}
+				continue;
+			}
+
+			const QgBlend state = blend->rb[i];
+			if (state != ssbnd->state)
+			{
+				if (state == QGBLEND_OFF)
+				{
+					if (ssbnd->state != QGBLEND_OFF)
+						GLDEBUG(glDisablei(GL_BLEND, i));
+				}
+				else
+				{
+					if (ssbnd->state == QGBLEND_OFF)
+						GLDEBUG(glEnablei(GL_BLEND, i));
+
+					const QglBlendValue* value = &gl_blend_values[state];
+					if (value->colorOp != ssbnd->value.colorOp || value->alphaOp != ssbnd->value.alphaOp)
+						GLDEBUG(glBlendEquationSeparatei(i, value->colorOp, value->alphaOp));
+					if (value->srcColor != ssbnd->value.srcColor || value->dstColor != ssbnd->value.dstColor ||
+						value->srcAlpha != ssbnd->value.srcAlpha || value->dstAlpha != ssbnd->value.dstAlpha)
+						GLDEBUG(glBlendFuncSeparatei(i, value->srcColor, value->dstColor, value->srcAlpha, value->dstAlpha));
+
+					ssbnd->value = *value;
+				}
+
+				ssbnd->state = QGBLEND_OFF;
+			}
+		}
+	}
+	else
+#endif
+	{
+		QglBlend* ssbnd = &ss->blend[0];
+		const QgBlend state = blend->rb[0];
+		if (state != ssbnd->state)
+		{
+			if (state == QGBLEND_OFF)
+			{
+				if (ssbnd->state != QGBLEND_OFF)
+					GLDEBUG(glDisable(GL_BLEND));
+			}
+			else
+			{
+				if (ssbnd->state == QGBLEND_OFF)
+					GLDEBUG(glEnable(GL_BLEND));
+
+				const QglBlendValue* value = &gl_blend_values[state];
+				if (value->colorOp != ssbnd->value.colorOp || value->alphaOp != ssbnd->value.alphaOp)
+					GLDEBUG(glBlendEquationSeparate(value->colorOp, value->alphaOp));
+				if (value->srcColor != ssbnd->value.srcColor || value->dstColor != ssbnd->value.dstColor ||
+					value->srcAlpha != ssbnd->value.srcAlpha || value->dstAlpha != ssbnd->value.dstAlpha)
+					GLDEBUG(glBlendFuncSeparate(value->srcColor, value->dstColor, value->srcAlpha, value->dstAlpha));
+
+				ssbnd->value = *value;
+			}
+
+			ssbnd->state = QGBLEND_OFF;
+		}
+	}
+
+	// 래스터라이저
+	const QglRasterizer* rasz = &rdr->rasz;
+	QglRasterizer* ssrz = &ss->rasz;
+#ifdef QGL_MAYBE_GL_CORE
+	if (QGL_CORE && ssrz->fill != rasz->fill)
+	{
+		ssrz->fill = rasz->fill;
+		glPolygonMode(GL_FRONT_AND_BACK, rasz->fill);
+	}
+#endif
+	if (ssrz->cull != rasz->cull)
+	{
+		if (rasz->cull == GL_NONE)
+		{
+			if (ssrz->cull != GL_NONE)
+				GLDEBUG(glDisable(GL_CULL_FACE));
+		}
+		else
+		{
+			if (ssrz->cull == GL_NONE)
+				GLDEBUG(glEnable(GL_CULL_FACE));
+			GLDEBUG(glCullFace(rasz->cull));
+		}
+		ssrz->cull = rasz->cull;
+	}
+	if (qm_eqf(ssrz->depth_bias, rasz->depth_bias) == false || qm_eqf(ssrz->slope_scale, rasz->slope_scale) == false)
+	{
+		float bias = rasz->depth_bias * (float)((1 << 24) - 1);
+		if (qm_eqf(bias, 0.0f) && qm_eqf(rasz->slope_scale, 0.0f))
+		{
+			GLDEBUG(glDisable(GL_POLYGON_OFFSET_FILL));
+#ifdef QGL_MAYBE_GL_CORE
+			if (QGL_CORE)
+			{
+				GLDEBUG(glDisable(GL_POLYGON_OFFSET_LINE));
+				GLDEBUG(glDisable(GL_POLYGON_OFFSET_POINT));
+			}
+#endif
+		}
+		else
+		{
+			GLDEBUG(glEnable(GL_POLYGON_OFFSET_FILL));
+#ifdef QGL_MAYBE_GL_CORE
+			if (QGL_CORE)
+			{
+				GLDEBUG(glEnable(GL_POLYGON_OFFSET_LINE));
+				GLDEBUG(glEnable(GL_POLYGON_OFFSET_POINT));
+			}
+#endif
+			glPolygonOffset(rasz->slope_scale, bias);
+		}
+
+		ssrz->depth_bias = rasz->depth_bias;
+	}
+}
+
 // 렌더 커밋
 static bool qgl_rdh_commit_render(void)
 {
@@ -1122,6 +1283,7 @@ static bool qgl_rdh_commit_render(void)
 		return false;
 
 	qgl_commit_depth_stencil(rdr);
+	qgl_commit_blend_rasz(rdr);
 
 	return true;
 }
@@ -1762,6 +1924,35 @@ static bool qgl_render_bind_layout_input(QglRenderState* self, const QgLayoutDat
 	return true;
 }
 
+// 래스터라이저 채우기
+static void qgl_render_set_rasterizer(QglRasterizer* rasz, const QgPropRasterizer* source)
+{
+#if defined GL_FILL && defined GL_LINE && defined GL_LINE
+	static const GLenum gl_fill_modes[] =
+	{
+		[QGFILL_SOLID] = GL_FILL,
+		[QGFILL_WIRE] = GL_LINE,
+		[QGFILL_POINT] = GL_POINT,
+	};
+#endif
+	static const GLenum gl_cull_modes[] =
+	{
+		[QGCULL_NONE] = GL_NONE,
+		[QGCULL_FRONT] = GL_FRONT,
+		[QGCULL_BACK] = GL_BACK,
+		[QGCULL_BOTH] = GL_FRONT_AND_BACK,
+	};
+#if defined GL_FILL && defined GL_LINE && defined GL_LINE
+	rasz->fill = gl_fill_modes[source->fill];
+#else
+	rasz->fill = GL_NONE;
+#endif
+	rasz->cull = gl_cull_modes[source->cull];
+	rasz->scissor = source->scissor;
+	rasz->depth_bias = source->depth_bias;
+	rasz->slope_scale = source->slope_scale;
+}
+
 // 렌더 만들기. 오류 처리는 다하고 왔을 것이다
 QgRenderState* qgl_create_render(_In_ const char* name, _In_ const QgPropRender* prop, const _In_ QgPropShader* shader)
 {
@@ -1779,6 +1970,9 @@ QgRenderState* qgl_create_render(_In_ const char* name, _In_ const QgPropRender*
 	// 속성
 	self->depth = prop->depth;
 	self->stencil = prop->stencil;
+
+	self->blend = prop->blend;
+	qgl_render_set_rasterizer(&self->rasz, &prop->rasterizer);
 
 	//
 	static QN_DECL_VTABLE(QNGAMBASE) vt_es_render =
@@ -1940,7 +2134,7 @@ static QgTexture* qgl_create_texture(_In_ const char* name, _In_ const QgImage* 
 			mheight = qm_maxi(mheight >> 1, 1);
 		}
 		flags |= QGTEXFS_COMPRESS;	// 압축 포맷이면 압축 플래그 추가 (압축 포맷이 아니면 무시됨)
-	}
+		}
 
 #ifdef GL_CLAMP_TO_BORDER
 	const GLenum gl_wrap = QN_TMASK(flags, QGTEXF_CLAMP) ? GL_CLAMP_TO_EDGE : QN_TMASK(flags, QGTEXF_BORDER) ? GL_CLAMP_TO_BORDER : GL_REPEAT;
@@ -2006,6 +2200,6 @@ static QgTexture* qgl_create_texture(_In_ const char* name, _In_ const QgImage* 
 		.base.dispose = qgl_texture_dispose,
 	};
 	return qn_gam_init(self, vt_qgl_texture);
-}
+	}
 
 #endif // USE_GL

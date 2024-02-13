@@ -1336,15 +1336,20 @@ QSAPI uchar2* qn_a_i_u32to16(const uchar4* src, size_t srclen, const char* desc,
 //////////////////////////////////////////////////////////////////////////
 // 컨테이너
 
+#ifdef _MSC_VER
 /// @brief 컨테이너 foreach
 #define QN_CTNR_FOREACH(CTNR, START, INDEX)															\
 	size_t QN_CONCAT(COUNT,__LINE__) = (CTNR).COUNT;												\
 	for ((INDEX) = (START); (INDEX) < QN_CONCAT(COUNT,__LINE__); (INDEX)++)
+#else
+/// @brief 컨테이너 foreach
+#define QN_CTNR_FOREACH(CTNR, START, INDEX)															\
+	for ((INDEX) = (START); (INDEX) < (CTNR).COUNT; (INDEX)++)
+#endif
 
 /// @brief 배열 foreach
 #define QN_ARRAY_FOREACH(CTNR, START, INDEX)														\
-	size_t QN_CONCAT(COUNT,__LINE__) = (CTNR).COUNT;												\
-	for ((INDEX) = (START); (INDEX) < QN_CONCAT(COUNT,__LINE__); (INDEX)++)
+	QN_CTNR_FOREACH(CTNR, START, INDEX)
 
 /// @brief 리스트용 foreach
 #define QN_LIST_FOREACH(LIST,NODE,NEXTNODE)															\

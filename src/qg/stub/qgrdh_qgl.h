@@ -102,12 +102,6 @@ typedef struct QGLVARATTR
 	QgScType			sctype : 8;			// 최대 22(2032-01-20 시점)으로 괜춘		
 } QglVarAttr;
 
-// 컨터이너
-QN_DECLIMPL_CTNR(QglCtnConfig, QglConfig, qgl_cfg_ctnr);			// 컨피그
-QN_DECLIMPL_CTNR(QglCtnLayoutInput, QglLayoutInput, qgl_li_ctnr);	// 레이아웃 입력
-QN_DECLIMPL_CTNR(QglCtnUniform, QgVarShader, qgl_uni_ctnr);			// 세이더 유니폼
-QN_DECLIMPL_CTNR(QglCtnAttr, QglVarAttr, qgl_attr_ctnr);			// 세이더 어트리뷰트
-
 // 컬러 포맷을 텍스쳐 포맷으로 구조체
 typedef struct QGLTEXFORMAT
 {
@@ -115,6 +109,36 @@ typedef struct QGLTEXFORMAT
 	GLenum				format;
 	GLenum				type;
 } QglTexFormat;
+
+// 블렌드를 GLenum으로 구조체
+typedef struct QGLBLENDVALUE
+{
+	GLenum				srcColor, dstColor, colorOp;
+	GLenum				srcAlpha, dstAlpha, alphaOp;
+} QglBlendValue;
+
+// 블렌드
+typedef struct QGLBLEND
+{
+	QgBlend				state;
+	QglBlendValue		value;
+} QglBlend;
+
+// 래스터라이저
+typedef struct QGLRASTERIZER
+{
+	GLenum				fill;
+	GLenum				cull;
+	bool				scissor;
+	float				depth_bias;
+	float				slope_scale;
+} QglRasterizer;
+
+// 컨터이너
+QN_DECLIMPL_CTNR(QglCtnConfig, QglConfig, qgl_cfg_ctnr);			// 컨피그
+QN_DECLIMPL_CTNR(QglCtnLayoutInput, QglLayoutInput, qgl_li_ctnr);	// 레이아웃 입력
+QN_DECLIMPL_CTNR(QglCtnUniform, QgVarShader, qgl_uni_ctnr);			// 세이더 유니폼
+QN_DECLIMPL_CTNR(QglCtnAttr, QglVarAttr, qgl_attr_ctnr);			// 세이더 어트리뷰트
 
 // 세션 데이터
 typedef struct QGLSESSION
@@ -140,6 +164,9 @@ typedef struct QGLSESSION
 
 	QgDepth				depth;
 	QgStencil			stencil;
+
+	QglBlend			blend[QGRVS_MAX_VALUE];
+	QglRasterizer		rasz;
 } QglSession;
 
 // 펜딩 데이터
@@ -156,6 +183,10 @@ typedef struct QGLPENDING
 	{
 		uint				topology;
 	}					draw;
+	struct QGLPENDING_OFF
+	{
+		void*				buffer[QGRVS_MAX_VALUE];
+	}					off;
 } QglPending;
 
 // 리소스
@@ -233,6 +264,9 @@ struct QGLRENDERSTATE
 
 	QgDepth				depth;
 	QgStencil			stencil;
+
+	QgPropBlend			blend;
+	QglRasterizer		rasz;
 };
 
 // 텍스쳐

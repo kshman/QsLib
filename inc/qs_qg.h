@@ -157,6 +157,7 @@ typedef enum QGCULL
 	QGCULL_NONE,											/// @brief 몇 제거 없음
 	QGCULL_FRONT,											/// @brief 앞면 제거
 	QGCULL_BACK,											/// @brief 뒷면 제거
+	QGCULL_BOTH,											/// @brief 양면 제거
 	QGCULL_MAX_VALUE
 } QgCull;
 
@@ -206,6 +207,8 @@ typedef enum QGBLEND
 	QGBLEND_OFF,											/// @brief dstRGBA = srcRGBA
 	QGBLEND_BLEND,											/// @brief dstRGB = (srcRGB * srcA) + (dstRGB * (1 - srcA), dstA = srcA  +  (dstA * (1 - srcA))
 	QGBLEND_ADD,											/// @brief dstRGB = (srgRGB * srcA) + dstRGB, dstA = dstA
+	QGBLEND_SUB,											/// @brief dstRGB = (srcRGB * srcA) - dstRGB, dstA = dstA
+	QGBLEND_REV_SUB,										/// @brief dstRGB = dstRGB - (srcRGB * srcA), dstA = dstA
 	QGBLEND_MOD,											/// @brief dstRGB = srcRGB * dstRGB, dstA = dstA
 	QGBLEND_MUL,											/// @brief dstRGB = (srcRGB * dstRGB) + (dstRGB * (1 - srcA)), dstA = dstA
 	QGBLEND_MAX_VALUE,
@@ -750,7 +753,7 @@ typedef struct QGPROPSHADER
 /// @brief 블렌드
 typedef struct QGPROPBLEND
 {
-	bool32				use_coverage;						/// @brief sample coverage / alpha to coverage
+	bool32				coverage;							/// @brief sample coverage / alpha to coverage
 	bool32				separate;							/// @brief 거짓이면 rb[0]만 사용
 	QgBlend				rb[QGRVS_MAX_VALUE];				/// @brief 스테이지 별 블렌드 정보
 } QgPropBlend;
@@ -1520,4 +1523,18 @@ QSAPI bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* 
 		.format.count = 1,\
 		.format.rtv[0] = QGCF_R8G8B8A8,\
 		.topology = QGTPG_TRI,\
+	}
+// 알파 블렌드 렌더 프로퍼티
+#define QGL_PROP_RENDER_BLEND\
+	{\
+		.rasterizer.fill = QGFILL_SOLID,\
+		.rasterizer.cull = QGCULL_BACK,\
+		.depth = QGDEPTH_LE,\
+		.stencil = QGSTENCIL_OFF,\
+		.format.count = 1,\
+		.format.rtv[0] = QGCF_R8G8B8A8,\
+		.topology = QGTPG_TRI,\
+		.blend.coverage = false,\
+		.blend.separate = false,\
+		.blend.rb[0] = QGBLEND_BLEND,\
 	}

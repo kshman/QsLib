@@ -22,7 +22,7 @@ int main(void)
 	QgTexture* tex_autumn = qg_load_texture(0, "/image/ff14_autumn.dds", QGTEXF_LINEAR);
 #endif
 
-	float f = 0.0f, angle = 0.0f;
+	float f = 0.0f, dir = 1.0f, angle = 0.0f;
 	while (qg_loop())
 	{
 		QgEvent ev;
@@ -45,9 +45,17 @@ int main(void)
 			}
 		}
 
-		f += qg_get_advance() * 0.5f;
+		f += qg_get_advance() * 0.5f * dir;
 		if (f > 1.0f)
+		{
+			f = 1.0f;
+			dir = -1.0f;
+		}
+		else if (f < 0.0f)
+		{
 			f = 0.0f;
+			dir = 1.0f;
+		}
 
 		angle += qg_get_advance() * QM_DEG_360 * (-1.0f / 3.0f);
 		if (angle >= QM_DEG_360)
