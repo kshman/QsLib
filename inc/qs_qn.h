@@ -3359,6 +3359,7 @@ typedef enum QNFILETYPE
 	QNFTYPE_DOC = 18,										/// @brief 문서
 	QNFTYPE_MODEL = 19,										/// @brief 모델
 	QNFTYPE_ANIM = 20,										/// @brief 애니메이션
+	QNFTYPE_FONT = 21,										/// @brief 글꼴
 } QnFileType;
 
 /// @brief 마운트 플래그
@@ -3407,12 +3408,6 @@ QSAPI size_t qn_get_file_max_alloc_size(void);
 /// @brief 한번에 파일을 읽는 기능들의 최대 허용 크기 지정 (0으로 지정하면 128MB로 초기화)
 QSAPI void qn_set_file_max_alloc_size(size_t size);
 
-/// @brief 파일 속성을 얻는다
-/// @param path 파일 경로
-/// @return 파일 속성
-/// @see QnFileAttr
-QSAPI QnFileAttr qn_get_file_attr(const char* path);
-
 /// @brief 파일 이름에서 경로를 뽑느다
 /// @param filename 대상 파일 이름
 /// @param dest 경로를 넣을 버퍼 (길이를 얻고 싶으면 이 값을 널로 지정)
@@ -3431,12 +3426,6 @@ QSAPI size_t qn_filename(const char* filename, char* dest, size_t destsize);
 /// @return 기본 패스
 /// @warning 반환 값은 qn_free 함수로 해제해야한다
 QSAPI char* qn_basepath(void);
-
-/// @brief 시스템 현재 디렉토리를 얻는다
-/// @return 현재 디렉토리
-/// @warning 반환 값은 qn_free 함수로 해제해야한다
-QSAPI char* qn_getcwd(void);
-
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -3487,8 +3476,6 @@ QN_DECL_VTABLE(QNDIR)
 	const char* (*dir_read)(/*QnDir*/QnGam);
 	bool (*dir_read_info)(/*QnDir*/QnGam, QnFileInfo*);
 	void (*dir_rewind)(/*QnDir*/QnGam);
-	void (*dir_seek)(/*QnDir*/QnGam, int);
-	int (*dir_tell)(/*QnDir*/QnGam);
 };
 
 /// @brief 마운트 타입
@@ -3504,24 +3491,24 @@ struct QNMOUNT
 QN_DECL_VTABLE(QNMOUNT)
 {
 	QN_GAM_VTABLE(QNGAMBASE);
-	QnStream* (*mount_open)(/*QnMount*/QnGam, const char*, const char*);
-	void* (*mount_read)(/*QnMount*/QnGam, const char*, int*);
-	char* (*mount_read_text)(/*QnMount*/QnGam, const char*, int*, int*);
-	QnFileAttr(*mount_exist)(/*QnMount*/QnGam, const char*);
-	bool (*mount_remove)(/*QnMount*/QnGam, const char*);
+	char* (*mount_cwd)(/*QnMount*/QnGam);
 	bool (*mount_chdir)(/*QnMount*/QnGam, const char*);
 	bool (*mount_mkdir)(/*QnMount*/QnGam, const char*);
-	QnDir* (*mount_list)(/*QnMount*/QnGam);
+	bool (*mount_remove)(/*QnMount*/QnGam, const char*);
+	QnFileAttr(*mount_attr)(/*QnMount*/QnGam, const char*);
+	QnStream* (*mount_stream)(/*QnMount*/QnGam, const char*, const char*);
+	QnDir* (*mount_list)(/*QnMount*/QnGam, const char*, const char*);
+	void* (*mount_alloc)(/*QnMount*/QnGam, const char*, int*);
 };
 
-// 스트림 보조 함수
+// 스트림 & 마운트 보조 함수
 
 /// @brief 파일이 존재하는지 확인
 /// @param mount 마운트 (널이면 디스크 파일 시스템)
 /// @param filename 파일 이름
 /// @return 파일 속성
 /// @see QnFileAttr
-QSAPI QnFileAttr qn_file_attr(QnMount* mount, const char* filename);
+QSAPI QnFileAttr qn_get_file_attr(QnMount* mount, const char* filename);
 
 /// @brief 파일을 한번에 읽는다
 /// @param mount 마운트 (널이면 디스크 파일 시스템)
@@ -3535,8 +3522,31 @@ QSAPI void* qn_file_alloc(QnMount* mount, const char* filename, int* size);
 /// @param filename 파일이름
 /// @param length 텍스트의 길이
 /// @param codepage 코드 페이지 (1200=UTF-16LE, 1201=UTF-16BE, 65001=UTF-8, 0=ANSI/시스템로캘 또는 UTF-8)
-/// @return 텍스트 데이터
 QSAPI char* qn_file_alloc_text(QnMount* mount, const char* filename, int* length, int* codepage);
+
+/// @brief 마운트에서 파일 제거 (디렉토리도 제거	가능
+/// @param mount 마운트 (널이면 디스크 파일 시스템)
+/// @param path 파일 경로
+/// @return 성공했으면 참을 반환
+QSAPI bool qn_remove_file(QnMount* mount, const char* path);
+
+/// @brief 현재 디렉토리를 얻는다
+/// @param mount 마운트 (널이면 디스크 파일 시스템)
+/// @return 현재 디렉토리
+/// @warning 반환 값은 qn_free 함수로 해제해야한다
+QSAPI char* qn_getcwd(QnMount* mount);
+
+/// @brief 마운트에서 디렉토리 변경
+/// @param mount 마운트
+/// @param directory 변경할 디렉토리 (널이면 기본 디렉토리로 변경)
+/// @return 성공했으면 참을 반환
+QSAPI bool qn_chdir(QnMount* mount, const char* directory);
+
+/// @brief 마운트에서 디렉토리 만들기
+/// @param mount 마운트 (널이면 디스크 파일 시스템)
+/// @param directory 디렉토리 이름
+/// @return 성공했으면 참을 반환
+QSAPI bool qn_mkdir(QnMount* mount, const char* directory);
 
 // 스트림
 
@@ -3647,6 +3657,13 @@ QSAPI void* qn_mem_stream_get_data(QnStream* self);
 
 // 디렉토리
 
+/// @brief 디렉토리 열기
+/// @param mount 마운트
+/// @param directory 디렉토리 이름 (널이면 현재 디렉토리)
+/// @param mask 마스크 (널이면 모든 파일)
+/// @return 디렉토리
+QSAPI QnDir* qn_open_dir(QnMount* mount, const char* directory, const char* mask);
+
 /// @brief 파일 목록에서 항목 읽기
 /// @param self 디렉토리
 /// @return 항목 이름
@@ -3661,16 +3678,6 @@ QSAPI bool qn_dir_read_info(QnDir* self, QnFileInfo* info);
 /// @param self 디렉토리
 QSAPI void qn_dir_rewind(QnDir* self);
 
-/// @brief 파일 목록에서 순서 항목으로 찾아가기
-/// @param self 디렉토리
-/// @param pos 위치
-QSAPI void qn_dir_seek(QnDir* self, int pos);
-
-/// @brief 파일 목록에서 몇번째 항목인지 얻기
-/// @param self 디렉토리
-/// @return 위치
-QSAPI int qn_dir_tell(QnDir* self);
-
 // 마운트
 
 /// @brief 마운트 열기
@@ -3682,59 +3689,6 @@ QSAPI int qn_dir_tell(QnDir* self);
 /// 모드에서 'f'는 HFS전용으로 open/read에서 디렉토리를 복구하지 않는다. 즉,
 /// 경로를 사용해서 파일을 읽고 열 때 해당 경로로 변경된다.
 QSAPI QnMount* qn_open_mount(const char* path, const char* mode);
-
-/// @brief 마운트에서 파일 열기
-/// @param self 마운트
-/// @param filename 파일 이름
-/// @param mode 모드
-/// @return 파일 스트림
-QSAPI QnStream* qn_mount_open_stream(QnMount* self, const char* filename, const char* mode);
-
-/// @brief 마운트에서 파일 한꺼번에 읽기
-/// @param self 마운트
-/// @param filename 파일 이름
-/// @param size 파일 크기 (널 가능)
-/// @return 파일 데이터
-QSAPI void* qn_mount_read(QnMount* self, const char* filename, int* size);
-
-/// @brief 마운트에서 텍스트 파일 한꺼번에 읽기
-/// @param self 마운트
-/// @param filename 파일 이름
-/// @param length 텍스트의 길이
-/// @param codepage 코드 페이지 (1200=UTF-16LE, 1201=UTF-16BE, 65001=UTF-8, 0=ANSI 또는 UTF-8)
-/// @return 텍스트 데이터
-/// UTF-32로 텍스트를 저장하는 일은 없어서 지원 안넣었슴
-QSAPI char* qn_mount_read_text(QnMount* self, const char* filename, int* length, int* codepage);
-
-/// @brief 마운트에서 파일이 있나 조사
-/// @param self 마운트
-/// @param path 파일 경로
-/// @return 파일 속성
-/// @see QnFileAttr
-QSAPI QnFileAttr qn_mount_exist(QnMount* self, const char* path);
-
-/// @brief 마운트에서 파일 제거
-/// @param self 마운트
-/// @param path 파일 경로
-/// @return 성공했으면 참을 반환
-QSAPI bool qn_mount_remove(QnMount* self, const char* path);
-
-/// @brief 마운트에서 디렉토리 변경
-/// @param self 마운트
-/// @param directory 변경할 디렉토리 (널이면 기본 디렉토리로 변경)
-/// @return 성공했으면 참을 반환
-QSAPI bool qn_mount_chdir(QnMount* self, const char* directory);
-
-/// @brief 마운트에서 디렉토리 만들기
-/// @param self 마운트
-/// @param directory 디렉토리 이름
-/// @return 성공했으면 참을 반환
-QSAPI bool qn_mount_mkdir(QnMount* self, const char* directory);
-
-/// @brief 마운트에서 파일 목록 얻기
-/// @param self 마운트
-/// @return 파일 목록 (널이면 실패)
-QSAPI QnDir* qn_mount_list(QnMount* self);
 
 /// @brief 마운트 이름 얻기
 /// @param self 마운트
@@ -3748,11 +3702,12 @@ INLINE const char* qn_mount_get_path(QnMount* self) { return qn_cast_type(self, 
 
 // HFS
 
-#ifndef _QN_MOBILE_
+#ifndef _QN_EMSCRIPTEN_
 /// @brief HFS에 설명을 넣는다 (63자까지)
 /// @param mount HFS 마운트
 /// @param desc 설명
 /// @return 실패 했다면 마운트가 HFS가 아니거나 쓰기 모드가 아님
+/// @note EMSCRIPTEN에서는 사용할 수 없다
 QSAPI bool qn_hfs_set_desc(QnMount* mount, const char* desc);
 
 /// @brief HFS에 버퍼를 파일로 저장한다
@@ -3763,6 +3718,7 @@ QSAPI bool qn_hfs_set_desc(QnMount* mount, const char* desc);
 /// @param cmpr 압축 여부
 /// @param type 파일 타입
 /// @return 성공했으면 참을 반환
+/// @note EMSCRIPTEN에서는 사용할 수 없다
 QSAPI bool qn_hfs_store_data(QnMount* mount, const char* filename, const void* data, uint size, bool cmpr, QnFileType type);
 
 /// @brief HFS에 스트림을 파일로 저장한다
@@ -3772,6 +3728,7 @@ QSAPI bool qn_hfs_store_data(QnMount* mount, const char* filename, const void* d
 /// @param cmpr 압축 여부
 /// @param type 파일 타입
 /// @return 성공했으면 참을 반환
+/// @note EMSCRIPTEN에서는 사용할 수 없다
 QSAPI bool qn_hfs_store_stream(QnMount* mount, const char* filename, QnStream* stream, bool cmpr, QnFileType type);
 
 /// @brief HFS에 파일을 파일로 저장한다
@@ -3781,6 +3738,7 @@ QSAPI bool qn_hfs_store_stream(QnMount* mount, const char* filename, QnStream* s
 /// @param cmpr 압축 여부
 /// @param type 파일 타입
 /// @return 성공했으면 참을 반환
+/// @note EMSCRIPTEN에서는 사용할 수 없다
 QSAPI bool qn_hfs_store_file(QnMount* mount, const char* filename, const char* srcfile, bool cmpr, QnFileType type);
 
 // HFS 최적화 상태 미리 정의
@@ -3814,7 +3772,8 @@ typedef struct HFSOPTIMIZEDATA
 /// @param output
 /// @param callback
 /// @param data
-/// @return
+/// @return 성공했으면 참을 반환
+/// @note EMSCRIPTEN에서는 사용할 수 없다
 QSAPI bool qn_hfs_optimize(QnMount* mount, HfsOptimizeParam* param);
 #endif
 

@@ -7,7 +7,7 @@ int main(void)
 
 	QnMount* mnt = qn_open_mount(NULL, 0);
 
-	QnStream* st = qn_mount_open_stream(mnt, "test.txt", "wt");
+	QnStream* st = qn_open_stream(mnt, "test.txt", "wt");
 	if (st != NULL)
 	{
 		qn_stream_write(st, "Hello, world!\n", 0, 14);
@@ -19,23 +19,21 @@ int main(void)
 		qn_unload(st);
 	}
 
-	QnDir* dir = qn_mount_list(mnt);
+	QnDir* dir = qn_open_dir(mnt, NULL, NULL);
 	if (dir != NULL)
 	{
 		QnFileInfo fi;
 		while (qn_dir_read_info(dir, &fi))
 		{
-			int pos = qn_dir_tell(dir);
 			QnDateTime ft = { fi.stc };
-			qn_outputf("%d, [%s] %s (%u) [%04d-%02d-%02d %02d:%02d:%02d]",
-				pos, QN_TMASK(fi.attr, QNFATTR_DIR) ? "디렉토리" : "파일", fi.name, fi.size,
+			qn_outputf("[%s] %s (%u) [%04d-%02d-%02d %02d:%02d:%02d]",
+				QN_TMASK(fi.attr, QNFATTR_DIR) ? "디렉토리" : "파일", fi.name, fi.size,
 				ft.year, ft.month, ft.day, ft.hour, ft.minute, ft.second);
 		}
 		qn_unload(dir);
 	}
 
-	if (st != NULL)
-		qn_mount_remove(mnt, "test.txt");
+	qn_remove_file(mnt, "test.txt");
 	qn_unload(mnt);
 
 	return 0;

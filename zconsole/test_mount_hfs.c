@@ -43,8 +43,8 @@ QN_DECLIMPL_ARRAY(FileInfoArray, QnPathStr, file_infos);
 
 static void subdirectory_list(QnMount* mnt, const char* path)
 {
-	qn_mount_chdir(mnt, path);
-	QnDir* dir = qn_mount_list(mnt);
+	qn_chdir(mnt, path);
+	QnDir* dir = qn_open_dir(mnt, NULL, NULL);
 	if (dir == NULL)
 		return;
 
@@ -55,7 +55,6 @@ static void subdirectory_list(QnMount* mnt, const char* path)
 	QnFileInfo fi;
 	while (qn_dir_read_info(dir, &fi))
 	{
-		int pos = qn_dir_tell(dir);
 		QnDateTime ft = { fi.stc };
 		if (QN_TMASK(fi.attr, QNFATTR_DIR))
 		{
@@ -66,14 +65,14 @@ static void subdirectory_list(QnMount* mnt, const char* path)
 				file_infos_add(&files, s);
 			}
 
-			qn_outputf("%d, [디렉토리] %s [%04d-%02d-%02d %02d:%02d:%02d]",
-				pos, fi.name,
+			qn_outputf("[디렉토리] %s [%04d-%02d-%02d %02d:%02d:%02d]",
+				fi.name,
 				ft.year, ft.month, ft.day, ft.hour, ft.minute, ft.second);
 		}
 		else
 		{
-			qn_outputf("%d, [파일] %s (%u) [%04d-%02d-%02d %02d:%02d:%02d]",
-				pos, fi.name, fi.size,
+			qn_outputf("[파일] %s (%u) [%04d-%02d-%02d %02d:%02d:%02d]",
+				fi.name, fi.size,
 				ft.year, ft.month, ft.day, ft.hour, ft.minute, ft.second);
 		}
 	}
@@ -87,7 +86,7 @@ static void subdirectory_list(QnMount* mnt, const char* path)
 
 	file_infos_dispose(&files);
 	qn_unload(dir);
-	qn_mount_chdir(mnt, "..");
+	qn_chdir(mnt, "..");
 }
 
 int main(void)
@@ -98,50 +97,50 @@ int main(void)
 	if (mnt != NULL)
 	{
 		qn_outputs("test 디렉토리 만들기");
-		qn_mount_mkdir(mnt, "test");
-		qn_mount_chdir(mnt, "test");
-		qn_mount_chdir(mnt, "/");
-		qn_mount_chdir(mnt, "test");
-		qn_mount_chdir(mnt, "..");
+		qn_mkdir(mnt, "test");
+		qn_chdir(mnt, "test");
+		qn_chdir(mnt, "/");
+		qn_chdir(mnt, "test");
+		qn_chdir(mnt, "..");
 
 		qn_outputs("000 디렉토리 만들기");
-		qn_mount_mkdir(mnt, "000");
+		qn_mkdir(mnt, "000");
 		qn_outputs("test 디렉토리 들어가기");
-		qn_mount_chdir(mnt, "test");
+		qn_chdir(mnt, "test");
 		qn_outputs("부모 디렉토리로 돌아가기");
-		qn_mount_chdir(mnt, "..");
+		qn_chdir(mnt, "..");
 		qn_outputs("최상위 디렉토리로 돌아가기");
-		qn_mount_chdir(mnt, "/");
+		qn_chdir(mnt, "/");
 
 		qn_outputs("test 디렉토리 들어가기");
-		qn_mount_chdir(mnt, "test");
+		qn_chdir(mnt, "test");
 
 		qn_outputs("123 / 456 디렉토리 만들기");
-		qn_mount_mkdir(mnt, "123");
-		qn_mount_mkdir(mnt, "456");
-		qn_mount_chdir(mnt, "456");
-		qn_mount_mkdir(mnt, "3rd step directory");
-		qn_mount_chdir(mnt, "..");
+		qn_mkdir(mnt, "123");
+		qn_mkdir(mnt, "456");
+		qn_chdir(mnt, "456");
+		qn_mkdir(mnt, "3rd step directory");
+		qn_chdir(mnt, "..");
 
 		qn_outputs("zzz(없는파일) 지우기");
-		qn_mount_remove(mnt, "zzz");
+		qn_remove_file(mnt, "zzz");
 		qn_outputs("123 디렉토리 지우기");
-		qn_mount_remove(mnt, "123");
-		qn_mount_chdir(mnt, "/");
-		qn_mount_chdir(mnt, "/test/456/3rd step directory");
-		qn_mount_mkdir(mnt, "/test/456/thisislongfilenamedirectoryisitwork");
-		qn_mount_chdir(mnt, "/test/456");
+		qn_remove_file(mnt, "123");
+		qn_chdir(mnt, "/");
+		qn_chdir(mnt, "/test/456/3rd step directory");
+		qn_mkdir(mnt, "/test/456/thisislongfilenamedirectoryisitwork");
+		qn_chdir(mnt, "/test/456");
 
-		qn_mount_chdir(mnt, "/test");
+		qn_chdir(mnt, "/test");
 		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night) - 1, false, QNFTYPE_TEXT);
 		qn_hfs_store_data(mnt, "one summer night.txt", one_summer_night, (uint)QN_COUNTOF(one_summer_night) - 1, false, QNFTYPE_TEXT);
 		qn_hfs_store_data(mnt, "one summer night.cmpr", one_summer_night, (uint)QN_COUNTOF(one_summer_night) - 1, true, QNFTYPE_TEXT);
 		qn_hfs_store_file(mnt, NULL, "QsLib.vcxproj", true, QNFTYPE_MARKUP);
 		qn_hfs_store_file(mnt, "qlem.html", "QsLibEm.html", true, QNFTYPE_MARKUP);
 		qn_hfs_store_file(mnt, "qlem.cmd", "QsLibEm.cmd", true, QNFTYPE_SCRIPT);
-		qn_mount_remove(mnt, "qlem.html");
-		qn_mount_chdir(mnt, "/");
-		qn_mount_chdir(mnt, "test");
+		qn_remove_file(mnt, "qlem.html");
+		qn_chdir(mnt, "/");
+		qn_chdir(mnt, "test");
 
 		qn_unload(mnt);
 	}
@@ -150,14 +149,14 @@ int main(void)
 	mnt = qn_open_mount("test.hfs", "hmf");
 	if (mnt)
 	{
-		QnFileAttr attr = qn_mount_exist(mnt, "/test/qlem.cmd");
+		QnFileAttr attr = qn_get_file_attr(mnt, "/test/qlem.cmd");
 		qn_outputf("qlem.cmd attribute: %d", attr);
 
-		qn_mount_chdir(mnt, "/test");
+		qn_chdir(mnt, "/test");
 
 		int size;
 		char *psz;
-		QnStream* stream = qn_mount_open_stream(mnt, "one summer night.txt", NULL);
+		QnStream* stream = qn_open_stream(mnt, "one summer night.txt", NULL);
 		if (stream)
 		{
 			size = (int)qn_stream_size(stream);
@@ -171,26 +170,25 @@ int main(void)
 			qn_unload(stream);
 		}
 
-		psz = qn_mount_read(mnt, "one summer night.cmpr", &size);
+		psz = qn_file_alloc(mnt, "one summer night.cmpr", &size);
 		psz[size] = '\0';
 		qn_outputs(psz);
 		qn_free(psz);
 
-		psz = qn_mount_read_text(mnt, "/test/qlem.cmd", NULL, NULL);
+		psz = qn_file_alloc_text(mnt, "/test/qlem.cmd", NULL, NULL);
 		qn_outputs(psz);
 		qn_free(psz);
 
 		// 파일 목록 테스트
-		QnDir* dir = qn_mount_list(mnt);
+		QnDir* dir = qn_open_dir(mnt, NULL, "one*");
 		if (dir != NULL)
 		{
 			QnFileInfo fi;
 			while (qn_dir_read_info(dir, &fi))
 			{
-				int pos = qn_dir_tell(dir);
 				QnDateTime ft = { fi.stc };
-				qn_outputf("%d, [%s] %s (%u) [%04d-%02d-%02d %02d:%02d:%02d]",
-					pos, QN_TMASK(fi.attr, QNFATTR_DIR) ? "디렉토리" : "파일", fi.name, fi.size,
+				qn_outputf("[%s] %s (%u) [%04d-%02d-%02d %02d:%02d:%02d]",
+					QN_TMASK(fi.attr, QNFATTR_DIR) ? "디렉토리" : "파일", fi.name, fi.size,
 					ft.year, ft.month, ft.day, ft.hour, ft.minute, ft.second);
 			}
 			qn_unload(dir);
@@ -216,7 +214,7 @@ int main(void)
 		subdirectory_list(mnt, "/");
 
 		// 간접 파일	읽기
-		QnStream* stream = qn_mount_open_stream(mnt, "/test/one summer night.txt", "");
+		QnStream* stream = qn_open_stream(mnt, "/test/one summer night.txt", "");
 		if (stream)
 		{
 			int size = (int)qn_stream_size(stream);

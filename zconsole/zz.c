@@ -1,8 +1,6 @@
 ﻿// 스프라이트 테스트
 #include <qs.h>
 
-#define USE_FUSE 1
-
 int main(void)
 {
 	qn_runtime();
@@ -11,11 +9,7 @@ int main(void)
 	int features = QGFEATURE_NONE;
 	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
-#if USE_FUSE
 	qg_fuse(0, NULL, false, true);
-#else
-	qg_mount(0, "res.hfs", "h");
-#endif
 
 	QmVec bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
 	qg_set_background(&bgc);
