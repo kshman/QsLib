@@ -89,7 +89,7 @@ static void shed_event_dispose(void)
 	qn_return_when_fail(shed_event.mutex != NULL, /*void*/);
 
 	// 예약 메모리
-	reserved_mems_foreach_1(&shed_event.reserved_mems, qn_mem_free);
+	reserved_mems_foreach_1(&shed_event.reserved_mems, qn_mem_free_ptr);
 	reserved_mems_dispose(&shed_event.reserved_mems);
 	// 우선 순위 큐
 	event_lnode_dispose_callback(&shed_event.prior, qn_mem_free);
@@ -252,7 +252,7 @@ static void shed_event_clear_reserved_mem(void)
 	qn_mutex_enter(shed_event.mutex);
 	if (reserved_mems_is_have(&shed_event.reserved_mems))
 	{
-		reserved_mems_foreach_1(&shed_event.reserved_mems, qn_mem_free);
+		reserved_mems_foreach_1(&shed_event.reserved_mems, qn_mem_free_ptr);
 		reserved_mems_clear(&shed_event.reserved_mems);
 	}
 	qn_mutex_leave(shed_event.mutex);

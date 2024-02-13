@@ -1312,7 +1312,7 @@ bool qn_strwcm(const char* string, const char* wild)
 	}
 	while (*wild == '*')
 		wild++;
-	return *wild != '\0';
+	return *wild == '\0';
 }
 
 //
@@ -1348,7 +1348,7 @@ bool qn_striwcm(const char* string, const char* wild)
 	}
 	while (*wild == '*')
 		wild++;
-	return *wild != '\0';
+	return *wild == '\0';
 }
 
 //
