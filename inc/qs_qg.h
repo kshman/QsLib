@@ -1601,7 +1601,17 @@ INLINE void QM_VECTORCALL qg_font_set_color(QgFont* self, const QmColor color) {
 /// @param x x 좌표
 /// @param y y 좌표
 /// @param text 문자열
+/// @return 그린 문자열의 너비
 QSAPI int qg_font_draw(QgFont* self, int x, int y, const char* text);
+
+/// @brief 문자열을 그린다
+/// @param font 글꼴
+/// @param x x 좌표
+/// @param y y 좌표
+/// @param fmt 문자열
+/// @param ... 가변 인수
+/// @return 그린 문자열의 너비
+QSAPI int qg_font_draw_format(QgFont* self, int x, int y, const char* fmt, ...);
 
 
 //////////////////////////////////////////////////////////////////////////

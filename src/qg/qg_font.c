@@ -147,7 +147,7 @@ void qg_font_set_size(QgFont* self, int size)
 //
 static QgImage* _font_generate_image(byte* bitmap, int width, int height)
 {
-	QgImage* img =qg_create_image(QGCF_A8L8, width, height);
+	QgImage* img = qg_create_image(QGCF_A8L8, width, height);
 	for (int y = 0; y < height; ++y)
 	{
 		byte* dst = img->data + y * img->pitch;
@@ -194,6 +194,8 @@ static GlyphValue* _font_get_glyph(QgRealFont* self, int code)
 	value->offset = qm_point(x1, y1 + (int)((float)self->ascent * self->scale));
 	value->tex = tex;
 
+	//qn_mesgf(false, VAR_CHK_NAME, "%d: %d (%d, %d)", code, value->advance, value->offset.X, value->offset.Y);
+
 	return value;
 }
 
@@ -231,7 +233,7 @@ int qg_font_draw(QgFont* self, int x, int y, const char* text)
 				GlyphValue* value = _font_get_glyph(font, code);
 				if (value != NULL)
 				{
-					QmRect rect = qm_rect_size(pt.X, pt.Y, value->tex->width, value->tex->height);
+					QmRect rect = qm_rect_size(pt.X + value->offset.X, pt.Y + value->offset.Y, value->tex->width, value->tex->height);
 					qg_draw_sprite(&rect, value->tex, &self->color, NULL);
 					//qg_draw_texture(value->tex, pt.X + value->offset.x, pt.Y - value->offset.y, &rect);
 					pt.X += value->advance;
@@ -244,4 +246,18 @@ int qg_font_draw(QgFont* self, int x, int y, const char* text)
 	}
 
 	return maxx;
+}
+
+//
+int qg_font_draw_format(QgFont* self, int x, int y, const char* fmt, ...)
+{
+	VAR_CHK_IF_NULL(fmt, 0);
+	va_list va;
+	va_start(va, fmt);
+	char buffer[1024];
+	int len = qn_vsnprintf(buffer, QN_COUNTOF(buffer), fmt, va);
+	va_end(va);
+	if (len <= 0)
+		return 0;
+	return qg_font_draw(self, x, y, buffer);
 }

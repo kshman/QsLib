@@ -5,7 +5,7 @@ int main(void)
 {
 	qn_runtime(NULL);
 
-	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA;
+	int flags = QGFLAG_RESIZE | QGFLAG_MSAA | QGFLAG_VSYNC;
 	int features = QGFEATURE_NONE;
 	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
@@ -86,7 +86,7 @@ int main(void)
 			rt = qm_rect_size(pt_puru.X, pt_puru.Y, tex_puru->width, tex_puru->height);
 			qg_draw_sprite_ex(&rt, angle, tex_puru, NULL, NULL);
 
-			qg_font_draw(font, 10, 10, "Hello, World! 한글도 나오나?");
+			qg_font_draw_format(font, 0, 0, "World, Hello! 한글도 나오나? (%.2f)", qg_get_fps());
 
 			qg_end_render(true);
 		}
