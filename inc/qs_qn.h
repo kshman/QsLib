@@ -367,7 +367,7 @@ typedef struct FUNCPARAM_T
 // runtime
 
 /// @brief 런타임 초기화
-QSAPI void qn_runtime(void);
+QSAPI void qn_runtime(const char* tag);
 
 /// @brief 버전 문자열을 얻는다
 /// @return 버전 문자열 "QS VERSION major.minor" 형식

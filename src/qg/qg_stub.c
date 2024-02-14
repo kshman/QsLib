@@ -273,7 +273,7 @@ static void stub_atexit_callback(void* dummy)
 //
 bool qg_open_stub(const char* title, int display, int width, int height, int flags, int features)
 {
-	qn_runtime();
+	qn_runtime(NULL);
 
 	if (qg_instance_stub)
 	{

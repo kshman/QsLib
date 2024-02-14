@@ -183,9 +183,11 @@ static void qn_runtime_up(void)
 }
 
 // 
-void qn_runtime(void)
+void qn_runtime(const char* tag)
 {
 	qn_return_on_ok(runtime_impl.inited,/*void*/);
+	if (tag != NULL && *tag != '\0')
+		qn_strncpy(runtime_impl.tag, tag, QN_COUNTOF(runtime_impl.tag) - 1);
 	qn_runtime_up();
 }
 
@@ -511,7 +513,7 @@ static nint _out_buf_flush(bool debug_output)
 	const nint ret = runtime_impl.out_pos;
 	runtime_impl.out_pos = 0;
 	return ret;
-}
+	}
 
 //
 int qn_asrt(const char* expr, const char* mesg, const char* filename, const int line)

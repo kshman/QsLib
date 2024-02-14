@@ -3,7 +3,7 @@
 
 int main(void)
 {
-	qn_runtime();
+	qn_runtime(NULL);
 
 	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA;
 	int features = QGFEATURE_NONE;
