@@ -3,9 +3,9 @@
 
 int main(void)
 {
-	qn_runtime();
+	qn_runtime(NULL);
 
-	int flags = QGFLAG_RESIZE | QGFLAG_VSYNC | QGFLAG_MSAA;
+	int flags = QGFLAG_RESIZE | QGFLAG_MSAA | QGFLAG_VSYNC;
 	int features = QGFEATURE_NONE;
 	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
@@ -21,6 +21,8 @@ int main(void)
 #else
 	QgTexture* tex_autumn = qg_load_texture(0, "/image/ff14_autumn.dds", QGTEXF_LINEAR);
 #endif
+
+	QgFont* font = qg_load_font(0, "/font/eunjin.ttf", 48);
 
 	float f = 0.0f, dir = 1.0f, angle = 0.0f;
 	while (qg_loop())
@@ -75,19 +77,22 @@ int main(void)
 			rt = qm_rect_size(10, 10, tex_autumn->width, tex_autumn->height);
 			coord = qm_vec(0.0f, 0.0f, 4.0f, 4.0f);
 			color = qm_vec(f, f, f, 1.0f);
-			qg_draw_sprite(&rt, &color, tex_autumn, &coord);
+			qg_draw_sprite(&rt, tex_autumn, &color, &coord);
 
 			rt = qm_rect_size(size.Width - 10 - tex_autumn->width, size.Height - 10 - tex_autumn->height, tex_autumn->width, tex_autumn->height);
 			color = qm_vec(1.0f, 1.0f, 1.0f, 1.0f - f);
-			qg_draw_sprite(&rt, &color, tex_autumn, NULL);
+			qg_draw_sprite(&rt, tex_autumn, &color, NULL);
 
 			rt = qm_rect_size(pt_puru.X, pt_puru.Y, tex_puru->width, tex_puru->height);
-			qg_draw_sprite_ex(&rt, angle, NULL, tex_puru, NULL);
+			qg_draw_sprite_ex(&rt, angle, tex_puru, NULL, NULL);
+
+			qg_font_draw_format(font, 0, 0, "World, Hello! 한글도 나오나? (%.2f)", qg_get_fps());
 
 			qg_end_render(true);
 		}
 	}
 
+	qn_unload(font);
 	qn_unload(tex_autumn);
 	qn_unload(tex_puru);
 	qg_close_rdh();

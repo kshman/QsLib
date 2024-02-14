@@ -270,8 +270,8 @@ typedef struct QNREALTIMER
 	bool32				stop;
 	uint				past;		// 왜 이걸 만들었는지 기억이 안난다
 
-	uint				fps_count;
 	int					fps_frame;
+	ullong				fps_count;
 	double				fps_abs;
 
 	double              cut;
@@ -325,7 +325,7 @@ void qn_timer_reset(QnTimer* self)
 	impl->basetime.q = impl->curtime.q;
 	impl->lasttime.q = impl->curtime.q;
 	impl->stoptime.q = 0;
-	impl->fps_count = impl->curtime.dw.l;
+	impl->fps_count = impl->curtime.q;
 
 	impl->stop = false;
 }
@@ -342,7 +342,7 @@ void qn_timer_start(QnTimer* self)
 
 	impl->lasttime.q = impl->curtime.q;
 	impl->stoptime.q = 0;
-	impl->fps_count = impl->curtime.dw.l;
+	impl->fps_count = impl->curtime.q;
 
 	impl->stop = false;
 }
@@ -355,7 +355,7 @@ void qn_timer_stop(QnTimer* self)
 	impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
 	impl->lasttime.q = impl->curtime.q;
 	impl->stoptime.q = impl->curtime.q;
-	impl->fps_count = impl->curtime.dw.l;
+	impl->fps_count = impl->curtime.q;
 
 	impl->stop = true;
 }
@@ -371,7 +371,7 @@ bool qn_timer_update(QnTimer* self, bool manual)
 	impl->base.runtime = (double)(impl->curtime.q - impl->basetime.q) * impl->tick;
 
 	if (manual == false)
-		impl->base.fps = (double)impl->frame.dw.l / (double)(impl->curtime.dw.l - impl->fps_count);
+		impl->base.fps = (double)impl->frame.q / (double)(impl->curtime.q - impl->fps_count);
 	else
 	{
 		impl->fps_frame++;
@@ -384,7 +384,7 @@ bool qn_timer_update(QnTimer* self, bool manual)
 		}
 	}
 
-	impl->fps_count = impl->curtime.dw.l;
+	impl->fps_count = impl->curtime.q;
 
 	if (impl->base.fps < impl->cut)
 	{
@@ -415,7 +415,7 @@ bool qn_timer_update_fps(QnTimer* self, bool manual, double target_fps)
 	{
 		qn_ssleep(target_fps - delta);
 
-		/*
+#if false
 		impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
 		impl->base.abstime = (double)impl->curtime.q * impl->tick;
 		impl->base.runtime = (double)(impl->curtime.q - impl->basetime.q) * impl->tick;
@@ -424,7 +424,7 @@ bool qn_timer_update_fps(QnTimer* self, bool manual, double target_fps)
 		impl->prevtime = impl->base.runtime;
 
 		impl->base.advance += wait;
-		*/
+#endif
 	}
 
 	return ret;

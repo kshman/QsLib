@@ -273,7 +273,7 @@ static void stub_atexit_callback(void* dummy)
 //
 bool qg_open_stub(const char* title, int display, int width, int height, int flags, int features)
 {
-	qn_runtime();
+	qn_runtime(NULL);
 
 	if (qg_instance_stub)
 	{
@@ -650,16 +650,23 @@ bool qg_loop(void)
 			return false;
 	}
 
-	if (QN_TMASK(stub->flags, QGFLAG_VSYNC) == false)
-		qn_timer_update(stub->timer, true);
+#if true
+	if (QN_TMASK(stub->flags, QGFLAG_VSYNC))
+		qn_timer_update(stub->timer, false);
 	else
 	{
 		const double frames =
 			QN_TMASK(stub->stats, QGSST_ACTIVE) == false &&
 			QN_TMASK(stub->features, QGFEATURE_ENABLE_IDLE) ? 0.1 : stub->frames;
-
-		qn_timer_update_fps(stub->timer, true, frames);
+		qn_timer_update_fps(stub->timer, false, frames);
 	}
+#else
+	const double frames =
+		QN_TMASK(stub->stats, QGSST_ACTIVE) == false &&
+		QN_TMASK(stub->features, QGFEATURE_ENABLE_IDLE) ? 0.1 : stub->frames;
+	qn_timer_update_fps(stub->timer, false, frames);
+#endif
+
 	const float adv = (float)stub->timer->advance;
 	stub->run = stub->timer->runtime;
 	stub->fps = (float)stub->timer->fps;

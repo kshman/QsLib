@@ -367,7 +367,8 @@ typedef struct FUNCPARAM_T
 // runtime
 
 /// @brief 런타임 초기화
-QSAPI void qn_runtime(void);
+/// @param tag 태그 (널이면 기본값)
+QSAPI void qn_runtime(const char* tag);
 
 /// @brief 버전 문자열을 얻는다
 /// @return 버전 문자열 "QS VERSION major.minor" 형식
@@ -1093,11 +1094,20 @@ void qn_splitpath(const char* p, char* drive, char* dir, char* name, char* ext);
 /// @brief UTF-8 문자를 UCS-4 문자로.
 /// @param[in] p utf8 문자.
 /// @return ucs4 문자.
+/// @warning 인수에 대한 널 검사를 하지 않는다
 QSAPI uchar4 qn_u8cbn(const char* p);
+
+/// @brief UTF-8 문자를 UCS-4 문자로
+/// @param[in] p utf8 문자
+/// @param[out] len 문자 길이
+/// @return ucs4 문자
+/// @warning 인수에 대한 널 검사를 하지 않는다
+QSAPI uchar4 qn_u8cbc(const char* p, int* len);
 
 /// @brief UTF-8 다음 글자
 /// @param[in] s utf8 문자열
 /// @return 다음 글자 위치
+/// @warning 인수에 대한 널 검사를 하지 않는다
 QSAPI const char* qn_u8nch(const char* s);
 
 /// @brief UTF-8 글자 길이
@@ -2420,6 +2430,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 	FINLINE void PFX##_sp_erase_all(NAME* hash);													\
 	FINLINE void PFX##_sp_erase_node(NAME* hash, NAME##Node** en);									\
 	FINLINE void PFX##_sp_set(NAME* hash, KEYTYPE* pkey, VALUETYPE* pvalue, bool replace);			\
+	FINLINE VALUETYPE* PFX##_sp_ins(NAME* hash, KEYTYPE* pkey, bool replace);						\
 	FINLINE size_t PFX##_count(const NAME *hash)													\
 	{																								\
 		return hash->COUNT;																			\
@@ -2501,9 +2512,28 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 		PFX##_sp_erase_node(hash, &node);															\
 		PFX##_sp_test_size(hash);																	\
 	}																								\
+	FINLINE bool PFX##_remove(NAME* hash, const KEYTYPE key)										\
+	{																								\
+		if (PFX##_sp_erase(hash, &key) == false)													\
+			return false;																			\
+		PFX##_sp_test_size(hash);																	\
+		return true;																				\
+	}																								\
+	FINLINE bool PFX##_remove_ptr(NAME* hash, const KEYTYPE* pkey)									\
+	{																								\
+		if (PFX##_sp_erase(hash, pkey) == false)													\
+			return false;																			\
+		PFX##_sp_test_size(hash);																	\
+		return true;																				\
+	}																								\
 	FINLINE VALUETYPE* PFX##_get(const NAME* hash, const KEYTYPE key)								\
 	{																								\
 		NAME##Node** gn = PFX##_sp_lookup(hash, &key);												\
+		return *gn ? &(*gn)->VALUE : NULL;															\
+	}																								\
+	FINLINE VALUETYPE* PFX##_get_ptr(const NAME* hash, const KEYTYPE* pkey)							\
+	{																								\
+		NAME##Node** gn = PFX##_sp_lookup(hash, pkey);												\
 		return *gn ? &(*gn)->VALUE : NULL;															\
 	}																								\
 	FINLINE void PFX##_add(NAME* hash, KEYTYPE key, VALUETYPE value)								\
@@ -2514,18 +2544,6 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 	{																								\
 		PFX##_sp_set(hash, &key, &value, true);														\
 	}																								\
-	FINLINE bool PFX##_remove(NAME* hash, const KEYTYPE key)										\
-	{																								\
-		if (PFX##_sp_erase(hash, &key) == false)													\
-			return false;																			\
-		PFX##_sp_test_size(hash);																	\
-		return true;																				\
-	}																								\
-	FINLINE VALUETYPE* PFX##_get_ptr(const NAME* hash, const KEYTYPE* pkey)							\
-	{																								\
-		NAME##Node** gn = PFX##_sp_lookup(hash, pkey);												\
-		return *gn ? &(*gn)->VALUE : NULL;															\
-	}																								\
 	FINLINE void PFX##_add_ptr(NAME* hash, KEYTYPE* pkey, VALUETYPE* pvalue)						\
 	{																								\
 		PFX##_sp_set(hash, pkey, pvalue, false);													\
@@ -2534,12 +2552,21 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 	{																								\
 		PFX##_sp_set(hash, pkey, pvalue, true);														\
 	}																								\
-	FINLINE bool PFX##_remove_ptr(NAME* hash, const KEYTYPE* pkey)									\
+	FINLINE VALUETYPE* PFX##_add_key(NAME* hash, KEYTYPE key)										\
 	{																								\
-		if (PFX##_sp_erase(hash, pkey) == false)													\
-			return false;																			\
-		PFX##_sp_test_size(hash);																	\
-		return true;																				\
+		return PFX##_sp_ins(hash, &key, false);														\
+	}																								\
+	FINLINE VALUETYPE* PFX##_set_key(NAME* hash, KEYTYPE key)										\
+	{																								\
+		return PFX##_sp_ins(hash, &key, true);														\
+	}																								\
+	FINLINE VALUETYPE* PFX##_add_key_ptr(NAME* hash, KEYTYPE* pkey)									\
+	{																								\
+		return PFX##_sp_ins(hash, pkey, false);														\
+	}																								\
+	FINLINE VALUETYPE* PFX##_set_key_ptr(NAME* hash, KEYTYPE* pkey)									\
+	{																								\
+		return PFX##_sp_ins(hash, pkey, true);														\
 	}
 
 
@@ -2626,20 +2653,50 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 			return true;																			\
 		}																							\
 	}																								\
+	FINLINE VALUETYPE* PFX##_sp_ins(NAME* hash, KEYTYPE* pkey, bool replace)						\
+	{																								\
+		size_t ah;																					\
+		NAME##Node** an = PFX##_sp_lookhash(hash, (const KEYTYPE*)pkey, &ah);						\
+		NAME##Node* ann = *an;																		\
+		if (ann != NULL) {																			\
+			KEYFREE(pkey);																			\
+			if (replace == false)																	\
+				return NULL;																		\
+			else {																					\
+				VALUEFREE(&ann->VALUE);																\
+				return &ann->VALUE;																	\
+			}																						\
+		} else {																					\
+			ann = qn_alloc_1(NAME##Node);															\
+			ann->SIB = NULL;																		\
+			ann->HASH = ah;																			\
+			ann->KEY = *pkey;																		\
+			ann->NEXT = NULL;																		\
+			ann->PREV = hash->TAIL;																	\
+			if (hash->TAIL)																			\
+				hash->TAIL->NEXT = ann;																\
+			else																					\
+				hash->HEAD = ann;																	\
+			hash->TAIL = ann;																		\
+			*an = ann;																				\
+			hash->REVISION++;																		\
+			hash->COUNT++;																			\
+			PFX##_sp_test_size(hash);																\
+			return &ann->VALUE;																		\
+		}																							\
+	}																								\
 	FINLINE void PFX##_sp_set(NAME* hash, KEYTYPE* pkey, VALUETYPE* pvalue, bool replace)			\
 	{																								\
 		size_t ah;																					\
 		NAME##Node** an = PFX##_sp_lookhash(hash, (const KEYTYPE*)pkey, &ah);						\
 		NAME##Node* ann = *an;																		\
 		if (ann != NULL) {																			\
-			if (replace) {																			\
-				KEYFREE(&ann->KEY);																	\
-				VALUEFREE(&ann->VALUE);																\
-				ann->KEY = *pkey;																	\
-				ann->VALUE = *pvalue;																\
-			} else {																				\
-				KEYFREE(pkey);																		\
+			KEYFREE(pkey);																			\
+			if (replace == false)																	\
 				VALUEFREE(pvalue);																	\
+			else {																					\
+				VALUEFREE(&ann->VALUE);																\
+				ann->VALUE = *pvalue;																\
 			}																						\
 		} else {																					\
 			ann = qn_alloc_1(NAME##Node);															\
@@ -2819,20 +2876,43 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 			return true;																			\
 		}																							\
 	}																								\
+	FINLINE VALUETYPE* PFX##_sp_ins(NAME* mukum, KEYTYPE* pkey, bool replace)						\
+	{																								\
+		size_t ah;																					\
+		NAME##Node** an = PFX##_sp_lookhash(mukum, (const KEYTYPE*)pkey, &ah);						\
+		NAME##Node* ann = *an;																		\
+		if (ann != NULL) {																			\
+			KEYFREE(pkey);																			\
+			if (replace == false)																	\
+				return NULL;																		\
+			else {																					\
+				VALUEFREE(&ann->VALUE);																\
+				return &ann->VALUE;																	\
+			}																						\
+		} else {																					\
+			ann = qn_alloc_1(NAME##Node);															\
+			ann->SIB = NULL;																		\
+			ann->HASH = ah;																			\
+			ann->KEY = *pkey;																		\
+			*an = ann;																				\
+			mukum->REVISION++;																		\
+			mukum->COUNT++;																			\
+			PFX##_sp_test_size(mukum);																\
+			return &ann->VALUE;																		\
+		}																							\
+	}																								\
 	FINLINE void PFX##_sp_set(NAME* mukum, KEYTYPE* pkey, VALUETYPE* pvalue, bool replace)			\
 	{																								\
 		size_t ah;																					\
 		NAME##Node** an = PFX##_sp_lookhash(mukum, (const KEYTYPE*)pkey, &ah);						\
 		NAME##Node* ann = *an;																		\
 		if (ann != NULL) {																			\
-			if (replace) {																			\
-				KEYFREE(&ann->KEY);																	\
-				VALUEFREE(&ann->VALUE);																\
-				ann->KEY = *pkey;																	\
-				ann->VALUE = *pvalue;																\
-			} else {																				\
-				KEYFREE(pkey);																		\
+			KEYFREE(pkey);																			\
+			if (replace == false)																	\
 				VALUEFREE(pvalue);																	\
+			else {																					\
+				VALUEFREE(&ann->VALUE);																\
+				ann->VALUE = *pvalue;																\
 			}																						\
 		} else {																					\
 			ann = qn_alloc_1(NAME##Node);															\

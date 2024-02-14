@@ -114,6 +114,15 @@
     <ClInclude Include="..\..\src\supp\vurtun\sinfl.h">
       <Filter>헤더 파일\supp\vurtun</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\qg\qg_primtype.h">
+      <Filter>헤더 파일\qg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\supp\stb\stb_rect_pack.h">
+      <Filter>헤더 파일\supp\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\supp\stb\stb_truetype.h">
+      <Filter>헤더 파일\supp\stb</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\qn\qn.c">
@@ -174,6 +183,9 @@
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qg\qg_image.c">
+      <Filter>소스 파일\qg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qg_font.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
   </ItemGroup>

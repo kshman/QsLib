@@ -380,7 +380,7 @@ void* qn_memzucp_s(const void* src, const size_t srcsize, const size_t destsize)
 	qn_return_when_fail(src != NULL, NULL);
 	qn_return_when_fail(srcsize > 0, NULL);
 	qn_return_when_fail(destsize > 0, NULL);
-	
+
 	byte* p = qn_alloc(destsize + 4, byte);
 	const int ret = sinflate(p, (int)destsize, src, (int)srcsize);
 	if (ret != (int)destsize)
@@ -1938,6 +1938,71 @@ uchar4 qn_u8cbn(const char* p)
 }
 
 //
+uchar4 qn_u8cbc(const char* p, int* len)
+{
+	int mask;
+	const byte ch = (byte)*p;
+
+	if (ch < 128)
+	{
+		*len = 1;
+		mask = 0x7f;
+	}
+	else if ((ch & 0xe0) == 0xc0)
+	{
+		*len = 2;
+		mask = 0x1f;
+	}
+	else if ((ch & 0xf0) == 0xe0)
+	{
+		*len = 3;
+		mask = 0x0f;
+	}
+	else if ((ch & 0xf8) == 0xf0)
+	{
+		*len = 4;
+		mask = 0x07;
+	}
+	else if ((ch & 0xfc) == 0xf8)
+	{
+		*len = 5;
+		mask = 0x03;
+	}
+	else if ((ch & 0xfe) == 0xfc)
+	{
+		*len = 6;
+		mask = 0x01;
+	}
+	else
+	{
+		*len = -1;
+		mask = 0;
+	}
+
+	if (len < 0)
+	{
+		// 사용하지 않는 문자 코드
+		// 0xFFFFFFFF
+		return (uchar4)-1;
+	}
+	else
+	{
+		// UCS4로 변환
+		uchar4 ret = (uchar4)(p[0] & mask);
+		for (int i = 1; i < *len; i++)
+		{
+			if ((p[i] & 0xC0) != 0x80)
+				return 0;
+
+			ret <<= 6;
+			ret |= (p[i] & 0x3F);
+		}
+
+		return ret;
+	}
+}
+
+//
 const char* qn_u8nch(const char* s)
 {
 	static const char utf8_skips[256] =
@@ -2011,7 +2076,7 @@ pos_done:
 	return ((size_t)(t - s) - cnt);
 #undef MASK
 #endif
-		}
+}
 
 //
 char* qn_u8ncpy(char* dest, const char* src, size_t len)
@@ -2682,7 +2747,7 @@ size_t qn_u32to16(uchar2* dest, size_t destsize, const uchar4* src, const size_t
 	}
 
 	return size;
-		}
+}
 
 #ifdef QS_NO_MEMORY_PROFILE
 #define DEF_UTF_DUP(name, in_type, out_type)\

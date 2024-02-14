@@ -94,6 +94,7 @@
     <ClInclude Include="..\..\inc\salieri.h" />
     <ClInclude Include="..\..\src\pch.h" />
     <ClInclude Include="..\..\src\qg\qg_node.h" />
+    <ClInclude Include="..\..\src\qg\qg_primtype.h" />
     <ClInclude Include="..\..\src\qn\PatrickPowell_snprintf.h" />
     <ClInclude Include="..\..\src\qs_conf.h" />
     <ClInclude Include="..\..\src\qs_proxy.h" />
@@ -107,12 +108,15 @@
     <ClInclude Include="..\..\src\supp\glad\wgl.h" />
     <ClInclude Include="..\..\src\supp\glad\wglext.h" />
     <ClInclude Include="..\..\src\supp\stb\stb_image.h" />
+    <ClInclude Include="..\..\src\supp\stb\stb_rect_pack.h" />
+    <ClInclude Include="..\..\src\supp\stb\stb_truetype.h" />
     <ClInclude Include="..\..\src\supp\vurtun\sdefl.h" />
     <ClInclude Include="..\..\src\supp\vurtun\sinfl.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\zconsole\zz.c" />
     <ClCompile Include="..\..\src\pch.c" />
+    <ClCompile Include="..\..\src\qg\qg_font.c" />
     <ClCompile Include="..\..\src\qg\qg_image.c" />
     <ClCompile Include="..\..\src\qg\qg_rdh.c" />
     <ClCompile Include="..\..\src\qg\qg_stub.c" />

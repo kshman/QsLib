@@ -482,7 +482,7 @@ bool qg_draw_indexed(QgTopology tpg, int indices)
 }
 
 //
-void qg_draw_sprite(const QmRect* bound, const QmColor* color, QgTexture* texture, const QmVec* coord)
+void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmColor* color, const QmVec* coord)
 {
 	VAR_CHK_IF_NULL(bound, );
 	if (color == NULL)
@@ -492,11 +492,11 @@ void qg_draw_sprite(const QmRect* bound, const QmColor* color, QgTexture* textur
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	qn_cast_vtable(rdh, RDHBASE)->draw_sprite(bound, color, texture, coord);
+	qn_cast_vtable(rdh, RDHBASE)->draw_sprite(bound, texture, color, coord);
 }
 
 //
-void qg_draw_sprite_ex(const QmRect* bound, float angle, const QmColor* color, QgTexture* texture, const QmVec* coord)
+void qg_draw_sprite_ex(const QmRect* bound, float angle, QgTexture* texture, const QmColor* color, const QmVec* coord)
 {
 	VAR_CHK_IF_NULL(bound, );
 	if (color == NULL)
@@ -506,7 +506,7 @@ void qg_draw_sprite_ex(const QmRect* bound, float angle, const QmColor* color, Q
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	qn_cast_vtable(rdh, RDHBASE)->draw_sprite_ex(bound, angle, color, texture, coord);
+	qn_cast_vtable(rdh, RDHBASE)->draw_sprite_ex(bound, angle, texture, color, coord);
 }
 
 

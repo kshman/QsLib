@@ -15,6 +15,7 @@
     <AlternativeType Name="QglCtnUniform"/>
     <AlternativeType Name="QglCtnAttr"/>
     <AlternativeType Name="QglCtnConfig"/>
+    <AlternativeType Name="QglArrayOrthoBatch"/>
     <DisplayString>[갯수: {COUNT}]</DisplayString>
     <Expand>
       <Item Name="[갯수]">COUNT</Item>

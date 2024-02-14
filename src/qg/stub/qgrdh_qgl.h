@@ -6,6 +6,7 @@
 #pragma once
 
 #include "qg/qg_stub.h"
+#include "qg/qg_primtype.h"
 #ifdef _QN_MOBILE_
 #define QGL_LINK_STATIC		1
 #endif
@@ -129,16 +130,28 @@ typedef struct QGLRASTERIZER
 {
 	GLenum				fill;
 	GLenum				cull;
-	bool				scissor;
 	float				depth_bias;
 	float				slope_scale;
+	bool				scissor;
+	bool				bias;
 } QglRasterizer;
+
+// 2D 배치
+typedef struct QGLORTHOBATCH
+{
+	QgBatchCmd			cmd;	
+	GLint				offset;
+	GLsizei				count;
+	GLuint				gl_tex;
+	bool				glyph;
+} QglOrthoBatch;
 
 // 컨터이너
 QN_DECLIMPL_CTNR(QglCtnConfig, QglConfig, qgl_cfg_ctnr);			// 컨피그
 QN_DECLIMPL_CTNR(QglCtnLayoutInput, QglLayoutInput, qgl_li_ctnr);	// 레이아웃 입력
 QN_DECLIMPL_CTNR(QglCtnUniform, QgVarShader, qgl_uni_ctnr);			// 세이더 유니폼
 QN_DECLIMPL_CTNR(QglCtnAttr, QglVarAttr, qgl_attr_ctnr);			// 세이더 어트리뷰트
+QN_DECLIMPL_ARRAY(QglArrayOrthoBatch, QglOrthoBatch, qgl_ortho_batch_array);
 
 // 세션 데이터
 typedef struct QGLSESSION
@@ -195,12 +208,17 @@ typedef struct QGLRESOURCE
 	char				hdr_vertex[256];
 	char				hdr_fragment[256];
 
-	QglRenderState*		ortho_render;
-	QglRenderState*		glyph_render;
-
 	QglTexture*			white_texture;
-	QglBuffer*			sprite_buffer;
-	byte*				sprite_data;
+
+	struct QGLRESOURCE_ORTHO
+	{
+		QglRenderState*		render;
+		QglRenderState*		glyph;
+		QglBuffer*			vertex;
+		OrthoVertex*		data;
+		size_t				data_count;
+		QglArrayOrthoBatch	batches;
+	}					ortho;
 } QglResource;
 
 // GL 렌더 디바이스
