@@ -356,6 +356,16 @@ typedef enum QGTEXFLAG
 	QGTEXSPEC_ARRAY = QN_BIT(31),							/// @brief 배열 텍스쳐
 } QgTexFlag;
 
+/// @brief 배치
+typedef enum QGBATCHCMD
+{
+	QGBTC_NONE,
+	QGBTC_LINE,
+	QGBTC_TRI,
+	QGBTC_RECT,
+	QGBTC_MAX_VALE,
+} QgBatchCmd;
+
 /// @brief 스터브와 렌더러 만들 때 플래그
 typedef enum QGFLAG
 {
@@ -1222,8 +1232,9 @@ QSAPI const char* qg_qic_to_str(QicButton button);
 
 typedef struct QGBUFFER			QgBuffer;						/// @brief 버퍼
 typedef struct QGRENDERSTATE	QgRenderState;					/// @brief 렌더 파이프라인
-typedef struct QGIMAGE			QgImage;						/// @brief 이미지
 typedef struct QGTEXTURE		QgTexture;						/// @brief 텍스쳐
+typedef struct QGIMAGE			QgImage;						/// @brief 이미지
+typedef struct QGFONT			QgFont;							/// @brief 폰트
 
 /// @brief 세이더 콜백
 /// @details 두번째 인수(int)는 qn_get_key로 얻어진 키 값을 전달하므로 자동 변수가 아닐 경우
@@ -1382,18 +1393,18 @@ QSAPI bool qg_draw_indexed(QgTopology tpg, int indices);
 
 /// @brief 텍스쳐 스프라이트를 그린다
 /// @param bound 그릴 영역
+/// @param texture 텍스쳐 (널이면 색깔만 사용)
 /// @param color 색깔 (널이면 흰색)
-/// @param texture 텍스쳐
 /// @param coord 텍스쳐 좌표 (널이면 전체 텍스쳐)
-QSAPI void qg_draw_sprite(const QmRect* bound, const QmColor* color, QgTexture* texture, const QmVec* coord);
+QSAPI void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmColor* color, const QmVec* coord);
 
 /// @brief 텍스쳐 스프라이트를 회전시켜 그린다
 /// @param bound 그릴 영영역
 /// @param angle 회전 각도(호도)
+/// @param texture 텍스쳐 (널이면 색깔만 사용)
 /// @param color 색깔 (널이면 흰색)
-/// @param texture 텍스쳐
 /// @param coord 텍스쳐 좌표 (널이면 전체 텍스쳐)
-QSAPI void qg_draw_sprite_ex(const QmRect* bound, float angle, const QmColor* color, QgTexture* texture, const QmVec* coord);
+QSAPI void qg_draw_sprite_ex(const QmRect* bound, float angle, QgTexture* texture, const QmColor* color, const QmVec* coord);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1483,21 +1494,61 @@ struct QGIMAGE
 };
 
 /// @brief 빈 이미지를 만든다
+/// @param fmt 이미지 포맷
+/// @param width 이미지 너비
+/// @param height 이미지 높이
+/// @return 만들어진 이미지
 QSAPI QgImage* qg_create_image(QgClrFmt fmt, int width, int height);
 
+/// @brief 버퍼로 이미지를 만든다. 버퍼는 압축되지 않은 날(RAW) 이미지 데이터이어야 한다
+/// @param fmt 이미지 포맷
+/// @param width 이미지 너비
+/// @param height 이미지 높이
+/// @param data 이미지 데이터 
+/// @return 만들어진 이미지
+/// @warning 각 인수에 대해 유효성을 검사하지 않는다! 즉, 안전하지 않은 함수이다. 한편,
+/// 이미지 데이터는 이미지가 관리하기 때문에 해제하면 안된다. 임시 메모리를 전달해도 안되며 반드시 할당한 데이터 일 것
+QSAPI QgImage* qg_create_image_buffer(QgClrFmt fmt, int width, int height, void* data);
+
 /// @brief 색깔로 채운 이미지를 만든다
+/// @param width 이미지 너비
+/// @param height 이미지 높이
+/// @param color 채울 색깔
+/// @return 만들어진 이미지
 QSAPI QgImage* qg_create_image_filled(int width, int height, const QmColor* color);
 
 /// @brief 선형 그라디언트 이미지를 만든다
+/// @param width 이미지 너비
+/// @param height 이미지 높이
+/// @param begin 시작 색깔
+/// @param end 끝 색깔
+/// @param direction 방향
+/// @return 만들어진 이미지
 QSAPI QgImage* qg_create_image_gradient_linear(int width, int height, const QmColor* begin, const QmColor* end, float direction);
 
 /// @brief 원형 그라디언트 이미지를 만든다
+/// @param width 이미지 너비
+/// @param height 이미지 높이
+/// @param inner 안쪽 색깔
+/// @param outer 바깥 색깔
+/// @param density 밀도
+/// @return 만들어진 이미지
 QSAPI QgImage* qg_create_image_gradient_radial(int width, int height, const QmColor* inner, const QmColor* outer, float density);
 
 /// @brief 격자 패턴	이미지를 만든다
+/// @param width 이미지 너비
+/// @param height 이미지 높이
+/// @param oddColor 홀수 색깔
+/// @param evenColor 짝수 색깔
+/// @param checkWidth 체크 너비
+/// @param checkHeight 체크 높이
+/// @return 만들어진 이미지
 QSAPI QgImage* qg_create_image_check_pattern(int width, int height, const QmColor* oddColor, const QmColor* evenColor, int checkWidth, int checkHeight);
 
 /// @brief 이미지를 이미지 형식이 담긴 데이터로 부터 만든다
+/// @param data 이미지 데이터
+/// @param size 이미지 데이터 크기
+/// @return 만들어진 이미지
 QSAPI QgImage* qg_load_image_buffer(const void* data, int size);
 
 /// @brief 이미지를 파일에서 읽어 만든다
@@ -1508,6 +1559,49 @@ QSAPI QgImage* qg_load_image(int mount, const char* filename);
 
 /// @brief 이미지에 점을 찍는다
 QSAPI bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* color);
+
+
+// 글꼴
+struct QGFONT
+{
+	QN_GAM_BASE(QNGAMBASE);
+
+	char*				name;
+	int					size;
+	QmVec4				color;
+};
+
+/// @brief 글꼴을 만든다
+/// @param mount 마운트 번호
+/// @param filename 파일 이름
+/// @param font_base_size 기본 글꼴 크기
+/// @return 만들어진 글꼴
+QSAPI QgFont* qg_load_font(int mount, const char* filename, int font_base_size);
+
+/// @brief 글꼴을 버퍼에서 만든다
+/// @param data 글꼴 데이터
+/// @param data_size 글꼴 데이터 크기
+/// @param font_base_size 기본 글꼴 크기
+/// @return 만들어진 글꼴
+/// @warning 글꼴 데이터는 글꼴이 관리하기 때문에 해제하면 안된다. 임시 메모리를 전달해도 안되며 반드시 할당한 데이터 일 것
+QSAPI QgFont* qg_load_font_buffer(void* data, int data_size, int font_base_size);
+
+/// @brief 글꼴 크기를 설정한다
+/// @param self 글꼴
+/// @param size 글꼴 크기
+QSAPI void qg_font_set_size(QgFont* self, int size);
+
+/// @brief 글꼴 색깔을 설정한다
+/// @param self 글꼴
+/// @param color 글꼴 색깔
+INLINE void QM_VECTORCALL qg_font_set_color(QgFont* self, const QmColor color) { self->color = color; }
+
+/// @brief 문자열을 그린다
+/// @param font 글꼴
+/// @param x x 좌표
+/// @param y y 좌표
+/// @param text 문자열
+QSAPI int qg_font_draw(QgFont* self, int x, int y, const char* text);
 
 
 //////////////////////////////////////////////////////////////////////////

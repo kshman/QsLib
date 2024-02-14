@@ -358,7 +358,7 @@ static bool image_loader_astc(const byte* data, uint size, QgImage* image)
 // 이미지 기본
 
 #undef VAR_CHK_NAME
-#define VAR_CHK_NAME	"IMAGE"
+#define VAR_CHK_NAME	"Image"
 
 //
 static void qg_image_dispose(QnGam gam)
@@ -394,6 +394,19 @@ QgImage* qg_create_image(QgClrFmt fmt, int width, int height)
 	self->mipmaps = 1;
 	const size_t size = (uint)qg_calc_image_block_size(prop, width, height);
 	self->data = qn_alloc(size, byte);
+	return self;
+}
+
+//
+QgImage* qg_create_image_buffer(QgClrFmt fmt, int width, int height, void* data)
+{
+	QgImage* self = qg_image();
+	self->prop = *qg_get_prop_pixel(fmt);
+	self->width = width;
+	self->height = height;
+	self->pitch = width * self->prop.tbp;
+	self->mipmaps = 1;
+	self->data = data;
 	return self;
 }
 

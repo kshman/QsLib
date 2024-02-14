@@ -247,8 +247,8 @@ QN_DECL_VTABLE(RDHBASE)
 
 	bool (*draw)(QgTopology, int);
 	bool (*draw_indexed)(QgTopology, int);
-	void (*draw_sprite)(const QmRect*, const QmVec*, void/*QgTexture*/*, const QmVec*);
-	void (*draw_sprite_ex)(const QmRect*, float, const QmVec*, void/*QgTexture*/*, const QmVec*);
+	void (*draw_sprite)(const QmRect*, void/*QgTexture*/*, const QmVec*, const QmVec*);
+	void (*draw_sprite_ex)(const QmRect*, float, void/*QgTexture*/*, const QmVec*, const QmVec*);
 };
 
 // 렌더 디바이스
