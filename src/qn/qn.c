@@ -4,13 +4,31 @@
 //
 
 #include "pch.h"
+#ifdef _QN_UNIX_
+#include <unistd.h>
+#endif
+#ifdef _QN_EMSCRIPTEN_
+#include <emscripten/console.h>
+#endif
+#ifdef _QN_ANDROID_
+#include <android/log.h>
+#endif
+
+#ifdef DEBUG_BREAK
+#error macro _DEBUG_BREAK already defined!
+#endif
+#ifdef _QN_WINDOWS_
+#define DEBUG_BREAK(x)			if (x) DebugBreak()
+#elif defined _QN_EMSCRIPTEN_
+#define DEBUG_BREAK(x)
+#else
+#define DEBUG_BREAK(x)			if (x) raise(SIGTRAP)
+#endif
 
 //
 extern void qn_cycle_up(void);
 extern void qn_mpf_up(void);
 extern void qn_mpf_down(void);
-extern void qn_debug_up(void);
-extern void qn_debug_down(void);
 extern void qn_module_up(void);
 extern void qn_module_down(void);
 extern void qn_thread_up(void);
@@ -19,6 +37,7 @@ extern void qn_thread_down(void);
 struct PROPDATA;
 static nint _sym_set(const char* name);
 static void _prop_data_dispose(struct PROPDATA* data);
+static void _prop_set(nint key, const char* value);
 
 // 심볼
 typedef struct SYMDATA
@@ -61,9 +80,23 @@ static struct RUNTIMEIMPL
 	SymMukum		symbols;
 	SymArray		symarray;
 	PropMukum		props;
+
+	char			tag[32];
+	char			out_buf[MAX_DEBUG_LENGTH];
+	nint			out_pos;
+
+#ifdef _QN_WINDOWS_
+	HANDLE			fd;
+#else
+	int				fd;
+#endif
+
+	bool			debugger;
+	bool			redirect;
 } runtime_impl =
 {
 	.inited = false,
+	.tag = "QS",
 };
 
 #if !defined _LIB && !defined _STATIC
@@ -102,7 +135,14 @@ static void qn_runtime_down(void)
 	qn_thread_down();
 	qn_module_down();
 	qn_mpf_down();
-	qn_debug_down();
+
+#ifdef _QN_WINDOWS_
+	if (runtime_impl.redirect && runtime_impl.fd != NULL)
+		CloseHandle(runtime_impl.fd);
+#else
+	if (runtime_impl.redirect && runtime_impl.fd >= 3)
+		close(runtime_impl.fd);
+#endif
 }
 
 // 런타임 올림
@@ -112,11 +152,16 @@ static void qn_runtime_up(void)
 
 #ifdef _QN_WINDOWS_
 	// 콘솔창을 UTF-8로 설정!!!!!!!!
+	SetConsoleCP(65001);
 	SetConsoleOutputCP(65001);
+
+	runtime_impl.fd = GetStdHandle(STD_OUTPUT_HANDLE);
+	runtime_impl.debugger = IsDebuggerPresent();
+#else
+	runtime_impl.fd = STDOUT_FILENO;
 #endif
 
 	qn_cycle_up();
-	qn_debug_up();
 	qn_mpf_up();
 	qn_module_up();
 	qn_thread_up();
@@ -127,9 +172,10 @@ static void qn_runtime_up(void)
 	_prop_mukum_init_fast(&runtime_impl.props);
 
 	_sym_array_add(&runtime_impl.symarray, NULL);	// 심볼을 1번부터니깐 0을 채워 넣기 위함
-	_sym_set("QS");
-	_sym_set("QSLIB");
-	_sym_set("KIM");
+	_prop_set(_sym_set("QSLIB"), qn_version());
+#define MAKE_BUILD_DATIME	__DATE__ " " __TIME__
+	_prop_set(_sym_set("KIM"), MAKE_BUILD_DATIME);
+#undef MAKE_BUILD_DATIME
 
 #if defined _LIB || defined _STATIC
 	(void)atexit(qn_runtime_down);
@@ -146,7 +192,7 @@ void qn_runtime(void)
 //
 const char* qn_version(void)
 {
-#define MAKE_VERSION_STRING(a,b)	"QS VERSION " QN_STRING(a) "." QN_STRING(b)
+#define MAKE_VERSION_STRING(a,b)	QN_STRING(a) "." QN_STRING(b)
 	static const char* version_string = MAKE_VERSION_STRING(QN_VERSION_MAJOR, QN_VERSION_MINER);
 	return version_string;
 #undef MAKE_VERSION_STRING
@@ -295,6 +341,34 @@ static void _prop_data_dispose(struct PROPDATA* data)
 		qn_free(data->value);
 }
 
+// 프로퍼티 설정
+static void _prop_set(nint key, const char* value)
+{
+	PropMukumNode* node = qn_alloc_1(PropMukumNode);
+	node->KEY = key;
+	node->VALUE.key = key;
+	if (strlen(value) < 64)
+	{
+		node->VALUE.value = node->VALUE.intern;
+		qn_strcpy(node->VALUE.intern, value);
+		node->VALUE.alloc = false;
+	}
+	else
+	{
+		node->VALUE.value = qn_strdup(value);
+		node->VALUE.intern[0] = '\0';
+		node->VALUE.alloc = true;
+	}
+	_prop_mukum_node_add(&runtime_impl.props, node);
+}
+
+// 프로퍼티 얻기
+static const char* _prop_get(nint key)
+{
+	PropData* ret = _prop_mukum_get(&runtime_impl.props, key);
+	return ret == NULL ? NULL : ret->value;
+}
+
 //
 void qn_set_prop(const char* name, const char* value)
 {
@@ -305,25 +379,7 @@ void qn_set_prop(const char* name, const char* value)
 	if (value == NULL || *value == '\0')
 		_prop_mukum_remove(&runtime_impl.props, key);
 	else
-	{
-		size_t len = strlen(value);
-		PropMukumNode* node = qn_alloc_1(PropMukumNode);
-		node->KEY = key;
-		node->VALUE.key = key;
-		if (len < 64)
-		{
-			node->VALUE.value = node->VALUE.intern;
-			qn_strcpy(node->VALUE.intern, value);
-			node->VALUE.alloc = false;
-		}
-		else
-		{
-			node->VALUE.value = qn_strdup(value);
-			node->VALUE.intern[0] = '\0';
-			node->VALUE.alloc = true;
-		}
-		_prop_mukum_node_add(&runtime_impl.props, node);
-	}
+		_prop_set(key, value);
 	QN_UNLOCK(runtime_impl.lock);
 }
 
@@ -334,9 +390,9 @@ const char* qn_get_prop(const char* name)
 	qn_return_when_fail(key != 0, NULL);
 
 	QN_LOCK(runtime_impl.lock);
-	PropData* ret = _prop_mukum_get(&runtime_impl.props, key);
+	const char* ret = _prop_get(key);
 	QN_UNLOCK(runtime_impl.lock);
-	return ret == NULL ? NULL : ret->value;
+	return ret;
 }
 
 //
@@ -374,6 +430,172 @@ void qn_prop_dbgout(void)
 	}
 	qn_mesgf(false, "PROP", "total properties: %zu", _prop_mukum_count(&runtime_impl.props));
 	QN_UNLOCK(runtime_impl.lock);
+}
+
+//
+static void _out_buf_ch(const int ch)
+{
+	if (1 + runtime_impl.out_pos > MAX_DEBUG_LENGTH - 1)
+		return;
+	runtime_impl.out_buf[runtime_impl.out_pos++] = (char)ch;
+}
+
+//
+static void _out_buf_str(const char* s)
+{
+	nint len = (nint)strlen(s);
+	if (len + runtime_impl.out_pos > MAX_DEBUG_LENGTH - 1)
+		len = MAX_DEBUG_LENGTH - runtime_impl.out_pos - 1;
+	if (len <= 0)
+		return;
+	memcpy(runtime_impl.out_buf + runtime_impl.out_pos, s, (size_t)len);
+	runtime_impl.out_pos += len;
+}
+
+//
+static void _out_buf_va(const char* fmt, va_list va)
+{
+	const int len = qn_vsnprintf(runtime_impl.out_buf + runtime_impl.out_pos, MAX_DEBUG_LENGTH - (size_t)runtime_impl.out_pos, fmt, va);
+	if (len > 0)
+		runtime_impl.out_pos += len;
+}
+
+//
+static void _out_buf_int(const int value)
+{
+	const int len = qn_itoa(runtime_impl.out_buf + runtime_impl.out_pos, value, 10, true);
+	runtime_impl.out_pos += len;
+}
+
+//
+static void _out_buf_head(const char* head)
+{
+	if (head == NULL)
+		return;
+	_out_buf_ch('[');
+	_out_buf_str(head);
+	_out_buf_str("] ");
+}
+
+//
+static nint _out_buf_flush(bool debug_output)
+{
+	qn_return_when_fail(runtime_impl.out_pos > 0, 0);
+	runtime_impl.out_buf[runtime_impl.out_pos] = '\0';
+#ifdef _QN_WINDOWS_
+	if (runtime_impl.fd != NULL)
+	{
+		DWORD wtn;
+		if (runtime_impl.redirect ||
+			WriteConsoleA(runtime_impl.fd, runtime_impl.out_buf, (DWORD)runtime_impl.out_pos, &wtn, NULL) == 0)
+			WriteFile(runtime_impl.fd, runtime_impl.out_buf, (DWORD)runtime_impl.out_pos, &wtn, NULL);
+	}
+	if (runtime_impl.debugger && debug_output)
+	{
+		// 유니코드로 보내야할지 나중에 확인해보자
+		OutputDebugStringA(runtime_impl.out_buf);
+	}
+#else
+	if (runtime_impl.fd != STDIN_FILENO)
+		write(runtime_impl.fd, runtime_impl.out_buf, (size_t)runtime_impl.out_pos);
+#ifdef __EMSCRIPTEN__
+	// 콘솔에 두번 나오니깐 한번만 출력하자
+	//if (debug_output)
+	//	emscripten_console_log(runtime_impl.out_buf);
+#endif
+#ifdef _QN_ANDROID_
+	if (debug_output)
+		__android_log_print(ANDROID_LOG_VERBOSE, runtime_impl.tag, runtime_impl.out_buf);
+#endif
+#endif
+	const nint ret = runtime_impl.out_pos;
+	runtime_impl.out_pos = 0;
+	return ret;
+}
+
+//
+int qn_asrt(const char* expr, const char* mesg, const char* filename, const int line)
+{
+	qn_return_when_fail(expr, -1);
+	_out_buf_str("ASSERT FAILED : ");
+	_out_buf_str(" (filename=\"");
+	_out_buf_str(filename);
+	_out_buf_str("\", line=");
+	_out_buf_int(line);
+	_out_buf_str(")\n\t: ");
+	_out_buf_str(expr);
+	if (mesg == NULL)
+		_out_buf_str(">\n");
+	else
+	{
+		_out_buf_str(">\n\t: [");
+		_out_buf_str(mesg);
+		_out_buf_str("]\n");
+	}
+	_out_buf_flush(true);
+
+	DEBUG_BREAK(runtime_impl.debugger);
+	return 0;
+}
+
+//
+_Noreturn void qn_halt(const char* head, const char* mesg)
+{
+	_out_buf_str("HALT ");
+	_out_buf_head(head);
+	_out_buf_str(mesg);
+	_out_buf_ch('\n');
+	_out_buf_flush(true);
+
+	DEBUG_BREAK(runtime_impl.debugger);
+	abort();
+}
+
+//
+int qn_mesg(const bool breakpoint, const char* head, const char* mesg)
+{
+	_out_buf_head(head);
+	_out_buf_str(mesg);
+	_out_buf_ch('\n');
+	const int len = (int)_out_buf_flush(true);
+
+	DEBUG_BREAK(breakpoint && runtime_impl.debugger);
+	return len;
+}
+
+//
+int qn_mesgf(const bool breakpoint, const char* head, const char* fmt, ...)
+{
+	_out_buf_head(head);
+	va_list va;
+	va_start(va, fmt);
+	_out_buf_va(fmt, va);
+	va_end(va);
+	_out_buf_ch('\n');
+	const int len = (int)_out_buf_flush(true);
+
+	DEBUG_BREAK(breakpoint && runtime_impl.debugger);
+	return len;
+}
+
+//
+int qn_outputs(const char* mesg)
+{
+	_out_buf_str(mesg);
+	_out_buf_ch('\n');
+	return (int)_out_buf_flush(false);
+}
+
+//
+int qn_outputf(const char* fmt, ...)
+{
+	qn_return_when_fail(fmt != NULL, -1);
+	va_list va;
+	va_start(va, fmt);
+	_out_buf_va(fmt, va);
+	va_end(va);
+	_out_buf_ch('\n');
+	return (int)_out_buf_flush(false);
 }
 
 //
