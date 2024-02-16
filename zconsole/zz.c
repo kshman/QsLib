@@ -10,6 +10,7 @@ int main(void)
 	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 	qg_fuse(0, NULL, false, true);
+	qg_set_fps(120);
 
 	QmVec bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
 	qg_set_background(&bgc);
@@ -24,7 +25,11 @@ int main(void)
 
 	QgFont* font = qg_load_font(0, "/font/eunjin.ttf", 48);
 
+	QnDateTime sdt = { .stamp = qn_now() };
+
 	float f = 0.0f, dir = 1.0f, angle = 0.0f;
+	float em = 0.0f, mm = 0.0f;
+	QnDateTime dt;
 	while (qg_loop())
 	{
 		QgEvent ev;
@@ -87,6 +92,42 @@ int main(void)
 			qg_draw_sprite_ex(&rt, angle, tex_puru, NULL, NULL);
 
 			qg_font_draw_format(font, 0, 0, "World, Hello! 한글도 나오나? (%.2f)", qg_get_fps());
+
+			static bool started = false, itsover = false;
+			static float checkpoint = 100.0f;
+			if (!itsover)
+			{
+				if (!started)
+				{
+					sdt.stamp = qn_now();
+					started = true;
+					qg_reset_timer();
+				}
+				dt.stamp = qn_now();
+			}
+			//if (!itsover && !started && dt.second == 0) started = true;
+
+			if (!itsover && started)
+			{
+				em += qg_get_elapsed();
+
+				int min = dt.minute - sdt.minute;
+				int sec = dt.second - sdt.second;
+				int ms = dt.millisecond - sdt.millisecond;
+				mm = (float)min * 60.0f + (float)sec + (float)ms / 1000.0f;
+
+				checkpoint += qg_get_elapsed();
+				if (checkpoint > 10.0f)
+				{
+					qn_outputf("E: %.2f, T: %.2f", em, mm);
+					checkpoint = 0.0f;
+				}
+			}
+			qg_font_draw_format(font, 0, 50, "E: %.2f", em);
+			qg_font_draw_format(font, 0, 80, "T: %.2f", mm);
+
+			if (started && mm > 600.0f)
+				started = false, itsover = true;
 
 			qg_end_render(true);
 		}

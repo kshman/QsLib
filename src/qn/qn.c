@@ -27,6 +27,7 @@
 
 //
 extern void qn_cycle_up(void);
+extern void qn_cycle_down(void);
 extern void qn_mpf_up(void);
 extern void qn_mpf_down(void);
 extern void qn_module_up(void);
@@ -135,6 +136,7 @@ static void qn_runtime_down(void)
 	qn_thread_down();
 	qn_module_down();
 	qn_mpf_down();
+	qn_cycle_down();
 
 #ifdef _QN_WINDOWS_
 	if (runtime_impl.redirect && runtime_impl.fd != NULL)

@@ -1123,6 +1123,14 @@ QSAPI double qg_get_run_time(void);
 /// @return 화면 비율
 QSAPI float qg_get_aspect(void);
 
+/// @brief 초 당 프레임(FPS)을 설정한다
+/// @param fps 초당 프레임 수
+/// @note 0이면 프레임 제한을 푼다, VSYNC가 켜져 있으면 이 값은 무시된다
+QSAPI void qg_set_fps(int fps);
+
+/// @brief 타이머를 리셋한다
+QSAPI void qg_reset_timer(void);
+
 /// @brief 화면 비율을 설정한다
 /// @param width 너비
 /// @param height 높이

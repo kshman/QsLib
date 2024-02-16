@@ -3250,16 +3250,25 @@ QSAPI llong qn_tick(void);
 /// @return	현재의 틱
 QSAPI uint qn_tick32(void);
 
+/// @brief 프로그램 시작부터 초당 틱
+/// @return	현재의 초당 틱
+QSAPI double qn_tickd(void);
+
 /// @brief 밀리초 슬립
 /// @param[in] milliseconds	밀리초 단위로 처리되는 millisecond
+/// @note 윈도우는 1~15.6ms 단위로 처리된다. 유닉스는 nanosleep을 사용한다
+/// @note 그러므로 모든 플랫폼에서 정밀한 시간으로 sleep 하려면 qn_msleep을 사용해야 한다
 QSAPI void qn_sleep(uint milliseconds);
 
 /// @brief 초(second) 슬립
-/// @param[in] seconds	초 단위로 처리되는 second
+/// @param[in] seconds 초 단위로 처리되는 second
+/// @note 유닉스는 내부적으로 nanosleep을 사용한다
+/// @note 윈도우는 정밀 시계를 사용하므로, 스레드 콘텍스트가 qn_sleep보다 제한된다
 QSAPI void qn_ssleep(double seconds);
 
-/// @brief 마이크로 슬립, 정밀 시계를 이용하며 스레드 콘텍스트가 일반 슬립보다 제한된다
+/// @brief 마이크로 슬립
 /// @param[in] microseconds	마이크로초 단위로 처리되는 microsecond
+/// @note 내부적으로 qn_ssleep을 사용한다
 QSAPI void qn_msleep(llong microseconds);
 
 /// @brief time stamp
@@ -3332,11 +3341,6 @@ QSAPI void qn_timer_reset(QnTimer* self);
 /// @brief 타이머 갱신
 /// @param[in] self 타이머 개체
 QSAPI void qn_timer_update(QnTimer* self);
-
-/// @brief 타이머 동기화
-/// @param[in] self 타이머 개체
-/// cut이 0이 아니면 프레임 컷을 적용한다
-QSAPI void qn_timer_sync(QnTimer* self);
 
 /// @brief 타이머 프레임 컷 설정
 /// @param[in] self 타이머 개체

@@ -317,8 +317,9 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 	stub->aspect = 9.0f / 16.0f;
 
 	stub->timer = qn_create_timer();
-	qn_timer_set_manual(stub->timer, true);
-	qn_timer_set_cut(stub->timer, 60);
+	if (QN_TMASK(flags, QGFLAG_VSYNC) == false)
+		qn_timer_set_cut(stub->timer, 60);
+	//qn_timer_set_manual(stub->timer, true);
 	stub->run = stub->timer->runtime;
 	stub->active = stub->timer->runtime;
 
@@ -603,6 +604,19 @@ float qg_get_aspect(void)
 }
 
 //
+void qg_set_fps(int fps)
+{
+	if (QN_TMASK(qg_instance_stub->flags, QGFLAG_VSYNC) == false)
+		qn_timer_set_cut(qg_instance_stub->timer, fps);
+}
+
+//
+void qg_reset_timer(void)
+{
+	qn_timer_reset(qg_instance_stub->timer);
+}
+
+//
 void qg_set_aspect(const int width, const int height)
 {
 	qg_instance_stub->aspect = (float)height / (float)width;
@@ -651,24 +665,15 @@ bool qg_loop(void)
 			return false;
 	}
 
-#if true
 	if (QN_TMASK(stub->flags, QGFLAG_VSYNC))
 		qn_timer_update(stub->timer);
 	else
 	{
-		qn_timer_sync(stub->timer);
 		if (QN_TMASK(stub->stats, QGSST_ACTIVE) == false &&
 			QN_TMASK(stub->features, QGFEATURE_ENABLE_IDLE))
 			qn_sleep(10);
 		qn_timer_update(stub->timer);
 	}
-#else
-	qn_timer_sync(stub->timer);
-	if (QN_TMASK(stub->stats, QGSST_ACTIVE) == false &&
-		QN_TMASK(stub->features, QGFEATURE_ENABLE_IDLE))
-		qn_sleep(10);
-	qn_timer_update(stub->timer);
-#endif
 
 	const float adv = (float)stub->timer->elapsed;
 	stub->run = stub->timer->runtime;
@@ -797,7 +802,7 @@ nint qg_register_event_callback(QgEventCallback func, void* data)
 	qn_mutex_leave(stub->mutex);
 
 	return (nint)cb.key;
-}
+	}
 
 //
 bool qg_unregister_event_callback(nint key)
