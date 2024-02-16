@@ -125,15 +125,17 @@ QnTimeStamp qn_mstod(const uint msec)
 //
 static struct CYCLEIMPL
 {
-	ullong				tick_count;		// 초 당 틱
-	ullong				start_count;	// 시작 카운트
+	llong				start_count;	// 시작 카운트
+	llong				tick_count;		// 카운터 틱, 보통 윈도우에서 1000000, 유닉스에서 1000
 } cycle_impl = { 0, };
 
 //
 void qn_cycle_up(void)
 {
 #ifdef _QN_WINDOWS_
-	QueryPerformanceFrequency((LARGE_INTEGER*)&cycle_impl.tick_count);
+	LARGE_INTEGER ll;
+	QueryPerformanceFrequency(&ll);
+	cycle_impl.tick_count = ll.QuadPart;
 #else
 	cycle_impl.tick_count = 1000;
 #endif
@@ -141,7 +143,7 @@ void qn_cycle_up(void)
 }
 
 //
-ullong qn_cycle(void)
+llong qn_cycle(void)
 {
 #ifdef _QN_WINDOWS_
 	LARGE_INTEGER ll;
@@ -151,28 +153,28 @@ ullong qn_cycle(void)
 	ullong n;
 	struct timespec ts;
 	if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
-		n = ((ullong)ts.tv_sec * 1000) + ((ullong)ts.tv_nsec / 1000000);
+		n = ((llong)ts.tv_sec * 1000) + ((llong)ts.tv_nsec / 1000000);
 	else
 	{
 		struct timeval tv;
 		gettimeofday(&tv, 0);
-		n = ((ullong)tv.tv_sec * 1000) + ((ullong)tv.tv_usec / 1000);
+		n = ((llong)tv.tv_sec * 1000) + ((llong)tv.tv_usec / 1000);
 	}
 	return n;
 #endif
 }
 
 //
-ullong qn_tick(void)
+llong qn_tick(void)
 {
-	const ullong cycle = qn_cycle();
+	const llong cycle = qn_cycle();
 	return ((cycle - cycle_impl.start_count) * 1000) / cycle_impl.tick_count;
 }
 
 //
 uint qn_tick32(void)
 {
-	ullong tick = qn_tick();
+	llong tick = qn_tick();
 	return (uint)(tick % UINT32_MAX);
 }
 
@@ -215,8 +217,10 @@ void qn_ssleep(double seconds)
 }
 
 //
-void qn_msleep(ullong microseconds)
+void qn_msleep(llong microseconds)
 {
+	if (microseconds <= 0)
+		return;
 #ifdef _QN_WINDOWS_
 	const double dms = (double)microseconds;
 	LARGE_INTEGER t1, t2;
@@ -267,24 +271,22 @@ typedef struct QNREALTIMER
 {
 	QnTimer				base;
 
-	bool32				stop;
-	uint				past;		// 왜 이걸 만들었는지 기억이 안난다
+	llong				cur_time;		// 현재 시간
+	llong				base_time;		// 기준 시간
+	llong				last_time;		// 이전 시간
 
-	int					fps_frame;
-	ullong				fps_count;
-	double				fps_abs;
+	llong				fps_time;		// FPS 초 계산용 시간
+	llong				cut_time;		// FPS 제한용 시간
+	uint				fps_count;		// FPS 계산용 초당 누적 갯수
+	uint				cut_count;		// FPS 제한용 누적 갯수
 
-	double              cut;
-	double				prevtime;
+	//ullong				fps_frame;		// FPS 계산 프레임
+	//ullong				fps_count;		// FPS 계산 누적 갯수
+	//double				fps_abs;		// FPS 계산 시간
 
-	vint64_t			basetime;
-	vint64_t			stoptime;
-	vint64_t			lasttime;
-	vint64_t			curtime;
-	vint64_t			frmtime;
+	//double				prevtime;		// 이전 시간
 
-	double				tick;
-	vint64_t			frame;
+	//ullong				frmtime;		// 프레임 시간
 } QnRealTimer;
 
 //
@@ -296,150 +298,104 @@ static void qn_timer_dispose(QnGam gam)
 //
 QnTimer* qn_create_timer(void)
 {
-	QnRealTimer* self = qn_alloc_zero_1(QnRealTimer);
+	QnRealTimer* real = qn_alloc_zero_1(QnRealTimer);
+	llong now = qn_cycle();
 
-	self->frame.q = cycle_impl.tick_count;
-	self->tick = 1.0 / (double)cycle_impl.tick_count;
-
-	self->curtime.q = qn_cycle();
-	self->basetime.q = self->curtime.q;
-	self->lasttime.q = self->curtime.q;
-
-	self->base.abstime = (double)self->curtime.q * self->tick;
-	self->cut = 9999999.0;  //10.0;
+	real->cur_time = now;
+	real->base_time = now;
+	real->last_time = now;
 
 	static QN_DECL_VTABLE(QNGAMBASE) qn_timer_vt =
 	{
 		"TIMER",
 		qn_timer_dispose,
 	};
-	return qn_gam_init(self, qn_timer_vt);
+	return qn_gam_init(real, qn_timer_vt);
 }
 
 //
 void qn_timer_reset(QnTimer* self)
 {
-	QnRealTimer* impl = (QnRealTimer*)self;
+	QnRealTimer* real = qn_cast_type(self, QnRealTimer);
+	llong now = qn_cycle();
 
-	impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
-	impl->basetime.q = impl->curtime.q;
-	impl->lasttime.q = impl->curtime.q;
-	impl->stoptime.q = 0;
-	impl->fps_count = impl->curtime.q;
+	real->cur_time = now;
+	real->base_time = now;
+	real->last_time = now;
 
-	impl->stop = false;
+	real->fps_time = now;
+	real->fps_count = 0;
+
+	real->base.runtime = 0.0;
+	real->base.elapsed = 0.0;
+	real->base.advance = 0.0;
+
+	real->base.fps = 0.0;
+	real->base.pause = false;
 }
 
 //
-void qn_timer_start(QnTimer* self)
+void qn_timer_update(QnTimer* self)
 {
-	QnRealTimer* impl = (QnRealTimer*)self;
+	QnRealTimer* real = qn_cast_type(self, QnRealTimer);
+	llong now = qn_cycle();
+	llong cbase = now - real->base_time;
+	llong clast = now - real->last_time;
 
-	impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
+	real->last_time = real->cur_time;
+	real->cur_time = now;
 
-	if (impl->stop)
-		impl->basetime.q += impl->curtime.q - impl->stoptime.q;
+	real->base.runtime = (double)cbase / cycle_impl.tick_count;
+	real->base.elapsed = (double)clast / cycle_impl.tick_count;
+	real->base.advance = real->base.pause ? 0.0 : real->base.elapsed;
 
-	impl->lasttime.q = impl->curtime.q;
-	impl->stoptime.q = 0;
-	impl->fps_count = impl->curtime.q;
-
-	impl->stop = false;
-}
-
-//
-void qn_timer_stop(QnTimer* self)
-{
-	QnRealTimer* impl = (QnRealTimer*)self;
-
-	impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
-	impl->lasttime.q = impl->curtime.q;
-	impl->stoptime.q = impl->curtime.q;
-	impl->fps_count = impl->curtime.q;
-
-	impl->stop = true;
-}
-
-//
-bool qn_timer_update(QnTimer* self, bool manual)
-{
-	QnRealTimer* impl = (QnRealTimer*)self;
-	bool ret;
-
-	impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
-	impl->base.abstime = (double)impl->curtime.q * impl->tick;
-	impl->base.runtime = (double)(impl->curtime.q - impl->basetime.q) * impl->tick;
-
-	if (manual == false)
-		impl->base.fps = (double)impl->frame.q / (double)(impl->curtime.q - impl->fps_count);
+	if (real->base.manual == false)
+		real->base.fps = (float)((double)cycle_impl.tick_count / clast);
 	else
 	{
-		impl->fps_frame++;
-
-		if ((impl->base.abstime - impl->fps_abs) >= 1.0)
+		real->fps_count++;
+		if (now - real->fps_time >= cycle_impl.tick_count)
 		{
-			impl->base.fps = (float)impl->fps_frame;
-			impl->fps_abs = impl->base.abstime;
-			impl->fps_frame = 0;
+			real->base.fps = (float)real->fps_count;
+			real->fps_time = now;
+			real->fps_count = 0;
 		}
 	}
 
-	impl->fps_count = impl->curtime.q;
-
-	if (impl->base.fps < impl->cut)
+	if (real->base.cut > 0)
 	{
-		impl->base.advance = (double)(impl->curtime.q - impl->lasttime.q) * impl->tick;
-		ret = true;
+		real->cut_count++;
+		if (real->cut_count == real->base.cut)
+		{
+			real->cut_count = 0;
+			real->cut_time = now;
+			//qn_timer_sync(self);
+		}
 	}
-	else
-	{
-		impl->base.advance = impl->cut * 0.001;
-		ret = false;
-	}
-
-	impl->lasttime.q = impl->curtime.q;
-	impl->past = (int)(impl->base.advance * 1000.0);
-	return ret;
 }
 
 //
-bool qn_timer_update_fps(QnTimer* self, bool manual, double target_fps)
+void qn_timer_sync(QnTimer* self)
 {
-	QnRealTimer* impl = (QnRealTimer*)self;
-	impl->prevtime = impl->base.runtime;
-
-	bool ret = qn_timer_update(self, manual);
-	double delta = impl->base.runtime - impl->prevtime;
-
-	if (delta < target_fps)
-	{
-		qn_ssleep(target_fps - delta);
-
-#if false
-		impl->curtime.q = (impl->stoptime.q != 0) ? impl->stoptime.q : qn_cycle();
-		impl->base.abstime = (double)impl->curtime.q * impl->tick;
-		impl->base.runtime = (double)(impl->curtime.q - impl->basetime.q) * impl->tick;
-
-		double wait = impl->base.runtime - impl->prevtime;
-		impl->prevtime = impl->base.runtime;
-
-		impl->base.advance += wait;
-#endif
-	}
-
-	return ret;
+	qn_return_when_fail(self->cut > 0, );
+	QnRealTimer* real = qn_cast_type(self, QnRealTimer);
+	llong now = qn_cycle();
+	llong took = now - real->cut_time;
+	llong wait = real->cut_count * cycle_impl.tick_count / real->base.cut - took;
+	if (wait > 0)
+		qn_ssleep((double)wait / cycle_impl.tick_count);
 }
 
 //
-double qn_timer_get_cut(const QnTimer* self)
+void qn_timer_set_cut(QnTimer* self, int cut)
 {
-	const QnRealTimer* impl = (const QnRealTimer*)self;
-	return impl->cut;
+	QnRealTimer* real = qn_cast_type(self, QnRealTimer);
+	real->base.cut = (ushort)cut;
 }
 
 //
-void qn_timer_set_cut(QnTimer* self, const double cut)
+void qn_timer_set_manual(QnTimer* self, bool manual)
 {
-	QnRealTimer* impl = (QnRealTimer*)self;
-	impl->cut = cut;
+	QnRealTimer* real = qn_cast_type(self, QnRealTimer);
+	real->base.manual = manual;
 }

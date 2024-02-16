@@ -317,9 +317,10 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 	stub->aspect = 9.0f / 16.0f;
 
 	stub->timer = qn_create_timer();
+	qn_timer_set_manual(stub->timer, true);
+	qn_timer_set_cut(stub->timer, 60);
 	stub->run = stub->timer->runtime;
-	stub->active = stub->timer->abstime;
-	stub->frames = 1.0 / 60.0;
+	stub->active = stub->timer->runtime;
 
 	stub->mouse.lim.move = 10 * 10 + 10 * 10;		// 제한 이동 거리(포인트)의 제곱
 	stub->mouse.lim.tick = 500;						// 제한 클릭 시간(밀리초)
@@ -652,22 +653,24 @@ bool qg_loop(void)
 
 #if true
 	if (QN_TMASK(stub->flags, QGFLAG_VSYNC))
-		qn_timer_update(stub->timer, false);
+		qn_timer_update(stub->timer);
 	else
 	{
-		const double frames =
-			QN_TMASK(stub->stats, QGSST_ACTIVE) == false &&
-			QN_TMASK(stub->features, QGFEATURE_ENABLE_IDLE) ? 0.1 : stub->frames;
-		qn_timer_update_fps(stub->timer, false, frames);
+		qn_timer_sync(stub->timer);
+		if (QN_TMASK(stub->stats, QGSST_ACTIVE) == false &&
+			QN_TMASK(stub->features, QGFEATURE_ENABLE_IDLE))
+			qn_sleep(10);
+		qn_timer_update(stub->timer);
 	}
 #else
-	const double frames =
-		QN_TMASK(stub->stats, QGSST_ACTIVE) == false &&
-		QN_TMASK(stub->features, QGFEATURE_ENABLE_IDLE) ? 0.1 : stub->frames;
-	qn_timer_update_fps(stub->timer, false, frames);
+	qn_timer_sync(stub->timer);
+	if (QN_TMASK(stub->stats, QGSST_ACTIVE) == false &&
+		QN_TMASK(stub->features, QGFEATURE_ENABLE_IDLE))
+		qn_sleep(10);
+	qn_timer_update(stub->timer);
 #endif
 
-	const float adv = (float)stub->timer->advance;
+	const float adv = (float)stub->timer->elapsed;
 	stub->run = stub->timer->runtime;
 	stub->fps = (float)stub->timer->fps;
 	stub->elapsed = adv;

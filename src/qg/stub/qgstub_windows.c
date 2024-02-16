@@ -1100,7 +1100,7 @@ static bool windows_mesg_keyboard(const WPARAM wp, const LPARAM lp, const bool d
 // 액티브 메시지
 static void windows_mesg_active(const bool focus)
 {
-	const double now = wStub.base.timer->abstime;
+	const double now = wStub.base.timer->runtime;
 	const double delta = now - wStub.base.active;
 	wStub.base.active = now;
 

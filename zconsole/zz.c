@@ -5,7 +5,7 @@ int main(void)
 {
 	qn_runtime(NULL);
 
-	int flags = QGFLAG_RESIZE | QGFLAG_MSAA | QGFLAG_VSYNC;
+	int flags = QGFLAG_RESIZE | QGFLAG_MSAA /*| QGFLAG_VSYNC*/;
 	int features = QGFEATURE_NONE;
 	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;

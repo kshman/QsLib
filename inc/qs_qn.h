@@ -3240,11 +3240,11 @@ QSAPI void qn_gmtime(struct tm* ptm, time_t tt);
 
 /// @brief 현재 시간 사이클
 /// @return	현재의 사이클
-QSAPI ullong qn_cycle(void);
+QSAPI llong qn_cycle(void);
 
 /// @brief 프로그램 시작부터 시간 틱
 /// @return	현재의 틱
-QSAPI ullong qn_tick(void);
+QSAPI llong qn_tick(void);
 
 /// @brief 프로그램 시작부터 시간 틱 (32비트 버전)
 /// @return	현재의 틱
@@ -3260,7 +3260,7 @@ QSAPI void qn_ssleep(double seconds);
 
 /// @brief 마이크로 슬립, 정밀 시계를 이용하며 스레드 콘텍스트가 일반 슬립보다 제한된다
 /// @param[in] microseconds	마이크로초 단위로 처리되는 microsecond
-QSAPI void qn_msleep(ullong microseconds);
+QSAPI void qn_msleep(llong microseconds);
 
 /// @brief time stamp
 typedef ullong QnTimeStamp;
@@ -3310,10 +3310,15 @@ QSAPI QnTimeStamp qn_mstod(uint msec);
 typedef struct QNTIMER
 {
 	QN_GAM_BASE(QNGAMBASE);
-	double				abstime;			/// @brief 타이머 절대 시간
-	double				runtime;			/// @brief 타이머 시작부터 수행 시간
-	double				advance;			/// @brief 타이머 갱신에 따른 시간 (프레임 당 시간)
-	double				fps;				/// @brief 초 당 프레임 수
+
+	double				runtime;			/// @brief 타이머 수행 시간
+	double				elapsed;			/// @brief 타이머 경과 시간 (포즈 영향 없음)
+	double				advance;			/// @brief 타이머 경과 시간 (포즈 중에는 0)
+
+	float				fps;				/// @brief 초 당 프레임 수
+	ushort				cut;				/// @brief 프레임 컷 (초당 프레임 수 제한)
+	bool				pause;				/// @brief 정지 여부
+	bool				manual;				/// @brief 수동 갱신 여부
 } QnTimer;
 
 /// @brief 타이머 만들기
@@ -3324,58 +3329,61 @@ QSAPI QnTimer* qn_create_timer(void);
 /// @param[in] self 타이머 개체
 QSAPI void qn_timer_reset(QnTimer* self);
 
-/// @brief 타이머 시작
-/// @param[in] self 타이머 개체
-QSAPI void qn_timer_start(QnTimer* self);
-
-/// @brief 타이머 정지
-/// @param[in] self 타이머 개체
-QSAPI void qn_timer_stop(QnTimer* self);
-
 /// @brief 타이머 갱신
 /// @param[in] self 타이머 개체
-/// @param[in] manual FPS를 자동으로 계산하려면 false, 아니면 true
-/// @return	성공 여부 반화
-/// @retval true 성공
-/// @retval false 실패
-QSAPI bool qn_timer_update(QnTimer* self, bool manual);
+QSAPI void qn_timer_update(QnTimer* self);
 
-/// @brief 타이머 갱신
-/// @param self 타이머 개체
-/// @param manual FPS를 자동으로 계산하려면 false, 아니면 true
-/// @param target_fps 목표 FPS
-/// @return 성공 여부
-bool qn_timer_update_fps(QnTimer* self, bool manual, double target_fps);
-
-/// @brief 타이머의 절대 시간
+/// @brief 타이머 동기화
 /// @param[in] self 타이머 개체
-/// @return	double
-QSAPI double qn_timer_get_cut(const QnTimer* self);
+/// cut이 0이 아니면 프레임 컷을 적용한다
+QSAPI void qn_timer_sync(QnTimer* self);
 
-/// @brief 타이머 과다 수행에 따른 갱신 경과값의 설정
+/// @brief 타이머 프레임 컷 설정
 /// @param[in] self 타이머 개체
-/// @param	cut 제한 값
-QSAPI void qn_timer_set_cut(QnTimer* self, double cut);
+/// @param cut 프레임 컷
+QSAPI void qn_timer_set_cut(QnTimer* self, int cut);
 
-/// @brief 타이머의 절대 시간
+/// @brief 타이머 프레임 계산 방식 설정
 /// @param[in] self 타이머 개체
-/// @return	double
-INLINE double qn_timer_get_abstime(const QnTimer* self) { return self->abstime; }
+/// @param manual 참이면 평균으로 계산, 아니면 각 프레임마다 계산
+QSAPI void qn_timer_set_manual(QnTimer* self, bool manual);
 
 /// @brief 타이머의 수행 시간
 /// @param[in] self 타이머 개체
-/// @return	double
+/// @return	수행 시간
 INLINE double qn_timer_get_runtime(const QnTimer* self) { return self->runtime; }
 
-/// @brief 타이머의 갱신 시간
+/// @brief 타이머의 갱신 시간 (포즈 중에도 계산된다)
 /// @param[in] self 타이머 개체
-/// @return	double
+/// @return	갱신 시간
+/// @see qn_timer_get_advance
+INLINE double qn_timer_get_elapsed(const QnTimer* self) { return self->elapsed; }
+
+/// @brief 타이머의 갱신 시간 (포즈 중에는 0)
+/// @param[in] self 타이머 개체
+/// @return	갱신 시간
+/// @see qn_timer_get_elapsed
 INLINE double qn_timer_get_advance(const QnTimer* self) { return self->advance; }
 
 /// @brief 타이머의 초당 프레임 수
 /// @param[in] self 타이머 개체
-/// @return	double
-INLINE double qn_timer_get_fps(const QnTimer* self) { return self->fps; }
+/// @return	프레임 수
+INLINE float qn_timer_get_fps(const QnTimer* self) { return self->fps; }
+
+/// @brief 타이머의 프레임 컷
+/// @param[in] self 타이머 개체
+/// @return	프레임 컷
+INLINE int qn_timer_get_cut(const QnTimer* self) { return self->cut; }
+
+/// @brief 타이머의 정지 여부
+/// @param[in] self 타이머 개체
+/// @return	정지 여부
+INLINE bool qn_timer_is_pause(const QnTimer* self) { return self->pause; }
+
+/// @brief 타이머의 정지 여부 설정
+/// @param[in] self 타이머 개체
+/// @param[in] pause 정지 여부
+INLINE void qn_timer_set_pause(QnTimer* self, bool pause) { self->pause = pause; }
 
 
 //////////////////////////////////////////////////////////////////////////
