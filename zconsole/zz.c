@@ -10,7 +10,7 @@ int main(void)
 	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 	qg_fuse(0, NULL, false, true);
-	qg_set_fps(120);
+	//qg_set_fps(120);
 
 	QmVec bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
 	qg_set_background(&bgc);

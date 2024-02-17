@@ -319,7 +319,6 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 	stub->timer = qn_create_timer();
 	if (QN_TMASK(flags, QGFLAG_VSYNC) == false)
 		qn_timer_set_cut(stub->timer, 60);
-	//qn_timer_set_manual(stub->timer, true);
 	stub->run = stub->timer->runtime;
 	stub->active = stub->timer->runtime;
 

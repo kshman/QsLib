@@ -3250,9 +3250,10 @@ QSAPI llong qn_tick(void);
 /// @return	현재의 틱
 QSAPI uint qn_tick32(void);
 
-/// @brief 프로그램 시작부터 초당 틱
-/// @return	현재의 초당 틱
-QSAPI double qn_tickd(void);
+/// @brief 프로그램 시작부터 지나간 시간(초)
+/// @return	현재 프로그램 수행 시간 (초)
+/// @note qn_tick() / 1000.0과 같다
+QSAPI double qn_elapsed(void);
 
 /// @brief 밀리초 슬립
 /// @param[in] milliseconds	밀리초 단위로 처리되는 millisecond
@@ -3270,6 +3271,11 @@ QSAPI void qn_ssleep(double seconds);
 /// @param[in] microseconds	마이크로초 단위로 처리되는 microsecond
 /// @note 내부적으로 qn_ssleep을 사용한다
 QSAPI void qn_msleep(llong microseconds);
+
+/// @brief 지정한 초 만큼 대기
+/// @param seconds 대기할 시간(초)
+/// @warning 짧은 시간 동안 프로세스를 멈출 때만 사용하여야 한다
+QSAPI void qn_yield(double seconds);
 
 /// @brief time stamp
 typedef ullong QnTimeStamp;

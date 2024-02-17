@@ -165,12 +165,12 @@ llong qn_cycle(void)
 	ullong n;
 	struct timespec ts;
 	if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
-		n = ((llong)ts.tv_sec * 1000) + ((llong)ts.tv_nsec / 1000000);
+		n = ((llong)ts.tv_sec * QN_MSEC_PER_SEC) + ((llong)ts.tv_nsec / QN_USEC_PER_SEC);
 	else
 	{
 		struct timeval tv;
 		gettimeofday(&tv, 0);
-		n = ((llong)tv.tv_sec * 1000) + ((llong)tv.tv_usec / 1000);
+		n = ((llong)tv.tv_sec * QN_MSEC_PER_SEC) + ((llong)tv.tv_usec / QN_MSEC_PER_SEC);
 	}
 	return n;
 #endif
@@ -191,10 +191,29 @@ uint qn_tick32(void)
 }
 
 //
-double qn_tickd(void)
+double qn_elapsed(void)
 {
 	const llong cycle = qn_cycle();
 	return (double)(cycle - cycle_impl.start_count) / (double)cycle_impl.tick_count;
+}
+
+//
+void _internal_yield(double until)
+{
+	do
+	{
+#if defined _MSC_VER && (defined _M_IX86 || defined _M_X64)
+		_mm_pause();
+#elif defined _MSC_VER && (defined _M_ARM || defined _M_ARM64 || defined _M_ARM64EC)
+		__yield();
+#elif defined __GNUC__ && (defined __i386__ || defined __x86_64__)
+		__asm__ __volatile__("pause");
+#elif defined __GNUC__ && (defined __arm__ || defined __aarch64__)
+		__asm__ __volatile__("yield");
+#elif _QN_EMSCRIPTEN_
+		emscripten_sleep(0);
+#endif
+	} while (qn_elapsed() < until);
 }
 
 //
@@ -212,18 +231,14 @@ void qn_sleep(uint milliseconds)
 #endif
 	struct timespec ts =
 	{
-		.tv_sec = milliseconds / 1000,
-		.tv_nsec = (milliseconds % 1000) * 1000000,
+		.tv_sec = milliseconds / QN_MSEC_PER_SEC,
+		.tv_nsec = (milliseconds % QN_MSEC_PER_SEC) * QN_USEC_PER_SEC,
 	};
 	int error;
 	do
 	{
 		errno = 0;
-		struct timespec es =
-		{
-			.tv_sec = ts.tv_sec,
-			.tv_nsec = ts.tv_nsec,
-		};
+		struct timespec es = ts;
 		error = nanosleep(&es, &ts);
 	} while (error && (errno == EINTR));
 #endif
@@ -232,17 +247,15 @@ void qn_sleep(uint milliseconds)
 //
 void qn_ssleep(double seconds)
 {
-	double until = qn_tickd() + seconds;
+	double until = qn_elapsed() + seconds;
 #if defined _QN_WINDOWS_
-	double msec = floor(seconds * QN_MSEC_PER_SEC * 0.9);
+	double msec = floor(seconds * QN_MSEC_PER_SEC * 0.95);
 	Sleep((DWORD)msec);
-#elif defined _QN_EMSCRIPTEN_
-
 #elif defined _QN_UNIX_
 #ifdef _QN_EMSCRIPTEN_
 	if (emscripten_has_asyncify())
 	{
-		double msec = floor(seconds * QN_MSEC_PER_SEC * 0.8);
+		double msec = floor(seconds * QN_MSEC_PER_SEC * 0.9);
 		emscripten_sleep(msec);
 	}
 	else
@@ -251,44 +264,34 @@ void qn_ssleep(double seconds)
 		llong nanosec = (llong)(seconds * 0.95 * QN_NSEC_PER_SEC);
 		struct timespec ts =
 		{
-			.tv_sec = nano / QN_NSEC_PER_SEC,
-			.tv_nsec = nano % QN_NSEC_PER_SEC,
+			.tv_sec = nanosec / QN_NSEC_PER_SEC,
+			.tv_nsec = nanosec % QN_NSEC_PER_SEC,
 		};
 		int error;
 		do
 		{
 			errno = 0;
-			struct timespec es =
-			{
-				.tv_sec = ts.tv_sec,
-				.tv_nsec = ts.tv_nsec,
-			};
+			struct timespec es = ts;
 			error = nanosleep(&es, &ts);
 		} while (error && (errno == EINTR));
 	}
 #else
-#error unknown platform! please place sleep function on here!
+#error unknown platform! please place seconds sleep function on here!
 #endif
-	while (qn_tickd() < until)
-	{
-#if defined _MSC_VER && (defined _M_IX86 || defined _M_X64)
-		_mm_pause();
-#elif defined _MSC_VER && (defined _M_ARM || defined _M_ARM64 || defined _M_ARM64EC)
-		__yield();
-#elif defined __GNUC__ && (defined __i386__ || defined __x86_64__)
-		__asm__ __volatile__("pause");
-#elif defined __GNUC__ && (defined __arm__ || defined __aarch64__)
-		__asm__ __volatile__("yield");
-#elif _QN_EMSCRIPTEN_
-		emscripten_sleep(0);
-#endif
-	}
+	_internal_yield(until);
 }
 
 //
 void qn_msleep(llong microseconds)
 {
 	qn_ssleep((double)microseconds / QN_USEC_PER_SEC);
+}
+
+//
+void qn_yield(double seconds)
+{
+	double until = qn_elapsed() + seconds;
+	_internal_yield(until);
 }
 
 
@@ -406,127 +409,66 @@ void qn_timer_set_manual(QnTimer* self, bool manual)
 }
 
 /*
-참고 CUT 60프레임 때 타이머 오차 (E=타이머, T=시계)
-E: 0.03, T: 0.00
-E: 10.03, T: 10.00
-E: 20.03, T: 20.00
-E: 30.03, T: 30.00
-E: 40.03, T: 40.00
-E: 50.03, T: 50.00
-E: 60.03, T: 60.01
-E: 70.03, T: 70.00
-E: 80.03, T: 80.01
-E: 90.04, T: 90.01
-E: 100.04, T: 100.01
-E: 110.04, T: 110.01
-E: 120.04, T: 120.01
-E: 130.04, T: 130.01
-E: 140.04, T: 140.01
-E: 150.04, T: 150.01
-E: 160.04, T: 160.01
-E: 170.03, T: 170.01
-E: 180.03, T: 180.01
-E: 190.03, T: 190.01
-E: 200.03, T: 200.01
-E: 210.03, T: 210.01
-E: 220.02, T: 220.01
-E: 230.02, T: 230.02
-E: 240.02, T: 240.02
-E: 250.02, T: 250.02
-E: 260.01, T: 260.02
-E: 270.01, T: 270.02
-E: 280.01, T: 280.02
-E: 290.01, T: 290.02
-E: 300.01, T: 300.02
-E: 310.00, T: 310.02
-E: 320.00, T: 320.02
-E: 330.00, T: 330.02
-E: 340.00, T: 340.03
-E: 350.00, T: 350.03
-E: 359.99, T: 360.03
-E: 369.99, T: 370.03
-E: 379.99, T: 380.03
-E: 389.99, T: 390.03
-E: 399.98, T: 400.03
-E: 409.98, T: 410.03
-E: 419.98, T: 420.03
-E: 429.98, T: 430.03
-E: 439.97, T: 440.03
-E: 449.97, T: 450.03
-E: 459.97, T: 460.03
-E: 469.97, T: 470.04
-E: 479.97, T: 480.04
-E: 489.96, T: 490.04
-E: 499.96, T: 500.04
-E: 509.96, T: 510.04
-E: 519.96, T: 520.04
-E: 529.95, T: 530.04
-E: 539.95, T: 540.04
-E: 549.95, T: 550.04
-E: 559.95, T: 560.04
-E: 569.95, T: 570.04
-E: 579.94, T: 580.04
-E: 589.94, T: 590.04
-
-참고 CUT 120프레임 때 타이머 오차 (E=타이머, T=시계)
-E: 0.03, T: 0.00
-E: 10.03, T: 10.01
-E: 20.04, T: 20.01
-E: 30.04, T: 30.01
-E: 40.04, T: 40.01
-E: 50.05, T: 50.02
-E: 60.05, T: 60.02
-E: 70.05, T: 70.03
-E: 80.05, T: 80.03
-E: 90.05, T: 90.03
-E: 100.05, T: 100.04
-E: 110.05, T: 110.04
-E: 120.06, T: 120.04
-E: 130.06, T: 130.05
-E: 140.06, T: 140.05
-E: 150.06, T: 150.06
-E: 160.06, T: 160.06
-E: 170.06, T: 170.06
-E: 180.06, T: 180.07
-E: 190.06, T: 190.07
-E: 200.06, T: 200.08
-E: 210.06, T: 210.08
-E: 220.06, T: 220.08
-E: 230.06, T: 230.09
-E: 240.06, T: 240.09
-E: 250.06, T: 250.10
-E: 260.06, T: 260.10
-E: 270.06, T: 270.10
-E: 280.07, T: 280.11
-E: 290.07, T: 290.11
-E: 300.07, T: 300.12
-E: 310.07, T: 310.12
-E: 320.07, T: 320.12
-E: 330.06, T: 330.12
-E: 340.07, T: 340.13
-E: 350.07, T: 350.14
-E: 360.07, T: 360.14
-E: 370.07, T: 370.14
-E: 380.07, T: 380.15
-E: 390.08, T: 390.16
-E: 400.08, T: 400.16
-E: 410.08, T: 410.17
-E: 420.08, T: 420.18
-E: 430.09, T: 430.18
-E: 440.09, T: 440.19
-E: 450.09, T: 450.19
-E: 460.09, T: 460.20
-E: 470.09, T: 470.20
-E: 480.09, T: 480.21
-E: 490.09, T: 490.21
-E: 500.10, T: 500.22
-E: 510.10, T: 510.22
-E: 520.13, T: 520.22
-E: 530.17, T: 530.23
-E: 540.20, T: 540.24
-E: 550.24, T: 550.24
-E: 560.28, T: 560.25
-E: 570.32, T: 570.25
-E: 580.35, T: 580.26
-E: 590.39, T: 590.26
+참고 CUT 타이머 오차 (E=타이머, T=시계) 시작할 때 0.03은 초기화에 걸린 시간 포함
+[60 프레임 고정]							[120 프레임 고정]
+E: 0.03, T: 0.00						E: 0.03, T: 0.00
+E: 10.03, T: 10.00						E: 10.03, T: 10.01
+E: 20.03, T: 20.00						E: 20.04, T: 20.01
+E: 30.03, T: 30.00						E: 30.04, T: 30.01
+E: 40.03, T: 40.00						E: 40.04, T: 40.01
+E: 50.03, T: 50.00						E: 50.05, T: 50.02
+E: 60.03, T: 60.01						E: 60.05, T: 60.02
+E: 70.03, T: 70.00						E: 70.05, T: 70.03
+E: 80.03, T: 80.01						E: 80.05, T: 80.03
+E: 90.04, T: 90.01						E: 90.05, T: 90.03
+E: 100.04, T: 100.01					E: 100.05, T: 100.04
+E: 110.04, T: 110.01					E: 110.05, T: 110.04
+E: 120.04, T: 120.01					E: 120.06, T: 120.04
+E: 130.04, T: 130.01					E: 130.06, T: 130.05
+E: 140.04, T: 140.01					E: 140.06, T: 140.05
+E: 150.04, T: 150.01					E: 150.06, T: 150.06
+E: 160.04, T: 160.01					E: 160.06, T: 160.06
+E: 170.03, T: 170.01					E: 170.06, T: 170.06
+E: 180.03, T: 180.01					E: 180.06, T: 180.07
+E: 190.03, T: 190.01					E: 190.06, T: 190.07
+E: 200.03, T: 200.01					E: 200.06, T: 200.08
+E: 210.03, T: 210.01					E: 210.06, T: 210.08
+E: 220.02, T: 220.01					E: 220.06, T: 220.08
+E: 230.02, T: 230.02					E: 230.06, T: 230.09
+E: 240.02, T: 240.02					E: 240.06, T: 240.09
+E: 250.02, T: 250.02					E: 250.06, T: 250.10
+E: 260.01, T: 260.02					E: 260.06, T: 260.10
+E: 270.01, T: 270.02					E: 270.06, T: 270.10
+E: 280.01, T: 280.02					E: 280.07, T: 280.11
+E: 290.01, T: 290.02					E: 290.07, T: 290.11
+E: 300.01, T: 300.02					E: 300.07, T: 300.12
+E: 310.00, T: 310.02					E: 310.07, T: 310.12
+E: 320.00, T: 320.02					E: 320.07, T: 320.12
+E: 330.00, T: 330.02					E: 330.06, T: 330.12
+E: 340.00, T: 340.03					E: 340.07, T: 340.13
+E: 350.00, T: 350.03					E: 350.07, T: 350.14
+E: 359.99, T: 360.03					E: 360.07, T: 360.14
+E: 369.99, T: 370.03					E: 370.07, T: 370.14
+E: 379.99, T: 380.03					E: 380.07, T: 380.15
+E: 389.99, T: 390.03					E: 390.08, T: 390.16
+E: 399.98, T: 400.03					E: 400.08, T: 400.16
+E: 409.98, T: 410.03					E: 410.08, T: 410.17
+E: 419.98, T: 420.03					E: 420.08, T: 420.18
+E: 429.98, T: 430.03					E: 430.09, T: 430.18
+E: 439.97, T: 440.03					E: 440.09, T: 440.19
+E: 449.97, T: 450.03					E: 450.09, T: 450.19
+E: 459.97, T: 460.03					E: 460.09, T: 460.20
+E: 469.97, T: 470.04					E: 470.09, T: 470.20
+E: 479.97, T: 480.04					E: 480.09, T: 480.21
+E: 489.96, T: 490.04					E: 490.09, T: 490.21
+E: 499.96, T: 500.04					E: 500.10, T: 500.22
+E: 509.96, T: 510.04					E: 510.10, T: 510.22
+E: 519.96, T: 520.04					E: 520.13, T: 520.22
+E: 529.95, T: 530.04					E: 530.17, T: 530.23
+E: 539.95, T: 540.04					E: 540.20, T: 540.24
+E: 549.95, T: 550.04					E: 550.24, T: 550.24
+E: 559.95, T: 560.04					E: 560.28, T: 560.25
+E: 569.95, T: 570.04					E: 570.32, T: 570.25
+E: 579.94, T: 580.04					E: 580.35, T: 580.26
+E: 589.94, T: 590.04					E: 590.39, T: 590.26
 */
