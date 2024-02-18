@@ -3292,35 +3292,49 @@ typedef union QNDATETIME
 	};
 	struct
 	{
-		uint			year : 14;			/// @brief 년
-		uint			month : 6;			/// @brief 월
-		uint			day : 8;			/// @brief 일
-		uint			dow : 4;			/// @brief 한주의 일
+		uint			year : 14;			/// @brief 년 (8191년까지, 부호업으면 16383년까지)
+		uint			month : 6;			/// @brief 월 (63월까지)
+		uint			day : 8;			/// @brief 일 (255일까지) 
+		uint			dow : 4;			/// @brief 한주의 일 (15일까지)
 
-		uint			hour : 6;			/// @brief 시
-		uint			minute : 8;			/// @brief 분
-		uint			second : 8;			/// @brief 초
-		uint			millisecond : 10;	/// @brief 밀리초
+		uint			hour : 6;			/// @brief 시 (63시까지)
+		uint			minute : 8;			/// @brief 분 (255분까지)
+		uint			second : 8;			/// @brief 초 (255초까지)
+		uint			millisecond : 10;	/// @brief 밀리초 (1023밀리초까지)
 	};
 } QnDateTime;
 
 /// @brief 현재 시간 날짜를 포함하는 타임스탬프
-/// @returns 현재 타임스탬프. QnDateTime 으로 컨버전해서 사용할 수 있다
+/// @returns 현재 타임스탬프. QnDateTime 으로 변환해서 사용할 수 있다
 QSAPI QnTimeStamp qn_now(void);
 
 /// @brief 현재의 UTC 시간 날짜를 포함하는 타임스탬프
-/// @returns 현재 타임스탬프. QnDateTime 으로 컨버전해서 사용할 수 있다
+/// @returns 현재 타임스탬프. QnDateTime 으로 변환해서 사용할 수 있다
 QSAPI QnTimeStamp qn_utc(void);
 
 /// @brief 초를 시간으로
 /// @param[in] sec 초
 /// @return 계산된 타임스탬프
-QSAPI QnTimeStamp qn_stod(double sec);
+/// @note 시간까지만 계산한다
+QSAPI QnTimeStamp qn_stots(double sec);
 
 /// @brief 밀리초를 시간으로
 /// @param msec 밀리초
 /// @return 계산된 타임스탬프
-QSAPI QnTimeStamp qn_mstod(uint msec);
+/// @note 시간까지만 계산한다
+QSAPI QnTimeStamp qn_mstots(uint msec);
+
+/// @brief 타임스탬프를 초로
+/// @param[in] ts 타임스탬프
+/// @return 초
+QSAPI double qn_tstos(const QnDateTime dt);
+
+/// @brief 타임스탬프 비교 (초 단위)
+/// @param[in] left 타임스탬프1
+/// @param[in] left 타임스탬프2
+/// @return t1 - t2를 초 단위로 변환
+QSAPI double qn_diffts(const QnTimeStamp left, const QnTimeStamp right);
+
 
 /// @brief timer
 typedef struct QNTIMER

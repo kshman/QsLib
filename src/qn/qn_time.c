@@ -77,7 +77,7 @@ QnTimeStamp qn_now(void)
 	struct timeval tv;
 	struct tm tm;
 	gettimeofday(&tv, NULL);
-	(void)gmtime_r(&tv.tv_sec, &tm);
+	(void)localtime_r(&tv.tv_sec, &tm);
 	return qn_tm_to_timestamp(&tm);
 #endif
 }
@@ -99,13 +99,13 @@ QnTimeStamp qn_utc(void)
 }
 
 //
-QnTimeStamp qn_stod(const double sec)
+QnTimeStamp qn_stots(const double sec)
 {
 	QnDateTime dt;
-	const uint ns = (uint)sec;
-	dt.hour = ns / 3600;
-	dt.minute = (ns % 3600) / 60;
-	dt.second = (ns % 60);
+	const uint us = (uint)sec;
+	dt.hour = us / 3600;
+	dt.minute = (us % 3600) / 60;
+	dt.second = (us % 60);
 	double m = (double)(ullong)sec;
 	m = sec - m;
 	m *= 1000.0;
@@ -114,7 +114,7 @@ QnTimeStamp qn_stod(const double sec)
 }
 
 //
-QnTimeStamp qn_mstod(const uint msec)
+QnTimeStamp qn_mstots(const uint msec)
 {
 	QnDateTime dt;
 	const uint ns = msec / 1000;
@@ -123,6 +123,65 @@ QnTimeStamp qn_mstod(const uint msec)
 	dt.second = (ns % 60);
 	dt.millisecond = msec - (ns * 1000);
 	return dt.stamp;
+}
+
+//
+static bool _is_leap_year(uint year)
+{
+	return (year % 4 == 0) && ((year % 100 != 0) || (year % 400 == 0));
+}
+
+static llong _elapsed_leap_years(uint year)
+{
+	return (year / 4) - (year / 100) + (year / 400);
+}
+
+//
+static ullong _timstamp_to_linear(const QnTimeStamp ts)
+{
+	static const ushort days_of_months[2][12] =
+	{
+		{ 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 },	// 평년
+		{ 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335 },	// 윤년
+	};
+	const QnDateTime* dt = (const QnDateTime*)&ts;
+	// 년
+	ullong vt = dt->year;
+	// 월
+	uint vm = dt->month - 1;
+	if (vm >= 12)
+	{
+		vt += vm / 12;
+		vm %= 12;
+	}
+	// 년과 월의 합체
+	vt = (vt * 365) + _elapsed_leap_years(dt->year - 1) + days_of_months[_is_leap_year(dt->year)][vm];
+	// 일
+	vt = vt + dt->day;
+	// 시간
+	vt = (vt * 24) + dt->hour;
+	// 분
+	vt = (vt * 60) + dt->minute;
+	// 초
+	vt = (vt * 60) + dt->second;
+	// 밀리초
+	vt = (vt * 1000) + dt->millisecond;
+	return vt;
+}
+
+//
+double qn_tstos(const QnDateTime dt)
+{
+	llong vt = (llong)_timstamp_to_linear(dt.stamp);
+	return (double)vt / 1000.0;
+}
+
+//
+double qn_diffts(const QnTimeStamp left, const QnTimeStamp right)
+{
+	llong vt1 = (llong)_timstamp_to_linear(left);
+	llong vt2 = (llong)_timstamp_to_linear(right);
+	return (double)(vt1 - vt2) / 1000.0;
 }
 
 //
@@ -214,7 +273,7 @@ void _internal_yield(double until)
 		emscripten_sleep(0);
 #endif
 	} while (qn_elapsed() < until);
-}
+	}
 
 //
 void qn_sleep(uint milliseconds)
