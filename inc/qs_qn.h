@@ -269,8 +269,9 @@ typedef uint16_t						uchar2;
 
 typedef uint16_t						halfint;						/// @brief 16비트 부호 없는 정수(half int)
 typedef uint16_t						halffloat;						/// @brief 16비트 실수(half float)
-typedef int16_t							bool16;							/// @brief 16비트 참거짓
-typedef int32_t							bool32;							/// @brief 32비트 참거짓
+
+typedef int32_t							cham;							/// @brief 32비트 참거짓
+typedef int16_t							halfcham;						/// @brief 16비트 참거짓
 
 /// @brief 하위 변형 있는 16비트 정수
 typedef union VINT16_T
@@ -4077,8 +4078,8 @@ typedef void* (*QnThreadCallback)(void*);
 typedef struct QNTHREAD
 {
 	char*				name;
-	bool32				canwait;
-	bool32				managed;
+	cham				canwait;
+	cham				managed;
 
 	int					busy;
 	uint				stack_size;
@@ -4176,7 +4177,7 @@ QSAPI void* qn_mod_func(QnModule* self, const char* name);
 //////////////////////////////////////////////////////////////////////////
 // type check
 #define QN_ASSERT_SIZE(t,s)	static_assert(sizeof(t) == s, #t " type size must be " #s "")
-QN_ASSERT_SIZE(bool32, 4);
+QN_ASSERT_SIZE(cham, 4);
 QN_ASSERT_SIZE(byte, 1);
 QN_ASSERT_SIZE(ushort, 2);
 QN_ASSERT_SIZE(uint, 4);

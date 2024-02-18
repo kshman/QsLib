@@ -45,8 +45,8 @@ struct ShedEvent
 {
 	QnMutex*			mutex;
 	struct {
-		bool32				reset;				// loop()에서 리셋
-		bool32				__pad;
+		cham				reset;				// loop()에서 리셋
+		cham				__pad;
 		nuint				count;				// loop() 횟수
 		nuint				poll;				// poll() 횟수
 	}					loop;

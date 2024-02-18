@@ -734,7 +734,7 @@ typedef struct QGLAYOUTINPUT
 	QgLayoutStage		stage;								/// @brief 스테이지 구분
 	QgLayoutUsage		usage;								/// @brief 사용법
 	QgClrFmt			format;								/// @brief 포맷
-	bool32				normalized;							/// @brief 정규화	
+	cham				normalized;							/// @brief 정규화	
 } QgLayoutInput;
 
 /// @brief 레이아웃 데이터
@@ -763,8 +763,8 @@ typedef struct QGPROPSHADER
 /// @brief 블렌드
 typedef struct QGPROPBLEND
 {
-	bool32				coverage;							/// @brief sample coverage / alpha to coverage
-	bool32				separate;							/// @brief 거짓이면 rb[0]만 사용
+	cham				coverage;							/// @brief sample coverage / alpha to coverage
+	cham				separate;							/// @brief 거짓이면 rb[0]만 사용
 	QgBlend				rb[QGRVS_MAX_VALUE];				/// @brief 스테이지 별 블렌드 정보
 } QgPropBlend;
 
@@ -773,7 +773,7 @@ typedef struct QGPROPRASTERIZER
 {
 	QgFill				fill : 16;							/// @brief 채우기 방법
 	QgCull				cull : 16;							/// @brief 면 제거 방법
-	bool32				scissor;							/// @brief 가위질
+	cham				scissor;							/// @brief 가위질
 	float				depth_bias;							/// @brief 주어진 픽셀에 추가하는 깊이 값
 	float				slope_scale;						/// @brief 픽셀 경사면에 주어지는 스칼라 값
 } QgPropRasterizer;
@@ -913,7 +913,7 @@ typedef union QGEVENT
 	struct QGEVENT_ACTIVE
 	{
 		QgEventType			ev;
-		bool32				active;							/// @brief 활성 상태면 참
+		cham				active;							/// @brief 활성 상태면 참
 		double				delta;							/// @brief 마지막 활성 상태로 부터의 지난 시간(초)
 	}					active;								/// @brief 액티브 이벤트
 	struct QGEVENT_LAYOUT
@@ -927,7 +927,7 @@ typedef union QGEVENT
 		QgEventType			ev;
 		QikKey				key;							/// @brief 이벤트에 해당하는 키
 		QikMask				mask;							/// @brief 특수키 상태
-		bool32				repeat;							/// @brief 계속 눌려 있었다면 참
+		cham				repeat;							/// @brief 계속 눌려 있었다면 참
 	}					key;								/// @brief 키 눌림 떼임 이벤트
 	struct QGEVENT_MOUSEMOVE
 	{
@@ -1428,7 +1428,7 @@ struct QGBUFFER
 	uint				count;
 	ushort				stride;
 
-	bool16				mapped;
+	halfcham			mapped;
 };
 
 QN_DECL_VTABLE(QGBUFFER)

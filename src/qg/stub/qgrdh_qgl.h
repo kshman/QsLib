@@ -178,6 +178,7 @@ typedef struct QGLSESSION
 	QgDepth				depth;
 	QgStencil			stencil;
 
+	cham				alpha_to_coverage;
 	QglBlend			blend[QGRVS_MAX_VALUE];
 	QglRasterizer		rasz;
 } QglSession;

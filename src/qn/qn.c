@@ -70,7 +70,7 @@ typedef struct CLOSURE
 // 구현
 static struct RUNTIMEIMPL
 {
-	bool32			inited;
+	cham			inited;
 #ifndef QS_NO_SPINLOCK
 	QnSpinLock		lock;
 #endif
