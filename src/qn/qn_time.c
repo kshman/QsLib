@@ -239,7 +239,15 @@ llong qn_cycle(void)
 llong qn_tick(void)
 {
 	const llong cycle = qn_cycle();
+#if false
+	llong interval = cycle - cycle_impl.start_count;
+	llong tick = interval / cycle_impl.tick_count * 1000;
+	interval %= cycle_impl.tick_count;
+	tick += interval * 1000 / cycle_impl.tick_count;
+	return tick;
+#else
 	return ((cycle - cycle_impl.start_count) * 1000) / cycle_impl.tick_count;
+#endif
 }
 
 //
@@ -273,7 +281,7 @@ void _internal_yield(double until)
 		emscripten_sleep(0);
 #endif
 	} while (qn_elapsed() < until);
-	}
+}
 
 //
 void qn_sleep(uint milliseconds)
@@ -308,19 +316,19 @@ void qn_ssleep(double seconds)
 {
 	double until = qn_elapsed() + seconds;
 #if defined _QN_WINDOWS_
-	double msec = floor(seconds * QN_MSEC_PER_SEC * 0.95);
-	Sleep((DWORD)msec);
+	DWORD msec = (DWORD)(seconds * QN_MSEC_PER_SEC * 0.9);
+	Sleep(msec);
 #elif defined _QN_UNIX_
 #ifdef _QN_EMSCRIPTEN_
 	if (emscripten_has_asyncify())
 	{
-		double msec = floor(seconds * QN_MSEC_PER_SEC * 0.9);
+		uint msec = (uint)(seconds * QN_MSEC_PER_SEC * 0.9);
 		emscripten_sleep(msec);
 	}
 	else
 #endif
 	{
-		llong nanosec = (llong)(seconds * 0.95 * QN_NSEC_PER_SEC);
+		llong nanosec = (llong)(seconds * 0.9 * QN_NSEC_PER_SEC);
 		struct timespec ts =
 		{
 			.tv_sec = nanosec / QN_NSEC_PER_SEC,
@@ -360,14 +368,16 @@ typedef struct QNREALTIMER
 {
 	QnTimer				base;
 
-	double				inv_cut;		// 컷 역수
-
 	llong				cur_time;		// 현재 시간
 	llong				base_time;		// 기준 시간
 	llong				last_time;		// 이전 시간
 
 	llong				fps_time;		// FPS 초 계산용 시간
 	uint				fps_count;		// FPS 계산용 초당 누적 갯수
+
+	llong				cut_last;		// 컷 마지막
+	double				cut_elapsed;	// 컷 경과
+	double				inv_cut;		// 컷 역수
 } QnRealTimer;
 
 //
@@ -413,35 +423,50 @@ void qn_timer_reset(QnTimer* self)
 
 	real->base.fps = 0.0;
 	real->base.pause = false;
+
+	real->cut_last = now;
+	real->cut_elapsed = 0.0;
 }
 
 //
 void qn_timer_update(QnTimer* self)
 {
 	QnRealTimer* real = qn_cast_type(self, QnRealTimer);
+	llong now = qn_cycle();
 
-	real->cur_time = qn_cycle();
-	real->base.runtime = (double)(real->cur_time - real->base_time) / cycle_impl.tick_count;
-	real->base.elapsed = (double)(real->cur_time - real->last_time) / cycle_impl.tick_count;
+	real->cur_time = now;
+	real->base.runtime = (double)(now - real->base_time) / cycle_impl.tick_count;
+	real->base.elapsed = (double)(now - real->last_time) / cycle_impl.tick_count;
 	real->last_time = real->cur_time;
-
-	if (real->base.cut > 0 && real->base.elapsed < real->inv_cut)
-	{
-		qn_ssleep(real->inv_cut - real->base.elapsed);
-
-		real->cur_time = qn_cycle();
-		double wait = (double)(real->cur_time - real->last_time) / cycle_impl.tick_count;
-		real->last_time = real->cur_time;
-		real->base.elapsed += wait;
-	}
 
 	real->base.advance = real->base.pause ? 0.0 : real->base.elapsed;
 
-	if (real->base.manual == false)
-		real->base.fps = 1.0f / (float)real->base.elapsed;
+	float fps_elapsed;
+	if (real->base.cut == 0)
+		fps_elapsed = (float)real->base.elapsed;
 	else
 	{
-		llong now = qn_cycle();
+		real->cut_elapsed = (double)(now - real->cut_last) / cycle_impl.tick_count;
+		real->cut_last = now;
+
+		if (real->cut_elapsed < real->inv_cut)
+		{
+			qn_ssleep(real->inv_cut - real->cut_elapsed);
+
+			now = qn_cycle();
+			double wait = (double)(now - real->cut_last) / cycle_impl.tick_count;
+			real->cut_last = now;
+			real->cut_elapsed += wait;
+		}
+
+		fps_elapsed = (float)real->cut_elapsed;
+	}
+
+	if (real->base.manual == false)
+		real->base.fps = 1.0f / fps_elapsed;
+	else
+	{
+		now = qn_cycle();
 		real->fps_count++;
 		if (now - real->fps_time >= cycle_impl.tick_count)
 		{

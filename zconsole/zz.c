@@ -17,19 +17,21 @@ int main(void)
 
 	QgImage* img_puru = qg_load_image(0, "/image/ff14_puru.jpg");
 	QgTexture* tex_puru = qg_create_texture("puru", img_puru, QGTEXF_DISCARD_IMAGE | QGTEXF_MIPMAP);
+	QgTexture* tex_autumn = qg_load_texture(0,
 #ifdef _QN_EMSCRIPTEN_
-	QgTexture* tex_autumn = qg_load_texture(0, "/image/ff14_autumn.bmp", QGTEXF_LINEAR);
+		"/image/ff14_autumn.bmp",
 #else
-	QgTexture* tex_autumn = qg_load_texture(0, "/image/ff14_autumn.dds", QGTEXF_LINEAR);
+		"/image/ff14_autumn.dds",
 #endif
+		QGTEXF_LINEAR);
 
 	QgFont* font = qg_load_font(0, "/font/eunjin.ttf", 48);
 
-	QnDateTime sdt = { .stamp = qn_now() };
+	QnDateTime ldt, sdt = { .stamp = qn_now() };
+	float eacc = 0.0f, macc = 0.0f;
+	bool calc_acc = true, print_acc = true;
 
 	float f = 0.0f, dir = 1.0f, angle = 0.0f;
-	float em = 0.0f, mm = 0.0f;
-	QnDateTime dt;
 	while (qg_loop())
 	{
 		QgEvent ev;
@@ -93,41 +95,23 @@ int main(void)
 
 			qg_font_draw_format(font, 0, 0, "World, Hello! 한글도 나오나? (%.2f)", qg_get_fps());
 
-			static bool started = false, itsover = false;
-			static float checkpoint = 100.0f;
-			if (!itsover)
+			if (calc_acc)
 			{
-				if (!started)
-				{
-					sdt.stamp = qn_now();
-					started = true;
-					qg_reset_timer();
-				}
-				dt.stamp = qn_now();
+				ldt.stamp = qn_now();
+				macc = (float)qn_diffts(ldt.stamp, sdt.stamp);
+				eacc += qg_get_elapsed();
 			}
-			//if (!itsover && !started && dt.second == 0) started = true;
-
-			if (!itsover && started)
+			if ((ldt.second % 10) == 0 && print_acc)
 			{
-				em += qg_get_elapsed();
-
-				int min = dt.minute - sdt.minute;
-				int sec = dt.second - sdt.second;
-				int ms = dt.millisecond - sdt.millisecond;
-				mm = (float)min * 60.0f + (float)sec + (float)ms / 1000.0f;
-
-				checkpoint += qg_get_elapsed();
-				if (checkpoint > 10.0f)
-				{
-					qn_outputf("E: %.2f, T: %.2f", em, mm);
-					checkpoint = 0.0f;
-				}
+				qn_outputf("E: %.2f, T: %.2f, D: %.2f", eacc, macc, eacc - macc);
+				print_acc = false;
 			}
-			qg_font_draw_format(font, 0, 50, "E: %.2f", em);
-			qg_font_draw_format(font, 0, 80, "T: %.2f", mm);
+			else if ((ldt.second % 10) == 1)
+				print_acc = true;
+			//if (macc > 10 * 60.0f) calc_acc = false;
 
-			if (started && mm > 600.0f)
-				started = false, itsover = true;
+			qg_font_draw_format(font, 0, 50, "E: %.2f", eacc);
+			qg_font_draw_format(font, 0, 80, "T: %.2f", macc);
 
 			qg_end_render(true);
 		}
