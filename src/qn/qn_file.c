@@ -1410,14 +1410,14 @@ static QnTimeStamp _filetime_to_timestamp(const FILETIME* ft)
 
 #ifdef _QN_UNIX_
 //
-extern QnTimeStamp qn_tm_to_timestamp(struct tm* ptm);
+extern QnTimeStamp qn_tm_to_timestamp(struct tm* ptm, uint ms);
 
 //
 static QnTimeStamp _stat_to_timestamp(time_t tt)
 {
 	struct tm tm;
 	localtime_r(&tt, &tm);
-	return qn_tm_to_timestamp(&tm);
+	return qn_tm_to_timestamp(&tm, 0);
 }
 #endif
 

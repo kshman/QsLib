@@ -269,8 +269,9 @@ typedef uint16_t						uchar2;
 
 typedef uint16_t						halfint;						/// @brief 16비트 부호 없는 정수(half int)
 typedef uint16_t						halffloat;						/// @brief 16비트 실수(half float)
-typedef int16_t							bool16;							/// @brief 16비트 참거짓
-typedef int32_t							bool32;							/// @brief 32비트 참거짓
+
+typedef int32_t							cham;							/// @brief 32비트 참거짓
+typedef int16_t							halfcham;						/// @brief 16비트 참거짓
 
 /// @brief 하위 변형 있는 16비트 정수
 typedef union VINT16_T
@@ -3240,27 +3241,42 @@ QSAPI void qn_gmtime(struct tm* ptm, time_t tt);
 
 /// @brief 현재 시간 사이클
 /// @return	현재의 사이클
-QSAPI ullong qn_cycle(void);
+QSAPI llong qn_cycle(void);
 
 /// @brief 프로그램 시작부터 시간 틱
 /// @return	현재의 틱
-QSAPI ullong qn_tick(void);
+QSAPI llong qn_tick(void);
 
 /// @brief 프로그램 시작부터 시간 틱 (32비트 버전)
 /// @return	현재의 틱
 QSAPI uint qn_tick32(void);
 
+/// @brief 프로그램 시작부터 지나간 시간(초)
+/// @return	현재 프로그램 수행 시간 (초)
+/// @note qn_tick() / 1000.0과 같다
+QSAPI double qn_elapsed(void);
+
 /// @brief 밀리초 슬립
 /// @param[in] milliseconds	밀리초 단위로 처리되는 millisecond
+/// @note 윈도우는 1~15.6ms 단위로 처리된다. 유닉스는 nanosleep을 사용한다
+/// @note 그러므로 모든 플랫폼에서 정밀한 시간으로 sleep 하려면 qn_msleep을 사용해야 한다
 QSAPI void qn_sleep(uint milliseconds);
 
 /// @brief 초(second) 슬립
-/// @param[in] seconds	초 단위로 처리되는 second
+/// @param[in] seconds 초 단위로 처리되는 second
+/// @note 유닉스는 내부적으로 nanosleep을 사용한다
+/// @note 윈도우는 정밀 시계를 사용하므로, 스레드 콘텍스트가 qn_sleep보다 제한된다
 QSAPI void qn_ssleep(double seconds);
 
-/// @brief 마이크로 슬립, 정밀 시계를 이용하며 스레드 콘텍스트가 일반 슬립보다 제한된다
+/// @brief 마이크로 슬립
 /// @param[in] microseconds	마이크로초 단위로 처리되는 microsecond
-QSAPI void qn_msleep(ullong microseconds);
+/// @note 내부적으로 qn_ssleep을 사용한다
+QSAPI void qn_msleep(llong microseconds);
+
+/// @brief 지정한 초 만큼 대기
+/// @param seconds 대기할 시간(초)
+/// @warning 짧은 시간 동안 프로세스를 멈출 때만 사용하여야 한다
+QSAPI void qn_yield(double seconds);
 
 /// @brief time stamp
 typedef ullong QnTimeStamp;
@@ -3276,44 +3292,63 @@ typedef union QNDATETIME
 	};
 	struct
 	{
-		uint			year : 14;			/// @brief 년
-		uint			month : 6;			/// @brief 월
-		uint			day : 8;			/// @brief 일
-		uint			dow : 4;			/// @brief 한주의 일
+		uint			year : 14;			/// @brief 년 (8191년까지, 부호업으면 16383년까지)
+		uint			month : 6;			/// @brief 월 (63월까지)
+		uint			day : 8;			/// @brief 일 (255일까지) 
+		uint			dow : 4;			/// @brief 한주의 일 (15일까지)
 
-		uint			hour : 6;			/// @brief 시
-		uint			minute : 8;			/// @brief 분
-		uint			second : 8;			/// @brief 초
-		uint			millisecond : 10;	/// @brief 밀리초
+		uint			hour : 6;			/// @brief 시 (63시까지)
+		uint			minute : 8;			/// @brief 분 (255분까지)
+		uint			second : 8;			/// @brief 초 (255초까지)
+		uint			millisecond : 10;	/// @brief 밀리초 (1023밀리초까지)
 	};
 } QnDateTime;
 
 /// @brief 현재 시간 날짜를 포함하는 타임스탬프
-/// @returns 현재 타임스탬프. QnDateTime 으로 컨버전해서 사용할 수 있다
+/// @returns 현재 타임스탬프. QnDateTime 으로 변환해서 사용할 수 있다
 QSAPI QnTimeStamp qn_now(void);
 
 /// @brief 현재의 UTC 시간 날짜를 포함하는 타임스탬프
-/// @returns 현재 타임스탬프. QnDateTime 으로 컨버전해서 사용할 수 있다
+/// @returns 현재 타임스탬프. QnDateTime 으로 변환해서 사용할 수 있다
 QSAPI QnTimeStamp qn_utc(void);
 
 /// @brief 초를 시간으로
 /// @param[in] sec 초
 /// @return 계산된 타임스탬프
-QSAPI QnTimeStamp qn_stod(double sec);
+/// @note 시간까지만 계산한다
+QSAPI QnTimeStamp qn_stots(double sec);
 
 /// @brief 밀리초를 시간으로
 /// @param msec 밀리초
 /// @return 계산된 타임스탬프
-QSAPI QnTimeStamp qn_mstod(uint msec);
+/// @note 시간까지만 계산한다
+QSAPI QnTimeStamp qn_mstots(uint msec);
+
+/// @brief 타임스탬프를 초로
+/// @param[in] ts 타임스탬프
+/// @return 초
+QSAPI double qn_tstos(const QnDateTime dt);
+
+/// @brief 타임스탬프 비교 (초 단위)
+/// @param[in] left 타임스탬프1
+/// @param[in] left 타임스탬프2
+/// @return t1 - t2를 초 단위로 변환
+QSAPI double qn_diffts(const QnTimeStamp left, const QnTimeStamp right);
+
 
 /// @brief timer
 typedef struct QNTIMER
 {
 	QN_GAM_BASE(QNGAMBASE);
-	double				abstime;			/// @brief 타이머 절대 시간
-	double				runtime;			/// @brief 타이머 시작부터 수행 시간
-	double				advance;			/// @brief 타이머 갱신에 따른 시간 (프레임 당 시간)
-	double				fps;				/// @brief 초 당 프레임 수
+
+	double				runtime;			/// @brief 타이머 수행 시간
+	double				elapsed;			/// @brief 타이머 경과 시간 (포즈 영향 없음)
+	double				advance;			/// @brief 타이머 경과 시간 (포즈 중에는 0)
+
+	float				fps;				/// @brief 초 당 프레임 수
+	ushort				cut;				/// @brief 프레임 컷 (초당 프레임 수 제한)
+	bool				pause;				/// @brief 정지 여부
+	bool				manual;				/// @brief 수동 갱신 여부
 } QnTimer;
 
 /// @brief 타이머 만들기
@@ -3324,58 +3359,56 @@ QSAPI QnTimer* qn_create_timer(void);
 /// @param[in] self 타이머 개체
 QSAPI void qn_timer_reset(QnTimer* self);
 
-/// @brief 타이머 시작
-/// @param[in] self 타이머 개체
-QSAPI void qn_timer_start(QnTimer* self);
-
-/// @brief 타이머 정지
-/// @param[in] self 타이머 개체
-QSAPI void qn_timer_stop(QnTimer* self);
-
 /// @brief 타이머 갱신
 /// @param[in] self 타이머 개체
-/// @param[in] manual FPS를 자동으로 계산하려면 false, 아니면 true
-/// @return	성공 여부 반화
-/// @retval true 성공
-/// @retval false 실패
-QSAPI bool qn_timer_update(QnTimer* self, bool manual);
+QSAPI void qn_timer_update(QnTimer* self);
 
-/// @brief 타이머 갱신
-/// @param self 타이머 개체
-/// @param manual FPS를 자동으로 계산하려면 false, 아니면 true
-/// @param target_fps 목표 FPS
-/// @return 성공 여부
-bool qn_timer_update_fps(QnTimer* self, bool manual, double target_fps);
-
-/// @brief 타이머의 절대 시간
+/// @brief 타이머 프레임 컷 설정
 /// @param[in] self 타이머 개체
-/// @return	double
-QSAPI double qn_timer_get_cut(const QnTimer* self);
+/// @param cut 프레임 컷
+QSAPI void qn_timer_set_cut(QnTimer* self, int cut);
 
-/// @brief 타이머 과다 수행에 따른 갱신 경과값의 설정
+/// @brief 타이머 프레임 계산 방식 설정
 /// @param[in] self 타이머 개체
-/// @param	cut 제한 값
-QSAPI void qn_timer_set_cut(QnTimer* self, double cut);
-
-/// @brief 타이머의 절대 시간
-/// @param[in] self 타이머 개체
-/// @return	double
-INLINE double qn_timer_get_abstime(const QnTimer* self) { return self->abstime; }
+/// @param manual 참이면 평균으로 계산, 아니면 각 프레임마다 계산
+QSAPI void qn_timer_set_manual(QnTimer* self, bool manual);
 
 /// @brief 타이머의 수행 시간
 /// @param[in] self 타이머 개체
-/// @return	double
+/// @return	수행 시간
 INLINE double qn_timer_get_runtime(const QnTimer* self) { return self->runtime; }
 
-/// @brief 타이머의 갱신 시간
+/// @brief 타이머의 갱신 시간 (포즈 중에도 계산된다)
 /// @param[in] self 타이머 개체
-/// @return	double
+/// @return	갱신 시간
+/// @see qn_timer_get_advance
+INLINE double qn_timer_get_elapsed(const QnTimer* self) { return self->elapsed; }
+
+/// @brief 타이머의 갱신 시간 (포즈 중에는 0)
+/// @param[in] self 타이머 개체
+/// @return	갱신 시간
+/// @see qn_timer_get_elapsed
 INLINE double qn_timer_get_advance(const QnTimer* self) { return self->advance; }
 
 /// @brief 타이머의 초당 프레임 수
 /// @param[in] self 타이머 개체
-/// @return	double
-INLINE double qn_timer_get_fps(const QnTimer* self) { return self->fps; }
+/// @return	프레임 수
+INLINE float qn_timer_get_fps(const QnTimer* self) { return self->fps; }
+
+/// @brief 타이머의 프레임 컷
+/// @param[in] self 타이머 개체
+/// @return	프레임 컷
+INLINE int qn_timer_get_cut(const QnTimer* self) { return self->cut; }
+
+/// @brief 타이머의 정지 여부
+/// @param[in] self 타이머 개체
+/// @return	정지 여부
+INLINE bool qn_timer_is_pause(const QnTimer* self) { return self->pause; }
+
+/// @brief 타이머의 정지 여부 설정
+/// @param[in] self 타이머 개체
+/// @param[in] pause 정지 여부
+INLINE void qn_timer_set_pause(QnTimer* self, bool pause) { self->pause = pause; }
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -4059,8 +4092,8 @@ typedef void* (*QnThreadCallback)(void*);
 typedef struct QNTHREAD
 {
 	char*				name;
-	bool32				canwait;
-	bool32				managed;
+	cham				canwait;
+	cham				managed;
 
 	int					busy;
 	uint				stack_size;
@@ -4158,7 +4191,7 @@ QSAPI void* qn_mod_func(QnModule* self, const char* name);
 //////////////////////////////////////////////////////////////////////////
 // type check
 #define QN_ASSERT_SIZE(t,s)	static_assert(sizeof(t) == s, #t " type size must be " #s "")
-QN_ASSERT_SIZE(bool32, 4);
+QN_ASSERT_SIZE(cham, 4);
 QN_ASSERT_SIZE(byte, 1);
 QN_ASSERT_SIZE(ushort, 2);
 QN_ASSERT_SIZE(uint, 4);

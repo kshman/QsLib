@@ -37,7 +37,6 @@ typedef struct STUBBASE
 	float				advance;							// 프레임 시간, 포즈 상태일 때는 0
 	double				run;								// 실행 시간
 	double				active;								// 활성화된 시간
-	double				frames;								// 목표 프레임
 
 	QmRect				bound;								// 현재 윈도우의 위치와 크기 정보
 	QmSize				client_size;						// 시스템 스터브 관리, 그리기 영역 크기 (창 크기가 아님)

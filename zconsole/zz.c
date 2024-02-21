@@ -5,7 +5,7 @@ int main(void)
 {
 	qn_runtime(NULL);
 
-	int flags = QGFLAG_RESIZE | QGFLAG_MSAA | QGFLAG_VSYNC;
+	int flags = QGFLAG_RESIZE | QGFLAG_MSAA /*| QGFLAG_VSYNC*/;
 	int features = QGFEATURE_NONE;
 	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
@@ -16,13 +16,19 @@ int main(void)
 
 	QgImage* img_puru = qg_load_image(0, "/image/ff14_puru.jpg");
 	QgTexture* tex_puru = qg_create_texture("puru", img_puru, QGTEXF_DISCARD_IMAGE | QGTEXF_MIPMAP);
+	QgTexture* tex_autumn = qg_load_texture(0,
 #ifdef _QN_EMSCRIPTEN_
-	QgTexture* tex_autumn = qg_load_texture(0, "/image/ff14_autumn.bmp", QGTEXF_LINEAR);
+		"/image/ff14_autumn.bmp",
 #else
-	QgTexture* tex_autumn = qg_load_texture(0, "/image/ff14_autumn.dds", QGTEXF_LINEAR);
+		"/image/ff14_autumn.dds",
 #endif
+		QGTEXF_LINEAR);
 
 	QgFont* font = qg_load_font(0, "/font/eunjin.ttf", 48);
+
+	QnDateTime ldt, sdt = { .stamp = qn_now() };
+	float eacc = 0.0f, macc = 0.0f;
+	bool calc_acc = true, print_acc = true;
 
 	float f = 0.0f, dir = 1.0f, angle = 0.0f;
 	while (qg_loop())
@@ -31,14 +37,7 @@ int main(void)
 		while (qg_poll(&ev))
 		{
 			if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_ESC)
-			{
-				qn_sym_dbgout();
-				qn_prop_dbgout();
-#ifndef _QN_EMSCRIPTEN_
-				qn_mpf_dbgout();
-#endif
 				qg_exit_loop();
-			}
 			else if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_F1)
 			{
 				static bool fullscreen = false;
@@ -87,6 +86,24 @@ int main(void)
 			qg_draw_sprite_ex(&rt, angle, tex_puru, NULL, NULL);
 
 			qg_font_draw_format(font, 0, 0, "World, Hello! 한글도 나오나? (%.2f)", qg_get_fps());
+
+			if (calc_acc)
+			{
+				ldt.stamp = qn_now();
+				macc = (float)qn_diffts(ldt.stamp, sdt.stamp);
+				eacc += qg_get_elapsed();
+			}
+			if ((ldt.second % 10) == 0 && print_acc)
+			{
+				qn_outputf("E: %.2f, T: %.2f, D: %.2f", eacc, macc, eacc - macc);
+				print_acc = false;
+			}
+			else if ((ldt.second % 10) == 1)
+				print_acc = true;
+			//if (macc > 10 * 60.0f) calc_acc = false;
+
+			qg_font_draw_format(font, 0, 50, "E: %.2f", eacc);
+			qg_font_draw_format(font, 0, 80, "T: %.2f", macc);
 
 			qg_end_render(true);
 		}

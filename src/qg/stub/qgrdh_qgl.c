@@ -541,6 +541,7 @@ static void qgl_rdh_reset(void)
 	ss->buffer.uniform = GL_INVALID_HANDLE;
 	ss->depth = QGDEPTH_LE;
 	ss->stencil = QGSTENCIL_OFF;
+	ss->alpha_to_coverage = false;
 	qn_zero(ss->blend, QGRVS_MAX_VALUE, QglBlend);
 	qn_zero_1(&ss->rasz);
 
@@ -1158,6 +1159,19 @@ static void qgl_commit_blend_rasz(const QglRenderState* rdr)
 	// 블랜드
 	const QgPropBlend* blend = &rdr->blend;
 #ifdef QGL_MAYBE_GL_CORE
+#ifdef GL_SAMPLE_ALPHA_TO_COVERAGE
+	if (QGL_CORE)
+	{
+		if (blend->coverage != ss->alpha_to_coverage)
+		{
+			if (blend->coverage)
+				GLDEBUG(glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE));
+			else
+				GLDEBUG(glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE));
+			ss->alpha_to_coverage = blend->coverage;
+		}
+	}
+#endif
 	if (QGL_CORE && info->renderer_version >= 300 && blend->separate)
 	{
 		for (GLuint i = 0; i < max_off_count; i++)
