@@ -51,7 +51,7 @@ QnTimeStamp qn_system_time_to_timestamp(const SYSTEMTIME* pst)
 
 #ifdef _QN_UNIX_
 // tm을 타임스탬프로 변환
-QnTimeStamp qn_tm_to_timestamp(struct tm* ptm)
+QnTimeStamp qn_tm_to_timestamp(struct tm* ptm, uint ms)
 {
 	QnDateTime dt;
 	dt.year = (uint)ptm->tm_year + 1900;
@@ -61,7 +61,7 @@ QnTimeStamp qn_tm_to_timestamp(struct tm* ptm)
 	dt.hour = (uint)ptm->tm_hour;
 	dt.minute = (uint)ptm->tm_min;
 	dt.second = (uint)ptm->tm_sec;
-	dt.millisecond = 0;
+	dt.millisecond = ms;
 	return dt.stamp;
 }
 #endif
@@ -74,11 +74,24 @@ QnTimeStamp qn_now(void)
 	GetLocalTime(&st);
 	return qn_system_time_to_timestamp(&st);
 #else
-	struct timeval tv;
+	time_t tt;
+	uint ms;
+	struct timespec ts;
+	if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
+	{
+		tt = ts.tv_sec;
+		ms = ts.tv_nsec / QN_USEC_PER_SEC;
+	}
+	else
+	{
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		tt = tv.tv_sec;
+		ms = tv.tv_usec / (QN_USEC_PER_SEC / QN_MSEC_PER_SEC);
+	}
 	struct tm tm;
-	gettimeofday(&tv, NULL);
-	(void)localtime_r(&tv.tv_sec, &tm);
-	return qn_tm_to_timestamp(&tm);
+	(void)localtime_r(&tt, &tm);
+	return qn_tm_to_timestamp(&tm, ms);
 #endif
 }
 
@@ -90,11 +103,24 @@ QnTimeStamp qn_utc(void)
 	GetSystemTime(&st);
 	return qn_system_time_to_timestamp(&st);
 #else
-	struct timeval tv;
+	time_t tt;
+	uint ms;
+	struct timespec ts;
+	if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
+	{
+		tt = ts.tv_sec;
+		ms = ts.tv_nsec / QN_USEC_PER_SEC;
+	}
+	else
+	{
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		tt = tv.tv_sec;
+		ms = tv.tv_usec / (QN_USEC_PER_SEC / QN_MSEC_PER_SEC);
+	}
 	struct tm tm;
-	gettimeofday(&tv, NULL);
-	(void)gmtime_r(&tv.tv_sec, &tm);
-	return qn_tm_to_timestamp(&tm);
+	(void)gmtime_r(&tt, &tm);
+	return qn_tm_to_timestamp(&tm, ms);
 #endif
 }
 
@@ -230,7 +256,7 @@ llong qn_cycle(void)
 		struct timeval tv;
 		gettimeofday(&tv, 0);
 		n = ((llong)tv.tv_sec * QN_MSEC_PER_SEC) + ((llong)tv.tv_usec / QN_MSEC_PER_SEC);
-	}
+}
 	return n;
 #endif
 }
@@ -278,7 +304,7 @@ void _internal_yield(double until)
 #elif defined __GNUC__ && (defined __arm__ || defined __aarch64__)
 		__asm__ __volatile__("yield");
 #elif _QN_EMSCRIPTEN_
-		emscripten_sleep(0);
+		//emscripten_sleep(0);
 #endif
 	} while (qn_elapsed() < until);
 }
@@ -309,7 +335,7 @@ void qn_sleep(uint milliseconds)
 		error = nanosleep(&es, &ts);
 	} while (error && (errno == EINTR));
 #endif
-}
+	}
 
 //
 void qn_ssleep(double seconds)
@@ -319,7 +345,7 @@ void qn_ssleep(double seconds)
 	DWORD msec = (DWORD)(seconds * QN_MSEC_PER_SEC * 0.9);
 	Sleep(msec);
 #elif defined _QN_UNIX_
-#ifdef _QN_EMSCRIPTEN_
+#if defined _QN_EMSCRIPTEN_ //&& false
 	if (emscripten_has_asyncify())
 	{
 		uint msec = (uint)(seconds * QN_MSEC_PER_SEC * 0.9);
@@ -341,7 +367,7 @@ void qn_ssleep(double seconds)
 			struct timespec es = ts;
 			error = nanosleep(&es, &ts);
 		} while (error && (errno == EINTR));
-	}
+}
 #else
 #error unknown platform! please place seconds sleep function on here!
 #endif

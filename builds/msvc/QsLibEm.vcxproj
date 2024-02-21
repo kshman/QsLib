@@ -116,9 +116,8 @@
   <ItemGroup>
     <ClCompile Include="..\..\zconsole\zz.c" />
     <ClCompile Include="..\..\src\pch.c" />
-    <ClCompile Include="..\..\src\qg\qg_font.c" />
+    <ClCompile Include="..\..\src\qg\qg_depict.c" />
     <ClCompile Include="..\..\src\qg\qg_image.c" />
-    <ClCompile Include="..\..\src\qg\qg_rdh.c" />
     <ClCompile Include="..\..\src\qg\qg_stub.c" />
     <ClCompile Include="..\..\src\qg\stub\qgrdh_qgl.c" />
     <ClCompile Include="..\..\src\qg\stub\qgrdh_qgl_glad.c" />

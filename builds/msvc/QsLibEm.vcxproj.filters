@@ -164,9 +164,6 @@
     <ClCompile Include="..\..\src\qg\stub\qgstub_wayland.c">
       <Filter>소스 파일\qg\stub</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qg_rdh.c">
-      <Filter>소스 파일\qg</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\qg\qg_stub.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
@@ -185,7 +182,7 @@
     <ClCompile Include="..\..\src\qg\qg_image.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qg_font.c">
+    <ClCompile Include="..\..\src\qg\qg_depict.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
     <ClCompile Include="..\..\zconsole\zz.c">

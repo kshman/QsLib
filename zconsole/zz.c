@@ -10,7 +10,6 @@ int main(void)
 	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 	qg_fuse(0, NULL, false, true);
-	//qg_set_fps(120);
 
 	QmVec bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
 	qg_set_background(&bgc);
@@ -38,14 +37,7 @@ int main(void)
 		while (qg_poll(&ev))
 		{
 			if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_ESC)
-			{
-				qn_sym_dbgout();
-				qn_prop_dbgout();
-#ifndef _QN_EMSCRIPTEN_
-				qn_mpf_dbgout();
-#endif
 				qg_exit_loop();
-			}
 			else if (ev.ev == QGEV_KEYDOWN && ev.key.key == QIK_F1)
 			{
 				static bool fullscreen = false;

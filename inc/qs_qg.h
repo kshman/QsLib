@@ -814,6 +814,44 @@ typedef struct QGVARSHADER
 	QgScAuto			scauto;								/// @brief 자동 타입 또는 사용자 정의 키 값
 } QgVarShader;
 
+/// @brief 프로젝션 파라미터
+typedef struct QGPARAMPROJ
+{
+	float				fov;								/// @brief 시야각
+	float				aspect;								/// @brief 가로 세로 비율
+	float				znear;								/// @brief 가까운 평면
+	float				zfar;								/// @brief 먼 평면
+} QgParamProj;
+
+/// @brief 뷰 파라미터
+typedef struct QGPARAMVIEW
+{
+	QmVec				eye;								/// @brief 눈 위치
+	QmVec				at;									/// @brief 바라보는 위치
+	QmVec				up;									/// @brief 위 방향
+	QmVec				ahead;								/// @brief 앞 방향
+} QgParamView;
+
+/// @brief 카메라 파라미터
+typedef struct QGPARAMCAMERA
+{
+	QmMat				proj;								/// @brief 프로젝션 행렬
+	QmMat				view;								/// @brief 뷰 행렬
+	QmMat				invv;								/// @brief 역 행렬
+	QmMat				vipr;								/// @brief 프로젝션 곱하기 뷰 행렬
+
+	QmVec				rot;								/// @brief 회전
+	float				dist;								/// @brief 거리
+
+	float				spd_move;							/// @brief 이동 속도
+	float				spd_rot;							/// @brief 회전 속도
+
+	uint				use_layout : 1;
+	uint				use_pause : 1;
+	uint				use_maya : 1;
+	uint				__pad : 29;
+} QgParamCamera;
+
 /// @brief 키 상태
 typedef struct QGUIMKEY
 {
@@ -1059,6 +1097,10 @@ QSAPI const QgUimKey* qg_get_key_info(void);
 /// @return 마우스 정보 포인터
 QSAPI const QgUimMouse* qg_get_mouse_info(void);
 
+/// @brief 타이머를 얻는다
+/// @return 타이머 포인터
+QSAPI QnTimer* qg_get_timer(void);
+
 /// @brief 마우스 더블 클릭 정밀도를 설정한다
 /// @param density 더블 클릭하면서 마우스를 움직여도 되는 거리 (포인트, 최대값 50)
 /// @param interval 클릭과 클릭 사이의 시간 (밀리초, 최대값 5000)
@@ -1243,6 +1285,9 @@ typedef struct QGRENDERSTATE	QgRenderState;					/// @brief 렌더 파이프라�
 typedef struct QGTEXTURE		QgTexture;						/// @brief 텍스쳐
 typedef struct QGIMAGE			QgImage;						/// @brief 이미지
 typedef struct QGFONT			QgFont;							/// @brief 폰트
+typedef struct QGRAY			QgRay;							/// @brief 레이
+typedef struct QGCAMERA			QgCamera;						/// @brief 카메라
+
 
 /// @brief 세이더 콜백
 /// @details 두번째 인수(int)는 qn_get_key로 얻어진 키 값을 전달하므로 자동 변수가 아닐 경우
@@ -1328,35 +1373,9 @@ QSAPI void qg_set_project(const QmMat4* proj);
 /// @param view 뷰 행렬
 QSAPI void qg_set_view_project(const QmMat4* proj, const QmMat4* view);
 
-/// @brief 버퍼를 만든다
-/// @param type 버퍼 타입
-/// @param count 요소 개수
-/// @param stride 요소의 너비
-/// @param initial_data 초기화할 요소 데이터로 이 값이 NULL이면 동적 버퍼, 값이 있으면 정적 버퍼로 만들어진다
-/// @return 만들어진 버퍼
-/// @details data 파라미터의 설명에도 있지만, 정적 버퍼로 만들고 나중에 데이터를 넣으면 문제가 생길 수도 있다
-QSAPI QgBuffer* qg_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data);
-
-/// @brief 렌더 파이프라인을 만든다
-/// @param name 렌더 이름 (이름을 지정하면 캐시한다)
-/// @param render 렌더 파이프라인 속성
-/// @param shader 세이더 속성
-/// @return 만들어진 렌더 파이프라인
-QSAPI QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgPropShader* shader);
-
-/// @brief 텍스쳐를 만든다
-/// @param name 텍스쳐 이름
-/// @param image 이미지
-/// @param flags 텍스쳐 플래그 
-/// @return 만들어진 텍스쳐
-QSAPI QgTexture* qg_create_texture(const char* name, const QgImage* image, QgTexFlag flags);
-
-/// @brief 텍스쳐를 파일에서 읽어 만든다
-/// @param mount 마운트 번호
-/// @param filename 파일 이름
-/// @param flags 텍스쳐 플래그
-/// @return 읽어서 만든 텍스쳐
-QSAPI QgTexture* qg_load_texture(int mount, const char* filename, QgTexFlag flags);
+/// @brief 카메라를 설정한다 (프로젝션과 뷰	행렬을 설정한다)
+/// @param camera 카메라
+QSAPI void qg_set_camera(QgCamera* camera);
 
 /// @brief 정점 버퍼를 설정한다
 /// @param stage 버퍼를 지정할 스테이지
@@ -1439,6 +1458,15 @@ QN_DECL_VTABLE(QGBUFFER)
 	bool (*data)(void*, int, const void*);
 };
 
+/// @brief 버퍼를 만든다
+/// @param type 버퍼 타입
+/// @param count 요소 개수
+/// @param stride 요소의 너비
+/// @param initial_data 초기화할 요소 데이터로 이 값이 NULL이면 동적 버퍼, 값이 있으면 정적 버퍼로 만들어진다
+/// @return 만들어진 버퍼
+/// @details data 파라미터의 설명에도 있지만, 정적 버퍼로 만들고 나중에 데이터를 넣으면 문제가 생길 수도 있다
+QSAPI QgBuffer* qg_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data);
+
 /// @brief 버퍼 설정을 위해 잠근다
 /// @param g 버퍼
 /// @return 버퍼 데이터 설정을 위한 포인터
@@ -1458,6 +1486,7 @@ QSAPI bool qg_buffer_unmap(QgBuffer* g);
 /// @note data 는 반드시 size 만큼 데이터를 갖고 있어야한다
 QSAPI bool qg_buffer_data(QgBuffer* g, int size, const void* data);
 
+
 /// @brief 렌더 파이프라인 상태
 struct QGRENDERSTATE
 {
@@ -1465,6 +1494,14 @@ struct QGRENDERSTATE
 
 	nuint				ref;
 };
+
+/// @brief 렌더 파이프라인을 만든다
+/// @param name 렌더 이름 (이름을 지정하면 캐시한다)
+/// @param render 렌더 파이프라인 속성
+/// @param shader 세이더 속성
+/// @return 만들어진 렌더 파이프라인
+QSAPI QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgPropShader* shader);
+
 
 /// @brief 텍스쳐
 struct QGTEXTURE
@@ -1483,6 +1520,20 @@ QN_DECL_VTABLE(QGTEXTURE)
 	QN_DECL_VTABLE(QNGAMBASE)	base;
 	bool (*bind)(QgTexture*, int);
 };
+
+/// @brief 텍스쳐를 만든다
+/// @param name 텍스쳐 이름
+/// @param image 이미지
+/// @param flags 텍스쳐 플래그 
+/// @return 만들어진 텍스쳐
+QSAPI QgTexture* qg_create_texture(const char* name, const QgImage* image, QgTexFlag flags);
+
+/// @brief 텍스쳐를 파일에서 읽어 만든다
+/// @param mount 마운트 번호
+/// @param filename 파일 이름
+/// @param flags 텍스쳐 플래그
+/// @return 읽어서 만든 텍스쳐
+QSAPI QgTexture* qg_load_texture(int mount, const char* filename, QgTexFlag flags);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1620,6 +1671,144 @@ QSAPI int qg_font_draw(QgFont* self, int x, int y, const char* text);
 /// @param ... 가변 인수
 /// @return 그린 문자열의 너비
 QSAPI int qg_font_draw_format(QgFont* self, int x, int y, const char* fmt, ...);
+
+
+// 광선
+struct QGRAY
+{
+	QN_GAM_BASE(QNGAMBASE);
+
+	QmVec				location;
+	QmVec				direction;
+	QmVec				origin;
+
+	QgCamera*			camera;
+};
+
+/// @brief 광선을 만든다
+/// @param camera 카메라
+/// @return 만들어진 광선
+QSAPI QgRay* qg_create_ray(QgCamera* camera);
+
+/// @brief 광선의 위치를 설정한다
+/// @param self 광선
+/// @param x,y x, y 좌표
+QSAPI void qg_ray_set_point(QgRay* self, float x, float y);
+
+/// @brief 광선의 위치를 설정한다
+/// @param self 광선
+/// @param bound 바운드
+/// @param x,y x, y 좌표
+QSAPI void qg_ray_set_bound_point(QgRay* self, const QmRect* bound, float x, float y);
+
+/// @brief 삼각형과 광선이 교차하는지 테스트한다
+/// @param self 광선
+/// @param v1 삼각형 첫번째 점
+/// @param v2 삼각형 두번째 점
+/// @param v3 삼각형 세번째 점
+/// @param distance 교차점까지의 거리
+/// @return 교차하면 참
+QSAPI bool qg_ray_intersect_tri(const QgRay* self, const QmVec* v1, const QmVec* v2, const QmVec* v3, float* distance);
+
+/// @brief 평면과 광선이 교차하는지 테스트한다
+/// @param self 광선
+/// @param plane 평면
+/// @param normal 평면의 법선
+/// @param distance 교차점까지의 거리
+/// @return 교차하면 참
+QSAPI bool qg_ray_intersect_plane(const QgRay* self, const QmVec* plane, const QmVec* normal, float* distance);
+
+/// @brief 광선의 위치를 얻는다
+/// @param self 광선
+/// @param dist 거리
+/// @return 광선의 위치
+QSAPI const QmVec QM_VECTORCALL qg_ray_get_loc(const QgRay* self, float dist);
+
+
+// 카메라
+struct QGCAMERA
+{
+	QN_GAM_BASE(QNGAMBASE);
+
+	QgParamCamera		param;
+	QgParamProj			proj;
+	QgParamView			view;
+};
+
+QN_DECL_VTABLE(QGCAMERA)
+{
+	QN_DECL_VTABLE(QNGAMBASE)	base;
+	void (*update)(QnGam);
+};
+
+/// @brief 카메라를 만든다
+/// @return 만들어진 카메라
+QSAPI QgCamera* qg_create_camera(void);
+
+/// @brief 마야 카메라를 만든다
+/// @return 만들어진 카메라
+QSAPI QgCamera* qg_create_maya_camera(void);
+
+/// @brief 프로젝션 속성을 설정한다
+/// @param self 카메라
+/// @param fov 시야각
+/// @param znear 가까운 평면
+/// @param zfar 먼 평면
+QSAPI void qg_camera_set_proj(QgCamera* self, float fov, float znear, float zfar);
+
+/// @brief 프로젝션 속성을 설정한다 (추가로 종횡비 설정)
+/// @param self 카메라
+/// @param ascpect 종횡비
+/// @param fov 시야각
+/// @param znear 가까운 평면
+/// @param zfar 먼 평면
+QSAPI void qg_camera_set_proj_aspect(QgCamera* self, float ascpect, float fov, float znear, float zfar);
+
+/// @brief 뷰 속성을 설정한다
+/// @param self 카메라
+/// @param at 시선
+/// @param ahead 앞 방향
+/// @return 마야 카메라를 사용하면 무조건 거짓을 반환한다
+/// @note at과 ahead는 카메라의 위치와 방향을 설정한다
+QSAPI bool qg_camera_set_view(QgCamera* self, const QmVec* at, const QmVec* ahead);
+
+/// @brief 카메라 회전을 설정한다 (마야/FPS 카메라)
+/// @param self 카메라
+/// @param rot 회전
+QSAPI void qg_camera_set_rot(QgCamera* self, const QmVec* rot);
+
+/// @brief 카메라 회전 속도를 설정한다 (마야/FPS 카메라)
+/// @param self 카메라
+/// @param spd 회전 속도
+QSAPI void qg_camera_set_rot_speed(QgCamera* self, float spd);
+
+/// @brief 카메라 이동 속도를 설정한다 (마야/FPS 카메라)
+/// @param self 카메라
+/// @param spd 이동 속도
+QSAPI void qg_camera_set_move_speed(QgCamera* self, float spd);
+
+/// @brief 점과 카메라의 거리의 제곱을 얻는다
+/// @param self 카메라
+/// @param pos 점
+/// @return 거리의 제곱
+QSAPI float qg_camera_get_distsq(const QgCamera* self, const QmVec* pos);
+
+/// @brief 점과 카메라의 거리를 얻는다
+/// @param self 카메라
+/// @param pos 점
+/// @return 거리
+QSAPI float qg_camera_get_dist(const QgCamera* self, const QmVec* pos);
+
+/// @brief 점을 카메라 공간으로 변환한다
+/// @param self 카메라
+/// @param v 점
+/// @param world 월드 행렬 (이 값이 널이면 RDH가 가지고 있는 world 행렬을 사용한다)
+/// @return 변환된 점
+QSAPI QmVec QM_VECTORCALL qg_camera_project(const QgCamera* self, const QmVec* v, const QmMat4* world);
+
+/// @brief 카메라를 업데이트한다
+/// @param self 카메라
+QSAPI void qg_camera_update(QgCamera* self);
 
 
 //////////////////////////////////////////////////////////////////////////
