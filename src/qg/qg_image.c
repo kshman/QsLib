@@ -796,13 +796,67 @@ static GlyphValue* _truetype_get_glyph(QgTrueType* self, int code)
 }
 
 //
+static QmColor _truetype_string_color(QgTrueType* self, const char* text, int len)
+{
+	if (text[0] == '#')
+	{
+		if (len == 9)
+		{
+			int i = qn_strtoi(text + 1, 16);
+			return qm_coloru((uint)i);
+		}
+		if (len == 7)
+		{
+			int i = 0xFF000000 | qn_strtoi(text + 1, 16);
+			return qm_coloru((uint)i);
+		}
+		if (len == 4)
+		{
+			char buf[8];
+			buf[0] = text[1];
+			buf[1] = text[1];
+			buf[2] = text[2];
+			buf[3] = text[2];
+			buf[4] = text[3];
+			buf[5] = text[3];
+			buf[6] = '\0';
+			int i = 0xFF000000 | qn_strtoi(buf, 16);
+			return qm_coloru((uint)i);
+		}
+	}
+	if (qn_stricmp(text, "black") == 0)
+		return QMCOLOR_BLACK;
+	if (qn_stricmp(text, "white") == 0)
+		return QMCOLOR_WHITE;
+	if (qn_stricmp(text, "red") == 0)
+		return QMCOLOR_RED;
+	if (qn_stricmp(text, "green") == 0)
+		return QMCOLOR_GREEN;
+	if (qn_stricmp(text, "blue") == 0)
+		return QMCOLOR_BLUE;
+	if (qn_stricmp(text, "yellow") == 0)
+		return QMCOLOR_YELLOW;
+	if (qn_stricmp(text, "cyan") == 0)
+		return QMCOLOR_CYAN;
+	if (qn_stricmp(text, "magenta") == 0)
+		return QMCOLOR_MAGENTA;
+	if (qn_stricmp(text, "gray") == 0)
+		return QMCOLOR_GRAY;
+	if (qn_stricmp(text, "lightgray") == 0)
+		return QMCOLOR_LIGHTGRAY;
+	if (qn_stricmp(text, "darkgray") == 0)
+		return QMCOLOR_DARKGRAY;
+	return self->base.color;
+}
+
+//
 static void _truetype_draw(QnGam g, const QmRect* bound, const char* text)
 {
 	QgTrueType* self = qn_cast_type(g, QgTrueType);
 	QmPoint pt = qm_point(bound->Left, bound->Top);
 	QmVec color = self->base.color;
 	int i, height = self->base.size + self->base.step.Height;
-	char clrbuf[10];
+	char clrbuf[16];
 
 	while (*text)
 	{
@@ -827,34 +881,25 @@ static void _truetype_draw(QnGam g, const QmRect* bound, const char* text)
 				pt.X += (self->base.size + self->base.step.Width) * 4;
 				break;
 			case '\a':
-				if (*text == '$')
+				for (i = 0; i < 15; i++)
+				{
+					char ch = *(text + i);
+					if (ch == '\0')
+						goto pos_exit;
+					if (ch == '\a')
+						break;
+					clrbuf[i] = ch;
+				}
+				if (i == 0)
 				{
 					text++;
 					color = self->base.color;
 				}
 				else
 				{
-					for (i = 0; i < 6; text++)
-					{
-						if (*text == '\0' || ((*text) & 0x80) != 0)
-							goto pos_exit;
-						if (*text >= '0' && *text <= '9' ||
-							*text >= 'a' && *text <= 'f' ||
-							*text >= 'A' && *text <= 'F')
-						{
-							clrbuf[i++] = *text;
-							continue;
-						}
-						break;
-					}
-					if (i != 6)
-						goto pos_exit;
-					else
-					{
-						clrbuf[i] = '\0';
-						i = 0xFF000000 | qn_strtoi(clrbuf, 16);
-						color = qm_coloru((uint)i);
-					}
+					text += i + 1;
+					clrbuf[i] = '\0';
+					color = _truetype_string_color(self, clrbuf, i);
 				}
 				break;
 			default:
@@ -909,26 +954,18 @@ static QmPoint _truetype_calc(QnGam g, const char* text)
 				pt.X += (self->base.size + self->base.step.Width) * 4;
 				break;
 			case '\a':
-				if (*text == '$')
+				for (i = 0; i < 15; i++)
+				{
+					char ch = *(text + i);
+					if (ch == '\0')
+						goto pos_exit;
+					if (ch == '\a')
+						break;
+				}
+				if (i == 0)
 					text++;
 				else
-				{
-					for (i = 0; i < 6; text++)
-					{
-						if (*text == '\0' || ((*text) & 0x80) != 0)
-							goto pos_exit;
-						if (*text >= '0' && *text <= '9' ||
-							*text >= 'a' && *text <= 'f' ||
-							*text >= 'A' && *text <= 'F')
-						{
-							i++;
-							continue;
-						}
-						break;
-					}
-					if (i != 6)
-						goto pos_exit;
-				}
+					text += i + 1;
 				break;
 			default:
 				if (code > ' ')
