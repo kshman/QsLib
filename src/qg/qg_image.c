@@ -827,26 +827,34 @@ static void _truetype_draw(QnGam g, const QmRect* bound, const char* text)
 				pt.X += (self->base.size + self->base.step.Width) * 4;
 				break;
 			case '\a':
-				for (i = 0; i < 6; text++)
+				if (*text == '$')
 				{
-					if (*text == '\0' || ((*text) & 0x80) != 0)
-						goto pos_exit;
-					if (*text >= '0' && *text <= '9' ||
-						*text >= 'a' && *text <= 'f' ||
-						*text >= 'A' && *text <= 'F')
-					{
-						clrbuf[i++] = *text;
-						continue;
-					}
-					break;
+					text++;
+					color = self->base.color;
 				}
-				if (i != 6)
-					goto pos_exit;
 				else
 				{
-					clrbuf[i] = '\0';
-					i = 0xFF000000 | qn_strtoi(clrbuf, 16);
-					color = qm_coloru((uint)i);
+					for (i = 0; i < 6; text++)
+					{
+						if (*text == '\0' || ((*text) & 0x80) != 0)
+							goto pos_exit;
+						if (*text >= '0' && *text <= '9' ||
+							*text >= 'a' && *text <= 'f' ||
+							*text >= 'A' && *text <= 'F')
+						{
+							clrbuf[i++] = *text;
+							continue;
+						}
+						break;
+					}
+					if (i != 6)
+						goto pos_exit;
+					else
+					{
+						clrbuf[i] = '\0';
+						i = 0xFF000000 | qn_strtoi(clrbuf, 16);
+						color = qm_coloru((uint)i);
+					}
 				}
 				break;
 			default:
@@ -901,21 +909,26 @@ static QmPoint _truetype_calc(QnGam g, const char* text)
 				pt.X += (self->base.size + self->base.step.Width) * 4;
 				break;
 			case '\a':
-				for (i = 0; i < 6; text++)
+				if (*text == '$')
+					text++;
+				else
 				{
-					if (*text == '\0' || ((*text) & 0x80) != 0)
-						goto pos_exit;
-					if (*text >= '0' && *text <= '9' ||
-						*text >= 'a' && *text <= 'f' ||
-						*text >= 'A' && *text <= 'F')
+					for (i = 0; i < 6; text++)
 					{
-						i++;
-						continue;
+						if (*text == '\0' || ((*text) & 0x80) != 0)
+							goto pos_exit;
+						if (*text >= '0' && *text <= '9' ||
+							*text >= 'a' && *text <= 'f' ||
+							*text >= 'A' && *text <= 'F')
+						{
+							i++;
+							continue;
+						}
+						break;
 					}
-					break;
+					if (i != 6)
+						goto pos_exit;
 				}
-				if (i != 6)
-					goto pos_exit;
 				break;
 			default:
 				if (code > ' ')
