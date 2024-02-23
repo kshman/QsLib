@@ -668,7 +668,7 @@ static void qgl_rdh_reset(void)
 	static QgLayoutInput inputs_ortho[] =
 	{
 		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT4, false },
-		{ QGLOS_1, QGLOU_COLOR1, QGLOT_FLOAT4, false },
+		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
 	};
 	static QgPropRender render_ortho = QGL_PROP_RENDER_BLEND;
 

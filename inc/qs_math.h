@@ -791,6 +791,7 @@ INLINE QmVec4 QM_VECTORCALL qm_color_neg(const QmVec4 c);
 INLINE QmVec4 QM_VECTORCALL qm_color_mod(const QmVec4 left, const QmVec4 right);
 INLINE QmVec4 QM_VECTORCALL qm_color_contrast(const QmVec4 c, float contrast);
 INLINE QmVec4 QM_VECTORCALL qm_color_saturation(const QmVec4 c, float saturation);
+INLINE uint QM_VECTORCALL qm_color_to_uint(const QmVec4 c);
 
 INLINE QmMat4 QM_VECTORCALL qm_mat4_unit(void);
 INLINE QmMat4 QM_VECTORCALL qm_mat4_zero(void);
@@ -1853,14 +1854,14 @@ INLINE QmVec4 QM_VECTORCALL qm_vec_ins(const QmVec4 a, const QmVec4 b, uint e, u
 /// @param x,y 좌표
 INLINE QmVec2 qm_vec2(float x, float y)
 {
-	return (QmVec2) { { x, y  } };
+	return (QmVec2) { { x, y } };
 }
 
 /// @brief 정수 좌표 설정
 /// @param p 좌표
 INLINE QmVec2 qm_vec2p(const QmPoint p)
 {
-	return (QmVec2) { { (float)p.X, (float)p.Y  } };
+	return (QmVec2) { { (float)p.X, (float)p.Y } };
 }
 
 /// @brief 벡터2 초기화
@@ -1874,7 +1875,7 @@ INLINE QmVec2 qm_vec2_zero(void)
 /// @param diag 대각 값
 INLINE QmVec2 qm_vec2_sp(float diag)
 {
-	return (QmVec2) { { diag, diag  } };
+	return (QmVec2) { { diag, diag } };
 }
 
 /// @brief 벡터2 부호 반전
@@ -3288,6 +3289,16 @@ INLINE QmVec4 QM_VECTORCALL qm_color_saturation(const QmVec4 c, float saturation
 #endif
 }
 
+/// @brief 32비트 색깔로 변환
+INLINE uint QM_VECTORCALL qm_color_to_uint(const QmVec4 c)
+{
+	uint r = (uint)(c.X * 255.0f);
+	uint g = (uint)(c.Y * 255.0f);
+	uint b = (uint)(c.Z * 255.0f);
+	uint a = (uint)(c.W * 255.0f);
+	return (a << 24) | (b << 16) | (g << 8) | r;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // matrix4x4
@@ -3409,7 +3420,7 @@ INLINE QmMat4 QM_VECTORCALL qm_mat4_tran(const QmMat4 m)
 	float32x4x4_t t = vld4q_f32(m.f);
 	return (QmMat4) { .v[0] = t.val[0], .v[1] = t.val[1], .v[2] = t.val[2], .v[3] = t.val[3] };
 #else
-	return (QmMat4) { {  m._11, m._21, m._31, m._41, m._12, m._22, m._32, m._42, m._13, m._23, m._33, m._43, m._14, m._24, m._34, m._44 } };
+	return (QmMat4) { { m._11, m._21, m._31, m._41, m._12, m._22, m._32, m._42, m._13, m._23, m._33, m._43, m._14, m._24, m._34, m._44 } };
 #endif
 }
 
@@ -3909,7 +3920,7 @@ INLINE QmMat4 QM_VECTORCALL qm_mat4_rot_quat(const QmVec4 rot)
 		._32 = 2.0f * (YZ - WX),
 		._33 = 1.0f - 2.0f * (XX + YY),
 		._44 = 1.0f,
-	};
+};
 	return r;
 #endif
 }

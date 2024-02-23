@@ -827,7 +827,7 @@ static void _truetype_draw(QnGam g, const QmRect* bound, const char* text)
 				pt.X += (self->base.size + self->base.step.Width) * 4;
 				break;
 			case '\a':
-				for (i = 0, text++; i < 6; text++)
+				for (i = 0; i < 6; text++)
 				{
 					if (*text == '\0' || ((*text) & 0x80) != 0)
 						goto pos_exit;
@@ -835,17 +835,18 @@ static void _truetype_draw(QnGam g, const QmRect* bound, const char* text)
 						*text >= 'a' && *text <= 'f' ||
 						*text >= 'A' && *text <= 'F')
 					{
-						clrbuf[i] = *text;
+						clrbuf[i++] = *text;
 						continue;
 					}
 					break;
 				}
-				if (i > 0)
+				if (i != 6)
+					goto pos_exit;
+				else
 				{
 					clrbuf[i] = '\0';
 					i = 0xFF000000 | qn_strtoi(clrbuf, 16);
 					color = qm_coloru((uint)i);
-					text--;
 				}
 				break;
 			default:
@@ -900,7 +901,7 @@ static QmPoint _truetype_calc(QnGam g, const char* text)
 				pt.X += (self->base.size + self->base.step.Width) * 4;
 				break;
 			case '\a':
-				for (i = 0, text++; i < 6; text++)
+				for (i = 0; i < 6; text++)
 				{
 					if (*text == '\0' || ((*text) & 0x80) != 0)
 						goto pos_exit;
@@ -913,8 +914,8 @@ static QmPoint _truetype_calc(QnGam g, const char* text)
 					}
 					break;
 				}
-				if (i > 0)
-					text--;
+				if (i != 6)
+					goto pos_exit;
 				break;
 			default:
 				if (code > ' ')

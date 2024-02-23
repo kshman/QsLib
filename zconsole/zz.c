@@ -87,7 +87,7 @@ int main(void)
 			rt = qm_rect_size(pt_puru.X, pt_puru.Y, tex_puru->width, tex_puru->height);
 			qg_draw_sprite_ex(&rt, angle, tex_puru, NULL, NULL);
 
-			qg_font_write_format(font, 0, 0, "World, Hello! 한글도 나오나? (%.2f / %.2f)", qg_get_fps(), qg_get_afps());
+			qg_font_write_format(font, 0, 0, "\aFF0000World, \a00FF00Hello! \a0000FF한글도 나오나? \aFFFFFF(%.2f / %.2f)", qg_get_fps(), qg_get_afps());
 
 			if (calc_acc)
 			{
