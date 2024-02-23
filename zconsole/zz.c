@@ -1,6 +1,8 @@
 ﻿// 스프라이트 테스트
 #include <qs.h>
 
+QSAPI QnTimeStamp qn_test_now(void);
+
 int main(void)
 {
 	qn_runtime(NULL);
@@ -85,7 +87,7 @@ int main(void)
 			rt = qm_rect_size(pt_puru.X, pt_puru.Y, tex_puru->width, tex_puru->height);
 			qg_draw_sprite_ex(&rt, angle, tex_puru, NULL, NULL);
 
-			qg_font_draw_format(font, 0, 0, "World, Hello! 한글도 나오나? (%.2f)", qg_get_fps());
+			qg_font_write_format(font, 0, 0, "World, Hello! 한글도 나오나? (%.2f / %.2f)", qg_get_fps(), qg_get_afps());
 
 			if (calc_acc)
 			{
@@ -102,8 +104,11 @@ int main(void)
 				print_acc = true;
 			//if (macc > 10 * 60.0f) calc_acc = false;
 
-			qg_font_draw_format(font, 0, 50, "E: %.2f", eacc);
-			qg_font_draw_format(font, 0, 80, "T: %.2f", macc);
+			qg_font_write_format(font, 0, 50, "E: %.2f", eacc);
+			qg_font_write_format(font, 0, 80, "T: %.2f", macc);
+			qg_font_write_format(font, 0, 120, "D: %.2f / %04d-%02d-%02d %02d:%02d:%02d.%03d",
+				eacc - macc,
+				ldt.year, ldt.month, ldt.day, ldt.hour, ldt.minute, ldt.second, ldt.millisecond);
 
 			qg_end_render(true);
 		}

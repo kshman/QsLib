@@ -27,6 +27,20 @@
 
 
 //////////////////////////////////////////////////////////////////////////
+// typedef
+
+typedef struct QGBUFFER			QgBuffer;						/// @brief 버퍼
+typedef struct QGRENDERSTATE	QgRenderState;					/// @brief 렌더 파이프라인
+typedef struct QGTEXTURE		QgTexture;						/// @brief 텍스쳐
+typedef struct QGIMAGE			QgImage;						/// @brief 이미지
+typedef struct QGFONT			QgFont;							/// @brief 폰트
+typedef struct QGDPCT			QgDpct;							/// @brief 노드
+typedef struct QGRAY			QgRay;							/// @brief 레이
+typedef struct QGCAMERA			QgCamera;						/// @brief 카메라
+typedef struct QGMESH			QgMesh;							/// @brief 메시
+
+
+//////////////////////////////////////////////////////////////////////////
 // types
 
 /// @brief 색깔 포맷
@@ -355,6 +369,13 @@ typedef enum QGTEXFLAG
 	QGTEXSPEC_CUBE = QN_BIT(30),							/// @brief 큐브 텍스쳐
 	QGTEXSPEC_ARRAY = QN_BIT(31),							/// @brief 배열 텍스쳐
 } QgTexFlag;
+
+/// @brief 글꼴 타입
+typedef enum QGFONTTYPE
+{
+	QGFONT_BITMAP,
+	QGFONT_TRUETYPE,
+} QgFontType;
 
 /// @brief 배치
 typedef enum QGBATCHCMD
@@ -852,6 +873,21 @@ typedef struct QGPARAMCAMERA
 	uint				__pad : 29;
 } QgParamCamera;
 
+/// @brief 메시 프로퍼티
+typedef struct QGPROPMESH
+{
+	int					vertices;
+	int					indices;
+
+	QmFloat3*			position;
+	QmFloat2*			coord[2];
+	QmFloat3*			normal[2];
+	QmFloat3*			binormal;
+	QmFloat3*			tangent;
+	QmKolor*			color[2];
+	int*				index;
+} QgPropMesh;
+
 /// @brief 키 상태
 typedef struct QGUIMKEY
 {
@@ -1147,6 +1183,10 @@ QSAPI bool qg_get_mouse_button_release(const QimButton button);
 /// @return 초당 프레임 수
 QSAPI float qg_get_fps(void);
 
+/// @brief 초당 평균 프레임(FPS)를 얻는다
+/// @return 초당 평균 프레임 수
+QSAPI float qg_get_afps(void);
+
 /// @brief 프레임 당 시간을 얻는다
 /// @return 리퍼런스 시간
 /// @note 포즈 중에도 이 시간은 계산된다
@@ -1279,15 +1319,6 @@ QSAPI const char* qg_qic_to_str(QicButton button);
 
 //////////////////////////////////////////////////////////////////////////
 // render device
-
-typedef struct QGBUFFER			QgBuffer;						/// @brief 버퍼
-typedef struct QGRENDERSTATE	QgRenderState;					/// @brief 렌더 파이프라인
-typedef struct QGTEXTURE		QgTexture;						/// @brief 텍스쳐
-typedef struct QGIMAGE			QgImage;						/// @brief 이미지
-typedef struct QGFONT			QgFont;							/// @brief 폰트
-typedef struct QGRAY			QgRay;							/// @brief 레이
-typedef struct QGCAMERA			QgCamera;						/// @brief 카메라
-
 
 /// @brief 세이더 콜백
 /// @details 두번째 인수(int)는 qn_get_key로 얻어진 키 값을 전달하므로 자동 변수가 아닐 경우
@@ -1626,8 +1657,18 @@ struct QGFONT
 	QN_GAM_BASE(QNGAMBASE);
 
 	char*				name;
+	QgFontType			type;
 	int					size;
 	QmVec4				color;
+	QmSize				step;
+};
+
+QN_DECL_VTABLE(QGFONT)
+{
+	QN_GAM_VTABLE(QNGAMBASE);
+	void (*set_size)(QnGam, int);
+	void (*draw)(QnGam, const QmRect*, const char*);
+	QmPoint(*calc)(QnGam, const char*);
 };
 
 /// @brief 글꼴을 만든다
@@ -1650,18 +1691,43 @@ QSAPI QgFont* qg_load_font_buffer(void* data, int data_size, int font_base_size)
 /// @param size 글꼴 크기
 QSAPI void qg_font_set_size(QgFont* self, int size);
 
+/// @brief 글꼴 크기를 얻는다
+/// @param self 글꼴
+/// @return 글꼴 크기
+INLINE int qg_font_get_size(QgFont* self) { return self->size; }
+
 /// @brief 글꼴 색깔을 설정한다
 /// @param self 글꼴
 /// @param color 글꼴 색깔
 INLINE void QM_VECTORCALL qg_font_set_color(QgFont* self, const QmColor color) { self->color = color; }
+
+/// @brief 글꼴 색깔을 얻는다
+/// @param self 글꼴
+/// @return 글꼴 색깔
+INLINE QmVec QM_VECTORCALL qg_font_get_color(QgFont* self) { return self->color; }
+
+/// @brief 글꼴 스텝을 설정한다
+/// @param self 글꼴
+/// @param step 글꼴 스텝
+INLINE void qg_font_set_step(QgFont* self, const QmSize step) { self->step = step; }
+
+/// @brief 글꼴 스텝을 얻는다
+/// @param self 글꼴
+/// @return 글꼴 스텝
+INLINE QmSize qg_font_get_step(QgFont* self) { return self->step; }
+
+/// @brief 문자열을 그린다
+/// @param font 글꼴
+/// @param bound 문자열을 그릴 영역
+/// @param text 문자열
+QSAPI void qg_font_draw(QgFont* self, const QmRect* bound, const char* text);
 
 /// @brief 문자열을 그린다
 /// @param font 글꼴
 /// @param x x 좌표
 /// @param y y 좌표
 /// @param text 문자열
-/// @return 그린 문자열의 너비
-QSAPI int qg_font_draw(QgFont* self, int x, int y, const char* text);
+QSAPI void qg_font_write(QgFont* self, int x, int y, const char* text);
 
 /// @brief 문자열을 그린다
 /// @param font 글꼴
@@ -1669,8 +1735,58 @@ QSAPI int qg_font_draw(QgFont* self, int x, int y, const char* text);
 /// @param y y 좌표
 /// @param fmt 문자열
 /// @param ... 가변 인수
-/// @return 그린 문자열의 너비
-QSAPI int qg_font_draw_format(QgFont* self, int x, int y, const char* fmt, ...);
+QSAPI void qg_font_write_format(QgFont* self, int x, int y, const char* fmt, ...);
+
+
+//////////////////////////////////////////////////////////////////////////
+// 노드
+
+struct QGDPCT
+{
+	QN_GAM_BASE(QNGAMBASE);
+
+	char				name[64];
+	size_t				hash;
+	QgDpct*				parent;
+
+	struct
+	{
+		QmMat				mdef;
+		QmMat				mcalc;
+		QmMat				mlocal;
+		QmVec				vloc;
+		QmVec				qrot;
+		QmVec				vscl;
+	}					trfm;
+	struct
+	{
+		QmVec				min;
+		QmVec				max;
+		QmVec				ctr;
+		float				rad;
+	}					bound;
+};
+
+QN_DECL_VTABLE(QGDPCT)
+{
+	QN_GAM_VTABLE(QNGAMBASE);
+	bool (*update)(QnGam, float);
+	void (*draw)(QnGam);
+	void (*set_loc)(QnGam, const QmVec*);
+	void (*set_rot)(QnGam, const QmVec*);
+	void (*set_scl)(QnGam, const QmVec*);
+};
+
+QSAPI bool qg_dpct_update(QgDpct* self, float advance);
+QSAPI void qg_dpct_draw(QgDpct* self);
+QSAPI void qg_dpct_set_loc(QgDpct* self, const QmVec* loc);
+QSAPI void qg_dpct_set_rot(QgDpct* self, const QmVec* rot);
+QSAPI void qg_dpct_set_scl(QgDpct* self, const QmVec* scl);
+QSAPI void qg_dpct_set_name(QgDpct* self, const char* name);
+QSAPI void qg_dpct_update_tm(QgDpct* self);
+
+INLINE const char* qg_dpct_get_name(QgDpct* self) { return self->name; }
+INLINE size_t qg_dpct_get_hash(QgDpct* self) { return self->hash; }
 
 
 // 광선
@@ -1737,7 +1853,7 @@ struct QGCAMERA
 
 QN_DECL_VTABLE(QGCAMERA)
 {
-	QN_DECL_VTABLE(QNGAMBASE)	base;
+	QN_GAM_VTABLE(QNGAMBASE);
 	void (*update)(QnGam);
 };
 
@@ -1809,6 +1925,18 @@ QSAPI QmVec QM_VECTORCALL qg_camera_project(const QgCamera* self, const QmVec* v
 /// @brief 카메라를 업데이트한다
 /// @param self 카메라
 QSAPI void qg_camera_update(QgCamera* self);
+
+
+/// @brief 메시
+struct QGMESH
+{
+	QN_GAM_BASE(QGDPCT);
+
+	QgPropMesh			mesh;
+
+	QgBuffer*			vbuffers[QGLOS_MAX_VALUE];
+	QgBuffer*			ibuffer;
+};
 
 
 //////////////////////////////////////////////////////////////////////////

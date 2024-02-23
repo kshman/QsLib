@@ -324,7 +324,6 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 	stub->timer = qn_create_timer();
 	if (QN_TMASK(flags, QGFLAG_VSYNC) == false)
 		qn_timer_set_cut(stub->timer, 60);
-	stub->run = stub->timer->runtime;
 	stub->active = stub->timer->runtime;
 
 	stub->mouse.lim.move = 10 * 10 + 10 * 10;		// 제한 이동 거리(포인트)의 제곱
@@ -586,7 +585,13 @@ bool qg_get_mouse_button_release(const QimButton button)
 //
 float qg_get_fps(void)
 {
-	return qg_instance_stub->fps;
+	return qg_instance_stub->timer->fps;
+}
+
+//
+float qg_get_afps(void)
+{
+	return qg_instance_stub->timer->afps;
 }
 
 //
@@ -604,7 +609,7 @@ float qg_get_advance(void)
 //
 double qg_get_run_time(void)
 {
-	return qg_instance_stub->run;
+	return qg_instance_stub->timer->runtime;
 }
 
 //
@@ -686,8 +691,6 @@ bool qg_loop(void)
 	}
 
 	const float adv = (float)stub->timer->elapsed;
-	stub->run = stub->timer->runtime;
-	stub->fps = (float)stub->timer->fps;
 	stub->elapsed = adv;
 	stub->advance = QN_TMASK(stub->stats, QGSST_PAUSE) == false ? adv : 0.0f;
 

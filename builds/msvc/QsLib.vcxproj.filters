@@ -81,9 +81,6 @@
     <ClInclude Include="..\..\inc\qs_qn.h">
       <Filter>헤더 파일\inc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\qg\qg_node.h">
-      <Filter>헤더 파일\qg</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\qs_supp.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -122,6 +119,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\supp\stb\stb_truetype.h">
       <Filter>헤더 파일\supp\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qg\qg_dpct.h">
+      <Filter>헤더 파일\qg</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -182,7 +182,10 @@
     <ClCompile Include="..\..\src\qg\qg_image.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qg_depict.c">
+    <ClCompile Include="..\..\src\qg\qg_dpct.c">
+      <Filter>소스 파일\qg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qg_mesh.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
   </ItemGroup>

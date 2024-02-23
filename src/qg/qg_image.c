@@ -1,5 +1,5 @@
 ﻿//
-// qg_image.c - 이미지
+// qg_image.c - 이미지, 글꼴
 // 2024-1-30 by kim
 //
 
@@ -619,6 +619,61 @@ bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* color)
 
 
 //////////////////////////////////////////////////////////////////////////
+// 글꼴
+
+#undef VAR_CHK_NAME
+#define VAR_CHK_NAME	"Font"
+
+//
+static void _font_dispose(QnGam g)
+{
+	QgFont* self = qn_cast_type(g, QgFont);
+	qn_free(self->name);
+	qn_free(self);
+}
+
+//
+void qg_font_set_size(QgFont* self, int size)
+{
+	qn_cast_vtable(self, QGFONT)->set_size(self, size);
+}
+
+//
+void qg_font_draw(QgFont* self, const QmRect* bound, const char* text)
+{
+	VAR_CHK_IF_NULL(bound, );
+	VAR_CHK_IF_NULL(text, );
+	qn_cast_vtable(self, QGFONT)->draw(self, bound, text);
+}
+
+//
+void qg_font_write(QgFont* self, int x, int y, const char* text)
+{
+	VAR_CHK_IF_NULL(text, );
+	QmSize size = RDH_TRANSFORM->size;
+	QmRect bound = qm_rect(x, y, size.Width, size.Height);
+	qn_cast_vtable(self, QGFONT)->draw(self, &bound, text);
+}
+
+//
+void qg_font_write_format(QgFont* self, int x, int y, const char* fmt, ...)
+{
+	VAR_CHK_IF_NULL(fmt, );
+	va_list va;
+	va_start(va, fmt);
+	char buffer[1024];
+	int len = qn_vsnprintf(buffer, QN_COUNTOF(buffer), fmt, va);
+	va_end(va);
+	if (len <= 0)
+		return;
+
+	QmSize size = RDH_TRANSFORM->size;
+	QmRect bound = qm_rect(x, y, size.Width, size.Height);
+	qn_cast_vtable(self, QGFONT)->draw(self, &bound, buffer);
+}
+
+
+//////////////////////////////////////////////////////////////////////////
 // 문자
 
 typedef struct GLYPHKEY
@@ -653,12 +708,13 @@ QN_DECLIMPL_MUKUM(GlyphHash, GlyphKey, GlyphValue, glyph_key_hash, glyph_key_eq,
 
 
 //////////////////////////////////////////////////////////////////////////
-// 글꼴
+// 트루타입 글꼴
 
 #undef VAR_CHK_NAME
-#define VAR_CHK_NAME	"Font"
+#define VAR_CHK_NAME	"TrueType"
 
-typedef struct QgRealFont
+// 트루타입 글꼴
+typedef struct QGTRUETYPE
 {
 	QN_GAM_BASE(QGFONT);
 
@@ -670,69 +726,12 @@ typedef struct QgRealFont
 	int					ascent, descent, linegap;
 
 	GlyphHash			glyphs;
-} QgRealFont;
+} QgTrueType;
 
 //
-static void qg_font_dispose(QnGam g)
+void _truetype_set_size(QnGam g, int size)
 {
-	QgRealFont* self = qn_cast_type(g, QgRealFont);
-	_glyph_hash_dispose(&self->glyphs);
-	qn_free(self->base.name);
-	qn_free(self->data);
-	qn_free(self);
-}
-
-//
-QgFont* qg_load_font_buffer(void* data, int data_size, int font_base_size)
-{
-	VAR_CHK_IF_NULL(data, NULL);
-	VAR_CHK_IF_ZERO(data_size, NULL);
-
-	int offset_index = stbtt_GetFontOffsetForIndex(data, 0);
-	if (offset_index < 0)
-		return NULL;
-
-	QgRealFont* self = qn_alloc_zero_1(QgRealFont);
-	if (stbtt_InitFont(&self->stbtt, data, offset_index) == 0)
-	{
-		qn_free(self);
-		return NULL;
-	}
-
-	_glyph_hash_init_fast(&self->glyphs);
-	self->base.color = QMCOLOR_WHITE;
-
-	self->data = data;
-	self->data_size = data_size;
-
-	qg_font_set_size(qn_cast_type(self, QgFont), font_base_size < 8 ? 8 : font_base_size);
-
-	static const QN_DECL_VTABLE(QNGAMBASE) vt_qg_font =
-	{
-		.name = VAR_CHK_NAME,
-		.dispose = qg_font_dispose,
-	};
-	return qn_gam_init(self, vt_qg_font);
-}
-
-//
-QgFont* qg_load_font(int mount, const char* filename, int font_base_size)
-{
-	VAR_CHK_IF_NULL(filename, NULL);
-
-	int size;
-	byte* data = qn_file_alloc(qg_get_mount(mount), filename, &size);
-	qn_return_when_fail(data != NULL, NULL);
-
-	QgFont* font = qg_load_font_buffer(data, size, font_base_size);
-	font->name = qn_strdup(filename);
-	return font;
-}
-
-//
-void qg_font_set_size(QgFont* self, int size)
-{
-	QgRealFont* font = qn_cast_type(self, QgRealFont);
+	QgTrueType* font = qn_cast_type(g, QgTrueType);
 
 	if (font->base.size == size)
 		return;
@@ -744,7 +743,7 @@ void qg_font_set_size(QgFont* self, int size)
 }
 
 //
-static QgImage* _font_generate_image(byte* bitmap, int width, int height)
+static QgImage* _truetype_generate_image(byte* bitmap, int width, int height)
 {
 	QgImage* img = qg_create_image(QGCF_A8L8, width, height);
 	for (int y = 0; y < height; ++y)
@@ -762,7 +761,7 @@ static QgImage* _font_generate_image(byte* bitmap, int width, int height)
 }
 
 //
-static GlyphValue* _font_get_glyph(QgRealFont* self, int code)
+static GlyphValue* _truetype_get_glyph(QgTrueType* self, int code)
 {
 	GlyphKey key = { code, self->base.size };
 	GlyphValue* value = _glyph_hash_get_ptr(&self->glyphs, &key);
@@ -780,7 +779,7 @@ static GlyphValue* _font_get_glyph(QgRealFont* self, int code)
 	stbtt_GetGlyphHMetrics(&self->stbtt, index, &advance, &lsb);
 
 	//QgImage* img = qg_create_image_buffer(QGCF_R8, x0, y0, bitmap);
-	QgImage* img = _font_generate_image(bitmap, x0, y0);
+	QgImage* img = _truetype_generate_image(bitmap, x0, y0);
 	QgTexture* tex = qg_create_texture(NULL, img, QGTEXF_DISCARD_IMAGE | QGTEXF_CLAMP);
 	if (tex == NULL)
 	{
@@ -793,19 +792,17 @@ static GlyphValue* _font_get_glyph(QgRealFont* self, int code)
 	value->offset = qm_point(x1, y1 + (int)((float)self->ascent * self->scale));
 	value->tex = tex;
 
-	//qn_mesgf(false, VAR_CHK_NAME, "%d: %d (%d, %d)", code, value->advance, value->offset.X, value->offset.Y);
-
 	return value;
 }
 
 //
-int qg_font_draw(QgFont* self, int x, int y, const char* text)
+static void _truetype_draw(QnGam g, const QmRect* bound, const char* text)
 {
-	VAR_CHK_IF_NULL(text, 0);
-
-	QgRealFont* font = qn_cast_type(self, QgRealFont);
-	QmPoint pt = qm_point(x, y);
-	int maxx = 0;
+	QgTrueType* self = qn_cast_type(g, QgTrueType);
+	QmPoint pt = qm_point(bound->Left, bound->Top);
+	QmVec color = self->base.color;
+	int i, height = self->base.size + self->base.step.Height;
+	char clrbuf[10];
 
 	while (*text)
 	{
@@ -817,46 +814,203 @@ int qg_font_draw(QgFont* self, int x, int y, const char* text)
 
 		switch (code)
 		{
+			case ' ':
+				pt.X += self->base.size / 3 + self->base.step.Width;
+				break;
 			case '\n':
-				pt.X = x;
-				pt.Y += font->base.size;
+				pt.X = bound->Left;
+				pt.Y += height;
+				if (pt.Y + height > bound->Bottom)
+					goto pos_exit;
 				break;
 			case '\t':
-				pt.X += font->base.size * 4;
+				pt.X += (self->base.size + self->base.step.Width) * 4;
 				break;
-			case ' ':
-				pt.X += font->base.size / 2;
+			case '\a':
+				for (i = 0, text++; i < 6; text++)
+				{
+					if (*text == '\0' || ((*text) & 0x80) != 0)
+						goto pos_exit;
+					if (*text >= '0' && *text <= '9' ||
+						*text >= 'a' && *text <= 'f' ||
+						*text >= 'A' && *text <= 'F')
+					{
+						clrbuf[i] = *text;
+						continue;
+					}
+					break;
+				}
+				if (i > 0)
+				{
+					clrbuf[i] = '\0';
+					i = 0xFF000000 | qn_strtoi(clrbuf, 16);
+					color = qm_coloru((uint)i);
+					text--;
+				}
 				break;
 			default:
-			{
-				GlyphValue* value = _font_get_glyph(font, code);
-				if (value != NULL)
+				if (code > ' ')
 				{
-					QmRect rect = qm_rect_size(pt.X + value->offset.X, pt.Y + value->offset.Y, value->tex->width, value->tex->height);
-					qg_draw_sprite(&rect, value->tex, &self->color, NULL);
-					//qg_draw_texture(value->tex, pt.X + value->offset.x, pt.Y - value->offset.y, &rect);
-					pt.X += value->advance;
+					GlyphValue* value = _truetype_get_glyph(self, code);
+					if (value != NULL)
+					{
+						if (pt.X + value->offset.X + value->tex->width >= bound->Right)
+							break;
+						QmRect rect = qm_rect_size(pt.X + value->offset.X, pt.Y + value->offset.Y, value->tex->width, value->tex->height);
+						qg_draw_sprite(&rect, value->tex, &color, NULL);
+						pt.X += value->advance + self->base.step.Width;
+					}
 				}
-			} break;
+				break;
 		}
-
-		if (pt.X > maxx)
-			maxx = pt.X;
 	}
 
-	return maxx;
+pos_exit:
+	return;
 }
 
 //
-int qg_font_draw_format(QgFont* self, int x, int y, const char* fmt, ...)
+static QmPoint _truetype_calc(QnGam g, const char* text)
 {
-	VAR_CHK_IF_NULL(fmt, 0);
-	va_list va;
-	va_start(va, fmt);
-	char buffer[1024];
-	int len = qn_vsnprintf(buffer, QN_COUNTOF(buffer), fmt, va);
-	va_end(va);
-	if (len <= 0)
-		return 0;
-	return qg_font_draw(self, x, y, buffer);
+	QgTrueType* self = qn_cast_type(g, QgTrueType);
+	QmPoint ret = qm_point(0, 0);
+	QmPoint pt = qm_point(0, 0);
+	int i;
+
+	while (*text)
+	{
+		int len;
+		int code = (int)qn_u8cbc(text, &len);
+		if (code < 0)
+			break;
+		text += len;
+
+		switch (code)
+		{
+			case ' ':
+				pt.X += self->base.size / 3 + self->base.step.Width;
+				break;
+			case '\n':
+				if (ret.X < pt.X)
+					ret.X = pt.X;
+				pt.X = 0;
+				pt.Y += self->base.size + self->base.step.Height;
+				break;
+			case '\t':
+				pt.X += (self->base.size + self->base.step.Width) * 4;
+				break;
+			case '\a':
+				for (i = 0, text++; i < 6; text++)
+				{
+					if (*text == '\0' || ((*text) & 0x80) != 0)
+						goto pos_exit;
+					if (*text >= '0' && *text <= '9' ||
+						*text >= 'a' && *text <= 'f' ||
+						*text >= 'A' && *text <= 'F')
+					{
+						i++;
+						continue;
+					}
+					break;
+				}
+				if (i > 0)
+					text--;
+				break;
+			default:
+				if (code > ' ')
+				{
+					GlyphValue* value = _truetype_get_glyph(self, code);
+					if (value != NULL)
+						pt.X += value->advance + self->base.step.Width;
+				}
+				break;
+		}
+	}
+
+pos_exit:
+	if (ret.X < pt.X)
+		ret.X = pt.X;
+	ret.Y = pt.Y + self->base.size + self->base.step.Height;
+	return ret;
+}
+
+//
+static void _truetype_dispose(QnGam g)
+{
+	QgTrueType* self = qn_cast_type(g, QgTrueType);
+	_glyph_hash_dispose(&self->glyphs);
+	qn_free(self->data);
+	_font_dispose(self);
+}
+
+// 트루타입 만들기
+QgFont* _truetype_create(void* data, int data_size, int font_base_size, int offset_index)
+{
+	QgTrueType* self = qn_alloc_zero_1(QgTrueType);
+	if (stbtt_InitFont(&self->stbtt, data, offset_index) == 0)
+	{
+		qn_free(self);
+		return NULL;
+	}
+
+	_glyph_hash_init_fast(&self->glyphs);
+	self->base.color = QMCOLOR_WHITE;
+
+	self->data = data;
+	self->data_size = data_size;
+
+	_truetype_set_size(qn_cast_type(self, QgFont), font_base_size < 8 ? 8 : font_base_size);
+
+	static const QN_DECL_VTABLE(QGFONT) vt_qg_truetype =
+	{
+		{
+			VAR_CHK_NAME,
+			_truetype_dispose,
+		},
+		_truetype_set_size,
+		_truetype_draw,
+		_truetype_calc,
+	};
+	return qn_gam_init(self, vt_qg_truetype);
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// 글꼴 공통
+
+//
+QgFont* qg_load_font_buffer(void* data, int data_size, int font_base_size)
+{
+	VAR_CHK_IF_NULL(data, NULL);
+	VAR_CHK_IF_ZERO(data_size, NULL);
+
+	int offset_index = stbtt_GetFontOffsetForIndex(data, 0);
+	if (offset_index >= 0)
+	{
+		// 트루타입
+		return _truetype_create(data, data_size, font_base_size, offset_index);
+	}
+
+	// 다른거는.. 후
+	return NULL;
+}
+
+//
+QgFont* qg_load_font(int mount, const char* filename, int font_base_size)
+{
+	VAR_CHK_IF_NULL(filename, NULL);
+
+	int size;
+	byte* data = qn_file_alloc(qg_get_mount(mount), filename, &size);
+	qn_return_when_fail(data != NULL, NULL);
+
+	QgFont* font = qg_load_font_buffer(data, size, font_base_size);
+	if (font == NULL)
+	{
+		qn_free(data);
+		return NULL;
+	}
+
+	font->name = qn_strdup(filename);
+	return font;
 }

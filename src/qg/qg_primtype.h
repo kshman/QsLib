@@ -20,3 +20,12 @@ INLINE void QM_VECTORCALL ortho_vertex_set_param(OrthoVertex* o, float x, float 
 	o->postex = (QmFloat4){ x, y, u, v };
 	o->color = *(QmFloat4*)&color.v;
 }
+
+// 3D 정점 형식
+typedef struct FRSTVERTEX
+{
+	QmFloat3		pos;
+	QmFloat3		normal;
+	QmFloat2		tex;
+	QmFloat4		color;
+} FrstVertex;

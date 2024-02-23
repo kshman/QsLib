@@ -3243,16 +3243,18 @@ QSAPI void qn_gmtime(struct tm* ptm, time_t tt);
 /// @return	현재의 사이클
 QSAPI llong qn_cycle(void);
 
-/// @brief 프로그램 시작부터 시간 틱
+/// @brief 프로그램 시작부터 시간 틱 (밀리초	 단위)
 /// @return	현재의 틱
+/// @note 약 1400세기 이후에는 계산값을 믿으면 안된다. (현 시점 21세기이므로 문제 없음)
 QSAPI llong qn_tick(void);
 
-/// @brief 프로그램 시작부터 시간 틱 (32비트 버전)
+/// @brief 프로그램 시작부터 시간 틱 (밀리초	 단위 32비트 버전)
 /// @return	현재의 틱
+/// @note 49.7일 (4294967.295초) 이후에는 0초부터 다시 시작된다
 QSAPI uint qn_tick32(void);
 
-/// @brief 프로그램 시작부터 지나간 시간(초)
-/// @return	현재 프로그램 수행 시간 (초)
+/// @brief 프로그램 시작부터 지나간 시간 (초 단위)
+/// @return	현재 프로그램 수행 시간
 /// @note qn_tick() / 1000.0과 같다
 QSAPI double qn_elapsed(void);
 
@@ -3346,9 +3348,12 @@ typedef struct QNTIMER
 	double				advance;			/// @brief 타이머 경과 시간 (포즈 중에는 0)
 
 	float				fps;				/// @brief 초 당 프레임 수
+	float				afps;				/// @brief 평균 초 당 프레임 수
+
 	ushort				cut;				/// @brief 프레임 컷 (초당 프레임 수 제한)
-	bool				pause;				/// @brief 정지 여부
-	bool				manual;				/// @brief 수동 갱신 여부
+	halfcham			pause;				/// @brief 정지 여부
+
+	uint				frame;				/// @brief 프레임 수
 } QnTimer;
 
 /// @brief 타이머 만들기
@@ -3367,11 +3372,6 @@ QSAPI void qn_timer_update(QnTimer* self);
 /// @param[in] self 타이머 개체
 /// @param cut 프레임 컷
 QSAPI void qn_timer_set_cut(QnTimer* self, int cut);
-
-/// @brief 타이머 프레임 계산 방식 설정
-/// @param[in] self 타이머 개체
-/// @param manual 참이면 평균으로 계산, 아니면 각 프레임마다 계산
-QSAPI void qn_timer_set_manual(QnTimer* self, bool manual);
 
 /// @brief 타이머의 수행 시간
 /// @param[in] self 타이머 개체
@@ -3393,17 +3393,22 @@ INLINE double qn_timer_get_advance(const QnTimer* self) { return self->advance; 
 /// @brief 타이머의 초당 프레임 수
 /// @param[in] self 타이머 개체
 /// @return	프레임 수
-INLINE float qn_timer_get_fps(const QnTimer* self) { return self->fps; }
+INLINE double qn_timer_get_fps(const QnTimer* self) { return self->fps; }
+
+/// @brief 타이머의 평균 초당 프레임 수
+/// @param[in] self 타이머 개체
+/// @return	평균 프레임 수
+INLINE double qn_timer_get_afps(const QnTimer* self) { return self->afps; }
 
 /// @brief 타이머의 프레임 컷
 /// @param[in] self 타이머 개체
 /// @return	프레임 컷
-INLINE int qn_timer_get_cut(const QnTimer* self) { return self->cut; }
+INLINE uint qn_timer_get_cut(const QnTimer* self) { return self->cut; }
 
 /// @brief 타이머의 정지 여부
 /// @param[in] self 타이머 개체
 /// @return	정지 여부
-INLINE bool qn_timer_is_pause(const QnTimer* self) { return self->pause; }
+INLINE bool qn_timer_is_pause(const QnTimer* self) { return self->pause != 0; }
 
 /// @brief 타이머의 정지 여부 설정
 /// @param[in] self 타이머 개체
@@ -3490,7 +3495,7 @@ typedef enum QNMOUNTFLAG
 	QNMFT_DISKFS = QN_BIT(16),								/// @brief 디스크 파일 시스템
 	QNMFT_MEM = QN_BIT(17),									/// @brief 메모리 파일 시스템
 	QNMFT_HFS = QN_BIT(18),									/// @brief HFS 파일 시스템
-	QNMFT_FUSE= QN_BIT(19),									/// @brief FUSE 파일 시스템
+	QNMFT_FUSE = QN_BIT(19),									/// @brief FUSE 파일 시스템
 	QNMFT_NORESTORE = QN_BIT(20),							/// @brief 복원하지 않음
 } QnMountFlag;
 

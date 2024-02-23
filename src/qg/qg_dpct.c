@@ -1,12 +1,98 @@
 ﻿//
-// qg_depict.c - 카메라
+// qg_dpct.c - 노드 & 카메라
 // 2024-2-20 by kim
 //
 
 #include "pch.h"
-#include "qs_qg.h"
+#include "qg_dpct.h"
 #include "qg_stub.h"
 #include "qs_supp.h"
+
+//////////////////////////////////////////////////////////////////////////
+// 데픽트
+
+void _dpct_init(QgDpct* self, const QmMat* defm)
+{
+	self->trfm.mdef = defm != NULL ? *defm : qm_mat4_unit();
+	self->trfm.mcalc = qm_mat4_unit();
+	self->trfm.mlocal = qm_mat4_unit();
+	self->trfm.vloc = qm_vec_zero();
+	self->trfm.qrot = qm_quat_unit();
+	self->trfm.vscl = qm_vec_one();
+}
+
+// 업데이트
+bool _dpct_update(QgDpct* self, float advance)
+{
+	QN_DUMMY(advance);
+	qg_dpct_update_tm(self);
+	return true;
+}
+
+// 위치
+void _dpct_set_loc(QgDpct* self, const QmVec* loc)
+{
+	self->trfm.vloc = *loc;
+}
+
+// 회전
+void _dpct_set_rot(QgDpct* self, const QmVec* rot)
+{
+	self->trfm.qrot = *rot;
+}
+
+// 크기
+void _dpct_set_scl(QgDpct* self, const QmVec* scl)
+{
+	self->trfm.vscl = *scl;
+}
+
+//
+bool qg_dpct_update(QgDpct* self, float advance)
+{
+	return qn_cast_vtable(self, QGDPCT)->update(self, advance);
+}
+
+//
+void qg_dpct_draw(QgDpct* self)
+{
+	qn_cast_vtable(self, QGDPCT)->draw(self);
+}
+
+//
+void qg_dpct_set_loc(QgDpct* self, const QmVec* loc)
+{
+	qn_cast_vtable(self, QGDPCT)->set_loc(self, loc);
+}
+
+//
+void qg_dpct_set_rot(QgDpct* self, const QmVec* rot)
+{
+	qn_cast_vtable(self, QGDPCT)->set_rot(self, rot);
+}
+
+//
+void qg_dpct_set_scl(QgDpct* self, const QmVec* scl)
+{
+	qn_cast_vtable(self, QGDPCT)->set_scl(self, scl);
+}
+
+//
+void qg_dpct_set_name(QgDpct* self, const char* name)
+{
+	qn_strncpy(self->name, name, QN_COUNTOF(self->name) - 1);
+}
+
+//
+void qg_dpct_update_tm(QgDpct* self)
+{
+	self->trfm.mlocal = qm_mat4_trfm(self->trfm.vloc, self->trfm.qrot, &self->trfm.vscl);
+	if (self->parent != NULL)
+		self->trfm.mcalc = qm_mat4_mul(self->trfm.mlocal, self->parent->trfm.mcalc);
+	else
+		self->trfm.mcalc = self->trfm.mlocal;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // 레이 캐스트

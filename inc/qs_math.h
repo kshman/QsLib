@@ -621,6 +621,7 @@ INLINE float qm_hf2f(const halffloat v)
 
 INLINE QmVec4 QM_VECTORCALL qm_vec(float x, float y, float z, float w);
 INLINE QmVec4 QM_VECTORCALL qm_vec_zero(void);
+INLINE QmVec4 QM_VECTORCALL qm_vec_one(void);
 INLINE QmVec4 QM_VECTORCALL qm_vec_sp(float diag);
 INLINE QmVec4 QM_VECTORCALL qm_vec_sp_x(const QmVec4 v);
 INLINE QmVec4 QM_VECTORCALL qm_vec_sp_y(const QmVec4 v);
@@ -987,6 +988,12 @@ INLINE QmVec4 QM_VECTORCALL qm_vec_zero(void)
 #else
 	return (QmVec4) { { 0.0f, 0.0f, 0.0f, 0.0f } };
 #endif
+}
+
+/// @brief 1 벡터 얻기
+INLINE QmVec4 QM_VECTORCALL qm_vec_one(void)
+{
+	return QMCONST_ONE;
 }
 
 /// @brief 모두 같은값으로 채우기

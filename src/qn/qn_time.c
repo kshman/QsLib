@@ -13,6 +13,89 @@
 #endif
 
 //
+static struct CYCLEIMPL
+{
+	llong				start;	// 시작 카운트
+	llong				tick;	// 카운터 틱, 보통 윈도우에서 1000000, 유닉스에서 1000
+#ifdef _QN_WINDOWS_
+	struct timespec		utc;	// UTC 시작 시간
+#endif
+} cycle_impl = { 0, };
+
+//
+void qn_cycle_up(void)
+{
+#ifdef _QN_WINDOWS_
+	timeBeginPeriod(1);
+
+	LARGE_INTEGER ll;
+	QueryPerformanceFrequency(&ll);
+	cycle_impl.tick = ll.QuadPart;
+
+	FILETIME ft;
+	GetSystemTimePreciseAsFileTime(&ft);
+	ULARGE_INTEGER ul = { .LowPart = ft.dwLowDateTime, .HighPart = ft.dwHighDateTime };
+	ul.QuadPart -= 116444736000000000LL;
+	cycle_impl.utc.tv_sec = (time_t)(ul.QuadPart / 10000000LL);
+	cycle_impl.utc.tv_nsec = (long)((ul.QuadPart % 10000000LL) * 100LL);
+#else
+	cycle_impl.tick = 1000;
+#endif
+	cycle_impl.start = qn_cycle();
+}
+
+//
+void qn_cycle_down(void)
+{
+#ifdef _QN_WINDOWS_
+	timeEndPeriod(1);
+#endif
+}
+
+//
+llong qn_cycle(void)
+{
+#ifdef _QN_WINDOWS_
+	LARGE_INTEGER ll;
+	QueryPerformanceCounter(&ll);
+	return ll.QuadPart;
+#else
+	llong n;
+	struct timespec ts;
+	if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
+		n = ((llong)ts.tv_sec * QN_MSEC_PER_SEC) + ((llong)ts.tv_nsec / QN_USEC_PER_SEC);
+	else
+	{
+		struct timeval tv;
+		gettimeofday(&tv, 0);
+		n = ((llong)tv.tv_sec * QN_MSEC_PER_SEC) + ((llong)tv.tv_usec / QN_MSEC_PER_SEC);
+	}
+	return n;
+#endif
+}
+
+//
+llong qn_tick(void)
+{
+	const llong cycle = qn_cycle();
+	return ((cycle - cycle_impl.start) * 1000) / cycle_impl.tick;
+}
+
+//
+uint qn_tick32(void)
+{
+	llong tick = qn_tick();
+	return (uint)(tick % UINT32_MAX);
+}
+
+//
+double qn_elapsed(void)
+{
+	const llong cycle = qn_cycle();
+	return (double)(cycle - cycle_impl.start) / (double)cycle_impl.tick;
+}
+
+//
 void qn_localtime(struct tm* ptm, const time_t tt)
 {
 #ifdef _MSC_VER
@@ -32,26 +115,37 @@ void qn_gmtime(struct tm* ptm, const time_t tt)
 #endif
 }
 
-#ifdef _QN_WINDOWS_
-// 윈도우 SYSTEMTIME을 타임스탬프로 변환
-QnTimeStamp qn_system_time_to_timestamp(const SYSTEMTIME* pst)
+// UTC 시간 얻기
+static void _timespec_now(struct timespec* ts)
 {
-	QnDateTime dt;
-	dt.year = pst->wYear;
-	dt.month = pst->wMonth;
-	dt.day = pst->wDay;
-	dt.dow = pst->wDayOfWeek;
-	dt.hour = pst->wHour;
-	dt.minute = pst->wMinute;
-	dt.second = pst->wSecond;
-	dt.millisecond = pst->wMilliseconds;
-	return dt.stamp;
-}
-#endif
+#ifdef _QN_WINDOWS_
+	LARGE_INTEGER ll;
+	QueryPerformanceCounter(&ll);
+	ll.QuadPart -= cycle_impl.start;
 
-#ifdef _QN_UNIX_
+	time_t sec = ll.QuadPart / cycle_impl.tick + cycle_impl.utc.tv_sec;
+	llong nsec = (ll.QuadPart % cycle_impl.tick) * 1000000000LL / cycle_impl.tick + cycle_impl.utc.tv_nsec;
+	if (nsec >= 1000000000LL)
+	{
+		sec++;
+		nsec -= 1000000000LL;
+	}
+
+	ts->tv_sec = sec;
+	ts->tv_nsec = (long)nsec;
+#else
+	if (clock_gettime(CLOCK_REALTIME, ts) != 0)
+	{
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		ts->tv_sec = tv.tv_sec;
+		ts->tv_nsec = tv.tv_usec * 1000;
+	}
+#endif
+}
+
 // tm을 타임스탬프로 변환
-QnTimeStamp qn_tm_to_timestamp(struct tm* ptm, uint ms)
+QnTimeStamp _tm_to_timestamp(struct tm* ptm, uint ms)
 {
 	QnDateTime dt;
 	dt.year = (uint)ptm->tm_year + 1900;
@@ -64,64 +158,31 @@ QnTimeStamp qn_tm_to_timestamp(struct tm* ptm, uint ms)
 	dt.millisecond = ms;
 	return dt.stamp;
 }
-#endif
+
+// time_t를 타임스탬프로 변환
+QnTimeStamp _time_to_timestamp(const time_t tt, uint ms)
+{
+	struct tm tm;
+	qn_localtime(&tm, tt);
+	return _tm_to_timestamp(&tm, ms);
+}
 
 //
 QnTimeStamp qn_now(void)
 {
-#ifdef _QN_WINDOWS_
-	SYSTEMTIME st;
-	GetLocalTime(&st);
-	return qn_system_time_to_timestamp(&st);
-#else
-	time_t tt;
-	uint ms;
 	struct timespec ts;
-	if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
-	{
-		tt = ts.tv_sec;
-		ms = ts.tv_nsec / QN_USEC_PER_SEC;
-	}
-	else
-	{
-		struct timeval tv;
-		gettimeofday(&tv, NULL);
-		tt = tv.tv_sec;
-		ms = tv.tv_usec / (QN_USEC_PER_SEC / QN_MSEC_PER_SEC);
-	}
-	struct tm tm;
-	(void)localtime_r(&tt, &tm);
-	return qn_tm_to_timestamp(&tm, ms);
-#endif
+	_timespec_now(&ts);
+	return _time_to_timestamp(ts.tv_sec, ts.tv_nsec / QN_USEC_PER_SEC);
 }
 
 //
 QnTimeStamp qn_utc(void)
 {
-#ifdef _QN_WINDOWS_
-	SYSTEMTIME st;
-	GetSystemTime(&st);
-	return qn_system_time_to_timestamp(&st);
-#else
-	time_t tt;
-	uint ms;
 	struct timespec ts;
-	if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
-	{
-		tt = ts.tv_sec;
-		ms = ts.tv_nsec / QN_USEC_PER_SEC;
-	}
-	else
-	{
-		struct timeval tv;
-		gettimeofday(&tv, NULL);
-		tt = tv.tv_sec;
-		ms = tv.tv_usec / (QN_USEC_PER_SEC / QN_MSEC_PER_SEC);
-	}
+	_timespec_now(&ts);
 	struct tm tm;
-	(void)gmtime_r(&tt, &tm);
-	return qn_tm_to_timestamp(&tm, ms);
-#endif
+	qn_gmtime(&tm, ts.tv_sec);
+	return _tm_to_timestamp(&tm, ts.tv_nsec / QN_USEC_PER_SEC);
 }
 
 //
@@ -211,86 +272,6 @@ double qn_diffts(const QnTimeStamp left, const QnTimeStamp right)
 }
 
 //
-static struct CYCLEIMPL
-{
-	llong				start_count;	// 시작 카운트
-	llong				tick_count;		// 카운터 틱, 보통 윈도우에서 1000000, 유닉스에서 1000
-} cycle_impl = { 0, };
-
-//
-void qn_cycle_up(void)
-{
-#ifdef _QN_WINDOWS_
-	timeBeginPeriod(1);
-	LARGE_INTEGER ll;
-	QueryPerformanceFrequency(&ll);
-	cycle_impl.tick_count = ll.QuadPart;
-#else
-	cycle_impl.tick_count = 1000;
-#endif
-	cycle_impl.start_count = qn_cycle();
-}
-
-//
-void qn_cycle_down(void)
-{
-#ifdef _QN_WINDOWS_
-	timeEndPeriod(1);
-#endif
-}
-
-//
-llong qn_cycle(void)
-{
-#ifdef _QN_WINDOWS_
-	LARGE_INTEGER ll;
-	QueryPerformanceCounter(&ll);
-	return ll.QuadPart;
-#else
-	ullong n;
-	struct timespec ts;
-	if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
-		n = ((llong)ts.tv_sec * QN_MSEC_PER_SEC) + ((llong)ts.tv_nsec / QN_USEC_PER_SEC);
-	else
-	{
-		struct timeval tv;
-		gettimeofday(&tv, 0);
-		n = ((llong)tv.tv_sec * QN_MSEC_PER_SEC) + ((llong)tv.tv_usec / QN_MSEC_PER_SEC);
-}
-	return n;
-#endif
-}
-
-//
-llong qn_tick(void)
-{
-	const llong cycle = qn_cycle();
-#if false
-	llong interval = cycle - cycle_impl.start_count;
-	llong tick = interval / cycle_impl.tick_count * 1000;
-	interval %= cycle_impl.tick_count;
-	tick += interval * 1000 / cycle_impl.tick_count;
-	return tick;
-#else
-	return ((cycle - cycle_impl.start_count) * 1000) / cycle_impl.tick_count;
-#endif
-}
-
-//
-uint qn_tick32(void)
-{
-	llong tick = qn_tick();
-	return (uint)(tick % UINT32_MAX);
-}
-
-//
-double qn_elapsed(void)
-{
-	const llong cycle = qn_cycle();
-	return (double)(cycle - cycle_impl.start_count) / (double)cycle_impl.tick_count;
-}
-
-//
 void _internal_yield(double until)
 {
 	do
@@ -335,7 +316,7 @@ void qn_sleep(uint milliseconds)
 		error = nanosleep(&es, &ts);
 	} while (error && (errno == EINTR));
 #endif
-	}
+}
 
 //
 void qn_ssleep(double seconds)
@@ -367,7 +348,7 @@ void qn_ssleep(double seconds)
 			struct timespec es = ts;
 			error = nanosleep(&es, &ts);
 		} while (error && (errno == EINTR));
-}
+	}
 #else
 #error unknown platform! please place seconds sleep function on here!
 #endif
@@ -394,16 +375,18 @@ typedef struct QNREALTIMER
 {
 	QnTimer				base;
 
-	llong				cur_time;		// 현재 시간
 	llong				base_time;		// 기준 시간
 	llong				last_time;		// 이전 시간
-
-	llong				fps_time;		// FPS 초 계산용 시간
-	uint				fps_count;		// FPS 계산용 초당 누적 갯수
+	llong				accum;			// 검사용 누적 시간
 
 	llong				cut_last;		// 컷 마지막
 	double				cut_elapsed;	// 컷 경과
 	double				inv_cut;		// 컷 역수
+
+	llong				fps_time;		// FPS 초 계산용 시간
+	uint				fps_index;		// FPS 인덱스
+	float				fps_average;	// FPS 평균
+	float				fps_array[30];
 } QnRealTimer;
 
 //
@@ -418,7 +401,6 @@ QnTimer* qn_create_timer(void)
 	QnRealTimer* real = qn_alloc_zero_1(QnRealTimer);
 	llong now = qn_cycle();
 
-	real->cur_time = now;
 	real->base_time = now;
 	real->last_time = now;
 
@@ -436,43 +418,53 @@ void qn_timer_reset(QnTimer* self)
 	QnRealTimer* real = qn_cast_type(self, QnRealTimer);
 	llong now = qn_cycle();
 
-	real->cur_time = now;
-	real->base_time = now;
-	real->last_time = now;
-
-	real->fps_time = now;
-	real->fps_count = 0;
-
 	real->base.runtime = 0.0;
 	real->base.elapsed = 0.0;
 	real->base.advance = 0.0;
-
-	real->base.fps = 0.0;
+	real->base.fps = 0.0f;
+	real->base.afps = 0.0f;
 	real->base.pause = false;
+	real->base.frame = 0;
+
+	real->base_time = now;
+	real->last_time = now;
+	real->accum = 0;
 
 	real->cut_last = now;
 	real->cut_elapsed = 0.0;
+
+	real->fps_time = now;
+	real->fps_index = 0;
+	real->fps_average = 0.0f;
+	memset(real->fps_array, 0, sizeof(real->fps_array));
 }
 
 //
 void qn_timer_update(QnTimer* self)
 {
 	QnRealTimer* real = qn_cast_type(self, QnRealTimer);
-	llong now = qn_cycle();
 
-	real->cur_time = now;
-	real->base.runtime = (double)(now - real->base_time) / cycle_impl.tick_count;
-	real->base.elapsed = (double)(now - real->last_time) / cycle_impl.tick_count;
-	real->last_time = real->cur_time;
+	llong now = qn_cycle(), last = real->last_time;
+	real->last_time = now;
 
+	llong runtime = now - real->base_time;
+	llong elapsed = now - last;
+	llong accum = real->accum + elapsed;
+	if (accum != runtime)
+		elapsed -= accum - runtime;
+
+	real->accum = accum;
+	real->base.runtime = (double)runtime / cycle_impl.tick;
+	real->base.elapsed = (double)elapsed / cycle_impl.tick;
 	real->base.advance = real->base.pause ? 0.0 : real->base.elapsed;
 
-	float fps_elapsed;
+	// 컷
+	double fps_elapsed;
 	if (real->base.cut == 0)
-		fps_elapsed = (float)real->base.elapsed;
+		fps_elapsed = real->base.elapsed;
 	else
 	{
-		real->cut_elapsed = (double)(now - real->cut_last) / cycle_impl.tick_count;
+		real->cut_elapsed = (double)(now - real->cut_last) / cycle_impl.tick;
 		real->cut_last = now;
 
 		if (real->cut_elapsed < real->inv_cut)
@@ -480,27 +472,31 @@ void qn_timer_update(QnTimer* self)
 			qn_ssleep(real->inv_cut - real->cut_elapsed);
 
 			now = qn_cycle();
-			double wait = (double)(now - real->cut_last) / cycle_impl.tick_count;
+			double wait = (double)(now - real->cut_last) / cycle_impl.tick;
 			real->cut_last = now;
 			real->cut_elapsed += wait;
 		}
 
-		fps_elapsed = (float)real->cut_elapsed;
+		fps_elapsed = real->cut_elapsed;
 	}
 
-	if (real->base.manual == false)
-		real->base.fps = 1.0f / fps_elapsed;
-	else
+	// 순간 FPS
+	real->base.fps = (float)(1.0 / fps_elapsed);
+
+	// 누적 FPS
+	now = qn_cycle();
+	if (now - real->fps_time >= cycle_impl.tick / (llong)QN_COUNTOF(real->fps_array) / 2)
 	{
-		now = qn_cycle();
-		real->fps_count++;
-		if (now - real->fps_time >= cycle_impl.tick_count)
-		{
-			real->base.fps = (float)real->fps_count;
-			real->fps_time = now;
-			real->fps_count = 0;
-		}
+		float elapsed = (float)fps_elapsed / QN_COUNTOF(real->fps_array);
+		real->fps_time = now;
+		real->fps_index = (real->fps_index + 1) % QN_COUNTOF(real->fps_array);
+		real->fps_average -= real->fps_array[real->fps_index];
+		real->fps_array[real->fps_index] = elapsed;
+		real->fps_average += elapsed;
 	}
+	real->base.afps = 1.0f / real->fps_average;
+
+	real->base.frame++;
 }
 
 //
@@ -509,13 +505,6 @@ void qn_timer_set_cut(QnTimer* self, int cut)
 	QnRealTimer* real = qn_cast_type(self, QnRealTimer);
 	real->base.cut = (ushort)cut;
 	real->inv_cut = 1.0 / (double)cut;
-}
-
-//
-void qn_timer_set_manual(QnTimer* self, bool manual)
-{
-	QnRealTimer* real = qn_cast_type(self, QnRealTimer);
-	real->base.manual = manual;
 }
 
 /*

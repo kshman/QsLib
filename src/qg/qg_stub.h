@@ -32,10 +32,8 @@ typedef struct STUBBASE
 	uint				display;
 	float				aspect;
 
-	float				fps;								// 프레임 당 시간
 	float				elapsed;							// 프레임 시간
 	float				advance;							// 프레임 시간, 포즈 상태일 때는 0
-	double				run;								// 실행 시간
 	double				active;								// 활성화된 시간
 
 	QmRect				bound;								// 현재 윈도우의 위치와 크기 정보
