@@ -241,11 +241,15 @@ void qg_camera_set_proj_aspect(QgCamera* self, float ascpect, float fov, float z
 }
 
 //
-bool qg_camera_set_view(QgCamera* self, const QmVec* at, const QmVec* ahead)
+bool qg_camera_set_view(QgCamera* self, const QmVec* eye, const QmVec* at, const QmVec* ahead)
 {
 	qn_return_when_fail(self->param.use_maya, false);
-	self->view.at = *at;
-	self->view.ahead = *ahead;
+	if (eye)
+		self->view.eye = *eye;
+	if (at)
+		self->view.at = *at;
+	if (ahead)
+		self->view.ahead = *ahead;
 	return true;
 }
 

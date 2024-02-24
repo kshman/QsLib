@@ -1698,7 +1698,7 @@ static void* _disk_fs_alloc(QnGam g, const char* filename, int* size)
 	qn_return_when_fail(_file_stream_get_real_path(real, self, filename), NULL);
 
 	size_t len;
-	void* fd = _internal_file_open(filename, &len);
+	void* fd = _internal_file_open(real, &len);
 	qn_return_when_fail(fd != NULL, NULL);
 
 	byte* buffer = qn_alloc(len + 4, byte);

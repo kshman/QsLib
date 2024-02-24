@@ -14,6 +14,7 @@
 #define PAR_REALLOC(T, BUF, N)	qn_realloc(BUF, N, T)
 #define PAR_FREE(BUF)			qn_free(BUF)
 #define sqrtf					qm_sqrtf
+#define printf					qn_outputf
 #include "par/par_shapes.h"
 
 
@@ -253,36 +254,192 @@ bool qg_mesh_gen_torus(QgMesh* self, float radius, float size, int segment, int 
 //
 bool qg_mesh_build(QgMesh* self)
 {
+	static byte lo_sizes[QGLOT_MAX_VALUE] =
+	{
+		/* UNKNOWN */ 0,
+		/* FLOAT   */ 4 * sizeof(float), 3 * sizeof(float), 2 * sizeof(float), 1 * sizeof(float),
+		/* INT     */ 4 * sizeof(int), 3 * sizeof(int), 2 * sizeof(int), 1 * sizeof(int),
+		/* HALF-F  */ 4 * sizeof(halffloat), 2 * sizeof(halffloat), 1 * sizeof(halffloat), 1 * sizeof(int),
+		/* HALF-I  */ 4 * sizeof(short), 2 * sizeof(short), 1 * sizeof(short), 1 * sizeof(int),
+		/* BYTE    */ 4 * sizeof(byte), 3 * sizeof(byte), 2 * sizeof(byte), 1 * sizeof(byte), 1 * sizeof(byte), 1 * sizeof(byte), 2 * sizeof(ushort),
+		/* USHORT  */ 2 * sizeof(ushort), 2 * sizeof(ushort), 2 * sizeof(ushort),
+	};
+	static byte lu_formats[QGLOU_MAX_VALUE] =
+	{
+		/* QGLOU_UNKNOWN,		*/	0,
+		/* QGLOU_POSITION,		*/	QGLOT_FLOAT3,
+		/* QGLOU_COORD1,		*/	QGLOT_FLOAT2,
+		/* QGLOU_COORD2,		*/	QGLOT_FLOAT2,
+		/* QGLOU_COORD3,		*/	QGLOT_FLOAT2,
+		/* QGLOU_COORD4,		*/	QGLOT_FLOAT2,
+		/* QGLOU_NORMAL1,		*/	QGLOT_FLOAT3,
+		/* QGLOU_NORMAL2,		*/	QGLOT_FLOAT3,
+		/* QGLOU_NORMAL3,		*/	QGLOT_FLOAT3,
+		/* QGLOU_NORMAL4,		*/	QGLOT_FLOAT3,
+		/* QGLOU_BINORMAL1,		*/	QGLOT_FLOAT3,
+		/* QGLOU_BINORMAL2,		*/	QGLOT_FLOAT3,
+		/* QGLOU_TANGENT1,		*/	QGLOT_FLOAT3,
+		/* QGLOU_TANGENT2,		*/	QGLOT_FLOAT3,
+		/* QGLOU_COLOR1,		*/	QGLOT_BYTE4,
+		/* QGLOU_COLOR2,		*/	QGLOT_BYTE4,
+		/* QGLOU_COLOR3,		*/	QGLOT_BYTE4,
+		/* QGLOU_COLOR4,		*/	QGLOT_BYTE4,
+		/* QGLOU_COLOR5,		*/	QGLOT_BYTE4,
+		/* QGLOU_COLOR6,		*/	QGLOT_BYTE4,
+		/* QGLOU_BLEND_WEIGHT,	*/	0,
+		/* QGLOU_BLEND_INDEX,	*/	0,
+		/* QGLOU_BLEND_EXTRA,	*/	0,
+	};
+
 	VAR_CHK_IF_ZERO(self->layout.count, false);
 	VAR_CHK_IF_ZERO(self->mesh.vertices, false);
 	VAR_CHK_IF_ZERO(self->mesh.polygons, false);
+	VAR_CHK_IF_NULL(self->mesh.position, false);
 
-	/*
-	// 버텍스 버퍼 생성
-	for (int i = 0; i < QGLOS_MAX_VALUE; i++)
+	size_t i, z, n;
+	ushort loac[QGLOS_MAX_VALUE] = { 0, }, losz[QGLOS_MAX_VALUE] = { 0, };
+	QgLayoutInput* stages[QGLOS_MAX_VALUE][QGLOU_MAX_SIZE] = { {NULL,}, };
+	for (i = 0; i < self->layout.count; i++)
 	{
-		if (self->vbuffers[i] == NULL)
-			self->vbuffers[i] = qn_create_vbuffer();
+		QgLayoutInput* input = &self->layout.inputs[i];
+		if ((size_t)input->stage >= QGLOS_MAX_VALUE)
+		{
+			qn_mesgf(true, VAR_CHK_NAME, "invalid layout stage: %d", input->stage);
+			return false;
+		}
+		if ((size_t)input->format >= QGLOT_MAX_VALUE)
+		{
+			qn_mesgf(true, VAR_CHK_NAME, "invalid layout format: %d", input->format);
+			return false;
+		}
+		if ((size_t)input->usage >= QGLOU_MAX_VALUE)
+		{
+			qn_mesgf(true, VAR_CHK_NAME, "invalid layout usage: %d", input->usage);
+			return false;
+		}
+		byte format = lu_formats[input->usage];
+		if (format == 0)
+		{
+			qn_mesgf(true, VAR_CHK_NAME, "layout not support: %d", input->usage);
+			return false;
+		}
+		if (input->format != format)
+		{
+			qn_mesgf(true, VAR_CHK_NAME, "layout format not match: %d (need: %d)", input->format, format);
+			return false;
+		}
+
+		QgLayoutStage stage = input->stage;
+		input->normalized = losz[stage];
+		stages[input->stage][loac[stage]] = input;
+		loac[stage]++;
+		losz[stage] += lo_sizes[input->format];
 	}
 
-	// 인덱스 버퍼 생성
-	if (self->ibuffer == NULL)
-		self->ibuffer = qn_create_ibuffer();
-
-	// 버텍스 버퍼에 데이터 쓰기
-	for (int i = 0; i < QGLOS_MAX_VALUE; i++)
+	byte* vdata[QGLOS_MAX_VALUE];
+	for (i = 0; i < QGLOS_MAX_VALUE; i++)
 	{
-		if (self->vbuffers[i] != NULL)
+		if (loac[i] == 0)
 		{
-			qn_vbuffer_write(self->vbuffers[i], self->mesh.position, self->mesh.vertices, sizeof(QmFloat3), i);
-			qn_vbuffer_write(self->vbuffers[i], self->mesh.coord[i], self->mesh.vertices, sizeof(QmFloat2), i + 1);
-			qn_vbuffer_write(self->vbuffers[i], self->mesh.normal[i], self->mesh.vertices, sizeof(QmFloat3), i + 2);
+			vdata[i] = NULL;
+			continue;
+		}
+		self->vbuffers[i] = qg_create_buffer(QGBUFFER_VERTEX, self->mesh.vertices, losz[i], NULL);
+		vdata[i] = qg_buffer_map(self->vbuffers[i]);
+	}
+
+	size_t vertices = (size_t)self->mesh.vertices;
+	for (z = 0; z < QGLOS_MAX_VALUE; z++)
+	{
+		size_t stride = losz[z];
+		for (i = 0; i < loac[z]; i++)
+		{
+			QgLayoutInput* input = stages[z][i];
+			byte* ptr = vdata[z] + input->normalized;
+#define CASE_SET_VALUE(TYPE, DATA, DEF)\
+	if (DATA == NULL)\
+	{\
+		for (n = 0; n < vertices; n++)\
+		{\
+			*(TYPE*)ptr = DEF;\
+			ptr += stride;\
+		}\
+	} else {\
+		for (n = 0; n < vertices; n++)\
+		{\
+			*(TYPE*)ptr = DATA[n];\
+			ptr += stride;\
+		}\
+	}
+#define CASE_FILL_VALUE(TYPE, DEF)\
+	for (n = 0; n < vertices; n++)\
+	{\
+		*(TYPE*)ptr = DEF;\
+		ptr += stride;\
+	}
+			switch (input->usage)
+			{
+				case QGLOU_POSITION:
+					CASE_SET_VALUE(QmFloat3, self->mesh.position, ((QmFloat3) { 0.0f, 0.0f, 0.0f }));
+					break;
+				case QGLOU_COORD1:
+					CASE_SET_VALUE(QmFloat2, self->mesh.coord[0], ((QmFloat2) { 0.0f, 0.0f }));
+					break;
+				case QGLOU_COORD2:
+					CASE_SET_VALUE(QmFloat2, self->mesh.coord[1], ((QmFloat2) { 0.0f, 0.0f }));
+					break;
+				case QGLOU_COORD3:
+				case QGLOU_COORD4:
+					CASE_FILL_VALUE(QmFloat2, ((QmFloat2) { 0.0f, 0.0f }));
+					break;
+				case QGLOU_NORMAL1:
+					CASE_SET_VALUE(QmFloat3, self->mesh.normal[0], ((QmFloat3) { 0.0f, 1.0f, 0.0f }));
+					break;
+				case QGLOU_NORMAL2:
+					CASE_SET_VALUE(QmFloat3, self->mesh.normal[1], ((QmFloat3) { 0.0f, 1.0f, 0.0f }));
+					break;
+				case QGLOU_NORMAL3:
+				case QGLOU_NORMAL4:
+					CASE_FILL_VALUE(QmFloat3, ((QmFloat3) { 0.0f, 1.0f, 0.0f }));
+					break;
+				case QGLOU_BINORMAL1:
+					CASE_SET_VALUE(QmFloat3, self->mesh.binormal, ((QmFloat3) { 0.0f, 1.0f, 0.0f }));
+					break;
+				case QGLOU_BINORMAL2:
+					CASE_FILL_VALUE(QmFloat3, ((QmFloat3) { 0.0f, 1.0f, 0.0f }));
+					break;
+				case QGLOU_TANGENT1:
+					CASE_SET_VALUE(QmFloat3, self->mesh.tangent, ((QmFloat3) { 0.0f, 1.0f, 0.0f }));
+					break;
+				case QGLOU_TANGENT2:
+					CASE_FILL_VALUE(QmFloat3, ((QmFloat3) { 0.0f, 1.0f, 0.0f }));
+					break;
+				case QGLOU_COLOR1:
+					CASE_SET_VALUE(uint, self->mesh.color[0], 0xFFFFFFFF);
+					break;
+				case QGLOU_COLOR2:
+					CASE_SET_VALUE(uint, self->mesh.color[1], 0xFFFFFFFF);
+					break;
+				case QGLOU_COLOR3:
+				case QGLOU_COLOR4:
+				case QGLOU_COLOR5:
+				case QGLOU_COLOR6:
+					CASE_FILL_VALUE(uint, 0xFFFFFFFF);
+					break;
+			}
+#undef CASE_SET_VALUE
+#undef CASE_FILL_VALUE
 		}
 	}
 
-	// 인덱스 버퍼에 데이터 쓰기
-	qn_ibuffer_write(self->ibuffer, self->mesh.index, self->mesh.polygons * 3, sizeof(int));
-	*/
+	for (i = 0; i < QGLOS_MAX_VALUE; i++)
+	{
+		if (vdata[i] != NULL)
+			qg_buffer_unmap(self->vbuffers[i]);
+	}
+
+	if (self->mesh.index != NULL)
+		self->ibuffer = qg_create_buffer(QGBUFFER_INDEX, self->mesh.polygons * 3, sizeof(int), self->mesh.index);
 
 	return true;
 }

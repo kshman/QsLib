@@ -220,6 +220,7 @@ typedef struct RDHBASE
 	RendererInvoke		invokes;
 
 	QnNodeMukum			mukums[RDHNODE_MAX_VALUE];
+	QgFont*				font;
 } RdhBase;
 
 QN_DECL_VTABLE(RDHBASE)

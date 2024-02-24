@@ -1539,6 +1539,7 @@ void rdh_internal_clean(void)
 	RdhBase* rdh = RDH;
 	for (size_t i = 0; i < QN_COUNTOF(rdh->mukums); i++)
 		qn_node_mukum_safe_dispose(&rdh->mukums[i]);
+	qn_unload(rdh->font);
 }
 
 //
@@ -1844,6 +1845,17 @@ QgTexture* qg_load_texture(int mount, const char* filename, QgTexFlag flags)
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
 	return qn_cast_vtable(rdh, RDHBASE)->create_texture(filename, image, flags | QGTEXF_DISCARD_IMAGE);
+}
+
+//
+bool qg_load_def_font(int mount, const char* filename, int font_base_size)
+{
+	QgFont* font = qg_load_font(mount, filename, font_base_size);
+	qn_return_when_fail(font != NULL, false);
+
+	qn_unload(RDH->font);
+	RDH->font = font;
+	return true;
 }
 
 //

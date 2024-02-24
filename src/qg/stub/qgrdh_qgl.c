@@ -636,7 +636,7 @@ static void qgl_rdh_reset(void)
 #endif
 
 	// 리소스
-	static const char vs_ortho[] = \
+	static char vs_ortho[] = \
 		"uniform mat4 OrthoProj;" \
 		"attribute vec4 aPosition;" \
 		"attribute vec4 aColor;" \
@@ -648,7 +648,7 @@ static void qgl_rdh_reset(void)
 		"	vCoord = aPosition.zw;"\
 		"	vColor = aColor;" \
 		"}";
-	static const char ps_ortho[] = \
+	static char ps_ortho[] = \
 		"uniform sampler2D Texture;" \
 		"varying vec2 vCoord;" \
 		"varying vec4 vColor;" \
@@ -656,7 +656,7 @@ static void qgl_rdh_reset(void)
 		"{" \
 		"	gl_FragColor = texture2D(Texture, vCoord) * vColor;\n" \
 		"}";
-	static const char ps_glyph[] = \
+	static char ps_glyph[] = \
 		"uniform sampler2D Texture;" \
 		"varying vec2 vCoord;" \
 		"varying vec4 vColor;" \

@@ -1065,3 +1065,26 @@ QgFont* qg_load_font(int mount, const char* filename, int font_base_size)
 	font->name = qn_strdup(filename);
 	return font;
 }
+
+//
+void qg_draw_text(int x, int y, const char* text)
+{
+	QgFont* font = RDH->font;
+	qn_return_when_fail(font != NULL, );
+	qg_font_write(font, x, y, text);
+}
+
+//
+void qg_draw_text_format(int x, int y, const char* fmt, ...)
+{
+	QgFont* font = RDH->font;
+	qn_return_when_fail(font != NULL, );
+	va_list va;
+	va_start(va, fmt);
+	char buffer[1024];
+	int len = qn_vsnprintf(buffer, QN_COUNTOF(buffer), fmt, va);
+	va_end(va);
+	if (len <= 0)
+		return;
+	qg_font_write(font, x, y, buffer);
+}

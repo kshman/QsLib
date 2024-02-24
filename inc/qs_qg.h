@@ -884,7 +884,7 @@ typedef struct QGPROPMESH
 	QmFloat3*			normal[2];
 	QmFloat3*			binormal;
 	QmFloat3*			tangent;
-	QmKolor*			color[2];
+	uint*				color[2];
 	int*				index;
 } QgPropMesh;
 
@@ -1737,6 +1737,24 @@ QSAPI void qg_font_write(QgFont* self, int x, int y, const char* text);
 /// @param ... 가변 인수
 QSAPI void qg_font_write_format(QgFont* self, int x, int y, const char* fmt, ...);
 
+/// @brief 기본 글꼴을 로드한다
+/// @param mount 마운트 번호
+/// @param filename 글꼴 파일 이름
+/// @param font_base_size 기본 글꼴 크기
+/// @return 로드에 성공하면 참
+QSAPI bool qg_load_def_font(int mount, const char* filename, int font_base_size);
+
+/// @brief 기본 글꼴로 그린다
+/// @param x,y x,y 좌표
+/// @param text 문자열
+QSAPI void qg_draw_text(int x, int y, const char* text);
+
+/// @brief 기본 글꼴로 그린다
+/// @param x,y x,y 좌표
+/// @param fmt 문자열
+/// @param ... 가변 인수
+QSAPI void qg_draw_text_format(int x, int y, const char* fmt, ...);
+
 
 //////////////////////////////////////////////////////////////////////////
 // 노드
@@ -1882,11 +1900,12 @@ QSAPI void qg_camera_set_proj_aspect(QgCamera* self, float ascpect, float fov, f
 
 /// @brief 뷰 속성을 설정한다
 /// @param self 카메라
+/// @param eye 위치
 /// @param at 시선
 /// @param ahead 앞 방향
 /// @return 마야 카메라를 사용하면 무조건 거짓을 반환한다
 /// @note at과 ahead는 카메라의 위치와 방향을 설정한다
-QSAPI bool qg_camera_set_view(QgCamera* self, const QmVec* at, const QmVec* ahead);
+QSAPI bool qg_camera_set_view(QgCamera* self, const QmVec* eye, const QmVec* at, const QmVec* ahead);
 
 /// @brief 카메라 회전을 설정한다 (마야/FPS 카메라)
 /// @param self 카메라
@@ -1943,6 +1962,11 @@ struct QGMESH
 /// @param name 메시 이름
 /// @return 만들어진 메시
 QSAPI QgMesh* qg_create_mesh(const char* name);
+
+/// @brief 메시를 빌드한다
+/// @param self 메시
+/// @return 빌드에 성공하면 참
+QSAPI bool qg_mesh_build(QgMesh* self);
 
 /// @brief 레이아웃을 설정한다
 /// @param self 메시
