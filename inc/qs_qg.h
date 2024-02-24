@@ -761,14 +761,14 @@ typedef struct QGLAYOUTINPUT
 /// @brief 레이아웃 데이터
 typedef struct QGLAYOUTDATA
 {
-	const QgLayoutInput*	inputs;							/// @brief 요소 데이터 포인트
-	size_t					count;							/// @brief 요소 갯수
+	QgLayoutInput*		inputs;								///	@brief 요소 데이터 포인트
+	size_t				count;								/// @brief 요소 갯수
 } QgLayoutData;
 
 /// @brief 코드 데이터
 typedef struct QGCODEDATA
 {
-	const void*			code;								/// @brief 코드 데이터
+	void*				code;								/// @brief 코드 데이터
 	size_t				size;								/// @brief 코드 크기 (텍스트 타입이면 반드시 0이어야 한다!)
 } QgCodeData;
 
@@ -877,7 +877,7 @@ typedef struct QGPARAMCAMERA
 typedef struct QGPROPMESH
 {
 	int					vertices;
-	int					indices;
+	int					polygons;
 
 	QmFloat3*			position;
 	QmFloat2*			coord[2];
@@ -1933,10 +1933,67 @@ struct QGMESH
 	QN_GAM_BASE(QGDPCT);
 
 	QgPropMesh			mesh;
+	QgLayoutData		layout;
 
 	QgBuffer*			vbuffers[QGLOS_MAX_VALUE];
 	QgBuffer*			ibuffer;
 };
+
+/// @brief 빈 메시를 만든다
+/// @param name 메시 이름
+/// @return 만들어진 메시
+QSAPI QgMesh* qg_create_mesh(const char* name);
+
+/// @brief 레이아웃을 설정한다
+/// @param self 메시
+/// @param lo 레이아웃 데이터
+QSAPI void qg_mesh_set_layout(QgMesh* self, const QgLayoutData* lo);
+
+/// @brief 사면체 메시를 만든다
+/// @param self 메시
+/// @param width 너비
+/// @param height 높이
+/// @param depth 깊이
+/// @return 문제가 없다면 참
+/// @note 메시 데이터만 만든다. 버퍼는 따로 만들어야 한다
+QSAPI bool qg_mesh_gen_cube(QgMesh* self, float width, float height, float depth);
+
+/// @brief 평면 메시를 만든다
+/// @param self 메시
+/// @param width 너비
+/// @param depth 깊이
+/// @param split_width 너비 분할
+/// @param split_depth 깊이 분할
+/// @return 문제가 없다면 참
+/// @note 메시 데이터만 만든다. 버퍼는 따로 만들어야 한다
+QSAPI bool qg_mesh_gen_plane(QgMesh* self, float width, float depth, int split_width, int split_depth);
+
+/// @brief 폴리곤 메시를 만든다
+/// @param self 메시
+/// @param sides 변 갯수
+/// @param radius 반지름
+/// @return 문제가 없다면 참
+/// @note 메시 데이터만 만든다. 버퍼는 따로 만들어야 한다
+QSAPI bool qg_mesh_gen_poly(QgMesh* self, int sides, float radius);
+
+/// @brief 구 메시를 만든다
+/// @param self 메시
+/// @param radius 반지름
+/// @param slices 슬라이스
+/// @param stacks 스택
+/// @return 문제가 없다면 참
+/// @note 메시 데이터만 만든다. 버퍼는 따로 만들어야 한다
+QSAPI bool qg_mesh_gen_sphere(QgMesh* self, float radius, int slices, int stacks);
+
+/// @brief 원환체 메시를 만든다
+/// @param self 메시
+/// @param radius 반지름
+/// @param size 크기
+/// @param segment 세그먼트
+/// @param sides 변 갯수
+/// @return 문제가 없다면 참
+/// @note 메시 데이터만 만든다. 버퍼는 따로 만들어야 한다
+QSAPI bool qg_mesh_gen_torus(QgMesh* self, float radius, float size, int segment, int sides);
 
 
 //////////////////////////////////////////////////////////////////////////

@@ -11,8 +11,14 @@
 //////////////////////////////////////////////////////////////////////////
 // 데픽트
 
-void _dpct_init(QgDpct* self, const QmMat* defm)
+void _dpct_init(QgDpct* self, const char* name, const QmMat* defm)
 {
+	if (name != NULL)
+	{
+		qn_strncpy(self->name, name, QN_COUNTOF(self->name) - 1);
+		self->hash = qn_strihash(self->name);
+	}
+
 	self->trfm.mdef = defm != NULL ? *defm : qm_mat4_unit();
 	self->trfm.mcalc = qm_mat4_unit();
 	self->trfm.mlocal = qm_mat4_unit();
@@ -22,28 +28,32 @@ void _dpct_init(QgDpct* self, const QmMat* defm)
 }
 
 // 업데이트
-bool _dpct_update(QgDpct* self, float advance)
+bool _dpct_update(QnGam g, float advance)
 {
+	QgDpct* self = qn_cast_type(g, QgDpct);
 	QN_DUMMY(advance);
 	qg_dpct_update_tm(self);
 	return true;
 }
 
 // 위치
-void _dpct_set_loc(QgDpct* self, const QmVec* loc)
+void _dpct_set_loc(QnGam g, const QmVec* loc)
 {
+	QgDpct* self = qn_cast_type(g, QgDpct);
 	self->trfm.vloc = *loc;
 }
 
 // 회전
-void _dpct_set_rot(QgDpct* self, const QmVec* rot)
+void _dpct_set_rot(QnGam g, const QmVec* rot)
 {
+	QgDpct* self = qn_cast_type(g, QgDpct);
 	self->trfm.qrot = *rot;
 }
 
 // 크기
-void _dpct_set_scl(QgDpct* self, const QmVec* scl)
+void _dpct_set_scl(QnGam g, const QmVec* scl)
 {
+	QgDpct* self = qn_cast_type(g, QgDpct);
 	self->trfm.vscl = *scl;
 }
 

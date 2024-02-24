@@ -210,6 +210,7 @@
     <ClInclude Include="..\..\src\supp\glad\gl.h" />
     <ClInclude Include="..\..\src\supp\glad\wgl.h" />
     <ClInclude Include="..\..\src\supp\glad\wglext.h" />
+    <ClInclude Include="..\..\src\supp\par\par_shapes.h" />
     <ClInclude Include="..\..\src\supp\stb\stb_image.h" />
     <ClInclude Include="..\..\src\supp\stb\stb_rect_pack.h" />
     <ClInclude Include="..\..\src\supp\stb\stb_truetype.h" />
