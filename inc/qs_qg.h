@@ -322,6 +322,10 @@ typedef enum QGSHADERCONSTAUTO
 	QGSCA_PROP_MAT3,										/// @brief 행렬 3번
 	QGSCA_PROP_MAT4,										/// @brief 행렬 4번
 	QGSCA_MAT_PALETTE,										/// @brief 행렬 팔레트
+	QGSCA_DIFFUSE,											/// @brief 디퓨즈 색깔
+	QGSCA_SPECULAR,											/// @brief 스페큘러 색깔
+	QGSCA_AMBIENT,											/// @brief 앰비언트 색깔
+	QGSCA_EMISSIVE,											/// @brief 이미시브 색깔
 	QGSCA_MAX_VALUE
 } QgScAuto;
 
@@ -1368,41 +1372,57 @@ QSAPI void qg_rdh_reset(void);
 /// @param clear 지우기 플래그
 QSAPI void qg_clear_render(QgClear clear);
 
+/// @brief 세이더 diffuse 파라미터 설정
+/// @param diffuse diffuse 색깔
+QSAPI void QM_VECTORCALL qg_set_param_diffuse(const QmVec diffuse);
+
+/// @brief 세이더 specular 파라미터 설정
+/// @param specular specular 색깔
+QSAPI void QM_VECTORCALL qg_set_param_specular(const QmVec specular);
+
+/// @brief 세이더 ambient 파라미터 설정
+/// @param ambient ambient 색깔
+QSAPI void QM_VECTORCALL qg_set_param_ambient(const QmVec ambient);
+
+/// @brief 세이더 emissive 파라미터 설정
+/// @param emissive emissive 색깔
+QSAPI void QM_VECTORCALL qg_set_param_emissive(const QmVec emissive);
+
 /// @brief 세이더 vec4 타입 파라미터 설정
 /// @param at 0부터 3까지 총 4가지
 /// @param v vec4 타입 값
-QSAPI void qg_set_param_vec4(int at, const QmVec4* v);
+QSAPI void QM_VECTORCALL qg_set_param_vec4(int at, const QmVec v);
 
 /// @brief 세이더 mat4 타입 파라미터 설정
 /// @param at 0부터 3까지 총 4가지
 /// @param m mat4 타입 값
-QSAPI void qg_set_param_mat4(int at, const QmMat4* m);
+QSAPI void QM_VECTORCALL qg_set_param_mat4(int at, const QmMat m);
 
 /// @brief 세이더 영향치(주로 뼈대 팔레트) 파라미터 설정
 /// @param count 행렬 갯수
 /// @param weight 영향치 행렬
-QSAPI void qg_set_param_weight(int count, QmMat4* weight);
+QSAPI void qg_set_param_weight(int count, QmMat* weight);
 
 /// @brief 배경색을 설정한다
-/// @param background_color 배경색 (널값일 경우 (0.0f, 0.0f, 0.0f, 1.0f)로 초기화)
-QSAPI void qg_set_background(const QmColor* background_color);
+/// @param background_color 배경색
+QSAPI void QM_VECTORCALL qg_set_background(const QmVec background_color);
 
 /// @brief 월드 행렬을 설정한다
 /// @param world 월드 행렬
-QSAPI void qg_set_world(const QmMat4* world);
+QSAPI void QM_VECTORCALL qg_set_world(const QmMat world);
 
 /// @brief 뷰 행렬을 설정한다
 /// @param view 뷰 행렬
-QSAPI void qg_set_view(const QmMat4* view);
+QSAPI void QM_VECTORCALL qg_set_view(const QmMat view);
 
 /// @brief 투영 행렬을 설정한다
 /// @param proj 투영 행렬
-QSAPI void qg_set_project(const QmMat4* proj);
+QSAPI void QM_VECTORCALL qg_set_project(const QmMat proj);
 
 /// @brief 뷰와 투영 행렬을 설정한다
 /// @param proj 투영 행렬
 /// @param view 뷰 행렬
-QSAPI void qg_set_view_project(const QmMat4* proj, const QmMat4* view);
+QSAPI void QM_VECTORCALL qg_set_view_project(const QmMat proj, const QmMat view);
 
 /// @brief 카메라를 설정한다 (프로젝션과 뷰	행렬을 설정한다)
 /// @param camera 카메라
@@ -1454,7 +1474,7 @@ QSAPI bool qg_draw_indexed(QgTopology tpg, int indices);
 /// @param texture 텍스쳐 (널이면 색깔만 사용)
 /// @param color 색깔 (널이면 흰색)
 /// @param coord 텍스쳐 좌표 (널이면 전체 텍스쳐)
-QSAPI void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmColor* color, const QmVec* coord);
+QSAPI void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmColor* color, const QmVec4* coord);
 
 /// @brief 텍스쳐 스프라이트를 회전시켜 그린다
 /// @param bound 그릴 영영역
@@ -1462,7 +1482,7 @@ QSAPI void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmColor
 /// @param texture 텍스쳐 (널이면 색깔만 사용)
 /// @param color 색깔 (널이면 흰색)
 /// @param coord 텍스쳐 좌표 (널이면 전체 텍스쳐)
-QSAPI void qg_draw_sprite_ex(const QmRect* bound, float angle, QgTexture* texture, const QmColor* color, const QmVec* coord);
+QSAPI void qg_draw_sprite_ex(const QmRect* bound, float angle, QgTexture* texture, const QmColor* color, const QmVec4* coord);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1704,7 +1724,7 @@ INLINE void QM_VECTORCALL qg_font_set_color(QgFont* self, const QmColor color) {
 /// @brief 글꼴 색깔을 얻는다
 /// @param self 글꼴
 /// @return 글꼴 색깔
-INLINE QmVec QM_VECTORCALL qg_font_get_color(QgFont* self) { return self->color; }
+INLINE QmVec QM_VECTORCALL qg_font_get_color(QgFont* self) { return self->color.s; }
 
 /// @brief 글꼴 스텝을 설정한다
 /// @param self 글꼴
@@ -1795,16 +1815,16 @@ QN_DECL_VTABLE(QGDPCT)
 	void (*set_scl)(QnGam, const QmVec*);
 };
 
-QSAPI bool qg_dpct_update(QgDpct* self, float advance);
-QSAPI void qg_dpct_draw(QgDpct* self);
-QSAPI void qg_dpct_set_loc(QgDpct* self, const QmVec* loc);
-QSAPI void qg_dpct_set_rot(QgDpct* self, const QmVec* rot);
-QSAPI void qg_dpct_set_scl(QgDpct* self, const QmVec* scl);
-QSAPI void qg_dpct_set_name(QgDpct* self, const char* name);
-QSAPI void qg_dpct_update_tm(QgDpct* self);
+QSAPI bool qg_dpct_update(QNGAM dpct, float advance);
+QSAPI void qg_dpct_draw(QNGAM dpct);
+QSAPI void qg_dpct_set_loc(QNGAM dpct, const QmVec* loc);
+QSAPI void qg_dpct_set_rot(QNGAM dpct, const QmVec* rot);
+QSAPI void qg_dpct_set_scl(QNGAM dpct, const QmVec* scl);
+QSAPI void qg_dpct_set_name(QNGAM dpct, const char* name);
+QSAPI void qg_dpct_update_tm(QNGAM dpct);
 
-INLINE const char* qg_dpct_get_name(QgDpct* self) { return self->name; }
-INLINE size_t qg_dpct_get_hash(QgDpct* self) { return self->hash; }
+INLINE const char* qg_dpct_get_name(QNGAM dpct) { return qn_cast_type(dpct, QgDpct)->name; }
+INLINE size_t qg_dpct_get_hash(QNGAM dpct) { return qn_cast_type(dpct, QgDpct)->hash; }
 
 
 // 광선
@@ -1939,7 +1959,7 @@ QSAPI float qg_camera_get_dist(const QgCamera* self, const QmVec* pos);
 /// @param v 점
 /// @param world 월드 행렬 (이 값이 널이면 RDH가 가지고 있는 world 행렬을 사용한다)
 /// @return 변환된 점
-QSAPI QmVec QM_VECTORCALL qg_camera_project(const QgCamera* self, const QmVec* v, const QmMat4* world);
+QSAPI QmVec QM_VECTORCALL qg_camera_project(const QgCamera* self, const QmVec v, const QmMat* world);
 
 /// @brief 카메라를 업데이트한다
 /// @param self 카메라

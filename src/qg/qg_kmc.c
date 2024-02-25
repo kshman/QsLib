@@ -236,6 +236,10 @@ static struct QGSHADERCONSTAUTOMAP
 	{ QGSCA_PROP_MAT3,		"propmat3",		0 },
 	{ QGSCA_PROP_MAT4,		"propmat4",		0 },
 	{ QGSCA_MAT_PALETTE,	"matpalette",	0 },
+	{ QGSCA_DIFFUSE,		"diffuse",		0 },
+	{ QGSCA_SPECULAR,		"specular",		0 },
+	{ QGSCA_AMBIENT,		"ambient",		0 },
+	{ QGSCA_EMISSIVE,		"emissive",		0 },
 	// 별명
 	{ QGSCA_TEX1,			"tex",			0 },
 	{ QGSCA_TEX1,			"tex1",			0 },

@@ -286,8 +286,8 @@ static bool qgl_rdh_set_render(void* render);
 static bool qgl_rdh_set_texture(int stage, void* texture);
 static bool qgl_rdh_draw(QgTopology tpg, int vertices);
 static bool qgl_rdh_draw_indexed(QgTopology tpg, int indices);
-static void qgl_rdh_draw_sprite(const QmRect* bound, void* texture, const QmColor* color, const QmVec* coord);
-static void qgl_rdh_draw_sprite_ex(const QmRect* bound, float angle, void* texture, const QmColor* color, const QmVec* coord);
+static void qgl_rdh_draw_sprite(const QmRect* bound, void* texture, const QmColor* color, const QmVec4* coord);
+static void qgl_rdh_draw_sprite_ex(const QmRect* bound, float angle, void* texture, const QmColor* color, const QmVec4* coord);
 static void qgl_rdh_flush_batch_ortho(void);
 
 static QgBuffer* qgl_create_buffer(_In_ QgBufferType type, _In_ uint count, _In_ uint stride, _In_ const void* initial_data);
@@ -503,9 +503,9 @@ static void qgl_rdh_layout(void)
 	RendererTransform* tm = RDH_TRANSFORM;
 	const RendererInfo* info = RDH_INFO;
 
-	QmMat4 ortho = qm_mat4_ortho_lh((float)tm->size.Width, (float)-tm->size.Height, -1.0f, 1.0f);
+	QmMat ortho = qm_mat4_ortho_lh((float)tm->size.Width, (float)-tm->size.Height, -1.0f, 1.0f);
 	ortho.r[3] = qm_vec4(-1.0f, 1.0f, 0.0f, 1.0f);
-	tm->ortho = ortho;
+	tm->ortho.s = ortho;
 
 	// 뷰포트
 	GLDEBUG(glViewport(0, 0, (GLsizei)tm->size.Width, (GLsizei)tm->size.Height));
@@ -906,8 +906,8 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 		case QGSCA_WORLD_VIEW_PROJ:
 		{
 			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			const QmMat4 m = qm_mat4_mul(tm->world, tm->view_proj);
-			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, m.f));
+			const QmMat m = qm_mat4_mul(tm->world.s, tm->view_proj.s);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, ((QmMat4*)&m)->f));
 		} break;
 		case QGSCA_TEX1:
 		case QGSCA_TEX2:
@@ -966,6 +966,52 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 			qn_debug_verify(var->sctype == QGSCT_FLOAT16);
 			GLDEBUG(glUniformMatrix4fv(var->offset, param->bone_count, false, (const GLfloat*)param->bone_ptr));
 			break;
+		case QGSCA_DIFFUSE:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->c[0].f));
+			break;
+		case QGSCA_SPECULAR:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->c[1].f));
+			break;
+		case QGSCA_AMBIENT:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->c[2].f));
+			break;
+		case QGSCA_EMISSIVE:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->c[3].f));
+			break;
+		/*
+		case QGSCA_LIGHT_POS:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->light_pos.f));
+			break;
+		case QGSCA_LIGHT_DIR:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->light_dir.f));
+			break;
+		case QGSCA_LIGHT_COLOR:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->light_color.f));
+			break;
+		case QGSCA_LIGHT_ATTEN:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->light_atten.f));
+			break;
+		case QGSCA_LIGHT_SPOT:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->light_spot.f));
+			break;
+		case QGSCA_LIGHT_RANGE:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->light_range.f));
+			break;
+		case QGSCA_LIGHT_COUNT:
+			qn_debug_verify(var->sctype == QGSCT_INT1 && var->size == 1);
+			GLDEBUG(glUniform1i(var->offset, param->light_count));
+			break;
+		*/
 		default:
 			if (param->callback_func != NULL)
 				param->callback_func(param->callback_data, (nint)var->hash, var);
@@ -1451,17 +1497,17 @@ static void qgl_rdh_flush_batch_ortho(void)
 }
 
 // 스프라이트 그리기 -> 배치에 사각형으로 넣기
-static void qgl_rdh_draw_sprite(const QmRect* bound, void* texture, const QmColor* color, const QmVec* coord)
+static void qgl_rdh_draw_sprite(const QmRect* bound, void* texture, const QmColor* color, const QmVec4* coord)
 {
 	QglResource* res = QGL_RESOURCE;
 	if (res->ortho.data_count + 4 >= MAX_ORTHOD_BATCH_COUNT)
 		qgl_rdh_flush_batch_ortho();
 
 	OrthoVertex* v = &res->ortho.data[res->ortho.data_count];
-	ortho_vertex_set(&v[0], qm_vec((float)bound->Left, (float)bound->Top, coord->X, coord->Y), *color);
-	ortho_vertex_set(&v[1], qm_vec((float)bound->Right, (float)bound->Top, coord->Z, coord->Y), *color);
-	ortho_vertex_set(&v[2], qm_vec((float)bound->Left, (float)bound->Bottom, coord->X, coord->W), *color);
-	ortho_vertex_set(&v[3], qm_vec((float)bound->Right, (float)bound->Bottom, coord->Z, coord->W), *color);
+	ortho_vertex_set_param(&v[0], (float)bound->Left, (float)bound->Top, coord->X, coord->Y, *color);
+	ortho_vertex_set_param(&v[1], (float)bound->Right, (float)bound->Top, coord->Z, coord->Y, *color);
+	ortho_vertex_set_param(&v[2], (float)bound->Left, (float)bound->Bottom, coord->X, coord->W, *color);
+	ortho_vertex_set_param(&v[3], (float)bound->Right, (float)bound->Bottom, coord->Z, coord->W, *color);
 
 	QglTexture* tex = texture != NULL ? texture : res->white_texture;
 	QglOrthoBatch batch = { QGBTC_RECT, (GLint)res->ortho.data_count, 4, qn_get_gam_desc(tex, GLuint), false };
@@ -1471,7 +1517,7 @@ static void qgl_rdh_draw_sprite(const QmRect* bound, void* texture, const QmColo
 }
 
 // 회전 스프라이트 그리기 -> 배치에 사각형으로 넣기
-static void qgl_rdh_draw_sprite_ex(const QmRect* bound, float angle, void* texture, const QmColor* color, const QmVec* coord)
+static void qgl_rdh_draw_sprite_ex(const QmRect* bound, float angle, void* texture, const QmColor* color, const QmVec4* coord)
 {
 	QglResource* res = QGL_RESOURCE;
 	if (res->ortho.data_count + 4 >= MAX_ORTHOD_BATCH_COUNT)
@@ -1481,10 +1527,10 @@ static void qgl_rdh_draw_sprite_ex(const QmRect* bound, float angle, void* textu
 	qm_rect_rotate(*bound, angle, &tl, &tr, &bl, &br);
 
 	OrthoVertex* v = &res->ortho.data[res->ortho.data_count];
-	ortho_vertex_set(&v[0], qm_vec(tl.X, tl.Y, coord->X, coord->Y), *color);
-	ortho_vertex_set(&v[1], qm_vec(tr.X, tr.Y, coord->Z, coord->Y), *color);
-	ortho_vertex_set(&v[2], qm_vec(bl.X, bl.Y, coord->X, coord->W), *color);
-	ortho_vertex_set(&v[3], qm_vec(br.X, br.Y, coord->Z, coord->W), *color);
+	ortho_vertex_set_param(&v[0], tl.X, tl.Y, coord->X, coord->Y, *color);
+	ortho_vertex_set_param(&v[1], tr.X, tr.Y, coord->Z, coord->Y, *color);
+	ortho_vertex_set_param(&v[2], bl.X, bl.Y, coord->X, coord->W, *color);
+	ortho_vertex_set_param(&v[3], br.X, br.Y, coord->Z, coord->W, *color);
 
 	QglTexture* tex = texture != NULL ? texture : res->white_texture;
 	QglOrthoBatch batch = { QGBTC_RECT, (GLint)res->ortho.data_count, 4, qn_get_gam_desc(tex, GLuint), false };
@@ -1725,7 +1771,7 @@ static GLuint qgl_render_compile_shader(GLenum gl_type, const char* header, cons
 
 	glDeleteShader(gl_shader);
 	return 0;
-}
+	}
 
 // GLenum을 상수로
 INLINE QgScType qgl_enum_to_shader_const(GLenum gl_type)
@@ -2163,7 +2209,7 @@ INLINE QglTexFormat qgl_clrfmt_to_tex_enum(QgClrFmt fmt)
 #else
 		[QGCF_ASTC8] = { GL_NONE, GL_NONE, GL_NONE },
 #endif
-	};
+};
 	return gl_enums[fmt];
 }
 

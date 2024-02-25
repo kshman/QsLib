@@ -198,6 +198,7 @@ typedef struct RENDERERTRANSFORM
 // 렌더 인수
 typedef struct RENDERERPARAM
 {
+	QmVec4				c[4];
 	QmVec4				v[4];
 	QmMat4				m[4];
 	QmMat4*				bone_ptr;
@@ -245,8 +246,8 @@ QN_DECL_VTABLE(RDHBASE)
 
 	bool (*draw)(QgTopology, int);
 	bool (*draw_indexed)(QgTopology, int);
-	void (*draw_sprite)(const QmRect*, void/*QgTexture*/*, const QmVec*, const QmVec*);
-	void (*draw_sprite_ex)(const QmRect*, float, void/*QgTexture*/*, const QmVec*, const QmVec*);
+	void (*draw_sprite)(const QmRect*, void/*QgTexture*/*, const QmColor*, const QmVec4*);
+	void (*draw_sprite_ex)(const QmRect*, float, void/*QgTexture*/*, const QmColor*, const QmVec4*);
 };
 
 // 렌더 디바이스

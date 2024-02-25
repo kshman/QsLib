@@ -1500,21 +1500,21 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 
 	// 한번 설정하면 바뀔일이 없거나 신경 안써도 되는것
 	RendererTransform* tm = &rdh->tm;
-	tm->world = qm_mat4_unit();
-	tm->view = qm_mat4_unit();
-	tm->invv = qm_mat4_unit();
-	tm->frm = qm_mat4_unit();
+	tm->world.s = qm_mat4_unit();
+	tm->view.s = qm_mat4_unit();
+	tm->invv.s = qm_mat4_unit();
+	tm->frm.s = qm_mat4_unit();
 	for (size_t i = 0; i < QN_COUNTOF(tm->tex); i++)		// 텍스쳐 행렬
-		tm->tex[i] = qm_mat4_unit();
+		tm->tex[i].s = qm_mat4_unit();
 	tm->Near = 1.0f;										// Z깊이
 	tm->Far = 100000.0f;
 
 	RendererParam* param = &rdh->param;
 	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)		// 벡터 인수
-		param->v[i] = qm_vec_zero();
+		param->v[i].s = qm_vec_zero();
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)		// 행렬 인수
-		param->m[i] = qm_mat4_unit();
-	param->bgc = qm_color(0.0f, 0.0f, 0.0f, 1.0f);			// 배경색
+		param->m[i].s = qm_mat4_unit();
+	param->bgc.s = qm_color(0.0f, 0.0f, 0.0f, 1.0f);			// 배경색
 
 	// 묶음
 	for (size_t i = 0; i < QN_COUNTOF(rdh->mukums); i++)
@@ -1564,8 +1564,8 @@ void rdh_internal_layout(void)
 	// tm
 	RendererTransform* tm = RDH_TRANSFORM;
 	tm->size = client_size;
-	tm->proj = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->Near, tm->Far);
-	tm->view_proj = qm_mat4_mul(tm->view, tm->proj);
+	tm->proj.s = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->Near, tm->Far);
+	tm->view_proj.s = qm_mat4_mul(tm->view.s, tm->proj.s);
 	tm->scissor = qm_rect_size(0, 0, client_size.Width, client_size.Height);
 }
 
@@ -1684,90 +1684,112 @@ void qg_clear_render(QgClear clear)
 }
 
 //
-void qg_set_param_vec4(int at, const QmVec4* v)
+void QM_VECTORCALL qg_set_param_diffuse(const QmVec diffuse)
 {
 	RdhBase* rdh = RDH;
-	VAR_CHK_IF_NULL(v, );
+	rdh->param.c[0].s = diffuse;
+	rdh->invokes.invokes++;
+}
+
+//
+void QM_VECTORCALL qg_set_param_specular(const QmVec specular)
+{
+	RdhBase* rdh = RDH;
+	rdh->param.c[1].s = specular;
+	rdh->invokes.invokes++;
+}
+
+//
+void QM_VECTORCALL qg_set_param_ambient(const QmVec ambient)
+{
+	RdhBase* rdh = RDH;
+	rdh->param.c[2].s = ambient;
+	rdh->invokes.invokes++;
+}
+
+//
+void QM_VECTORCALL qg_set_param_emissive(const QmVec emissive)
+{
+	RdhBase* rdh = RDH;
+	rdh->param.c[3].s = emissive;
+	rdh->invokes.invokes++;
+}
+
+//
+void QM_VECTORCALL qg_set_param_vec4(int at, const QmVec v)
+{
+	RdhBase* rdh = RDH;
 	VAR_CHK_IF_MAX(at, QN_COUNTOF(rdh->param.v), );
-	rdh->param.v[at] = *v;
+	rdh->param.v[at].s = v;
 	rdh->invokes.invokes++;
 }
 
 //
-void qg_set_param_mat4(int at, const QmMat4* m)
+void QM_VECTORCALL qg_set_param_mat4(int at, const QmMat m)
 {
 	RdhBase* rdh = RDH;
-	VAR_CHK_IF_NULL(m, );
 	VAR_CHK_IF_MAX(at, QN_COUNTOF(rdh->param.m), );
-	rdh->param.m[at] = *m;
+	rdh->param.m[at].s = m;
 	rdh->invokes.invokes++;
 }
 
 //
-void qg_set_param_weight(int count, QmMat4* weight)
+void qg_set_param_weight(int count, QmMat* weight)
 {
 	VAR_CHK_IF_MIN(count, 0, );
 	VAR_CHK_IF_NULL(weight, );
 	RdhBase* rdh = RDH;
 	rdh->param.bone_count = count;
-	rdh->param.bone_ptr = weight;
+	rdh->param.bone_ptr = (QmMat4*)weight;
 	rdh->invokes.invokes++;
 }
 
 //
-void qg_set_background(const QmColor* color)
+void QM_VECTORCALL qg_set_background(const QmVec color)
 {
 	RdhBase* rdh = RDH;
-	if (color)
-		rdh->param.bgc = *color;
-	else
-		rdh->param.bgc = qm_color(0.0f, 0.0f, 0.0f, 1.0f);
+	rdh->param.bgc.s = color;
 	rdh->invokes.invokes++;
 }
 
 //
-void qg_set_world(const QmMat4* world)
+void QM_VECTORCALL qg_set_world(const QmMat world)
 {
-	VAR_CHK_IF_NULL(world, );
 	RdhBase* rdh = RDH;
-	rdh->tm.world = *world;
+	rdh->tm.world.s = world;
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
 
 //
-void qg_set_view(const QmMat4* view)
+void QM_VECTORCALL qg_set_view(const QmMat view)
 {
-	VAR_CHK_IF_NULL(view, );
 	RdhBase* rdh = RDH;
-	rdh->tm.view = *view;
-	rdh->tm.invv = qm_mat4_inv(*view);
-	rdh->tm.view_proj = qm_mat4_mul(*view, rdh->tm.proj);
+	rdh->tm.view.s = view;
+	rdh->tm.invv.s = qm_mat4_inv(view);
+	rdh->tm.view_proj.s = qm_mat4_mul(view, rdh->tm.proj.s);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
 
 //
-void qg_set_project(const QmMat4* proj)
+void QM_VECTORCALL qg_set_project(const QmMat proj)
 {
-	VAR_CHK_IF_NULL(proj, );
 	RdhBase* rdh = RDH;
-	rdh->tm.proj = *proj;
-	rdh->tm.view_proj = qm_mat4_mul(rdh->tm.view, *proj);
+	rdh->tm.proj.s = proj;
+	rdh->tm.view_proj.s = qm_mat4_mul(rdh->tm.view.s, proj);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
 
 //
-void qg_set_view_project(const QmMat4* proj, const QmMat4* view)
+void QM_VECTORCALL qg_set_view_project(const QmMat proj, const QmMat view)
 {
-	VAR_CHK_IF_NULL(proj, );
-	VAR_CHK_IF_NULL(view, );
 	RdhBase* rdh = RDH;
-	rdh->tm.proj = *proj;
-	rdh->tm.view = *view;
-	rdh->tm.invv = qm_mat4_inv(*view);
-	rdh->tm.view_proj = qm_mat4_mul(*proj, *view);
+	rdh->tm.proj.s = proj;
+	rdh->tm.view.s = view;
+	rdh->tm.invv.s = qm_mat4_inv(view);
+	rdh->tm.view_proj.s = qm_mat4_mul(proj, view);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
@@ -1777,10 +1799,10 @@ void qg_set_camera(QgCamera* camera)
 {
 	VAR_CHK_IF_NULL(camera, );
 	RdhBase* rdh = RDH;
-	rdh->tm.proj = camera->param.proj;
-	rdh->tm.view = camera->param.view;
-	rdh->tm.invv = camera->param.invv;
-	rdh->tm.view_proj = camera->param.vipr;
+	rdh->tm.proj.s = camera->param.proj;
+	rdh->tm.view.s = camera->param.view;
+	rdh->tm.invv.s = camera->param.invv;
+	rdh->tm.view_proj.s = camera->param.vipr;
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
@@ -1930,7 +1952,7 @@ bool qg_draw_indexed(QgTopology tpg, int indices)
 }
 
 //
-void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmColor* color, const QmVec* coord)
+void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmColor* color, const QmVec4* coord)
 {
 	VAR_CHK_IF_NULL(bound, );
 	if (color == NULL)
@@ -1944,7 +1966,7 @@ void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmColor* colo
 }
 
 //
-void qg_draw_sprite_ex(const QmRect* bound, float angle, QgTexture* texture, const QmColor* color, const QmVec* coord)
+void qg_draw_sprite_ex(const QmRect* bound, float angle, QgTexture* texture, const QmColor* color, const QmVec4* coord)
 {
 	VAR_CHK_IF_NULL(bound, );
 	if (color == NULL)

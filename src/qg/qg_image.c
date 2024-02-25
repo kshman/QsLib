@@ -36,54 +36,54 @@
 //////////////////////////////////////////////////////////////////////////
 // 블릿
 
-INLINE void QM_VECTORCALL pixel_color_to_r5_g6_b5(ushort* v, const QmVec4 color)
+INLINE void pixel_color_to_r5_g6_b5(ushort* v, const QmVec4* color)
 {
-	v[0] = (ushort)(((ushort)(color.X * 31) << 11) | ((ushort)(color.Y * 63) << 5) | ((ushort)(color.Z * 31)));
+	v[0] = (ushort)(((ushort)(color->X * 31) << 11) | ((ushort)(color->Y * 63) << 5) | ((ushort)(color->Z * 31)));
 }
 
-INLINE void QM_VECTORCALL pixel_color_to_r5_b5_g5_a1(ushort* v, const QmVec4 color)
+INLINE void pixel_color_to_r5_b5_g5_a1(ushort* v, const QmVec4* color)
 {
-	v[0] = (ushort)(((ushort)(color.X * 31) << 10) | ((ushort)(color.Y * 31) << 5) | ((ushort)(color.Z * 31)) | ((ushort)(color.W * 1) << 15));
+	v[0] = (ushort)(((ushort)(color->X * 31) << 10) | ((ushort)(color->Y * 31) << 5) | ((ushort)(color->Z * 31)) | ((ushort)(color->W * 1) << 15));
 }
 
-INLINE void QM_VECTORCALL pixel_color_to_r4_b4_g4_a4(ushort* v, const QmVec4 color)
+INLINE void pixel_color_to_r4_b4_g4_a4(ushort* v, const QmVec4* color)
 {
-	v[0] = (ushort)(((ushort)(color.X * 15) << 8) | ((ushort)(color.Y * 15) << 4) | ((ushort)(color.Z * 15)) | ((ushort)(color.W * 15) << 12));
+	v[0] = (ushort)(((ushort)(color->X * 15) << 8) | ((ushort)(color->Y * 15) << 4) | ((ushort)(color->Z * 15)) | ((ushort)(color->W * 15) << 12));
 }
 
-INLINE void QM_VECTORCALL pixel_color_to_r8_g8_b8(byte* v, const QmVec4 color)
+INLINE void pixel_color_to_r8_g8_b8(byte* v, const QmVec4* color)
 {
-	v[0] = (byte)(color.X * 255);
-	v[1] = (byte)(color.Y * 255);
-	v[2] = (byte)(color.Z * 255);
+	v[0] = (byte)(color->X * 255);
+	v[1] = (byte)(color->Y * 255);
+	v[2] = (byte)(color->Z * 255);
 }
 
-INLINE void QM_VECTORCALL pixel_color_to_r8_g8_b8_a8(uint* v, const QmVec4 color)
+INLINE void pixel_color_to_r8_g8_b8_a8(uint* v, const QmVec4* color)
 {
-	v[0] = ((uint)(color.X * 255) << 16) | ((uint)(color.Y * 255) << 8) | ((uint)(color.Z * 255)) | ((uint)(color.W * 255) << 24);
+	v[0] = ((uint)(color->X * 255) << 16) | ((uint)(color->Y * 255) << 8) | ((uint)(color->Z * 255)) | ((uint)(color->W * 255) << 24);
 }
 
-INLINE void QM_VECTORCALL pixel_color_to_r10_g10_b10_a2(uint* v, const QmVec4 color)
+INLINE void pixel_color_to_r10_g10_b10_a2(uint* v, const QmVec4* color)
 {
-	v[0] = ((uint)(color.X * 1023) << 20) | ((uint)(color.Y * 1023) << 10) | ((uint)(color.Z * 1023)) | ((uint)(color.W * 3) << 30);
+	v[0] = ((uint)(color->X * 1023) << 20) | ((uint)(color->Y * 1023) << 10) | ((uint)(color->Z * 1023)) | ((uint)(color->W * 3) << 30);
 }
 
-INLINE void QM_VECTORCALL pixel_color_to_r11_g11_b10_f(uint* v, const QmVec4 color)
+INLINE void pixel_color_to_r11_g11_b10_f(uint* v, const QmVec4* color)
 {
 	// UNDONE: 이거 아님. 실수 계산으로 바꿔야함. 당분간 안쓸거 같으니 냅두자
-	v[0] = ((uint)(color.X * 2047) << 21) | ((uint)(color.Y * 2047) << 10) | ((uint)(color.Z * 1023));
+	v[0] = ((uint)(color->X * 2047) << 21) | ((uint)(color->Y * 2047) << 10) | ((uint)(color->Z * 1023));
 }
 
-INLINE void QM_VECTORCALL pixel_color_to_r16_g16_b16(ushort* v, const QmVec4 color)
+INLINE void pixel_color_to_r16_g16_b16(ushort* v, const QmVec4* color)
 {
-	v[0] = (ushort)(color.X * 65535);
-	v[1] = (ushort)(color.Y * 65535);
-	v[2] = (ushort)(color.Z * 65535);
+	v[0] = (ushort)(color->X * 65535);
+	v[1] = (ushort)(color->Y * 65535);
+	v[2] = (ushort)(color->Z * 65535);
 }
 
-INLINE void QM_VECTORCALL pixel_color_to_r16_g16_b16_a16(ullong* v, const QmVec4 color)
+INLINE void pixel_color_to_r16_g16_b16_a16(ullong* v, const QmVec4* color)
 {
-	v[0] = ((ullong)(color.X * 65535) << 32) | ((ullong)(color.Y * 65535) << 16) | ((ullong)(color.Z * 65535)) | ((ullong)(color.W * 65535) << 48);
+	v[0] = ((ullong)(color->X * 65535) << 32) | ((ullong)(color->Y * 65535) << 16) | ((ullong)(color->Z * 65535)) | ((ullong)(color->W * 65535) << 48);
 }
 
 //
@@ -428,7 +428,7 @@ QgImage* qg_create_image_filled(int width, int height, const QmColor* color)
 	QgImage* self = qg_create_image(QGCF_R8G8B8A8, width, height);
 	uint* data = (uint*)self->data;
 	uint c;
-	pixel_color_to_r8_g8_b8_a8(&c, *color);
+	pixel_color_to_r8_g8_b8_a8(&c, color);
 	for (int i = 0; i < width * height; i++)
 		data[i] = c;
 	return self;
@@ -446,8 +446,8 @@ QgImage* qg_create_image_gradient_linear(int width, int height, const QmColor* b
 		for (int x = 0; x < width; x++)
 		{
 			const float f = qm_clampf(((float)x * cs + (float)y * sn) / ((float)width * cs + (float)height * cs), 0.0f, 1.0f);
-			const QmVec c = qm_lerp(*begin, *end, f);
-			pixel_color_to_r8_g8_b8_a8(&data[y * width + x], c);
+			const QmVec c = qm_lerp(begin->s, end->s, f);
+			pixel_color_to_r8_g8_b8_a8(&data[y * width + x], (QmColor*)&c);
 		}
 	}
 	return self;
@@ -467,8 +467,8 @@ QgImage* qg_create_image_gradient_radial(int width, int height, const QmColor* i
 		{
 			const float h = hypotf((float)x - cx, (float)y - cy);
 			const float m = qm_clampf((h - r * density) / (r * (1.0f - density)), 0.0f, 1.0f);
-			const QmVec c = qm_lerp(*outer, *inner, m);
-			pixel_color_to_r8_g8_b8_a8(&data[y * width + x], c);
+			const QmVec c = qm_lerp(outer->s, inner->s, m);
+			pixel_color_to_r8_g8_b8_a8(&data[y * width + x], (QmColor*)&c);
 		}
 	}
 	return self;
@@ -480,8 +480,8 @@ QgImage* qg_create_image_check_pattern(int width, int height, const QmColor* odd
 	QgImage* self = qg_create_image(QGCF_R8G8B8A8, width, height);
 	uint* data = (uint*)self->data;
 	uint oc, ec;
-	pixel_color_to_r8_g8_b8_a8(&oc, *oddColor);
-	pixel_color_to_r8_g8_b8_a8(&ec, *evenColor);
+	pixel_color_to_r8_g8_b8_a8(&oc, oddColor);
+	pixel_color_to_r8_g8_b8_a8(&ec, evenColor);
 	for (int y = 0; y < height; y++)
 	{
 		for (int x = 0; x < height; x++)
@@ -558,7 +558,7 @@ bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* color)
 	switch (self->prop.format)
 	{
 		case QGCF_R32G32B32A32F:
-			((QmVec*)ptr)[0] = *color;
+			((QmVec*)ptr)[0] = color->s;
 			break;
 		case QGCF_R32G32B32F:
 			((QmFloat3*)ptr)[0] = (QmFloat3){ color->X, color->Y, color->Z };
@@ -573,22 +573,22 @@ bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* color)
 			((halffloat*)ptr)[0] = qm_f2hf(color->X);
 			break;
 		case QGCF_R11G11B10F:
-			pixel_color_to_r11_g11_b10_f((uint*)ptr, *color);
+			pixel_color_to_r11_g11_b10_f((uint*)ptr, color);
 			break;
 		case QGCF_R16G16B16A16:
-			pixel_color_to_r16_g16_b16_a16((ullong*)ptr, *color);
+			pixel_color_to_r16_g16_b16_a16((ullong*)ptr, color);
 			break;
 		case QGCF_R16:
 			((ushort*)ptr)[0] = (ushort)(color->X * 0xFFFF);
 			break;
 		case QGCF_R10G10B10A2:
-			pixel_color_to_r10_g10_b10_a2((uint*)ptr, *color);
+			pixel_color_to_r10_g10_b10_a2((uint*)ptr, color);
 			break;
 		case QGCF_R8G8B8A8:
-			pixel_color_to_r8_g8_b8_a8((uint*)ptr, *color);
+			pixel_color_to_r8_g8_b8_a8((uint*)ptr, color);
 			break;
 		case QGCF_R8G8B8:
-			pixel_color_to_r8_g8_b8(ptr, *color);
+			pixel_color_to_r8_g8_b8(ptr, color);
 			break;
 		case QGCF_R8:
 			*ptr = (byte)(color->X * 0xFF);
@@ -603,13 +603,13 @@ bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* color)
 			((ushort*)ptr)[0] = (ushort)(((byte)(color->W * 0xFF) << 8) | (byte)(color->X * 0xFF));
 			break;
 		case QGCF_R5G6B5:
-			pixel_color_to_r5_g6_b5(&((ushort*)ptr)[0], *color);
+			pixel_color_to_r5_g6_b5(&((ushort*)ptr)[0], color);
 			break;
 		case QGCF_R5G5B5A1:
-			pixel_color_to_r5_b5_g5_a1(&((ushort*)ptr)[0], *color);
+			pixel_color_to_r5_b5_g5_a1(&((ushort*)ptr)[0], color);
 			break;
 		case QGCF_R4G4B4A4:
-			pixel_color_to_r4_b4_g4_a4(&((ushort*)ptr)[0], *color);
+			pixel_color_to_r4_b4_g4_a4(&((ushort*)ptr)[0], color);
 			break;
 		default:
 			return false;
@@ -796,7 +796,7 @@ static GlyphValue* _truetype_get_glyph(QgTrueType* self, int code)
 }
 
 //
-static QmColor _truetype_string_color(QgTrueType* self, const char* text, int len)
+static QmVec QM_VECTORCALL _truetype_string_color(QgTrueType* self, const char* text, int len)
 {
 	if (text[0] == '#')
 	{
@@ -825,28 +825,28 @@ static QmColor _truetype_string_color(QgTrueType* self, const char* text, int le
 		}
 	}
 	if (qn_stricmp(text, "black") == 0)
-		return QMCOLOR_BLACK;
+		return QMCOLOR_BLACK.s;
 	if (qn_stricmp(text, "white") == 0)
-		return QMCOLOR_WHITE;
+		return QMCOLOR_WHITE.s;
 	if (qn_stricmp(text, "red") == 0)
-		return QMCOLOR_RED;
+		return QMCOLOR_RED.s;
 	if (qn_stricmp(text, "green") == 0)
-		return QMCOLOR_GREEN;
+		return QMCOLOR_GREEN.s;
 	if (qn_stricmp(text, "blue") == 0)
-		return QMCOLOR_BLUE;
+		return QMCOLOR_BLUE.s;
 	if (qn_stricmp(text, "yellow") == 0)
-		return QMCOLOR_YELLOW;
+		return QMCOLOR_YELLOW.s;
 	if (qn_stricmp(text, "cyan") == 0)
-		return QMCOLOR_CYAN;
+		return QMCOLOR_CYAN.s;
 	if (qn_stricmp(text, "magenta") == 0)
-		return QMCOLOR_MAGENTA;
+		return QMCOLOR_MAGENTA.s;
 	if (qn_stricmp(text, "gray") == 0)
-		return QMCOLOR_GRAY;
+		return QMCOLOR_GRAY.s;
 	if (qn_stricmp(text, "lightgray") == 0)
-		return QMCOLOR_LIGHTGRAY;
+		return QMCOLOR_LIGHTGRAY.s;
 	if (qn_stricmp(text, "darkgray") == 0)
-		return QMCOLOR_DARKGRAY;
-	return self->base.color;
+		return QMCOLOR_DARKGRAY.s;
+	return self->base.color.s;
 }
 
 //
@@ -854,7 +854,7 @@ static void _truetype_draw(QnGam g, const QmRect* bound, const char* text)
 {
 	QgTrueType* self = qn_cast_type(g, QgTrueType);
 	QmPoint pt = qm_point(bound->Left, bound->Top);
-	QmVec color = self->base.color;
+	QmVec color = self->base.color.s;
 	int i, height = self->base.size + self->base.step.Height;
 	char clrbuf[16];
 
@@ -893,7 +893,7 @@ static void _truetype_draw(QnGam g, const QmRect* bound, const char* text)
 				if (i == 0)
 				{
 					text++;
-					color = self->base.color;
+					color = self->base.color.s;
 				}
 				else
 				{
@@ -911,7 +911,7 @@ static void _truetype_draw(QnGam g, const QmRect* bound, const char* text)
 						if (pt.X + value->offset.X + value->tex->width >= bound->Right)
 							break;
 						QmRect rect = qm_rect_size(pt.X + value->offset.X, pt.Y + value->offset.Y, value->tex->width, value->tex->height);
-						qg_draw_sprite(&rect, value->tex, &color, NULL);
+						qg_draw_sprite(&rect, value->tex, (QmColor*)&color, NULL);
 						pt.X += value->advance + self->base.step.Width;
 					}
 				}

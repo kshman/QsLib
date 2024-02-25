@@ -11,8 +11,7 @@ int main(void)
 		return -1;
 	qg_fuse(0, NULL, true, true);
 
-	QmVec bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
-	qg_set_background(&bgc);
+	qg_set_background(qm_vec(0.1f, 0.3f, 0.1f, 1.0f));
 	qg_load_def_font(0, "/font/eunjin.ttf", 48);
 
 	QgCamera* cam = qg_create_camera();
