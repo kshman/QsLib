@@ -136,22 +136,51 @@ typedef struct QGLRASTERIZER
 	bool				bias;
 } QglRasterizer;
 
-// 2D 배치
-typedef struct QGLORTHOBATCH
+// 배치 아이템
+typedef struct QGLBATCHITEM
 {
-	QgBatchCmd			cmd;	
-	GLint				offset;
-	GLsizei				count;
+	struct QGLBATCHITEM*	next;
+	GLsizei				index;
 	GLuint				gl_tex;
-	bool				glyph;
-} QglOrthoBatch;
+} QglBatchItem;
+
+// 평면 배치 아이템
+typedef struct QGLBATCHORTHO
+{
+	QglBatchItem		base;
+	OrthoVertex			vertices[4];
+} QglBatchOrtho;
+
+// 공간 배치 아이템
+typedef struct QGBATCHFRST
+{
+	QglBatchItem		base;
+	FrstVertex			vertices[4];
+} QglBatchFrst;
+
+// 최대 배치 아이템 수
+#define QGL_MAX_BATCH_ITEM		3 //512
+
+// 배치 스트림
+typedef struct QGLBATCHSTREAM
+{
+	QgBatchCmd			cmd;
+	uint				count;
+	ushort				vertex_stride;
+	ushort				index_stride;
+	QglBatchItem*		items[QGL_MAX_BATCH_ITEM];
+	QglBatchItem*		save;
+	byte*				vertices;
+	ushort*				indices;
+	QglBuffer*			vbuffer;
+	QglBuffer*			ibuffer;
+} QglBatchStream;
 
 // 컨터이너
 QN_DECLIMPL_CTNR(QglCtnConfig, QglConfig, qgl_cfg_ctnr);			// 컨피그
 QN_DECLIMPL_CTNR(QglCtnLayoutInput, QglLayoutInput, qgl_li_ctnr);	// 레이아웃 입력
 QN_DECLIMPL_CTNR(QglCtnUniform, QgVarShader, qgl_uni_ctnr);			// 세이더 유니폼
 QN_DECLIMPL_CTNR(QglCtnAttr, QglVarAttr, qgl_attr_ctnr);			// 세이더 어트리뷰트
-QN_DECLIMPL_ARRAY(QglArrayOrthoBatch, QglOrthoBatch, qgl_ortho_batch_array);
 
 // 세션 데이터
 typedef struct QGLSESSION
@@ -211,15 +240,9 @@ typedef struct QGLRESOURCE
 
 	QglTexture*			white_texture;
 
-	struct QGLRESOURCE_ORTHO
-	{
-		QglRenderState*		render;
-		QglRenderState*		glyph;
-		QglBuffer*			vertex;
-		OrthoVertex*		data;
-		size_t				data_count;
-		QglArrayOrthoBatch	batches;
-	}					ortho;
+	QglRenderState*		ortho_render;			// rdh가 관리하므로 지우지 않아도 된다
+	QglRenderState*		ortho_glyph;			// rdh가 관리하므로 지우지 않아도 된다
+	QglBatchStream*		ortho_batch;
 } QglResource;
 
 // GL 렌더 디바이스
@@ -294,7 +317,7 @@ struct QGLTEXTURE
 	QgTexture			base;
 
 	GLenum				gl_target;
-	QglTexFormat		gl_enum;	
+	QglTexFormat		gl_enum;
 };
 
 // 버전 찾기

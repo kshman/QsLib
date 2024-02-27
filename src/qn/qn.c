@@ -167,7 +167,7 @@ static void qn_runtime_up(void)
 	qn_mpf_up();
 	qn_module_up();
 	qn_thread_up();
-	qm_srand(NULL, 0);
+	qn_srand(NULL, 0);
 
 	_sym_mukum_init_fast(&runtime_impl.symbols);
 	_sym_array_init_fast(&runtime_impl.symarray, 32);

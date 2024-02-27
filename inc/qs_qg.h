@@ -388,6 +388,7 @@ typedef enum QGBATCHCMD
 	QGBTC_LINE,
 	QGBTC_TRI,
 	QGBTC_RECT,
+	QGBTC_GLYPH,
 	QGBTC_MAX_VALE,
 } QgBatchCmd;
 
@@ -851,21 +852,21 @@ typedef struct QGPARAMPROJ
 /// @brief 뷰 파라미터
 typedef struct QGPARAMVIEW
 {
-	QmVec				eye;								/// @brief 눈 위치
-	QmVec				at;									/// @brief 바라보는 위치
-	QmVec				up;									/// @brief 위 방향
-	QmVec				ahead;								/// @brief 앞 방향
+	QmVec4				eye;								/// @brief 눈 위치
+	QmVec4				at;									/// @brief 바라보는 위치
+	QmVec4				up;									/// @brief 위 방향
+	QmVec4				ahead;								/// @brief 앞 방향
 } QgParamView;
 
 /// @brief 카메라 파라미터
 typedef struct QGPARAMCAMERA
 {
-	QmMat				proj;								/// @brief 프로젝션 행렬
-	QmMat				view;								/// @brief 뷰 행렬
-	QmMat				invv;								/// @brief 역 행렬
-	QmMat				vipr;								/// @brief 프로젝션 곱하기 뷰 행렬
+	QmMat4				proj;								/// @brief 프로젝션 행렬
+	QmMat4				view;								/// @brief 뷰 행렬
+	QmMat4				invv;								/// @brief 역 행렬
+	QmMat4				vipr;								/// @brief 프로젝션 곱하기 뷰 행렬
 
-	QmVec				rot;								/// @brief 회전
+	QmVec4				rot;								/// @brief 회전
 	float				dist;								/// @brief 거리
 
 	float				spd_move;							/// @brief 이동 속도
@@ -1374,55 +1375,55 @@ QSAPI void qg_clear_render(QgClear clear);
 
 /// @brief 세이더 diffuse 파라미터 설정
 /// @param diffuse diffuse 색깔
-QSAPI void QM_VECTORCALL qg_set_param_diffuse(const QmVec diffuse);
+QSAPI void qg_set_param_diffuse(const QMVEC* diffuse);
 
 /// @brief 세이더 specular 파라미터 설정
 /// @param specular specular 색깔
-QSAPI void QM_VECTORCALL qg_set_param_specular(const QmVec specular);
+QSAPI void qg_set_param_specular(const QMVEC* specular);
 
 /// @brief 세이더 ambient 파라미터 설정
 /// @param ambient ambient 색깔
-QSAPI void QM_VECTORCALL qg_set_param_ambient(const QmVec ambient);
+QSAPI void qg_set_param_ambient(const QMVEC* ambient);
 
 /// @brief 세이더 emissive 파라미터 설정
 /// @param emissive emissive 색깔
-QSAPI void QM_VECTORCALL qg_set_param_emissive(const QmVec emissive);
+QSAPI void qg_set_param_emissive(const QMVEC* emissive);
 
 /// @brief 세이더 vec4 타입 파라미터 설정
 /// @param at 0부터 3까지 총 4가지
 /// @param v vec4 타입 값
-QSAPI void QM_VECTORCALL qg_set_param_vec4(int at, const QmVec v);
+QSAPI void qg_set_param_vec4(int at, const QMVEC* v);
 
 /// @brief 세이더 mat4 타입 파라미터 설정
 /// @param at 0부터 3까지 총 4가지
 /// @param m mat4 타입 값
-QSAPI void QM_VECTORCALL qg_set_param_mat4(int at, const QmMat m);
+QSAPI void qg_set_param_mat4(int at, const QMMAT* m);
 
 /// @brief 세이더 영향치(주로 뼈대 팔레트) 파라미터 설정
 /// @param count 행렬 갯수
 /// @param weight 영향치 행렬
-QSAPI void qg_set_param_weight(int count, QmMat* weight);
+QSAPI void qg_set_param_weight(int count, QMMAT* weight);
 
 /// @brief 배경색을 설정한다
 /// @param background_color 배경색
-QSAPI void QM_VECTORCALL qg_set_background(const QmVec background_color);
+QSAPI void qg_set_background(const QMVEC* background_color);
 
 /// @brief 월드 행렬을 설정한다
 /// @param world 월드 행렬
-QSAPI void QM_VECTORCALL qg_set_world(const QmMat world);
+QSAPI void qg_set_world(const QMMAT* world);
 
 /// @brief 뷰 행렬을 설정한다
 /// @param view 뷰 행렬
-QSAPI void QM_VECTORCALL qg_set_view(const QmMat view);
+QSAPI void qg_set_view(const QMMAT* view);
 
 /// @brief 투영 행렬을 설정한다
 /// @param proj 투영 행렬
-QSAPI void QM_VECTORCALL qg_set_project(const QmMat proj);
+QSAPI void qg_set_project(const QMMAT* proj);
 
 /// @brief 뷰와 투영 행렬을 설정한다
 /// @param proj 투영 행렬
 /// @param view 뷰 행렬
-QSAPI void QM_VECTORCALL qg_set_view_project(const QmMat proj, const QmMat view);
+QSAPI void qg_set_view_project(const QMMAT* proj, const QMMAT* view);
 
 /// @brief 카메라를 설정한다 (프로젝션과 뷰	행렬을 설정한다)
 /// @param camera 카메라
@@ -1472,17 +1473,25 @@ QSAPI bool qg_draw_indexed(QgTopology tpg, int indices);
 /// @brief 텍스쳐 스프라이트를 그린다
 /// @param bound 그릴 영역
 /// @param texture 텍스쳐 (널이면 색깔만 사용)
-/// @param color 색깔 (널이면 흰색)
+/// @param color 색깔
 /// @param coord 텍스쳐 좌표 (널이면 전체 텍스쳐)
-QSAPI void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmColor* color, const QmVec4* coord);
+QSAPI void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmKolor color, const QMVEC* coord);
 
 /// @brief 텍스쳐 스프라이트를 회전시켜 그린다
 /// @param bound 그릴 영영역
 /// @param angle 회전 각도(호도)
 /// @param texture 텍스쳐 (널이면 색깔만 사용)
-/// @param color 색깔 (널이면 흰색)
+/// @param color 색깔
 /// @param coord 텍스쳐 좌표 (널이면 전체 텍스쳐)
-QSAPI void qg_draw_sprite_ex(const QmRect* bound, float angle, QgTexture* texture, const QmColor* color, const QmVec4* coord);
+QSAPI void qg_draw_sprite_ex(const QmRect* bound, float angle, QgTexture* texture, const QmKolor color, const QMVEC* coord);
+
+/// @brief 글자를 그린다
+/// @param bound 그릴 영역
+/// @param texture 텍스쳐
+/// @param color 색깔
+/// @param coord 텍스쳐 좌표
+/// @note 텍스쳐 좌표는 글자의 텍스쳐 좌표를 사용한다
+QSAPI void qg_draw_glyph(const QmRect* bound, QgTexture* texture, const QmKolor color, const QMVEC* coord);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1625,7 +1634,7 @@ QSAPI QgImage* qg_create_image_buffer(QgClrFmt fmt, int width, int height, void*
 /// @param height 이미지 높이
 /// @param color 채울 색깔
 /// @return 만들어진 이미지
-QSAPI QgImage* qg_create_image_filled(int width, int height, const QmColor* color);
+QSAPI QgImage* qg_create_image_filled(int width, int height, const QMVEC* color);
 
 /// @brief 선형 그라디언트 이미지를 만든다
 /// @param width 이미지 너비
@@ -1634,7 +1643,7 @@ QSAPI QgImage* qg_create_image_filled(int width, int height, const QmColor* colo
 /// @param end 끝 색깔
 /// @param direction 방향
 /// @return 만들어진 이미지
-QSAPI QgImage* qg_create_image_gradient_linear(int width, int height, const QmColor* begin, const QmColor* end, float direction);
+QSAPI QgImage* qg_create_image_gradient_linear(int width, int height, const QMVEC* begin, const QMVEC* end, float direction);
 
 /// @brief 원형 그라디언트 이미지를 만든다
 /// @param width 이미지 너비
@@ -1643,17 +1652,17 @@ QSAPI QgImage* qg_create_image_gradient_linear(int width, int height, const QmCo
 /// @param outer 바깥 색깔
 /// @param density 밀도
 /// @return 만들어진 이미지
-QSAPI QgImage* qg_create_image_gradient_radial(int width, int height, const QmColor* inner, const QmColor* outer, float density);
+QSAPI QgImage* qg_create_image_gradient_radial(int width, int height, const QMVEC* inner, const QMVEC* outer, float density);
 
 /// @brief 격자 패턴	이미지를 만든다
 /// @param width 이미지 너비
 /// @param height 이미지 높이
-/// @param oddColor 홀수 색깔
-/// @param evenColor 짝수 색깔
-/// @param checkWidth 체크 너비
-/// @param checkHeight 체크 높이
+/// @param odd 홀수 색깔
+/// @param even 짝수 색깔
+/// @param sx 체크 너비
+/// @param sy 체크 높이
 /// @return 만들어진 이미지
-QSAPI QgImage* qg_create_image_check_pattern(int width, int height, const QmColor* oddColor, const QmColor* evenColor, int checkWidth, int checkHeight);
+QSAPI QgImage* qg_create_image_check_pattern(int width, int height, const QMVEC* odd, const QMVEC* even, int sx, int sy);
 
 /// @brief 이미지를 이미지 형식이 담긴 데이터로 부터 만든다
 /// @param data 이미지 데이터
@@ -1668,7 +1677,7 @@ QSAPI QgImage* qg_load_image_buffer(const void* data, int size);
 QSAPI QgImage* qg_load_image(int mount, const char* filename);
 
 /// @brief 이미지에 점을 찍는다
-QSAPI bool qg_image_set_pixel(const QgImage* self, int x, int y, const QmColor* color);
+QSAPI bool qg_image_set_pixel(const QgImage* self, int x, int y, const QMVEC* color);
 
 
 // 글꼴
@@ -1679,7 +1688,7 @@ struct QGFONT
 	char*				name;
 	QgFontType			type;
 	int					size;
-	QmVec4				color;
+	QmKolor				color;
 	QmSize				step;
 };
 
@@ -1695,16 +1704,19 @@ QN_DECL_VTABLE(QGFONT)
 /// @param mount 마운트 번호
 /// @param filename 파일 이름
 /// @param font_base_size 기본 글꼴 크기
+/// @param cjk 트루타입이 아닐 경우 이미지의 CJK 마스크 (0x01: 한글, 0x02: 중국어, 0x04: 일본어)
 /// @return 만들어진 글꼴
-QSAPI QgFont* qg_load_font(int mount, const char* filename, int font_base_size);
+QSAPI QgFont* qg_load_font(int mount, const char* filename, int font_base_size, int cjk);
 
 /// @brief 글꼴을 버퍼에서 만든다
+/// @param name 글꼴 이름
 /// @param data 글꼴 데이터
 /// @param data_size 글꼴 데이터 크기
 /// @param font_base_size 기본 글꼴 크기
+/// @param cjk 트루타입이 아닐 경우 이미지의 CJK 마스크 (0x01: 한글, 0x02: 중국어, 0x04: 일본어)
 /// @return 만들어진 글꼴
 /// @warning 글꼴 데이터는 글꼴이 관리하기 때문에 해제하면 안된다. 임시 메모리를 전달해도 안되며 반드시 할당한 데이터 일 것
-QSAPI QgFont* qg_load_font_buffer(void* data, int data_size, int font_base_size);
+QSAPI QgFont* qg_load_font_buffer(void* data, int data_size, int font_base_size, int cjk);
 
 /// @brief 글꼴 크기를 설정한다
 /// @param self 글꼴
@@ -1719,12 +1731,12 @@ INLINE int qg_font_get_size(QgFont* self) { return self->size; }
 /// @brief 글꼴 색깔을 설정한다
 /// @param self 글꼴
 /// @param color 글꼴 색깔
-INLINE void QM_VECTORCALL qg_font_set_color(QgFont* self, const QmColor color) { self->color = color; }
+INLINE void qg_font_set_color(QgFont* self, const QmKolor color) { self->color = color; }
 
 /// @brief 글꼴 색깔을 얻는다
 /// @param self 글꼴
 /// @return 글꼴 색깔
-INLINE QmVec QM_VECTORCALL qg_font_get_color(QgFont* self) { return self->color.s; }
+INLINE QmKolor qg_font_get_color(QgFont* self) { return self->color; }
 
 /// @brief 글꼴 스텝을 설정한다
 /// @param self 글꼴
@@ -1764,6 +1776,10 @@ QSAPI void qg_font_write_format(QgFont* self, int x, int y, const char* fmt, ...
 /// @return 로드에 성공하면 참
 QSAPI bool qg_load_def_font(int mount, const char* filename, int font_base_size);
 
+/// @brief 기본 글꼴을 얻는다
+/// @return 기본 글꼴
+QSAPI QgFont* qg_get_def_font(void);
+
 /// @brief 기본 글꼴로 그린다
 /// @param x,y x,y 좌표
 /// @param text 문자열
@@ -1789,18 +1805,18 @@ struct QGDPCT
 
 	struct
 	{
-		QmMat				mdef;
-		QmMat				mcalc;
-		QmMat				mlocal;
-		QmVec				vloc;
-		QmVec				qrot;
-		QmVec				vscl;
+		QmMat4				mdef;
+		QmMat4				mcalc;
+		QmMat4				mlocal;
+		QmVec4				vloc;
+		QmVec4				qrot;
+		QmVec4				vscl;
 	}					trfm;
 	struct
 	{
-		QmVec				min;
-		QmVec				max;
-		QmVec				ctr;
+		QmVec4				min;
+		QmVec4				max;
+		QmVec4				ctr;
 		float				rad;
 	}					bound;
 };
@@ -1810,16 +1826,16 @@ QN_DECL_VTABLE(QGDPCT)
 	QN_GAM_VTABLE(QNGAMBASE);
 	bool (*update)(QnGam, float);
 	void (*draw)(QnGam);
-	void (*set_loc)(QnGam, const QmVec*);
-	void (*set_rot)(QnGam, const QmVec*);
-	void (*set_scl)(QnGam, const QmVec*);
+	void (*set_loc)(QnGam, const QMVEC*);
+	void (*set_rot)(QnGam, const QMVEC*);
+	void (*set_scl)(QnGam, const QMVEC*);
 };
 
 QSAPI bool qg_dpct_update(QNGAM dpct, float advance);
 QSAPI void qg_dpct_draw(QNGAM dpct);
-QSAPI void qg_dpct_set_loc(QNGAM dpct, const QmVec* loc);
-QSAPI void qg_dpct_set_rot(QNGAM dpct, const QmVec* rot);
-QSAPI void qg_dpct_set_scl(QNGAM dpct, const QmVec* scl);
+QSAPI void qg_dpct_set_loc(QNGAM dpct, const QMVEC* loc);
+QSAPI void qg_dpct_set_rot(QNGAM dpct, const QMVEC* rot);
+QSAPI void qg_dpct_set_scl(QNGAM dpct, const QMVEC* scl);
 QSAPI void qg_dpct_set_name(QNGAM dpct, const char* name);
 QSAPI void qg_dpct_update_tm(QNGAM dpct);
 
@@ -1832,9 +1848,9 @@ struct QGRAY
 {
 	QN_GAM_BASE(QNGAMBASE);
 
-	QmVec				location;
-	QmVec				direction;
-	QmVec				origin;
+	QmVec4				location;
+	QmVec4				direction;
+	QmVec4				origin;
 
 	QgCamera*			camera;
 };
@@ -1862,7 +1878,7 @@ QSAPI void qg_ray_set_bound_point(QgRay* self, const QmRect* bound, float x, flo
 /// @param v3 삼각형 세번째 점
 /// @param distance 교차점까지의 거리
 /// @return 교차하면 참
-QSAPI bool qg_ray_intersect_tri(const QgRay* self, const QmVec* v1, const QmVec* v2, const QmVec* v3, float* distance);
+QSAPI bool qg_ray_intersect_tri(const QgRay* self, const QMVEC* v1, const QMVEC* v2, const QMVEC* v3, float* distance);
 
 /// @brief 평면과 광선이 교차하는지 테스트한다
 /// @param self 광선
@@ -1870,13 +1886,13 @@ QSAPI bool qg_ray_intersect_tri(const QgRay* self, const QmVec* v1, const QmVec*
 /// @param normal 평면의 법선
 /// @param distance 교차점까지의 거리
 /// @return 교차하면 참
-QSAPI bool qg_ray_intersect_plane(const QgRay* self, const QmVec* plane, const QmVec* normal, float* distance);
+QSAPI bool qg_ray_intersect_plane(const QgRay* self, const QMVEC* plane, const QMVEC* normal, float* distance);
 
 /// @brief 광선의 위치를 얻는다
 /// @param self 광선
 /// @param dist 거리
-/// @return 광선의 위치
-QSAPI const QmVec QM_VECTORCALL qg_ray_get_loc(const QgRay* self, float dist);
+/// @return 얻은 위치
+QSAPI QMVEC qg_ray_get_loc(const QgRay* self, float dist);
 
 
 // 카메라
@@ -1925,12 +1941,12 @@ QSAPI void qg_camera_set_proj_aspect(QgCamera* self, float ascpect, float fov, f
 /// @param ahead 앞 방향
 /// @return 마야 카메라를 사용하면 무조건 거짓을 반환한다
 /// @note at과 ahead는 카메라의 위치와 방향을 설정한다
-QSAPI bool qg_camera_set_view(QgCamera* self, const QmVec* eye, const QmVec* at, const QmVec* ahead);
+QSAPI bool qg_camera_set_view(QgCamera* self, const QMVEC* eye, const QMVEC* at, const QMVEC* ahead);
 
 /// @brief 카메라 회전을 설정한다 (마야/FPS 카메라)
 /// @param self 카메라
 /// @param rot 회전
-QSAPI void qg_camera_set_rot(QgCamera* self, const QmVec* rot);
+QSAPI void qg_camera_set_rot(QgCamera* self, const QMVEC* rot);
 
 /// @brief 카메라 회전 속도를 설정한다 (마야/FPS 카메라)
 /// @param self 카메라
@@ -1946,20 +1962,20 @@ QSAPI void qg_camera_set_move_speed(QgCamera* self, float spd);
 /// @param self 카메라
 /// @param pos 점
 /// @return 거리의 제곱
-QSAPI float qg_camera_get_distsq(const QgCamera* self, const QmVec* pos);
+QSAPI float qg_camera_get_distsq(const QgCamera* self, const QMVEC* pos);
 
 /// @brief 점과 카메라의 거리를 얻는다
 /// @param self 카메라
 /// @param pos 점
 /// @return 거리
-QSAPI float qg_camera_get_dist(const QgCamera* self, const QmVec* pos);
+QSAPI float qg_camera_get_dist(const QgCamera* self, const QMVEC* pos);
 
 /// @brief 점을 카메라 공간으로 변환한다
 /// @param self 카메라
 /// @param v 점
 /// @param world 월드 행렬 (이 값이 널이면 RDH가 가지고 있는 world 행렬을 사용한다)
 /// @return 변환된 점
-QSAPI QmVec QM_VECTORCALL qg_camera_project(const QgCamera* self, const QmVec v, const QmMat* world);
+QSAPI QMVEC qg_camera_project(const QgCamera* self, const QMVEC v, const QMMAT* world);
 
 /// @brief 카메라를 업데이트한다
 /// @param self 카메라

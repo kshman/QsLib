@@ -267,9 +267,6 @@ typedef wint_t							uchar4;
 typedef uint16_t						uchar2;
 #endif
 
-typedef uint16_t						halfint;						/// @brief 16비트 부호 없는 정수(half int)
-typedef uint16_t						halffloat;						/// @brief 16비트 실수(half float)
-
 typedef int32_t							cham;							/// @brief 32비트 참거짓
 typedef int16_t							halfcham;						/// @brief 16비트 참거짓
 
@@ -689,6 +686,29 @@ QSAPI void qn_qsort(void* ptr, size_t count, size_t stride, cmpfunc_t compfunc);
 /// @param[in] compfunc 비교 연산 콜백 함수
 /// @param[in] context 콜백 함수용 콘텍스트
 QSAPI void qn_qsortc(void* ptr, size_t count, size_t stride, cmpcfunc_t compfunc, void* context);
+
+
+//////////////////////////////////////////////////////////////////////////
+// random
+
+/// @brief 랜덤
+typedef struct QNRANDOM
+{
+	nuint seed;
+	nuint state1, state2;
+} QnRandom;
+
+/// @brief 랜덤 시드
+QSAPI void qn_srand(QnRandom* r, nuint seed);
+
+/// @brief 랜덤
+QSAPI nuint qn_rand(QnRandom* r);
+
+/// @brief 랜덤 실수 (0.0~1.0)
+QSAPI float qn_randf(QnRandom* r);
+
+/// @brief 랜덤 실수 (0.0~1.0)
+QSAPI double qn_randd(QnRandom* r);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1342,6 +1362,20 @@ QSAPI char* qn_a_i_u16to8(const uchar2* src, size_t srclen, const char* desc, si
 QSAPI uchar4* qn_a_i_u16to32(const uchar2* src, size_t srclen, const char* desc, size_t line);
 QSAPI uchar2* qn_a_i_u32to16(const uchar4* src, size_t srclen, const char* desc, size_t line);
 #endif
+
+/// @brief 한글 자모를 얻는다
+/// @param code 한글 문자
+/// @param cho 초성
+/// @param jung 중성
+/// @param jong 종성
+/// @return 성공하면 참
+QSAPI bool qn_hangul_dcp(uchar4 code, int* cho, int* jung, int* jong);
+
+/// @brief 한글 조사를 얻는다
+/// @param code 한글 문자
+/// @param josa_type 조사 종류 (0: 은/는, 1: 이/가, 2: 을/를, 3: 와/과)
+/// @return 조사 문자 (UCS-4)
+QSAPI uchar4 qn_hangul_josa(uchar4 code, int josa_type);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -4201,7 +4235,6 @@ QN_ASSERT_SIZE(byte, 1);
 QN_ASSERT_SIZE(ushort, 2);
 QN_ASSERT_SIZE(uint, 4);
 QN_ASSERT_SIZE(ullong, 8);
-QN_ASSERT_SIZE(halfint, 2);
 QN_ASSERT_SIZE(vshort, 2);
 QN_ASSERT_SIZE(vint, 4);
 QN_ASSERT_SIZE(vllong, 8);

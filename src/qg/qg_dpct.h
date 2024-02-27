@@ -5,8 +5,8 @@
 //////////////////////////////////////////////////////////////////////////
 // 데픽트
 
-extern void _dpct_init(QgDpct* self, const char* name, const QmMat* defm);
+extern void _dpct_init(QgDpct* self, const char* name, const QMMAT* defm);
 extern bool _dpct_update(QnGam g, float advance);
-extern void _dpct_set_loc(QnGam g, const QmVec* loc);
-extern void _dpct_set_rot(QnGam g, const QmVec* rot);
-extern void _dpct_set_scl(QnGam g, const QmVec* scl);
+extern void _dpct_set_loc(QnGam g, const QMVEC* loc);
+extern void _dpct_set_rot(QnGam g, const QMVEC* rot);
+extern void _dpct_set_scl(QnGam g, const QMVEC* scl);

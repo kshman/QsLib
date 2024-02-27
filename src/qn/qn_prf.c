@@ -360,7 +360,7 @@ static void* qn_internal_realloc(void* ptr, size_t size)
 //
 static void qn_internal_free(void* ptr)
 {
-	qn_return_when_fail(ptr,);
+	qn_return_when_fail(ptr, );
 
 	if (HeapValidate(mem_impl.heap, 0, ptr) == FALSE)
 	{
@@ -383,7 +383,7 @@ size_t qn_mpf_size(void)
 size_t qn_mpf_count(void)
 {
 	return mem_impl.count;
-	}
+}
 
 //
 void qn_mpf_dbgout(void)
@@ -578,7 +578,7 @@ static void* qn_mpf_realloc(void* ptr, size_t size, const char* desc, size_t lin
 		qn_mpf_node_link(node);
 	}
 	return _memptr(node);
-	}
+}
 
 //
 static void qn_mpf_free(void* ptr)
@@ -639,9 +639,8 @@ void qn_mem_free(void* ptr)
 void qn_mem_free_ptr(void* pptr)
 {
 	void** ptr = (void**)pptr;
-	if (ptr == NULL)
-		return;
-	mem_impl.table._free(*ptr);
+	if (ptr != NULL)
+		mem_impl.table._free(*ptr);
 }
 
 #ifdef QS_NO_MEMORY_PROFILE

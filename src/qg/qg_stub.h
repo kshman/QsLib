@@ -198,12 +198,15 @@ typedef struct RENDERERTRANSFORM
 // 렌더 인수
 typedef struct RENDERERPARAM
 {
-	QmVec4				c[4];
 	QmVec4				v[4];
 	QmMat4				m[4];
 	QmMat4*				bone_ptr;
 	int					bone_count;
 	QmVec4				bgc;
+	QmVec4				diffuse;
+	QmVec4				ambient;
+	QmVec4				specular;
+	QmVec4				emissive;
 
 	QgVarShaderFunc		callback_func;
 	void*				callback_data;
@@ -246,8 +249,9 @@ QN_DECL_VTABLE(RDHBASE)
 
 	bool (*draw)(QgTopology, int);
 	bool (*draw_indexed)(QgTopology, int);
-	void (*draw_sprite)(const QmRect*, void/*QgTexture*/*, const QmColor*, const QmVec4*);
-	void (*draw_sprite_ex)(const QmRect*, float, void/*QgTexture*/*, const QmColor*, const QmVec4*);
+	void (*draw_sprite)(const QmRect*, void/*QgTexture*/*, const QmKolor, const QMVEC*);
+	void (*draw_sprite_ex)(const QmRect*, float, void/*QgTexture*/*, const QmKolor, const QMVEC*);
+	void (*draw_glyph)(const QmRect*, void/*QgTexture*/*, const QmKolor, const QMVEC*);
 };
 
 // 렌더 디바이스
@@ -283,6 +287,9 @@ extern void rdh_internal_check_layout(void);
 extern void rdh_internal_add_node(RenderNodeShed shed, void* node);
 // 노드 제거요 (dispose에서 호출용)
 extern void rdh_internal_unlink_node(RenderNodeShed shed, void* node);
+
+// 기본 글꼴 만들기
+extern QgFont* _create_default_font(void);
 
 // 열거자 컨버터 초기화
 extern void qg_init_converters(void);

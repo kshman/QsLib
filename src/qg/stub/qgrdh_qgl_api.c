@@ -272,6 +272,8 @@ static void egl_get_config(_Out_ QglConfig* config, _In_ EGLDisplay display, _In
 // EGL 설정 얻기
 static bool egl_choose_config(_In_ EGLDisplay display, _In_ const QglConfig* wanted_config, _Out_ QglConfig* found_config)
 {
+	found_config->handle = NULL;
+
 #define ATTR_ADD(e,v)	QN_STMT_BEGIN{ attrs[i++] = e; attrs[i++] = v; }QN_STMT_END
 	EGLint attrs[32], i = 0;
 	ATTR_ADD(EGL_RENDERABLE_TYPE, wanted_config->version >= 300 ? EGL_OPENGL_ES3_BIT : EGL_OPENGL_ES2_BIT);

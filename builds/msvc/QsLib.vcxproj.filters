@@ -146,7 +146,7 @@
     <ClCompile Include="..\..\src\qn\qn_gam.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qm_math.c">
+    <ClCompile Include="..\..\src\qn\qn_math.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qn\qn_str.c">

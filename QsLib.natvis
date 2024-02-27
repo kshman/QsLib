@@ -318,7 +318,7 @@
     <AlternativeType Name="QMU565"/>
     <AlternativeType Name="QMF111110"/>
     <AlternativeType Name="QMU1010102"/>
-    <DisplayString>[{R}, {G}, {B}, {A}]</DisplayString>
+    <DisplayString>[{v,X}]</DisplayString>
     <Expand>
       <Item Name="R">R</Item>
       <Item Name="G">G</Item>

@@ -9,30 +9,29 @@
 //////////////////////////////////////////////////////////////////////////
 // qmkc supp
 
-static const bool qik_key_enables[] =
-{
-	/*00*/ false, false, false, false, false, false, false, false, true, true, false, false, false, true, false, false,
-	/*10*/ false, false, false, true, true, false, false, false, false, false, false, true, false, false, false, false,
-	/*20*/ true, true, true, true, true, true, true, true, true, false, false, false, true, true, true, false,
-	/*30*/ true, true, true, true, true, true, true, true, true, true, false, false, false, false, false, false,
-	/*40*/ false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
-	/*50*/ true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, false,
-	/*60*/ true, true, true, true, true, true, true, true, true, true, true,  true,  false, true,  true,  true,
-	/*70*/ true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
-	/*80*/ true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false,
-	/*90*/ true,  true, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
-	/*A0*/ true,  true,  true, true, true, true, true, true, true, true, true, true, true, true, true, true,
-	/*B0*/ true, true, true, true, false, false, false, false, false, false, true, true, true, true, true, true,
-	/*C0*/ true, false,  false, false, false, false, false, false, false, false, false, false, false, false, false, false,
-	/*D0*/ false,false, false, false, false, false, false, false, false, false, false, true, true,  true, true, false,
-	/*E0*/ false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
-	/*F0*/ false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
-};
-
 //
 bool qg_qik_usable(const QikKey key)
 {
-	return qik_key_enables[(byte)key];
+	static const bool key_enables[] =
+	{
+		/*00*/ false, false, false, false, false, false, false, false, true, true, false, false, false, true, false, false,
+		/*10*/ false, false, false, true, true, false, false, false, false, false, false, true, false, false, false, false,
+		/*20*/ true, true, true, true, true, true, true, true, true, false, false, false, true, true, true, false,
+		/*30*/ true, true, true, true, true, true, true, true, true, true, false, false, false, false, false, false,
+		/*40*/ false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+		/*50*/ true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, false,
+		/*60*/ true, true, true, true, true, true, true, true, true, true, true,  true,  false, true,  true,  true,
+		/*70*/ true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+		/*80*/ true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false,
+		/*90*/ true,  true, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+		/*A0*/ true,  true,  true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+		/*B0*/ true, true, true, true, false, false, false, false, false, false, true, true, true, true, true, true,
+		/*C0*/ true, false,  false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+		/*D0*/ false,false, false, false, false, false, false, false, false, false, false, true, true,  true, true, false,
+		/*E0*/ false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+		/*F0*/ false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+	};
+	return key_enables[(byte)key];
 }
 
 //
@@ -318,8 +317,10 @@ QgClrFmt qg_rgba_to_clrfmt(int red, int green, int blue, int alpha, bool is_floa
 	}
 	else if (red == 4 && blue == 4 && green == 4 && alpha == 4)
 		return QGCF_R4G4B4A4;
-	// QGCF_A8
-	// QGCF_L8
+	else if (red == 0 && blue == 0 && green ==0 && alpha == 8)
+		return QGCF_A8;
+	else if (red == 8 && blue == 0 && green == 0 && alpha == 0)
+		return QGCF_L8;
 	// QGCF_D32F
 	// QGCF_D24S8
 	return QGCF_UNKNOWN;

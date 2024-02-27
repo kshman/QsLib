@@ -242,7 +242,7 @@
     <ClCompile Include="..\..\src\qn\qn_prf.c" />
     <ClCompile Include="..\..\src\qn\qn_file.c" />
     <ClCompile Include="..\..\src\qn\qn_gam.c" />
-    <ClCompile Include="..\..\src\qn\qm_math.c" />
+    <ClCompile Include="..\..\src\qn\qn_math.c" />
     <ClCompile Include="..\..\src\qn\qn_str.c" />
   </ItemGroup>
   <ItemGroup>

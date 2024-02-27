@@ -1890,9 +1890,9 @@ static ushort _hfs_write_directory(QnStream* stream, const char* name, size_t na
 	{
 		.source.attr = QNFATTR_DIR,
 		.source.type = QNFTYPE_DIR,
-		.source.size = (uint)qm_rand(NULL),
-		.source.cmpr = (uint)qm_rand(NULL),
-		.source.seek = (uint)qm_rand(NULL),
+		.source.size = (uint)qn_rand(NULL),
+		.source.cmpr = (uint)qn_rand(NULL),
+		.source.seek = (uint)qn_rand(NULL),
 		.stc.stamp = stc,
 		.subp = subp,
 		.next = next,
