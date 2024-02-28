@@ -51,7 +51,6 @@ struct ShedEvent
 	QnMutex*			mutex;
 	struct {
 		cham				reset;				// loop()에서 리셋
-		cham				__pad;
 		nuint				count;				// loop() 횟수
 		nuint				poll;				// poll() 횟수
 	}					loop;
@@ -324,7 +323,6 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 	stub->timer = qn_create_timer();
 	if (QN_TMASK(flags, QGFLAG_VSYNC) == false)
 		qn_timer_set_cut(stub->timer, 60);
-	stub->run = stub->timer->runtime;
 	stub->active = stub->timer->runtime;
 
 	stub->mouse.lim.move = 10 * 10 + 10 * 10;		// 제한 이동 거리(포인트)의 제곱
@@ -586,7 +584,13 @@ bool qg_get_mouse_button_release(const QimButton button)
 //
 float qg_get_fps(void)
 {
-	return qg_instance_stub->fps;
+	return qg_instance_stub->timer->fps;
+}
+
+//
+float qg_get_afps(void)
+{
+	return qg_instance_stub->timer->afps;
 }
 
 //
@@ -604,7 +608,7 @@ float qg_get_advance(void)
 //
 double qg_get_run_time(void)
 {
-	return qg_instance_stub->run;
+	return qg_instance_stub->timer->runtime;
 }
 
 //
@@ -686,8 +690,6 @@ bool qg_loop(void)
 	}
 
 	const float adv = (float)stub->timer->elapsed;
-	stub->run = stub->timer->runtime;
-	stub->fps = (float)stub->timer->fps;
 	stub->elapsed = adv;
 	stub->advance = QN_TMASK(stub->stats, QGSST_PAUSE) == false ? adv : 0.0f;
 
@@ -1497,29 +1499,29 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 
 	// 한번 설정하면 바뀔일이 없거나 신경 안써도 되는것
 	RendererTransform* tm = &rdh->tm;
-	tm->world = qm_mat4_unit();
-	tm->view = qm_mat4_unit();
-	tm->invv = qm_mat4_unit();
-	tm->frm = qm_mat4_unit();
+	tm->world.s = qm_mat4_unit();
+	tm->view.s = qm_mat4_unit();
+	tm->invv.s = qm_mat4_unit();
+	tm->frm.s = qm_mat4_unit();
 	for (size_t i = 0; i < QN_COUNTOF(tm->tex); i++)		// 텍스쳐 행렬
-		tm->tex[i] = qm_mat4_unit();
+		tm->tex[i].s = qm_mat4_unit();
 	tm->Near = 1.0f;										// Z깊이
 	tm->Far = 100000.0f;
 
 	RendererParam* param = &rdh->param;
 	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)		// 벡터 인수
-		param->v[i] = qm_vec_zero();
+		param->v[i].s = qm_vec_zero();
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)		// 행렬 인수
-		param->m[i] = qm_mat4_unit();
-	param->bgc = qm_color(0.0f, 0.0f, 0.0f, 1.0f);			// 배경색
+		param->m[i].s = qm_mat4_unit();
+	param->bgc.s = QMCONST_BLACK.s;							// 배경색
 
 	// 묶음
 	for (size_t i = 0; i < QN_COUNTOF(rdh->mukums); i++)
 		qn_node_mukum_init_fast(&rdh->mukums[i]);
 
 	// 
-	qn_cast_vtable(rdh, RDHBASE)->layout();						// 레이아웃 재설정
-	qn_cast_vtable(rdh, RDHBASE)->reset();						// 장치 리셋
+	qn_cast_vtable(rdh, RDHBASE)->layout();					// 레이아웃 재설정
+	qn_cast_vtable(rdh, RDHBASE)->reset();					// 장치 리셋
 	qn_timer_reset(STUB->timer);							// 타이머도 리셋해둔다
 	return true;
 }
@@ -1536,6 +1538,7 @@ void rdh_internal_clean(void)
 	RdhBase* rdh = RDH;
 	for (size_t i = 0; i < QN_COUNTOF(rdh->mukums); i++)
 		qn_node_mukum_safe_dispose(&rdh->mukums[i]);
+	qn_unload(rdh->font);
 }
 
 //
@@ -1560,8 +1563,8 @@ void rdh_internal_layout(void)
 	// tm
 	RendererTransform* tm = RDH_TRANSFORM;
 	tm->size = client_size;
-	tm->proj = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->Near, tm->Far);
-	tm->view_proj = qm_mat4_mul(tm->view, tm->proj);
+	tm->proj.s = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->Near, tm->Far);
+	tm->view_proj.s = qm_mat4_mul(tm->view.s, tm->proj.s);
 	tm->scissor = qm_rect_size(0, 0, client_size.Width, client_size.Height);
 }
 
@@ -1572,6 +1575,9 @@ void rdh_internal_reset(void)
 	RendererParam* param = RDH_PARAM;
 	param->bone_ptr = NULL;									// 뼈대 포인터는 메모리 안전을 위해 초기화
 	param->bone_count = 0;									// 뼈대 가중치 개수도 초기화
+
+	RdhBase* rdh = RDH;
+	rdh->font = _create_default_font();
 }
 
 //
@@ -1680,90 +1686,112 @@ void qg_clear_render(QgClear clear)
 }
 
 //
-void qg_set_param_vec4(int at, const QmVec4* v)
+void qg_set_param_diffuse(const QMVEC* diffuse)
 {
 	RdhBase* rdh = RDH;
-	VAR_CHK_IF_NULL(v, );
+	rdh->param.diffuse.s = *diffuse;
+	rdh->invokes.invokes++;
+}
+
+//
+void qg_set_param_specular(const QMVEC* specular)
+{
+	RdhBase* rdh = RDH;
+	rdh->param.specular.s = *specular;
+	rdh->invokes.invokes++;
+}
+
+//
+void qg_set_param_ambient(const QMVEC* ambient)
+{
+	RdhBase* rdh = RDH;
+	rdh->param.ambient.s = *ambient;
+	rdh->invokes.invokes++;
+}
+
+//
+void qg_set_param_emissive(const QMVEC* emissive)
+{
+	RdhBase* rdh = RDH;
+	rdh->param.emissive.s = *emissive;
+	rdh->invokes.invokes++;
+}
+
+//
+void qg_set_param_vec4(int at, const QMVEC* v)
+{
+	RdhBase* rdh = RDH;
 	VAR_CHK_IF_MAX(at, QN_COUNTOF(rdh->param.v), );
-	rdh->param.v[at] = *v;
+	rdh->param.v[at].s = *v;
 	rdh->invokes.invokes++;
 }
 
 //
-void qg_set_param_mat4(int at, const QmMat4* m)
+void qg_set_param_mat4(int at, const QMMAT* m)
 {
 	RdhBase* rdh = RDH;
-	VAR_CHK_IF_NULL(m, );
 	VAR_CHK_IF_MAX(at, QN_COUNTOF(rdh->param.m), );
-	rdh->param.m[at] = *m;
+	rdh->param.m[at].s = *m;
 	rdh->invokes.invokes++;
 }
 
 //
-void qg_set_param_weight(int count, QmMat4* weight)
+void qg_set_param_weight(int count, QMMAT* weight)
 {
 	VAR_CHK_IF_MIN(count, 0, );
 	VAR_CHK_IF_NULL(weight, );
 	RdhBase* rdh = RDH;
 	rdh->param.bone_count = count;
-	rdh->param.bone_ptr = weight;
+	rdh->param.bone_ptr = (QmMat4*)weight;
 	rdh->invokes.invokes++;
 }
 
 //
-void qg_set_background(const QmColor* color)
+void qg_set_background(const QMVEC* color)
 {
 	RdhBase* rdh = RDH;
-	if (color)
-		rdh->param.bgc = *color;
-	else
-		rdh->param.bgc = qm_color(0.0f, 0.0f, 0.0f, 1.0f);
+	rdh->param.bgc.s = *color;
 	rdh->invokes.invokes++;
 }
 
 //
-void qg_set_world(const QmMat4* world)
+void qg_set_world(const QMMAT* world)
 {
-	VAR_CHK_IF_NULL(world, );
 	RdhBase* rdh = RDH;
-	rdh->tm.world = *world;
+	rdh->tm.world.s = *world;
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
 
 //
-void qg_set_view(const QmMat4* view)
+void qg_set_view(const QMMAT* view)
 {
-	VAR_CHK_IF_NULL(view, );
 	RdhBase* rdh = RDH;
-	rdh->tm.view = *view;
-	rdh->tm.invv = qm_mat4_inv(*view);
-	rdh->tm.view_proj = qm_mat4_mul(*view, rdh->tm.proj);
+	rdh->tm.view.s = *view;
+	rdh->tm.invv.s = qm_mat4_inv(*view);
+	rdh->tm.view_proj.s = qm_mat4_mul(*view, rdh->tm.proj.s);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
 
 //
-void qg_set_project(const QmMat4* proj)
+void qg_set_project(const QMMAT* proj)
 {
-	VAR_CHK_IF_NULL(proj, );
 	RdhBase* rdh = RDH;
-	rdh->tm.proj = *proj;
-	rdh->tm.view_proj = qm_mat4_mul(rdh->tm.view, *proj);
+	rdh->tm.proj.s = *proj;
+	rdh->tm.view_proj.s = qm_mat4_mul(rdh->tm.view.s, *proj);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
 
 //
-void qg_set_view_project(const QmMat4* proj, const QmMat4* view)
+void qg_set_view_project(const QMMAT* proj, const QMMAT* view)
 {
-	VAR_CHK_IF_NULL(proj, );
-	VAR_CHK_IF_NULL(view, );
 	RdhBase* rdh = RDH;
-	rdh->tm.proj = *proj;
-	rdh->tm.view = *view;
-	rdh->tm.invv = qm_mat4_inv(*view);
-	rdh->tm.view_proj = qm_mat4_mul(*proj, *view);
+	rdh->tm.proj.s = *proj;
+	rdh->tm.view.s = *view;
+	rdh->tm.invv.s = qm_mat4_inv(*view);
+	rdh->tm.view_proj.s = qm_mat4_mul(*proj, *view);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
@@ -1773,10 +1801,10 @@ void qg_set_camera(QgCamera* camera)
 {
 	VAR_CHK_IF_NULL(camera, );
 	RdhBase* rdh = RDH;
-	rdh->tm.proj = camera->param.proj;
-	rdh->tm.view = camera->param.view;
-	rdh->tm.invv = camera->param.invv;
-	rdh->tm.view_proj = camera->param.vipr;
+	rdh->tm.proj.s = camera->param.proj.s;
+	rdh->tm.view.s = camera->param.view.s;
+	rdh->tm.invv.s = camera->param.invv.s;
+	rdh->tm.view_proj.s = camera->param.vipr.s;
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
@@ -1841,6 +1869,23 @@ QgTexture* qg_load_texture(int mount, const char* filename, QgTexFlag flags)
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
 	return qn_cast_vtable(rdh, RDHBASE)->create_texture(filename, image, flags | QGTEXF_DISCARD_IMAGE);
+}
+
+//
+bool qg_load_def_font(int mount, const char* filename, int font_base_size)
+{
+	QgFont* font = qg_load_font(mount, filename, font_base_size, 0x1);
+	qn_return_when_fail(font != NULL, false);
+
+	qn_unload(RDH->font);
+	RDH->font = font;
+	return true;
+}
+
+//
+QgFont* qg_get_def_font(void)
+{
+	return RDH->font;
 }
 
 //
@@ -1915,13 +1960,11 @@ bool qg_draw_indexed(QgTopology tpg, int indices)
 }
 
 //
-void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmColor* color, const QmVec* coord)
+void qg_draw_prite(const QmRect* bound, QgTexture* texture, const QmKolor color, const QMVEC* coord)
 {
 	VAR_CHK_IF_NULL(bound, );
-	if (color == NULL)
-		color = &QMCOLOR_WHITE;
 	if (coord == NULL)
-		coord = &QMCONST_00ZW;
+		coord = &QMCONST_00ZW.s;
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
@@ -1929,17 +1972,27 @@ void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmColor* colo
 }
 
 //
-void qg_draw_sprite_ex(const QmRect* bound, float angle, QgTexture* texture, const QmColor* color, const QmVec* coord)
+void qg_draw_sprite_ex(const QmRect* bound, float angle, QgTexture* texture, const QmKolor color, const QMVEC* coord)
 {
 	VAR_CHK_IF_NULL(bound, );
-	if (color == NULL)
-		color = &QMCOLOR_WHITE;
 	if (coord == NULL)
-		coord = &QMCONST_00ZW;
+		coord = &QMCONST_00ZW.s;
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
 	qn_cast_vtable(rdh, RDHBASE)->draw_sprite_ex(bound, angle, texture, color, coord);
+}
+
+//
+void qg_draw_glyph(const QmRect* bound, QgTexture* texture, const QmKolor color, const QMVEC* coord)
+{
+	VAR_CHK_IF_NULL(bound, );
+	if (coord == NULL)
+		coord = &QMCONST_00ZW.s;
+	RdhBase* rdh = RDH;
+	rdh->invokes.invokes++;
+	rdh->invokes.draws++;
+	qn_cast_vtable(rdh, RDHBASE)->draw_glyph(bound, texture, color, coord);
 }
 
 
@@ -1950,10 +2003,10 @@ void qg_draw_sprite_ex(const QmRect* bound, float angle, QgTexture* texture, con
 #define VAR_CHK_NAME	"BUFFER"
 
 //
-void* qg_buffer_map(QgBuffer * self)
+void* qg_buffer_map(QgBuffer * self, bool synchronized)
 {
 	VAR_CHK_IF_COND(self->mapped != false, "buffer already mapped", NULL);
-	return qn_cast_vtable(self, QGBUFFER)->map(self);
+	return qn_cast_vtable(self, QGBUFFER)->map(self, synchronized);
 }
 
 //

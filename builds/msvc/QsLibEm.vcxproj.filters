@@ -46,6 +46,9 @@
     <Filter Include="헤더 파일\supp\vurtun">
       <UniqueIdentifier>{487275f4-422f-4824-889f-2088ef0eeafc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\supp\par">
+      <UniqueIdentifier>{90679352-6d15-4f8e-ab56-15579319f629}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\pch.h">
@@ -80,9 +83,6 @@
     </ClInclude>
     <ClInclude Include="..\..\inc\qs_qn.h">
       <Filter>헤더 파일\inc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\qg\qg_node.h">
-      <Filter>헤더 파일\qg</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\qs_supp.h">
       <Filter>헤더 파일</Filter>
@@ -123,6 +123,12 @@
     <ClInclude Include="..\..\src\supp\stb\stb_truetype.h">
       <Filter>헤더 파일\supp\stb</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\qg\qg_dpct.h">
+      <Filter>헤더 파일\qg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\supp\par\par_shapes.h">
+      <Filter>헤더 파일\supp\par</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\qn\qn.c">
@@ -140,7 +146,7 @@
     <ClCompile Include="..\..\src\qn\qn_gam.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qn\qm_math.c">
+    <ClCompile Include="..\..\src\qn\qn_math.c">
       <Filter>소스 파일\qn</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qn\qn_str.c">
@@ -182,7 +188,10 @@
     <ClCompile Include="..\..\src\qg\qg_image.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qg_depict.c">
+    <ClCompile Include="..\..\src\qg\qg_dpct.c">
+      <Filter>소스 파일\qg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qg\qg_mesh.c">
       <Filter>소스 파일\qg</Filter>
     </ClCompile>
     <ClCompile Include="..\..\zconsole\zz.c">

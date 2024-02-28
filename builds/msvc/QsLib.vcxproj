@@ -196,7 +196,7 @@
     <ClInclude Include="..\..\inc\qs_qg.h" />
     <ClInclude Include="..\..\inc\salieri.h" />
     <ClInclude Include="..\..\src\pch.h" />
-    <ClInclude Include="..\..\src\qg\qg_node.h" />
+    <ClInclude Include="..\..\src\qg\qg_dpct.h" />
     <ClInclude Include="..\..\src\qg\qg_primtype.h" />
     <ClInclude Include="..\..\src\qn\PatrickPowell_snprintf.h" />
     <ClInclude Include="..\..\src\qs_conf.h" />
@@ -210,6 +210,7 @@
     <ClInclude Include="..\..\src\supp\glad\gl.h" />
     <ClInclude Include="..\..\src\supp\glad\wgl.h" />
     <ClInclude Include="..\..\src\supp\glad\wglext.h" />
+    <ClInclude Include="..\..\src\supp\par\par_shapes.h" />
     <ClInclude Include="..\..\src\supp\stb\stb_image.h" />
     <ClInclude Include="..\..\src\supp\stb\stb_rect_pack.h" />
     <ClInclude Include="..\..\src\supp\stb\stb_truetype.h" />
@@ -223,8 +224,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\..\src\qg\qg_depict.c" />
+    <ClCompile Include="..\..\src\qg\qg_dpct.c" />
     <ClCompile Include="..\..\src\qg\qg_image.c" />
+    <ClCompile Include="..\..\src\qg\qg_mesh.c" />
     <ClCompile Include="..\..\src\qg\qg_stub.c" />
     <ClCompile Include="..\..\src\qg\stub\qgrdh_qgl.c" />
     <ClCompile Include="..\..\src\qg\stub\qgrdh_qgl_glad.c" />
@@ -240,7 +242,7 @@
     <ClCompile Include="..\..\src\qn\qn_prf.c" />
     <ClCompile Include="..\..\src\qn\qn_file.c" />
     <ClCompile Include="..\..\src\qn\qn_gam.c" />
-    <ClCompile Include="..\..\src\qn\qm_math.c" />
+    <ClCompile Include="..\..\src\qn\qn_math.c" />
     <ClCompile Include="..\..\src\qn\qn_str.c" />
   </ItemGroup>
   <ItemGroup>

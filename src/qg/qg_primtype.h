@@ -3,20 +3,51 @@
 // 평면 정점 형식
 typedef struct ORTHOVERTEX
 {
-	QmFloat4		postex;
-	QmFloat4		color;
+	QmFloat3		pos;
+	QmFloat2		coord;
+	QmKolor			color;
 } OrthoVertex;
 
 // 평면 정점 설정
-INLINE void QM_VECTORCALL ortho_vertex_set(OrthoVertex* o, const QmVec postex, const QmVec color)
+INLINE void QM_VECTORCALL ortho_vertex_set(OrthoVertex* o, const QMVEC pos, QmFloat2 coord, const QmKolor color)
 {
-	o->postex = *(QmFloat4*)&postex.v;
-	o->color = *(QmFloat4*)&color.v;
+	qm_vec_st_float3(&o->pos, pos);
+	o->coord = coord;
+	o->color = color;
 }
 
 // 평면 정점 설정2
-INLINE void QM_VECTORCALL ortho_vertex_set_param(OrthoVertex* o, float x, float y, float u, float v, const QmVec color)
+INLINE void QM_VECTORCALL ortho_vertex_set_param(OrthoVertex* o, float x, float y, float z, float u, float v, const QmKolor color)
 {
-	o->postex = (QmFloat4){ x, y, u, v };
-	o->color = *(QmFloat4*)&color.v;
+	o->pos = (QmFloat3){ x, y, z };
+	o->coord = (QmFloat2){ u, v };
+	o->color = color;
 }
+
+// 3D 정점 형식
+typedef struct FRSTVERTEX
+{
+	QmFloat3		pos;
+	QmFloat3		normal;
+	QmFloat2		coord;
+	QmKolor			color;
+} FrstVertex;
+
+// 3D 정점 설정
+INLINE void QM_VECTORCALL frst_vertex_set(FrstVertex* f, const QMVEC pos, const QMVEC normal, QmFloat2 coord, const QmKolor color)
+{
+	qm_vec_st_float3(&f->pos, pos);
+	qm_vec_st_float3(&f->normal, normal);
+	f->coord = coord;
+	f->color = color;
+}
+
+// 3D 정점 설정2
+INLINE void QM_VECTORCALL frst_vertex_set_param(FrstVertex* f, float x, float y, float z, float nx, float ny, float nz, float u, float v, const QmKolor color)
+{
+	f->pos = (QmFloat3){ x, y, z };
+	f->normal = (QmFloat3){ nx, ny, nz };
+	f->coord = (QmFloat2){ u, v };
+	f->color = color;
+}
+

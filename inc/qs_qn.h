@@ -172,6 +172,15 @@
 #define QN_WARN_POP						PRAGMA(GCC diagnostic pop)
 #define QN_WARN_SIGN					PRAGMA(GCC diagnostic ignored "-Wsign-conversion")
 #define QN_WARN_ASSIGN
+#endif			/// @brief 마스크 설정
+
+// platform selection
+#ifdef _QN_64_
+#define QN_ON64(x)						x								/// @brief 64비트일 때
+#define QN_ON32(x)														/// @brief 32비트일 때
+#else
+#define QN_ON64(x)														/// @brief 64비트일 때							
+#define QN_ON32(x)						x								/// @brief 32비트일 때
 #endif
 
 
@@ -210,7 +219,7 @@
 #define QN_TBIT(value,bit)				(((value) & (1 << (bit))) != 0)	/// @brief 비트가 있나 비교
 #define QN_TMASK(value,mask)			(((value) & (mask)) != 0)		/// @brief 마스크가 있나 비교
 #define QN_SBIT(value,bit,set)			QN_WARN_PUSH QN_WARN_SIGN ((set) ? ((value) |= (1 << (bit))) : ((value) &= ~(1 << (bit)))) QN_WARN_POP	/// @brief 비트 설정
-#define QN_SMASK(value,mask,set)		QN_WARN_PUSH QN_WARN_SIGN ((set) ? ((value) |= (mask)) : ((value) &= ~(mask))) QN_WARN_POP				/// @brief 마스크 설정
+#define QN_SMASK(value,mask,set)		QN_WARN_PUSH QN_WARN_SIGN ((set) ? ((value) |= (mask)) : ((value) &= ~(mask))) QN_WARN_POP	
 
 // constant
 #define QN_VERSION_MAJOR				3
@@ -266,9 +275,6 @@ typedef wchar_t							uchar2;							/// @brief 2바이트(16비트) 유니코드
 typedef wint_t							uchar4;
 typedef uint16_t						uchar2;
 #endif
-
-typedef uint16_t						halfint;						/// @brief 16비트 부호 없는 정수(half int)
-typedef uint16_t						halffloat;						/// @brief 16비트 실수(half float)
 
 typedef int32_t							cham;							/// @brief 32비트 참거짓
 typedef int16_t							halfcham;						/// @brief 16비트 참거짓
@@ -689,6 +695,29 @@ QSAPI void qn_qsort(void* ptr, size_t count, size_t stride, cmpfunc_t compfunc);
 /// @param[in] compfunc 비교 연산 콜백 함수
 /// @param[in] context 콜백 함수용 콘텍스트
 QSAPI void qn_qsortc(void* ptr, size_t count, size_t stride, cmpcfunc_t compfunc, void* context);
+
+
+//////////////////////////////////////////////////////////////////////////
+// random
+
+/// @brief 랜덤
+typedef struct QNRANDOM
+{
+	nuint seed;
+	nuint state1, state2;
+} QnRandom;
+
+/// @brief 랜덤 시드
+QSAPI void qn_srand(QnRandom* r, nuint seed);
+
+/// @brief 랜덤
+QSAPI nuint qn_rand(QnRandom* r);
+
+/// @brief 랜덤 실수 (0.0~1.0)
+QSAPI float qn_randf(QnRandom* r);
+
+/// @brief 랜덤 실수 (0.0~1.0)
+QSAPI double qn_randd(QnRandom* r);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1342,6 +1371,20 @@ QSAPI char* qn_a_i_u16to8(const uchar2* src, size_t srclen, const char* desc, si
 QSAPI uchar4* qn_a_i_u16to32(const uchar2* src, size_t srclen, const char* desc, size_t line);
 QSAPI uchar2* qn_a_i_u32to16(const uchar4* src, size_t srclen, const char* desc, size_t line);
 #endif
+
+/// @brief 한글 자모를 얻는다
+/// @param code 한글 문자
+/// @param cho 초성
+/// @param jung 중성
+/// @param jong 종성
+/// @return 성공하면 참
+QSAPI bool qn_hangul_dcp(uchar4 code, int* cho, int* jung, int* jong);
+
+/// @brief 한글 조사를 얻는다
+/// @param code 한글 문자
+/// @param josa_type 조사 종류 (0: 은/는, 1: 이/가, 2: 을/를, 3: 와/과)
+/// @return 조사 문자 (UCS-4)
+QSAPI uchar4 qn_hangul_josa(uchar4 code, int josa_type);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -3243,16 +3286,18 @@ QSAPI void qn_gmtime(struct tm* ptm, time_t tt);
 /// @return	현재의 사이클
 QSAPI llong qn_cycle(void);
 
-/// @brief 프로그램 시작부터 시간 틱
+/// @brief 프로그램 시작부터 시간 틱 (밀리초	 단위)
 /// @return	현재의 틱
+/// @note 약 1400세기 이후에는 계산값을 믿으면 안된다. (현 시점 21세기이므로 문제 없음)
 QSAPI llong qn_tick(void);
 
-/// @brief 프로그램 시작부터 시간 틱 (32비트 버전)
+/// @brief 프로그램 시작부터 시간 틱 (밀리초	 단위 32비트 버전)
 /// @return	현재의 틱
+/// @note 49.7일 (4294967.295초) 이후에는 0초부터 다시 시작된다
 QSAPI uint qn_tick32(void);
 
-/// @brief 프로그램 시작부터 지나간 시간(초)
-/// @return	현재 프로그램 수행 시간 (초)
+/// @brief 프로그램 시작부터 지나간 시간 (초 단위)
+/// @return	현재 프로그램 수행 시간
 /// @note qn_tick() / 1000.0과 같다
 QSAPI double qn_elapsed(void);
 
@@ -3346,9 +3391,12 @@ typedef struct QNTIMER
 	double				advance;			/// @brief 타이머 경과 시간 (포즈 중에는 0)
 
 	float				fps;				/// @brief 초 당 프레임 수
+	float				afps;				/// @brief 평균 초 당 프레임 수
+
 	ushort				cut;				/// @brief 프레임 컷 (초당 프레임 수 제한)
-	bool				pause;				/// @brief 정지 여부
-	bool				manual;				/// @brief 수동 갱신 여부
+	halfcham			pause;				/// @brief 정지 여부
+
+	uint				frame;				/// @brief 프레임 수
 } QnTimer;
 
 /// @brief 타이머 만들기
@@ -3367,11 +3415,6 @@ QSAPI void qn_timer_update(QnTimer* self);
 /// @param[in] self 타이머 개체
 /// @param cut 프레임 컷
 QSAPI void qn_timer_set_cut(QnTimer* self, int cut);
-
-/// @brief 타이머 프레임 계산 방식 설정
-/// @param[in] self 타이머 개체
-/// @param manual 참이면 평균으로 계산, 아니면 각 프레임마다 계산
-QSAPI void qn_timer_set_manual(QnTimer* self, bool manual);
 
 /// @brief 타이머의 수행 시간
 /// @param[in] self 타이머 개체
@@ -3393,17 +3436,22 @@ INLINE double qn_timer_get_advance(const QnTimer* self) { return self->advance; 
 /// @brief 타이머의 초당 프레임 수
 /// @param[in] self 타이머 개체
 /// @return	프레임 수
-INLINE float qn_timer_get_fps(const QnTimer* self) { return self->fps; }
+INLINE double qn_timer_get_fps(const QnTimer* self) { return self->fps; }
+
+/// @brief 타이머의 평균 초당 프레임 수
+/// @param[in] self 타이머 개체
+/// @return	평균 프레임 수
+INLINE double qn_timer_get_afps(const QnTimer* self) { return self->afps; }
 
 /// @brief 타이머의 프레임 컷
 /// @param[in] self 타이머 개체
 /// @return	프레임 컷
-INLINE int qn_timer_get_cut(const QnTimer* self) { return self->cut; }
+INLINE uint qn_timer_get_cut(const QnTimer* self) { return self->cut; }
 
 /// @brief 타이머의 정지 여부
 /// @param[in] self 타이머 개체
 /// @return	정지 여부
-INLINE bool qn_timer_is_pause(const QnTimer* self) { return self->pause; }
+INLINE bool qn_timer_is_pause(const QnTimer* self) { return self->pause != 0; }
 
 /// @brief 타이머의 정지 여부 설정
 /// @param[in] self 타이머 개체
@@ -3490,7 +3538,7 @@ typedef enum QNMOUNTFLAG
 	QNMFT_DISKFS = QN_BIT(16),								/// @brief 디스크 파일 시스템
 	QNMFT_MEM = QN_BIT(17),									/// @brief 메모리 파일 시스템
 	QNMFT_HFS = QN_BIT(18),									/// @brief HFS 파일 시스템
-	QNMFT_FUSE= QN_BIT(19),									/// @brief FUSE 파일 시스템
+	QNMFT_FUSE = QN_BIT(19),									/// @brief FUSE 파일 시스템
 	QNMFT_NORESTORE = QN_BIT(20),							/// @brief 복원하지 않음
 } QnMountFlag;
 
@@ -4196,7 +4244,6 @@ QN_ASSERT_SIZE(byte, 1);
 QN_ASSERT_SIZE(ushort, 2);
 QN_ASSERT_SIZE(uint, 4);
 QN_ASSERT_SIZE(ullong, 8);
-QN_ASSERT_SIZE(halfint, 2);
 QN_ASSERT_SIZE(vshort, 2);
 QN_ASSERT_SIZE(vint, 4);
 QN_ASSERT_SIZE(vllong, 8);

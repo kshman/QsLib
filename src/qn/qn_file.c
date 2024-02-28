@@ -1395,29 +1395,21 @@ static const char* _disk_list_read(QnGam g)
 #endif
 }
 
-#ifdef _QN_WINDOWS_
 //
-extern QnTimeStamp qn_system_time_to_timestamp(const SYSTEMTIME* pst);
+extern QnTimeStamp _time_to_timestamp(const time_t tt, uint ms);
 
+#ifdef _QN_WINDOWS_
 //
 static QnTimeStamp _filetime_to_timestamp(const FILETIME* ft)
 {
-	SYSTEMTIME st;
-	FileTimeToSystemTime(ft, &st);
-	return qn_system_time_to_timestamp(&st);
-}
-#endif
-
-#ifdef _QN_UNIX_
-//
-extern QnTimeStamp qn_tm_to_timestamp(struct tm* ptm, uint ms);
-
-//
-static QnTimeStamp _stat_to_timestamp(time_t tt)
-{
-	struct tm tm;
-	localtime_r(&tt, &tm);
-	return qn_tm_to_timestamp(&tm, 0);
+	ULARGE_INTEGER ul = { .LowPart = ft->dwLowDateTime, .HighPart = ft->dwHighDateTime };
+	ul.QuadPart -= 116444736000000000ULL;
+	struct timespec ts =
+	{
+		.tv_sec = (time_t)((ul.QuadPart) / 10000000),
+		.tv_nsec = (long)((ul.QuadPart % 10000000) * 100),
+	};
+	return _time_to_timestamp(ts.tv_sec, ts.tv_nsec / 1000000);
 }
 #endif
 
@@ -1494,12 +1486,12 @@ static bool _disk_list_read_info(QnGam g, QnFileInfo* info)
 	info->len = (uint)strlen(ent->d_name);
 	info->size = (llong)st.st_size;
 	info->cmpr = 0;
-	info->stc = _stat_to_timestamp(st.st_ctime);
-	info->stw = _stat_to_timestamp(st.st_mtime);
+	info->stc = _time_to_timestamp(st.st_ctime, 0);
+	info->stw = _time_to_timestamp(st.st_mtime, 0);
 	info->name = ent->d_name;
 	return true;
 #endif
-}
+	}
 
 //
 static void _disk_list_rewind(QnGam g)
@@ -1706,7 +1698,7 @@ static void* _disk_fs_alloc(QnGam g, const char* filename, int* size)
 	qn_return_when_fail(_file_stream_get_real_path(real, self, filename), NULL);
 
 	size_t len;
-	void* fd = _internal_file_open(filename, &len);
+	void* fd = _internal_file_open(real, &len);
 	qn_return_when_fail(fd != NULL, NULL);
 
 	byte* buffer = qn_alloc(len + 4, byte);
@@ -1783,7 +1775,7 @@ static QnMount* _create_diskfs(char* path)
 		.mount_alloc = _disk_fs_alloc,
 	};
 	return qn_gam_init(self, _disk_fs_vt);
-}
+	}
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1898,9 +1890,9 @@ static ushort _hfs_write_directory(QnStream* stream, const char* name, size_t na
 	{
 		.source.attr = QNFATTR_DIR,
 		.source.type = QNFTYPE_DIR,
-		.source.size = (uint)qm_rand(NULL),
-		.source.cmpr = (uint)qm_rand(NULL),
-		.source.seek = (uint)qm_rand(NULL),
+		.source.size = (uint)qn_rand(NULL),
+		.source.cmpr = (uint)qn_rand(NULL),
+		.source.seek = (uint)qn_rand(NULL),
 		.stc.stamp = stc,
 		.subp = subp,
 		.next = next,
@@ -2586,8 +2578,8 @@ static QnStream* _hfs_open_file(const char* filename, bool can_write, bool use_m
 
 			_mem_stream_seek(stream, 0, QNSEEK_BEGIN);
 			qn_unload(filestream);
+		}
 	}
-}
 	else
 	{
 		// 파일로 열자
@@ -3123,7 +3115,7 @@ QnMount* qn_open_mount(const char* path, const char* mode)
 		tmppath = qn_getcwd(NULL);
 #endif
 		return _create_diskfs(tmppath);
-	}
+}
 
 	const QnFileAttr attr = qn_get_file_attr(NULL, path);
 	if (QN_TMASK(attr, QNFATTR_DIR))
@@ -3151,7 +3143,7 @@ QnMount* qn_open_mount(const char* path, const char* mode)
 			return NULL;
 		tmppath = qn_strdup(path);
 		return _create_diskfs(tmppath);
-}
+	}
 
 	return NULL;
 }
@@ -3423,7 +3415,7 @@ QnMount* qn_create_fuse(const char* path, bool diskfs, bool loadall)
 #endif
 			self->base.name_len = len + 1;
 		}
-	}
+		}
 
 	_hfs_mukum_init_fast(&self->hfss);
 	_fs_mukum_init_fast(&self->fss);
@@ -3466,7 +3458,7 @@ QnMount* qn_create_fuse(const char* path, bool diskfs, bool loadall)
 	}
 
 	return qn_cast_type(self, QnMount);
-}
+	}
 
 
 //////////////////////////////////////////////////////////////////////////
