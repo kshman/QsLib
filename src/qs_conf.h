@@ -16,6 +16,11 @@
 #	endif
 #endif
 
+// 컴파일러 전용
+#ifndef PRAGMA
+#define PRAGMA(x)			_Pragma(#x)
+#endif
+
 // 디버그 출력 버퍼 길이
 #ifndef MAX_DEBUG_LENGTH
 #define MAX_DEBUG_LENGTH	1024
@@ -37,7 +42,7 @@ static_assert(MAX_DEBUG_LENGTH >= 256 && MAX_DEBUG_LENGTH <= 4096, "256 <= MAX_D
 #define MAX_POLL_LENGTH		3
 #endif
 
-// 컴파일러 전용
-#ifndef PRAGMA
-#define PRAGMA(x)			_Pragma(#x)
+// 배치 아이템 최대 개수
+#ifndef MAX_BATCH_ITEM
+#define MAX_BATCH_ITEM		512
 #endif

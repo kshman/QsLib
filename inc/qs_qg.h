@@ -1507,13 +1507,14 @@ struct QGBUFFER
 	uint				count;
 	ushort				stride;
 
-	halfcham			mapped;
+	bool				mapped;
+	bool				dynamic;
 };
 
 QN_DECL_VTABLE(QGBUFFER)
 {
 	QN_DECL_VTABLE(QNGAMBASE)	base;
-	void*(*map)(void*);
+	void*(*map)(void*, bool);
 	bool (*unmap)(void*);
 	bool (*data)(void*, int, const void*);
 };
@@ -1529,9 +1530,10 @@ QSAPI QgBuffer* qg_create_buffer(QgBufferType type, uint count, uint stride, con
 
 /// @brief 버퍼 설정을 위해 잠근다
 /// @param g 버퍼
+///	@param synchronized 동기화 여부
 /// @return 버퍼 데이터 설정을 위한 포인터
 /// @retval NULL 버퍼를 잠글 수 없다
-QSAPI void* qg_buffer_map(QgBuffer* g);
+QSAPI void* qg_buffer_map(QgBuffer* g, bool synchronized);
 
 /// @brief 잠궛던 버퍼를 푼다
 /// @param g 버퍼

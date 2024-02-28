@@ -8,6 +8,11 @@
 #include "qg_stub.h"
 #include "qs_supp.h"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 6011)
+#endif
+
 #define PAR_SHAPES_IMPLEMENTATION
 #define PAR_MALLOC(T, N)		qn_alloc(N, T)
 #define PAR_CALLOC(T, N)		qn_alloc_zero(N, T)
@@ -16,6 +21,10 @@
 #define sqrtf					qm_sqrtf
 #define printf					qn_outputf
 #include "par/par_shapes.h"
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -345,7 +354,7 @@ bool qg_mesh_build(QgMesh* self)
 			continue;
 		}
 		self->vbuffers[i] = qg_create_buffer(QGBUFFER_VERTEX, self->mesh.vertices, losz[i], NULL);
-		vdata[i] = qg_buffer_map(self->vbuffers[i]);
+		vdata[i] = qg_buffer_map(self->vbuffers[i], true);
 	}
 
 	size_t vertices = (size_t)self->mesh.vertices;

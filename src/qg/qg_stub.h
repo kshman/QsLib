@@ -218,7 +218,6 @@ typedef struct RDHBASE
 	QN_GAM_BASE(QNGAMBASE);
 
 	RendererInfo		info;
-
 	RendererTransform	tm;
 	RendererParam		param;
 	RendererInvoke		invokes;

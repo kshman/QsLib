@@ -172,6 +172,15 @@
 #define QN_WARN_POP						PRAGMA(GCC diagnostic pop)
 #define QN_WARN_SIGN					PRAGMA(GCC diagnostic ignored "-Wsign-conversion")
 #define QN_WARN_ASSIGN
+#endif			/// @brief 마스크 설정
+
+// platform selection
+#ifdef _QN_64_
+#define QN_ON64(x)						x								/// @brief 64비트일 때
+#define QN_ON32(x)														/// @brief 32비트일 때
+#else
+#define QN_ON64(x)														/// @brief 64비트일 때							
+#define QN_ON32(x)						x								/// @brief 32비트일 때
 #endif
 
 
@@ -210,7 +219,7 @@
 #define QN_TBIT(value,bit)				(((value) & (1 << (bit))) != 0)	/// @brief 비트가 있나 비교
 #define QN_TMASK(value,mask)			(((value) & (mask)) != 0)		/// @brief 마스크가 있나 비교
 #define QN_SBIT(value,bit,set)			QN_WARN_PUSH QN_WARN_SIGN ((set) ? ((value) |= (1 << (bit))) : ((value) &= ~(1 << (bit)))) QN_WARN_POP	/// @brief 비트 설정
-#define QN_SMASK(value,mask,set)		QN_WARN_PUSH QN_WARN_SIGN ((set) ? ((value) |= (mask)) : ((value) &= ~(mask))) QN_WARN_POP				/// @brief 마스크 설정
+#define QN_SMASK(value,mask,set)		QN_WARN_PUSH QN_WARN_SIGN ((set) ? ((value) |= (mask)) : ((value) &= ~(mask))) QN_WARN_POP	
 
 // constant
 #define QN_VERSION_MAJOR				3

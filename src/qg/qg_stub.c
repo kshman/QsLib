@@ -2003,10 +2003,10 @@ void qg_draw_glyph(const QmRect* bound, QgTexture* texture, const QmKolor color,
 #define VAR_CHK_NAME	"BUFFER"
 
 //
-void* qg_buffer_map(QgBuffer * self)
+void* qg_buffer_map(QgBuffer * self, bool synchronized)
 {
 	VAR_CHK_IF_COND(self->mapped != false, "buffer already mapped", NULL);
-	return qn_cast_vtable(self, QGBUFFER)->map(self);
+	return qn_cast_vtable(self, QGBUFFER)->map(self, synchronized);
 }
 
 //
