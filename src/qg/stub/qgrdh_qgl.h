@@ -85,7 +85,7 @@ typedef struct QGLLAYOUTDESC
 // 세이더 어트리뷰트
 typedef struct QGLVARATTR
 {
-	char				name[32 + QN_ON64(8)];
+	char				name[32 QN_ON64(+ 8)];
 	size_t				hash;
 
 	GLint				attrib;
@@ -329,3 +329,35 @@ extern bool gl_make_current(_In_ void* context, _In_ const QglConfig* config);
 extern bool gl_swap_buffers(void);
 extern bool gl_swap_interval(_In_ int interval);
 extern void gl_dispose(_In_ void* context);
+
+// 텍스쳐 포맷 추가 (WebGL, 안드르에서는 되는데 정의가 안돼있음)
+#ifndef GL_COMPRESSED_RGB_S3TC_DXT1_EXT
+#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
+#endif
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
+#endif
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT3_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
+#endif
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
+#endif
+#ifndef GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT
+#define GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT 0x8E8E
+#endif
+#ifndef GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT
+#define GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT 0x8E8F
+#endif
+#ifndef GL_COMPRESSED_RED_RGTC1
+#define GL_COMPRESSED_RED_RGTC1 0x8DBB
+#endif
+#ifndef GL_COMPRESSED_SIGNED_RED_RGTC1
+#define GL_COMPRESSED_SIGNED_RED_RGTC1 0x8DBC
+#endif
+#ifndef GL_COMPRESSED_RG_RGTC2
+#define GL_COMPRESSED_RG_RGTC2 0x8DBD
+#endif
+#ifndef GL_COMPRESSED_SIGNED_RG_RGTC2
+#define GL_COMPRESSED_SIGNED_RG_RGTC2 0x8DBE
+#endif

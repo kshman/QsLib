@@ -9,10 +9,6 @@
 #include <qs_supp.h>
 #include <ctype.h>
 
-// 최대 평면 정점 갯수
-#define MAX_ORTHOD_BATCH_COUNT 1024
-
-
 //////////////////////////////////////////////////////////////////////////
 // 오픈GL 컨피그 + 도움꾼
 
@@ -675,6 +671,7 @@ static void qgl_rdh_reset(void)
 		"{" \
 		"	gl_FragColor = texture2D(Texture, vCoord) * vColor;\n" \
 		"}";
+#ifdef QGL_MAYBE_GL_CORE
 	static char ps_glyph[] = \
 		"uniform sampler2D Texture;" \
 		"varying vec2 vCoord;" \
@@ -684,6 +681,7 @@ static void qgl_rdh_reset(void)
 		"	vec4 t = texture2D(Texture, vCoord).rrrg;"\
 		"	gl_FragColor = t * vColor;" \
 		"}";
+#endif
 	static QgLayoutInput inputs_ortho[] =
 	{
 		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
@@ -708,9 +706,19 @@ static void qgl_rdh_reset(void)
 	// 평면용 글자 스테이트 => 한번만 만들어도 됨
 	if (res->ortho_glyph == NULL)
 	{
-		const QgPropShader shader_glyph = { { inputs_ortho, QN_COUNTOF(inputs_ortho) }, { vs_ortho, 0 }, { ps_glyph, 0 } };
-		res->ortho_glyph = (QglRenderState*)qg_create_render_state("qg_glyph", &render_ortho, &shader_glyph);
-		qn_unload(res->ortho_glyph);
+#ifdef QGL_MAYBE_GL_CORE
+		if (QGL_CORE)
+		{
+			const QgPropShader shader_glyph = { { inputs_ortho, QN_COUNTOF(inputs_ortho) }, { vs_ortho, 0 }, { ps_glyph, 0 } };
+			res->ortho_glyph = (QglRenderState*)qg_create_render_state("qg_glyph", &render_ortho, &shader_glyph);
+			qn_unload(res->ortho_glyph);
+		}
+		else
+#endif
+		{
+			// ES는 Lumiance Alpha를 지원하므로, 그냥 렌더 스테이트를 공유한다
+			res->ortho_glyph = res->ortho_render;	// 참조 안해도 된다. 원래 관리 오브젝트니깐
+		}
 	}
 
 	// 배치 스트림 => 리셋하면 다시 만들어야 함
@@ -1579,7 +1587,7 @@ static int qgl_batch_stream_sort_texture(const void* a, const void* b)
 		ia->index - ib->index :
 		(nint)ia->gl_tex - (nint)ib->gl_tex;
 #else
-	return (nint)ia->gl_tex - (nint)ib->gl_tex;
+	return (int)ia->gl_tex - (int)ib->gl_tex;
 #endif
 }
 
@@ -1622,7 +1630,12 @@ static void qgl_batch_ortho_flush(QglBatchStream* batch)
 	qgl_buffer_unmap(vbuffer);
 
 	qgl_rdh_set_vertex(QGLOS_1, vbuffer);
+#ifdef _QN_EMSCRIPTEN_
 	qgl_rdh_set_render(self->base.cmd == QGBTC_GLYPH ? res->ortho_glyph : res->ortho_render);
+	//qgl_rdh_set_render(res->ortho_render);
+#else
+	qgl_rdh_set_render(self->base.cmd == QGBTC_GLYPH ? res->ortho_glyph : res->ortho_render);
+#endif
 	qgl_rdh_commit_render();
 	GLDEBUG(glActiveTexture(GL_TEXTURE0));
 
@@ -2014,7 +2027,7 @@ INLINE QgScType qgl_enum_to_shader_const(GLenum gl_type)
 #endif
 		default:							return QGSCT_UNKNOWN;
 	}
-	}
+}
 
 // 세이더 만들기
 static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData * vertex, const QgCodeData * fragment)
@@ -2310,6 +2323,9 @@ static void qgl_texture_dispose(QnGam g)
 // 컬러 포맷을 텍스쳐 포맷으로
 INLINE QglTexFormatDesc qgl_clrfmt_to_tex_enum(QgClrFmt fmt)
 {
+	// s3tc => dxt1, dxt3, dxt5
+	// rgtc => bc4
+	// bptc => bc7
 	static QglTexFormatDesc gl_enums[QGCF_MAX_VALUE] =
 	{
 		[QGCF_UNKNOWN] = { GL_NONE, GL_NONE, GL_NONE },
@@ -2349,28 +2365,24 @@ INLINE QglTexFormatDesc qgl_clrfmt_to_tex_enum(QgClrFmt fmt)
 		[QGCF_D32F] = { GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT },
 		[QGCF_D24S8] = { GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8 },
 
-#ifdef GL_COMPRESSED_RGB_S3TC_DXT1_EXT
 		[QGCF_DXT1] = { GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_NONE, GL_NONE },
-#else
-		[QGCF_DXT1] = { GL_NONE, GL_NONE, GL_NONE },
-#endif
-#ifdef GL_COMPRESSED_RGBA_S3TC_DXT3_EXT
 		[QGCF_DXT3] = { GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_NONE, GL_NONE },
-#else
-		[QGCF_DXT3] = { GL_NONE, GL_NONE, GL_NONE },
-#endif
-#ifdef GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
 		[QGCF_DXT5] = { GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_NONE, GL_NONE },
-#else
-		[QGCF_DXT5] = { GL_NONE, GL_NONE, GL_NONE },
-#endif
 #ifdef GL_COMPRESSED_RGB8_ETC1
 		[QGCF_EXT1] = { GL_COMPRESSED_RGB8_ETC1, GL_NONE, GL_NONE },
 #else
 		[QGCF_EXT1] = { GL_NONE, GL_NONE, GL_NONE },
 #endif
+#ifdef GL_COMPRESSED_RGB8_ETC2
 		[QGCF_EXT2] = { GL_COMPRESSED_RGB8_ETC2, GL_NONE, GL_NONE },
+#else
+		[QGCF_EXT2] = { GL_NONE, GL_NONE, GL_NONE },
+#endif
+#ifdef GL_COMPRESSED_RGBA8_ETC2_EAC
 		[QGCF_EXT2_EAC] = { GL_COMPRESSED_RGBA8_ETC2_EAC, GL_NONE, GL_NONE },
+#else
+		[QGCF_EXT2_EAC] = { GL_NONE, GL_NONE, GL_NONE },
+#endif
 #ifdef GL_COMPRESSED_RGBA_ASTC_4x4
 		[QGCF_ASTC4] = { GL_COMPRESSED_RGBA_ASTC_4x4, GL_NONE, GL_NONE },
 #else
@@ -2383,7 +2395,7 @@ INLINE QglTexFormatDesc qgl_clrfmt_to_tex_enum(QgClrFmt fmt)
 #endif
 	};
 	return gl_enums[fmt];
-	}
+}
 
 // 2D 텍스쳐
 static QgTexture* qgl_create_texture(const char* name, const QgImage* image, QgTexFlag flags)

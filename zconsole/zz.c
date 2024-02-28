@@ -7,7 +7,7 @@ int main(void)
 
 	int flags = QGFLAG_RESIZE | QGFLAG_MSAA /*| QGFLAG_VSYNC*/;
 	int features = QGFEATURE_NONE;
-	if (qg_open_rdh("gl", "RDH", 0, 0, 0, flags, features) == false)
+	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 	qg_fuse(0, NULL, true, true);
 	qg_font_set_size(qg_get_def_font(), 32);
@@ -58,7 +58,9 @@ int main(void)
 		}
 	}
 
+#ifndef _QN_EMSCRIPTEN_
 	qn_mpf_dbgout();
+#endif
 
 	//qn_unload(mesh);
 	qn_unload(cam);
