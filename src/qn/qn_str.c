@@ -2173,31 +2173,58 @@ DEF_UTF_DUP(u32to16, uchar4, uchar2)
 //////////////////////////////////////////////////////////////////////////
 // 한글 분석
 
+// 초성: ㄱㄲㄴㄷㄸㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ
+// 중성: ㅏㅐㅑㅒㅓⅩⅩㅔㅕㅖㅗㅘㅙⅩⅩㅚㅛㅜㅝㅞㅟⅩⅩㅠㅡㅢㅣ<아><어>
+// 종성: ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁ<ㅎㅎ>ㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ<ㅇ>
+
+
 //
-bool qn_hangul_dcp(uchar4 code, int* cho, int* jung, int* jong)
+bool qn_hangul_dcp(uchar4 code, int* cho_jung_jong)
 {
-	if ((code > 0xAC00) && (code <= 0xD7A3))
+	qn_return_when_fail(cho_jung_jong, false);
+	if ((code >= 0xAC00) && (code <= 0xD7A3))
 	{
+		static const char cho_index[] = { 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17,18,19,20 };
+		static const char jung_index[] = { 3, 4, 5, 6, 7,10,11,12, 13,14,15,18,19,20,21,22,23,26,27,28,29 };
+		static const char jong_index[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17,19,20,21,22,23,24,25,26,27,28,29 };
 		uchar4 c = code - 0xAC00;
-		if (cho)
-			*cho = (int)(c / 588);
-		if (jung)
-			*jung = (int)((c % 588) / 28);
-		if (jong)
-			*jong = (int)(c % 28);
+		cho_jung_jong[0] = cho_index[(int)(c / 588)];
+		cho_jung_jong[1] = jung_index[(int)((c % 588) / 28)];
+		cho_jung_jong[2] = jong_index[(int)(c % 28)];
 		return true;
 	}
-	if ((code > 0xffa1) && (code <= 0xffdc))
+	if ((code >= 0x3131) && code <= 0x314E)
 	{
-		uchar4 c = code - 0xffa1;
-		if (cho)
-			*cho = (int)(c / 28);
-		if (jung)
-			*jung = (int)(c % 28);
-		if (jong)
-			*jong = -1;
+		// 자음만
+		// ㄱㄲ　ㄴ　　ㄷㄸㄹ　　　　　　　ㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ
+		// ㄱㄲㄳㄴㄵㄶㄷㄸㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅃㅄㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ
+		static const char jaum_index[] = { 2, 3, -1, 4, -1, -1, 5, 6, 7, -1, -1, -1, -1, -1, -1, -1, 8, 9, 10, -1, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
+		byte c = (byte)(code - 0x3131);
+		cho_jung_jong[0] = jaum_index[c];
+		cho_jung_jong[1] = -1;
+		cho_jung_jong[2] = -1;
 		return true;
 	}
+	if ((code >= 0x314F) && code <= 0x3163)
+	{
+		// 모음만
+		// ㅏㅐㅑㅒㅓⅩⅩㅔㅕㅖㅗㅘㅙⅩⅩㅚㅛㅜㅝㅞㅟⅩⅩㅠㅡㅢㅣ
+		// ㅏㅐㅑㅒㅓ　　ㅔㅕㅖㅗㅘㅙ　　ㅚㅛㅜㅝㅞㅟ　　ㅠㅡㅢㅣ
+		static const char moum_index[] = { 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 18, 19, 20, 21, 22, 23, 26, 27, 28, 29 };
+		byte c = (byte)(code - 0x314F);
+		cho_jung_jong[0] = -1;
+		cho_jung_jong[1] = moum_index[c];
+		cho_jung_jong[2] = -1;
+		return true;
+	}
+	/*
+	if ((code >= 0xffa1) && (code <= 0xffdc))
+	{
+		// 한글 반각인데 취급 안함
+		return false;
+	}
+	*/
+	cho_jung_jong[0] = cho_jung_jong[1] = cho_jung_jong[2] = -1;
 	return false;
 }
 
@@ -2210,15 +2237,9 @@ uchar4 qn_hangul_josa(uchar4 code, int josa_type)
 		c = code - 0xAC00;
 		c = (uchar4)(c % 28);
 	}
-	else if (code > 0xffa1 && code <= 0xffdc)
-	{
-		//c = code - 0xffa1;
-		//c = (uchar4)(c % 28);
-		c = 0;
-	}
 	else
 		c = 0;
-	static const char* josadeul[][2]=
+	static const char* josadeul[][2] =
 	{
 		{ "은", "는" },
 		{ "이", "가" },

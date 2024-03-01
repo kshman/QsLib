@@ -40,9 +40,9 @@ static void* windows_dll_func(QnModule* module, const char* func_name, const cha
 	if (current_dll != dll_name)
 	{
 		current_dll = dll_name;
-		qn_mesgf(false, "WINDOWS STUB", "DLL: %s", dll_name);
+		qn_mesgf("WINDOWS STUB", "DLL: %s", dll_name);
 	}
-	qn_mesgf(false, "WINDOWS STUB", "%s: %s",
+	qn_mesgf("WINDOWS STUB", "%s: %s",
 		ret == NULL ? "load failed" : "loaded", func_name);
 #else
 	QN_DUMMY(dll_name);
@@ -70,12 +70,12 @@ static bool windows_dll_init(void)
 	if (module == NULL)
 	{
 		// 이건 오바다
-		qn_mesgf(true, "WINDOWS STUB", "no '%s' DLL found!", "XINPUT");
+		qn_mesgfb("WINDOWS STUB", "no '%s' DLL found!", "XINPUT");
 		return false;
 	}
 #define DEF_WIN_DLL_BEGIN(name)\
 	module = qn_open_mod(dll_name = (name), 1); if (module == NULL)\
-	{ qn_mesgf(true, "WINDOWS STUB", "DLL load filed: %s", dll_name); return false; } else {
+	{ qn_mesgfb("WINDOWS STUB", "DLL load filed: %s", dll_name); return false; } else {
 #define DEF_WIN_DLL_END }
 #define DEF_WIN_FUNC(ret,name,args)\
 	QN_CONCAT(Win32, name) = (ret(WINAPI*)args)windows_dll_func(module, QN_STRING(name), dll_name);	// NOLINT
@@ -207,14 +207,14 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	//
 	if (windows_dll_init() == false)
 	{
-		qn_mesg(true, "WINDOWS STUB", "DLL load failed");
+		qn_mesgb("WINDOWS STUB", "DLL load failed");
 		return false;
 	}
 
 	wStub.instance = GetModuleHandle(NULL);
 	if (wStub.instance == NULL)
 	{
-		qn_mesg(true, "WINDOWS STUB", "cannot retrieve module handle");
+		qn_mesgb("WINDOWS STUB", "cannot retrieve module handle");
 		return false;
 	}
 
@@ -224,7 +224,7 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	windows_set_dpi_awareness();
 	if (windows_detect_displays() == false)
 	{
-		qn_mesg(true, "WINDOWS STUB", "cannot detect any display");
+		qn_mesgb("WINDOWS STUB", "cannot detect any display");
 		return false;
 	}
 
@@ -272,7 +272,7 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 				DestroyIcon(wc.hIcon);
 			if (wc.hIconSm)
 				DestroyIcon(wc.hIconSm);
-			qn_mesg(true, "WINDOWS STUB", "window class registration failed");
+			qn_mesgb("WINDOWS STUB", "window class registration failed");
 			return false;
 		}
 
@@ -365,7 +365,7 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	qn_free(wtitle);
 	if (wStub.hwnd == NULL)
 	{
-		qn_mesg(true, "WINDOWS STUB", "cannot create window");
+		qn_mesgb("WINDOWS STUB", "cannot create window");
 		return false;
 	}
 	wStub.hdc = GetDC(wStub.hwnd);

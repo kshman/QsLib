@@ -281,7 +281,7 @@ bool qg_open_stub(const char* title, int display, int width, int height, int fla
 
 	if (qg_instance_stub)
 	{
-		qn_mesg(true, "STUB", "already opened");
+		qn_mesgb("STUB", "already opened");
 		return false;
 	}
 
@@ -709,7 +709,7 @@ static void qg_poll_check_shed(void)
 	}
 	if (shed_event.loop.poll != shed_event.loop.count)
 	{
-		qn_mesgf(true, "STUB", "call qg_loop() before qg_poll()! [poll(%d) != loop(%d)]",
+		qn_mesgfb("STUB", "call qg_loop() before qg_poll()! [poll(%d) != loop(%d)]",
 			shed_event.loop.poll, shed_event.loop.count);
 		shed_event.loop.poll = shed_event.loop.count;
 	}
@@ -1661,7 +1661,7 @@ void qg_flush(void)
 	RdhBase* rdh = RDH;
 	if (!rdh->invokes.flush)
 	{
-		qn_mesg(true, "RDH", "call end() before flush");
+		qn_mesgb("RDH", "call end() before flush");
 		qg_end_render(false);
 	}
 	qn_cast_vtable(rdh, RDHBASE)->flush();
@@ -1960,7 +1960,7 @@ bool qg_draw_indexed(QgTopology tpg, int indices)
 }
 
 //
-void qg_draw_prite(const QmRect* bound, QgTexture* texture, const QmKolor color, const QMVEC* coord)
+void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmKolor color, const QMVEC* coord)
 {
 	VAR_CHK_IF_NULL(bound, );
 	if (coord == NULL)

@@ -14,17 +14,6 @@
 #include <android/log.h>
 #endif
 
-#ifdef DEBUG_BREAK
-#error macro _DEBUG_BREAK already defined!
-#endif
-#ifdef _QN_WINDOWS_
-#define DEBUG_BREAK(x)			if (x) DebugBreak()
-#elif defined _QN_EMSCRIPTEN_
-#define DEBUG_BREAK(x)
-#else
-#define DEBUG_BREAK(x)			if (x) raise(SIGTRAP)
-#endif
-
 //
 extern void qn_cycle_up(void);
 extern void qn_cycle_down(void);
@@ -257,6 +246,12 @@ const char* qn_p_unknown(int value, bool hex)
 }
 
 //
+cham qn_p_debugger(void)
+{
+	return runtime_impl.debugger;
+}
+
+//
 static nint _sym_set(const char* name)
 {
 	static nint sym = 1;
@@ -324,17 +319,17 @@ void qn_sym_dbgout(void)
 {
 	qn_return_when_fail(runtime_impl.inited,/*void*/);
 	QN_LOCK(runtime_impl.lock);
-	qn_mesgf(false, "SYMBOL", " %-8s | %-s", "symbol", "string");
+	qn_mesgf("SYMBOL", " %-8s | %-s", "symbol", "string");
 #if false
 	SymMukumNode* node;
 	QN_MUKUM_FOREACH(runtime_impl.symbols, node)
-		qn_mesgf(false, "SYMBOL", " %-8d | %-s", node->VALUE.value, node->KEY);
+		qn_mesgf("SYMBOL", " %-8d | %-s", node->VALUE.value, node->KEY);
 #else
 	size_t i;
 	QN_ARRAY_FOREACH(runtime_impl.symarray, 1, i)
-		qn_mesgf(false, "SYMBOL", " %-8d | %-s", i, _sym_array_nth(&runtime_impl.symarray, i)->KEY);
+		qn_mesgf("SYMBOL", " %-8d | %-s", i, _sym_array_nth(&runtime_impl.symarray, i)->KEY);
 #endif
-	qn_mesgf(false, "SYMBOL", "total symbols: %zu", _sym_mukum_count(&runtime_impl.symbols));
+	qn_mesgf("SYMBOL", "total symbols: %zu", _sym_mukum_count(&runtime_impl.symbols));
 	QN_UNLOCK(runtime_impl.lock);
 }
 
@@ -430,9 +425,9 @@ void qn_prop_dbgout(void)
 		const char* name = _sym_get(node->KEY);
 		if (node->VALUE.alloc)
 			qn_strncpy(node->VALUE.intern, node->VALUE.value, QN_COUNTOF(node->VALUE.intern) - 1);
-		qn_mesgf(false, "PROP", " %s = %-s", name, node->VALUE.intern);
+		qn_mesgf("PROP", " %s = %-s", name, node->VALUE.intern);
 	}
-	qn_mesgf(false, "PROP", "total properties: %zu", _prop_mukum_count(&runtime_impl.props));
+	qn_mesgf("PROP", "total properties: %zu", _prop_mukum_count(&runtime_impl.props));
 	QN_UNLOCK(runtime_impl.lock);
 }
 
@@ -538,7 +533,6 @@ int qn_asrt(const char* expr, const char* mesg, const char* filename, const int 
 	}
 	_out_buf_flush(true);
 
-	DEBUG_BREAK(runtime_impl.debugger);
 	return 0;
 }
 
@@ -551,24 +545,22 @@ _Noreturn void qn_halt(const char* head, const char* mesg)
 	_out_buf_ch('\n');
 	_out_buf_flush(true);
 
-	DEBUG_BREAK(runtime_impl.debugger);
+	qn_debug_break();
 	abort();
 }
 
 //
-int qn_mesg(const bool breakpoint, const char* head, const char* mesg)
+int qn_mesg(const char* head, const char* mesg)
 {
 	_out_buf_head(head);
 	_out_buf_str(mesg);
 	_out_buf_ch('\n');
 	const int len = (int)_out_buf_flush(true);
-
-	DEBUG_BREAK(breakpoint && runtime_impl.debugger);
 	return len;
 }
 
 //
-int qn_mesgf(const bool breakpoint, const char* head, const char* fmt, ...)
+int qn_mesgf(const char* head, const char* fmt, ...)
 {
 	_out_buf_head(head);
 	va_list va;
@@ -577,8 +569,6 @@ int qn_mesgf(const bool breakpoint, const char* head, const char* fmt, ...)
 	va_end(va);
 	_out_buf_ch('\n');
 	const int len = (int)_out_buf_flush(true);
-
-	DEBUG_BREAK(breakpoint && runtime_impl.debugger);
 	return len;
 }
 

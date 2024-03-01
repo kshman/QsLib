@@ -1009,21 +1009,21 @@ static HGLRC wgl_create_context_arb(_In_ HDC hdc, _In_ int* attrs, _In_ int vers
 		const DWORD dw = GetLastError();
 		if (dw == ERROR_INVALID_VERSION_ARB)
 		{
-			qn_mesgf(false, VAR_CHK_NAME, "driver not support version %d.%d", attrs[1], attrs[3]);
+			qn_mesgf(VAR_CHK_NAME, "driver not support version %d.%d", attrs[1], attrs[3]);
 			continue;
 		}
 		if (dw == ERROR_INVALID_PROFILE_ARB)
-			qn_mesg(true, VAR_CHK_NAME, "driver not support profile");
+			qn_mesgb(VAR_CHK_NAME, "driver not support profile");
 		else if (dw == ERROR_INCOMPATIBLE_DEVICE_CONTEXTS_ARB)
-			qn_mesg(true, VAR_CHK_NAME, "driver not support context");
+			qn_mesgb(VAR_CHK_NAME, "driver not support context");
 		else if (dw == ERROR_INVALID_PARAMETER)
-			qn_mesg(true, VAR_CHK_NAME, "invalid parameter");
+			qn_mesgb(VAR_CHK_NAME, "invalid parameter");
 		else if (dw == ERROR_INVALID_PIXEL_FORMAT)
-			qn_mesg(true, VAR_CHK_NAME, "invalid pixel format");
+			qn_mesgb(VAR_CHK_NAME, "invalid pixel format");
 		else if (dw == ERROR_NO_SYSTEM_RESOURCES)
-			qn_mesg(true, VAR_CHK_NAME, "no system resources");
+			qn_mesgb(VAR_CHK_NAME, "no system resources");
 		else
-			qn_mesg(true, VAR_CHK_NAME, qn_p_unknown((int)dw, true));
+			qn_mesgb(VAR_CHK_NAME, qn_p_unknown((int)dw, true));
 		break;
 	}
 	return NULL;

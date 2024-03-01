@@ -374,12 +374,15 @@ typedef enum QGTEXFLAG
 	QGTEXSPEC_ARRAY = QN_BIT(31),							/// @brief 배열 텍스쳐
 } QgTexFlag;
 
-/// @brief 글꼴 타입
-typedef enum QGFONTTYPE
+/// @brief 글꼴 플래그
+typedef enum QGFONTFLAG
 {
-	QGFONT_BITMAP,
-	QGFONT_TRUETYPE,
-} QgFontType;
+	QGFONTF_NONE = 0,
+
+	QGFONTTYPE_HXN = QN_BIT(16),
+	QGFONTTYPE_BITMAP = QN_BIT(17),
+	QGFONTTYPE_TRUETYPE = QN_BIT(18),
+} QgFontFlag;
 
 /// @brief 배치
 typedef enum QGBATCHCMD
@@ -1687,8 +1690,7 @@ struct QGFONT
 {
 	QN_GAM_BASE(QNGAMBASE);
 
-	char*				name;
-	QgFontType			type;
+	QgFontFlag			flags;
 	int					size;
 	QmKolor				color;
 	QmSize				step;
@@ -1699,7 +1701,7 @@ QN_DECL_VTABLE(QGFONT)
 	QN_GAM_VTABLE(QNGAMBASE);
 	void (*set_size)(QnGam, int);
 	void (*draw)(QnGam, const QmRect*, const char*);
-	QmPoint(*calc)(QnGam, const char*);
+	QmPoint (*calc)(QnGam, const char*);
 };
 
 /// @brief 글꼴을 만든다
@@ -1719,6 +1721,20 @@ QSAPI QgFont* qg_load_font(int mount, const char* filename, int font_base_size, 
 /// @return 만들어진 글꼴
 /// @warning 글꼴 데이터는 글꼴이 관리하기 때문에 해제하면 안된다. 임시 메모리를 전달해도 안되며 반드시 할당한 데이터 일 것
 QSAPI QgFont* qg_load_font_buffer(void* data, int data_size, int font_base_size, int cjk);
+
+/// @brief 글꼴을 버퍼에서 추가한다
+/// @param font 글꼴
+/// @param data 글꼴 데이터
+/// @param size 글꼴 데이터 크기
+/// @return 추가에 성공하면 참
+QSAPI bool qg_font_add_buffer(QgFont* font, void* data, int size);
+
+/// @brief 글꼴을 파일에서 추가한다
+/// @param font 글꼴
+/// @param mount 마운트 번호
+/// @param filename 글꼴 파일 이름
+/// @return 추가에 성공하면 참
+QSAPI bool qg_font_add(QgFont* font, int mount, const char* filename);
 
 /// @brief 글꼴 크기를 설정한다
 /// @param self 글꼴

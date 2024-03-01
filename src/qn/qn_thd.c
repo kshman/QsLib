@@ -164,7 +164,7 @@ void qn_module_down(void)
 	{
 		QnModule* next = node->next;
 		if (QN_TMASK(node->flags, QNMDF_SYSTEM | QNMDF_RESIDENT | QNMDF_MULTIPLE) == false)
-			qn_mesgf(false, "MODULE", "'%s' not unloaded (ref: %d)", node->name, qn_gam_ref(node));
+			qn_mesgf("MODULE", "'%s' not unloaded (ref: %d)", node->name, qn_gam_ref(node));
 		if (QN_TMASK(node->flags, QNMDF_RESIDENT) == false && qn_get_gam_pointer(node) != NULL)
 #ifdef _QN_WINDOWS_
 			FreeLibrary(qn_get_gam_handle(node));
@@ -202,12 +202,12 @@ static void _qn_module_set_error(void)
 	LPVOID lpMsgBuf;
 	FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&lpMsgBuf, 0, NULL);
-	qn_mesg(false, "MODULE", (const char*)lpMsgBuf);
+	qn_mesg("MODULE", (const char*)lpMsgBuf);
 	LocalFree(lpMsgBuf);
 #else
 	const char* err = dlerror();
 	if (err != NULL)
-		qn_mesg(false, "MODULE", err);
+		qn_mesg("MODULE", err);
 #endif
 }
 

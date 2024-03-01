@@ -4176,6 +4176,13 @@ INLINE QMVEC QM_VECTORCALL qm_color_saturate(const QMVEC c, float saturation)
 #endif
 }
 
+INLINE QmKolor QM_VECTORCALL qm_color_to_kolor(const QMVEC c)
+{
+	QmKolor k;
+	qm_vec_st_kolor(&k, c);
+	return k;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // matrix4x4

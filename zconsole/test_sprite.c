@@ -7,24 +7,17 @@ int main(void)
 
 	int flags = QGFLAG_RESIZE | QGFLAG_MSAA /*| QGFLAG_VSYNC*/;
 	int features = QGFEATURE_NONE;
-	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
+	if (qg_open_rdh("gl", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
-	qg_fuse(0, NULL, true, true);
 
-	QmVec bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
+	QMVEC bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
 	qg_set_background(&bgc);
+	qg_font_set_size(qg_get_def_font(), 32);
+	qg_fuse(0, NULL, true, true);
 
 	QgImage* img_puru = qg_load_image(0, "/image/ff14_puru.jpg");
 	QgTexture* tex_puru = qg_create_texture("puru", img_puru, QGTEXF_DISCARD_IMAGE | QGTEXF_MIPMAP);
-	QgTexture* tex_autumn = qg_load_texture(0,
-#ifdef _QN_EMSCRIPTEN_
-		"/image/ff14_autumn.bmp",
-#else
-		"/image/ff14_autumn.dds",
-#endif
-		QGTEXF_LINEAR);
-
-	QgFont* font = qg_load_font(0, "/font/eunjin.ttf", 48);
+	QgTexture* tex_autumn = qg_load_texture(0, "/image/ff14_autumn.dds", QGTEXF_LINEAR);
 
 	QnDateTime ldt, sdt = { .stamp = qn_now() };
 	float eacc = 0.0f, macc = 0.0f;
@@ -71,21 +64,21 @@ int main(void)
 		if (qg_begin_render(true))
 		{
 			QmRect rt;
-			QmVec color, coord;
+			QMVEC color, coord;
 
 			rt = qm_rect_size(10, 10, tex_autumn->width, tex_autumn->height);
 			coord = qm_vec(0.0f, 0.0f, 4.0f, 4.0f);
 			color = qm_vec(f, f, f, 1.0f);
-			qg_draw_sprite(&rt, tex_autumn, &color, &coord);
+			qg_draw_sprite(&rt, tex_autumn, qm_color_to_kolor(color), &coord);
 
 			rt = qm_rect_size(size.Width - 10 - tex_autumn->width, size.Height - 10 - tex_autumn->height, tex_autumn->width, tex_autumn->height);
 			color = qm_vec(1.0f, 1.0f, 1.0f, 1.0f - f);
-			qg_draw_sprite(&rt, tex_autumn, &color, NULL);
+			qg_draw_sprite(&rt, tex_autumn, qm_color_to_kolor(color), NULL);
 
 			rt = qm_rect_size(pt_puru.X, pt_puru.Y, tex_puru->width, tex_puru->height);
-			qg_draw_sprite_ex(&rt, angle, tex_puru, NULL, NULL);
+			qg_draw_sprite_ex(&rt, angle, tex_puru, QMKOLOR_WHITE, NULL);
 
-			qg_font_write_format(font, 0, 0, "\a#FFFF0000\aWorld\a\a, \a#0F0\aHello\a\a! \ablue\a한글도 나오나\a\a? (\acyan\a%.2f\a\a / \amagenta\a%.2f\a\a)", qg_get_fps(), qg_get_afps());
+			qg_draw_text_format(0, 0, "\a#FFFF0000\aWorld\a\a, \a#0F0\aHello\a\a! \ablue\a한글\a\a도 \ayellow\a나오나\a\a? (\acyan\a%.2f\a\a / \amagenta\a%.2f\a\a)", qg_get_fps(), qg_get_afps());
 
 			if (calc_acc)
 			{
@@ -102,9 +95,9 @@ int main(void)
 				print_acc = true;
 			//if (macc > 10 * 60.0f) calc_acc = false;
 
-			qg_font_write_format(font, 0, 50, "E: %.2f", eacc);
-			qg_font_write_format(font, 0, 80, "T: %.2f", macc);
-			qg_font_write_format(font, 0, 120, "D: %.2f / %04d-%02d-%02d %02d:%02d:%02d.%03d",
+			qg_draw_text_format(0, 50, "E: %.2f", eacc);
+			qg_draw_text_format(0, 80, "T: %.2f", macc);
+			qg_draw_text_format(0, 120, "D: %.2f / %04d-%02d-%02d %02d:%02d:%02d.%03d",
 				eacc - macc,
 				ldt.year, ldt.month, ldt.day, ldt.hour, ldt.minute, ldt.second, ldt.millisecond);
 
@@ -112,7 +105,6 @@ int main(void)
 		}
 	}
 
-	qn_unload(font);
 	qn_unload(tex_autumn);
 	qn_unload(tex_puru);
 	qg_close_rdh();

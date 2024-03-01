@@ -313,28 +313,28 @@ bool qg_mesh_build(QgMesh* self)
 		QgLayoutInput* input = &self->layout.inputs[i];
 		if ((size_t)input->stage >= QGLOS_MAX_VALUE)
 		{
-			qn_mesgf(true, VAR_CHK_NAME, "invalid layout stage: %d", input->stage);
+			qn_mesgfb(VAR_CHK_NAME, "invalid layout stage: %d", input->stage);
 			return false;
 		}
 		if ((size_t)input->format >= QGLOT_MAX_VALUE)
 		{
-			qn_mesgf(true, VAR_CHK_NAME, "invalid layout format: %d", input->format);
+			qn_mesgfb(VAR_CHK_NAME, "invalid layout format: %d", input->format);
 			return false;
 		}
 		if ((size_t)input->usage >= QGLOU_MAX_VALUE)
 		{
-			qn_mesgf(true, VAR_CHK_NAME, "invalid layout usage: %d", input->usage);
+			qn_mesgfb(VAR_CHK_NAME, "invalid layout usage: %d", input->usage);
 			return false;
 		}
 		byte format = lu_formats[input->usage];
 		if (format == 0)
 		{
-			qn_mesgf(true, VAR_CHK_NAME, "layout not support: %d", input->usage);
+			qn_mesgfb(VAR_CHK_NAME, "layout not support: %d", input->usage);
 			return false;
 		}
 		if (input->format != format)
 		{
-			qn_mesgf(true, VAR_CHK_NAME, "layout format not match: %d (need: %d)", input->format, format);
+			qn_mesgfb(VAR_CHK_NAME, "layout format not match: %d (need: %d)", input->format, format);
 			return false;
 		}
 
