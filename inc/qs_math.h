@@ -1092,7 +1092,9 @@ QN_CONST_ANY QmVecU QMCONST_S1000 = { { 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00
 QN_CONST_ANY QmVecU QMCONST_S0100 = { { 0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000 } };
 QN_CONST_ANY QmVecU QMCONST_S0010 = { { 0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000 } };
 QN_CONST_ANY QmVecU QMCONST_S0001 = { { 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF } };
+QN_CONST_ANY QmVecU QMCONST_S0111 = { { 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF } };
 QN_CONST_ANY QmVecU QMCONST_S1100 = { { 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000 } };
+QN_CONST_ANY QmVecU QMCONST_S1101 = { { 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF } };
 QN_CONST_ANY QmVecU QMCONST_S1110 = { { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000 } };
 QN_CONST_ANY QmVecU QMCONST_S1011 = { { 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF } };
 QN_CONST_ANY QmVecU QMCONST_MSB = { { 0x80000000, 0x80000000, 0x80000000, 0x80000000 } };
@@ -1203,6 +1205,32 @@ INLINE QMVEC QM_VECTORCALL qm_vec_pmt(const QMVEC a, const QMVEC b, uint32_t px,
 	return v.s;
 #endif
 }
+
+#ifdef QM_USE_AVX
+#define qm_vec_pmt_mask(ret,a,b,mask,s)\
+	do{\
+		QMVEC s1 = _MM_PERMUTE_PS(a, s);\
+		QMVEC s2 = _MM_PERMUTE_PS(b, s);\
+		QMVEC m1 = _mm_andnot_ps(mask, s1);\
+		QMVEC m2 = _mm_and_ps(mask, s2);\
+		ret = _mm_or_ps(m1, m2);\
+	} while (0)
+#define qm_vec_pmt_anao(ret,a,b,s,hx,hy,hz,hw)\
+	do{\
+		if (!hx && !hy && !hz && !hw)		/*false,false,false,false*/\
+			ret = _MM_PERMUTE_PS(a, s);\
+		else if (hx && hy && hz && hw)		/*true, true, true, true*/\
+			ret = _MM_PERMUTE_PS(b, s);\
+		else if (!hx && !hy && hz && hw)	/*false,false,true, true*/\
+			ret = _mm_shuffle_ps(a, b, s);\
+		else if (hx && hy && !hz && !hw)	/*true, true,false,false*/\
+			ret = _mm_shuffle_ps(a, b, s);\
+		else {\
+			const QmVecU mask = { { hx ? 0xFFFFFFFF : 0, hy ? 0xFFFFFFFF : 0, hz ? 0xFFFFFFFF : 0, hw ? 0xFFFFFFFF : 0 } };\
+			qm_vec_pmt_mask(ret, a, b, mask.s, s);\
+		}\
+	} while (0)
+#endif
 
 //
 INLINE QMVEC QM_VECTORCALL qm_vec_bit_shl(const QMVEC a, const QMVEC b, uint32_t e)
@@ -2525,11 +2553,13 @@ INLINE void QM_VECTORCALL qm_vec_simd_sincos(const QMVEC v, QMVEC* ret_sin, QMVE
 #if defined _MSC_VER && defined QM_USE_AVX
 	*ret_sin = _mm_sincos_ps(ret_cos, v);
 #else
-	const float x = qm_vec_get_x(v);
-	const float s = sinf(x);
-	const float c = cosf(x);
-	*ret_sin = (QMVEC){ { s, s, s, s } };
-	*ret_cos = (QMVEC){ { c, c, c, c } };
+	float sx, cx, sy, cy, sz, cz, sw, cw;
+	qm_sincosf(qm_vec_get_x(v), &sx, &cx);
+	qm_sincosf(qm_vec_get_y(v), &sy, &cy);
+	qm_sincosf(qm_vec_get_z(v), &sz, &cz);
+	qm_sincosf(qm_vec_get_w(v), &sw, &cw);
+	*ret_sin = (QMVEC){ { sx, sy, sz, sw } };
+	*ret_cos = (QMVEC){ { cx, cy, cz, cw } };
 #endif
 }
 
@@ -3671,29 +3701,28 @@ INLINE QMVEC QM_VECTORCALL qm_quat_barycentric(const QMVEC q1, const QMVEC q2, c
 /// @brief 벡터로 회전 (롤/피치/요)
 INLINE QMVEC QM_VECTORCALL qm_quat_rot_vec(const QMVEC rot3)
 {
-#ifdef QM_USE_AVX
+#if defined QM_USE_AVX && false
 	static const QmVec4 sign = { { 1.0f, -1.0f, -1.0f, 1.0f } };
 	QMVEC s, c;
 	qm_vec_simd_sincos(_mm_mul_ps(rot3, QMCONST_HALF.s), &s, &c);
-	QMVEC p0 = _MM_PERMUTE_PS(s, _MM_SHUFFLE(0, 0, 0, 0));
-	QMVEC y0 = _MM_PERMUTE_PS(s, _MM_SHUFFLE(1, 1, 1, 1));
-	QMVEC r0 = _MM_PERMUTE_PS(s, _MM_SHUFFLE(2, 2, 2, 2));
-	QMVEC p1 = _MM_PERMUTE_PS(c, _MM_SHUFFLE(0, 0, 0, 0));
-	QMVEC y1 = _MM_PERMUTE_PS(c, _MM_SHUFFLE(1, 1, 1, 1));
-	QMVEC r1 = _MM_PERMUTE_PS(c, _MM_SHUFFLE(2, 2, 2, 2));
+	QMVEC p0, y0, r0, p1, y1, r1;
+	qm_vec_pmt_mask(p0, s, c, QMCONST_S0111.s, (_MM_SHUFFLE(0, 0, 0, 0)));
+	qm_vec_pmt_mask(y0, s, c, QMCONST_S1011.s, (_MM_SHUFFLE(1, 1, 1, 1)));
+	qm_vec_pmt_mask(r0, s, c, QMCONST_S1101.s, (_MM_SHUFFLE(2, 2, 2, 2)));
+	qm_vec_pmt_mask(p1, s, c, QMCONST_S0111.s, (_MM_SHUFFLE(0, 0, 0, 0)));
+	qm_vec_pmt_mask(y1, s, c, QMCONST_S1011.s, (_MM_SHUFFLE(1, 1, 1, 1)));
+	qm_vec_pmt_mask(r1, s, c, QMCONST_S1101.s, (_MM_SHUFFLE(2, 2, 2, 2)));
 	QMVEC o = _mm_mul_ps(p1, sign.s);
 	QMVEC z = _mm_mul_ps(p0, y0);
 	return _MM_FMADD_PS(_mm_mul_ps(o, y1), r1, _mm_mul_ps(z, r0));
 #else
-	float rs, rc, ps, pc, ys, yc;
-	qm_sincosf(qm_vec_get_x(rot3) * 0.5f, &rs, &rc);
-	qm_sincosf(qm_vec_get_y(rot3) * 0.5f, &ps, &pc);
-	qm_sincosf(qm_vec_get_z(rot3) * 0.5f, &ys, &yc);
-	const float pcyc = pc * yc;
-	const float psyc = ps * yc;
-	const float pcys = pc * ys;
-	const float psys = ps * ys;
-	return qm_vec(rs * pcyc - rc * psys, rc * psyc + rs * pcys, rc * pcys + rs * psyc, rc * pcyc + rs * psys);
+	QmVec4 s, c;
+	qm_vec_simd_sincos(qm_vec_mul(rot3, QMCONST_HALF.s), &s.s, &c.s);
+	const float pcyc = c.Y * c.Z;
+	const float psyc = s.Y * c.Z;
+	const float pcys = c.Y * s.Z;
+	const float psys = s.Y * s.Z;
+	return qm_vec(s.X * pcyc - c.X * psys, c.X * psyc + s.X * pcys, c.X * pcys + s.X * psyc, c.X * pcyc + s.X * psys);
 #endif
 }
 

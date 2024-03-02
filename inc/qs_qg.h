@@ -769,15 +769,15 @@ typedef struct QGLAYOUTINPUT
 /// @brief 레이아웃 데이터
 typedef struct QGLAYOUTDATA
 {
-	QgLayoutInput*		inputs;								///	@brief 요소 데이터 포인트
 	size_t				count;								/// @brief 요소 갯수
+	QgLayoutInput*		inputs;								///	@brief 요소 데이터 포인트
 } QgLayoutData;
 
 /// @brief 코드 데이터
 typedef struct QGCODEDATA
 {
-	void*				code;								/// @brief 코드 데이터
 	size_t				size;								/// @brief 코드 크기 (텍스트 타입이면 반드시 0이어야 한다!)
+	void*				code;								/// @brief 코드 데이터
 } QgCodeData;
 
 /// @brief 세이더 속성
@@ -1229,9 +1229,21 @@ QSAPI void qg_set_aspect(const int width, const int height);
 /// @brief 스터브 크기를 얻는다
 QSAPI void qg_get_size(_Out_ QmSize* size);
 
+/// @brief 프로그램 종료 키를 설정한다
+/// @param key 종료 키
+QSAPI void qg_set_exit_key(QikKey key);
+
+/// @brief 풀스크린 키를 설정한다
+/// @param key 풀스크린 키
+QSAPI void qg_set_fullscreen_key(QikKey key);
+
 /// @brief 스터브 루프를 처리한다
 /// @return 거짓이면 프로그램을 종료한다
 QSAPI bool qg_loop(void);
+
+/// @brief 스터브 루프를 처리하면서 이벤트를 처리한다
+/// @return 거짓이면 프로그램을 종료한다
+QSAPI bool qg_loop_dispatch(void);
 
 /// @brief 스터브 이벤트를 폴링한다
 /// @param[out] ev 폴링한 이벤트를 반환
@@ -1567,6 +1579,16 @@ struct QGRENDERSTATE
 /// @return 만들어진 렌더 파이프라인
 QSAPI QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgPropShader* shader);
 
+/// @brief 렌더 파이프라인을 만든다
+/// @param name 렌더 이름 (이름을 지정하면 캐시한다)
+/// @param render 렌더 파이프라인 속성
+/// @param layout 레이아웃 속성
+/// @param mount 마운트 번호
+/// @param vsfile 정점 세이더 파일
+/// @param psfile 픽셀 세이더 파일
+/// @return 만들어진 렌더 파이프라인
+QSAPI QgRenderState* qg_create_render_state_vsps(const char* name, const QgPropRender* render, const QgLayoutData* layout, int mount, const char* vsfile, const char* psfile);
+
 
 /// @brief 텍스쳐
 struct QGTEXTURE
@@ -1854,6 +1876,9 @@ QSAPI void qg_dpct_draw(QNGAM dpct);
 QSAPI void qg_dpct_set_loc(QNGAM dpct, const QMVEC* loc);
 QSAPI void qg_dpct_set_rot(QNGAM dpct, const QMVEC* rot);
 QSAPI void qg_dpct_set_scl(QNGAM dpct, const QMVEC* scl);
+QSAPI void qg_dpct_set_loc_param(QNGAM dpct, float x, float y, float z);
+QSAPI void qg_dpct_set_rot_param(QNGAM dpct, float x, float y, float z, float w);
+QSAPI void qg_dpct_set_scl_param(QNGAM dpct, float x, float y, float z);
 QSAPI void qg_dpct_set_name(QNGAM dpct, const char* name);
 QSAPI void qg_dpct_update_tm(QNGAM dpct);
 

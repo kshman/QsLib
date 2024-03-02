@@ -411,6 +411,8 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 
 	// ㅇㅋ
 	stub_system_update_bound();
+	// 진짜 종횡비 넣기
+	wStub.base.aspect = qm_size_get_aspect(wStub.base.client_size);
 
 	return true;
 }
@@ -588,6 +590,10 @@ void stub_system_update_bound(void)
 
 	GetClientRect(wStub.hwnd, &rect);
 	wStub.base.client_size = qm_size(rect.right - rect.left, rect.bottom - rect.top);
+
+	// 진짜 종횡비
+	if (QN_TMASK(wStub.base.features, QGFEATURE_ENABLE_ASPECT) == false)
+		wStub.base.aspect = qm_size_get_aspect(wStub.base.client_size);
 }
 
 //
@@ -693,11 +699,11 @@ static void windows_rect_aspect(RECT* rect, int edge)
 	windows_rect_adjust(&offset, 0, 0,
 		GetDpiForWindow ? GetDpiForWindow(wStub.hwnd) : USER_DEFAULT_SCREEN_DPI);
 	if (edge == WMSZ_LEFT || edge == WMSZ_BOTTOMLEFT || edge == WMSZ_RIGHT || edge == WMSZ_BOTTOMRIGHT)
-		rect->bottom = rect->top + offset.Height + (int)((float)(rect->right - rect->left - offset.Width) * wStub.base.aspect);
+		rect->bottom = rect->top + offset.Height + (int)((float)(rect->right - rect->left - offset.Width) / wStub.base.aspect);
 	else if (edge == WMSZ_TOPLEFT || edge == WMSZ_TOPRIGHT)
-		rect->top = rect->bottom - offset.Height - (int)((float)(rect->right - rect->left - offset.Width) * wStub.base.aspect);
+		rect->top = rect->bottom - offset.Height - (int)((float)(rect->right - rect->left - offset.Width) / wStub.base.aspect);
 	else if (edge == WMSZ_TOP || edge == WMSZ_BOTTOM)
-		rect->right = rect->left + offset.Height + (int)((float)(rect->bottom - rect->top - offset.Width) / wStub.base.aspect);
+		rect->right = rect->left + offset.Height + (int)((float)(rect->bottom - rect->top - offset.Width) * wStub.base.aspect);
 }
 
 // 키 후킹 콜백

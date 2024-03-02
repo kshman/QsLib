@@ -42,6 +42,8 @@ typedef struct STUBBASE
 	QgUimKey			key;
 	QgUimMouse			mouse;
 	StubMonitorCtnr		monitors;
+	QikKey				key_exit;
+	QikKey				key_fullscreen;
 
 	StubListEventCb		callbacks;
 #ifdef _QN_EMSCRIPTEN_

@@ -318,7 +318,7 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 	stub->features = QGFEATURE_NONE;				// 나중에 설정해야 하므로 NONE
 	stub->stats = QGSST_ACTIVE | QGSST_CURSOR;		// 기본으로 활성 상태랑 커서는 켠다
 
-	stub->aspect = 9.0f / 16.0f;
+	stub->aspect = 16.0f / 9.0f;
 
 	stub->timer = qn_create_timer();
 	if (QN_TMASK(flags, QGFLAG_VSYNC) == false)
@@ -327,6 +327,10 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 
 	stub->mouse.lim.move = 10 * 10 + 10 * 10;		// 제한 이동 거리(포인트)의 제곱
 	stub->mouse.lim.tick = 500;						// 제한 클릭 시간(밀리초)
+
+#ifdef _DEBUG
+	stub->key_exit = QIK_ESC;
+#endif
 
 	monitor_ctnr_init(&stub->monitors, 0);
 	eventcb_list_init(&stub->callbacks);
@@ -645,6 +649,18 @@ void qg_get_size(_Out_ QmSize* size)
 }
 
 //
+void qg_set_exit_key(QikKey key)
+{
+	qg_instance_stub->key_exit = key;
+}
+
+//
+void qg_set_fullscreen_key(QikKey key)
+{
+	qg_instance_stub->key_fullscreen = key;
+}
+
+//
 int qg_left_events(void)
 {
 	return (int)(event_lnode_count(&shed_event.queue) + event_lnode_count(&shed_event.prior));
@@ -696,6 +712,21 @@ bool qg_loop(void)
 	if (qg_instance_rdh)
 		rdh_internal_invoke_reset();
 
+	if (stub->key_exit != QIK_NONE && stub->key.key[stub->key_exit])
+	{
+		qg_exit_loop();
+		return false;
+	}
+
+	return true;
+}
+
+//
+bool qg_loop_dispatch(void)
+{
+	if (qg_loop() == false)
+		return false;
+	qg_dispatch();
 	return true;
 }
 
@@ -1842,6 +1873,47 @@ QgRenderState* qg_create_render_state(const char* name, const QgPropRender* rend
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
 	return qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, shader);
+}
+
+//
+QgRenderState* qg_create_render_state_vsps(const char* name, const QgPropRender* render, const QgLayoutData* layout, int mount, const char* vsfile, const char* psfile)
+{
+	VAR_CHK_IF_NULL(render, NULL);
+	VAR_CHK_IF_MAX3(render, rasterizer, fill, QGFILL_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX3(render, rasterizer, cull, QGCULL_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, depth, QGDEPTH_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, stencil, QGSTENCIL_MAX_VALUE, NULL);
+	VAR_CHK_IF_ZERO3(render, format, count, NULL);
+	VAR_CHK_IF_MAX3(render, format, count, QGRVS_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, topology, QGTPG_MAX_VALUE, NULL);
+
+	VAR_CHK_IF_NULL2(layout, inputs, NULL);
+	VAR_CHK_IF_ZERO2(layout, count, NULL);
+
+	int size;
+	QgPropShader shader;
+	shader.layout.count = layout->count;
+	shader.layout.inputs = layout->inputs;
+	shader.vertex.code = qn_file_alloc(qg_get_mount(mount), vsfile, &size);
+	shader.vertex.size = (size_t)size;
+	shader.pixel.code = qn_file_alloc(qg_get_mount(mount), psfile, &size);
+	shader.pixel.size = (size_t)size;
+	if (shader.vertex.code == NULL || shader.pixel.code == NULL)
+	{
+		qn_free(shader.vertex.code);
+		qn_free(shader.pixel.code);
+		return NULL;
+	}
+	((char*)shader.vertex.code)[shader.vertex.size] = '\0';
+	((char*)shader.pixel.code)[shader.pixel.size] = '\0';
+
+	RdhBase* rdh = RDH;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	QgRenderState* rs = qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, &shader);
+	qn_free(shader.vertex.code);
+	qn_free(shader.pixel.code);
+	return rs;
 }
 
 //

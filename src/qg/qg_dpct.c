@@ -88,6 +88,27 @@ void qg_dpct_set_scl(QNGAM dpct, const QMVEC* scl)
 }
 
 //
+void qg_dpct_set_loc_param(QNGAM dpct, float x, float y, float z)
+{
+	QMVEC v = qm_vec(x, y, z, 1.0f);
+	qg_dpct_set_loc(dpct, &v);
+}
+
+//
+void qg_dpct_set_rot_param(QNGAM dpct, float x, float y, float z, float w)
+{
+	QMVEC v = qm_vec(x, y, z, w);
+	qg_dpct_set_rot(dpct, &v);
+}
+
+//
+void qg_dpct_set_scl_param(QNGAM dpct, float x, float y, float z)
+{
+	QMVEC v = qm_vec(x, y, z, 1.0f);
+	qg_dpct_set_scl(dpct, &v);
+}
+
+//
 void qg_dpct_set_name(QNGAM dpct, const char* name)
 {
 	QgDpct* self = qn_cast_type(dpct, QgDpct);

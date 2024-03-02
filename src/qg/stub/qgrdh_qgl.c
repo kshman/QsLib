@@ -696,7 +696,7 @@ static void qgl_rdh_reset(void)
 	// 평면용 렌더 스테이트 => 한번만 만들어도 됨
 	if (res->ortho_render == NULL)
 	{
-		const QgPropShader shader_ortho = { { inputs_ortho, QN_COUNTOF(inputs_ortho) }, { vs_ortho, 0 }, { ps_ortho, 0 } };
+		const QgPropShader shader_ortho = { { QN_COUNTOF(inputs_ortho), inputs_ortho }, { 0, vs_ortho }, { 0, ps_ortho } };
 		res->ortho_render = (QglRenderState*)qg_create_render_state("qg_ortho", &render_ortho, &shader_ortho);
 		qn_unload(res->ortho_render);
 	}
@@ -704,7 +704,7 @@ static void qgl_rdh_reset(void)
 	// 평면용 글자 스테이트 => 한번만 만들어도 됨
 	if (res->ortho_glyph == NULL)
 	{
-		const QgPropShader shader_glyph = { { inputs_ortho, QN_COUNTOF(inputs_ortho) }, { vs_ortho, 0 }, { ps_glyph, 0 } };
+		const QgPropShader shader_glyph = { { QN_COUNTOF(inputs_ortho), inputs_ortho }, { 0, vs_ortho }, { 0, ps_glyph } };
 		res->ortho_glyph = (QglRenderState*)qg_create_render_state("qg_glyph", &render_ortho, &shader_glyph);
 		qn_unload(res->ortho_glyph);
 	}
@@ -1669,7 +1669,12 @@ static QglBatchItemOrtho* qgl_batch_ortho_item(QglBatchStream* batch)
 {
 	QglBatchOrtho* self = (QglBatchOrtho*)batch;
 	if (self->base.index == QGL_MAX_BATCH_ITEM)
+	{
 		qgl_batch_ortho_flush(batch);
+#ifdef __INTELLISENSE__ 
+		self->base.index = 0;
+#endif
+	}
 
 	const size_t index = self->base.index++;
 	QglBatchItemOrtho* item = self->ptrs[index] = &self->items[index];

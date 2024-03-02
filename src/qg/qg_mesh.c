@@ -37,7 +37,22 @@
 static void _mesh_draw(QnGam g)
 {
 	QgMesh* self = qn_cast_type(g, QgMesh);
-	(void)self;
+	size_t i;
+
+	qg_set_world(&self->base.trfm.mcalc.s);
+
+	for (i = 0; i < QGLOS_MAX_VALUE; i++)
+	{
+		if (self->vbuffers[i] != NULL)
+			qg_set_vertex(i, self->vbuffers[i]);
+	}
+	if (self->ibuffer == NULL)
+		qg_draw(QGTPG_TRI, self->mesh.vertices);
+	else
+	{
+		qg_set_index(self->ibuffer);
+		qg_draw_indexed(QGTPG_TRI, self->mesh.polygons * 3);
+	}
 }
 
 // 메시 제거
@@ -128,9 +143,14 @@ bool qg_mesh_gen_cube(QgMesh* self, float width, float height, float depth)
 
 	for (int i = 0; i < vertex_count; i++)
 	{
-		pos[i] = (QmFloat3){ mesh->points[i * 3 + 0], mesh->points[i * 3 + 1], mesh->points[i * 3 + 2] };
-		norm[i] = (QmFloat3){ mesh->normals[i * 3 + 0], mesh->normals[i * 3 + 1], mesh->normals[i * 3 + 2] };
-		coord[i] = (QmFloat2){ mesh->tcoords[i * 2 + 0], mesh->tcoords[i * 2 + 1] };
+		PAR_SHAPES_T p0 = mesh->triangles[i] * 3 + 0;
+		PAR_SHAPES_T p1 = mesh->triangles[i] * 3 + 1;
+		PAR_SHAPES_T p2 = mesh->triangles[i] * 3 + 2;
+		pos[i] = (QmFloat3){ mesh->points[p0], mesh->points[p1], mesh->points[p2] };
+		norm[i] = (QmFloat3){ mesh->normals[p0], mesh->normals[p1], mesh->normals[p2] };
+		PAR_SHAPES_T t0 = mesh->triangles[i] * 2 + 0;
+		PAR_SHAPES_T t1 = mesh->triangles[i] * 2 + 1;
+		coord[i] = (QmFloat2){ mesh->tcoords[t0], mesh->tcoords[t1] };
 	}
 
 	par_shapes_free_mesh(mesh);
