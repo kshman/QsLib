@@ -19,7 +19,6 @@ int main(void)
 	const QMVEC bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
 	qg_set_background(&bgc);
 	qg_fuse(0, NULL, true, true);
-	//qg_load_def_font(0, "/font/kopubs_l.hxn");
 
 	QgCamera* cam = qg_create_camera();
 
@@ -40,7 +39,7 @@ int main(void)
 	qg_mesh_build(mesh);
 	qg_dpct_set_loc_param(mesh, 0.0f, 0.0f, 8.0f);
 
-	static VertexType vertices[] =
+	static VertexType vertices[] = 
 	{
 		{ { 0.0f, 1.0f, 5.0f }, 0xFFFF0000 },
 		{ { 1.0f, -1.0f, 5.0f}, 0xFF00FF00 },

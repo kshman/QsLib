@@ -379,8 +379,8 @@ typedef enum QGFONTFLAG
 {
 	QGFONTF_NONE = 0,
 
-	QGFONTTYPE_HXN = QN_BIT(16),
-	QGFONTTYPE_BITMAP = QN_BIT(17),
+	QGFONTTYPE_JOHAB = QN_BIT(16),
+	QGFONTTYPE_ATLAS = QN_BIT(17),
 	QGFONTTYPE_TRUETYPE = QN_BIT(18),
 } QgFontFlag;
 
@@ -1636,7 +1636,7 @@ struct QGIMAGE
 	int					height;
 	int					pitch;
 	int					mipmaps;
-	byte*				data;
+	int					extra;
 };
 
 /// @brief 빈 이미지를 만든다
@@ -1729,20 +1729,18 @@ QN_DECL_VTABLE(QGFONT)
 /// @brief 글꼴을 만든다
 /// @param mount 마운트 번호
 /// @param filename 파일 이름
-/// @param font_base_size 기본 글꼴 크기
 /// @param cjk 트루타입이 아닐 경우 이미지의 CJK 마스크 (0x01: 한글, 0x02: 중국어, 0x04: 일본어)
 /// @return 만들어진 글꼴
-QSAPI QgFont* qg_load_font(int mount, const char* filename, int font_base_size, int cjk);
+QSAPI QgFont* qg_load_font(int mount, const char* filename, int cjk);
 
 /// @brief 글꼴을 버퍼에서 만든다
 /// @param name 글꼴 이름
 /// @param data 글꼴 데이터
 /// @param data_size 글꼴 데이터 크기
-/// @param font_base_size 기본 글꼴 크기
 /// @param cjk 트루타입이 아닐 경우 이미지의 CJK 마스크 (0x01: 한글, 0x02: 중국어, 0x04: 일본어)
 /// @return 만들어진 글꼴
 /// @warning 글꼴 데이터는 글꼴이 관리하기 때문에 해제하면 안된다. 임시 메모리를 전달해도 안되며 반드시 할당한 데이터 일 것
-QSAPI QgFont* qg_load_font_buffer(void* data, int data_size, int font_base_size, int cjk);
+QSAPI QgFont* qg_load_font_buffer(void* data, int data_size, int cjk);
 
 /// @brief 글꼴을 버퍼에서 추가한다
 /// @param font 글꼴
@@ -1812,9 +1810,8 @@ QSAPI void qg_font_write_format(QgFont* self, int x, int y, const char* fmt, ...
 /// @brief 기본 글꼴을 로드한다
 /// @param mount 마운트 번호
 /// @param filename 글꼴 파일 이름
-/// @param font_base_size 기본 글꼴 크기
 /// @return 로드에 성공하면 참
-QSAPI bool qg_load_def_font(int mount, const char* filename, int font_base_size);
+QSAPI bool qg_load_def_font(int mount, const char* filename);
 
 /// @brief 기본 글꼴을 얻는다
 /// @return 기본 글꼴

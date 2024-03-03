@@ -1920,7 +1920,6 @@ QgRenderState* qg_create_render_state_vsps(const char* name, const QgPropRender*
 QgTexture* qg_create_texture(const char* name, const QgImage* image, QgTexFlag flags)
 {
 	VAR_CHK_IF_NULL(image, NULL);
-	VAR_CHK_IF_NULL2(image, data, NULL);
 
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
@@ -1935,7 +1934,6 @@ QgTexture* qg_load_texture(int mount, const char* filename, QgTexFlag flags)
 
 	QgImage* image = qg_load_image(mount, filename);
 	VAR_CHK_IF_NULL(image, NULL);
-	VAR_CHK_IF_NULL2(image, data, NULL);
 
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
@@ -1944,9 +1942,9 @@ QgTexture* qg_load_texture(int mount, const char* filename, QgTexFlag flags)
 }
 
 //
-bool qg_load_def_font(int mount, const char* filename, int font_base_size)
+bool qg_load_def_font(int mount, const char* filename)
 {
-	QgFont* font = qg_load_font(mount, filename, font_base_size, 0x1);
+	QgFont* font = qg_load_font(mount, filename, 0x1);
 	qn_return_when_fail(font != NULL, false);
 
 	qn_unload(RDH->font);

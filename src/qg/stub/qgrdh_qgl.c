@@ -13,11 +13,11 @@
 // 오픈GL 컨피그 + 도움꾼
 
 #ifdef _DEBUG
-#define GLDEBUG(x)				QN_STMT_BEGIN{ x; GLenum err = glGetError(); if (err != GL_NO_ERROR) qn_mesgfb(VAR_CHK_NAME, "GL Error: %d(%X)", err, err); }QN_STMT_END
+#define GLDEBUG(x)				QN_STMT_BEGIN{ x; GLenum err = glGetError(); if (err != GL_NO_ERROR) qn_mesgfb(VAR_CHK_NAME, "GL Error: %d(%X) [%u]", err, err, __LINE__); }QN_STMT_END
 #else
 #define GLDEBUG(x)				x
 #endif
-#define GLCHECK(x,action,ret)	QN_STMT_BEGIN{ x; GLenum err = glGetError(); if (err != GL_NO_ERROR) { qn_mesgfb(VAR_CHK_NAME, "GL Error: %d(%X)", err, err); action; return ret; } }QN_STMT_END
+#define GLCHECK(x,action,ret)	QN_STMT_BEGIN{ x; GLenum err = glGetError(); if (err != GL_NO_ERROR) { qn_mesgfb(VAR_CHK_NAME, "GL Error: %d(%X) [%u]", err, err, __LINE__); action; return ret; } }QN_STMT_END
 
 #ifndef _QN_EMSCRIPTEN_
 #ifndef _QN_MOBILE_
@@ -677,7 +677,7 @@ static void qgl_rdh_reset(void)
 		"varying vec4 vColor;" \
 		"void main()" \
 		"{" \
-		"	float a = texture2D(Texture, vCoord).r;"\
+		"	float a = texture2D(Texture, vCoord).a;"\
 		"	gl_FragColor = vec4(vColor.bgr, vColor.a * a);" \
 		"}";
 	static QgLayoutInput inputs_ortho[] =
@@ -2414,26 +2414,26 @@ static QgTexture* qgl_create_texture(const char* name, const QgImage* image, QgT
 	ss->texture.target[0] = GL_TEXTURE_2D;
 
 	int mip_count;
+	byte* buffer= qn_get_gam_pointer(image);
 	if (gl_enum.format != GL_NONE)
 	{
 		// 그냥 이미지. 밉맵은 없을 것이다
 		qn_debug_verify(image->mipmaps == 1);
 		mip_count = 1;
-		GLCHECK(glTexImage2D(GL_TEXTURE_2D, 0, gl_enum.ifmt, image->width, image->height, 0, gl_enum.format, gl_enum.type, image->data),
+		GLCHECK(glTexImage2D(GL_TEXTURE_2D, 0, gl_enum.ifmt, image->width, image->height, 0, gl_enum.format, gl_enum.type, buffer),
 			glDeleteTextures(1, &gl_id), NULL);
 	}
 	else
 	{
 		// 압축 이미지
-		const byte* mip_data = image->data;
 		int mip_width = image->width, mip_height = image->height;
 		mip_count = image->mipmaps;
 		for (int i = 0; i < mip_count; i++)
 		{
 			const size_t mip_size = qg_calc_image_block_size(&image->prop, mip_width, mip_height);
-			GLCHECK(glCompressedTexImage2D(GL_TEXTURE_2D, i, gl_enum.ifmt, mip_width, mip_height, 0, (GLsizei)mip_size, mip_data),
+			GLCHECK(glCompressedTexImage2D(GL_TEXTURE_2D, i, gl_enum.ifmt, mip_width, mip_height, 0, (GLsizei)mip_size, buffer),
 				glDeleteTextures(1, &gl_id), NULL);
-			mip_data += mip_size;
+			buffer += mip_size;
 			mip_width = qm_maxi(mip_width >> 1, 1);
 			mip_height = qm_maxi(mip_height >> 1, 1);
 		}
