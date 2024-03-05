@@ -507,7 +507,7 @@ QgImage* qg_create_image_filled(int width, int height, const QMVEC* color)
 	QgImage* self = qg_create_image(QGCF_R8G8B8A8, width, height);
 	QmKolor* data = qn_get_gam_pointer(self);
 	QmKolor c;
-	qm_vec_st_kolor(&c, *color);
+	qm_vec_to_kolor(*color, &c);
 	for (int i = 0; i < width * height; i++)
 		data[i] = c;
 	return self;
@@ -526,7 +526,7 @@ QgImage* qg_create_image_gradient_linear(int width, int height, const QMVEC* beg
 		{
 			const float f = qm_clampf(((float)x * cs + (float)y * sn) / ((float)width * cs + (float)height * cs), 0.0f, 1.0f);
 			const QMVEC c = qm_lerp(*begin, *end, f);
-			qm_vec_st_kolor(&data[y * width + x], c);
+			qm_vec_to_kolor(c, &data[y * width + x]);
 		}
 	}
 	return self;
@@ -547,7 +547,7 @@ QgImage* qg_create_image_gradient_radial(int width, int height, const QMVEC* inn
 			const float h = hypotf((float)x - cx, (float)y - cy);
 			const float m = qm_clampf((h - r * density) / (r * (1.0f - density)), 0.0f, 1.0f);
 			const QMVEC c = qm_lerp(*outer, *inner, m);
-			qm_vec_st_kolor(&data[y * width + x], c);
+			qm_vec_to_kolor(c, &data[y * width + x]);
 		}
 	}
 	return self;
@@ -559,8 +559,8 @@ QgImage* qg_create_image_check_pattern(int width, int height, const QMVEC* odd, 
 	QgImage* self = qg_create_image(QGCF_R8G8B8A8, width, height);
 	QmKolor* data = qn_get_gam_pointer(self);
 	QmKolor oc, ec;
-	qm_vec_st_kolor(&oc, *odd);
-	qm_vec_st_kolor(&ec, *even);
+	qm_vec_to_kolor(*odd, &oc);
+	qm_vec_to_kolor(*even, &ec);
 	for (int y = 0; y < height; y++)
 	{
 		for (int x = 0; x < height; x++)
@@ -652,19 +652,19 @@ bool qg_image_set_pixel(const QgImage* self, int x, int y, const QMVEC* color)
 			((QMVEC*)ptr)[0] = *color;
 			break;
 		case QGCF_R32G32B32F:
-			qm_vec_st_float3((QmFloat3*)ptr, *color);
+			qm_vec_to_float3(*color, (QmFloat3*)ptr);
 			break;
 		case QGCF_R32F:
 			((float*)ptr)[0] = qm_vec_get_x(*color);
 			break;
 		case QGCF_R16G16B16A16F:
-			qm_vec_st_half4((QmHalf4*)ptr, *color);
+			qm_vec_to_half4(*color, (QmHalf4*)ptr);
 			break;
 		case QGCF_R16F:
 			((half_t*)ptr)[0] = qm_f2hf(qm_vec_get_x(*color));
 			break;
 		case QGCF_R11G11B10F:
-			qm_vec_st_f111110((QmF111110*)ptr, *color);
+			qm_vec_to_f111110(*color, (QmF111110*)ptr);
 			break;
 		case QGCF_R16G16B16A16:
 			pixel_color_to_r16_g16_b16_a16((ullong*)ptr, *color);
@@ -673,10 +673,10 @@ bool qg_image_set_pixel(const QgImage* self, int x, int y, const QMVEC* color)
 			((ushort*)ptr)[0] = (ushort)(qm_vec_get_x(*color) * 0xFFFF);
 			break;
 		case QGCF_R10G10B10A2:
-			qm_vec_st_u1010102((QmU1010102*)ptr, *color);
+			qm_vec_to_u1010102(*color, (QmU1010102*)ptr);
 			break;
 		case QGCF_R8G8B8A8:
-			qm_vec_st_kolor((QmKolor*)ptr, *color);
+			qm_vec_to_kolor(*color, (QmKolor*)ptr);
 			break;
 		case QGCF_R8G8B8:
 			pixel_color_to_r8_g8_b8(ptr, *color);
@@ -696,13 +696,13 @@ bool qg_image_set_pixel(const QgImage* self, int x, int y, const QMVEC* color)
 					(byte)(qm_vec_get_x(*color) * 0xFF));
 			break;
 		case QGCF_R5G6B5:
-			qm_vec_st_u565((QmU565*)ptr, *color);
+			qm_vec_to_u565(*color, (QmU565*)ptr);
 			break;
 		case QGCF_R5G5B5A1:
-			qm_vec_st_u5551((QmU5551*)ptr, *color);
+			qm_vec_to_u5551(*color, (QmU5551*)ptr);
 			break;
 		case QGCF_R4G4B4A4:
-			qm_vec_st_u4444((QmU4444*)ptr, *color);
+			qm_vec_to_u4444(*color, (QmU4444*)ptr);
 			break;
 		default:
 			return false;

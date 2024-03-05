@@ -395,6 +395,16 @@ typedef enum QGBATCHCMD
 	QGBTC_MAX_VALE,
 } QgBatchCmd;
 
+/// @brief 카메라
+typedef enum QGCAMERAFLAG
+{
+	QGCAMF_NONE = 0,
+	QGCAMF_LAYOUT = QN_BIT(0),								/// @brief 스터브 레이아웃에 영향
+	QGCAMF_PAUSE = QN_BIT(1),								/// @brief 카메라 포즈
+	QGCAMF_MAYA = QN_BIT(16),								/// @brief 마야 카메라
+	QGCAMF_FPS = QN_BIT(17),								/// @brief FPS 카메라
+} QgCameraFlag;
+
 /// @brief 스터브와 렌더러 만들 때 플래그
 typedef enum QGFLAG
 {
@@ -842,44 +852,6 @@ typedef struct QGVARSHADER
 	QgScType			sctype;								/// @brief 변수 타입
 	QgScAuto			scauto;								/// @brief 자동 타입 또는 사용자 정의 키 값
 } QgVarShader;
-
-/// @brief 프로젝션 파라미터
-typedef struct QGPARAMPROJ
-{
-	float				fov;								/// @brief 시야각
-	float				aspect;								/// @brief 가로 세로 비율
-	float				znear;								/// @brief 가까운 평면
-	float				zfar;								/// @brief 먼 평면
-} QgParamProj;
-
-/// @brief 뷰 파라미터
-typedef struct QGPARAMVIEW
-{
-	QmVec4				eye;								/// @brief 눈 위치
-	QmVec4				at;									/// @brief 바라보는 위치
-	QmVec4				up;									/// @brief 위 방향
-	QmVec4				ahead;								/// @brief 앞 방향
-} QgParamView;
-
-/// @brief 카메라 파라미터
-typedef struct QGPARAMCAMERA
-{
-	QmMat4				proj;								/// @brief 프로젝션 행렬
-	QmMat4				view;								/// @brief 뷰 행렬
-	QmMat4				invv;								/// @brief 역 행렬
-	QmMat4				vipr;								/// @brief 프로젝션 곱하기 뷰 행렬
-
-	QmVec4				rot;								/// @brief 회전
-	float				dist;								/// @brief 거리
-
-	float				spd_move;							/// @brief 이동 속도
-	float				spd_rot;							/// @brief 회전 속도
-
-	uint				use_layout : 1;
-	uint				use_pause : 1;
-	uint				use_maya : 1;
-	uint				__pad : 29;
-} QgParamCamera;
 
 /// @brief 메시 프로퍼티
 typedef struct QGPROPMESH
@@ -1940,9 +1912,31 @@ struct QGCAMERA
 {
 	QN_GAM_BASE(QNGAMBASE);
 
-	QgParamCamera		param;
-	QgParamProj			proj;
-	QgParamView			view;
+	QgCameraFlag		flags;								/// @brief 카메라 플래그
+
+	struct QGCAMERA_PARAM
+	{
+		float			aspect;								/// @brief 종횡비
+		float			fov;								/// @brief 시야각
+		float			znear;								/// @brief 가까운 평면
+		float			zfar;								/// @brief 먼 평면
+
+		float			dist;								/// @brief 카메라와의 거리
+		QmVec4			smove;								/// @brief 이동 속도
+		QmVec4			srot;								/// @brief 회전 속도
+
+		QmVec4			angle;								/// @brief 회전 (roll/pitch/yaw => 벡터3)
+		QmVec4			eye;								/// @brief 시점 (벡터3)
+		QmVec4			at;									/// @brief 시선 (벡터3)
+	}					param;
+
+	struct QGCAMERA_MATRIX
+	{
+		QMMAT				proj;							/// @brief 프로젝션 행렬
+		QMMAT				view;							/// @brief 뷰 행렬
+		QMMAT				invv;							/// @brief 역 행렬
+		QMMAT				vipr;							/// @brief 프로젝션 곱하기 뷰 행렬
+	}					mat;
 };
 
 QN_DECL_VTABLE(QGCAMERA)
@@ -1961,53 +1955,42 @@ QSAPI QgCamera* qg_create_maya_camera(void);
 
 /// @brief 프로젝션 속성을 설정한다
 /// @param self 카메라
+/// @param ascpect 종횡비 (화면 종횡비는 qg_get_aspect() 함수로 가져올 수 있다)
 /// @param fov 시야각
 /// @param znear 가까운 평면
 /// @param zfar 먼 평면
-QSAPI void qg_camera_set_proj(QgCamera* self, float fov, float znear, float zfar);
+QSAPI void qg_camera_set_proj_param(QgCamera* self, float ascpect, float fov, float znear, float zfar);
 
-/// @brief 프로젝션 속성을 설정한다 (추가로 종횡비 설정)
+/// @brief 카메라 위치를 설정한다
 /// @param self 카메라
-/// @param ascpect 종횡비
-/// @param fov 시야각
-/// @param znear 가까운 평면
-/// @param zfar 먼 평면
-QSAPI void qg_camera_set_proj_aspect(QgCamera* self, float ascpect, float fov, float znear, float zfar);
+/// @param pos 위치
+/// @note 기본 카메라는 시점의 위치, 마야 카메라는 시선의	위치를 설정한다
+QSAPI void qg_camera_set_position(QgCamera* self, const QMVEC* pos);
 
-/// @brief 뷰 속성을 설정한다
+/// @brief 카메라 각도를 설정한다
 /// @param self 카메라
-/// @param eye 위치
-/// @param at 시선
-/// @param ahead 앞 방향
-/// @return 마야 카메라를 사용하면 무조건 거짓을 반환한다
-/// @note at과 ahead는 카메라의 위치와 방향을 설정한다
-QSAPI bool qg_camera_set_view(QgCamera* self, const QMVEC* eye, const QMVEC* at, const QMVEC* ahead);
+/// @param angle 각도
+QSAPI void qg_camera_set_angle(QgCamera* self, const QMVEC* angle);
 
 /// @brief 카메라 회전을 설정한다 (마야/FPS 카메라)
 /// @param self 카메라
 /// @param rot 회전
-QSAPI void qg_camera_set_rot(QgCamera* self, const QMVEC* rot);
-
-/// @brief 카메라 회전 속도를 설정한다 (마야/FPS 카메라)
-/// @param self 카메라
-/// @param spd 회전 속도
-QSAPI void qg_camera_set_rot_speed(QgCamera* self, float spd);
+QSAPI void qg_camera_set_angle(QgCamera* self, const QMVEC* angle);
 
 /// @brief 카메라 이동 속도를 설정한다 (마야/FPS 카메라)
 /// @param self 카메라
-/// @param spd 이동 속도
-QSAPI void qg_camera_set_move_speed(QgCamera* self, float spd);
+/// @param sx,sy,sz 각 축에 대한 이동 속도
+QSAPI void qg_camera_set_move_speed(QgCamera* self, float sx, float sy, float sz);
 
-/// @brief 점과 카메라의 거리의 제곱을 얻는다
+/// @brief 카메라 회전 속도를 설정한다 (마야/FPS 카메라)
 /// @param self 카메라
-/// @param pos 점
-/// @return 거리의 제곱
-QSAPI float qg_camera_get_distsq(const QgCamera* self, const QMVEC* pos);
+/// @param sx,sy,sz 각 축에 대한 회전 속도
+QSAPI void qg_camera_set_rot_speed(QgCamera* self, float sx, float sy, float sz);
 
 /// @brief 점과 카메라의 거리를 얻는다
 /// @param self 카메라
 /// @param pos 점
-/// @return 거리
+/// @return 시점과의 거리
 QSAPI float qg_camera_get_dist(const QgCamera* self, const QMVEC* pos);
 
 /// @brief 점을 카메라 공간으로 변환한다

@@ -452,6 +452,16 @@ typedef union QMKOLOR
 	struct { uint8_t B, G, R, A; };
 } QmKolor;
 
+/// @brief 절두체
+typedef union QMFRUSTUM
+{
+	QMVEC f[6];
+	struct
+	{
+		QMVEC Left, Right, Top, Bottom, Near, Far;
+	};
+} QmFrustum;
+
 
 //////////////////////////////////////////////////////////////////////////
 // integer & float
@@ -745,29 +755,29 @@ INLINE QMVEC QM_VECTORCALL qm_vec_set_w(const QMVEC v, float w);
 INLINE bool QM_VECTORCALL qm_vec_eq(const QMVEC left, const QMVEC right);
 INLINE bool QM_VECTORCALL qm_vec_eps(const QMVEC left, const QMVEC right, float epsilon);
 INLINE bool QM_VECTORCALL qm_vec_near(const QMVEC left, const QMVEC right);
-INLINE void QM_VECTORCALL qm_vec_st_float2(QmFloat2* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_float3(QmFloat3* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_float4(QmFloat4* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_int2(QmInt2* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_int3(QmInt3* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_int4(QmInt4* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_uint2(QmUint2* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_uint3(QmUint3* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_uint4(QmUint4* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_ushort2(QmUshort2* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_ushort4(QmUshort4* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_half2(QmHalf2* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_half4(QmHalf4* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_u4444(QmU4444* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_u565(QmU565* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_u5551(QmU5551* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_f111110(QmF111110* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_u1010102(QmU1010102* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_kolor(QmKolor* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_float3a(QmFloat3A* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_float4a(QmFloat4A* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_ushort2n(QmUshort2* p, const QMVEC v);
-INLINE void QM_VECTORCALL qm_vec_st_ushort4n(QmUshort4* p, const QMVEC v);
+INLINE void QM_VECTORCALL qm_vec_to_float2(const QMVEC v, QmFloat2* p);
+INLINE void QM_VECTORCALL qm_vec_to_float3(const QMVEC v, QmFloat3* p);
+INLINE void QM_VECTORCALL qm_vec_to_float4(const QMVEC v, QmFloat4* p);
+INLINE void QM_VECTORCALL qm_vec_to_int2(const QMVEC v, QmInt2* p);
+INLINE void QM_VECTORCALL qm_vec_to_int3(const QMVEC v, QmInt3* p);
+INLINE void QM_VECTORCALL qm_vec_to_int4(const QMVEC v, QmInt4* p);
+INLINE void QM_VECTORCALL qm_vec_to_uint2(const QMVEC v, QmUint2* p);
+INLINE void QM_VECTORCALL qm_vec_to_uint3(const QMVEC v, QmUint3* p);
+INLINE void QM_VECTORCALL qm_vec_to_uint4(const QMVEC v, QmUint4* p);
+INLINE void QM_VECTORCALL qm_vec_to_ushort2(const QMVEC v, QmUshort2* p);
+INLINE void QM_VECTORCALL qm_vec_to_ushort4(const QMVEC v, QmUshort4* p);
+INLINE void QM_VECTORCALL qm_vec_to_half2(const QMVEC v, QmHalf2* p);
+INLINE void QM_VECTORCALL qm_vec_to_half4(const QMVEC v, QmHalf4* p);
+INLINE void QM_VECTORCALL qm_vec_to_u4444(const QMVEC v, QmU4444* p);
+INLINE void QM_VECTORCALL qm_vec_to_u565(const QMVEC v, QmU565* p);
+INLINE void QM_VECTORCALL qm_vec_to_u5551(const QMVEC v, QmU5551* p);
+INLINE void QM_VECTORCALL qm_vec_to_f111110(const QMVEC v, QmF111110* p);
+INLINE void QM_VECTORCALL qm_vec_to_u1010102(const QMVEC v, QmU1010102* p);
+INLINE void QM_VECTORCALL qm_vec_to_kolor(const QMVEC v, QmKolor* p);
+INLINE void QM_VECTORCALL qm_vec_to_float3a(const QMVEC v, QmFloat3A* p);
+INLINE void QM_VECTORCALL qm_vec_to_float4a(const QMVEC v, QmFloat4A* p);
+INLINE void QM_VECTORCALL qm_vec_to_ushort2n(const QMVEC v, QmUshort2* p);
+INLINE void QM_VECTORCALL qm_vec_to_ushort4n(const QMVEC v, QmUshort4* p);
 INLINE void QM_VECTORCALL qm_vec_simd_sincos(const QMVEC v, QMVEC* ret_sin, QMVEC* ret_cos);
 INLINE QMVEC QM_VECTORCALL qm_vec_simd_sqrt(const QMVEC v);
 INLINE QMVEC QM_VECTORCALL qm_vec_simd_rsqrt(const QMVEC v);
@@ -932,8 +942,8 @@ INLINE QMMAT QM_VECTORCALL qm_mat4_inv(const QMMAT m);
 INLINE QMMAT QM_VECTORCALL qm_mat4_scl(float x, float y, float z);
 INLINE QMMAT QM_VECTORCALL qm_mat4_scl_vec3(const QMVEC v);
 INLINE QMMAT QM_VECTORCALL qm_mat4_loc(float x, float y, float z);
-INLINE QMMAT QM_VECTORCALL qm_mat4_loc_vec(const QMVEC v);
-INLINE QMMAT QM_VECTORCALL qm_mat4_rot_rot(const QMVEC axis, float angle);
+INLINE QMMAT QM_VECTORCALL qm_mat4_loc_vec3(const QMVEC v);
+INLINE QMMAT QM_VECTORCALL qm_mat4_rot_axis(const QMVEC axis, float angle);
 INLINE QMMAT QM_VECTORCALL qm_mat4_rot_vec3(const QMVEC rot);
 INLINE QMMAT QM_VECTORCALL qm_mat4_rot_quat(const QMVEC rot);
 INLINE QMMAT QM_VECTORCALL qm_mat4_rot_x(float rot);
@@ -1022,8 +1032,8 @@ INLINE bool qm_rect_eq(const QmRect left, const QmRect right);
 INLINE bool qm_rect_isz(const QmRect pv);
 INLINE void qm_rect_rotate(QmRect rt, float angle, QmVec2* tl, QmVec2* tr, QmVec2* bl, QmVec2* br);
 #ifdef _WINDEF_
-INLINE QmRect qm_rect_win_rect(RECT rt);
-INLINE RECT qm_rect_to_win_rect(const QmRect rt);
+INLINE QmRect qm_rect_RECT(RECT rt);
+INLINE RECT qm_rect_to_RECT(const QmRect rt);
 #endif
 
 
@@ -1382,7 +1392,13 @@ INLINE QMVEC QM_VECTORCALL qm_vec_zero(void)
 /// @brief 1 벡터 얻기
 INLINE QMVEC QM_VECTORCALL qm_vec_one(void)
 {
+#if defined QM_USE_AVX
+	return _mm_set1_ps(1.0f);
+#elif defined QM_USE_NEON
+	return vdupq_n_f32(1.0f);
+#else
 	return QMCONST_ONE.s;
+#endif
 }
 
 /// @brief 모두 같은값으로 채우기
@@ -2037,7 +2053,7 @@ INLINE bool QM_VECTORCALL qm_vec_near(const QMVEC left, const QMVEC right)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_float2(QmFloat2* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_float2(const QMVEC v, QmFloat2* p)
 {
 #if defined QM_USE_AVX
 	_mm_store_sd((double*)p, _mm_castps_pd(v));
@@ -2051,7 +2067,7 @@ INLINE void QM_VECTORCALL qm_vec_st_float2(QmFloat2* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_float3(QmFloat3* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_float3(const QMVEC v, QmFloat3* p)
 {
 #if defined QM_USE_AVX
 	*(int32_t*)&p->X = _mm_extract_ps(v, 0);
@@ -2069,7 +2085,7 @@ INLINE void QM_VECTORCALL qm_vec_st_float3(QmFloat3* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_float4(QmFloat4* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_float4(const QMVEC v, QmFloat4* p)
 {
 #if defined QM_USE_AVX
 	_mm_storeu_ps((float*)p, v);
@@ -2084,7 +2100,7 @@ INLINE void QM_VECTORCALL qm_vec_st_float4(QmFloat4* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_int2(QmInt2* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_int2(const QMVEC v, QmInt2* p)
 {
 #if defined QM_USE_AVX
 	QMVEC w = _mm_cmpgt_ps(v, QMCONST_MAX_INT.s);
@@ -2104,7 +2120,7 @@ INLINE void QM_VECTORCALL qm_vec_st_int2(QmInt2* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_int3(QmInt3* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_int3(const QMVEC v, QmInt3* p)
 {
 #if defined QM_USE_AVX
 	QMVEC w = _mm_cmpgt_ps(v, QMCONST_MAX_INT.s);
@@ -2128,7 +2144,7 @@ INLINE void QM_VECTORCALL qm_vec_st_int3(QmInt3* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_int4(QmInt4* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_int4(const QMVEC v, QmInt4* p)
 {
 #if defined QM_USE_AVX
 	QMVEC w = _mm_cmpgt_ps(v, QMCONST_MAX_INT.s);
@@ -2149,7 +2165,7 @@ INLINE void QM_VECTORCALL qm_vec_st_int4(QmInt4* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_uint2(QmUint2* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_uint2(const QMVEC v, QmUint2* p)
 {
 #if defined QM_USE_AVX
 	QMVEC r = _mm_max_ps(v, QMCONST_ZERO.s);
@@ -2173,7 +2189,7 @@ INLINE void QM_VECTORCALL qm_vec_st_uint2(QmUint2* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_uint3(QmUint3* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_uint3(const QMVEC v, QmUint3* p)
 {
 #if defined QM_USE_AVX
 	QMVEC r = _mm_max_ps(v, QMCONST_ZERO.s);
@@ -2201,7 +2217,7 @@ INLINE void QM_VECTORCALL qm_vec_st_uint3(QmUint3* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_uint4(QmUint4* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_uint4(const QMVEC v, QmUint4* p)
 {
 #if defined QM_USE_AVX
 	QMVEC r = _mm_max_ps(v, QMCONST_ZERO.s);
@@ -2226,7 +2242,7 @@ INLINE void QM_VECTORCALL qm_vec_st_uint4(QmUint4* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_ushort2(QmUshort2* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_ushort2(const QMVEC v, QmUshort2* p)
 {
 #if defined QM_USE_AVX
 	QMIVEC i = _mm_cvtps_epi32(v);
@@ -2243,7 +2259,7 @@ INLINE void QM_VECTORCALL qm_vec_st_ushort2(QmUshort2* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_ushort4(QmUshort4* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_ushort4(const QMVEC v, QmUshort4* p)
 {
 #if defined QM_USE_AVX
 	QMIVEC i = _mm_cvtps_epi32(v);
@@ -2265,7 +2281,7 @@ INLINE void QM_VECTORCALL qm_vec_st_ushort4(QmUshort4* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_half2(QmHalf2* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_half2(const QMVEC v, QmHalf2* p)
 {
 #if defined QM_USE_AVX
 	QMIVEC i = _mm_cvtps_ph(v, _MM_FROUND_TO_NEAREST_INT);
@@ -2277,7 +2293,7 @@ INLINE void QM_VECTORCALL qm_vec_st_half2(QmHalf2* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_half4(QmHalf4* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_half4(const QMVEC v, QmHalf4* p)
 {
 #if defined QM_USE_AVX
 	QMIVEC i = _mm_cvtps_ph(v, _MM_FROUND_TO_NEAREST_INT);
@@ -2291,7 +2307,7 @@ INLINE void QM_VECTORCALL qm_vec_st_half4(QmHalf4* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_u4444(QmU4444* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_u4444(const QMVEC v, QmU4444* p)
 {
 #if defined QM_USE_AVX
 	static const QmVec4 max = { { 15.0f, 15.0f, 15.0f, 15.0f } };
@@ -2312,7 +2328,7 @@ INLINE void QM_VECTORCALL qm_vec_st_u4444(QmU4444* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_u565(QmU565* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_u565(const QMVEC v, QmU565* p)
 {
 #if defined QM_USE_AVX
 	static const QmVec4 max = { { 31.0f, 63.0f, 31.0f, 0.0f } };
@@ -2331,7 +2347,7 @@ INLINE void QM_VECTORCALL qm_vec_st_u565(QmU565* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_u5551(QmU5551* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_u5551(const QMVEC v, QmU5551* p)
 {
 #if defined QM_USE_AVX
 	static const QmVec4 max = { { 31.0f, 31.0f, 31.0f, 1.0f } };
@@ -2352,10 +2368,10 @@ INLINE void QM_VECTORCALL qm_vec_st_u5551(QmU5551* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_f111110(QmF111110* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_f111110(const QMVEC v, QmF111110* p)
 {
 	QM_ALIGN(16) uint32_t i[4];
-	qm_vec_st_float3a((QmFloat3A*)i, v);
+	qm_vec_to_float3a(v, (QmFloat3A*)i);
 	uint32_t res[3], sign, u;
 	for (uint32_t z = 0; z < 2; z++)
 	{
@@ -2414,7 +2430,7 @@ INLINE void QM_VECTORCALL qm_vec_st_f111110(QmF111110* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_u1010102(QmU1010102* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_u1010102(const QMVEC v, QmU1010102* p)
 {
 	const int32_t x = (int32_t)(qm_vec_get_x(v) * 1023) & 0x3FF;
 	const int32_t y = (int32_t)(qm_vec_get_y(v) * 1023) & 0x3FF;
@@ -2424,7 +2440,7 @@ INLINE void QM_VECTORCALL qm_vec_st_u1010102(QmU1010102* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_kolor(QmKolor* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_kolor(const QMVEC v, QmKolor* p)
 {
 #if defined QM_USE_AVX
 	QMVEC h = _mm_mul_ps(v, QMCONST_MAX_UBYTE.s);
@@ -2447,7 +2463,7 @@ INLINE void QM_VECTORCALL qm_vec_st_kolor(QmKolor* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_float3a(QmFloat3A* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_float3a(const QMVEC v, QmFloat3A* p)
 {
 #if defined QM_USE_AVX
 	_mm_store_sd((double*)p, _mm_castps_pd(v));
@@ -2464,7 +2480,7 @@ INLINE void QM_VECTORCALL qm_vec_st_float3a(QmFloat3A* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_float4a(QmFloat4A* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_float4a(const QMVEC v, QmFloat4A* p)
 {
 #if defined QM_USE_AVX
 	_mm_storeu_ps((float*)p, v);
@@ -2480,7 +2496,7 @@ INLINE void QM_VECTORCALL qm_vec_st_float4a(QmFloat4A* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_ushort2n(QmUshort2* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_ushort2n(const QMVEC v, QmUshort2* p)
 {
 #if defined QM_USE_AVX
 	QMVEC r = _mm_add_ps(_mm_mul_ps(v, QMCONST_MAX_USHORT.s), QMCONST_HALF.s);
@@ -2499,7 +2515,7 @@ INLINE void QM_VECTORCALL qm_vec_st_ushort2n(QmUshort2* p, const QMVEC v)
 }
 
 //
-INLINE void QM_VECTORCALL qm_vec_st_ushort4n(QmUshort4* p, const QMVEC v)
+INLINE void QM_VECTORCALL qm_vec_to_ushort4n(const QMVEC v, QmUshort4* p)
 {
 #if defined QM_USE_AVX
 	QMVEC r = _mm_add_ps(_mm_mul_ps(v, QMCONST_MAX_USHORT.s), QMCONST_HALF.s);
@@ -3019,19 +3035,21 @@ INLINE QMVEC QM_VECTORCALL qm_vec3_rot_inv(const QMVEC v, const QMVEC rot_quat)
 INLINE QMVEC QM_VECTORCALL qm_vec3_trfm(const QMVEC v, const QMMAT m)
 {
 #if defined QM_USE_AVX
-	QMVEC x = _mm_permute_ps(v, _MM_SHUFFLE(0, 0, 0, 0));
-	QMVEC y = _mm_permute_ps(v, _MM_SHUFFLE(1, 1, 1, 1));
-	QMVEC z = _mm_permute_ps(v, _MM_SHUFFLE(2, 2, 2, 2));
-	QMVEC r = _MM_FMADD_PS(z, m.r[2], m.r[3]);
-	r = _MM_FMADD_PS(y, m.r[1], r);
-	return _MM_FMADD_PS(x, m.r[0], r);
+	QMVEC x = _MM_PERMUTE_PS(v, _MM_SHUFFLE(0, 0, 0, 0));
+	QMVEC y = _MM_PERMUTE_PS(v, _MM_SHUFFLE(1, 1, 1, 1));
+	QMVEC z = _MM_PERMUTE_PS(v, _MM_SHUFFLE(2, 2, 2, 2));
+	QMVEC h = _MM_FMADD_PS(z, m.r[2], m.r[3]);
+	h = _MM_FMADD_PS(y, m.r[1], h);
+	h = _MM_FMADD_PS(x, m.r[0], h);
+	return h;
 #else
 	QMVEC x = qm_vec_sp_x(v);
 	QMVEC y = qm_vec_sp_y(v);
 	QMVEC z = qm_vec_sp_z(v);
 	QMVEC h = qm_vec_madd(z, m.r[2], m.r[3]);
 	h = qm_vec_madd(y, m.r[1], h);
-	return qm_vec_madd(x, m.r[0], h);
+	h = qm_vec_madd(x, m.r[0], h);
+	return h;
 #endif
 }
 
@@ -3039,19 +3057,21 @@ INLINE QMVEC QM_VECTORCALL qm_vec3_trfm(const QMVEC v, const QMMAT m)
 INLINE QMVEC QM_VECTORCALL qm_vec3_trfm_norm(const QMVEC v, const QMMAT m)
 {
 #if defined QM_USE_AVX
-	QMVEC x = _mm_permute_ps(v, _MM_SHUFFLE(0, 0, 0, 0));
-	QMVEC y = _mm_permute_ps(v, _MM_SHUFFLE(1, 1, 1, 1));
-	QMVEC z = _mm_permute_ps(v, _MM_SHUFFLE(2, 2, 2, 2));
-	QMVEC r = _mm_mul_ps(z, m.r[2]);
-	r = _MM_FMADD_PS(y, m.r[1], r);
-	return _MM_FMADD_PS(x, m.r[0], r);
+	QMVEC x = _MM_PERMUTE_PS(v, _MM_SHUFFLE(0, 0, 0, 0));
+	QMVEC y = _MM_PERMUTE_PS(v, _MM_SHUFFLE(1, 1, 1, 1));
+	QMVEC z = _MM_PERMUTE_PS(v, _MM_SHUFFLE(2, 2, 2, 2));
+	QMVEC h = _mm_mul_ps(z, m.r[2]);
+	h = _MM_FMADD_PS(y, m.r[1], h);
+	h = _MM_FMADD_PS(x, m.r[0], h);
+	return h;
 #else
 	QMVEC x = qm_vec_sp_x(v);
 	QMVEC y = qm_vec_sp_y(v);
 	QMVEC z = qm_vec_sp_z(v);
 	QMVEC h = qm_vec_mul(z, m.r[2]);
 	h = qm_vec_madd(y, m.r[1], h);
-	return qm_vec_madd(x, m.r[0], h);
+	h = qm_vec_madd(x, m.r[0], h);
+	return h;
 #endif
 }
 
@@ -3059,13 +3079,13 @@ INLINE QMVEC QM_VECTORCALL qm_vec3_trfm_norm(const QMVEC v, const QMMAT m)
 INLINE QMVEC QM_VECTORCALL qm_vec3_trfm_coord(const QMVEC v, const QMMAT m)
 {
 #if defined QM_USE_AVX
-	QMVEC x = _mm_permute_ps(v, _MM_SHUFFLE(0, 0, 0, 0));
-	QMVEC y = _mm_permute_ps(v, _MM_SHUFFLE(1, 1, 1, 1));
-	QMVEC z = _mm_permute_ps(v, _MM_SHUFFLE(2, 2, 2, 2));
+	QMVEC x = _MM_PERMUTE_PS(v, _MM_SHUFFLE(0, 0, 0, 0));
+	QMVEC y = _MM_PERMUTE_PS(v, _MM_SHUFFLE(1, 1, 1, 1));
+	QMVEC z = _MM_PERMUTE_PS(v, _MM_SHUFFLE(2, 2, 2, 2));
 	QMVEC r = _MM_FMADD_PS(z, m.r[2], m.r[3]);
 	r = _MM_FMADD_PS(y, m.r[1], r);
 	r = _MM_FMADD_PS(x, m.r[0], r);
-	QMVEC w = _mm_permute_ps(r, _MM_SHUFFLE(2, 2, 2, 2));
+	QMVEC w = _MM_PERMUTE_PS(r, _MM_SHUFFLE(3, 3, 3, 3));
 	return _mm_div_ps(r, w);
 #else
 	QMVEC x = qm_vec_sp_x(v);
@@ -4208,7 +4228,7 @@ INLINE QMVEC QM_VECTORCALL qm_color_saturate(const QMVEC c, float saturation)
 INLINE QmKolor QM_VECTORCALL qm_color_to_kolor(const QMVEC c)
 {
 	QmKolor k;
-	qm_vec_st_kolor(&k, c);
+	qm_vec_to_kolor(c, &k);
 	return k;
 }
 
@@ -4753,7 +4773,7 @@ INLINE QMMAT QM_VECTORCALL qm_mat4_loc(float x, float y, float z)
 }
 
 /// @brief 위치 행렬을 만든다
-INLINE QMMAT QM_VECTORCALL qm_mat4_loc_vec(const QMVEC v)
+INLINE QMMAT QM_VECTORCALL qm_mat4_loc_vec3(const QMVEC v)
 {
 	QMMAT r;
 	r.r[0] = QMCONST_UNIT_R0.s;
@@ -4764,7 +4784,7 @@ INLINE QMMAT QM_VECTORCALL qm_mat4_loc_vec(const QMVEC v)
 }
 
 /// @brief 회전 행렬을 만든다
-INLINE QMMAT QM_VECTORCALL qm_mat4_rot_rot(const QMVEC axis, float angle)
+INLINE QMMAT QM_VECTORCALL qm_mat4_rot_axis(const QMVEC axis, float angle)
 {
 	QMVEC norm = qm_vec3_norm(axis);
 	float s, c;
@@ -4991,7 +5011,6 @@ INLINE QMMAT QM_VECTORCALL qm_mat4_reflect(const QMVEC plane)
 /// @brief 그림자 행렬
 INLINE QMMAT QM_VECTORCALL qm_mat4_shadow(const QMVEC plane, const QMVEC light)
 {
-	static const QmVecU s0001 = { { 0, 0, 0, 0xFFFFFFFF } };
 	QMVEC p = qm_plane_norm(plane);
 	QMVEC dot = qm_plane_simd_dot(p, light);
 	p = qm_vec_neg(p);
@@ -4999,7 +5018,7 @@ INLINE QMMAT QM_VECTORCALL qm_mat4_shadow(const QMVEC plane, const QMVEC light)
 	const QMVEC b = qm_vec_sp_y(p);
 	const QMVEC c = qm_vec_sp_z(p);
 	const QMVEC d = qm_vec_sp_w(p);
-	dot = qm_vec_select(s0001.s, dot, s0001.s);
+	dot = qm_vec_select(QMCONST_S0001.s, dot, QMCONST_S0001.s);
 	QMMAT m;
 	m.r[3] = qm_vec_madd(d, light, dot);
 	dot = qm_vec_bit_rol(dot, 1);
@@ -5204,7 +5223,7 @@ INLINE QmPoint qm_pointv(const QmVec2 v)
 INLINE QmPoint qm_pointv4(const QMVEC v)
 {
 	QmPoint p;
-	qm_vec_st_int2((QmInt2*)&p, v);
+	qm_vec_to_int2(v, (QmInt2*)&p);
 	return p;
 }
 
@@ -5630,17 +5649,61 @@ INLINE void qm_rect_rotate(QmRect rt, float angle, QmVec2* tl, QmVec2* tr, QmVec
 
 #ifdef _WINDEF_
 /// @brief 윈도우 RECT에서
-INLINE QmRect qm_rect_win_rect(RECT rt)
+INLINE QmRect qm_rect_RECT(RECT rt)
 {
 	return (QmRect) { { rt.left, rt.top, rt.right, rt.bottom } };
 }
 
 /// @brief 윈도우 RECT로
-INLINE RECT qm_rect_to_win_rect(const QmRect rt)
+INLINE RECT qm_rect_to_RECT(const QmRect rt)
 {
 	return (RECT) { rt.Left, rt.Top, rt.Right, rt.Bottom };
 }
 #endif
+
+
+//////////////////////////////////////////////////////////////////////////
+// 절두체
+
+//
+INLINE QmFrustum QM_VECTORCALL qm_frustum(const QMMAT m/*view x project*/)
+{
+	QmFrustum f;
+	const QmMat4* p = (const QmMat4*)&m;
+	f.Right = qm_plane_norm(qm_plane(p->_14 - p->_11, p->_24 - p->_21, p->_34 - p->_31, p->_44 - p->_41));
+	f.Left = qm_plane_norm(qm_plane(p->_14 + p->_11, p->_24 + p->_21, p->_34 + p->_31, p->_44 + p->_41));
+	f.Bottom = qm_plane_norm(qm_plane(p->_14 + p->_12, p->_24 + p->_22, p->_34 + p->_32, p->_44 + p->_42));
+	f.Top = qm_plane_norm(qm_plane(p->_14 - p->_12, p->_24 - p->_22, p->_34 - p->_32, p->_44 - p->_42));
+	f.Far = qm_plane_norm(qm_plane(p->_14 - p->_13, p->_24 - p->_23, p->_34 - p->_33, p->_44 - p->_43));
+	f.Near = qm_plane_norm(qm_plane(p->_14 + p->_13, p->_24 + p->_23, p->_34 + p->_33, p->_44 + p->_43));
+	return f;
+}
+
+//
+INLINE bool QM_VECTORCALL qm_frustum_on_point(const QmFrustum f, const QMVEC v)
+{
+	const QMVEC r = qm_vec_set_w(v, 1.0f);
+	return
+		qm_plane_dot_coord(f.Left, r) > 0.0f &&
+		qm_plane_dot_coord(f.Right, r) > 0.0f &&
+		qm_plane_dot_coord(f.Bottom, r) > 0.0f &&
+		qm_plane_dot_coord(f.Top, r) > 0.0f &&
+		qm_plane_dot_coord(f.Near, r) > 0.0f &&
+		qm_plane_dot_coord(f.Far, r) > 0.0f;
+}
+
+//
+INLINE bool QM_VECTORCALL qm_frustum_on_sphere(const QmFrustum f, const QMVEC v, float radius)
+{
+	const QMVEC r = qm_vec_set_w(v, 1.0f);
+	return
+		qm_plane_dot_coord(f.Left, r) > -radius &&
+		qm_plane_dot_coord(f.Right, r) > -radius &&
+		qm_plane_dot_coord(f.Bottom, r) > -radius &&
+		qm_plane_dot_coord(f.Top, r) > -radius &&
+		qm_plane_dot_coord(f.Near, r) > -radius &&
+		qm_plane_dot_coord(f.Far, r) > -radius;
+}
 
 
 //////////////////////////////////////////////////////////////////////////

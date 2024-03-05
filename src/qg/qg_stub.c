@@ -1832,10 +1832,10 @@ void qg_set_camera(QgCamera* camera)
 {
 	VAR_CHK_IF_NULL(camera, );
 	RdhBase* rdh = RDH;
-	rdh->tm.proj.s = camera->param.proj.s;
-	rdh->tm.view.s = camera->param.view.s;
-	rdh->tm.invv.s = camera->param.invv.s;
-	rdh->tm.view_proj.s = camera->param.vipr.s;
+	rdh->tm.proj.s = camera->mat.proj;
+	rdh->tm.view.s = camera->mat.view;
+	rdh->tm.invv.s = camera->mat.invv;
+	rdh->tm.view_proj.s = camera->mat.vipr;
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }

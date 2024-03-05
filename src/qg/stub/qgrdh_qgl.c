@@ -456,7 +456,7 @@ RdhBase* qgl_allocator(QgFlag flags, QgFeature features)
 		name, info->renderer_version, info->shader_version, info->renderer, info->vendor);
 	qn_mesgf(VAR_CHK_NAME, "%s / %s", gl_version, gl_shader_version);
 
-#if true && defined _QN_EMSCRIPTEN_
+#if false && defined _QN_EMSCRIPTEN_
 	GLint num_ext = qgl_get_integer_v(GL_NUM_EXTENSIONS);
 	if (num_ext > 0)
 	{
@@ -1151,7 +1151,7 @@ static bool qgl_commit_shader_layout(const QglRenderState* rdr)
 }
 
 // depth 함수 변환
-INLINE GLenum qgl_depth_to_enum(QgDepth func)
+static INLINE GLenum qgl_depth_to_enum(QgDepth func)
 {
 	switch (func)
 	{

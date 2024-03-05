@@ -13,13 +13,13 @@ int main(void)
 
 	const int flags = QGFLAG_RESIZE | QGFLAG_MSAA /*| QGFLAG_VSYNC*/;
 	const int features = QGFEATURE_NONE;
-	if (qg_open_rdh("", "RDH", 0, 0, 0, flags, features) == false)
+	if (qg_open_rdh("gl", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 
 	const QMVEC bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
 	qg_set_background(&bgc);
 	qg_fuse(0, NULL, true, true);
-	//qg_load_def_font(0, "/font/kopubs_l.hxn");
+	qg_load_def_font(0, "/font/kopubs_l.hxn");
 
 	QgCamera* cam = qg_create_camera();
 
@@ -38,7 +38,7 @@ int main(void)
 	qg_mesh_set_layout(mesh, &ld_3d);
 	qg_mesh_gen_cube(mesh, 1.0f, 1.0f, 1.0f);
 	qg_mesh_build(mesh);
-	qg_dpct_set_loc_param(mesh, 0.0f, 0.0f, 8.0f);
+	qg_dpct_set_loc_param(mesh, 0.0f, 0.0f, 0.0f);
 
 	static VertexType vertices[] =
 	{
@@ -48,7 +48,7 @@ int main(void)
 	};
 	QgBuffer* vbuffer = qg_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(vertices), sizeof(VertexType), vertices);
 
-	QmVec4 rot; rot.s = qm_vec_zero();
+	QmVec4 rot = { .s = qm_vec_zero() };
 
 	while (qg_loop_dispatch())
 	{
