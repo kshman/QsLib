@@ -83,7 +83,7 @@ void qn_node_set_name(QnGamNode* self, const char* name)
 	}
 }
 
-QN_IMPL_CTNR(QnPtrCtnr, pointer_t, qn_pctnr);
+QN_IMPL_CTNR(QnPtrCtn, pointer_t, qn_pctnr);
 
 /// @brief 초기화
 void qn_node_mukum_init(QnNodeMukum* mukum)
@@ -105,9 +105,9 @@ void qn_node_mukum_init_fast(QnNodeMukum* mukum)
 }
 
 //
-QnPtrCtnr qn_node_mukum_to_ctnr(const QnNodeMukum* mukum)
+QnPtrCtn qn_node_mukum_to_ctnr(const QnNodeMukum* mukum)
 {
-	QnPtrCtnr ctnr = { mukum->COUNT, qn_alloc(mukum->COUNT, void*) };
+	QnPtrCtn ctnr = { mukum->COUNT, qn_alloc(mukum->COUNT, void*) };
 	QnGamNode** ptr = (QnGamNode**)qn_pctnr_data(&ctnr);
 	for (QnGamNode* node = mukum->HEAD; node; node = node->NEXT)
 		*ptr++ = node;
@@ -130,7 +130,7 @@ void qn_node_mukum_safe_dispose(QnNodeMukum* mukum)
 {
 	if (mukum->COUNT > 0)
 	{
-		QnPtrCtnr ctnr = qn_node_mukum_to_ctnr(mukum);
+		QnPtrCtn ctnr = qn_node_mukum_to_ctnr(mukum);
 		size_t i;
 		QN_CTNR_FOREACH(ctnr, 0, i)
 			qn_unload(qn_pctnr_nth(&ctnr, i));

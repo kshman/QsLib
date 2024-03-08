@@ -157,7 +157,6 @@
 
 // compiler specific
 #ifdef _MSC_VER
-#define QN_CONST_ANY					extern const __declspec(selectany)
 #define QN_STMT_BEGIN					PRAGMA(warning(suppress:4127 4296 6011)) do
 #define QN_STMT_END						while(0)
 #define QN_WARN_PUSH					PRAGMA(warning(push))
@@ -165,14 +164,13 @@
 #define QN_WARN_SIGN
 #define QN_WARN_ASSIGN					PRAGMA(warning(disable:4706))
 #elif defined __GNUC__
-#define QN_CONST_ANY					const __attribute__((weak))
 #define QN_STMT_BEGIN					do
 #define QN_STMT_END						while(0)
 #define QN_WARN_PUSH					PRAGMA(GCC diagnostic push)
 #define QN_WARN_POP						PRAGMA(GCC diagnostic pop)
 #define QN_WARN_SIGN					PRAGMA(GCC diagnostic ignored "-Wsign-conversion")
 #define QN_WARN_ASSIGN
-#endif			/// @brief 마스크 설정
+#endif
 
 // platform selection
 #ifdef _QN_64_
@@ -1999,7 +1997,7 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 	QN_IMPL_CTNR(NAME, TYPE, PFX)
 
 /// @brief 포인터 컨테이너
-QN_DECL_CTNR(QnPtrCtnr, pointer_t);
+QN_DECL_CTNR(QnPtrCtn, pointer_t);
 
 
 /// @brief 배열 인라인
@@ -3220,7 +3218,7 @@ QSAPI void qn_node_mukum_init_fast(QnNodeMukum* mukum);
 
 /// @brief 묶음을 포인터 컨테이너로
 /// @param mukum 묶음
-QSAPI QnPtrCtnr qn_node_mukum_to_ctnr(const QnNodeMukum* mukum);
+QSAPI QnPtrCtn qn_node_mukum_to_ctnr(const QnNodeMukum* mukum);
 
 /// @brief 해제
 /// @param mukum 묶음

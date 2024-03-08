@@ -951,27 +951,23 @@ static QmKolor _font_string_color(const QgFont* self, const char* text, int len)
 		}
 	}
 	if (qn_stricmp(text, "black") == 0)
-		return QMKOLOR_BLACK;
+		return (QmKolor) { QMKOLOR_BLACK };
 	if (qn_stricmp(text, "white") == 0)
-		return QMKOLOR_WHITE;
+		return (QmKolor) { QMKOLOR_WHITE };
 	if (qn_stricmp(text, "red") == 0)
-		return QMKOLOR_RED;
+		return (QmKolor) { QMKOLOR_RED };
 	if (qn_stricmp(text, "green") == 0)
-		return QMKOLOR_GREEN;
+		return (QmKolor) { QMKOLOR_GREEN };
 	if (qn_stricmp(text, "blue") == 0)
-		return QMKOLOR_BLUE;
+		return (QmKolor) { QMKOLOR_BLUE };
 	if (qn_stricmp(text, "yellow") == 0)
-		return QMKOLOR_YELLOW;
+		return (QmKolor) { QMKOLOR_YELLOW };
 	if (qn_stricmp(text, "cyan") == 0)
-		return QMKOLOR_CYAN;
+		return (QmKolor) { QMKOLOR_CYAN };
 	if (qn_stricmp(text, "magenta") == 0)
-		return QMKOLOR_MAGENTA;
+		return (QmKolor) { QMKOLOR_MAGENTA };
 	if (qn_stricmp(text, "gray") == 0)
-		return QMKOLOR_GRAY;
-	if (qn_stricmp(text, "lightgray") == 0)
-		return QMKOLOR_LIGHTGRAY;
-	if (qn_stricmp(text, "darkgray") == 0)
-		return QMKOLOR_DARKGRAY;
+		return (QmKolor) { QMKOLOR_GRAY };
 	return self->color;
 }
 
@@ -1284,7 +1280,7 @@ QgFont* _truetype_create(void* data, int data_size, int offset_index)
 	_truetype_hash_init_fast(&self->glyphs);
 
 	self->base.size = font_base_size;
-	self->base.color = QMKOLOR_WHITE;
+	self->base.color.v = QMKOLOR_WHITE;
 	self->base.flags = QGFONTTYPE_TRUETYPE;
 
 	static const QN_DECL_VTABLE(QGFONT) vt_qg_truetype =
@@ -1634,7 +1630,7 @@ static QgFont* _johab_create(QgImage* image)
 	self->uv_size = qm_vec2(16.0f / self->width, 16.0f / self->height);
 
 	self->base.size = font_base_size;
-	self->base.color = QMKOLOR_WHITE;
+	self->base.color.v = QMKOLOR_WHITE;
 	self->base.flags = QGFONTTYPE_JOHAB;
 
 	static const QN_DECL_VTABLE(QGFONT) vt_qg_johab =
@@ -1884,7 +1880,7 @@ static QgFont* _atlas_create(QgImage* image, int atlas, HxnAtlas* atlas_data)
 
 	self->tex = tex;
 	self->base.size = font_base_size;
-	self->base.color = QMKOLOR_WHITE;
+	self->base.color.v = QMKOLOR_WHITE;
 	self->base.flags = QGFONTTYPE_ATLAS;
 
 	static const QN_DECL_VTABLE(QGFONT) vt_qg_atlas =

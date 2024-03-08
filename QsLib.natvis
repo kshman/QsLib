@@ -1,10 +1,203 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-  <!-- ==================== QNCTN (+QN+QG) ==================== -->
+  <!-- ==================== MATH ==================== -->
+
+  <!-- __m128 -->
+  <Type Name ="__m128">
+    <DisplayString>[{m128_f32[0]}, {m128_f32[1]}, {m128_f32[2]}, {m128_f32[3]}]</DisplayString>
+    <Expand>
+      <Item Name="[X]">m128_f32[0]</Item>
+      <Item Name="[Y]">m128_f32[1]</Item>
+      <Item Name="[Z]">m128_f32[2]</Item>
+      <Item Name="[W]">m128_f32[3]</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMVEC_FIU -->
+  <Type Name="QMVEC_FIU">
+    <DisplayString>[{f[0]}, {f[1]}, {f[2]}, {f[3]}]</DisplayString>
+    <Expand>
+      <Item Name="[실수 X]">f[0]</Item>
+      <Item Name="[실수 Y]">f[1]</Item>
+      <Item Name="[실수 Z]">f[2]</Item>
+      <Item Name="[실수 W]">f[3]</Item>
+      <Item Name="[정수 X]">u[0]</Item>
+      <Item Name="[정수 Y]">u[1]</Item>
+      <Item Name="[정수 Z]">u[2]</Item>
+      <Item Name="[정수 W]">u[3]</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMMAT_SIMD -->
+  <Type Name ="QMMAT_SIMD">
+    <DisplayString>[{r[0]}, {r[1]}, {r[2]}, {r[3]}]</DisplayString>
+    <Expand>
+      <Item Name="[#1]">r[0]</Item>
+      <Item Name="[#2]">r[1]</Item>
+      <Item Name="[#3]">r[2]</Item>
+      <Item Name="[#4]">r[3]</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMMAT_FMR -->
+  <Type Name="QMMAT_FMR">
+    <DisplayString>[({_11}, {_22}, {_33}, {_44}) ({_41}, {_42}, {_43}, {_44})]</DisplayString>
+    <Expand>
+      <Item Name="[#1]">r[0]</Item>
+      <Item Name="[#2]">r[1]</Item>
+      <Item Name="[#3]">r[2]</Item>
+      <Item Name="[#4]">r[3]</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMVEC2 -->
+  <Type Name="QMVEC2">
+    <AlternativeType Name="QMPOINT"/>
+    <AlternativeType Name="QMFLOAT2"/>
+    <AlternativeType Name="QMINT2"/>
+    <AlternativeType Name="QMUINT2"/>
+    <AlternativeType Name="QMUSHORT2"/>
+    <AlternativeType Name="QMHALF2"/>
+    <DisplayString>[{X}, {Y}]</DisplayString>
+    <Expand>
+      <Item Name="[X]">X</Item>
+      <Item Name="[Y]">Y</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMVEC3 (이런 형식은 없다) -->
+  <Type Name="DUMMY_QMVEC3">
+    <AlternativeType Name="QMFLOAT3"/>
+    <AlternativeType Name="QMINT3"/>
+    <AlternativeType Name="QMUINT3"/>
+    <AlternativeType Name="QMFLOAT3A"/>
+    <AlternativeType Name="QMINT3A"/>
+    <AlternativeType Name="QMUINT3A"/>
+    <DisplayString>[{X}, {Y}, {Z}]</DisplayString>
+    <Expand>
+      <Item Name="[X]">X</Item>
+      <Item Name="[Y]">Y</Item>
+      <Item Name="[Z]">Z</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMVECF / QMVECU -->
+  <Type Name="QMVECF">
+    <AlternativeType Name="QMVECU"/>
+    <AlternativeType Name="QMFLOAT4"/>
+    <AlternativeType Name="QMINT4"/>
+    <AlternativeType Name="QMUINT4"/>
+    <AlternativeType Name="QMUSHORT4"/>
+    <AlternativeType Name="QMHALF4"/>
+    <AlternativeType Name="QMFLOAT4A"/>
+    <AlternativeType Name="QMINT4A"/>
+    <AlternativeType Name="QMUINT4A"/>
+    <DisplayString>[{X}, {Y}, {Z}, {W}]</DisplayString>
+    <Expand>
+      <Item Name="[X]">X</Item>
+      <Item Name="[Y]">Y</Item>
+      <Item Name="[Z]">Z</Item>
+      <Item Name="[W]">W</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMMAT4 -->
+  <Type Name="QMMAT4">
+    <AlternativeType Name="QMFLOAT4X4"/>
+    <AlternativeType Name="QMFLOAT4X4A"/>
+    <DisplayString>[({_11}, {_22}, {_33}, {_44}) ({_41}, {_42}, {_43}, {_44})]</DisplayString>
+    <Expand>
+      <Item Name="[#1]">r[0]</Item>
+      <Item Name="[#2]">r[1]</Item>
+      <Item Name="[#3]">r[2]</Item>
+      <Item Name="[#4]">r[3]</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMSIZE -->
+  <Type Name="QMSIZE">
+    <DisplayString>[{Width}, {Height}]</DisplayString>
+    <Expand>
+      <Item Name="[Width]">Width</Item>
+      <Item Name="[Height]">Height</Item>
+      <Item Name="[MIN]">Minimum</Item>
+      <Item Name="[MAX]">Maximum</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMRECT -->
+  <Type Name="QMRECT">
+    <DisplayString>[({Left}, {Top})-({Right}, {Bottom})]</DisplayString>
+    <Expand>
+      <Item Name="[Left]">Left</Item>
+      <Item Name="[Top]">Top</Item>
+      <Item Name="[Right]">Right</Item>
+      <Item Name="[Bottom]">Bottom</Item>
+      <Item Name="[Width]">Right-Left</Item>
+      <Item Name="[Height]">Bottom-Top</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMCOLOR / QMKOLOR -->
+  <Type Name="QMKOLOR">
+    <AlternativeType Name="QMU4444"/>
+    <AlternativeType Name="QMU5551"/>
+    <AlternativeType Name="QMU1010102"/>
+    <DisplayString>[{v,X}]</DisplayString>
+    <Expand>
+      <Item Name="[R]">R</Item>
+      <Item Name="[G]">G</Item>
+      <Item Name="[B]">B</Item>
+      <Item Name="[A]">A</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMRGB(이런 형식은 없다 -->
+  <Type Name="DUMMY_QMRGB">
+    <AlternativeType Name="QMU565"/>
+    <DisplayString>[{v,X}]</DisplayString>
+    <Expand>
+      <Item Name="[R]">R</Item>
+      <Item Name="[G]">G</Item>
+      <Item Name="[B]">B</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMF111110 -->
+  <Type Name="QMF111110">
+    <DisplayString>[{v,X}]</DisplayString>
+    <Expand>
+      <Item Name="[R]">R</Item>
+      <Item Name="[G]">G</Item>
+      <Item Name="[B]">B</Item>
+      <Item Name="[R mask]">Rm</Item>
+      <Item Name="[G mask]">Gm</Item>
+      <Item Name="[B mask]">Bm</Item>
+      <Item Name="[R exp]">Re</Item>
+      <Item Name="[G exp]">Ge</Item>
+      <Item Name="[B exp]">Be</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMFRUSTUM -->
+  <Type Name="QMFRUSTUM">
+    <DisplayString>[{Left}, {Top}, {Right}, {Bottom}, {Near}, {Far}]</DisplayString>
+    <Expand>
+      <Item Name="[Left]">Left</Item>
+      <Item Name="[Top]">Top</Item>
+      <Item Name="[Right]">Right</Item>
+      <Item Name="[Bottom]">Bottom</Item>
+      <Item Name="[Near]">Near</Item>
+      <Item Name="[Far]">Far</Item>
+    </Expand>
+  </Type>
+
+  <!-- ==================== CONTAINER ==================== -->
 
   <!-- 배열 / 컨테이너 / 슬라이스 -->
-  <Type Name="QnPtrCtnr">
+  <Type Name="DUMMYCTNTYPE">
+    <AlternativeType Name="QnPtrCtn"/>
     <AlternativeType Name="QnPtrArray"/>
     <AlternativeType Name="SymArray"/>
     <AlternativeType Name="HfsInfoArray"/>
@@ -29,7 +222,7 @@
   </Type>
 
   <!-- 리스트 -->
-  <Type Name="QnPtrList">
+  <Type Name="DUMMYLISTTYPE">
     <AlternativeType Name="StubListEventCb"/>
     <DisplayString>[갯수: {COUNT}]</DisplayString>
     <Expand>
@@ -44,7 +237,7 @@
   </Type>
 
   <!-- 해시 -->
-  <Type Name ="QnHash">
+  <Type Name ="DUMMYHASHTYPE">
     <DisplayString>[갯수: {COUNT} (리비전: {REVISION}, 바구니: {BUCKET})]</DisplayString>
     <Expand>
       <LinkedListItems>
@@ -56,7 +249,8 @@
   </Type>
 
   <!-- 묶음 노드 -->
-  <Type Name="SymMukumNode">
+  <Type Name="DUMMYMUKUMNODE">
+    <AlternativeType Name="SymMukumNode"/>
     <AlternativeType Name="PropMukumNode"/>
     <AlternativeType Name="FsMukumNode"/>
     <AlternativeType Name="HfsMukumNode"/>
@@ -71,7 +265,8 @@
   </Type>
 
   <!-- 묶음 -->
-  <Type Name="SymMukum">
+  <Type Name="DUMMYMUKUMTYPE">
+    <AlternativeType Name="SymMukum"/>
     <AlternativeType Name="PropMukum"/>
     <AlternativeType Name="FsMukum"/>
     <AlternativeType Name="HfsMukum"/>
@@ -91,25 +286,27 @@
 
   <!-- 오브젝트 -->
   <Type Name="QNGAM">
-    <DisplayString>[{((QNGAM*)this)-&gt;vt-&gt;name,s}&lt;{((QNGAM*)this)-&gt;ref}&gt; (desc:{((QNGAM*)this)-&gt;desc})]</DisplayString>
+    <DisplayString>[{((QNGAM*)this)-&gt;vt-&gt;name,s} &lt;{((QNGAM*)this)-&gt;ref}&gt;</DisplayString>
     <Expand>
       <Item Name="[타입]">((QNGAM*)this)-&gt;vt-&gt;name</Item>
       <Item Name="[참조]">((QNGAM*)this)-&gt;ref</Item>
+      <Item Name="[서술자]">((QNGAM*)this)-&gt;desc</Item>
     </Expand>
   </Type>
 
   <!-- 노드 -->
   <Type Name="QNGAMNODE">
-    <DisplayString>[{((QNGAM*)this)-&gt;vt-&gt;name,s} / {NAME,s} (ref:{((QNGAM*)this)-&gt;ref})]</DisplayString>
+    <DisplayString>[{NAME,s} ({((QNGAM*)this)-&gt;vt-&gt;name,s} &lt;{((QNGAM*)this)-&gt;ref}&gt;)</DisplayString>
     <Expand>
+      <Item Name="[이름]">NAME</Item>
+      <Item Name="[해시]">HASH,X</Item>
       <Item Name="[타입]">((QNGAM*)this)-&gt;vt-&gt;name</Item>
       <Item Name="[참조]">((QNGAM*)this)-&gt;ref</Item>
-      <Item Name="[해시]">HASH,X</Item>
-      <Item Name="[이름]">NAME</Item>
+      <Item Name="[서술자]">((QNGAM*)this)-&gt;desc</Item>
     </Expand>
   </Type>
 
-  <!-- QGNODEMUKUM -->
+  <!-- 노드 묶음 -->
   <Type Name="QNNODEMUKUM">
     <DisplayString>[갯수: {COUNT}]</DisplayString>
     <Expand>
@@ -126,16 +323,35 @@
   <!-- 데이트 타임 -->
   <Type Name="QNDATETIME">
     <DisplayString>[{year}-{month}-{day} {hour}:{minute}:{second}.{millisecond}]</DisplayString>
+    <Expand>
+      <Item Name="[타임스탬프]">stamp</Item>
+      <Item Name="[년]">year</Item>
+      <Item Name="[월]">month</Item>
+      <Item Name="[일]">day</Item>
+      <Item Name="[요일]">dow</Item>
+      <Item Name="[시]">hour</Item>
+      <Item Name="[분]">minute</Item>
+      <Item Name="[초]">second</Item>
+      <Item Name="[밀리초]">millisecond</Item>
+    </Expand>
   </Type>
 
   <!-- 타이머 -->
-  <Type Name="QnTimer">
-    <DisplayString>[실행: {runtime} (FPS: {fps})]</DisplayString>
+  <Type Name="QNTIMER">
+    <DisplayString>[실행: {runtime} (FPS: {fps}:{afps})]</DisplayString>
+    <Expand>
+      <Item Name="[실행 시간]">runtime</Item>
+      <Item Name="[프레임 경과]">elapsed</Item>
+      <Item Name="[활성 프레임 경과]">advance</Item>
+      <Item Name="[순간 FPS]">fps</Item>
+      <Item Name="[평균 FPS]">afps</Item>
+      <Item Name="[프레임 수]">frame</Item>
+    </Expand>
   </Type>
 
   <!-- 마운트 -->
   <Type Name="QNMOUNT">
-    <DisplayString>[{path.DATA,s} ({flags} &lt;{base.ref}&gt;)</DisplayString>
+    <DisplayString>[{((QNGAM*)this)-&gt;vt-&gt;name,s} '{path.DATA,s}' &lt;{base.ref}&gt;</DisplayString>
     <Expand>
       <Item Name="[이름/기본]">name,s</Item>
       <Item Name="[현재 경로]">path.DATA,s</Item>
@@ -145,10 +361,19 @@
 
   <!-- 스트림 -->
   <Type Name="QNSTREAM">
-    <DisplayString>[{name,s} ({flags} &lt;{base.ref}&gt;)</DisplayString>
+    <DisplayString>[{((QNGAM*)this)-&gt;vt-&gt;name,s} '{name,s}' &lt;{base.ref}&gt;</DisplayString>
     <Expand>
       <Item Name="[이름]">name,s</Item>
       <Item Name="[플래그]">flags</Item>
+      <Item Name="[마운트]">mount</Item>
+    </Expand>
+  </Type>
+
+  <!-- 디렉토리 -->
+  <Type Name="QNDIR">
+    <DisplayString>[{((QNGAM*)this)-&gt;vt-&gt;name,s} '{name,s}' &lt;{base.ref}&gt;</DisplayString>
+    <Expand>
+      <Item Name="[이름]">name,s</Item>
       <Item Name="[마운트]">mount</Item>
     </Expand>
   </Type>
@@ -231,121 +456,6 @@
         <NextPointer>next</NextPointer>
         <ValueNode>this</ValueNode>
       </LinkedListItems>
-    </Expand>
-  </Type>
-
-  <!-- QMSVECFIU -->
-  <Type Name="QMSVECFIU">
-    <DisplayString>[{f[0]}, {f[1]}, {f[2]}, {f[3]}]</DisplayString>
-    <Expand>
-      <Item Name="X">f[0]</Item>
-      <Item Name="Y">f[1]</Item>
-      <Item Name="Z">f[2]</Item>
-      <Item Name="W">f[3]</Item>
-    </Expand>
-  </Type>
-
-  <!-- __m128 -->
-  <Type Name ="__m128">
-    <DisplayString>[{m128_f32[0]}, {m128_f32[1]}, {m128_f32[2]}, {m128_f32[3]}]</DisplayString>
-    <Expand>
-      <Item Name="X">m128_f32[0]</Item>
-      <Item Name="Y">m128_f32[1]</Item>
-      <Item Name="Z">m128_f32[2]</Item>
-      <Item Name="W">m128_f32[3]</Item>
-    </Expand>
-  </Type>
-
-  <!-- QMVEC2 / QMVECI2 / QMVECH2 -->
-  <Type Name="QMVEC2">
-    <AlternativeType Name="QMVECI2"/>
-    <AlternativeType Name="QMFLOAT2"/>
-    <AlternativeType Name="QMINT2"/>
-    <AlternativeType Name="QMUINT2"/>
-    <AlternativeType Name="QMHALF2"/>
-    <AlternativeType Name="QMPOINT"/>
-    <DisplayString>[{X}, {Y}]</DisplayString>
-    <Expand>
-      <Item Name="X">X</Item>
-      <Item Name="Y">Y</Item>
-    </Expand>
-  </Type>
-
-  <!-- QMVEC3 (이 형식은 없다) -->
-  <Type Name="QMFLOAT3">
-    <AlternativeType Name="QMINT3"/>
-    <AlternativeType Name="QMUINT3"/>
-    <DisplayString>[{X}, {Y}, {Z}]</DisplayString>
-    <Expand>
-      <Item Name="X">X</Item>
-      <Item Name="Y">Y</Item>
-      <Item Name="Z">Z</Item>
-    </Expand>
-  </Type>
-
-  <!-- QMVEC4 / QMVECI4 / QMVECH4 -->
-  <Type Name="QMVECF">
-    <AlternativeType Name="QMVECU"/>
-    <AlternativeType Name="QMFLOAT4"/>
-    <AlternativeType Name="QMINT4"/>
-    <AlternativeType Name="QMUINT4"/>
-    <AlternativeType Name="QMHALF4"/>
-    <DisplayString>[{X}, {Y}, {Z}, {W}]</DisplayString>
-    <Expand>
-      <Item Name="X">X</Item>
-      <Item Name="Y">Y</Item>
-      <Item Name="Z">Z</Item>
-      <Item Name="W">W</Item>
-    </Expand>
-  </Type>
-
-  <!-- QMMAT4 -->
-  <Type Name="QMMAT4">
-    <AlternativeType Name="QMFLOAT4X4"/>
-    <DisplayString>[({_11}, {_22}, {_33}, {_44}) ({_41}, {_42}, {_43}, {_44})]</DisplayString>
-    <Expand>
-      <Item Name="#1">m[0]</Item>
-      <Item Name="#2">m[1]</Item>
-      <Item Name="#3">m[2]</Item>
-      <Item Name="#4">m[3]</Item>
-    </Expand>
-  </Type>
-
-  <!-- QMCOLOR / QMKOLOR -->
-  <Type Name="QMKOLOR">
-    <AlternativeType Name="QMU4444"/>
-    <AlternativeType Name="QMU5551"/>
-    <AlternativeType Name="QMU565"/>
-    <AlternativeType Name="QMF111110"/>
-    <AlternativeType Name="QMU1010102"/>
-    <DisplayString>[{v,X}]</DisplayString>
-    <Expand>
-      <Item Name="R">R</Item>
-      <Item Name="G">G</Item>
-      <Item Name="B">B</Item>
-      <Item Name="A">A</Item>
-    </Expand>
-  </Type>
-
-  <!-- QMSIZE -->
-  <Type Name="QMSIZE">
-    <DisplayString>[{Width}, {Height}]</DisplayString>
-    <Expand>
-      <Item Name="Width / MIN">Width</Item>
-      <Item Name="Height / MAX">Height</Item>
-    </Expand>
-  </Type>
-
-  <!-- QMRECT -->
-  <Type Name="QMRECT">
-    <DisplayString>[({Left}, {Top})-({Right}, {Bottom})]</DisplayString>
-    <Expand>
-      <Item Name="Left">Left</Item>
-      <Item Name="Top">Top</Item>
-      <Item Name="Right">Right</Item>
-      <Item Name="Bottom">Bottom</Item>
-      <Item Name="[Width]">Right-Left</Item>
-      <Item Name="[Height]">Bottom-Top</Item>
     </Expand>
   </Type>
 

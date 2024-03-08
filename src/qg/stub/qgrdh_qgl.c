@@ -691,7 +691,7 @@ static void qgl_rdh_reset(void)
 	// 텍스쳐 => 리셋하면 다시 만들어야 함
 	QglResource* res = QGL_RESOURCE;
 	qn_unload(res->white_texture);
-	res->white_texture = (QglTexture*)qg_create_texture("qg_white", qg_create_image_filled(2, 2, &QMCONST_WHITE.s), QGTEXF_DISCARD_IMAGE);
+	res->white_texture = (QglTexture*)qg_create_texture("qg_white", qg_create_image_filled(2, 2, &QMCOLOR_WHITE.s), QGTEXF_DISCARD_IMAGE);
 
 	// 평면용 렌더 스테이트 => 한번만 만들어도 됨
 	if (res->ortho_render == NULL)

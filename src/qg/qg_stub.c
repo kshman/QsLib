@@ -1544,7 +1544,7 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 		param->v[i].s = qm_vec_zero();
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)		// 행렬 인수
 		param->m[i].s = qm_mat4_unit();
-	param->bgc.s = QMCONST_BLACK.s;							// 배경색
+	param->bgc.s = QMCOLOR_BLACK.s;							// 배경색
 
 	// 묶음
 	for (size_t i = 0; i < QN_COUNTOF(rdh->mukums); i++)

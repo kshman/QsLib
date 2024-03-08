@@ -868,6 +868,22 @@ typedef struct QGPROPMESH
 	int*				index;
 } QgPropMesh;
 
+/// @brief 카메라 컨트롤 입력
+typedef struct QGCAMCTRL
+{
+	QikKey				move_front;							/// @brief 앞으로 가는 키
+	QikKey				move_back;							/// @brief 뒤로 가는 키
+	QikKey				move_left;							/// @brief 왼쪽으로 가는 키
+	QikKey				move_right;							/// @brief 오른쪽으로 가는 키
+	QikKey				move_up;							/// @brief 위로 가는 키
+	QikKey				move_down;							/// @brief 아래로 가는 키
+	QikKey				rot_yaw_left;						/// @brief 좌로 회전하는 키
+	QikKey				rot_yaw_right;						/// @brief 우로 회전하는 키
+	QikKey				rot_pitch_up;						/// @brief 위로 회전하는 키
+	QikKey				rot_pitch_down;						/// @brief 아래로 회전하는 키
+	QimButton			rot_button;							/// @brief 회전 버튼
+} QgCamCtrl;
+
 /// @brief 키 상태
 typedef struct QGUIMKEY
 {
@@ -1934,8 +1950,9 @@ struct QGCAMERA
 	{
 		QMMAT				proj;							/// @brief 프로젝션 행렬
 		QMMAT				view;							/// @brief 뷰 행렬
-		QMMAT				invv;							/// @brief 역 행렬
 		QMMAT				vipr;							/// @brief 프로젝션 곱하기 뷰 행렬
+		QMMAT				invv;							/// @brief 역 행렬
+		QMMAT				iinv;							/// @brief 역의 역행렬
 	}					mat;
 };
 
@@ -1943,6 +1960,7 @@ QN_DECL_VTABLE(QGCAMERA)
 {
 	QN_GAM_VTABLE(QNGAMBASE);
 	void (*update)(QnGam);
+	void (*control)(QnGam, const QgCamCtrl*, float);
 };
 
 /// @brief 카메라를 만든다
@@ -2003,6 +2021,25 @@ QSAPI QMVEC qg_camera_project(const QgCamera* self, const QMVEC v, const QMMAT* 
 /// @brief 카메라를 업데이트한다
 /// @param self 카메라
 QSAPI void qg_camera_update(QgCamera* self);
+
+/// @brief 카메라를 조종한다
+/// @param self 카메라
+/// @param ctrl 카메라 컨트롤 정의 구조체 (널이면 기본값)
+/// @param advance 시간
+/// @details 카메라 컨트롤 정의 구조체의 기본값은 다음과 같다
+/// 명령        | 키값
+/// ------------|------------
+/// 앞으로      | W
+/// 뒤로        | S
+/// 왼쪽으로    | A
+/// 오른쪽으로  | D
+/// 위로        | R
+/// 아래로      | F
+/// 왼쪽 회전   | 왼쪽 화살표
+/// 오른쪽 회전 | 오른쪽 화살표
+/// 위로 회전   | 위 화살표
+/// 아래로 회전 | 아래 화살표
+QSAPI void qg_camera_control(QgCamera* self, const QgCamCtrl* ctrl, float advance);
 
 
 /// @brief 메시

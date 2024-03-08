@@ -90,7 +90,7 @@ void qg_dpct_set_scl(QNGAM dpct, const QMVEC* scl)
 //
 void qg_dpct_set_loc_param(QNGAM dpct, float x, float y, float z)
 {
-	QMVEC v = qm_vec(x, y, z, 1.0f);
+	QMVEC v = qm_vec(x, y, z, 0.0f);
 	qg_dpct_set_loc(dpct, &v);
 }
 
@@ -256,7 +256,7 @@ void qg_camera_set_proj_param(QgCamera* self, float ascpect, float fov, float zn
 //
 void qg_camera_set_position(QgCamera* self, const QMVEC* pos)
 {
-	if (QN_TMASK(self->flags, QGCAMF_LAYOUT))
+	if (QN_TMASK(self->flags, QGCAMF_MAYA))
 		self->param.at.s = *pos;
 	else
 		self->param.eye.s = *pos;
@@ -307,19 +307,23 @@ void qg_camera_update(QgCamera* self)
 }
 
 //
+void qg_camera_control(QgCamera* self, const QgCamCtrl* ctrl, float advance)
+{
+	qn_cast_vtable(self, QGCAMERA)->control(self, ctrl, advance);
+}
+
+//
 static void _camera_internal_update(QnGam g)
 {
 	QgCamera* self = qn_cast_type(g, QgCamera);
 
 	if (QN_TMASK(self->flags, QGCAMF_LAYOUT))
-	{
 		self->param.aspect = qg_get_aspect();
-		self->mat.proj = qm_mat4_perspective_lh(self->param.fov, self->param.aspect, self->param.znear, self->param.zfar);
-	}
+	self->mat.proj = qm_mat4_perspective_lh(self->param.fov, self->param.aspect, self->param.znear, self->param.zfar);
 
 	QMMAT r = qm_mat4_rot_vec3(self->param.angle.s);
-	QMVEC up = qm_vec3_trfm(QMCONST_UNIT_R1.s, r);
-	QMVEC ah = qm_vec3_trfm(QMCONST_UNIT_R2.s, r);
+	QMVEC up = qm_vec3_trfm_norm(QMCONST_UNIT_R1.s, r);
+	QMVEC ah = qm_vec3_trfm_norm(QMCONST_UNIT_R2.s, r);
 
 	if (QN_TMASK(self->flags, QGCAMF_MAYA))
 	{
@@ -338,8 +342,54 @@ static void _camera_internal_update(QnGam g)
 
 	self->mat.invv = qm_mat4_inv(self->mat.view);
 	self->mat.vipr = qm_mat4_mul(self->mat.proj, self->mat.view);
+	self->mat.iinv = qm_mat4_inv(self->mat.invv);
 
 	qg_set_camera(self);
+}
+
+//
+static void _camera_internal_control(QnGam g, const QgCamCtrl* ctrl, float advance)
+{
+	static const QgCamCtrl def_ctrl =
+	{
+		QIK_W, QIK_S, QIK_A, QIK_D, QIK_R, QIK_F,
+		QIK_LEFT, QIK_RIGHT, QIK_UP, QIK_DOWN,
+		QIM_RIGHT,
+	};
+	QgCamera* self = qn_cast_type(g, QgCamera);
+	const QgCamCtrl* c = ctrl != NULL ? ctrl : &def_ctrl;
+	QmVec4 move = { .s = qm_vec_zero() };
+	QmVec4 rot = { .s = qm_vec_zero() };
+
+	if (qg_get_key_state(c->move_front))
+		move.Z += 1.0f;
+	if (qg_get_key_state(c->move_back))
+		move.Z -= 1.0f;
+	if (qg_get_key_state(c->move_left))
+		move.X -= 1.0f;
+	if (qg_get_key_state(c->move_right))
+		move.X += 1.0f;
+	if (qg_get_key_state(c->move_up))
+		move.Y += 1.0f;
+	if (qg_get_key_state(c->move_down))
+		move.Y -= 1.0f;
+	if (qg_get_key_state(c->rot_yaw_left))
+		rot.Y -= 1.0f;
+	if (qg_get_key_state(c->rot_yaw_right))
+		rot.Y += 1.0f;
+	if (qg_get_key_state(c->rot_pitch_up))
+		rot.X -= 1.0f;
+	if (qg_get_key_state(c->rot_pitch_down))
+		rot.X += 1.0f;
+
+	QMVEC pos = qm_vec_mul(move.s, qm_vec_mag(self->param.smove.s, advance));
+	QMVEC angle = qm_vec_mul(rot.s, qm_vec_mag(self->param.srot.s, advance));
+
+	if (QN_TMASK(self->flags, QGCAMF_FPS))
+	{
+		self->param.eye.s = qm_vec_add(self->param.eye.s, pos);
+		self->param.angle.s = qm_vec_crad(qm_vec_add(self->param.angle.s, angle));
+	}
 }
 
 //
@@ -354,7 +404,7 @@ static void _camera_init(QgCamera* self)
 
 	self->param.dist = 10.0f;
 	self->param.smove.s = qm_vec3(1.0f, 1.0f, 1.0f);
-	self->param.srot.s = qm_vec3(1.0f, 1.0f, 1.0f);
+	self->param.srot.s = qm_vec3(QM_PI_H, QM_PI_H, QM_PI_H);
 
 	self->param.angle.s = qm_vec_zero();
 	// eye와 at은 카메라 초기화에서 설정
@@ -376,6 +426,7 @@ QgCamera* qg_create_camera(void)
 	_camera_init(self);
 	self->param.eye.s = qm_vec_zero();
 	self->param.at.s = QMCONST_UNIT_R2.s;
+	QN_SMASK(self->flags, QGCAMF_FPS, true);
 	_camera_internal_update(self);
 
 	static const QN_DECL_VTABLE(QGCAMERA) vt_qg_camera =
@@ -385,6 +436,7 @@ QgCamera* qg_create_camera(void)
 			qg_camera_dispose,
 		},
 		_camera_internal_update,
+		_camera_internal_control,
 	};
 	return qn_gam_init(self, vt_qg_camera);
 }
@@ -406,6 +458,7 @@ QgCamera* qg_create_maya_camera(void)
 			qg_camera_dispose,
 		},
 		_camera_internal_update,
+		_camera_internal_control,
 	};
 	return qn_gam_init(self, vt_qg_camera);
 }
