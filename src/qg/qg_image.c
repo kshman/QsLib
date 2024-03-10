@@ -1610,7 +1610,7 @@ static void _johab_dispose(QnGam g)
 }
 
 // 조합 만들기
-static QgFont* _johab_create(QgImage* image)
+static QgFont* _johab_create(QgImage* image, int font_display_size)
 {
 	const int font_base_size = image->extra == 0 ? 16 : image->extra;
 	QgTexture* tex = qg_create_texture(NULL, image, QGTEXF_DISCARD_IMAGE | QGTEXF_CLAMP);
@@ -1629,7 +1629,7 @@ static QgFont* _johab_create(QgImage* image)
 	self->johab_pos = qm_point(0, ascheight + 1);
 	self->uv_size = qm_vec2(16.0f / self->width, 16.0f / self->height);
 
-	self->base.size = font_base_size;
+	self->base.size = font_display_size == 0 ? font_base_size : font_display_size;
 	self->base.color.v = QMKOLOR_WHITE;
 	self->base.flags = QGFONTTYPE_JOHAB;
 
@@ -1650,7 +1650,7 @@ static QgFont* _johab_create(QgImage* image)
 QgFont* _create_default_font(void)
 {
 	QgImage* image = _load_image_hxn(default_font, sizeof(default_font), NULL, NULL);
-	return _johab_create(image);
+	return _johab_create(image, 32);
 }
 
 
@@ -1923,7 +1923,7 @@ QgFont* qg_load_font_buffer(void* data, int data_size, int cjk)
 	if (atlas == 0)
 	{
 		// 조합형 글꼴
-		font = _johab_create(image);
+		font = _johab_create(image, 0);
 	}
 	else
 	{

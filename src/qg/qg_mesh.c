@@ -241,9 +241,14 @@ bool qg_mesh_gen_sphere(QgMesh* self, float radius, int slices, int stacks)
 
 	for (int i = 0; i < vertex_count; i++)
 	{
-		pos[i] = (QmFloat3){ mesh->points[i * 3 + 0], mesh->points[i * 3 + 1], mesh->points[i * 3 + 2] };
-		norm[i] = (QmFloat3){ mesh->normals[i * 3 + 0], mesh->normals[i * 3 + 1], mesh->normals[i * 3 + 2] };
-		coord[i] = (QmFloat2){ mesh->tcoords[i * 2 + 0], mesh->tcoords[i * 2 + 1] };
+		PAR_SHAPES_T p0 = mesh->triangles[i] * 3 + 0;
+		PAR_SHAPES_T p1 = mesh->triangles[i] * 3 + 1;
+		PAR_SHAPES_T p2 = mesh->triangles[i] * 3 + 2;
+		pos[i] = (QmFloat3){ mesh->points[p0], mesh->points[p1], mesh->points[p2] };
+		norm[i] = (QmFloat3){ mesh->normals[p0], mesh->normals[p1], mesh->normals[p2] };
+		PAR_SHAPES_T t0 = mesh->triangles[i] * 2 + 0;
+		PAR_SHAPES_T t1 = mesh->triangles[i] * 2 + 1;
+		coord[i] = (QmFloat2){ mesh->tcoords[t0], mesh->tcoords[t1] };
 	}
 
 	par_shapes_free_mesh(mesh);

@@ -679,7 +679,7 @@ int qn_strfnd(const char* src, const char* find, const size_t index)
 //
 bool qn_strwcm(const char* string, const char* wild)
 {
-	const char *cp = NULL, *mp = NULL;
+	const char* cp = NULL, * mp = NULL;
 	while ((*string) && (*wild != '*'))
 	{
 		if ((*wild != *string) && (*wild != '?'))
@@ -715,7 +715,7 @@ bool qn_strwcm(const char* string, const char* wild)
 //
 bool qn_striwcm(const char* string, const char* wild)
 {
-	const char *cp = NULL, *mp = NULL;
+	const char* cp = NULL, * mp = NULL;
 	while ((*string) && (*wild != '*'))
 	{
 		if ((toupper(*wild) != toupper(*string)) && (*wild != '?'))
@@ -1307,31 +1307,23 @@ uchar4 qn_u8cbn(const char* p)
 	}
 	else
 	{
-		len = -1;
-		mask = 0;
-	}
-
-	if (len < 0)
-	{
 		// 사용하지 않는 문자 코드
 		// 0xFFFFFFFF
 		return (uchar4)-1;
 	}
-	else
+
+	// UCS4로 변환
+	uchar4 ret = (uchar4)(p[0] & mask);
+	for (int i = 1; i < len; i++)
 	{
-		// UCS4로 변환
-		uchar4 ret = (uchar4)(p[0] & mask);
-		for (int i = 1; i < len; i++)
-		{
-			if ((p[i] & 0xC0) != 0x80)
-				return 0;
+		if ((p[i] & 0xC0) != 0x80)
+			return 0;
 
-			ret <<= 6;
-			ret |= (p[i] & 0x3F);
-		}
-
-		return ret;
+		ret <<= 6;
+		ret |= (p[i] & 0x3F);
 	}
+
+	return ret;
 }
 
 //
@@ -1372,31 +1364,23 @@ uchar4 qn_u8cbc(const char* p, int* len)
 	}
 	else
 	{
-		*len = -1;
-		mask = 0;
-	}
-
-	if (len < 0)
-	{
 		// 사용하지 않는 문자 코드
 		// 0xFFFFFFFF
 		return (uchar4)-1;
 	}
-	else
+
+	// UCS4로 변환
+	uchar4 ret = (uchar4)(p[0] & mask);
+	for (int i = 1; i < *len; i++)
 	{
-		// UCS4로 변환
-		uchar4 ret = (uchar4)(p[0] & mask);
-		for (int i = 1; i < *len; i++)
-		{
-			if ((p[i] & 0xC0) != 0x80)
-				return 0;
+		if ((p[i] & 0xC0) != 0x80)
+			return 0;
 
-			ret <<= 6;
-			ret |= (p[i] & 0x3F);
-		}
-
-		return ret;
+		ret <<= 6;
+		ret |= (p[i] & 0x3F);
 	}
+
+	return ret;
 }
 
 //

@@ -318,8 +318,6 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 	stub->features = QGFEATURE_NONE;				// 나중에 설정해야 하므로 NONE
 	stub->stats = QGSST_ACTIVE | QGSST_CURSOR;		// 기본으로 활성 상태랑 커서는 켠다
 
-	stub->aspect = 16.0f / 9.0f;
-
 	stub->timer = qn_create_timer();
 	if (QN_TMASK(flags, QGFLAG_VSYNC) == false)
 		qn_timer_set_cut(stub->timer, 60);

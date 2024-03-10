@@ -1156,7 +1156,7 @@ static bool qgl_commit_shader_layout(const QglRenderState* rdr)
 }
 
 // depth 함수 변환
-static INLINE GLenum qgl_depth_to_enum(QgDepth func)
+INLINE GLenum qgl_depth_to_enum(QgDepth func)
 {
 	switch (func)
 	{

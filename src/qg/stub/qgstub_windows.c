@@ -409,10 +409,8 @@ bool stub_system_open(const char* title, int display, int width, int height, QgF
 	if (QN_TMASK(features, 0xFF000000) == false)
 		stub_system_actuate();
 
-	// ㅇㅋ
+	// 바운드 업데이트 => 종횡비도 계산
 	stub_system_update_bound();
-	// 진짜 종횡비 넣기
-	wStub.base.aspect = qm_size_get_aspect(wStub.base.client_size);
 
 	return true;
 }
@@ -591,9 +589,11 @@ void stub_system_update_bound(void)
 	GetClientRect(wStub.hwnd, &rect);
 	wStub.base.client_size = qm_size(rect.right - rect.left, rect.bottom - rect.top);
 
-	// 진짜 종횡비
 	if (QN_TMASK(wStub.base.features, QGFEATURE_ENABLE_ASPECT) == false)
+	{
+		// 기능은 맨 첨부터 사용하지 않으니깐 이 종횡비 계산은 유효하다
 		wStub.base.aspect = qm_size_get_aspect(wStub.base.client_size);
+	}
 }
 
 //
