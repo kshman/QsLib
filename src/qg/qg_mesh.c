@@ -37,7 +37,22 @@
 static void _mesh_draw(QnGam g)
 {
 	QgMesh* self = qn_cast_type(g, QgMesh);
-	(void)self;
+	size_t i;
+
+	qg_set_world(&self->base.trfm.mcalc.s);
+
+	for (i = 0; i < QGLOS_MAX_VALUE; i++)
+	{
+		if (self->vbuffers[i] != NULL)
+			qg_set_vertex(i, self->vbuffers[i]);
+	}
+	if (self->ibuffer == NULL)
+		qg_draw(QGTPG_TRI, self->mesh.vertices);
+	else
+	{
+		qg_set_index(self->ibuffer);
+		qg_draw_indexed(QGTPG_TRI, self->mesh.polygons * 3);
+	}
 }
 
 // 메시 제거
@@ -128,9 +143,14 @@ bool qg_mesh_gen_cube(QgMesh* self, float width, float height, float depth)
 
 	for (int i = 0; i < vertex_count; i++)
 	{
-		pos[i] = (QmFloat3){ mesh->points[i * 3 + 0], mesh->points[i * 3 + 1], mesh->points[i * 3 + 2] };
-		norm[i] = (QmFloat3){ mesh->normals[i * 3 + 0], mesh->normals[i * 3 + 1], mesh->normals[i * 3 + 2] };
-		coord[i] = (QmFloat2){ mesh->tcoords[i * 2 + 0], mesh->tcoords[i * 2 + 1] };
+		PAR_SHAPES_T p0 = mesh->triangles[i] * 3 + 0;
+		PAR_SHAPES_T p1 = mesh->triangles[i] * 3 + 1;
+		PAR_SHAPES_T p2 = mesh->triangles[i] * 3 + 2;
+		pos[i] = (QmFloat3){ mesh->points[p0], mesh->points[p1], mesh->points[p2] };
+		norm[i] = (QmFloat3){ mesh->normals[p0], mesh->normals[p1], mesh->normals[p2] };
+		PAR_SHAPES_T t0 = mesh->triangles[i] * 2 + 0;
+		PAR_SHAPES_T t1 = mesh->triangles[i] * 2 + 1;
+		coord[i] = (QmFloat2){ mesh->tcoords[t0], mesh->tcoords[t1] };
 	}
 
 	par_shapes_free_mesh(mesh);
@@ -221,9 +241,14 @@ bool qg_mesh_gen_sphere(QgMesh* self, float radius, int slices, int stacks)
 
 	for (int i = 0; i < vertex_count; i++)
 	{
-		pos[i] = (QmFloat3){ mesh->points[i * 3 + 0], mesh->points[i * 3 + 1], mesh->points[i * 3 + 2] };
-		norm[i] = (QmFloat3){ mesh->normals[i * 3 + 0], mesh->normals[i * 3 + 1], mesh->normals[i * 3 + 2] };
-		coord[i] = (QmFloat2){ mesh->tcoords[i * 2 + 0], mesh->tcoords[i * 2 + 1] };
+		PAR_SHAPES_T p0 = mesh->triangles[i] * 3 + 0;
+		PAR_SHAPES_T p1 = mesh->triangles[i] * 3 + 1;
+		PAR_SHAPES_T p2 = mesh->triangles[i] * 3 + 2;
+		pos[i] = (QmFloat3){ mesh->points[p0], mesh->points[p1], mesh->points[p2] };
+		norm[i] = (QmFloat3){ mesh->normals[p0], mesh->normals[p1], mesh->normals[p2] };
+		PAR_SHAPES_T t0 = mesh->triangles[i] * 2 + 0;
+		PAR_SHAPES_T t1 = mesh->triangles[i] * 2 + 1;
+		coord[i] = (QmFloat2){ mesh->tcoords[t0], mesh->tcoords[t1] };
 	}
 
 	par_shapes_free_mesh(mesh);
@@ -313,28 +338,28 @@ bool qg_mesh_build(QgMesh* self)
 		QgLayoutInput* input = &self->layout.inputs[i];
 		if ((size_t)input->stage >= QGLOS_MAX_VALUE)
 		{
-			qn_mesgf(true, VAR_CHK_NAME, "invalid layout stage: %d", input->stage);
+			qn_mesgfb(VAR_CHK_NAME, "invalid layout stage: %d", input->stage);
 			return false;
 		}
 		if ((size_t)input->format >= QGLOT_MAX_VALUE)
 		{
-			qn_mesgf(true, VAR_CHK_NAME, "invalid layout format: %d", input->format);
+			qn_mesgfb(VAR_CHK_NAME, "invalid layout format: %d", input->format);
 			return false;
 		}
 		if ((size_t)input->usage >= QGLOU_MAX_VALUE)
 		{
-			qn_mesgf(true, VAR_CHK_NAME, "invalid layout usage: %d", input->usage);
+			qn_mesgfb(VAR_CHK_NAME, "invalid layout usage: %d", input->usage);
 			return false;
 		}
 		byte format = lu_formats[input->usage];
 		if (format == 0)
 		{
-			qn_mesgf(true, VAR_CHK_NAME, "layout not support: %d", input->usage);
+			qn_mesgfb(VAR_CHK_NAME, "layout not support: %d", input->usage);
 			return false;
 		}
 		if (input->format != format)
 		{
-			qn_mesgf(true, VAR_CHK_NAME, "layout format not match: %d (need: %d)", input->format, format);
+			qn_mesgfb(VAR_CHK_NAME, "layout format not match: %d (need: %d)", input->format, format);
 			return false;
 		}
 
@@ -348,8 +373,10 @@ bool qg_mesh_build(QgMesh* self)
 	byte* vdata[QGLOS_MAX_VALUE];
 	for (i = 0; i < QGLOS_MAX_VALUE; i++)
 	{
+		qn_unload(self->vbuffers[i]);
 		if (loac[i] == 0)
 		{
+			self->vbuffers[i] = NULL;
 			vdata[i] = NULL;
 			continue;
 		}
@@ -448,7 +475,10 @@ bool qg_mesh_build(QgMesh* self)
 	}
 
 	if (self->mesh.index != NULL)
+	{
+		qn_unload(self->ibuffer);
 		self->ibuffer = qg_create_buffer(QGBUFFER_INDEX, self->mesh.polygons * 3, sizeof(int), self->mesh.index);
+	}
 
 	return true;
 }

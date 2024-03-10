@@ -11,7 +11,7 @@ typedef struct ORTHOVERTEX
 // 평면 정점 설정
 INLINE void QM_VECTORCALL ortho_vertex_set(OrthoVertex* o, const QMVEC pos, QmFloat2 coord, const QmKolor color)
 {
-	qm_vec_st_float3(&o->pos, pos);
+	qm_vec_to_float3(pos, &o->pos);
 	o->coord = coord;
 	o->color = color;
 }
@@ -36,8 +36,8 @@ typedef struct FRSTVERTEX
 // 3D 정점 설정
 INLINE void QM_VECTORCALL frst_vertex_set(FrstVertex* f, const QMVEC pos, const QMVEC normal, QmFloat2 coord, const QmKolor color)
 {
-	qm_vec_st_float3(&f->pos, pos);
-	qm_vec_st_float3(&f->normal, normal);
+	qm_vec_to_float3(pos, &f->pos);
+	qm_vec_to_float3(normal, &f->normal);
 	f->coord = coord;
 	f->color = color;
 }

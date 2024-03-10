@@ -303,8 +303,9 @@ typedef enum QGSHADERCONSTAUTO
 	QGSCA_VIEW,												/// @brief 뷰 행렬
 	QGSCA_PROJ,												/// @brief 투영 행렬
 	QGSCA_VIEW_PROJ,										/// @brief 뷰와 투영의 곱행렬
+	QGSCA_PROJ_VIEW,										/// @brief 투영과 뷰의 곱행렬
 	QGSCA_INV_VIEW,											/// @brief 뷰의 역행렬
-	QGSCA_WORLD_VIEW_PROJ,									/// @brief 전역 투영
+	QGSCA_MVP,												/// @brief 모델뷰투영 행렬
 	QGSCA_TEX1,												/// @brief 텍스쳐 1번
 	QGSCA_TEX2,												/// @brief 텍스쳐 2번
 	QGSCA_TEX3,												/// @brief 텍스쳐 3번
@@ -374,12 +375,15 @@ typedef enum QGTEXFLAG
 	QGTEXSPEC_ARRAY = QN_BIT(31),							/// @brief 배열 텍스쳐
 } QgTexFlag;
 
-/// @brief 글꼴 타입
-typedef enum QGFONTTYPE
+/// @brief 글꼴 플래그
+typedef enum QGFONTFLAG
 {
-	QGFONT_BITMAP,
-	QGFONT_TRUETYPE,
-} QgFontType;
+	QGFONTF_NONE = 0,
+
+	QGFONTTYPE_JOHAB = QN_BIT(16),
+	QGFONTTYPE_ATLAS = QN_BIT(17),
+	QGFONTTYPE_TRUETYPE = QN_BIT(18),
+} QgFontFlag;
 
 /// @brief 배치
 typedef enum QGBATCHCMD
@@ -391,6 +395,16 @@ typedef enum QGBATCHCMD
 	QGBTC_GLYPH,
 	QGBTC_MAX_VALE,
 } QgBatchCmd;
+
+/// @brief 카메라
+typedef enum QGCAMERAFLAG
+{
+	QGCAMF_NONE = 0,
+	QGCAMF_LAYOUT = QN_BIT(0),								/// @brief 스터브 레이아웃에 영향
+	QGCAMF_PAUSE = QN_BIT(1),								/// @brief 카메라 포즈
+	QGCAMF_MAYA = QN_BIT(16),								/// @brief 마야 카메라
+	QGCAMF_FPS = QN_BIT(17),								/// @brief FPS 카메라
+} QgCameraFlag;
 
 /// @brief 스터브와 렌더러 만들 때 플래그
 typedef enum QGFLAG
@@ -766,15 +780,15 @@ typedef struct QGLAYOUTINPUT
 /// @brief 레이아웃 데이터
 typedef struct QGLAYOUTDATA
 {
-	QgLayoutInput*		inputs;								///	@brief 요소 데이터 포인트
 	size_t				count;								/// @brief 요소 갯수
+	QgLayoutInput*		inputs;								///	@brief 요소 데이터 포인트
 } QgLayoutData;
 
 /// @brief 코드 데이터
 typedef struct QGCODEDATA
 {
-	void*				code;								/// @brief 코드 데이터
 	size_t				size;								/// @brief 코드 크기 (텍스트 타입이면 반드시 0이어야 한다!)
+	void*				code;								/// @brief 코드 데이터
 } QgCodeData;
 
 /// @brief 세이더 속성
@@ -840,44 +854,6 @@ typedef struct QGVARSHADER
 	QgScAuto			scauto;								/// @brief 자동 타입 또는 사용자 정의 키 값
 } QgVarShader;
 
-/// @brief 프로젝션 파라미터
-typedef struct QGPARAMPROJ
-{
-	float				fov;								/// @brief 시야각
-	float				aspect;								/// @brief 가로 세로 비율
-	float				znear;								/// @brief 가까운 평면
-	float				zfar;								/// @brief 먼 평면
-} QgParamProj;
-
-/// @brief 뷰 파라미터
-typedef struct QGPARAMVIEW
-{
-	QmVec4				eye;								/// @brief 눈 위치
-	QmVec4				at;									/// @brief 바라보는 위치
-	QmVec4				up;									/// @brief 위 방향
-	QmVec4				ahead;								/// @brief 앞 방향
-} QgParamView;
-
-/// @brief 카메라 파라미터
-typedef struct QGPARAMCAMERA
-{
-	QmMat4				proj;								/// @brief 프로젝션 행렬
-	QmMat4				view;								/// @brief 뷰 행렬
-	QmMat4				invv;								/// @brief 역 행렬
-	QmMat4				vipr;								/// @brief 프로젝션 곱하기 뷰 행렬
-
-	QmVec4				rot;								/// @brief 회전
-	float				dist;								/// @brief 거리
-
-	float				spd_move;							/// @brief 이동 속도
-	float				spd_rot;							/// @brief 회전 속도
-
-	uint				use_layout : 1;
-	uint				use_pause : 1;
-	uint				use_maya : 1;
-	uint				__pad : 29;
-} QgParamCamera;
-
 /// @brief 메시 프로퍼티
 typedef struct QGPROPMESH
 {
@@ -892,6 +868,22 @@ typedef struct QGPROPMESH
 	uint*				color[2];
 	int*				index;
 } QgPropMesh;
+
+/// @brief 카메라 컨트롤 입력
+typedef struct QGCAMCTRL
+{
+	QikKey				move_front;							/// @brief 앞으로 가는 키
+	QikKey				move_back;							/// @brief 뒤로 가는 키
+	QikKey				move_left;							/// @brief 왼쪽으로 가는 키
+	QikKey				move_right;							/// @brief 오른쪽으로 가는 키
+	QikKey				move_up;							/// @brief 위로 가는 키
+	QikKey				move_down;							/// @brief 아래로 가는 키
+	QikKey				rot_yaw_left;						/// @brief 좌로 회전하는 키
+	QikKey				rot_yaw_right;						/// @brief 우로 회전하는 키
+	QikKey				rot_pitch_up;						/// @brief 위로 회전하는 키
+	QikKey				rot_pitch_down;						/// @brief 아래로 회전하는 키
+	QimButton			rot_button;							/// @brief 회전 버튼
+} QgCamCtrl;
 
 /// @brief 키 상태
 typedef struct QGUIMKEY
@@ -1184,6 +1176,18 @@ QSAPI bool qg_get_mouse_button_press(const QimButton button);
 /// @return 눌렸다 떼졌으면 참
 QSAPI bool qg_get_mouse_button_release(const QimButton button);
 
+/// @brief 마우스 버튼 마스크
+/// @return 마우스 버튼 마스크
+QSAPI const QimMask qg_get_mouse_button_mask(void);
+
+/// @brief 마우스 위치를 얻는다
+/// @param pos 마우스 위치
+QSAPI void qg_get_mouse_get_position(QmPoint* pos);
+
+/// @brief 마우스 이동 변위를 얻는다
+/// @param delta 마우스 이동 변위
+QSAPI void qg_get_mouse_get_delta(QmPoint* delta);
+
 /// @brief 초당 프레임(FPS)를 얻는다
 /// @return 초당 프레임 수
 QSAPI float qg_get_fps(void);
@@ -1226,9 +1230,21 @@ QSAPI void qg_set_aspect(const int width, const int height);
 /// @brief 스터브 크기를 얻는다
 QSAPI void qg_get_size(_Out_ QmSize* size);
 
+/// @brief 프로그램 종료 키를 설정한다
+/// @param key 종료 키
+QSAPI void qg_set_exit_key(QikKey key);
+
+/// @brief 풀스크린 키를 설정한다
+/// @param key 풀스크린 키
+QSAPI void qg_set_fullscreen_key(QikKey key);
+
 /// @brief 스터브 루프를 처리한다
 /// @return 거짓이면 프로그램을 종료한다
 QSAPI bool qg_loop(void);
+
+/// @brief 스터브 루프를 처리하면서 이벤트를 처리한다
+/// @return 거짓이면 프로그램을 종료한다
+QSAPI bool qg_loop_dispatch(void);
 
 /// @brief 스터브 이벤트를 폴링한다
 /// @param[out] ev 폴링한 이벤트를 반환
@@ -1408,6 +1424,10 @@ QSAPI void qg_set_param_weight(int count, QMMAT* weight);
 /// @param background_color 배경색
 QSAPI void qg_set_background(const QMVEC* background_color);
 
+/// @brief 배경색을 설정한다
+/// @param r,g,b,a 배경색
+QSAPI void qg_set_background_param(float r, float g, float b, float a);
+
 /// @brief 월드 행렬을 설정한다
 /// @param world 월드 행렬
 QSAPI void qg_set_world(const QMMAT* world);
@@ -1564,6 +1584,16 @@ struct QGRENDERSTATE
 /// @return 만들어진 렌더 파이프라인
 QSAPI QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgPropShader* shader);
 
+/// @brief 렌더 파이프라인을 만든다
+/// @param name 렌더 이름 (이름을 지정하면 캐시한다)
+/// @param render 렌더 파이프라인 속성
+/// @param layout 레이아웃 속성
+/// @param mount 마운트 번호
+/// @param vsfile 정점 세이더 파일
+/// @param psfile 픽셀 세이더 파일
+/// @return 만들어진 렌더 파이프라인
+QSAPI QgRenderState* qg_create_render_state_vsps(const char* name, const QgPropRender* render, const QgLayoutData* layout, int mount, const char* vsfile, const char* psfile);
+
 
 /// @brief 텍스쳐
 struct QGTEXTURE
@@ -1611,7 +1641,7 @@ struct QGIMAGE
 	int					height;
 	int					pitch;
 	int					mipmaps;
-	byte*				data;
+	int					extra;
 };
 
 /// @brief 빈 이미지를 만든다
@@ -1687,8 +1717,7 @@ struct QGFONT
 {
 	QN_GAM_BASE(QNGAMBASE);
 
-	char*				name;
-	QgFontType			type;
+	QgFontFlag			flags;
 	int					size;
 	QmKolor				color;
 	QmSize				step;
@@ -1699,26 +1728,38 @@ QN_DECL_VTABLE(QGFONT)
 	QN_GAM_VTABLE(QNGAMBASE);
 	void (*set_size)(QnGam, int);
 	void (*draw)(QnGam, const QmRect*, const char*);
-	QmPoint(*calc)(QnGam, const char*);
+	QmPoint (*calc)(QnGam, const char*);
 };
 
 /// @brief 글꼴을 만든다
 /// @param mount 마운트 번호
 /// @param filename 파일 이름
-/// @param font_base_size 기본 글꼴 크기
 /// @param cjk 트루타입이 아닐 경우 이미지의 CJK 마스크 (0x01: 한글, 0x02: 중국어, 0x04: 일본어)
 /// @return 만들어진 글꼴
-QSAPI QgFont* qg_load_font(int mount, const char* filename, int font_base_size, int cjk);
+QSAPI QgFont* qg_load_font(int mount, const char* filename, int cjk);
 
 /// @brief 글꼴을 버퍼에서 만든다
 /// @param name 글꼴 이름
 /// @param data 글꼴 데이터
 /// @param data_size 글꼴 데이터 크기
-/// @param font_base_size 기본 글꼴 크기
 /// @param cjk 트루타입이 아닐 경우 이미지의 CJK 마스크 (0x01: 한글, 0x02: 중국어, 0x04: 일본어)
 /// @return 만들어진 글꼴
 /// @warning 글꼴 데이터는 글꼴이 관리하기 때문에 해제하면 안된다. 임시 메모리를 전달해도 안되며 반드시 할당한 데이터 일 것
-QSAPI QgFont* qg_load_font_buffer(void* data, int data_size, int font_base_size, int cjk);
+QSAPI QgFont* qg_load_font_buffer(void* data, int data_size, int cjk);
+
+/// @brief 글꼴을 버퍼에서 추가한다
+/// @param font 글꼴
+/// @param data 글꼴 데이터
+/// @param size 글꼴 데이터 크기
+/// @return 추가에 성공하면 참
+QSAPI bool qg_font_add_buffer(QgFont* font, void* data, int size);
+
+/// @brief 글꼴을 파일에서 추가한다
+/// @param font 글꼴
+/// @param mount 마운트 번호
+/// @param filename 글꼴 파일 이름
+/// @return 추가에 성공하면 참
+QSAPI bool qg_font_add(QgFont* font, int mount, const char* filename);
 
 /// @brief 글꼴 크기를 설정한다
 /// @param self 글꼴
@@ -1774,9 +1815,8 @@ QSAPI void qg_font_write_format(QgFont* self, int x, int y, const char* fmt, ...
 /// @brief 기본 글꼴을 로드한다
 /// @param mount 마운트 번호
 /// @param filename 글꼴 파일 이름
-/// @param font_base_size 기본 글꼴 크기
 /// @return 로드에 성공하면 참
-QSAPI bool qg_load_def_font(int mount, const char* filename, int font_base_size);
+QSAPI bool qg_load_def_font(int mount, const char* filename);
 
 /// @brief 기본 글꼴을 얻는다
 /// @return 기본 글꼴
@@ -1838,6 +1878,11 @@ QSAPI void qg_dpct_draw(QNGAM dpct);
 QSAPI void qg_dpct_set_loc(QNGAM dpct, const QMVEC* loc);
 QSAPI void qg_dpct_set_rot(QNGAM dpct, const QMVEC* rot);
 QSAPI void qg_dpct_set_scl(QNGAM dpct, const QMVEC* scl);
+QSAPI void qg_dcpt_set_local(QNGAM dcpt, const QMMAT* m);
+QSAPI void qg_dcpt_set_calc(QNGAM dcpt, const QMMAT* m);
+QSAPI void qg_dpct_set_loc_param(QNGAM dpct, float x, float y, float z);
+QSAPI void qg_dpct_set_rot_param(QNGAM dpct, float x, float y, float z, float w);
+QSAPI void qg_dpct_set_scl_param(QNGAM dpct, float x, float y, float z);
 QSAPI void qg_dpct_set_name(QNGAM dpct, const char* name);
 QSAPI void qg_dpct_update_tm(QNGAM dpct);
 
@@ -1902,15 +1947,39 @@ struct QGCAMERA
 {
 	QN_GAM_BASE(QNGAMBASE);
 
-	QgParamCamera		param;
-	QgParamProj			proj;
-	QgParamView			view;
+	QgCameraFlag		flags;								/// @brief 카메라 플래그
+
+	struct QGCAMERA_PARAM
+	{
+		float			aspect;								/// @brief 종횡비
+		float			fov;								/// @brief 시야각
+		float			znear;								/// @brief 가까운 평면
+		float			zfar;								/// @brief 먼 평면
+
+		float			dist;								/// @brief 카메라와의 거리
+		QmVec4			smove;								/// @brief 이동 속도
+		QmVec4			srot;								/// @brief 회전 속도
+		QmVec4			dmove;								/// @brief 이동 거리
+		QmVec4			drot;								/// @brief 회전 거리
+
+		QmVec4			angle;								/// @brief 회전 (roll/pitch/yaw => 벡터3)
+		QmVec4			eye;								/// @brief 시점 (벡터3)
+		QmVec4			at;									/// @brief 시선 (벡터3)
+	}					param;
+
+	struct QGCAMERA_MATRIX
+	{
+		QMMAT				proj;							/// @brief 프로젝션 행렬
+		QMMAT				view;							/// @brief 뷰 행렬
+		QMMAT				invv;							/// @brief 뷰의 역 행렬
+	}					mat;
 };
 
 QN_DECL_VTABLE(QGCAMERA)
 {
 	QN_GAM_VTABLE(QNGAMBASE);
 	void (*update)(QnGam);
+	void (*control)(QnGam, const QgCamCtrl*, float);
 };
 
 /// @brief 카메라를 만든다
@@ -1923,53 +1992,62 @@ QSAPI QgCamera* qg_create_maya_camera(void);
 
 /// @brief 프로젝션 속성을 설정한다
 /// @param self 카메라
+/// @param ascpect 종횡비 (화면 종횡비는 qg_get_aspect() 함수로 가져올 수 있다)
 /// @param fov 시야각
 /// @param znear 가까운 평면
 /// @param zfar 먼 평면
-QSAPI void qg_camera_set_proj(QgCamera* self, float fov, float znear, float zfar);
+QSAPI void qg_camera_set_proj_param(QgCamera* self, float ascpect, float fov, float znear, float zfar);
 
-/// @brief 프로젝션 속성을 설정한다 (추가로 종횡비 설정)
+/// @brief 카메라 위치를 설정한다
 /// @param self 카메라
-/// @param ascpect 종횡비
-/// @param fov 시야각
-/// @param znear 가까운 평면
-/// @param zfar 먼 평면
-QSAPI void qg_camera_set_proj_aspect(QgCamera* self, float ascpect, float fov, float znear, float zfar);
+/// @param pos 위치
+/// @note 기본 카메라는 시점의 위치, 마야 카메라는 시선의	위치를 설정한다
+QSAPI void qg_camera_set_position(QgCamera* self, const QMVEC* pos);
 
-/// @brief 뷰 속성을 설정한다
+/// @brief 카메라 각도를 설정한다
 /// @param self 카메라
-/// @param eye 위치
-/// @param at 시선
-/// @param ahead 앞 방향
-/// @return 마야 카메라를 사용하면 무조건 거짓을 반환한다
-/// @note at과 ahead는 카메라의 위치와 방향을 설정한다
-QSAPI bool qg_camera_set_view(QgCamera* self, const QMVEC* eye, const QMVEC* at, const QMVEC* ahead);
+/// @param angle 각도
+QSAPI void qg_camera_set_angle(QgCamera* self, const QMVEC* angle);
 
 /// @brief 카메라 회전을 설정한다 (마야/FPS 카메라)
 /// @param self 카메라
 /// @param rot 회전
-QSAPI void qg_camera_set_rot(QgCamera* self, const QMVEC* rot);
-
-/// @brief 카메라 회전 속도를 설정한다 (마야/FPS 카메라)
-/// @param self 카메라
-/// @param spd 회전 속도
-QSAPI void qg_camera_set_rot_speed(QgCamera* self, float spd);
+QSAPI void qg_camera_set_angle(QgCamera* self, const QMVEC* angle);
 
 /// @brief 카메라 이동 속도를 설정한다 (마야/FPS 카메라)
 /// @param self 카메라
-/// @param spd 이동 속도
-QSAPI void qg_camera_set_move_speed(QgCamera* self, float spd);
+/// @param s 이동 속도
+QSAPI void qg_camera_set_move_speed(QgCamera* self, const QMVEC* s);
 
-/// @brief 점과 카메라의 거리의 제곱을 얻는다
+/// @brief 카메라 회전 속도를 설정한다 (마야/FPS 카메라)
 /// @param self 카메라
-/// @param pos 점
-/// @return 거리의 제곱
-QSAPI float qg_camera_get_distsq(const QgCamera* self, const QMVEC* pos);
+/// @param s 회전 속도
+QSAPI void qg_camera_set_rot_speed(QgCamera* self, const QMVEC* s);
+
+/// @brief 카메라 위치를 설정한다
+/// @param self 카메라
+/// @param x,y,z 위치
+QSAPI void qg_camera_set_position_param(QgCamera* self, float x, float y, float z);
+
+/// @brief 카메라 각도를 설정한다
+/// @param self 카메라
+/// @param x,y,z 각도
+QSAPI void qg_camera_set_angle_param(QgCamera* self, float x, float y, float z);
+
+/// @brief 카메라 이동 속도를 설정한다 (마야/FPS 카메라)
+/// @param self 카메라
+/// @param sx,sy,sz 각 축에 대한 이동 속도
+QSAPI void qg_camera_set_move_speed_param(QgCamera* self, float sx, float sy, float sz);
+
+/// @brief 카메라 회전 속도를 설정한다 (마야/FPS 카메라)
+/// @param self 카메라
+/// @param sx,sy,sz 각 축에 대한 회전 속도
+QSAPI void qg_camera_set_rot_speed_param(QgCamera* self, float sx, float sy, float sz);
 
 /// @brief 점과 카메라의 거리를 얻는다
 /// @param self 카메라
 /// @param pos 점
-/// @return 거리
+/// @return 시점과의 거리
 QSAPI float qg_camera_get_dist(const QgCamera* self, const QMVEC* pos);
 
 /// @brief 점을 카메라 공간으로 변환한다
@@ -1982,6 +2060,25 @@ QSAPI QMVEC qg_camera_project(const QgCamera* self, const QMVEC v, const QMMAT* 
 /// @brief 카메라를 업데이트한다
 /// @param self 카메라
 QSAPI void qg_camera_update(QgCamera* self);
+
+/// @brief 카메라를 조종한다
+/// @param self 카메라
+/// @param ctrl 카메라 컨트롤 정의 구조체 (널이면 기본값)
+/// @param advance 시간
+/// @details 카메라 컨트롤 정의 구조체의 기본값은 다음과 같다
+/// 명령        | 키값
+/// ------------|------------
+/// 앞으로      | W
+/// 뒤로        | S
+/// 왼쪽으로    | A
+/// 오른쪽으로  | D
+/// 위로        | R
+/// 아래로      | F
+/// 왼쪽 회전   | 왼쪽 화살표
+/// 오른쪽 회전 | 오른쪽 화살표
+/// 위로 회전   | 위 화살표
+/// 아래로 회전 | 아래 화살표
+QSAPI void qg_camera_control(QgCamera* self, const QgCamCtrl* ctrl, float advance);
 
 
 /// @brief 메시

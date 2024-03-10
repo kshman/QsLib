@@ -928,7 +928,7 @@ static char* _file_stream_get_real_path(char* dest, const QnMount* mount, const 
 #ifdef _QN_WINDOWS_
 	if (filename[0] != '\0' && filename[1] == ':')
 	{
-		qn_debug_mesg(true, "FileStream", "cannot use drive letter");
+		qn_debug_mesg("FileStream", "cannot use drive letter");
 		return NULL;
 	}
 #endif
@@ -938,7 +938,7 @@ static char* _file_stream_get_real_path(char* dest, const QnMount* mount, const 
 		const size_t len = strlen(filename);
 		if (mount->name_len + len >= QN_MAX_PATH)
 		{
-			qn_mesg(true, "FileStream", "filename too long");
+			qn_mesgb("FileStream", "filename too long");
 			return NULL;
 		}
 #endif
@@ -951,7 +951,7 @@ static char* _file_stream_get_real_path(char* dest, const QnMount* mount, const 
 		const size_t len = strlen(filename);
 		if (mount->path.LENGTH + len >= QN_MAX_PATH)
 		{
-			qn_mesg(true, "FileStream", "filename too long");
+			qn_mesgb("FileStream", "filename too long");
 			return NULL;
 		}
 #endif
@@ -1133,7 +1133,7 @@ static QnStream* _file_stream_open(QnMount* mount, const char* filename, const c
 		FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), 0, wz, QN_COUNTOF(wz), NULL);
 		char sz[256];
 		qn_u16to8(sz, 256, wz, 0);
-		qn_mesgf(false, "FileStream", "CreateFile failed: %s", sz);
+		qn_mesgf("FileStream", "CreateFile failed: %s", sz);
 #endif
 		return NULL;
 	}
@@ -1201,7 +1201,7 @@ static int _indirect_stream_read(QnGam g, void* buffer, const int offset, const 
 static int _indirect_stream_write(QnGam g, const void* buffer, const int offset, const int size)
 {
 	QN_DUMMY(g); QN_DUMMY(buffer); QN_DUMMY(offset); QN_DUMMY(size);
-	qn_mesgf(true, "IndirectStream", "write not supported");
+	qn_mesgb("IndirectStream", "write not supported");
 	return -1;
 }
 
@@ -2286,7 +2286,7 @@ static QnStream* _hfs_stream(QnGam g, const char* filename, const char* mode)
 		{
 			if (*p == 'w' || *p == 'a' || *p == '+')
 			{
-				qn_mesgf(true, "Hfs", "file write mode is not supported: %s (%s)", filename, mode);
+				qn_mesgfb("Hfs", "file write mode is not supported: %s (%s)", filename, mode);
 				errno = EACCES;
 				return NULL;
 			}
@@ -3451,7 +3451,7 @@ QnMount* qn_create_fuse(const char* path, bool diskfs, bool loadall)
 				if (filename == NULL)
 					break;
 				if (_fuse_add_hfs(self, filename) == false)
-					qn_mesgf(true, "Fuse", "Failed to load HFS file: %s (check opened by other program)", filename);
+					qn_mesgfb("Fuse", "Failed to load HFS file: %s (check opened by other program)", filename);
 			}
 			qn_unload(dir);
 		}

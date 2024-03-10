@@ -88,6 +88,41 @@ void qg_dpct_set_scl(QNGAM dpct, const QMVEC* scl)
 }
 
 //
+void qg_dcpt_set_local(QNGAM dcpt, const QMMAT* m)
+{
+	QgDpct* self = qn_cast_type(dcpt, QgDpct);
+	self->trfm.mlocal.s = m != NULL ? *m : qm_mat4_unit();
+}
+
+//
+void qg_dcpt_set_calc(QNGAM dcpt, const QMMAT* m)
+{
+	QgDpct* self = qn_cast_type(dcpt, QgDpct);
+	self->trfm.mcalc.s = m != NULL ? *m : qm_mat4_unit();
+}
+
+//
+void qg_dpct_set_loc_param(QNGAM dpct, float x, float y, float z)
+{
+	QMVEC v = qm_vec(x, y, z, 0.0f);
+	qg_dpct_set_loc(dpct, &v);
+}
+
+//
+void qg_dpct_set_rot_param(QNGAM dpct, float x, float y, float z, float w)
+{
+	QMVEC v = qm_vec(x, y, z, w);
+	qg_dpct_set_rot(dpct, &v);
+}
+
+//
+void qg_dpct_set_scl_param(QNGAM dpct, float x, float y, float z)
+{
+	QMVEC v = qm_vec(x, y, z, 1.0f);
+	qg_dpct_set_scl(dpct, &v);
+}
+
+//
 void qg_dpct_set_name(QNGAM dpct, const char* name)
 {
 	QgDpct* self = qn_cast_type(dpct, QgDpct);
@@ -109,12 +144,13 @@ void qg_dpct_update_tm(QNGAM dpct)
 //////////////////////////////////////////////////////////////////////////
 // 레이 캐스트
 
+//
 void qg_ray_set_point(QgRay* self, float x, float y)
 {
 	qn_return_when_fail(self->camera != NULL, );
 	const QmSize size = RDH_TRANSFORM->size;
-	const QmMat4* proj = &self->camera->param.proj;
-	const QmMat4* invv = &self->camera->param.invv;
+	const QmMat4* proj = (const QmMat4*)&self->camera->mat.proj;
+	const QmMat4* invv = (const QmMat4*)&self->camera->mat.invv;
 
 	QMVEC v = qm_vec(
 		((((x - size.Width) * 2.0f / size.Width) - 1.0f) - proj->_31) / proj->_11,
@@ -123,14 +159,15 @@ void qg_ray_set_point(QgRay* self, float x, float y)
 
 	self->location.s = qm_vec(x, y, 0.0f, 0.0f);
 	self->direction.s = qm_vec3_trfm_norm(v, invv->s);
-	self->origin.s = qm_vec(invv->_41, invv->_42, invv->_43, 0.0f);
+	self->origin.s = qm_vec_set_w(invv->r[3], 0.0f);
 }
 
+//
 void qg_ray_set_bound_point(QgRay* self, const QmRect* bound, float x, float y)
 {
 	qn_return_when_fail(self->camera != NULL, );
-	const QmMat4* proj = &self->camera->param.proj;
-	const QmMat4* invv = &self->camera->param.invv;
+	const QmMat4* proj = (const QmMat4*)&self->camera->mat.proj;
+	const QmMat4* invv = (const QmMat4*)&self->camera->mat.invv;
 	const int width = qm_rect_get_width(*bound);
 	const int height = qm_rect_get_height(*bound);
 
@@ -141,14 +178,16 @@ void qg_ray_set_bound_point(QgRay* self, const QmRect* bound, float x, float y)
 
 	self->location.s = qm_vec(x, y, 0.0f, 0.0f);
 	self->direction.s = qm_vec3_trfm_norm(v, invv->s);
-	self->origin.s = qm_vec(invv->_41, invv->_42, invv->_43, 0.0f);
+	self->origin.s = qm_vec_set_w(invv->r[3], 0.0f);
 }
 
+//
 QMVEC qg_ray_get_loc(const QgRay* self, float dist)
 {
 	return qm_vec_add(qm_vec_mag(self->direction.s, dist), self->origin.s);
 }
 
+//
 bool qg_ray_intersect_tri(const QgRay* self, const QMVEC* v1, const QMVEC* v2, const QMVEC* v3, float* distance)
 {
 	const QMVEC e1 = qm_vec_sub(*v2, *v1);
@@ -180,6 +219,7 @@ bool qg_ray_intersect_tri(const QgRay* self, const QMVEC* v1, const QMVEC* v2, c
 	return false;
 }
 
+//
 bool qg_ray_intersect_plane(const QgRay* self, const QMVEC* plane, const QMVEC* normal, float* distance)
 {
 	const float d = qm_vec3_dot(*normal, *plane);
@@ -193,6 +233,7 @@ bool qg_ray_intersect_plane(const QgRay* self, const QMVEC* plane, const QMVEC* 
 	return false;
 }
 
+//
 static void qg_ray_dispose(QnGam g)
 {
 	QgRay* self = qn_cast_type(g, QgRay);
@@ -200,6 +241,7 @@ static void qg_ray_dispose(QnGam g)
 	qn_free(self);
 }
 
+//
 QgRay* qg_create_ray(QgCamera* camera)
 {
 	QgRay* self = qn_alloc_zero_1(QgRay);
@@ -217,75 +259,83 @@ QgRay* qg_create_ray(QgCamera* camera)
 // 카메라
 
 //
-void qg_camera_set_proj(QgCamera* self, float fov, float znear, float zfar)
+void qg_camera_set_proj_param(QgCamera* self, float ascpect, float fov, float znear, float zfar)
 {
-	self->proj.aspect = qg_get_aspect();
-	self->proj.fov = fov;
-	self->proj.znear = znear;
-	self->proj.zfar = zfar;
+	self->param.aspect = ascpect;
+	self->param.fov = fov;
+	self->param.znear = znear;
+	self->param.zfar = zfar;
 }
 
 //
-void qg_camera_set_proj_aspect(QgCamera* self, float ascpect, float fov, float znear, float zfar)
+void qg_camera_set_position(QgCamera* self, const QMVEC* pos)
 {
-	self->proj.aspect = ascpect;
-	self->proj.fov = fov;
-	self->proj.znear = znear;
-	self->proj.zfar = zfar;
+	if (QN_TMASK(self->flags, QGCAMF_MAYA))
+		self->param.at.s = *pos;
+	else
+		self->param.eye.s = *pos;
 }
 
 //
-bool qg_camera_set_view(QgCamera* self, const QMVEC* eye, const QMVEC* at, const QMVEC* ahead)
+void qg_camera_set_angle(QgCamera* self, const QMVEC* angle)
 {
-	qn_return_when_fail(self->param.use_maya, false);
-	if (eye)
-		self->view.eye.s = *eye;
-	if (at)
-		self->view.at.s = *at;
-	if (ahead)
-		self->view.ahead.s = *ahead;
-	return true;
+	self->param.angle.s = *angle;
 }
 
 //
-void qg_camera_set_rot(QgCamera* self, const QMVEC* rot)
+void qg_camera_set_move_speed(QgCamera* self, const QMVEC* s)
 {
-	self->param.rot.s = *rot;
+	self->param.smove.s = *s;
 }
 
 //
-void qg_camera_set_rot_speed(QgCamera* self, float spd)
+void qg_camera_set_rot_speed(QgCamera* self, const QMVEC* s)
 {
-	self->param.spd_rot = spd;
+	self->param.srot.s = *s;
 }
 
 //
-void qg_camera_set_move_speed(QgCamera* self, float spd)
+void qg_camera_set_position_param(QgCamera* self, float x, float y, float z)
 {
-	self->param.spd_move = spd;
+	if (QN_TMASK(self->flags, QGCAMF_MAYA))
+		self->param.at.s = qm_vec3(x, y, z);
+	else
+		self->param.eye.s = qm_vec3(x, y, z);
 }
 
 //
-float qg_camera_get_distsq(const QgCamera* self, const QMVEC* pos)
+void qg_camera_set_angle_param(QgCamera* self, float x, float y, float z)
 {
-	const QMVEC v = qm_vec_sub(*pos, self->view.eye.s);
-	return qm_vec3_dot(v, v);
+	self->param.angle.s = qm_vec3(x, y, z);
+}
+
+//
+void qg_camera_set_move_speed_param(QgCamera* self, float sx, float sy, float sz)
+{
+	self->param.smove.s = qm_vec3(sx, sy, sz);
+}
+
+//
+void qg_camera_set_rot_speed_param(QgCamera* self, float sx, float sy, float sz)
+{
+	self->param.srot.s = qm_vec3(sx, sy, sz);
 }
 
 //
 float qg_camera_get_dist(const QgCamera* self, const QMVEC* pos)
 {
-	return qm_sqrtf(qg_camera_get_distsq(self, pos));
+	return qm_vec3_dist(self->param.eye.s, *pos);
 }
 
 //
 QMVEC qg_camera_project(const QgCamera* self, const QMVEC v, const QMMAT* world)
 {
 	const QmSize size = RDH_TRANSFORM->size;
-	QMMAT m = qm_mat4_mul(world != NULL ? *world : RDH_TRANSFORM->world.s, self->param.vipr.s);
+	QMMAT vp = qm_mat4_mul(self->mat.view, self->mat.proj);
+	QMMAT m = qm_mat4_mul(world != NULL ? *world : RDH_TRANSFORM->world.s, vp);
 	QMVEC t = qm_vec3_trfm(v, m);
 	QmFloat3A a;
-	qm_vec_st_float3a(&a, t);
+	qm_vec_to_float3a(t, &a);
 	return qm_vec(
 		(a.X + 1.0f) * 0.5f * size.Width,
 		(1.0f - a.Y) * 0.5f * size.Height,
@@ -299,62 +349,116 @@ void qg_camera_update(QgCamera* self)
 }
 
 //
+void qg_camera_control(QgCamera* self, const QgCamCtrl* ctrl, float advance)
+{
+	qn_cast_vtable(self, QGCAMERA)->control(self, ctrl, advance);
+}
+
+//
 static void _camera_internal_update(QnGam g)
 {
 	QgCamera* self = qn_cast_type(g, QgCamera);
 
-	if (self->param.use_layout)
-	{
-		self->proj.aspect = qg_get_aspect();
-		self->param.proj.s = qm_mat4_perspective_lh(self->proj.fov, self->proj.aspect, self->proj.znear, self->proj.zfar);
-	}
+	if (QN_TMASK(self->flags, QGCAMF_LAYOUT))
+		self->param.aspect = qg_get_aspect();
+	self->mat.proj = qm_mat4_perspective_lh(self->param.fov, self->param.aspect, self->param.znear, self->param.zfar);
 
-	if (self->param.use_maya)
-	{
-		QMMAT r = qm_mat4_rot_quat(self->param.rot.s);
-		self->view.up.s = qm_vec3_trfm(qm_vec(0.0f, 1.0f, 0.0f, 0.0f), r);
-		self->view.ahead.s = qm_vec3_trfm(qm_vec(0.0f, 0.0f, 1.0f, 0.0f), r);
+	self->param.angle.s = qm_vec_crad(qm_vec_add(self->param.angle.s, self->param.drot.s));
+	QMMAT r = qm_mat4_rot_vec3(self->param.angle.s);
+	QMVEC up = qm_vec3_trfm_norm(QMCONST_UNIT_R1.s, r);
+	QMVEC ah = qm_vec3_trfm_norm(QMCONST_UNIT_R2.s, r);
 
-		QMVEC ahead = qm_vec_mag(self->view.ahead.s, self->param.dist);
-		self->view.eye.s = qm_vec_sub(self->view.at.s, ahead);
-		QMVEC at = qm_vec_add(self->view.eye.s, self->view.ahead.s);
-		self->param.view.s = qm_mat4_lookat_lh(self->view.eye.s, at, self->view.up.s);
+	if (QN_TMASK(self->flags, QGCAMF_MAYA))
+	{
+		// 마야 카메라
+		QMVEC move = qm_vec3_trfm_norm(self->param.dmove.s, r);
+		self->param.at.s = qm_vec_add(self->param.at.s, move);
+		QMVEC dist = qm_vec_mag(ah, self->param.dist);
+		self->param.eye.s = qm_vec_sub(self->param.at.s, dist);
+		QMVEC at = qm_vec_add(self->param.eye.s, ah);
+		self->mat.view = qm_mat4_lookat_lh(self->param.eye.s, at, up);
 	}
 	else
 	{
-		self->param.view.s = qm_mat4_lookat_lh(self->view.eye.s, self->view.at.s, self->view.up.s);
+		// FPS 카메라
+		QMVEC move = qm_vec3_trfm_norm(self->param.dmove.s, r);
+		self->param.eye.s = qm_vec_add(self->param.eye.s, move);
+		self->param.at.s = qm_vec_add(self->param.eye.s, ah);
+		self->mat.view = qm_mat4_lookat_lh(self->param.eye.s, self->param.at.s, up);
 	}
 
-	self->param.invv.s = qm_mat4_inv(self->param.view.s);
-	self->param.vipr.s = qm_mat4_mul(self->param.proj.s, self->param.view.s);
+	self->mat.invv = qm_mat4_inv(self->mat.view);
 
+	self->param.dmove.s = qm_vec_zero();
+	self->param.drot.s = qm_vec_zero();
 	qg_set_camera(self);
+}
+
+//
+static void _camera_internal_control(QnGam g, const QgCamCtrl* ctrl, float advance)
+{
+	static const QgCamCtrl def_ctrl =
+	{
+		QIK_W, QIK_S, QIK_A, QIK_D, QIK_R, QIK_F,
+		QIK_LEFT, QIK_RIGHT, QIK_UP, QIK_DOWN,
+		QIM_RIGHT,
+	};
+	QgCamera* self = qn_cast_type(g, QgCamera);
+	const QgCamCtrl* c = ctrl != NULL ? ctrl : &def_ctrl;
+	QmVec4 move = { .s = qm_vec_zero() };
+	QmVec4 rot = { .s = qm_vec_zero() };
+
+	if (qg_get_key_state(c->move_front))
+		move.Z += 1.0f;
+	if (qg_get_key_state(c->move_back))
+		move.Z -= 1.0f;
+	if (qg_get_key_state(c->move_left))
+		move.X -= 1.0f;
+	if (qg_get_key_state(c->move_right))
+		move.X += 1.0f;
+	if (qg_get_key_state(c->move_up))
+		move.Y += 1.0f;
+	if (qg_get_key_state(c->move_down))
+		move.Y -= 1.0f;
+	if (qg_get_key_state(c->rot_yaw_left))
+		rot.Y -= 1.0f;
+	if (qg_get_key_state(c->rot_yaw_right))
+		rot.Y += 1.0f;
+	if (qg_get_key_state(c->rot_pitch_up))
+		rot.X -= 1.0f;
+	if (qg_get_key_state(c->rot_pitch_down))
+		rot.X += 1.0f;
+
+	if (c->rot_button == QIM_NONE || qg_get_mouse_button_state(c->rot_button))
+	{
+		QmPoint d;
+		qg_get_mouse_get_delta(&d);
+		rot.Y += (float)d.X * -0.1f;
+		rot.X += (float)d.Y * -0.1f;
+	}
+
+	self->param.dmove.s = qm_vec_mul(move.s, qm_vec_mag(self->param.smove.s, advance));
+	self->param.drot.s = qm_vec_mul(rot.s, qm_vec_mag(self->param.srot.s, advance));
 }
 
 //
 static void _camera_init(QgCamera* self)
 {
-	self->proj.aspect = qg_get_aspect();
-	self->proj.fov = QM_PI_Q;
-	self->proj.znear = 1.0f;
-	self->proj.zfar = 10000.0f;
+	RendererTransform* tm = RDH_TRANSFORM;
 
-	self->view.eye.s = qm_vec(0.0f, 0.0f, 0.0f, 0.0f);
-	self->view.at.s = qm_vec(0.0f, 0.0f, 1.0f, 0.0f);
-	self->view.up.s = qm_vec(0.0f, 1.0f, 0.0f, 0.0f);
-	self->view.ahead.s = qm_vec(0.0f, 0.0f, 1.0f, 0.0f);
+	self->param.aspect = qg_get_aspect();
+	self->param.fov = QM_PI_Q;
+	self->param.znear = tm->Near;
+	self->param.zfar = tm->Far;
 
-	self->param.proj.s = qm_mat4_perspective_lh(self->proj.fov, self->proj.aspect, self->proj.znear, self->proj.zfar);
-	self->param.view.s = qm_mat4_lookat_lh(self->view.eye.s, self->view.at.s, self->view.up.s);
-	self->param.invv.s = qm_mat4_inv(self->param.view.s);
-	self->param.vipr.s = qm_mat4_mul(self->param.proj.s, self->param.view.s);
-	self->param.rot.s = qm_quat_unit();
 	self->param.dist = 10.0f;
-	self->param.spd_move = 1.0f;
-	self->param.spd_rot = 1.0f;
+	self->param.smove.s = qm_vec3(10.0f, 10.0f, 10.0f);
+	self->param.srot.s = qm_vec3(QM_TAU_H, QM_TAU_H, QM_TAU_H);
 
-	self->param.use_layout = true;
-	self->param.use_pause = true;
+	self->param.angle.s = qm_vec_zero();
+	// eye와 at은 카메라 초기화에서 설정
+
+	self->flags = QGCAMF_LAYOUT | QGCAMF_PAUSE;
 }
 
 //
@@ -369,6 +473,11 @@ QgCamera* qg_create_camera(void)
 {
 	QgCamera* self = qn_alloc_zero_1(QgCamera);
 	_camera_init(self);
+	self->param.eye.s = qm_vec_zero();
+	self->param.at.s = QMCONST_UNIT_R2.s;
+	QN_SMASK(self->flags, QGCAMF_FPS, true);
+	_camera_internal_update(self);
+
 	static const QN_DECL_VTABLE(QGCAMERA) vt_qg_camera =
 	{
 		{
@@ -376,6 +485,7 @@ QgCamera* qg_create_camera(void)
 			qg_camera_dispose,
 		},
 		_camera_internal_update,
+		_camera_internal_control,
 	};
 	return qn_gam_init(self, vt_qg_camera);
 }
@@ -385,7 +495,11 @@ QgCamera* qg_create_maya_camera(void)
 {
 	QgCamera* self = qn_alloc_zero_1(QgCamera);
 	_camera_init(self);
-	self->param.use_maya = true;
+	self->param.eye.s = qm_vec3(0.0f, 0.0f, -self->param.dist);
+	self->param.at.s = qm_vec_zero();
+	QN_SMASK(self->flags, QGCAMF_MAYA, true);
+	_camera_internal_update(self);
+
 	static const QN_DECL_VTABLE(QGCAMERA) vt_qg_camera =
 	{
 		{
@@ -393,6 +507,7 @@ QgCamera* qg_create_maya_camera(void)
 			qg_camera_dispose,
 		},
 		_camera_internal_update,
+		_camera_internal_control,
 	};
 	return qn_gam_init(self, vt_qg_camera);
 }

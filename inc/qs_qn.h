@@ -157,7 +157,6 @@
 
 // compiler specific
 #ifdef _MSC_VER
-#define QN_CONST_ANY					extern const __declspec(selectany)
 #define QN_STMT_BEGIN					PRAGMA(warning(suppress:4127 4296 6011)) do
 #define QN_STMT_END						while(0)
 #define QN_WARN_PUSH					PRAGMA(warning(push))
@@ -165,14 +164,13 @@
 #define QN_WARN_SIGN
 #define QN_WARN_ASSIGN					PRAGMA(warning(disable:4706))
 #elif defined __GNUC__
-#define QN_CONST_ANY					const __attribute__((weak))
 #define QN_STMT_BEGIN					do
 #define QN_STMT_END						while(0)
 #define QN_WARN_PUSH					PRAGMA(GCC diagnostic push)
 #define QN_WARN_POP						PRAGMA(GCC diagnostic pop)
 #define QN_WARN_SIGN					PRAGMA(GCC diagnostic ignored "-Wsign-conversion")
 #define QN_WARN_ASSIGN
-#endif			/// @brief 마스크 설정
+#endif
 
 // platform selection
 #ifdef _QN_64_
@@ -354,20 +352,32 @@ typedef struct FUNCPARAM_T
 #define qn_return_when_fail(expr,ret)	QN_STMT_BEGIN{ if (!(expr)) return ret; }QN_STMT_END	/// @brief 값이 거짓이변 반환
 #define qn_return_on_ok(expr,ret)		QN_STMT_BEGIN{ if ((expr)) return ret; }QN_STMT_END		/// @brief 값이 참이면 반환
 #ifdef _DEBUG
-#define qn_debug_assert(expr,msg)		QN_STMT_BEGIN{ if (!(expr)) qn_asrt(#expr, msg, __FUNCTION__, __LINE__); }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
-#define qn_debug_verify(expr)			QN_STMT_BEGIN{ if (!(expr)) qn_asrt(#expr, NULL, __FUNCTION__, __LINE__); }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
-#define qn_debug_mesg(b,head,mesg)		qn_mesg(b, head, mesg)									/// @brief 디버그용 메시지 출력
-#define qn_debug_mesgf(b,head,fmt,...)	qn_mesgf(b, head, fmt, __VA_ARGS__)						/// @brief 디버그용 포맷 메시지 출력
+#ifdef _QN_WINDOWS_
+#define qn_debug_break()				QN_STMT_BEGIN{ if (qn_p_debugger()) __debugbreak(); }QN_STMT_END
+#else
+#ifdef __GNUC__
+#define qn_debug_break()				__builtin_trap()
+#else
+#define qn_debug_break()				raise(SIGTRAP)
+#endif
+#endif
+#define qn_debug_assert(expr,msg)		QN_STMT_BEGIN{ if (!(expr)) { qn_asrt(#expr, msg, __FUNCTION__, __LINE__); qn_debug_break(); } }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
+#define qn_debug_verify(expr)			QN_STMT_BEGIN{ if (!(expr)) { qn_asrt(#expr, NULL, __FUNCTION__, __LINE__); qn_debug_break(); } }QN_STMT_END	/// @brief 표현이 거짓이면 메시지 출력
+#define qn_debug_mesg(head,mesg)		qn_mesgb(head, mesg)									/// @brief 디버그용 메시지 출력
+#define qn_debug_mesgf(head,fmt,...)	qn_mesgfb(head, fmt, __VA_ARGS__)						/// @brief 디버그용 포맷 메시지 출력
 #define qn_debug_outputs(msg)			qn_outputs(msg)											/// @brief 디버그용 출력
 #define qn_debug_outputf(fmt,...)		qn_outputf(fmt, __VA_ARGS__)							/// @brief 디버그용 포맷 출력
 #else
+#define qn_debug_break()
 #define qn_debug_assert(expr,msg)
 #define qn_debug_verify(expr)
-#define qn_debug_mesg(b,head,mesg)
-#define qn_debug_mesgf(b,head,fmt,...)
+#define qn_debug_mesg(head,mesg)
+#define qn_debug_mesgf(head,fmt,...)
 #define qn_debug_outputs(msg)
 #define qn_debug_outputf(fmt,...)
 #endif
+#define qn_mesgb(head,mesg)				QN_STMT_BEGIN{ qn_mesg(head, mesg); qn_debug_break(); }QN_STMT_END
+#define qn_mesgfb(head,fmt,...)			QN_STMT_BEGIN{ qn_mesgf(head, fmt, __VA_ARGS__); qn_debug_break(); }QN_STMT_END
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -401,6 +411,10 @@ QSAPI size_t qn_p_index(void);
 /// @param hex 16진수 표시 여부
 /// @return "UNKNOWN(??)" 또는 "UNKNOWN(0x??)" 형식의 문자열
 QSAPI const char* qn_p_unknown(int value, bool hex);
+
+/// @brief 디버거가 붙어 있으면 참
+///	@return 디버거가 붙어 있으면 참
+QSAPI cham qn_p_debugger(void);
 
 /// @brief 심볼을 얻는다
 /// @param name 심볼 이름. 최대 63 글자만 쑬 수 있다
@@ -458,19 +472,17 @@ QSAPI int qn_asrt(const char* expr, const char* mesg, const char* filename, int 
 QSAPI NORETURN void qn_halt(const char* head, const char* mesg);
 
 /// @brief 디버그용 문자열 출력. 출력할 문자열의 끝에 개행문자가 붙는다
-/// @param[in] breakpoint 참이면 디버거 연결시 중단점 표시
 /// @param[in] head 머릿글
 /// @param[in] mesg 메시지
 /// @return 출력한 문자열 길이
-QSAPI int qn_mesg(bool breakpoint, const char* head, const char* mesg);
+QSAPI int qn_mesg(const char* head, const char* mesg);
 
 /// @brief 디버그용 문자열 포맷 출력. 출력할 문자열의 끝에 개행문자가 붙는다
-/// @param[in] breakpoint 참이면 디버거 연결시 중단점 표시
 /// @param[in] head 머릿글
 /// @param[in] fmt 문자열 포맷
 /// @param ... 인수
 /// @return 출력한 문자열 길이
-QSAPI int qn_mesgf(bool breakpoint, const char* head, const char* fmt, ...);
+QSAPI int qn_mesgf(const char* head, const char* fmt, ...);
 
 /// @brief 문자열을 콘솔 또는 지정한 리다이렉션으로 출력한다. 출력할 문자열의 끝에 개행문자가 붙는다
 /// @param[in] mesg 출력할 내용
@@ -1374,11 +1386,10 @@ QSAPI uchar2* qn_a_i_u32to16(const uchar4* src, size_t srclen, const char* desc,
 
 /// @brief 한글 자모를 얻는다
 /// @param code 한글 문자
-/// @param cho 초성
-/// @param jung 중성
-/// @param jong 종성
+/// @param cho_jung_jong 초성/중성/종성 3개짜리 배열
 /// @return 성공하면 참
-QSAPI bool qn_hangul_dcp(uchar4 code, int* cho, int* jung, int* jong);
+/// https://ko.wikipedia.org/wiki/%ED%95%9C%EA%B8%80_%EC%83%81%EC%9A%A9_%EC%A1%B0%ED%95%A9%ED%98%95_%EC%9D%B8%EC%BD%94%EB%94%A9
+QSAPI bool qn_hangul_dcp(uchar4 code, int* cho_jung_jong);
 
 /// @brief 한글 조사를 얻는다
 /// @param code 한글 문자
@@ -1986,7 +1997,7 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 	QN_IMPL_CTNR(NAME, TYPE, PFX)
 
 /// @brief 포인터 컨테이너
-QN_DECL_CTNR(QnPtrCtnr, pointer_t);
+QN_DECL_CTNR(QnPtrCtn, pointer_t);
 
 
 /// @brief 배열 인라인
@@ -3207,7 +3218,7 @@ QSAPI void qn_node_mukum_init_fast(QnNodeMukum* mukum);
 
 /// @brief 묶음을 포인터 컨테이너로
 /// @param mukum 묶음
-QSAPI QnPtrCtnr qn_node_mukum_to_ctnr(const QnNodeMukum* mukum);
+QSAPI QnPtrCtn qn_node_mukum_to_ctnr(const QnNodeMukum* mukum);
 
 /// @brief 해제
 /// @param mukum 묶음
@@ -3271,6 +3282,11 @@ INLINE /*QnGam*/void* qn_node_mukum_tail(QnNodeMukum* mukum) { return mukum->TAI
 
 //////////////////////////////////////////////////////////////////////////
 // time
+
+/// @brief 내부 시간 정의
+/// @param bptc 기준 시간 (유닉스 타임 스탬프 형식)
+/// @param cptc 시간 단위 (초 단위, 3600이면 실시간)
+QSAPI void qn_set_ptc(const time_t bptc, const double cptc);
 
 /// @brief 로컬 시간으로 변화
 /// @param[out]	ptm	시간 구조체
@@ -3357,6 +3373,10 @@ QSAPI QnTimeStamp qn_now(void);
 /// @returns 현재 타임스탬프. QnDateTime 으로 변환해서 사용할 수 있다
 QSAPI QnTimeStamp qn_utc(void);
 
+/// @brief 내부 시간 날짜를 포함하는 타임스탬프
+/// @returns 내부 타임스탬프. QnDateTime 으로 변환해서 사용할 수 있다
+QSAPI QnTimeStamp qn_ptc(void);
+
 /// @brief 초를 시간으로
 /// @param[in] sec 초
 /// @return 계산된 타임스탬프
@@ -3370,15 +3390,15 @@ QSAPI QnTimeStamp qn_stots(double sec);
 QSAPI QnTimeStamp qn_mstots(uint msec);
 
 /// @brief 타임스탬프를 초로
-/// @param[in] ts 타임스탬프
+/// @param[in] dt 날짜 시간
 /// @return 초
-QSAPI double qn_tstos(const QnDateTime dt);
+QSAPI double qn_tstos(QnDateTime dt);
 
 /// @brief 타임스탬프 비교 (초 단위)
 /// @param[in] left 타임스탬프1
-/// @param[in] left 타임스탬프2
-/// @return t1 - t2를 초 단위로 변환
-QSAPI double qn_diffts(const QnTimeStamp left, const QnTimeStamp right);
+/// @param[in] right 타임스탬프2
+/// @return left - right를 초 단위로 변환
+QSAPI double qn_diffts(QnTimeStamp left, QnTimeStamp right);
 
 
 /// @brief timer
@@ -3935,9 +3955,7 @@ typedef struct HFSOPTIMIZEDATA
 
 /// @brief HFS 최적화
 /// @param mount HFS 마운트
-/// @param output
-/// @param callback
-/// @param data
+/// @param param 최적화 파라미터
 /// @return 성공했으면 참을 반환
 /// @note EMSCRIPTEN에서는 사용할 수 없다
 QSAPI bool qn_hfs_optimize(QnMount* mount, HfsOptimizeParam* param);

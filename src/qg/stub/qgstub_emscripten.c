@@ -164,6 +164,7 @@ void stub_system_update_bound(void)
 	emscripten_get_canvas_element_size(emCanvas, &size.Width, &size.Height);
 	emStub.base.bound = qm_rect_size(0, 0, size.Width, size.Height);
 	emStub.base.client_size = size;
+	emStub.base.aspect = qm_size_get_aspect(size);
 }
 
 //
