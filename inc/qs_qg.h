@@ -303,8 +303,9 @@ typedef enum QGSHADERCONSTAUTO
 	QGSCA_VIEW,												/// @brief 뷰 행렬
 	QGSCA_PROJ,												/// @brief 투영 행렬
 	QGSCA_VIEW_PROJ,										/// @brief 뷰와 투영의 곱행렬
+	QGSCA_PROJ_VIEW,										/// @brief 투영과 뷰의 곱행렬
 	QGSCA_INV_VIEW,											/// @brief 뷰의 역행렬
-	QGSCA_WORLD_VIEW_PROJ,									/// @brief 전역 투영
+	QGSCA_MVP,												/// @brief 모델뷰투영 행렬
 	QGSCA_TEX1,												/// @brief 텍스쳐 1번
 	QGSCA_TEX2,												/// @brief 텍스쳐 2번
 	QGSCA_TEX3,												/// @brief 텍스쳐 3번
@@ -1175,6 +1176,18 @@ QSAPI bool qg_get_mouse_button_press(const QimButton button);
 /// @return 눌렸다 떼졌으면 참
 QSAPI bool qg_get_mouse_button_release(const QimButton button);
 
+/// @brief 마우스 버튼 마스크
+/// @return 마우스 버튼 마스크
+QSAPI const QimMask qg_get_mouse_button_mask(void);
+
+/// @brief 마우스 위치를 얻는다
+/// @param pos 마우스 위치
+QSAPI void qg_get_mouse_get_position(QmPoint* pos);
+
+/// @brief 마우스 이동 변위를 얻는다
+/// @param delta 마우스 이동 변위
+QSAPI void qg_get_mouse_get_delta(QmPoint* delta);
+
 /// @brief 초당 프레임(FPS)를 얻는다
 /// @return 초당 프레임 수
 QSAPI float qg_get_fps(void);
@@ -1410,6 +1423,10 @@ QSAPI void qg_set_param_weight(int count, QMMAT* weight);
 /// @brief 배경색을 설정한다
 /// @param background_color 배경색
 QSAPI void qg_set_background(const QMVEC* background_color);
+
+/// @brief 배경색을 설정한다
+/// @param r,g,b,a 배경색
+QSAPI void qg_set_background_param(float r, float g, float b, float a);
 
 /// @brief 월드 행렬을 설정한다
 /// @param world 월드 행렬
@@ -1861,6 +1878,8 @@ QSAPI void qg_dpct_draw(QNGAM dpct);
 QSAPI void qg_dpct_set_loc(QNGAM dpct, const QMVEC* loc);
 QSAPI void qg_dpct_set_rot(QNGAM dpct, const QMVEC* rot);
 QSAPI void qg_dpct_set_scl(QNGAM dpct, const QMVEC* scl);
+QSAPI void qg_dcpt_set_local(QNGAM dcpt, const QMMAT* m);
+QSAPI void qg_dcpt_set_calc(QNGAM dcpt, const QMMAT* m);
 QSAPI void qg_dpct_set_loc_param(QNGAM dpct, float x, float y, float z);
 QSAPI void qg_dpct_set_rot_param(QNGAM dpct, float x, float y, float z, float w);
 QSAPI void qg_dpct_set_scl_param(QNGAM dpct, float x, float y, float z);
@@ -1940,6 +1959,8 @@ struct QGCAMERA
 		float			dist;								/// @brief 카메라와의 거리
 		QmVec4			smove;								/// @brief 이동 속도
 		QmVec4			srot;								/// @brief 회전 속도
+		QmVec4			dmove;								/// @brief 이동 거리
+		QmVec4			drot;								/// @brief 회전 거리
 
 		QmVec4			angle;								/// @brief 회전 (roll/pitch/yaw => 벡터3)
 		QmVec4			eye;								/// @brief 시점 (벡터3)
@@ -1950,9 +1971,7 @@ struct QGCAMERA
 	{
 		QMMAT				proj;							/// @brief 프로젝션 행렬
 		QMMAT				view;							/// @brief 뷰 행렬
-		QMMAT				vipr;							/// @brief 프로젝션 곱하기 뷰 행렬
-		QMMAT				invv;							/// @brief 역 행렬
-		QMMAT				iinv;							/// @brief 역의 역행렬
+		QMMAT				invv;							/// @brief 뷰의 역 행렬
 	}					mat;
 };
 
@@ -1997,13 +2016,33 @@ QSAPI void qg_camera_set_angle(QgCamera* self, const QMVEC* angle);
 
 /// @brief 카메라 이동 속도를 설정한다 (마야/FPS 카메라)
 /// @param self 카메라
+/// @param s 이동 속도
+QSAPI void qg_camera_set_move_speed(QgCamera* self, const QMVEC* s);
+
+/// @brief 카메라 회전 속도를 설정한다 (마야/FPS 카메라)
+/// @param self 카메라
+/// @param s 회전 속도
+QSAPI void qg_camera_set_rot_speed(QgCamera* self, const QMVEC* s);
+
+/// @brief 카메라 위치를 설정한다
+/// @param self 카메라
+/// @param x,y,z 위치
+QSAPI void qg_camera_set_position_param(QgCamera* self, float x, float y, float z);
+
+/// @brief 카메라 각도를 설정한다
+/// @param self 카메라
+/// @param x,y,z 각도
+QSAPI void qg_camera_set_angle_param(QgCamera* self, float x, float y, float z);
+
+/// @brief 카메라 이동 속도를 설정한다 (마야/FPS 카메라)
+/// @param self 카메라
 /// @param sx,sy,sz 각 축에 대한 이동 속도
-QSAPI void qg_camera_set_move_speed(QgCamera* self, float sx, float sy, float sz);
+QSAPI void qg_camera_set_move_speed_param(QgCamera* self, float sx, float sy, float sz);
 
 /// @brief 카메라 회전 속도를 설정한다 (마야/FPS 카메라)
 /// @param self 카메라
 /// @param sx,sy,sz 각 축에 대한 회전 속도
-QSAPI void qg_camera_set_rot_speed(QgCamera* self, float sx, float sy, float sz);
+QSAPI void qg_camera_set_rot_speed_param(QgCamera* self, float sx, float sy, float sz);
 
 /// @brief 점과 카메라의 거리를 얻는다
 /// @param self 카메라

@@ -1367,6 +1367,10 @@ QM_CONST_ANY QmVec4 QMCONST_ZERO = { { 0.0f, 0.0f, 0.0f, 0.0f } };
 QM_CONST_ANY QmVec4 QMCONST_ONE = { { 1.0f, 1.0f, 1.0f, 1.0f } };
 QM_CONST_ANY QmVec4 QMCONST_HALF = { { 0.5f, 0.5f, 0.5f, 0.5f } };
 QM_CONST_ANY QmVec4 QMCONST_NEG = { { -1.0f, -1.0f, -1.0f, -1.0f } };
+QM_CONST_ANY QmVec4 QMCONST_ONE_3 = { { 1.0f, 1.0f, 1.0f, 0.0f } };
+QM_CONST_ANY QmVec4 QMCONST_HALF_3 = { { 0.5f, 0.5f, 0.5f, 0.0f } };
+QM_CONST_ANY QmVec4 QMCONST_NEG_3 = { { -1.0f, -1.0f, -1.0f, 0.0f } };
+QM_CONST_ANY QmVec4 QMCONST_CJG = { { -1.0f, -1.0f, -1.0f, 1.0f } };
 QM_CONST_ANY QmVec4 QMCONST_UNIT_R0 = { { 1.0f, 0.0f, 0.0f, 0.0f } };
 QM_CONST_ANY QmVec4 QMCONST_UNIT_R1 = { { 0.0f, 1.0f, 0.0f, 0.0f } };
 QM_CONST_ANY QmVec4 QMCONST_UNIT_R2 = { { 0.0f, 0.0f, 1.0f, 0.0f } };
@@ -1374,14 +1378,20 @@ QM_CONST_ANY QmVec4 QMCONST_UNIT_R3 = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 QM_CONST_ANY QmVec4 QMCONST_XY00 = { { 1.0f, 1.0f, 0.0f, 0.0f } };
 QM_CONST_ANY QmVec4 QMCONST_XYZ0 = { { 1.0f, 1.0f, 1.0f, 0.0f } };
 QM_CONST_ANY QmVec4 QMCONST_00ZW = { { 0.0f, 0.0f, 1.0f, 1.0f } };
+QM_CONST_ANY QmVec4 QMCONST_PMMP = { { +1.0f, -1.0f, -1.0f, +1.0f } };
+QM_CONST_ANY QmVec4 QMCONST_MPMP = { { -1.0f, +1.0f, -1.0f, +1.0f } };
+QM_CONST_ANY QmVec4 QMCONST_MMPP = { { -1.0f, -1.0f, +1.0f, +1.0f } };
 QM_CONST_ANY QmVec4 QMCONST_EPSILON = { { QM_EPSILON, QM_EPSILON, QM_EPSILON, QM_EPSILON } };	// FLT_EPSILON
+QM_CONST_ANY QmVec4 QMCONST_ONE_EPSILON = { { 1.0f - QM_EPSILON, 1.0f - QM_EPSILON, 1.0f - QM_EPSILON, 1.0f - QM_EPSILON } };
 QM_CONST_ANY QmVec4 QMCONST_MAX_INT = { { 65536.0f * 32768.0f - 128.0f, 65536.0f * 32768.0f - 128.0f, 65536.0f * 32768.0f - 128.0f, 65536.0f * 32768.0f - 128.0f } };
 QM_CONST_ANY QmVec4 QMCONST_MAX_UINT = { { 65536.0f * 65536.0f - 256.0f, 65536.0f * 65536.0f - 256.0f, 65536.0f * 65536.0f - 256.0f, 65536.0f * 65536.0f - 256.0f } };
 QM_CONST_ANY QmVec4 QMCONST_MAX_USHORT = { { 65535.0f, 65535.0f, 65535.0f, 65535.0f } };
 QM_CONST_ANY QmVec4 QMCONST_MAX_UBYTE = { { 255.0f, 255.0f, 255.0f, 255.0f } };
 QM_CONST_ANY QmVec4 QMCONST_UINT_SIGN_FIX = { { 32768.0f * 65536.0f, 32768.0f * 65536.0f, 32768.0f * 65536.0f, 32768.0f * 65536.0f } };
+QM_CONST_ANY QmVec4 QMCONST_TAU = { { QM_TAU, QM_TAU, QM_TAU, QM_TAU } };
 QM_CONST_ANY QmVec4 QMCONST_PI = { { QM_PI, QM_PI, QM_PI, QM_PI } };
 QM_CONST_ANY QmVec4 QMCONST_PI_H = { { QM_PI_H, QM_PI_H, QM_PI_H, QM_PI_H } };
+QM_CONST_ANY QmVec4 QMCONST_RPI_H = { { QM_RPI_H, QM_RPI_H, QM_RPI_H, QM_RPI_H } };
 QM_CONST_ANY QmVec4 QMCONST_SIN_C0 = { { -0.16666667f, +0.0083333310f, -0.00019840874f, +2.7525562e-06f } };
 QM_CONST_ANY QmVec4 QMCONST_SIN_C1 = { { -2.3889859e-08f, -0.16665852f, +0.0083139502f, -0.00018524670f } };
 QM_CONST_ANY QmVec4 QMCONST_COS_C0 = { { -0.5f, +0.041666638f, -0.0013888378f, +2.4760495e-05f } };
@@ -1998,10 +2008,8 @@ INLINE QMVEC QM_VECTORCALL qm_vec_csat(const QMVEC v)
 INLINE QMVEC QM_VECTORCALL qm_vec_crad(const QMVEC v)
 {
 #if true
-	static const QmVec4 rpih = { { QM_RPI_H, QM_RPI_H, QM_RPI_H, QM_RPI_H } };
-	static const QmVec4 tau = { { QM_TAU, QM_TAU, QM_TAU, QM_TAU } };
-	QMVEC h = qm_vec_simd_round(qm_vec_mul(v, rpih.s));
-	return qm_vec_msub(h, tau.s, v);
+	QMVEC h = qm_vec_simd_round(qm_vec_mul(v, QMCONST_RPI_H.s));
+	return qm_vec_msub(h, QMCONST_TAU.s, v);
 #else
 	QMVEC u;
 	u.f[0] = qm_cradf(v.f[0]);
@@ -2586,8 +2594,8 @@ INLINE void QM_VECTORCALL qm_vec_to_half4(const QMVEC v, QmHalf4* p)
 INLINE void QM_VECTORCALL qm_vec_to_u4444(const QMVEC v, QmU4444* p)
 {
 #if defined QM_USE_AVX
-	static const QmVec4 max = { { 15.0f, 15.0f, 15.0f, 15.0f } };
-	QMIVEC i = _mm_cvtps_epi32(_mm_min_ps(v, max.s));
+	static const QmVec4 MAX = { { 15.0f, 15.0f, 15.0f, 15.0f } };
+	QMIVEC i = _mm_cvtps_epi32(_mm_min_ps(v, MAX.s));
 	uint16_t x = (uint16_t)_mm_extract_epi16(i, 0);
 	uint16_t y = (uint16_t)_mm_extract_epi16(i, 2);
 	uint16_t z = (uint16_t)_mm_extract_epi16(i, 4);
@@ -2608,8 +2616,8 @@ INLINE void QM_VECTORCALL qm_vec_to_u4444(const QMVEC v, QmU4444* p)
 INLINE void QM_VECTORCALL qm_vec_to_u565(const QMVEC v, QmU565* p)
 {
 #if defined QM_USE_AVX
-	static const QmVec4 max = { { 31.0f, 63.0f, 31.0f, 0.0f } };
-	QMIVEC i = _mm_cvtps_epi32(_mm_min_ps(v, max.s));
+	static const QmVec4 MAX = { { 31.0f, 63.0f, 31.0f, 0.0f } };
+	QMIVEC i = _mm_cvtps_epi32(_mm_min_ps(v, MAX.s));
 	uint16_t x = (uint16_t)_mm_extract_epi16(i, 0);
 	uint16_t y = (uint16_t)_mm_extract_epi16(i, 2);
 	uint16_t z = (uint16_t)_mm_extract_epi16(i, 4);
@@ -2628,8 +2636,8 @@ INLINE void QM_VECTORCALL qm_vec_to_u565(const QMVEC v, QmU565* p)
 INLINE void QM_VECTORCALL qm_vec_to_u5551(const QMVEC v, QmU5551* p)
 {
 #if defined QM_USE_AVX
-	static const QmVec4 max = { { 31.0f, 31.0f, 31.0f, 1.0f } };
-	QMIVEC i = _mm_cvtps_epi32(_mm_min_ps(v, max.s));
+	static const QmVec4 MAX = { { 31.0f, 31.0f, 31.0f, 1.0f } };
+	QMIVEC i = _mm_cvtps_epi32(_mm_min_ps(v, MAX.s));
 	uint16_t x = (uint16_t)_mm_extract_epi16(i, 0);
 	uint16_t y = (uint16_t)_mm_extract_epi16(i, 2);
 	uint16_t z = (uint16_t)_mm_extract_epi16(i, 4);
@@ -4256,11 +4264,9 @@ INLINE QMVEC QM_VECTORCALL qm_quat_norm(const QMVEC q)
 INLINE QMVEC QM_VECTORCALL qm_quat_cjg(const QMVEC q)
 {
 #if defined QM_USE_AVX
-	static const QmVec4 CONJUGATE_MASK = { { -1.0f, -1.0f, -1.0f, 1.0f } };
-	return _mm_mul_ps(q, CONJUGATE_MASK.s);
+	return _mm_mul_ps(q, QMCONST_CJG.s);
 #elif defined QM_USE_NEON
-	static const QmVec4 CONJUGATE_MASK = { { -1.0f, -1.0f, -1.0f, 1.0f } };
-	return vmulq_f32(q, CONJUGATE_MASK.s);
+	return vmulq_f32(q, QMCONST_CJG.s);
 #else
 	return (QMVEC) { { -q.f[0], -q.f[1], -q.f[2], q.f[3] } };
 #endif
@@ -4292,10 +4298,9 @@ INLINE QMVEC QM_VECTORCALL qm_quat_exp(const QMVEC q)
 /// @brief 로그 사원수
 INLINE QMVEC QM_VECTORCALL qm_quat_ln(const QMVEC q)
 {
-	static const QmVec4 OME = { { 1.0f - QM_EPSILON, 1.0f - QM_EPSILON, 1.0f - QM_EPSILON, 1.0f - QM_EPSILON } };
 	const QMVEC w = qm_vec_sp_w(q);
 	const QMVEC z = qm_vec_select(QMCONST_S1110.s, q, QMCONST_S1110.s);
-	const QMVEC c = qm_vec_op_in_bound(w, OME.s);
+	const QMVEC c = qm_vec_op_in_bound(w, QMCONST_ONE_EPSILON.s);
 	const QMVEC t = qm_vec_simd_acos(w);
 	const QMVEC s = qm_vec_simd_sin(t);
 	const QMVEC p = qm_vec_div(t, s);
@@ -4324,19 +4329,16 @@ INLINE QMVEC QM_VECTORCALL qm_quat_slerp(const QMVEC left, const QMVEC right, fl
 /// @brief DirectXMath용 사원수 구형 보간
 INLINE QMVEC QM_VECTORCALL qm_quat_slerp_dxm(const QMVEC Q0, const QMVEC Q1, float scale)
 {
-	static const QMVEC OneMinusEpsilon = { { 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f } };
-	static const QMVEC NegativeOne = { { -1.0f, -1.0f, -1.0f, -1.0f } };
-
 	const QMVEC t = qm_vec_sp(scale);
 	QMVEC CosOmega = qm_quat_simd_dot(Q0, Q1);
 
 	const QMVEC Zero = qm_vec_zero();
 	QMVEC Control = qm_vec_op_lt(CosOmega, Zero);
-	const QMVEC Sign = qm_vec_select(QMCONST_ONE.s, NegativeOne, Control);
+	const QMVEC Sign = qm_vec_select(QMCONST_ONE.s, QMCONST_NEG.s, Control);
 
 	CosOmega = qm_vec_mul(CosOmega, Sign);
 
-	Control = qm_vec_op_lt(CosOmega, OneMinusEpsilon);
+	Control = qm_vec_op_lt(CosOmega, QMCONST_ONE_EPSILON.s);
 
 	QMVEC SinOmega = qm_vec_msub(CosOmega, CosOmega, QMCONST_ONE.s);
 	SinOmega = qm_vec_simd_sqrt(SinOmega);
@@ -4437,9 +4439,6 @@ INLINE QMVEC QM_VECTORCALL qm_quat_rot_z(float rot)
 INLINE QMVEC QM_VECTORCALL qm_quat_rot_mat4(const QMMAT rot)
 {
 #if defined QM_USE_AVX
-	static const QmVec4 PMMP = { { +1.0f, -1.0f, -1.0f, +1.0f } };
-	static const QmVec4 MPMP = { { -1.0f, +1.0f, -1.0f, +1.0f } };
-	static const QmVec4 MMPP = { { -1.0f, -1.0f, +1.0f, +1.0f } };
 	QMVEC r0 = rot.r[0];
 	QMVEC r1 = rot.r[1];
 	QMVEC r2 = rot.r[2];
@@ -4451,9 +4450,9 @@ INLINE QMVEC QM_VECTORCALL qm_quat_rot_mat4(const QMMAT rot)
 	QMVEC r11pr00 = _mm_add_ps(r11, r00);
 	QMVEC z2gew2 = _mm_cmple_ps(r11pr00, QMCONST_ZERO.s);
 	QMVEC x2py2gez2pw2 = _mm_cmple_ps(r22, QMCONST_ZERO.s);
-	QMVEC t0 = _MM_FMADD_PS(PMMP.s, r00, QMCONST_ONE.s);
-	QMVEC t1 = _mm_mul_ps(MPMP.s, r11);
-	QMVEC t2 = _MM_FMADD_PS(MMPP.s, r22, t0);
+	QMVEC t0 = _MM_FMADD_PS(QMCONST_PMMP.s, r00, QMCONST_ONE.s);
+	QMVEC t1 = _mm_mul_ps(QMCONST_MPMP.s, r11);
+	QMVEC t2 = _MM_FMADD_PS(QMCONST_MMPP.s, r22, t0);
 	QMVEC x2y2z2w2 = _mm_add_ps(t1, t2);
 	t0 = _mm_shuffle_ps(r0, r1, _MM_SHUFFLE(1, 2, 2, 1));
 	t1 = _mm_shuffle_ps(r1, r2, _MM_SHUFFLE(1, 0, 0, 0));
@@ -4463,7 +4462,7 @@ INLINE QMVEC QM_VECTORCALL qm_quat_rot_mat4(const QMMAT rot)
 	t1 = _mm_shuffle_ps(r1, r0, _MM_SHUFFLE(1, 2, 2, 2));
 	t1 = _MM_PERMUTE_PS(t1, _MM_SHUFFLE(1, 3, 2, 0));
 	QMVEC xwywzw = _mm_sub_ps(t0, t1);
-	xwywzw = _mm_mul_ps(MPMP.s, xwywzw);
+	xwywzw = _mm_mul_ps(QMCONST_MPMP.s, xwywzw);
 	t0 = _mm_shuffle_ps(x2y2z2w2, xyxzyz, _MM_SHUFFLE(0, 0, 1, 0));
 	t1 = _mm_shuffle_ps(x2y2z2w2, xwywzw, _MM_SHUFFLE(0, 2, 3, 2));
 	t2 = _mm_shuffle_ps(xyxzyz, xwywzw, _MM_SHUFFLE(1, 0, 2, 1));
@@ -4810,15 +4809,11 @@ INLINE QMVEC QM_VECTORCALL qm_color_sp(float value, float alpha)
 INLINE QMVEC QM_VECTORCALL qm_color_neg(const QMVEC c)
 {
 #if defined QM_USE_AVX
-	static const QmVec4 ONE3 = { { 1.0f, 1.0f, 1.0f, 0.0f } };
-	static const QmVec4 NEG3 = { { -1.0f, -1.0f, -1.0f, 0.0f } };
-	QMVEC t = _mm_xor_ps(c, NEG3.s);
-	return _mm_add_ps(t, ONE3.s);
+	QMVEC t = _mm_xor_ps(c, QMCONST_NEG_3.s);
+	return _mm_add_ps(t, QMCONST_ONE_3.s);
 #elif defined QM_USE_NEON
-	static const QmVec4 ONE3 = { { 1.0f, 1.0f, 1.0f, 0.0f } };
-	static const QmVec4 NEG3 = { { -1.0f, -1.0f, -1.0f, 0.0f } };
-	uint32x4_t t = veorq_u32(vreinterpretq_u32_f32(c), NEG3.s);
-	return vaddq_f32(vreinterpretq_f32_u32(t), ONE3.s);
+	uint32x4_t t = veorq_u32(vreinterpretq_u32_f32(c), QMCONST_NEG_3.s);
+	return vaddq_f32(vreinterpretq_f32_u32(t), QMCONST_ONE_3.s);
 #else
 	return qm_vec(1.0f - c.f[0], 1.0f - c.f[1], 1.0f - c.f[2], c.f[3]);
 #endif

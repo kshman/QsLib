@@ -7,41 +7,21 @@ typedef struct VERTEXTYPE
 	QmKolor color;
 } VertexType;
 
-void test(void)
-{
-	float l[] = { 23.5791397, 0.00000000, 0.00000000, 0.00000000 };
-	float r[] = { 0.00000000, 0.00000000, 0.999999940, 0.00000000 };
-	uint* ul = (uint*)l;
-	uint* ur = (uint*)r;
-	uint c[] = { 0xFFFFFFFF , 0xFFFFFFFF , 0xFFFFFFFF , 0 };
-	QmVecU v;
-	v.u[0] = (ul[0] & ~c[0]) | (ur[0] & c[0]);
-	v.u[1] = (ul[1] & ~c[1]) | (ur[1] & c[1]);
-	v.u[2] = (ul[2] & ~c[2]) | (ur[2] & c[2]);
-	v.u[3] = (ul[3] & ~c[3]) | (ur[3] & c[3]);
-	QmVecF* vf = (QmVecF*)&v;
-	qn_outputf("v: %f, %f, %f, %f", vf->X, vf->Y, vf->Z, vf->W);
-}
-
 int main(void)
 {
 	qn_runtime(NULL);
-	test();
 
 	const int flags = QGFLAG_RESIZE | QGFLAG_MSAA /*| QGFLAG_VSYNC*/;
 	const int features = QGFEATURE_NONE;
 	if (qg_open_rdh("gl", "RDH", 0, 0, 0, flags, features) == false)
 		return -1;
 
-	const QMVEC bgc = qm_vec(0.1f, 0.3f, 0.1f, 1.0f);
-	qg_set_background(&bgc);
+	qg_set_background_param(0.1f, 0.3f, 0.1f, 1.0f);
 	qg_fuse(0, NULL, true, true);
-	qg_load_def_font(0, "/font/kopubs_l.hxn");
+	qg_font_set_size(qg_get_def_font(), 32);
 
 	QgCamera* cam = qg_create_camera();
-	qg_camera_set_move_speed(cam, 5.0f, 5.0f, 5.0f);
-	const QMVEC pos = qm_vec(0.0f, 0.0f, -10.0f, 0.0f);
-	qg_camera_set_position(cam, &pos);
+	qg_camera_set_position_param(cam, 0.0f, 0.0f, -10.0f);
 
 	static QgLayoutInput li_3d[] =
 	{
@@ -60,6 +40,11 @@ int main(void)
 	qg_mesh_build(mesh);
 	qg_dpct_set_loc_param(mesh, 0.0f, 0.0f, 0.0f);
 
+	QgMesh* sphere = qg_create_mesh("sphere");
+	qg_mesh_set_layout(sphere, &ld_3d);
+	qg_mesh_gen_sphere(sphere, 1.0f, 16, 16);
+	qg_mesh_build(sphere);
+
 	static VertexType vertices[] =
 	{
 		{ { 0.0f, 1.0f, 5.0f }, 0xFFFF0000 },
@@ -69,11 +54,20 @@ int main(void)
 	QgBuffer* vbuffer = qg_create_buffer(QGBUFFER_VERTEX, QN_COUNTOF(vertices), sizeof(VertexType), vertices);
 
 	QmVec4 rot = { .s = qm_vec_zero() };
+	QmVec4 pos = { .s = qm_vec_zero() };
 
 	while (qg_loop_dispatch())
 	{
 		float advance = qg_get_advance();
 
+		if (qg_get_key_state(QIK_LEFT))
+			pos.X -= 0.1f;
+		if (qg_get_key_state(QIK_RIGHT))
+			pos.X += 0.1f;
+		if (qg_get_key_state(QIK_UP))
+			pos.Y += 0.1f;
+		if (qg_get_key_state(QIK_DOWN))
+			pos.Y -= 0.1f;
 		if (qg_get_key_state(QIK_SUB))
 			rot.Y -= 0.1f * QM_RPI;
 		if (qg_get_key_state(QIK_ADD))
@@ -84,8 +78,15 @@ int main(void)
 			rot.X += 0.1f * QM_RPI;
 		QMVEC q = qm_quat_rot_vec(rot.s);
 
-		qg_camera_control(cam, NULL, advance);
+		static const QgCamCtrl cam_ctrl =
+		{
+			QIK_W, QIK_S, QIK_A, QIK_D, QIK_R, QIK_F,
+			QIK_NONE, QIK_NONE, QIK_NONE, QIK_NONE,
+			QIM_RIGHT,
+		};
+		qg_camera_control(cam, &cam_ctrl, advance);
 		qg_camera_update(cam);
+		qg_dpct_set_loc(mesh, &pos.s);
 		qg_dpct_set_rot(mesh, &q);
 		qg_dpct_update(mesh, advance);
 
@@ -98,14 +99,22 @@ int main(void)
 			qg_dpct_draw(mesh);
 
 			qg_draw_text_format(0, 0, "평균 FPS: %.2f", qg_get_afps());
-			qg_draw_text_format(0, 25, "카메라 상태: P(%.2f, %.2f, %.2f) A(%.2f, %.2f, %.2f)",
+			qg_draw_text_format(0, 32, "카메라 상태: P(%.2f, %.2f, %.2f) A(%.2f, %.2f, %.2f)",
 				cam->param.eye.X, cam->param.eye.Y, cam->param.eye.Z,
 				cam->param.angle.X, cam->param.angle.Y, cam->param.angle.Z);
+
+			QnDateTime dt;
+			dt.stamp = qn_utc();
+			qg_draw_text_format(0, 70, "%04d-%02d-%02d %02d:%02d:%02d", dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
+			dt.stamp = qn_ptc();
+			qg_draw_text_format(0, 102, "%04d-%02d-%02d %02d:%02d:%02d", dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
+
 			qg_end_render(true);
 		}
 	}
 
 	qn_unload(vbuffer);
+	qn_unload(sphere);
 	qn_unload(mesh);
 	qn_unload(rs);
 	qn_unload(cam);

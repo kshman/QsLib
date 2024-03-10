@@ -1,4 +1,4 @@
-uniform mat4 WorldViewProj;
+uniform mat4 MVP;
 
 attribute vec3 aPosition;
 //attribute vec2 aCoord;
@@ -15,5 +15,5 @@ void main()
     vColor = aColor;
 
     // Calculate final vertex position
-    gl_Position = WorldViewProj * vec4(aPosition, 1.0);
+    gl_Position = MVP * vec4(aPosition, 1.0);
 }

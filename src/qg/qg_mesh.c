@@ -368,8 +368,10 @@ bool qg_mesh_build(QgMesh* self)
 	byte* vdata[QGLOS_MAX_VALUE];
 	for (i = 0; i < QGLOS_MAX_VALUE; i++)
 	{
+		qn_unload(self->vbuffers[i]);
 		if (loac[i] == 0)
 		{
+			self->vbuffers[i] = NULL;
 			vdata[i] = NULL;
 			continue;
 		}
@@ -468,7 +470,10 @@ bool qg_mesh_build(QgMesh* self)
 	}
 
 	if (self->mesh.index != NULL)
+	{
+		qn_unload(self->ibuffer);
 		self->ibuffer = qg_create_buffer(QGBUFFER_INDEX, self->mesh.polygons * 3, sizeof(int), self->mesh.index);
+	}
 
 	return true;
 }

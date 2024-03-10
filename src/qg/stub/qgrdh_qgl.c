@@ -165,8 +165,8 @@ static void qgl_default_config(QglConfig* config, QgFlag flags)
 	}
 	else
 	{
-		const char *sep = "; ";
-		char *brk = NULL, *p = qn_strdup(prop);
+		const char* sep = "; ";
+		char* brk = NULL, * p = qn_strdup(prop);
 		for (const char* tok = qn_strtok(p, sep, &brk); tok != NULL; tok = qn_strtok(NULL, sep, &brk))
 		{
 			if (qn_stricmp(tok, "floatbuffer") == 0)
@@ -714,7 +714,7 @@ static void qgl_rdh_reset(void)
 	res->batch_ortho = qgl_create_batch_ortho();
 
 	qn_unload(res->index_stream_rect);
-	ushort* index16 = qn_alloc(6 * QGL_MAX_BATCH_ITEM, ushort), *keep_index16 = index16;
+	ushort* index16 = qn_alloc(6 * QGL_MAX_BATCH_ITEM, ushort), * keep_index16 = index16;
 	for (i = 0; i < QGL_MAX_BATCH_ITEM; i++, index16 += 6)
 	{
 		const ushort base = (ushort)(i * 4);
@@ -939,16 +939,21 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 			break;
 		case QGSCA_VIEW_PROJ:
 			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->view_proj.f));
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->vwpr.f));
+			break;
+		case QGSCA_PROJ_VIEW:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->prvw.f));
 			break;
 		case QGSCA_INV_VIEW:
 			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->invv.f));
 			break;
-		case QGSCA_WORLD_VIEW_PROJ:
+		case QGSCA_MVP:
 		{
 			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
-			const QMMAT m = qm_mat4_mul(tm->world.s, tm->view_proj.s);
+			//const QMMAT m = qm_mat4_tmul(tm->world.s, tm->vwpr.s);	// 이건 DirectX 방식
+			const QMMAT m = qm_mat4_mul(tm->prvw.s, tm->world.s);		// OpenGL 방식
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, ((const QmMat4*)&m)->f));
 		} break;
 		case QGSCA_TEX1:
@@ -1671,9 +1676,7 @@ static QglBatchItemOrtho* qgl_batch_ortho_item(QglBatchStream* batch)
 	if (self->base.index == QGL_MAX_BATCH_ITEM)
 	{
 		qgl_batch_ortho_flush(batch);
-#ifdef __INTELLISENSE__ 
 		self->base.index = 0;
-#endif
 	}
 
 	const size_t index = self->base.index++;
@@ -2018,7 +2021,7 @@ INLINE QgScType qgl_enum_to_shader_const(GLenum gl_type)
 }
 
 // 세이더 만들기
-static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData * vertex, const QgCodeData * fragment)
+static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData* vertex, const QgCodeData* fragment)
 {
 	// 프로그램이랑 세이더 만들고
 	const QglResource* res = QGL_RESOURCE;
@@ -2127,7 +2130,7 @@ static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData * vert
 }
 
 // 버텍스 레이아웃 만들기
-static bool qgl_render_bind_layout_input(QglRenderState* self, const QgLayoutData * layout)
+static bool qgl_render_bind_layout_input(QglRenderState* self, const QgLayoutData* layout)
 {
 	static byte lo_count[QGLOT_MAX_VALUE] =
 	{
@@ -2414,7 +2417,7 @@ static QgTexture* qgl_create_texture(const char* name, const QgImage* image, QgT
 	ss->texture.target[0] = GL_TEXTURE_2D;
 
 	int mip_count;
-	byte* buffer= qn_get_gam_pointer(image);
+	byte* buffer = qn_get_gam_pointer(image);
 	if (gl_enum.format != GL_NONE)
 	{
 		// 그냥 이미지. 밉맵은 없을 것이다

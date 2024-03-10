@@ -190,7 +190,8 @@ typedef struct RENDERERTRANSFORM
 	QmMat4				world;
 	QmMat4				view;
 	QmMat4				proj;
-	QmMat4				view_proj;
+	QmMat4				vwpr;
+	QmMat4				prvw;
 	QmMat4				invv;								// inverse view
 	QmMat4				frm;								// tex formation
 	QmMat4				tex[4];
@@ -200,15 +201,22 @@ typedef struct RENDERERTRANSFORM
 // 렌더 인수
 typedef struct RENDERERPARAM
 {
+	QmVec4				bgc;
+
 	QmVec4				v[4];
 	QmMat4				m[4];
 	QmMat4*				bone_ptr;
 	int					bone_count;
-	QmVec4				bgc;
+
 	QmVec4				diffuse;
 	QmVec4				ambient;
 	QmVec4				specular;
 	QmVec4				emissive;
+	float				shininess;
+
+	float				constant_dist;
+	QmVec4				constant_pos;
+	QmVec4				constant_color;
 
 	QgVarShaderFunc		callback_func;
 	void*				callback_data;

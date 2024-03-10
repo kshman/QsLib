@@ -33,8 +33,8 @@ bool qg_stub_atexit = false;
 typedef struct EventNode	EventNode;
 struct EventNode
 {
-	EventNode*			PREV;
-	EventNode*			NEXT;
+	EventNode* PREV;
+	EventNode* NEXT;
 	QgEvent				event;
 	size_t				key;
 	/* 32비트에서 4바이트 패딩 */
@@ -48,7 +48,7 @@ QN_IMPL_ARRAY(QnPtrArray, void*, reserved_mems);
 // 이벤트 창고
 struct ShedEvent
 {
-	QnMutex*			mutex;
+	QnMutex* mutex;
 	struct {
 		cham				reset;				// loop()에서 리셋
 		nuint				count;				// loop() 횟수
@@ -586,6 +586,26 @@ bool qg_get_mouse_button_release(const QimButton button)
 }
 
 //
+const QimMask qg_get_mouse_button_mask(void)
+{
+	return qg_instance_stub->mouse.mask;
+}
+
+//
+void qg_get_mouse_get_position(QmPoint* pos)
+{
+	if (pos)
+		*pos = qg_instance_stub->mouse.pt;
+}
+
+//
+void qg_get_mouse_get_delta(QmPoint* delta)
+{
+	if (delta)
+		*delta = qg_instance_stub->mouse.delta;
+}
+
+//
 float qg_get_fps(void)
 {
 	return qg_instance_stub->timer->fps;
@@ -685,6 +705,7 @@ bool qg_loop(void)
 	shed_event_clear_reserved_mem();
 
 	memcpy(stub->key.prev, stub->key.key, sizeof(byte) * QIK_MAX_VALUE);
+	stub->mouse.delta = qm_point_zero();
 
 	if (QN_TMASK(stub->flags, QGSPECIFIC_VIRTUAL) == false)
 	{
@@ -751,7 +772,7 @@ static void qg_dispatch_event(const QgEvent* ev)
 {
 	const StubBase* stub = qg_instance_stub;
 	const QgEventType type = ev->ev;
-	StubListEventCbNode *node, *next;
+	StubListEventCbNode* node, * next;
 	QN_LIST_FOREACH(stub->callbacks, node, next)
 	{
 		if (node->DATA.func(node->DATA.data, type, ev) > 0)
@@ -855,7 +876,7 @@ bool qg_unregister_event_callback(nint key)
 	qn_mutex_enter(stub->mutex);
 
 	bool ret = false;
-	StubListEventCbNode* node, *next;
+	StubListEventCbNode* node, * next;
 	QN_LIST_FOREACH(stub->callbacks, node, next)
 	{
 		if (node->DATA.key != (size_t)key)
@@ -878,7 +899,7 @@ void qg_flush_event(void)
 }
 
 //
-bool qg_pop_event(QgEvent * ev, bool peek)
+bool qg_pop_event(QgEvent* ev, bool peek)
 {
 	qn_return_when_fail(ev, false);
 	if (peek)
@@ -887,7 +908,7 @@ bool qg_pop_event(QgEvent * ev, bool peek)
 }
 
 //
-int qg_add_event(const QgEvent * ev, const bool prior)
+int qg_add_event(const QgEvent* ev, const bool prior)
 {
 	qn_return_when_fail(ev, -1);
 
@@ -914,7 +935,7 @@ int qg_add_signal_event(const QgEventType type, const bool prior)
 }
 
 //
-int qg_add_key_event(const QgEvent * ev, const size_t key)
+int qg_add_key_event(const QgEvent* ev, const size_t key)
 {
 	qn_return_when_fail(ev, -1);
 	qn_return_when_fail(key != 0, -3);
@@ -1540,11 +1561,22 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	tm->Far = 100000.0f;
 
 	RendererParam* param = &rdh->param;
+	param->bgc.s = QMCOLOR_BLACK.s;							// 배경색
+
 	for (size_t i = 0; i < QN_COUNTOF(param->v); i++)		// 벡터 인수
 		param->v[i].s = qm_vec_zero();
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)		// 행렬 인수
 		param->m[i].s = qm_mat4_unit();
-	param->bgc.s = QMCOLOR_BLACK.s;							// 배경색
+
+	param->diffuse.s = QMCOLOR_WHITE.s;						// 디퓨즈 색
+	param->specular.s = QMCOLOR_WHITE.s;					// 스펙큘러 색
+	param->ambient.s = QMCOLOR_WHITE.s;						// 앰비언트 색
+	param->emissive.s = QMCOLOR_BLACK.s;					// 이미시브 색
+	param->shininess = 0.0f;								// 빛나는 정도
+
+	param->constant_dist = 1000.0f;							// 거리 상수
+	param->constant_pos.s = qm_vec3(0.0f, 0.0f, 0.0f);		// 위치 상수
+	param->constant_color = QMCOLOR_WHITE;					// 색깔 상수
 
 	// 묶음
 	for (size_t i = 0; i < QN_COUNTOF(rdh->mukums); i++)
@@ -1595,7 +1627,6 @@ void rdh_internal_layout(void)
 	RendererTransform* tm = RDH_TRANSFORM;
 	tm->size = client_size;
 	tm->proj.s = qm_mat4_perspective_lh(QM_PI_H, aspect, tm->Near, tm->Far);
-	tm->view_proj.s = qm_mat4_mul(tm->view.s, tm->proj.s);
 	tm->scissor = qm_rect_size(0, 0, client_size.Width, client_size.Height);
 }
 
@@ -1615,6 +1646,7 @@ void rdh_internal_reset(void)
 void rdh_internal_invoke_reset(void)
 {
 	RdhBase* rdh = RDH;
+
 	RendererInvoke* ivk = &rdh->invokes;
 	ivk->invokes = 0;
 	ivk->begins = 0;
@@ -1626,6 +1658,14 @@ void rdh_internal_invoke_reset(void)
 	ivk->draws = 0;
 	ivk->primitives = 0;
 	ivk->flush = false;
+
+	RendererParam* param = &rdh->param;
+	QnDateTime dt = { .stamp = qn_ptc() };
+	float s, c, hs = (float)(dt.hour * 3600 + dt.minute * 60 + dt.second) / 86400.0f;
+	QMMAT m = qm_mat4_rot_z(qm_d2rf((hs - 0.25f) * 360.0f));
+	qm_sincosf(hs * QM_TAU, &s, &c);
+	param->constant_pos.s = qm_vec3(s * param->constant_dist, 0.0f, c * param->constant_dist);
+	param->constant_pos.s = qm_vec3_trfm(qm_vec(0.0f, param->constant_dist, 0.0f, 0.0f), m);
 }
 
 //
@@ -1671,6 +1711,9 @@ bool qg_begin_render(bool clear)
 	rdh->invokes.invokes++;
 	rdh->invokes.begins++;
 	rdh->invokes.flush = false;
+	RendererTransform* tm = &rdh->tm;
+	tm->vwpr.s = qm_mat4_mul(tm->view.s, tm->proj.s);
+	tm->prvw.s = qm_mat4_mul(tm->proj.s, tm->view.s);
 	return qn_cast_vtable(rdh, RDHBASE)->begin(clear);
 }
 
@@ -1786,6 +1829,14 @@ void qg_set_background(const QMVEC* color)
 }
 
 //
+void qg_set_background_param(float r, float g, float b, float a)
+{
+	RdhBase* rdh = RDH;
+	rdh->param.bgc.s = qm_vec4(r, g, b, a);
+	rdh->invokes.invokes++;
+}
+
+//
 void qg_set_world(const QMMAT* world)
 {
 	RdhBase* rdh = RDH;
@@ -1800,7 +1851,6 @@ void qg_set_view(const QMMAT* view)
 	RdhBase* rdh = RDH;
 	rdh->tm.view.s = *view;
 	rdh->tm.invv.s = qm_mat4_inv(*view);
-	rdh->tm.view_proj.s = qm_mat4_mul(*view, rdh->tm.proj.s);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
@@ -1810,7 +1860,6 @@ void qg_set_project(const QMMAT* proj)
 {
 	RdhBase* rdh = RDH;
 	rdh->tm.proj.s = *proj;
-	rdh->tm.view_proj.s = qm_mat4_mul(rdh->tm.view.s, *proj);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
@@ -1822,7 +1871,6 @@ void qg_set_view_project(const QMMAT* proj, const QMMAT* view)
 	rdh->tm.proj.s = *proj;
 	rdh->tm.view.s = *view;
 	rdh->tm.invv.s = qm_mat4_inv(*view);
-	rdh->tm.view_proj.s = qm_mat4_mul(*proj, *view);
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
@@ -1835,7 +1883,6 @@ void qg_set_camera(QgCamera* camera)
 	rdh->tm.proj.s = camera->mat.proj;
 	rdh->tm.view.s = camera->mat.view;
 	rdh->tm.invv.s = camera->mat.invv;
-	rdh->tm.view_proj.s = camera->mat.vipr;
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
 }
@@ -1980,7 +2027,7 @@ bool qg_set_vertex(QgLayoutStage stage, QgBuffer* buffer)
 }
 
 //
-bool qg_set_render_state(QgRenderState * render)
+bool qg_set_render_state(QgRenderState* render)
 {
 	VAR_CHK_IF_NULL(render, false);
 	RdhBase* rdh = RDH;
@@ -2073,21 +2120,21 @@ void qg_draw_glyph(const QmRect* bound, QgTexture* texture, const QmKolor color,
 #define VAR_CHK_NAME	"BUFFER"
 
 //
-void* qg_buffer_map(QgBuffer * self, bool synchronized)
+void* qg_buffer_map(QgBuffer* self, bool synchronized)
 {
 	VAR_CHK_IF_COND(self->mapped != false, "buffer already mapped", NULL);
 	return qn_cast_vtable(self, QGBUFFER)->map(self, synchronized);
 }
 
 //
-bool qg_buffer_unmap(QgBuffer * self)
+bool qg_buffer_unmap(QgBuffer* self)
 {
 	VAR_CHK_IF_COND(self->mapped == false, "buffer not mapped", false);
 	return qn_cast_vtable(self, QGBUFFER)->unmap(self);
 }
 
 //
-bool qg_buffer_data(QgBuffer * self, int size, const void* data)
+bool qg_buffer_data(QgBuffer* self, int size, const void* data)
 {
 	VAR_CHK_IF_COND(self->mapped != false, "buffer already mapped", false);
 	VAR_CHK_IF_NULL(data, false);

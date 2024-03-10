@@ -88,6 +88,20 @@ void qg_dpct_set_scl(QNGAM dpct, const QMVEC* scl)
 }
 
 //
+void qg_dcpt_set_local(QNGAM dcpt, const QMMAT* m)
+{
+	QgDpct* self = qn_cast_type(dcpt, QgDpct);
+	self->trfm.mlocal.s = m != NULL ? *m : qm_mat4_unit();
+}
+
+//
+void qg_dcpt_set_calc(QNGAM dcpt, const QMMAT* m)
+{
+	QgDpct* self = qn_cast_type(dcpt, QgDpct);
+	self->trfm.mcalc.s = m != NULL ? *m : qm_mat4_unit();
+}
+
+//
 void qg_dpct_set_loc_param(QNGAM dpct, float x, float y, float z)
 {
 	QMVEC v = qm_vec(x, y, z, 0.0f);
@@ -269,13 +283,40 @@ void qg_camera_set_angle(QgCamera* self, const QMVEC* angle)
 }
 
 //
-void qg_camera_set_move_speed(QgCamera* self, float sx, float sy, float sz)
+void qg_camera_set_move_speed(QgCamera* self, const QMVEC* s)
+{
+	self->param.smove.s = *s;
+}
+
+//
+void qg_camera_set_rot_speed(QgCamera* self, const QMVEC* s)
+{
+	self->param.srot.s = *s;
+}
+
+//
+void qg_camera_set_position_param(QgCamera* self, float x, float y, float z)
+{
+	if (QN_TMASK(self->flags, QGCAMF_MAYA))
+		self->param.at.s = qm_vec3(x, y, z);
+	else
+		self->param.eye.s = qm_vec3(x, y, z);
+}
+
+//
+void qg_camera_set_angle_param(QgCamera* self, float x, float y, float z)
+{
+	self->param.angle.s = qm_vec3(x, y, z);
+}
+
+//
+void qg_camera_set_move_speed_param(QgCamera* self, float sx, float sy, float sz)
 {
 	self->param.smove.s = qm_vec3(sx, sy, sz);
 }
 
 //
-void qg_camera_set_rot_speed(QgCamera* self, float sx, float sy, float sz)
+void qg_camera_set_rot_speed_param(QgCamera* self, float sx, float sy, float sz)
 {
 	self->param.srot.s = qm_vec3(sx, sy, sz);
 }
@@ -290,7 +331,8 @@ float qg_camera_get_dist(const QgCamera* self, const QMVEC* pos)
 QMVEC qg_camera_project(const QgCamera* self, const QMVEC v, const QMMAT* world)
 {
 	const QmSize size = RDH_TRANSFORM->size;
-	QMMAT m = qm_mat4_mul(world != NULL ? *world : RDH_TRANSFORM->world.s, self->mat.vipr);
+	QMMAT vp = qm_mat4_mul(self->mat.view, self->mat.proj);
+	QMMAT m = qm_mat4_mul(world != NULL ? *world : RDH_TRANSFORM->world.s, vp);
 	QMVEC t = qm_vec3_trfm(v, m);
 	QmFloat3A a;
 	qm_vec_to_float3a(t, &a);
@@ -321,6 +363,7 @@ static void _camera_internal_update(QnGam g)
 		self->param.aspect = qg_get_aspect();
 	self->mat.proj = qm_mat4_perspective_lh(self->param.fov, self->param.aspect, self->param.znear, self->param.zfar);
 
+	self->param.angle.s = qm_vec_crad(qm_vec_add(self->param.angle.s, self->param.drot.s));
 	QMMAT r = qm_mat4_rot_vec3(self->param.angle.s);
 	QMVEC up = qm_vec3_trfm_norm(QMCONST_UNIT_R1.s, r);
 	QMVEC ah = qm_vec3_trfm_norm(QMCONST_UNIT_R2.s, r);
@@ -328,6 +371,8 @@ static void _camera_internal_update(QnGam g)
 	if (QN_TMASK(self->flags, QGCAMF_MAYA))
 	{
 		// 마야 카메라
+		QMVEC move = qm_vec3_trfm_norm(self->param.dmove.s, r);
+		self->param.at.s = qm_vec_add(self->param.at.s, move);
 		QMVEC dist = qm_vec_mag(ah, self->param.dist);
 		self->param.eye.s = qm_vec_sub(self->param.at.s, dist);
 		QMVEC at = qm_vec_add(self->param.eye.s, ah);
@@ -336,14 +381,16 @@ static void _camera_internal_update(QnGam g)
 	else
 	{
 		// FPS 카메라
+		QMVEC move = qm_vec3_trfm_norm(self->param.dmove.s, r);
+		self->param.eye.s = qm_vec_add(self->param.eye.s, move);
 		self->param.at.s = qm_vec_add(self->param.eye.s, ah);
 		self->mat.view = qm_mat4_lookat_lh(self->param.eye.s, self->param.at.s, up);
 	}
 
 	self->mat.invv = qm_mat4_inv(self->mat.view);
-	self->mat.vipr = qm_mat4_mul(self->mat.proj, self->mat.view);
-	self->mat.iinv = qm_mat4_inv(self->mat.invv);
 
+	self->param.dmove.s = qm_vec_zero();
+	self->param.drot.s = qm_vec_zero();
 	qg_set_camera(self);
 }
 
@@ -382,14 +429,16 @@ static void _camera_internal_control(QnGam g, const QgCamCtrl* ctrl, float advan
 	if (qg_get_key_state(c->rot_pitch_down))
 		rot.X += 1.0f;
 
-	QMVEC pos = qm_vec_mul(move.s, qm_vec_mag(self->param.smove.s, advance));
-	QMVEC angle = qm_vec_mul(rot.s, qm_vec_mag(self->param.srot.s, advance));
-
-	if (QN_TMASK(self->flags, QGCAMF_FPS))
+	if (c->rot_button == QIM_NONE || qg_get_mouse_button_state(c->rot_button))
 	{
-		self->param.eye.s = qm_vec_add(self->param.eye.s, pos);
-		self->param.angle.s = qm_vec_crad(qm_vec_add(self->param.angle.s, angle));
+		QmPoint d;
+		qg_get_mouse_get_delta(&d);
+		rot.Y += (float)d.X * -0.1f;
+		rot.X += (float)d.Y * -0.1f;
 	}
+
+	self->param.dmove.s = qm_vec_mul(move.s, qm_vec_mag(self->param.smove.s, advance));
+	self->param.drot.s = qm_vec_mul(rot.s, qm_vec_mag(self->param.srot.s, advance));
 }
 
 //
@@ -403,8 +452,8 @@ static void _camera_init(QgCamera* self)
 	self->param.zfar = tm->Far;
 
 	self->param.dist = 10.0f;
-	self->param.smove.s = qm_vec3(1.0f, 1.0f, 1.0f);
-	self->param.srot.s = qm_vec3(QM_PI_H, QM_PI_H, QM_PI_H);
+	self->param.smove.s = qm_vec3(10.0f, 10.0f, 10.0f);
+	self->param.srot.s = qm_vec3(QM_TAU_H, QM_TAU_H, QM_TAU_H);
 
 	self->param.angle.s = qm_vec_zero();
 	// eye와 at은 카메라 초기화에서 설정
