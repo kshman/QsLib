@@ -650,7 +650,7 @@ static void qgl_rdh_reset(void)
 #endif
 
 	// 리소스
-	static char vs_ortho[] = \
+	static char vs_ortho[] = /*vertex shader:*/\
 		"uniform mat4 OrthoProj;" \
 		"attribute vec3 aPosition;" \
 		"attribute vec2 aCoord;" \
@@ -663,7 +663,7 @@ static void qgl_rdh_reset(void)
 		"	vCoord = aCoord;"\
 		"	vColor = aColor;" \
 		"}";
-	static char ps_ortho[] = \
+	static char ps_ortho[] = /*fragment shader:*/\
 		"uniform sampler2D Texture;" \
 		"varying vec2 vCoord;" \
 		"varying vec4 vColor;" \
@@ -671,7 +671,7 @@ static void qgl_rdh_reset(void)
 		"{" \
 		"	gl_FragColor = texture2D(Texture, vCoord) * vColor;\n" \
 		"}";
-	static char ps_glyph[] = \
+	static char ps_glyph[] = /*fragment shader:*/\
 		"uniform sampler2D Texture;" \
 		"varying vec2 vCoord;" \
 		"varying vec4 vColor;" \
@@ -937,6 +937,12 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->proj.f));
 			break;
+		case QGSCA_WORLD_VIEW:
+		{
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			const QMMAT m = qm_mat4_mul(tm->view.s, tm->world.s);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, ((const QmMat4*)&m)->f));
+		}break;
 		case QGSCA_VIEW_PROJ:
 			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->vwpr.f));
@@ -945,6 +951,12 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->prvw.f));
 			break;
+		case QGSCA_INV_WORLD:
+		{
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			const QMMAT m = qm_mat4_tinv(tm->world.s);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, ((const QmMat4*)&m)->f));
+		} break;
 		case QGSCA_INV_VIEW:
 			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->invv.f));
@@ -1028,6 +1040,14 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 		case QGSCA_EMISSIVE:
 			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
 			GLDEBUG(glUniform4fv(var->offset, 1, param->emissive.f));
+			break;
+		case QGSCA_CONSTANT_POS:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->constant_pos.f));
+			break;
+		case QGSCA_CONSTANT_COLOR:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->constant_color.f));
 			break;
 			/*
 			case QGSCA_LIGHT_POS:
@@ -2252,7 +2272,7 @@ static void qgl_render_set_rasterizer(QglRasterizerDesc* rasz, const QgPropRaste
 	rasz->slope_scale = source->slope_scale;
 	rasz->scissor = source->scissor;
 	rasz->bias = qm_eqf(source->depth_bias, 0.0f) == false || qm_eqf(source->slope_scale, 0.0f) == false;
-}
+	}
 
 // 렌더 만들기. 오류 처리는 다하고 왔을 것이다
 QgRenderState* qgl_create_render(const char* name, const QgPropRender* prop, const QgPropShader* shader)

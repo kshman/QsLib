@@ -190,7 +190,7 @@ typedef enum QGLAYOUTUSAGE
 {
 	QGLOU_UNKNOWN,											/// @brief 알 수 없음
 	QGLOU_POSITION,											/// @brief XYZ 좌표
-	QGLOU_COORD1,											/// @brief UV 좌표 1	
+	QGLOU_COORD1,											/// @brief UV 좌표 1
 	QGLOU_COORD2,											/// @brief UV 좌표 2
 	QGLOU_COORD3,											/// @brief UV 좌표 3
 	QGLOU_COORD4,											/// @brief UV 좌표 4
@@ -302,8 +302,10 @@ typedef enum QGSHADERCONSTAUTO
 	QGSCA_WORLD,											/// @brief 월드 행렬
 	QGSCA_VIEW,												/// @brief 뷰 행렬
 	QGSCA_PROJ,												/// @brief 투영 행렬
+	QGSCA_WORLD_VIEW,										/// @brief 월드와 뷰의 곱행렬
 	QGSCA_VIEW_PROJ,										/// @brief 뷰와 투영의 곱행렬
 	QGSCA_PROJ_VIEW,										/// @brief 투영과 뷰의 곱행렬
+	QGSCA_INV_WORLD,										/// @brief 월드의 역행렬 (전치되어 있음)
 	QGSCA_INV_VIEW,											/// @brief 뷰의 역행렬
 	QGSCA_MVP,												/// @brief 모델뷰투영 행렬
 	QGSCA_TEX1,												/// @brief 텍스쳐 1번
@@ -323,10 +325,12 @@ typedef enum QGSHADERCONSTAUTO
 	QGSCA_PROP_MAT3,										/// @brief 행렬 3번
 	QGSCA_PROP_MAT4,										/// @brief 행렬 4번
 	QGSCA_MAT_PALETTE,										/// @brief 행렬 팔레트
-	QGSCA_DIFFUSE,											/// @brief 디퓨즈 색깔
-	QGSCA_SPECULAR,											/// @brief 스페큘러 색깔
-	QGSCA_AMBIENT,											/// @brief 앰비언트 색깔
-	QGSCA_EMISSIVE,											/// @brief 이미시브 색깔
+	QGSCA_DIFFUSE,											/// @brief 분산광
+	QGSCA_SPECULAR,											/// @brief 반사광
+	QGSCA_AMBIENT,											/// @brief 주변광
+	QGSCA_EMISSIVE,											/// @brief 방사광
+	QGSCA_CONSTANT_POS,										/// @brief 항성 위치
+	QGSCA_CONSTANT_COLOR,									/// @brief 항성 색깔
 	QGSCA_MAX_VALUE
 } QgScAuto;
 
@@ -335,7 +339,7 @@ typedef enum QGBUFFERTYPE
 {
 	QGBUFFER_VERTEX,										/// @brief 정점 버퍼
 	QGBUFFER_INDEX,											/// @brief 인덱스 버퍼
-	QGBUFFER_CONSTANT,										/// @brief 상수 버퍼			
+	QGBUFFER_CONSTANT,										/// @brief 상수 버퍼
 } QgBufferType;
 
 /// @brief 지우기 역할
@@ -774,7 +778,7 @@ typedef struct QGLAYOUTINPUT
 	QgLayoutStage		stage;								/// @brief 스테이지 구분
 	QgLayoutUsage		usage;								/// @brief 사용법
 	QgClrFmt			format;								/// @brief 포맷
-	cham				normalized;							/// @brief 정규화	
+	cham				normalized;							/// @brief 정규화
 } QgLayoutInput;
 
 /// @brief 레이아웃 데이터
@@ -1152,8 +1156,8 @@ QSAPI void qg_set_key_state(QikKey key, bool down);
 QSAPI bool qg_get_key_state(QikKey key);
 
 /// @brief 키가 눌려졌는가 테스트 한다 (키 반복 X)
-/// @param key 
-/// @return 
+/// @param key
+/// @return
 QSAPI bool qg_get_key_press(const QikKey key);
 
 /// @brief 키가 눌렸다 떼졌나 테스트 한다
@@ -1228,7 +1232,8 @@ QSAPI void qg_reset_timer(void);
 QSAPI void qg_set_aspect(const int width, const int height);
 
 /// @brief 스터브 크기를 얻는다
-QSAPI void qg_get_size(_Out_ QmSize* size);
+/// @return 스터브 크기
+QSAPI const QmSize qg_get_size(void);
 
 /// @brief 프로그램 종료 키를 설정한다
 /// @param key 종료 키
@@ -1261,14 +1266,14 @@ QSAPI void qg_main_loop(paramfunc_t func, void* data);
 
 /// @brief 스터브 루프를 탈출한다
 /// @see qg_poll
-/// 
+///
 /// 다만, 바로 프로그램을 종료하는 것은 아니며.실제로 이벤트를 처리하지 않도록 하는 역할을 한다
 QSAPI void qg_exit_loop(void);
 
 /// @brief 스터브 이벤트 콜백을 등록한다
 /// @param func 콜백 함수
 /// @param data 콜백 함수 사용자 데이터
-/// @return 등록 키. 이 키로 qg_unregister_event_callback 로 등록을 해제할 수 있다 
+/// @return 등록 키. 이 키로 qg_unregister_event_callback 로 등록을 해제할 수 있다
 QSAPI nint qg_register_event_callback(QgEventCallback func, void* data);
 
 /// @brief 스터브 이벤트 콜백의 등록을 해제한다
@@ -1449,6 +1454,20 @@ QSAPI void qg_set_view_project(const QMMAT* proj, const QMMAT* view);
 /// @param camera 카메라
 QSAPI void qg_set_camera(QgCamera* camera);
 
+/// @brief 항성의 정보를 설정한다
+/// @param dist 항성까지의 거리
+/// @param pos 항성의 위치 (널이면 기본 PTC시간을 사용)
+/// @param color 항성에서 도달하는 색깔
+QSAPI void qg_set_constant_param(float dist, const QMVEC* pos, const QMVEC* color);
+
+/// @brief 항성의 거리를 얻는다
+/// @return 항성까지의 거리
+QSAPI float qg_get_constant_dist(void);
+
+/// @brief 항성의 위치를 얻는다
+/// @return 항성의 위치
+QSAPI const QMVEC qg_get_constant_pos(void);
+
 /// @brief 정점 버퍼를 설정한다
 /// @param stage 버퍼를 지정할 스테이지
 /// @param buffer 설정할 버퍼
@@ -1616,7 +1635,7 @@ QN_DECL_VTABLE(QGTEXTURE)
 /// @brief 텍스쳐를 만든다
 /// @param name 텍스쳐 이름
 /// @param image 이미지
-/// @param flags 텍스쳐 플래그 
+/// @param flags 텍스쳐 플래그
 /// @return 만들어진 텍스쳐
 QSAPI QgTexture* qg_create_texture(const char* name, const QgImage* image, QgTexFlag flags);
 
@@ -1655,7 +1674,7 @@ QSAPI QgImage* qg_create_image(QgClrFmt fmt, int width, int height);
 /// @param fmt 이미지 포맷
 /// @param width 이미지 너비
 /// @param height 이미지 높이
-/// @param data 이미지 데이터 
+/// @param data 이미지 데이터
 /// @return 만들어진 이미지
 /// @warning 각 인수에 대해 유효성을 검사하지 않는다! 즉, 안전하지 않은 함수이다. 한편,
 /// 이미지 데이터는 이미지가 관리하기 때문에 해제하면 안된다. 임시 메모리를 전달해도 안되며 반드시 할당한 데이터 일 것
@@ -1822,6 +1841,13 @@ QSAPI bool qg_load_def_font(int mount, const char* filename);
 /// @return 기본 글꼴
 QSAPI QgFont* qg_get_def_font(void);
 
+/// @brief 기본 글꼴의 크기를 얻는다
+QSAPI int qg_get_def_font_size(void);
+
+/// @brief 기본 글꼴 크기를 설정한다
+/// @param size 글꼴 크기
+QSAPI void qg_set_def_font_size(int size);
+
 /// @brief 기본 글꼴로 그린다
 /// @param x,y x,y 좌표
 /// @param text 문자열
@@ -1832,6 +1858,9 @@ QSAPI void qg_draw_text(int x, int y, const char* text);
 /// @param fmt 문자열
 /// @param ... 가변 인수
 QSAPI void qg_draw_text_format(int x, int y, const char* fmt, ...);
+
+/// @brief 글꼴 크기 기준으로 위치값을 설정한다
+#define QG_FGS(x)		(0xFFFF0000 | (x))
 
 
 //////////////////////////////////////////////////////////////////////////

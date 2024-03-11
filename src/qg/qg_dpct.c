@@ -401,7 +401,7 @@ static void _camera_internal_control(QnGam g, const QgCamCtrl* ctrl, float advan
 	{
 		QIK_W, QIK_S, QIK_A, QIK_D, QIK_R, QIK_F,
 		QIK_LEFT, QIK_RIGHT, QIK_UP, QIK_DOWN,
-		QIM_RIGHT,
+		QIM_LEFT,
 	};
 	QgCamera* self = qn_cast_type(g, QgCamera);
 	const QgCamCtrl* c = ctrl != NULL ? ctrl : &def_ctrl;

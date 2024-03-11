@@ -878,6 +878,8 @@ static const uint default_font[] = {
 //////////////////////////////////////////////////////////////////////////
 // 글꼴
 
+#define FONT_POS(f,x)		((x)<0xFFFF0000) ? (x) : (f)->size * ((x) & 0xFFFF)
+
 #undef VAR_CHK_NAME
 #define VAR_CHK_NAME	"Font"
 
@@ -907,7 +909,7 @@ void qg_font_write(QgFont* self, int x, int y, const char* text)
 {
 	VAR_CHK_IF_NULL(text, );
 	const QmSize size = RDH_TRANSFORM->size;
-	const QmRect bound = qm_rect(x, y, size.Width, size.Height);
+	const QmRect bound = qm_rect(FONT_POS(self, x), FONT_POS(self, y), size.Width, size.Height);
 	qn_cast_vtable(self, QGFONT)->draw(self, &bound, text);
 }
 
@@ -924,7 +926,7 @@ void qg_font_write_format(QgFont* self, int x, int y, const char* fmt, ...)
 		return;
 
 	const QmSize size = RDH_TRANSFORM->size;
-	const QmRect bound = qm_rect(x, y, size.Width, size.Height);
+	const QmRect bound = qm_rect(FONT_POS(self, x), FONT_POS(self, y), size.Width, size.Height);
 	qn_cast_vtable(self, QGFONT)->draw(self, &bound, buffer);
 }
 
@@ -988,7 +990,7 @@ typedef struct TRUETYPE_VALUE
 {
 	int					advance;
 	QmPoint				offset;
-	QgTexture*			tex;
+	QgTexture* tex;
 } TrueTypeValue;
 
 INLINE int truetype_key_hash(const TrueTypeKey* key)
@@ -1015,7 +1017,7 @@ typedef struct STBTT_DATA
 	stbtt_fontinfo		stbtt;
 	float				scale;
 	int					ascent, descent, linegap;
-	struct STBTT_DATA*	next;
+	struct STBTT_DATA* next;
 } StbttData;
 
 // 트루타입 글꼴
@@ -1023,7 +1025,7 @@ typedef struct TRUETYPE_FONT
 {
 	QN_GAM_BASE(QGFONT);
 
-	StbttData*			nodes;
+	StbttData* nodes;
 	TrueTypeHash		glyphs;
 } TrueTypeFont;
 
@@ -1245,7 +1247,7 @@ static void _truetype_dispose(QnGam g)
 {
 	TrueTypeFont* self = qn_cast_type(g, TrueTypeFont);
 	_truetype_hash_dispose(&self->glyphs);
-	for (StbttData *next, *node = self->nodes; node != NULL; node = next)
+	for (StbttData* next, *node = self->nodes; node != NULL; node = next)
 	{
 		next = node->next;
 		qn_free(node->stbtt.data);
@@ -1322,7 +1324,7 @@ typedef struct JOHAB_FONT
 {
 	QN_GAM_BASE(QGFONT);
 
-	QgTexture*			tex;
+	QgTexture* tex;
 	float				width;
 	float				height;
 
@@ -1650,7 +1652,7 @@ static QgFont* _johab_create(QgImage* image, int font_display_size)
 QgFont* _create_default_font(void)
 {
 	QgImage* image = _load_image_hxn(default_font, sizeof(default_font), NULL, NULL);
-	return _johab_create(image, 32);
+	return _johab_create(image, 0);
 }
 
 
@@ -1675,9 +1677,9 @@ typedef struct ATLASFONT
 {
 	QN_GAM_BASE(QGFONT);
 
-	QgTexture*			tex;
-	AtlasGlyph*			glyphs;
-	AtlasGlyph**		index;
+	QgTexture* tex;
+	AtlasGlyph* glyphs;
+	AtlasGlyph** index;
 } AtlasFont;
 
 //
@@ -1993,7 +1995,7 @@ void qg_draw_text(int x, int y, const char* text)
 {
 	QgFont* font = RDH->font;
 	qn_return_when_fail(font != NULL, );
-	qg_font_write(font, x, y, text);
+	qg_font_write(font, FONT_POS(font, x), FONT_POS(font, y), text);
 }
 
 //
@@ -2008,5 +2010,5 @@ void qg_draw_text_format(int x, int y, const char* fmt, ...)
 	va_end(va);
 	if (len <= 0)
 		return;
-	qg_font_write(font, x, y, buffer);
+	qg_font_write(font, FONT_POS(font, x), FONT_POS(font, y), buffer);
 }

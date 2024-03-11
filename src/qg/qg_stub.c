@@ -661,9 +661,9 @@ void qg_set_aspect(const int width, const int height)
 }
 
 //
-void qg_get_size(_Out_ QmSize* size)
+const QmSize qg_get_size(void)
 {
-	*size = qg_instance_stub->client_size;
+	return qg_instance_stub->client_size;
 }
 
 //
@@ -1566,21 +1566,21 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)		// 행렬 인수
 		param->m[i].s = qm_mat4_unit();
 
-	param->diffuse.s = QMCOLOR_WHITE.s;						// 디퓨즈 색
-	param->specular.s = QMCOLOR_WHITE.s;					// 스펙큘러 색
-	param->ambient.s = QMCOLOR_WHITE.s;						// 앰비언트 색
-	param->emissive.s = QMCOLOR_BLACK.s;					// 이미시브 색
+	param->diffuse.s = QMCOLOR_WHITE.s;						// 분산광
+	param->specular.s = QMCOLOR_WHITE.s;					// 반사광
+	param->ambient.s = QMCOLOR_SILVER.s;					// 주변광
+	param->emissive.s = QMCOLOR_BLACK.s;					// 방사광
 	param->shininess = 0.0f;								// 빛나는 정도
 
 	param->constant_dist = 1000.0f;							// 거리 상수
-	param->constant_pos.s = qm_vec3(0.0f, 0.0f, 0.0f);		// 위치 상수
+	param->constant_pos.s = qm_vec_zero();					// 위치 상수
 	param->constant_color = QMCOLOR_WHITE;					// 색깔 상수
 
 	// 묶음
 	for (size_t i = 0; i < QN_COUNTOF(rdh->mukums); i++)
 		qn_node_mukum_init_fast(&rdh->mukums[i]);
 
-	// 
+	//
 	qn_cast_vtable(rdh, RDHBASE)->layout();					// 레이아웃 재설정
 	qn_cast_vtable(rdh, RDHBASE)->reset();					// 장치 리셋
 	qn_timer_reset(STUB->timer);							// 타이머도 리셋해둔다
@@ -1660,10 +1660,8 @@ void rdh_internal_invoke_reset(void)
 	RendererParam* param = &rdh->param;
 	QnDateTime dt = { .stamp = qn_ptc() };
 	float s, c, hs = (float)(dt.hour * 3600 + dt.minute * 60 + dt.second) / 86400.0f;
-	QMMAT m = qm_mat4_rot_z(qm_d2rf((hs - 0.25f) * 360.0f));
 	qm_sincosf(hs * QM_TAU, &s, &c);
-	param->constant_pos.s = qm_vec3(s * param->constant_dist, 0.0f, c * param->constant_dist);
-	param->constant_pos.s = qm_vec3_trfm(qm_vec(0.0f, param->constant_dist, 0.0f, 0.0f), m);
+	param->constant_pos.s = qm_vec3(s * param->constant_dist, -c * param->constant_dist, 0.0);
 }
 
 //
@@ -1886,6 +1884,29 @@ void qg_set_camera(QgCamera* camera)
 }
 
 //
+void qg_set_constant_param(float dist, const QMVEC* pos, const QMVEC* color)
+{
+	RdhBase* rdh = RDH;
+	rdh->param.constant_dist = dist;
+	if (pos != NULL)
+		rdh->param.constant_pos.s = *pos;
+	rdh->param.constant_color.s = color != NULL ? *color : QMCOLOR_WHITE.s;
+	rdh->invokes.invokes++;
+}
+
+//
+float qg_get_constant_dist(void)
+{
+	return RDH_PARAM->constant_dist;
+}
+
+//
+const QMVEC qg_get_constant_pos(void)
+{
+	return RDH_PARAM->constant_pos.s;
+}
+
+//
 QgBuffer* qg_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data)
 {
 	VAR_CHK_IF_ZERO(count, NULL);
@@ -2001,6 +2022,20 @@ bool qg_load_def_font(int mount, const char* filename)
 QgFont* qg_get_def_font(void)
 {
 	return RDH->font;
+}
+
+//
+int qg_get_def_font_size(void)
+{
+	return RDH->font != NULL ? qg_font_get_size(RDH->font) : 0;
+}
+
+//
+void qg_set_def_font_size(int size)
+{
+	QgFont* font = RDH->font;
+	if (font != NULL)
+		qg_font_set_size(font, size);
 }
 
 //
