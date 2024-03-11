@@ -242,8 +242,9 @@ static struct QGSHADERCONSTAUTOMAP
 	{ QGSCA_SPECULAR,		"specular",			0 },
 	{ QGSCA_AMBIENT,		"ambient",			0 },
 	{ QGSCA_EMISSIVE,		"emissive",			0 },
-	{ QGSCA_CONSTANT_POS,	"constantpos",		0 },
+	{ QGSCA_CONSTANT_DIR,	"constantdir",		0 },
 	{ QGSCA_CONSTANT_COLOR,	"constantcolor",	0 },
+	{ QGSCA_VIEW_POS,		"viewpos",			0 },
 	// 별명
 	{ QGSCA_TEX1,			"tex",				0 },
 	{ QGSCA_TEX1,			"tex1",				0 },

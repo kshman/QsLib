@@ -1570,11 +1570,9 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	param->specular.s = QMCOLOR_WHITE.s;					// 반사광
 	param->ambient.s = QMCOLOR_SILVER.s;					// 주변광
 	param->emissive.s = QMCOLOR_BLACK.s;					// 방사광
-	param->shininess = 0.0f;								// 빛나는 정도
-
-	param->constant_dist = 1000.0f;							// 거리 상수
-	param->constant_pos.s = qm_vec_zero();					// 위치 상수
-	param->constant_color = QMCOLOR_WHITE;					// 색깔 상수
+	param->shininess = 4.0f;								// 빛나는 정도
+	param->constant_dir.s = qm_vec_zero();					// 항성 방향 벡터
+	param->constant_color.s = QMCOLOR_LIGHT_CYAN.s;			// 항성 색깔
 
 	// 묶음
 	for (size_t i = 0; i < QN_COUNTOF(rdh->mukums); i++)
@@ -1661,7 +1659,7 @@ void rdh_internal_invoke_reset(void)
 	QnDateTime dt = { .stamp = qn_ptc() };
 	float s, c, hs = (float)(dt.hour * 3600 + dt.minute * 60 + dt.second) / 86400.0f;
 	qm_sincosf(hs * QM_TAU, &s, &c);
-	param->constant_pos.s = qm_vec3(s * param->constant_dist, -c * param->constant_dist, 0.0);
+	param->constant_dir.s = qm_vec3(-s, c, 0.0);
 }
 
 //
@@ -1756,7 +1754,7 @@ void qg_clear_render(QgClear clear)
 }
 
 //
-void qg_set_param_diffuse(const QMVEC* diffuse)
+void qg_set_diffuse(const QMVEC* diffuse)
 {
 	RdhBase* rdh = RDH;
 	rdh->param.diffuse.s = *diffuse;
@@ -1764,7 +1762,7 @@ void qg_set_param_diffuse(const QMVEC* diffuse)
 }
 
 //
-void qg_set_param_specular(const QMVEC* specular)
+void qg_set_specular(const QMVEC* specular)
 {
 	RdhBase* rdh = RDH;
 	rdh->param.specular.s = *specular;
@@ -1772,7 +1770,7 @@ void qg_set_param_specular(const QMVEC* specular)
 }
 
 //
-void qg_set_param_ambient(const QMVEC* ambient)
+void qg_set_ambient(const QMVEC* ambient)
 {
 	RdhBase* rdh = RDH;
 	rdh->param.ambient.s = *ambient;
@@ -1780,11 +1778,34 @@ void qg_set_param_ambient(const QMVEC* ambient)
 }
 
 //
-void qg_set_param_emissive(const QMVEC* emissive)
+void qg_set_emissive(const QMVEC* emissive)
 {
 	RdhBase* rdh = RDH;
 	rdh->param.emissive.s = *emissive;
 	rdh->invokes.invokes++;
+}
+
+//
+void qg_set_constant_dir(const QMVEC* dir)
+{
+	RdhBase* rdh = RDH;
+	if (dir != NULL)
+		rdh->param.constant_dir.s = *dir;
+	rdh->invokes.invokes++;
+}
+
+//
+void qg_set_constant_color(const QMVEC* color)
+{
+	RdhBase* rdh = RDH;
+	rdh->param.constant_color.s = color != NULL ? *color : QMCOLOR_WHITE.s;
+	rdh->invokes.invokes++;
+}
+
+//
+const QMVEC qg_get_constant_dir(void)
+{
+	return RDH_PARAM->constant_dir.s;
 }
 
 //
@@ -1881,29 +1902,6 @@ void qg_set_camera(QgCamera* camera)
 	rdh->tm.invv.s = camera->mat.invv;
 	rdh->invokes.invokes++;
 	rdh->invokes.transforms++;
-}
-
-//
-void qg_set_constant_param(float dist, const QMVEC* pos, const QMVEC* color)
-{
-	RdhBase* rdh = RDH;
-	rdh->param.constant_dist = dist;
-	if (pos != NULL)
-		rdh->param.constant_pos.s = *pos;
-	rdh->param.constant_color.s = color != NULL ? *color : QMCOLOR_WHITE.s;
-	rdh->invokes.invokes++;
-}
-
-//
-float qg_get_constant_dist(void)
-{
-	return RDH_PARAM->constant_dist;
-}
-
-//
-const QMVEC qg_get_constant_pos(void)
-{
-	return RDH_PARAM->constant_pos.s;
 }
 
 //
@@ -2143,6 +2141,55 @@ void qg_draw_glyph(const QmRect* bound, QgTexture* texture, const QmKolor color,
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
 	qn_cast_vtable(rdh, RDHBASE)->draw_glyph(bound, texture, color, coord);
+}
+
+//
+const QgLayoutData* qg_get_layout_data(QgFixedLayout layout)
+{
+	static QgLayoutInput layout_1p[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+	};
+	static QgLayoutInput layout_1pn[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
+	};
+	static QgLayoutInput layout_1pnt[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
+		{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
+	};
+	static QgLayoutInput layout_1pc[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
+	};
+	static QgLayoutInput layout_1pnc[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
+		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
+	};
+	static QgLayoutInput layout_1pntc[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
+		{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
+		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
+	};
+	static QgLayoutData layouts[QGLDP_MAX_VALUE] =
+	{
+		[QGLDP_1P] = { QN_COUNTOF(layout_1p), layout_1p },
+		[QGLDP_1PN] = { QN_COUNTOF(layout_1pn), layout_1pn },
+		[QGLDP_1PNT] = { QN_COUNTOF(layout_1pnt), layout_1pnt },
+		[QGLDP_1PC] = { QN_COUNTOF(layout_1pc), layout_1pc },
+		[QGLDP_1PNC] = { QN_COUNTOF(layout_1pnc), layout_1pnc },
+		[QGLDP_1PNTC] = { QN_COUNTOF(layout_1pntc), layout_1pntc },
+	};
+	VAR_CHK_IF_MAX(layout, QGLDP_MAX_VALUE, NULL);
+	return &layouts[layout];
 }
 
 

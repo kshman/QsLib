@@ -1041,13 +1041,17 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
 			GLDEBUG(glUniform4fv(var->offset, 1, param->emissive.f));
 			break;
-		case QGSCA_CONSTANT_POS:
+		case QGSCA_CONSTANT_DIR:
 			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
-			GLDEBUG(glUniform4fv(var->offset, 1, param->constant_pos.f));
+			GLDEBUG(glUniform4fv(var->offset, 1, param->constant_dir.f));
 			break;
 		case QGSCA_CONSTANT_COLOR:
 			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
 			GLDEBUG(glUniform4fv(var->offset, 1, param->constant_color.f));
+			break;
+		case QGSCA_VIEW_POS:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, &tm->view._41));
 			break;
 			/*
 			case QGSCA_LIGHT_POS:

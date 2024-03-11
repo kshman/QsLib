@@ -18,38 +18,30 @@ int main(void)
 
 	qg_set_background_param(0.1f, 0.3f, 0.1f, 1.0f);
 	qg_fuse(0, NULL, true, true);
-	qg_load_def_font(0, "/font/kopubs_l.hxn");
+	qg_set_def_font_size(32);
 
 	// 항성 정보
 	const float constant_dist = 5.0f;
-	qg_set_constant_param(constant_dist, NULL, NULL);
 
 	// 카메라 만들고
 	QgCamera* cam = qg_create_camera();
-	qg_camera_set_position_param(cam, 0.0f, 0.0f, -10.0f);
+	qg_camera_set_position_param(cam, 0.0f, 0.0f, -15.0f);
 
 	// 메시용 레이아웃
-	static QgLayoutInput li_3d[] =
-	{
-		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
-		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
-		//{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
-		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
-	};
-	static QgLayoutData ld_3d = { QN_COUNTOF(li_3d), li_3d };
-	static QgPropRender pr_3d = QG_DEFAULT_PROP_RENDER;
-	QgRenderState* rs = qg_create_render_state_vsps(NULL, &pr_3d, &ld_3d, 0, "/shader/simple_vs.glsl", "/shader/simple_ps.glsl");
+	const QgLayoutData* layout = qg_get_layout_data(QGLDP_1PNC);
+	const QgPropRender* render = qg_get_prop_render_default();
+	QgRenderState* rs = qg_create_render_state_vsps(NULL, render, layout, 0, "/shader/simple_vs.glsl", "/shader/simple_ps.glsl");
 
 	// 큐브 메시
 	QgMesh* mesh = qg_create_mesh("cube");
-	qg_mesh_set_layout(mesh, &ld_3d);
+	qg_mesh_set_layout(mesh, layout);
 	qg_mesh_gen_cube(mesh, 1.0f, 1.0f, 1.0f);
 	qg_mesh_build(mesh);
 	qg_dpct_set_loc_param(mesh, 0.0f, 0.0f, 0.0f);
 
 	// 구면 메시
 	QgMesh* sphere = qg_create_mesh("sphere");
-	qg_mesh_set_layout(sphere, &ld_3d);
+	qg_mesh_set_layout(sphere, layout);
 	qg_mesh_gen_sphere(sphere, 0.5f, 16, 16);
 	qg_mesh_build(sphere);
 
@@ -97,13 +89,15 @@ int main(void)
 			// 사용자가 업데이트
 			float s, c, hs = stime / 86400.0f;
 			qm_sincosf(hs * QM_TAU, &s, &c);
-			spos = qm_vec(s * sdist, -c * sdist, 0.0f, 0.0f);
-			qg_set_constant_param(constant_dist, &spos, NULL);
+			spos = qm_vec(-s, c, 0.0f, 0.0f);
+			qg_set_constant_dir(&spos);
+			spos = qm_vec_mag(spos, -sdist);
 		}
 		else
 		{
 			// PTC 시간으로 업데이트
-			spos = qg_get_constant_pos();
+			spos = qg_get_constant_dir();
+			spos = qm_vec_mag(spos, -sdist);
 		}
 		qg_dpct_set_loc(sphere, &spos);
 		qg_dpct_update(sphere, advance);

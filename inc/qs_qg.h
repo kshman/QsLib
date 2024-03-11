@@ -215,6 +215,18 @@ typedef enum QGLAYOUTUSAGE
 } QgLayoutUsage;
 #define QGLOU_MAX_SIZE		((size_t)(QGLOU_MAX_VALUE+sizeof(size_t)-1))&((size_t)~(sizeof(size_t)-1))
 
+/// @brief 미리 정의된 고정된 레이아웃
+typedef enum QGFIXEDLAYOUT
+{
+	QGLDP_1P,												/// @brief 1(위치)
+	QGLDP_1PN,												/// @brief 1(위치/법선)
+	QGLDP_1PNT,												/// @brief 1(위치/법선/텍스쳐)
+	QGLDP_1PC,												/// @brief 1(위치/색깔)
+	QGLDP_1PNC,												/// @brief 1(위치/법선/색깔)
+	QGLDP_1PNTC,											/// @brief 1(위치/법선/텍스쳐/색깔)
+	QGLDP_MAX_VALUE,
+} QgFixedLayout;
+
 /// @brief 블렌드 모드
 typedef enum QGBLEND
 {
@@ -329,8 +341,9 @@ typedef enum QGSHADERCONSTAUTO
 	QGSCA_SPECULAR,											/// @brief 반사광
 	QGSCA_AMBIENT,											/// @brief 주변광
 	QGSCA_EMISSIVE,											/// @brief 방사광
-	QGSCA_CONSTANT_POS,										/// @brief 항성 위치
+	QGSCA_CONSTANT_DIR,										/// @brief 항성 방향
 	QGSCA_CONSTANT_COLOR,									/// @brief 항성 색깔
+	QGSCA_VIEW_POS,											/// @brief 뷰 위치
 	QGSCA_MAX_VALUE
 } QgScAuto;
 
@@ -1396,19 +1409,31 @@ QSAPI void qg_clear_render(QgClear clear);
 
 /// @brief 세이더 diffuse 파라미터 설정
 /// @param diffuse diffuse 색깔
-QSAPI void qg_set_param_diffuse(const QMVEC* diffuse);
+QSAPI void qg_set_diffuse(const QMVEC* diffuse);
 
 /// @brief 세이더 specular 파라미터 설정
 /// @param specular specular 색깔
-QSAPI void qg_set_param_specular(const QMVEC* specular);
+QSAPI void qg_set_specular(const QMVEC* specular);
 
 /// @brief 세이더 ambient 파라미터 설정
 /// @param ambient ambient 색깔
-QSAPI void qg_set_param_ambient(const QMVEC* ambient);
+QSAPI void qg_set_ambient(const QMVEC* ambient);
 
 /// @brief 세이더 emissive 파라미터 설정
 /// @param emissive emissive 색깔
-QSAPI void qg_set_param_emissive(const QMVEC* emissive);
+QSAPI void qg_set_emissive(const QMVEC* emissive);
+
+/// @brief 항성의 방향을 설정한다
+/// @param dir 항성의 위치 (널이면 기본 PTC시간을 사용)
+QSAPI void qg_set_constant_dir(const QMVEC* dir);
+
+/// @brief 항성의 색깔을 설정한다
+/// @param color 항성의 색깔
+QSAPI void qg_set_constant_color(const QMVEC* color);
+
+/// @brief 항성의 방향을 얻는다
+/// @return 항성의 방향
+QSAPI const QMVEC qg_get_constant_dir(void);
 
 /// @brief 세이더 vec4 타입 파라미터 설정
 /// @param at 0부터 3까지 총 4가지
@@ -1453,20 +1478,6 @@ QSAPI void qg_set_view_project(const QMMAT* proj, const QMMAT* view);
 /// @brief 카메라를 설정한다 (프로젝션과 뷰	행렬을 설정한다)
 /// @param camera 카메라
 QSAPI void qg_set_camera(QgCamera* camera);
-
-/// @brief 항성의 정보를 설정한다
-/// @param dist 항성까지의 거리
-/// @param pos 항성의 위치 (널이면 기본 PTC시간을 사용)
-/// @param color 항성에서 도달하는 색깔
-QSAPI void qg_set_constant_param(float dist, const QMVEC* pos, const QMVEC* color);
-
-/// @brief 항성의 거리를 얻는다
-/// @return 항성까지의 거리
-QSAPI float qg_get_constant_dist(void);
-
-/// @brief 항성의 위치를 얻는다
-/// @return 항성의 위치
-QSAPI const QMVEC qg_get_constant_pos(void);
 
 /// @brief 정점 버퍼를 설정한다
 /// @param stage 버퍼를 지정할 스테이지
@@ -2212,3 +2223,16 @@ QSAPI bool qg_mesh_gen_torus(QgMesh* self, float radius, float size, int segment
 		.blend.separate = false,\
 		.blend.rb[0] = QGBLEND_BLEND,\
 	}
+
+/// @brief 기본 레이아웃 데이터를 얻는다
+/// @param layout 레이아웃 종류
+/// @return 레이아웃 데이터 포인터
+QSAPI const QgLayoutData* qg_get_layout_data(QgFixedLayout layout);
+
+/// @brief 기본 렌더 프로퍼티를 얻는다
+/// @return 렌더 프로퍼티 포인터
+INLINE const QgPropRender* qg_get_prop_render_default(void) { static const QgPropRender prop = QG_DEFAULT_PROP_RENDER; return &prop; }
+
+/// @brief 알파 블렌드 렌더 프로퍼티를 얻는다
+/// @return 렌더 프로퍼티 포인터
+INLINE const QgPropRender* qg_get_prop_render_blend(void) { static const QgPropRender prop = QGL_PROP_RENDER_BLEND; return &prop; }

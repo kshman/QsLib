@@ -51,10 +51,10 @@ typedef struct STUBBASE
 #endif
 } StubBase;
 
-// 스터브 인스턴스 
+// 스터브 인스턴스
 extern StubBase* qg_instance_stub;
 
-#define STUB	(qg_instance_stub)		
+#define STUB	(qg_instance_stub)
 
 // 시스템 스터브를 연다
 extern bool stub_system_open(const char* title, int display, int width, int height, QgFlag flags, QgFeature features);
@@ -214,8 +214,7 @@ typedef struct RENDERERPARAM
 	QmVec4				emissive;
 	float				shininess;
 
-	float				constant_dist;
-	QmVec4				constant_pos;
+	QmVec4				constant_dir;
 	QmVec4				constant_color;
 
 	QgVarShaderFunc		callback_func;
@@ -266,7 +265,7 @@ QN_DECL_VTABLE(RDHBASE)
 // 렌더 디바이스
 extern RdhBase* qg_instance_rdh;
 
-#define RDH					(qg_instance_rdh)		
+#define RDH					(qg_instance_rdh)
 #define RDH_INFO			(&qg_instance_rdh->info)
 #define RDH_TRANSFORM		(&qg_instance_rdh->tm)
 #define RDH_PARAM			(&qg_instance_rdh->param)
