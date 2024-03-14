@@ -1656,7 +1656,7 @@ void rdh_internal_invoke_reset(void)
 	ivk->flush = false;
 
 	RendererParam* param = &rdh->param;
-	QnDateTime dt = { .stamp = qn_ptc() };
+	QnDateTime dt = { .stamp = qn_qtc() };
 	float s, c, hs = (float)(dt.hour * 3600 + dt.minute * 60 + dt.second) / 86400.0f;
 	qm_sincosf(hs * QM_TAU, &s, &c);
 	param->constant_dir.s = qm_vec3(-s, c, 0.0);
@@ -1916,7 +1916,7 @@ QgBuffer* qg_create_buffer(QgBufferType type, uint count, uint stride, const voi
 }
 
 //
-QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgPropShader* shader)
+QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgLayoutData* layout, const QgPropShader* shader)
 {
 	VAR_CHK_IF_NULL(render, NULL);
 	VAR_CHK_IF_MAX3(render, rasterizer, fill, QGFILL_MAX_VALUE, NULL);
@@ -1927,16 +1927,18 @@ QgRenderState* qg_create_render_state(const char* name, const QgPropRender* rend
 	VAR_CHK_IF_MAX3(render, format, count, QGRVS_MAX_VALUE, NULL);
 	VAR_CHK_IF_MAX2(render, topology, QGTPG_MAX_VALUE, NULL);
 
+	VAR_CHK_IF_NULL(layout, NULL);
+	VAR_CHK_IF_NULL2(layout, inputs, NULL);
+	VAR_CHK_IF_ZERO2(layout, count, NULL);
+
 	VAR_CHK_IF_NULL(shader, NULL);
-	VAR_CHK_IF_NULL3(shader, layout, inputs, NULL);
-	VAR_CHK_IF_ZERO3(shader, layout, count, NULL);
 	VAR_CHK_IF_NULL3(shader, vertex, code, NULL);
 	VAR_CHK_IF_NULL3(shader, pixel, code, NULL);
 
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, shader);
+	return qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, layout, shader);
 }
 
 //
@@ -1951,13 +1953,12 @@ QgRenderState* qg_create_render_state_vsps(const char* name, const QgPropRender*
 	VAR_CHK_IF_MAX3(render, format, count, QGRVS_MAX_VALUE, NULL);
 	VAR_CHK_IF_MAX2(render, topology, QGTPG_MAX_VALUE, NULL);
 
+	VAR_CHK_IF_NULL(layout, NULL);
 	VAR_CHK_IF_NULL2(layout, inputs, NULL);
 	VAR_CHK_IF_ZERO2(layout, count, NULL);
 
 	int size;
 	QgPropShader shader;
-	shader.layout.count = layout->count;
-	shader.layout.inputs = layout->inputs;
 	shader.vertex.code = qn_file_alloc(qg_get_mount(mount), vsfile, &size);
 	shader.vertex.size = (size_t)size;
 	shader.pixel.code = qn_file_alloc(qg_get_mount(mount), psfile, &size);
@@ -1974,7 +1975,71 @@ QgRenderState* qg_create_render_state_vsps(const char* name, const QgPropRender*
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	QgRenderState* rs = qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, &shader);
+	QgRenderState* rs = qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, layout, &shader);
+	qn_free(shader.vertex.code);
+	qn_free(shader.pixel.code);
+	return rs;
+}
+
+//
+QgRenderState* qg_create_render_state_decl(const char* name, const QgPropRender* render, QgLayoutDecl layout, const QgPropShader* shader)
+{
+	VAR_CHK_IF_NULL(render, NULL);
+	VAR_CHK_IF_MAX3(render, rasterizer, fill, QGFILL_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX3(render, rasterizer, cull, QGCULL_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, depth, QGDEPTH_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, stencil, QGSTENCIL_MAX_VALUE, NULL);
+	VAR_CHK_IF_ZERO3(render, format, count, NULL);
+	VAR_CHK_IF_MAX3(render, format, count, QGRVS_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, topology, QGTPG_MAX_VALUE, NULL);
+
+	VAR_CHK_IF_MAX(layout, QGLAYOUT_MAX_VALUE, NULL);
+
+	VAR_CHK_IF_NULL(shader, NULL);
+	VAR_CHK_IF_NULL3(shader, vertex, code, NULL);
+	VAR_CHK_IF_NULL3(shader, pixel, code, NULL);
+
+	RdhBase* rdh = RDH;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	const QgLayoutData* layout_data = qg_get_layout_data(layout);
+	return qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, layout_data, shader);
+}
+
+//
+QgRenderState* qg_create_render_state_decl_vsps(const char* name, const QgPropRender* render, QgLayoutDecl layout, int mount, const char* vsfile, const char* psfile)
+{
+	VAR_CHK_IF_NULL(render, NULL);
+	VAR_CHK_IF_MAX3(render, rasterizer, fill, QGFILL_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX3(render, rasterizer, cull, QGCULL_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, depth, QGDEPTH_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, stencil, QGSTENCIL_MAX_VALUE, NULL);
+	VAR_CHK_IF_ZERO3(render, format, count, NULL);
+	VAR_CHK_IF_MAX3(render, format, count, QGRVS_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, topology, QGTPG_MAX_VALUE, NULL);
+
+	VAR_CHK_IF_MAX(layout, QGLAYOUT_MAX_VALUE, NULL);
+
+	int size;
+	QgPropShader shader;
+	shader.vertex.code = qn_file_alloc(qg_get_mount(mount), vsfile, &size);
+	shader.vertex.size = (size_t)size;
+	shader.pixel.code = qn_file_alloc(qg_get_mount(mount), psfile, &size);
+	shader.pixel.size = (size_t)size;
+	if (shader.vertex.code == NULL || shader.pixel.code == NULL)
+	{
+		qn_free(shader.vertex.code);
+		qn_free(shader.pixel.code);
+		return NULL;
+	}
+	((char*)shader.vertex.code)[shader.vertex.size] = '\0';
+	((char*)shader.pixel.code)[shader.pixel.size] = '\0';
+
+	RdhBase* rdh = RDH;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	const QgLayoutData* layout_data = qg_get_layout_data(layout);
+	QgRenderState* rs = qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, layout_data, &shader);
 	qn_free(shader.vertex.code);
 	qn_free(shader.pixel.code);
 	return rs;
@@ -2141,55 +2206,6 @@ void qg_draw_glyph(const QmRect* bound, QgTexture* texture, const QmKolor color,
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
 	qn_cast_vtable(rdh, RDHBASE)->draw_glyph(bound, texture, color, coord);
-}
-
-//
-const QgLayoutData* qg_get_layout_data(QgFixedLayout layout)
-{
-	static QgLayoutInput layout_1p[] =
-	{
-		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
-	};
-	static QgLayoutInput layout_1pn[] =
-	{
-		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
-		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
-	};
-	static QgLayoutInput layout_1pnt[] =
-	{
-		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
-		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
-		{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
-	};
-	static QgLayoutInput layout_1pc[] =
-	{
-		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
-		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
-	};
-	static QgLayoutInput layout_1pnc[] =
-	{
-		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
-		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
-		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
-	};
-	static QgLayoutInput layout_1pntc[] =
-	{
-		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
-		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
-		{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
-		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
-	};
-	static QgLayoutData layouts[QGLDP_MAX_VALUE] =
-	{
-		[QGLDP_1P] = { QN_COUNTOF(layout_1p), layout_1p },
-		[QGLDP_1PN] = { QN_COUNTOF(layout_1pn), layout_1pn },
-		[QGLDP_1PNT] = { QN_COUNTOF(layout_1pnt), layout_1pnt },
-		[QGLDP_1PC] = { QN_COUNTOF(layout_1pc), layout_1pc },
-		[QGLDP_1PNC] = { QN_COUNTOF(layout_1pnc), layout_1pnc },
-		[QGLDP_1PNTC] = { QN_COUNTOF(layout_1pntc), layout_1pntc },
-	};
-	VAR_CHK_IF_MAX(layout, QGLDP_MAX_VALUE, NULL);
-	return &layouts[layout];
 }
 
 

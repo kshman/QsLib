@@ -424,6 +424,68 @@ const char* qg_shader_const_auto_to_str(const QgScAuto sca)
 	return qn_p_unknown(sca, false);
 }
 
+//
+const QgLayoutData* qg_get_layout_data(QgLayoutDecl layout)
+{
+	static QgLayoutInput layout_1p[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+	};
+	static QgLayoutInput layout_1pn[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
+	};
+	static QgLayoutInput layout_1pt[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
+	};
+	static QgLayoutInput layout_1pnt[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
+		{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
+	};
+	static QgLayoutInput layout_1pk[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
+	};
+	static QgLayoutInput layout_1pnk[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
+		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
+	};
+	static QgLayoutInput layout_1ptk[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
+		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
+	};
+	static QgLayoutInput layout_1pntk[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
+		{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
+		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
+	};
+	static QgLayoutData layouts[QGLAYOUT_MAX_VALUE] =
+	{
+		[QGLAYOUT_1P] = { QN_COUNTOF(layout_1p), layout_1p },
+		[QGLAYOUT_1PN] = { QN_COUNTOF(layout_1pn), layout_1pn },
+		[QGLAYOUT_1PT] = { QN_COUNTOF(layout_1pt), layout_1pt },
+		[QGLAYOUT_1PNT] = { QN_COUNTOF(layout_1pnt), layout_1pnt },
+		[QGLAYOUT_1PK] = { QN_COUNTOF(layout_1pk), layout_1pk },
+		[QGLAYOUT_1PNK] = { QN_COUNTOF(layout_1pnk), layout_1pnk },
+		[QGLAYOUT_1PTK] = { QN_COUNTOF(layout_1ptk), layout_1ptk },
+		[QGLAYOUT_1PNTK] = { QN_COUNTOF(layout_1pntk), layout_1pntk },
+	};
+	qn_return_when_fail((size_t)layout < QGLAYOUT_MAX_VALUE, NULL);
+	return &layouts[layout];
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // 다른 인터페이스와 맞추기 용도

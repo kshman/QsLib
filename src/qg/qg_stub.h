@@ -247,7 +247,7 @@ QN_DECL_VTABLE(RDHBASE)
 	void (*flush)(void);
 
 	QgBuffer* (*create_buffer)(QgBufferType, uint, uint, const void*);
-	QgRenderState* (*create_render)(const char*, const QgPropRender*, const QgPropShader*);
+	QgRenderState* (*create_render)(const char*, const QgPropRender*, const QgLayoutData*, const QgPropShader*);
 	QgTexture* (*create_texture)(const char*, const QgImage*, QgTexFlag);
 
 	bool (*set_vertex)(QgLayoutStage, void/*QgBuffer*/*);
@@ -313,6 +313,9 @@ extern const char* qg_clrfmt_to_str(QgClrFmt fmt);
 extern const char* qg_layout_usage_to_str(const QgLayoutUsage usage);
 // 세이더 자동 상수 문자열로 변환
 extern const char* qg_shader_const_auto_to_str(const QgScAuto sca);
+// 레이아웃 데이터 얻기
+extern const QgLayoutData* qg_get_layout_data(QgLayoutDecl layout);
+
 
 
 //////////////////////////////////////////////////////////////////////////

@@ -216,16 +216,18 @@ typedef enum QGLAYOUTUSAGE
 #define QGLOU_MAX_SIZE		((size_t)(QGLOU_MAX_VALUE+sizeof(size_t)-1))&((size_t)~(sizeof(size_t)-1))
 
 /// @brief 미리 정의된 고정된 레이아웃
-typedef enum QGFIXEDLAYOUT
+typedef enum QGLAYOUTDECL
 {
-	QGLDP_1P,												/// @brief 1(위치)
-	QGLDP_1PN,												/// @brief 1(위치/법선)
-	QGLDP_1PNT,												/// @brief 1(위치/법선/텍스쳐)
-	QGLDP_1PC,												/// @brief 1(위치/색깔)
-	QGLDP_1PNC,												/// @brief 1(위치/법선/색깔)
-	QGLDP_1PNTC,											/// @brief 1(위치/법선/텍스쳐/색깔)
-	QGLDP_MAX_VALUE,
-} QgFixedLayout;
+	QGLAYOUT_1P,											/// @brief 1(위치3)
+	QGLAYOUT_1PN,											/// @brief 1(위치3/법선3)
+	QGLAYOUT_1PT,											/// @brief 1(위치3/텍스쳐2)
+	QGLAYOUT_1PNT,											/// @brief 1(위치3/법선3/텍스쳐2)
+	QGLAYOUT_1PK,											/// @brief 1(위치3/색깔1)
+	QGLAYOUT_1PNK,											/// @brief 1(위치3/법선3/색깔1)
+	QGLAYOUT_1PTK,											/// @brief 1(위치3/텍스쳐2/색깔1)
+	QGLAYOUT_1PNTK,											/// @brief 1(위치3/법선/3텍스쳐2/색깔1)
+	QGLAYOUT_MAX_VALUE,
+} QgLayoutDecl;
 
 /// @brief 블렌드 모드
 typedef enum QGBLEND
@@ -811,7 +813,6 @@ typedef struct QGCODEDATA
 /// @brief 세이더 속성
 typedef struct QGPROPSHADER
 {
-	QgLayoutData		layout;
 	QgCodeData			vertex;
 	QgCodeData			pixel;
 	//QgCodeData		geometry;
@@ -900,6 +901,7 @@ typedef struct QGCAMCTRL
 	QikKey				rot_pitch_up;						/// @brief 위로 회전하는 키
 	QikKey				rot_pitch_down;						/// @brief 아래로 회전하는 키
 	QimButton			rot_button;							/// @brief 회전 버튼
+	cham				dist_wheel;							/// @brief 휠로 거리 조절
 } QgCamCtrl;
 
 /// @brief 키 상태
@@ -1605,14 +1607,16 @@ struct QGRENDERSTATE
 	QN_GAM_BASE(QNGAMNODE);
 
 	nuint				ref;
+	QgLayoutData		layout;
 };
 
 /// @brief 렌더 파이프라인을 만든다
 /// @param name 렌더 이름 (이름을 지정하면 캐시한다)
 /// @param render 렌더 파이프라인 속성
+/// @param layout 레이아웃 속성
 /// @param shader 세이더 속성
 /// @return 만들어진 렌더 파이프라인
-QSAPI QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgPropShader* shader);
+QSAPI QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgLayoutData* layout, const QgPropShader* shader);
 
 /// @brief 렌더 파이프라인을 만든다
 /// @param name 렌더 이름 (이름을 지정하면 캐시한다)
@@ -1623,6 +1627,24 @@ QSAPI QgRenderState* qg_create_render_state(const char* name, const QgPropRender
 /// @param psfile 픽셀 세이더 파일
 /// @return 만들어진 렌더 파이프라인
 QSAPI QgRenderState* qg_create_render_state_vsps(const char* name, const QgPropRender* render, const QgLayoutData* layout, int mount, const char* vsfile, const char* psfile);
+
+/// @brief 렌더 파이프라인을 만든다
+/// @param name 렌더 이름 (이름을 지정하면 캐시한다)
+/// @param render 렌더 파이프라인 속성
+/// @param layout 미리 정의된 레이아웃 속성
+/// @param shader 세이더 속성
+/// @return 만들어진 렌더 파이프라인
+QSAPI QgRenderState* qg_create_render_state_decl(const char* name, const QgPropRender* render, QgLayoutDecl layout, const QgPropShader* shader);
+
+/// @brief 렌더 파이프라인을 만든다
+/// @param name 렌더 이름 (이름을 지정하면 캐시한다)
+/// @param render 렌더 파이프라인 속성
+/// @param layout 미리 정의된 렠이아웃 속성
+/// @param mount 마운트 번호
+/// @param vsfile 정점 세이더 파일
+/// @param psfile 픽셀 세이더 파일
+/// @return 만들어진 렌더 파이프라인
+QSAPI QgRenderState* qg_create_render_state_decl_vsps(const char* name, const QgPropRender* render, QgLayoutDecl layout, int mount, const char* vsfile, const char* psfile);
 
 
 /// @brief 텍스쳐
@@ -1997,10 +2019,11 @@ struct QGCAMERA
 		float			zfar;								/// @brief 먼 평면
 
 		float			dist;								/// @brief 카메라와의 거리
-		QmVec4			smove;								/// @brief 이동 속도
-		QmVec4			srot;								/// @brief 회전 속도
+		float			sdist;								/// @brief 카메라와의 거리 속도
 		QmVec4			dmove;								/// @brief 이동 거리
+		QmVec4			smove;								/// @brief 이동 속도
 		QmVec4			drot;								/// @brief 회전 거리
+		QmVec4			srot;								/// @brief 회전 속도
 
 		QmVec4			angle;								/// @brief 회전 (roll/pitch/yaw => 벡터3)
 		QmVec4			eye;								/// @brief 시점 (벡터3)
@@ -2042,7 +2065,7 @@ QSAPI void qg_camera_set_proj_param(QgCamera* self, float ascpect, float fov, fl
 /// @param self 카메라
 /// @param pos 위치
 /// @note 기본 카메라는 시점의 위치, 마야 카메라는 시선의	위치를 설정한다
-QSAPI void qg_camera_set_position(QgCamera* self, const QMVEC* pos);
+QSAPI void qg_camera_set_pos(QgCamera* self, const QMVEC* pos);
 
 /// @brief 카메라 각도를 설정한다
 /// @param self 카메라
@@ -2053,6 +2076,11 @@ QSAPI void qg_camera_set_angle(QgCamera* self, const QMVEC* angle);
 /// @param self 카메라
 /// @param rot 회전
 QSAPI void qg_camera_set_angle(QgCamera* self, const QMVEC* angle);
+
+/// @brief 카메라 거리 조절 속도를 설정한다 (마야 카메라)
+/// @param self 카메라
+/// @param s 거리 조절 속도
+QSAPI void qg_camera_set_dist_speed(QgCamera* self, float s);
 
 /// @brief 카메라 이동 속도를 설정한다 (마야/FPS 카메라)
 /// @param self 카메라
@@ -2067,7 +2095,7 @@ QSAPI void qg_camera_set_rot_speed(QgCamera* self, const QMVEC* s);
 /// @brief 카메라 위치를 설정한다
 /// @param self 카메라
 /// @param x,y,z 위치
-QSAPI void qg_camera_set_position_param(QgCamera* self, float x, float y, float z);
+QSAPI void qg_camera_set_pos_param(QgCamera* self, float x, float y, float z);
 
 /// @brief 카메라 각도를 설정한다
 /// @param self 카메라
@@ -2127,8 +2155,6 @@ struct QGMESH
 	QN_GAM_BASE(QGDPCT);
 
 	QgPropMesh			mesh;
-	QgLayoutData		layout;
-
 	QgBuffer*			vbuffers[QGLOS_MAX_VALUE];
 	QgBuffer*			ibuffer;
 };
@@ -2140,13 +2166,9 @@ QSAPI QgMesh* qg_create_mesh(const char* name);
 
 /// @brief 메시를 빌드한다
 /// @param self 메시
+/// @param rs 렌더 상태
 /// @return 빌드에 성공하면 참
-QSAPI bool qg_mesh_build(QgMesh* self);
-
-/// @brief 레이아웃을 설정한다
-/// @param self 메시
-/// @param lo 레이아웃 데이터
-QSAPI void qg_mesh_set_layout(QgMesh* self, const QgLayoutData* lo);
+QSAPI bool qg_mesh_build(QgMesh* self, const QgRenderState* rs);
 
 /// @brief 사면체 메시를 만든다
 /// @param self 메시
@@ -2223,11 +2245,6 @@ QSAPI bool qg_mesh_gen_torus(QgMesh* self, float radius, float size, int segment
 		.blend.separate = false,\
 		.blend.rb[0] = QGBLEND_BLEND,\
 	}
-
-/// @brief 기본 레이아웃 데이터를 얻는다
-/// @param layout 레이아웃 종류
-/// @return 레이아웃 데이터 포인터
-QSAPI const QgLayoutData* qg_get_layout_data(QgFixedLayout layout);
 
 /// @brief 기본 렌더 프로퍼티를 얻는다
 /// @return 렌더 프로퍼티 포인터

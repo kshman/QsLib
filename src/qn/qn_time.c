@@ -15,21 +15,28 @@
 //
 static struct CYCLEIMPL
 {
-	llong				start;	// 시작 카운트
-	llong				tick;	// 카운터 틱, 보통 윈도우에서 1000000, 유닉스에서 1000
+	llong				start;		// 시작 카운트
+	llong				tick;		// 카운터 틱, 보통 윈도우에서 1000000, 유닉스에서 1000
+	llong				qtc_base;	// 기준 시간 변환 상수
+	double				qtc_const;	// 시간 변환 상수
 #ifdef _QN_WINDOWS_
 	struct timespec		utc;	// UTC 시작 시간
 #endif
-	time_t				bptc;	// 기준 시간 변환 상수
-	double				cptc;	// 시간 변환 상수
 } cycle_impl =
 {
 	0, 0,
+#if true
+	// qs time
+	1577804400,			// 계산시작: 2020-01-01 00:00:00 (유닉스 시간)
+	3600.0 / 60.0,		// 1초당 60분
+#else
+	// 비교용 eorzean time
+	0,					// 계산시작: 1970-01-01 00:00:00 (유닉스 시간)
+	3600.0 / 175.0,		// 1초당 175분
+#endif
 #ifdef _QN_WINDOWS_
 	{ 0, 0 },
 #endif
-	1577804400,	// 2020-01-01 00:00:00
-	3600.0 / 60.0,
 };
 
 //
@@ -63,10 +70,10 @@ void qn_cycle_down(void)
 }
 
 //
-void qn_set_ptc(const time_t bptc, const double cptc)
+void qn_set_qtc(const time_t base_time, const double conv_const)
 {
-	cycle_impl.bptc = bptc;
-	cycle_impl.cptc = 3600.0 / cptc;
+	cycle_impl.qtc_base = (llong)base_time;
+	cycle_impl.qtc_const = 3600.0 / conv_const;
 }
 
 //
@@ -203,16 +210,19 @@ QnTimeStamp qn_utc(void)
 }
 
 //
-QnTimeStamp qn_ptc(void)
+QnTimeStamp qn_qtc(void)
 {
 	struct timespec ts;
 	_timespec_now(&ts);
-	time_t t = (time_t)round((double)(ts.tv_sec - cycle_impl.bptc) * cycle_impl.cptc);
+	llong n = ((llong)ts.tv_sec * QN_MSEC_PER_SEC) + ((llong)ts.tv_nsec / QN_USEC_PER_SEC);
+	llong t = (llong)round((double)(n - cycle_impl.qtc_base * QN_MSEC_PER_SEC) * cycle_impl.qtc_const);
 	QnDateTime dt;
-	dt.second = t & 60; t /= 60;
+	dt.dow = (uint)((t / QN_MSEC_PER_SEC / 86400 + 4) % 7);
+	dt.millisecond = t % 1000; t /= 1000;
+	dt.second = t % 60; t /= 60;
 	dt.minute = t % 60; t /= 60;
 	dt.hour = t % 24; t /= 24;
-	dt.day = t % 31 + 1; t /= 31;
+	dt.day = t % 30 + 1; t /= 30;
 	dt.month = t % 12 + 1; t /= 12;
 	dt.year = (uint)t;
 	return dt.stamp;

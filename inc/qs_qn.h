@@ -177,7 +177,7 @@
 #define QN_ON64(x)						x								/// @brief 64비트일 때
 #define QN_ON32(x)														/// @brief 32비트일 때
 #else
-#define QN_ON64(x)														/// @brief 64비트일 때							
+#define QN_ON64(x)														/// @brief 64비트일 때
 #define QN_ON32(x)						x								/// @brief 32비트일 때
 #endif
 
@@ -217,7 +217,7 @@
 #define QN_TBIT(value,bit)				(((value) & (1 << (bit))) != 0)	/// @brief 비트가 있나 비교
 #define QN_TMASK(value,mask)			(((value) & (mask)) != 0)		/// @brief 마스크가 있나 비교
 #define QN_SBIT(value,bit,set)			QN_WARN_PUSH QN_WARN_SIGN ((set) ? ((value) |= (1 << (bit))) : ((value) &= ~(1 << (bit)))) QN_WARN_POP	/// @brief 비트 설정
-#define QN_SMASK(value,mask,set)		QN_WARN_PUSH QN_WARN_SIGN ((set) ? ((value) |= (mask)) : ((value) &= ~(mask))) QN_WARN_POP	
+#define QN_SMASK(value,mask,set)		QN_WARN_PUSH QN_WARN_SIGN ((set) ? ((value) |= (mask)) : ((value) &= ~(mask))) QN_WARN_POP
 
 // constant
 #define QN_VERSION_MAJOR				3
@@ -3284,9 +3284,9 @@ INLINE /*QnGam*/void* qn_node_mukum_tail(QnNodeMukum* mukum) { return mukum->TAI
 // time
 
 /// @brief 내부 시간 정의
-/// @param bptc 기준 시간 (유닉스 타임 스탬프 형식)
-/// @param cptc 시간 단위 (초 단위, 3600이면 실시간)
-QSAPI void qn_set_ptc(const time_t bptc, const double cptc);
+/// @param base_time 기준 시간 (유닉스 타임 스탬프 형식)
+/// @param conv_const 시간 단위 (초 단위, 3600이면 실시간)
+QSAPI void qn_set_qtc(const time_t base_time, const double conv_const);
 
 /// @brief 로컬 시간으로 변화
 /// @param[out]	ptm	시간 구조체
@@ -3355,7 +3355,7 @@ typedef union QNDATETIME
 	{
 		uint			year : 14;			/// @brief 년 (8191년까지, 부호업으면 16383년까지)
 		uint			month : 6;			/// @brief 월 (63월까지)
-		uint			day : 8;			/// @brief 일 (255일까지) 
+		uint			day : 8;			/// @brief 일 (255일까지)
 		uint			dow : 4;			/// @brief 한주의 일 (15일까지)
 
 		uint			hour : 6;			/// @brief 시 (63시까지)
@@ -3375,7 +3375,7 @@ QSAPI QnTimeStamp qn_utc(void);
 
 /// @brief 내부 시간 날짜를 포함하는 타임스탬프
 /// @returns 내부 타임스탬프. QnDateTime 으로 변환해서 사용할 수 있다
-QSAPI QnTimeStamp qn_ptc(void);
+QSAPI QnTimeStamp qn_qtc(void);
 
 /// @brief 초를 시간으로
 /// @param[in] sec 초

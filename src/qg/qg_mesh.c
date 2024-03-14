@@ -64,9 +64,6 @@ static void _mesh_dispose(QnGam g)
 		qn_unload(self->vbuffers[i]);
 	qn_unload(self->ibuffer);
 
-	if (self->layout.count)
-		qn_free(self->layout.inputs);
-
 	if (self->mesh.vertices > 0)
 	{
 		qn_free(self->mesh.position);
@@ -89,7 +86,6 @@ QgMesh* qg_create_mesh(const char* name)
 {
 	QgMesh* self = qn_alloc_zero_1(QgMesh);
 	_dpct_init(qn_cast_type(self, QgDpct), name, NULL);
-
 	static const QN_DECL_VTABLE(QGDPCT) vt_qg_mesh =
 	{
 		{
@@ -103,23 +99,6 @@ QgMesh* qg_create_mesh(const char* name)
 		_dpct_set_scl,
 	};
 	return qn_gam_init(self, vt_qg_mesh);
-}
-
-//
-void qg_mesh_set_layout(QgMesh* self, const QgLayoutData* lo)
-{
-	if (self->layout.count)
-	{
-		self->layout.count = 0;
-		qn_free(self->layout.inputs);
-	}
-
-	if (lo != NULL)
-	{
-		self->layout.count = lo->count;
-		self->layout.inputs = qn_alloc(lo->count, QgLayoutInput);
-		memcpy(self->layout.inputs, lo->inputs, sizeof(QgLayoutInput) * lo->count);
-	}
 }
 
 //
@@ -286,7 +265,7 @@ bool qg_mesh_gen_torus(QgMesh* self, float radius, float size, int segment, int 
 }
 
 //
-bool qg_mesh_build(QgMesh* self)
+bool qg_mesh_build(QgMesh* self, const QgRenderState* rs)
 {
 	static byte lo_sizes[QGLOT_MAX_VALUE] =
 	{
@@ -325,17 +304,18 @@ bool qg_mesh_build(QgMesh* self)
 		/* QGLOU_BLEND_EXTRA,	*/	0,
 	};
 
-	VAR_CHK_IF_ZERO(self->layout.count, false);
-	VAR_CHK_IF_ZERO(self->mesh.vertices, false);
-	VAR_CHK_IF_ZERO(self->mesh.polygons, false);
-	VAR_CHK_IF_NULL(self->mesh.position, false);
+	VAR_CHK_IF_ZERO(rs, false);
+	VAR_CHK_IF_ZERO3(self, mesh, vertices, false);
+	VAR_CHK_IF_ZERO3(self, mesh, polygons, false);
+	VAR_CHK_IF_NULL3(self, mesh, position, false);
 
 	size_t i, z, n;
 	ushort loac[QGLOS_MAX_VALUE] = { 0, }, losz[QGLOS_MAX_VALUE] = { 0, };
 	QgLayoutInput* stages[QGLOS_MAX_VALUE][QGLOU_MAX_SIZE] = { {NULL,}, };
-	for (i = 0; i < self->layout.count; i++)
+	const QgLayoutData* layout = &rs->layout;
+	for (i = 0; i < layout->count; i++)
 	{
-		QgLayoutInput* input = &self->layout.inputs[i];
+		QgLayoutInput* input = &layout->inputs[i];
 		if ((size_t)input->stage >= QGLOS_MAX_VALUE)
 		{
 			qn_mesgfb(VAR_CHK_NAME, "invalid layout stage: %d", input->stage);

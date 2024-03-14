@@ -24,8 +24,8 @@ int main(void)
 	const float constant_dist = 5.0f;
 
 	// 카메라 만들고
-	QgCamera* cam = qg_create_maya_camera();
-	qg_camera_set_pos_param(cam, 0.0f, 0.0f, 0.0f);
+	QgCamera* cam = qg_create_camera();
+	qg_camera_set_pos_param(cam, 0.0f, 0.0f, -15.0f);
 
 	// 메시용 레이아웃
 	const QgPropRender* render = qg_get_prop_render_default();
