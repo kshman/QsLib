@@ -3058,7 +3058,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 #define QN_DECLIMPL_UINT_UINT_MUKUM(NAME, PFX)														\
 	QN_DECLIMPL_UINT_MUKUM(NAME, uint, (void), PFX)
 // 키 부호없는 정수 / 값 문자열
-#define QN_DECLIMPL_UINT_PCHAR_MUKUM(NAME, PFX)														\
+#define QN_DECLIMPL_UINT_PCHAR_MUKUM(NAME, PFX)		
 	QN_DECLIMPL_UINT_MUKUM(NAME, char*, qn_mem_free_ptr, PFX)
 
 // 키 문자열
