@@ -1,5 +1,5 @@
 ﻿//
-// qn_gam.c - 감 잡는 QnGamBase
+// qn_gam.c - 감 잡는 QnBaseGam
 // 2023-12-27 by kim
 //
 
@@ -11,7 +11,7 @@
 // 만들었슴
 QnGam qn_sc_init(QnGam g, const void* vt)
 {
-	QnGamBase* base = qn_cast_type(g, QnGamBase);
+	QnBaseGam* base = qn_cast_type(g, QnBaseGam);
 	base->vt = vt;
 	base->ref = 1;
 	return g;
@@ -20,7 +20,7 @@ QnGam qn_sc_init(QnGam g, const void* vt)
 // 로드
 QnGam qn_sc_load(QnGam g)
 {
-	QnGamBase* base = qn_cast_type(g, QnGamBase);
+	QnBaseGam* base = qn_cast_type(g, QnBaseGam);
 	base->ref++;
 	return g;
 }
@@ -28,7 +28,7 @@ QnGam qn_sc_load(QnGam g)
 // 언로드
 QnGam qn_sc_unload(QnGam g)
 {
-	QnGamBase* base = qn_cast_type(g, QnGamBase);
+	QnBaseGam* base = qn_cast_type(g, QnBaseGam);
 	const volatile int ref = (int)--base->ref;
 	if (ref != 0)
 	{
@@ -42,21 +42,21 @@ QnGam qn_sc_unload(QnGam g)
 //
 nint qn_sc_get_ref(const QnGam g)
 {
-	QnGamBase* base = qn_cast_type(g, QnGamBase);
+	QnBaseGam* base = qn_cast_type(g, QnBaseGam);
 	return base->ref;
 }
 
 //
 nuint qn_sc_get_desc(const QnGam g)
 {
-	const QnGamBase* base = qn_cast_type(g, QnGamBase);
+	const QnBaseGam* base = qn_cast_type(g, QnBaseGam);
 	return base->desc;
 }
 
 //
 nuint qn_sc_set_desc(QnGam g, const nuint ptr)
 {
-	QnGamBase* base = qn_cast_type(g, QnGamBase);
+	QnBaseGam* base = qn_cast_type(g, QnBaseGam);
 	const nuint prev = base->desc;
 	base->desc = ptr;
 	return prev;
@@ -67,7 +67,7 @@ nuint qn_sc_set_desc(QnGam g, const nuint ptr)
 // QNGAMNODE & QNNODEMUKUM
 
 //
-void qn_node_set_name(QnGamNode* self, const char* name)
+void qn_node_set_name(QnNodeGam* self, const char* name)
 {
 	if (name)
 	{
@@ -83,7 +83,7 @@ void qn_node_set_name(QnGamNode* self, const char* name)
 	}
 }
 
-QN_IMPL_CTNR(QnPtrCtn, pointer_t, qn_pctnr);
+QN_IMPL_CTN(QnPtrCtn, pointer_t, qn_pctn);
 
 /// @brief 초기화
 void qn_node_mukum_init(QnNodeMukum* mukum)
@@ -91,7 +91,7 @@ void qn_node_mukum_init(QnNodeMukum* mukum)
 	mukum->REVISION = 0;
 	mukum->BUCKET = QN_MIN_HASH;
 	mukum->COUNT = 0;
-	mukum->NODES = qn_alloc_zero(QN_MIN_HASH, QnGamNode*);
+	mukum->NODES = qn_alloc_zero(QN_MIN_HASH, QnNodeGam*);
 	mukum->HEAD = NULL;
 	mukum->TAIL = NULL;
 }
@@ -101,15 +101,15 @@ void qn_node_mukum_init_fast(QnNodeMukum* mukum)
 {
 	qn_debug_assert(mukum->REVISION == 0 && mukum->COUNT == 0 && mukum->NODES == NULL, "cannot use fast init, use just init");
 	mukum->BUCKET = QN_MIN_HASH;
-	mukum->NODES = qn_alloc_zero(QN_MIN_HASH, QnGamNode*);
+	mukum->NODES = qn_alloc_zero(QN_MIN_HASH, QnNodeGam*);
 }
 
 //
 QnPtrCtn qn_node_mukum_to_ctnr(const QnNodeMukum* mukum)
 {
 	QnPtrCtn ctnr = { mukum->COUNT, qn_alloc(mukum->COUNT, void*) };
-	QnGamNode** ptr = (QnGamNode**)qn_pctnr_data(&ctnr);
-	for (QnGamNode* node = mukum->HEAD; node; node = node->NEXT)
+	QnNodeGam** ptr = (QnNodeGam**)qn_pctn_data(&ctnr);
+	for (QnNodeGam* node = mukum->HEAD; node; node = node->NEXT)
 		*ptr++ = node;
 	return ctnr;
 }
@@ -117,7 +117,7 @@ QnPtrCtn qn_node_mukum_to_ctnr(const QnNodeMukum* mukum)
 /// @brief 해제
 void qn_node_mukum_dispose(QnNodeMukum* mukum)
 {
-	for (QnGamNode *next, *node = mukum->HEAD; node; node = next)
+	for (QnNodeGam *next, *node = mukum->HEAD; node; node = next)
 	{
 		next = node->NEXT;
 		qn_unload(node);
@@ -133,8 +133,8 @@ void qn_node_mukum_safe_dispose(QnNodeMukum* mukum)
 		QnPtrCtn ctnr = qn_node_mukum_to_ctnr(mukum);
 		size_t i;
 		QN_CTNR_FOREACH(ctnr, 0, i)
-			qn_unload(qn_pctnr_nth(&ctnr, i));
-		qn_pctnr_dispose(&ctnr);
+			qn_unload(qn_pctn_nth(&ctnr, i));
+		qn_pctn_dispose(&ctnr);
 	}
 	qn_free(mukum->NODES);
 }
@@ -147,13 +147,13 @@ static void qg_internal_node_mukum_test_size(QnNodeMukum* mukum)
 	{
 		size_t new_bucket = qn_prime_near((uint)mukum->COUNT);
 		new_bucket = QN_CLAMP(new_bucket, QN_MIN_HASH, QN_MAX_HASH);
-		QnGamNode** new_nodes = qn_alloc_zero(new_bucket, QnGamNode*);
+		QnNodeGam** new_nodes = qn_alloc_zero(new_bucket, QnNodeGam*);
 		for (size_t i = 0; i < mukum->BUCKET; ++i)
 		{
-			QnGamNode* node = mukum->NODES[i];
+			QnNodeGam* node = mukum->NODES[i];
 			while (node)
 			{
-				QnGamNode* next = node->SIB;
+				QnNodeGam* next = node->SIB;
 				const size_t hash = node->HASH % new_bucket;
 				node->SIB = new_nodes[hash];
 				new_nodes[hash] = node;
@@ -169,22 +169,22 @@ static void qg_internal_node_mukum_test_size(QnNodeMukum* mukum)
 /// @brief 모두 삭제
 void qn_node_mukum_clear(QnNodeMukum* mukum)
 {
-	for (QnGamNode *next, *node = mukum->HEAD; node; node = next)
+	for (QnNodeGam *next, *node = mukum->HEAD; node; node = next)
 	{
 		next = node->NEXT;
 		qn_unload(node);
 	}
 	mukum->HEAD = mukum->TAIL = NULL;
 	mukum->COUNT = 0;
-	memset(mukum->NODES, 0, sizeof(QnGamNode*) * mukum->BUCKET);
+	memset(mukum->NODES, 0, sizeof(QnNodeGam*) * mukum->BUCKET);
 	qg_internal_node_mukum_test_size(mukum);
 }
 
 /// @brief 해시 룩업
-static QnGamNode** qg_internal_node_mukum_lookup(const QnNodeMukum* mukum, size_t hash, const char* name)
+static QnNodeGam** qg_internal_node_mukum_lookup(const QnNodeMukum* mukum, size_t hash, const char* name)
 {
-	QnGamNode** pnode = &mukum->NODES[hash % mukum->BUCKET];
-	QnGamNode* node;
+	QnNodeGam** pnode = &mukum->NODES[hash % mukum->BUCKET];
+	QnNodeGam* node;
 	while ((node = *pnode) != NULL)
 	{
 		if (node->HASH == hash && qn_streqv(node->NAME, name))
@@ -196,11 +196,11 @@ static QnGamNode** qg_internal_node_mukum_lookup(const QnNodeMukum* mukum, size_
 }
 
 /// @brief 해시 셋
-static void qg_internal_node_mukum_input(QnNodeMukum* mukum, QnGamNode* item, bool replace)
+static void qg_internal_node_mukum_input(QnNodeMukum* mukum, QnNodeGam* item, bool replace)
 {
 	qn_return_on_ok(item->HASH == 0, /*void*/);
-	QnGamNode** pnode = qg_internal_node_mukum_lookup(mukum, item->HASH, item->NAME);
-	QnGamNode* node = *pnode;
+	QnNodeGam** pnode = qg_internal_node_mukum_lookup(mukum, item->HASH, item->NAME);
+	QnNodeGam* node = *pnode;
 	if (node)
 	{
 		if (replace)
@@ -249,9 +249,9 @@ static void qg_internal_node_mukum_input(QnNodeMukum* mukum, QnGamNode* item, bo
 }
 
 /// @brief 노드 제거, 링크만 해제하고 노드 자체를 해제하지 않는다
-static void qg_internal_node_mukum_unlink(QnNodeMukum* mukum, QnGamNode** pnode)
+static void qg_internal_node_mukum_unlink(QnNodeMukum* mukum, QnNodeGam** pnode)
 {
-	const QnGamNode* node = *pnode;
+	const QnNodeGam* node = *pnode;
 	*pnode = node->SIB;
 	if (node->NEXT)
 		node->NEXT->PREV = node->PREV;
@@ -277,7 +277,7 @@ static void qg_internal_node_mukum_unlink(QnNodeMukum* mukum, QnGamNode** pnode)
 /// @brief 노드 제거, 실제로 노드를 제거한다!
 static bool qg_internal_node_mukum_erase(QnNodeMukum* mukum, size_t hash, const char* name)
 {
-	QnGamNode** pnode = qg_internal_node_mukum_lookup(mukum, hash, name);
+	QnNodeGam** pnode = qg_internal_node_mukum_lookup(mukum, hash, name);
 	if (*pnode == NULL)
 		return false;
 	qg_internal_node_mukum_unlink(mukum, pnode);
@@ -289,18 +289,18 @@ static bool qg_internal_node_mukum_erase(QnNodeMukum* mukum, size_t hash, const 
 void* qn_node_mukum_get(const QnNodeMukum* mukum, const char* name)
 {
 	const size_t hash = qn_strhash(name);
-	QnGamNode** pnode = qg_internal_node_mukum_lookup(mukum, hash, name);
+	QnNodeGam** pnode = qg_internal_node_mukum_lookup(mukum, hash, name);
 	return *pnode;
 }
 
 /// @brief 노드 추가, 참조 처리 하지 않는다!
-void qn_node_mukum_add(QnNodeMukum* mukum, QnGamNode* node)
+void qn_node_mukum_add(QnNodeMukum* mukum, QnNodeGam* node)
 {
 	qg_internal_node_mukum_input(mukum, node, false);
 }
 
 /// @brief 노드 설정, 참조 처리 하지 않는다!
-void qn_node_mukum_set(QnNodeMukum* mukum, QnGamNode* node)
+void qn_node_mukum_set(QnNodeMukum* mukum, QnNodeGam* node)
 {
 	qg_internal_node_mukum_input(mukum, node, true);
 }
@@ -314,7 +314,7 @@ void qn_node_mukum_remove(QnNodeMukum* mukum, const char* name)
 }
 
 /// @brief 링크를 제거한다, 노드를 제거하지 않는다! (노드 dispose에서 호출용)
-void qn_node_mukum_unlink(QnNodeMukum* mukum, QnGamNode* node)
+void qn_node_mukum_unlink(QnNodeMukum* mukum, QnNodeGam* node)
 {
 	qn_return_on_ok(node->HASH == 0, /*void*/);
 	qg_internal_node_mukum_unlink(mukum, &node);
@@ -323,7 +323,7 @@ void qn_node_mukum_unlink(QnNodeMukum* mukum, QnGamNode* node)
 /// @brief 찾기
 void* qn_node_mukum_find(const QnNodeMukum* mukum, eqcfunc_t func, void* data)
 {
-	for (QnGamNode* node = mukum->HEAD; node; node = node->NEXT)
+	for (QnNodeGam* node = mukum->HEAD; node; node = node->NEXT)
 	{
 		if (func(data, node))
 			return node;

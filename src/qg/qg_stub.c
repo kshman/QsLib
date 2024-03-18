@@ -93,7 +93,7 @@ static void shed_event_dispose(void)
 	qn_return_when_fail(shed_event.mutex != NULL, /*void*/);
 
 	// 예약 메모리
-	reserved_mems_foreach_1(&shed_event.reserved_mems, qn_mem_free_ptr);
+	reserved_mems_loop(&shed_event.reserved_mems, qn_mem_free_ptr);
 	reserved_mems_dispose(&shed_event.reserved_mems);
 	// 우선 순위 큐
 	event_lnode_dispose_callback(&shed_event.prior, qn_mem_free);
@@ -147,7 +147,7 @@ static void shed_event_prior_queue(const size_t key, const QgEvent* e)
 	qn_return_when_fail(shed_event.mutex, /*void*/);
 	qn_mutex_enter(shed_event.mutex);
 
-	EventNode* node = event_lnode_find(&shed_event.prior, shed_event_prior_queue_key_callback, (void*)key);
+	EventNode* node = event_lnode_find_callback(&shed_event.prior, shed_event_prior_queue_key_callback, (void*)key);
 
 	if (node == NULL)
 	{
@@ -231,12 +231,12 @@ static void shed_event_flush(void)
 	qn_mutex_enter(shed_event.mutex);
 	if (event_lnode_is_have(&shed_event.prior))
 	{
-		event_lnode_foreach_1(&shed_event.prior, shed_event_flush_callback);
+		event_lnode_loop(&shed_event.prior, shed_event_flush_callback);
 		event_lnode_reset(&shed_event.prior);
 	}
 	if (event_lnode_is_have(&shed_event.queue))
 	{
-		event_lnode_foreach_1(&shed_event.queue, shed_event_flush_callback);
+		event_lnode_loop(&shed_event.queue, shed_event_flush_callback);
 		event_lnode_reset(&shed_event.queue);
 	}
 	qn_mutex_leave(shed_event.mutex);
@@ -256,7 +256,7 @@ static void shed_event_clear_reserved_mem(void)
 	qn_mutex_enter(shed_event.mutex);
 	if (reserved_mems_is_have(&shed_event.reserved_mems))
 	{
-		reserved_mems_foreach_1(&shed_event.reserved_mems, qn_mem_free_ptr);
+		reserved_mems_loop(&shed_event.reserved_mems, qn_mem_free_ptr);
 		reserved_mems_clear(&shed_event.reserved_mems);
 	}
 	qn_mutex_leave(shed_event.mutex);
@@ -330,7 +330,7 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 	stub->key_exit = QIK_ESC;
 #endif
 
-	monitor_ctnr_init(&stub->monitors, 0);
+	monitor_ctn_init(&stub->monitors, 0);
 	eventcb_list_init(&stub->callbacks);
 }
 
@@ -344,8 +344,8 @@ void qg_close_stub(void)
 
 	size_t i;
 	QN_CTNR_FOREACH(self->monitors, 0, i)
-		qn_free(monitor_ctnr_nth(&self->monitors, i));
-	monitor_ctnr_dispose(&self->monitors);
+		qn_free(monitor_ctn_nth(&self->monitors, i));
+	monitor_ctn_dispose(&self->monitors);
 	eventcb_list_dispose(&self->callbacks);
 
 	qn_delete_mutex(self->mutex);
@@ -491,17 +491,17 @@ QnMount* qg_get_mount(int index)
 const QgUdevMonitor* qg_get_monitor(int index)
 {
 	const StubBase* stub = qg_instance_stub;
-	qn_return_when_fail((size_t)index < monitor_ctnr_count(&stub->monitors), NULL);
-	return monitor_ctnr_nth(&stub->monitors, index);
+	qn_return_when_fail((size_t)index < monitor_ctn_count(&stub->monitors), NULL);
+	return monitor_ctn_nth(&stub->monitors, index);
 }
 
 //
 const QgUdevMonitor* qg_get_current_monitor(void)
 {
 	const StubBase* stub = qg_instance_stub;
-	qn_debug_assert(monitor_ctnr_is_have(&stub->monitors), "아니 왜 모니터가 없어");
-	const uint index = stub->display < monitor_ctnr_count(&stub->monitors) ? stub->display : 0;
-	return monitor_ctnr_nth(&stub->monitors, index);
+	qn_debug_assert(monitor_ctn_is_have(&stub->monitors), "아니 왜 모니터가 없어");
+	const uint index = stub->display < monitor_ctn_count(&stub->monitors) ? stub->display : 0;
+	return monitor_ctn_nth(&stub->monitors, index);
 }
 
 //
@@ -661,9 +661,9 @@ void qg_set_aspect(const int width, const int height)
 }
 
 //
-void qg_get_size(_Out_ QmSize* size)
+const QmSize qg_get_size(void)
 {
-	*size = qg_instance_stub->client_size;
+	return qg_instance_stub->client_size;
 }
 
 //
@@ -1023,21 +1023,21 @@ bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary,
 	if (connected)
 	{
 		if (primary)
-			monitor_ctnr_ins(&stub->monitors, 0, monitor);
+			monitor_ctn_ins(&stub->monitors, 0, monitor);
 		else
-			monitor_ctnr_add(&stub->monitors, monitor);
+			monitor_ctn_add(&stub->monitors, monitor);
 	}
 	else
 	{
-		size_t nth = monitor_ctnr_contains(&stub->monitors, monitor);
+		size_t nth = monitor_ctn_find(&stub->monitors, monitor);
 		if (nth != (size_t)-1)
-			monitor_ctnr_remove_nth(&stub->monitors, nth);
+			monitor_ctn_remove_nth(&stub->monitors, nth);
 	}
 
 	// 모니터 번호 재할당
 	size_t i;
 	QN_CTNR_FOREACH(stub->monitors, 0, i)
-		monitor_ctnr_nth(&stub->monitors, i)->no = (int)i;
+		monitor_ctn_nth(&stub->monitors, i)->no = (int)i;
 
 	// 이벤트
 	bool ret = true;
@@ -1168,18 +1168,18 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 			if (stub->bound.Left == param1 && stub->bound.Top == param2)
 				return false;
 			stub->bound = qm_rect_move(stub->bound, param1, param2);
-			if (monitor_ctnr_count(&stub->monitors) > 1)
+			if (monitor_ctn_count(&stub->monitors) > 1)
 			{
 				size_t i;
 				QN_CTNR_FOREACH(stub->monitors, 0, i)
 				{
-					const QgUdevMonitor* mon = monitor_ctnr_nth(&stub->monitors, i);
+					const QgUdevMonitor* mon = monitor_ctn_nth(&stub->monitors, i);
 					const QmRect bound = qm_rect_size((int)mon->x, (int)mon->y, (int)mon->width, (int)mon->height);
 					if (qm_rect_include(bound, stub->bound))
 						break;
 				}
-				if (i < monitor_ctnr_count(&stub->monitors))
-					stub_event_on_active_monitor(monitor_ctnr_nth(&stub->monitors, i));
+				if (i < monitor_ctn_count(&stub->monitors))
+					stub_event_on_active_monitor(monitor_ctn_nth(&stub->monitors, i));
 			}
 			break;
 
@@ -1566,23 +1566,21 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 	for (size_t i = 0; i < QN_COUNTOF(param->m); i++)		// 행렬 인수
 		param->m[i].s = qm_mat4_unit();
 
-	param->diffuse.s = QMCOLOR_WHITE.s;						// 디퓨즈 색
-	param->specular.s = QMCOLOR_WHITE.s;					// 스펙큘러 색
-	param->ambient.s = QMCOLOR_WHITE.s;						// 앰비언트 색
-	param->emissive.s = QMCOLOR_BLACK.s;					// 이미시브 색
-	param->shininess = 0.0f;								// 빛나는 정도
-
-	param->constant_dist = 1000.0f;							// 거리 상수
-	param->constant_pos.s = qm_vec3(0.0f, 0.0f, 0.0f);		// 위치 상수
-	param->constant_color = QMCOLOR_WHITE;					// 색깔 상수
+	param->diffuse.s = QMCOLOR_WHITE.s;						// 분산광
+	param->specular.s = QMCOLOR_WHITE.s;					// 반사광
+	param->ambient.s = QMCOLOR_SILVER.s;					// 주변광
+	param->emissive.s = QMCOLOR_BLACK.s;					// 방사광
+	param->shininess = 4.0f;								// 빛나는 정도
+	param->constant_dir.s = qm_vec_zero();					// 항성 방향 벡터
+	param->constant_color.s = QMCOLOR_LIGHT_CYAN.s;			// 항성 색깔
 
 	// 묶음
 	for (size_t i = 0; i < QN_COUNTOF(rdh->mukums); i++)
 		qn_node_mukum_init_fast(&rdh->mukums[i]);
 
-	// 
-	qn_cast_vtable(rdh, RDHBASE)->layout();					// 레이아웃 재설정
-	qn_cast_vtable(rdh, RDHBASE)->reset();					// 장치 리셋
+	//
+	qn_cast_vtable(rdh, RDH)->layout();					// 레이아웃 재설정
+	qn_cast_vtable(rdh, RDH)->reset();					// 장치 리셋
 	qn_timer_reset(STUB->timer);							// 타이머도 리셋해둔다
 	return true;
 }
@@ -1658,12 +1656,10 @@ void rdh_internal_invoke_reset(void)
 	ivk->flush = false;
 
 	RendererParam* param = &rdh->param;
-	QnDateTime dt = { .stamp = qn_ptc() };
+	QnDateTime dt = { .stamp = qn_qtc() };
 	float s, c, hs = (float)(dt.hour * 3600 + dt.minute * 60 + dt.second) / 86400.0f;
-	QMMAT m = qm_mat4_rot_z(qm_d2rf((hs - 0.25f) * 360.0f));
 	qm_sincosf(hs * QM_TAU, &s, &c);
-	param->constant_pos.s = qm_vec3(s * param->constant_dist, 0.0f, c * param->constant_dist);
-	param->constant_pos.s = qm_vec3_trfm(qm_vec(0.0f, param->constant_dist, 0.0f, 0.0f), m);
+	param->constant_dir.s = qm_vec3(-s, c, 0.0);
 }
 
 //
@@ -1675,7 +1671,7 @@ void rdh_internal_check_layout(void)
 	const int height = (int)rdh->tm.size.Height;
 	if (size.Width == width && size.Height == height)
 		return;
-	qn_cast_vtable(rdh, RDHBASE)->layout();
+	qn_cast_vtable(rdh, RDH)->layout();
 }
 
 //
@@ -1683,7 +1679,7 @@ void rdh_internal_add_node(RenderNodeShed shed, void* node)
 {
 	VAR_CHK_IF_MAX(shed, RDHNODE_MAX_VALUE, );
 	RdhBase* rdh = RDH;
-	qn_node_mukum_set(&rdh->mukums[shed], qn_loadu(node, QnGamNode));
+	qn_node_mukum_set(&rdh->mukums[shed], qn_loadu(node, QnNodeGam));
 }
 
 //
@@ -1691,7 +1687,7 @@ void rdh_internal_unlink_node(RenderNodeShed shed, void* node)
 {
 	VAR_CHK_IF_MAX(shed, RDHNODE_MAX_VALUE, );
 	RdhBase* rdh = RDH;
-	qn_node_mukum_unlink(&rdh->mukums[shed], qn_cast_type(node, QnGamNode));
+	qn_node_mukum_unlink(&rdh->mukums[shed], qn_cast_type(node, QnNodeGam));
 }
 
 //
@@ -1712,7 +1708,7 @@ bool qg_begin_render(bool clear)
 	RendererTransform* tm = &rdh->tm;
 	tm->vwpr.s = qm_mat4_mul(tm->view.s, tm->proj.s);
 	tm->prvw.s = qm_mat4_mul(tm->proj.s, tm->view.s);
-	return qn_cast_vtable(rdh, RDHBASE)->begin(clear);
+	return qn_cast_vtable(rdh, RDH)->begin(clear);
 }
 
 //
@@ -1722,9 +1718,9 @@ void qg_end_render(bool flush)
 	rdh->invokes.invokes++;
 	rdh->invokes.ends++;
 	rdh->invokes.flush = true;
-	qn_cast_vtable(rdh, RDHBASE)->end();
+	qn_cast_vtable(rdh, RDH)->end();
 	if (flush)
-		qn_cast_vtable(rdh, RDHBASE)->flush();
+		qn_cast_vtable(rdh, RDH)->flush();
 }
 
 //
@@ -1736,7 +1732,7 @@ void qg_flush(void)
 		qn_mesgb("RDH", "call end() before flush");
 		qg_end_render(false);
 	}
-	qn_cast_vtable(rdh, RDHBASE)->flush();
+	qn_cast_vtable(rdh, RDH)->flush();
 	rdh->invokes.invokes++;
 	rdh->invokes.frames++;
 }
@@ -1746,7 +1742,7 @@ void qg_rdh_reset(void)
 {
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	qn_cast_vtable(rdh, RDHBASE)->reset();
+	qn_cast_vtable(rdh, RDH)->reset();
 }
 
 //
@@ -1754,11 +1750,11 @@ void qg_clear_render(QgClear clear)
 {
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	qn_cast_vtable(rdh, RDHBASE)->clear(clear);
+	qn_cast_vtable(rdh, RDH)->clear(clear);
 }
 
 //
-void qg_set_param_diffuse(const QMVEC* diffuse)
+void qg_set_diffuse(const QMVEC* diffuse)
 {
 	RdhBase* rdh = RDH;
 	rdh->param.diffuse.s = *diffuse;
@@ -1766,7 +1762,7 @@ void qg_set_param_diffuse(const QMVEC* diffuse)
 }
 
 //
-void qg_set_param_specular(const QMVEC* specular)
+void qg_set_specular(const QMVEC* specular)
 {
 	RdhBase* rdh = RDH;
 	rdh->param.specular.s = *specular;
@@ -1774,7 +1770,7 @@ void qg_set_param_specular(const QMVEC* specular)
 }
 
 //
-void qg_set_param_ambient(const QMVEC* ambient)
+void qg_set_ambient(const QMVEC* ambient)
 {
 	RdhBase* rdh = RDH;
 	rdh->param.ambient.s = *ambient;
@@ -1782,11 +1778,34 @@ void qg_set_param_ambient(const QMVEC* ambient)
 }
 
 //
-void qg_set_param_emissive(const QMVEC* emissive)
+void qg_set_emissive(const QMVEC* emissive)
 {
 	RdhBase* rdh = RDH;
 	rdh->param.emissive.s = *emissive;
 	rdh->invokes.invokes++;
+}
+
+//
+void qg_set_constant_dir(const QMVEC* dir)
+{
+	RdhBase* rdh = RDH;
+	if (dir != NULL)
+		rdh->param.constant_dir.s = *dir;
+	rdh->invokes.invokes++;
+}
+
+//
+void qg_set_constant_color(const QMVEC* color)
+{
+	RdhBase* rdh = RDH;
+	rdh->param.constant_color.s = color != NULL ? *color : QMCOLOR_WHITE.s;
+	rdh->invokes.invokes++;
+}
+
+//
+const QMVEC qg_get_constant_dir(void)
+{
+	return RDH_PARAM->constant_dir.s;
 }
 
 //
@@ -1893,11 +1912,11 @@ QgBuffer* qg_create_buffer(QgBufferType type, uint count, uint stride, const voi
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->create_buffer(type, count, stride, initial_data);
+	return qn_cast_vtable(rdh, RDH)->create_buffer(type, count, stride, initial_data);
 }
 
 //
-QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgPropShader* shader)
+QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgLayoutData* layout, const QgPropShader* shader)
 {
 	VAR_CHK_IF_NULL(render, NULL);
 	VAR_CHK_IF_MAX3(render, rasterizer, fill, QGFILL_MAX_VALUE, NULL);
@@ -1908,16 +1927,18 @@ QgRenderState* qg_create_render_state(const char* name, const QgPropRender* rend
 	VAR_CHK_IF_MAX3(render, format, count, QGRVS_MAX_VALUE, NULL);
 	VAR_CHK_IF_MAX2(render, topology, QGTPG_MAX_VALUE, NULL);
 
+	VAR_CHK_IF_NULL(layout, NULL);
+	VAR_CHK_IF_NULL2(layout, inputs, NULL);
+	VAR_CHK_IF_ZERO2(layout, count, NULL);
+
 	VAR_CHK_IF_NULL(shader, NULL);
-	VAR_CHK_IF_NULL3(shader, layout, inputs, NULL);
-	VAR_CHK_IF_ZERO3(shader, layout, count, NULL);
 	VAR_CHK_IF_NULL3(shader, vertex, code, NULL);
 	VAR_CHK_IF_NULL3(shader, pixel, code, NULL);
 
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, shader);
+	return qn_cast_vtable(rdh, RDH)->create_render(name, render, layout, shader);
 }
 
 //
@@ -1932,13 +1953,12 @@ QgRenderState* qg_create_render_state_vsps(const char* name, const QgPropRender*
 	VAR_CHK_IF_MAX3(render, format, count, QGRVS_MAX_VALUE, NULL);
 	VAR_CHK_IF_MAX2(render, topology, QGTPG_MAX_VALUE, NULL);
 
+	VAR_CHK_IF_NULL(layout, NULL);
 	VAR_CHK_IF_NULL2(layout, inputs, NULL);
 	VAR_CHK_IF_ZERO2(layout, count, NULL);
 
 	int size;
 	QgPropShader shader;
-	shader.layout.count = layout->count;
-	shader.layout.inputs = layout->inputs;
 	shader.vertex.code = qn_file_alloc(qg_get_mount(mount), vsfile, &size);
 	shader.vertex.size = (size_t)size;
 	shader.pixel.code = qn_file_alloc(qg_get_mount(mount), psfile, &size);
@@ -1955,7 +1975,71 @@ QgRenderState* qg_create_render_state_vsps(const char* name, const QgPropRender*
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	QgRenderState* rs = qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, &shader);
+	QgRenderState* rs = qn_cast_vtable(rdh, RDH)->create_render(name, render, layout, &shader);
+	qn_free(shader.vertex.code);
+	qn_free(shader.pixel.code);
+	return rs;
+}
+
+//
+QgRenderState* qg_create_render_state_decl(const char* name, const QgPropRender* render, QgLayoutDecl layout, const QgPropShader* shader)
+{
+	VAR_CHK_IF_NULL(render, NULL);
+	VAR_CHK_IF_MAX3(render, rasterizer, fill, QGFILL_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX3(render, rasterizer, cull, QGCULL_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, depth, QGDEPTH_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, stencil, QGSTENCIL_MAX_VALUE, NULL);
+	VAR_CHK_IF_ZERO3(render, format, count, NULL);
+	VAR_CHK_IF_MAX3(render, format, count, QGRVS_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, topology, QGTPG_MAX_VALUE, NULL);
+
+	VAR_CHK_IF_MAX(layout, QGLAYOUT_MAX_VALUE, NULL);
+
+	VAR_CHK_IF_NULL(shader, NULL);
+	VAR_CHK_IF_NULL3(shader, vertex, code, NULL);
+	VAR_CHK_IF_NULL3(shader, pixel, code, NULL);
+
+	RdhBase* rdh = RDH;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	const QgLayoutData* layout_data = qg_get_layout_data(layout);
+	return qn_cast_vtable(rdh, RDH)->create_render(name, render, layout_data, shader);
+}
+
+//
+QgRenderState* qg_create_render_state_decl_vsps(const char* name, const QgPropRender* render, QgLayoutDecl layout, int mount, const char* vsfile, const char* psfile)
+{
+	VAR_CHK_IF_NULL(render, NULL);
+	VAR_CHK_IF_MAX3(render, rasterizer, fill, QGFILL_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX3(render, rasterizer, cull, QGCULL_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, depth, QGDEPTH_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, stencil, QGSTENCIL_MAX_VALUE, NULL);
+	VAR_CHK_IF_ZERO3(render, format, count, NULL);
+	VAR_CHK_IF_MAX3(render, format, count, QGRVS_MAX_VALUE, NULL);
+	VAR_CHK_IF_MAX2(render, topology, QGTPG_MAX_VALUE, NULL);
+
+	VAR_CHK_IF_MAX(layout, QGLAYOUT_MAX_VALUE, NULL);
+
+	int size;
+	QgPropShader shader;
+	shader.vertex.code = qn_file_alloc(qg_get_mount(mount), vsfile, &size);
+	shader.vertex.size = (size_t)size;
+	shader.pixel.code = qn_file_alloc(qg_get_mount(mount), psfile, &size);
+	shader.pixel.size = (size_t)size;
+	if (shader.vertex.code == NULL || shader.pixel.code == NULL)
+	{
+		qn_free(shader.vertex.code);
+		qn_free(shader.pixel.code);
+		return NULL;
+	}
+	((char*)shader.vertex.code)[shader.vertex.size] = '\0';
+	((char*)shader.pixel.code)[shader.pixel.size] = '\0';
+
+	RdhBase* rdh = RDH;
+	rdh->invokes.creations++;
+	rdh->invokes.invokes++;
+	const QgLayoutData* layout_data = qg_get_layout_data(layout);
+	QgRenderState* rs = qn_cast_vtable(rdh, RDH)->create_render(name, render, layout_data, &shader);
 	qn_free(shader.vertex.code);
 	qn_free(shader.pixel.code);
 	return rs;
@@ -1969,7 +2053,7 @@ QgTexture* qg_create_texture(const char* name, const QgImage* image, QgTexFlag f
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->create_texture(name, image, flags);
+	return qn_cast_vtable(rdh, RDH)->create_texture(name, image, flags);
 }
 
 //
@@ -1983,7 +2067,7 @@ QgTexture* qg_load_texture(int mount, const char* filename, QgTexFlag flags)
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->create_texture(filename, image, flags | QGTEXF_DISCARD_IMAGE);
+	return qn_cast_vtable(rdh, RDH)->create_texture(filename, image, flags | QGTEXF_DISCARD_IMAGE);
 }
 
 //
@@ -2004,13 +2088,27 @@ QgFont* qg_get_def_font(void)
 }
 
 //
+int qg_get_def_font_size(void)
+{
+	return RDH->font != NULL ? qg_font_get_size(RDH->font) : 0;
+}
+
+//
+void qg_set_def_font_size(int size)
+{
+	QgFont* font = RDH->font;
+	if (font != NULL)
+		qg_font_set_size(font, size);
+}
+
+//
 bool qg_set_index(QgBuffer* buffer)
 {
 	VAR_CHK_IF_NULL(buffer, false);
 	VAR_CHK_IF_COND(buffer->type != QGBUFFER_INDEX, "cannot set non-index buffer as index buffer", false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->set_index(buffer);
+	return qn_cast_vtable(rdh, RDH)->set_index(buffer);
 }
 
 //
@@ -2021,7 +2119,7 @@ bool qg_set_vertex(QgLayoutStage stage, QgBuffer* buffer)
 	VAR_CHK_IF_MAX(stage, QGLOS_MAX_VALUE, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->set_vertex(stage, buffer);
+	return qn_cast_vtable(rdh, RDH)->set_vertex(stage, buffer);
 }
 
 //
@@ -2030,7 +2128,7 @@ bool qg_set_render_state(QgRenderState* render)
 	VAR_CHK_IF_NULL(render, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->set_render(render);
+	return qn_cast_vtable(rdh, RDH)->set_render(render);
 }
 
 //
@@ -2040,7 +2138,7 @@ bool qg_set_render_named(const char* name)
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	QgRenderState* rdr = qn_node_mukum_get(&rdh->mukums[RDHNODE_RENDER], name);
-	return rdr == NULL ? false : qn_cast_vtable(rdh, RDHBASE)->set_render(rdr);
+	return rdr == NULL ? false : qn_cast_vtable(rdh, RDH)->set_render(rdr);
 }
 
 //
@@ -2049,7 +2147,7 @@ bool qg_set_texture(int stage, QgTexture* texture)
 	VAR_CHK_IF_MAX(stage, 8/*RDH_INFO->max_tex_count*/, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->set_texture(stage, texture);
+	return qn_cast_vtable(rdh, RDH)->set_texture(stage, texture);
 }
 
 //
@@ -2060,7 +2158,7 @@ bool qg_draw(QgTopology tpg, int vertices)
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	return qn_cast_vtable(rdh, RDHBASE)->draw(tpg, vertices);
+	return qn_cast_vtable(rdh, RDH)->draw(tpg, vertices);
 }
 
 //
@@ -2071,7 +2169,7 @@ bool qg_draw_indexed(QgTopology tpg, int indices)
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	return qn_cast_vtable(rdh, RDHBASE)->draw_indexed(tpg, indices);
+	return qn_cast_vtable(rdh, RDH)->draw_indexed(tpg, indices);
 }
 
 //
@@ -2083,7 +2181,7 @@ void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmKolor color
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	qn_cast_vtable(rdh, RDHBASE)->draw_sprite(bound, texture, color, coord);
+	qn_cast_vtable(rdh, RDH)->draw_sprite(bound, texture, color, coord);
 }
 
 //
@@ -2095,7 +2193,7 @@ void qg_draw_sprite_ex(const QmRect* bound, float angle, QgTexture* texture, con
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	qn_cast_vtable(rdh, RDHBASE)->draw_sprite_ex(bound, angle, texture, color, coord);
+	qn_cast_vtable(rdh, RDH)->draw_sprite_ex(bound, angle, texture, color, coord);
 }
 
 //
@@ -2107,7 +2205,7 @@ void qg_draw_glyph(const QmRect* bound, QgTexture* texture, const QmKolor color,
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	qn_cast_vtable(rdh, RDHBASE)->draw_glyph(bound, texture, color, coord);
+	qn_cast_vtable(rdh, RDH)->draw_glyph(bound, texture, color, coord);
 }
 
 

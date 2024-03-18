@@ -30,7 +30,7 @@
 // typedef
 
 typedef struct QGBUFFER			QgBuffer;						/// @brief 버퍼
-typedef struct QGRENDERSTATE	QgRenderState;					/// @brief 렌더 파이프라인
+typedef struct QGRENDER_STATE	QgRenderState;					/// @brief 렌더 파이프라인
 typedef struct QGTEXTURE		QgTexture;						/// @brief 텍스쳐
 typedef struct QGIMAGE			QgImage;						/// @brief 이미지
 typedef struct QGFONT			QgFont;							/// @brief 폰트
@@ -190,7 +190,7 @@ typedef enum QGLAYOUTUSAGE
 {
 	QGLOU_UNKNOWN,											/// @brief 알 수 없음
 	QGLOU_POSITION,											/// @brief XYZ 좌표
-	QGLOU_COORD1,											/// @brief UV 좌표 1	
+	QGLOU_COORD1,											/// @brief UV 좌표 1
 	QGLOU_COORD2,											/// @brief UV 좌표 2
 	QGLOU_COORD3,											/// @brief UV 좌표 3
 	QGLOU_COORD4,											/// @brief UV 좌표 4
@@ -214,6 +214,20 @@ typedef enum QGLAYOUTUSAGE
 	QGLOU_MAX_VALUE
 } QgLayoutUsage;
 #define QGLOU_MAX_SIZE		((size_t)(QGLOU_MAX_VALUE+sizeof(size_t)-1))&((size_t)~(sizeof(size_t)-1))
+
+/// @brief 미리 정의된 고정된 레이아웃
+typedef enum QGLAYOUTDECL
+{
+	QGLAYOUT_1P,											/// @brief 1(위치3)
+	QGLAYOUT_1PN,											/// @brief 1(위치3/법선3)
+	QGLAYOUT_1PT,											/// @brief 1(위치3/텍스쳐2)
+	QGLAYOUT_1PNT,											/// @brief 1(위치3/법선3/텍스쳐2)
+	QGLAYOUT_1PK,											/// @brief 1(위치3/색깔1)
+	QGLAYOUT_1PNK,											/// @brief 1(위치3/법선3/색깔1)
+	QGLAYOUT_1PTK,											/// @brief 1(위치3/텍스쳐2/색깔1)
+	QGLAYOUT_1PNTK,											/// @brief 1(위치3/법선/3텍스쳐2/색깔1)
+	QGLAYOUT_MAX_VALUE,
+} QgLayoutDecl;
 
 /// @brief 블렌드 모드
 typedef enum QGBLEND
@@ -302,8 +316,10 @@ typedef enum QGSHADERCONSTAUTO
 	QGSCA_WORLD,											/// @brief 월드 행렬
 	QGSCA_VIEW,												/// @brief 뷰 행렬
 	QGSCA_PROJ,												/// @brief 투영 행렬
+	QGSCA_WORLD_VIEW,										/// @brief 월드와 뷰의 곱행렬
 	QGSCA_VIEW_PROJ,										/// @brief 뷰와 투영의 곱행렬
 	QGSCA_PROJ_VIEW,										/// @brief 투영과 뷰의 곱행렬
+	QGSCA_INV_WORLD,										/// @brief 월드의 역행렬 (전치되어 있음)
 	QGSCA_INV_VIEW,											/// @brief 뷰의 역행렬
 	QGSCA_MVP,												/// @brief 모델뷰투영 행렬
 	QGSCA_TEX1,												/// @brief 텍스쳐 1번
@@ -323,10 +339,13 @@ typedef enum QGSHADERCONSTAUTO
 	QGSCA_PROP_MAT3,										/// @brief 행렬 3번
 	QGSCA_PROP_MAT4,										/// @brief 행렬 4번
 	QGSCA_MAT_PALETTE,										/// @brief 행렬 팔레트
-	QGSCA_DIFFUSE,											/// @brief 디퓨즈 색깔
-	QGSCA_SPECULAR,											/// @brief 스페큘러 색깔
-	QGSCA_AMBIENT,											/// @brief 앰비언트 색깔
-	QGSCA_EMISSIVE,											/// @brief 이미시브 색깔
+	QGSCA_DIFFUSE,											/// @brief 분산광
+	QGSCA_SPECULAR,											/// @brief 반사광
+	QGSCA_AMBIENT,											/// @brief 주변광
+	QGSCA_EMISSIVE,											/// @brief 방사광
+	QGSCA_CONSTANT_DIR,										/// @brief 항성 방향
+	QGSCA_CONSTANT_COLOR,									/// @brief 항성 색깔
+	QGSCA_VIEW_POS,											/// @brief 뷰 위치
 	QGSCA_MAX_VALUE
 } QgScAuto;
 
@@ -335,7 +354,7 @@ typedef enum QGBUFFERTYPE
 {
 	QGBUFFER_VERTEX,										/// @brief 정점 버퍼
 	QGBUFFER_INDEX,											/// @brief 인덱스 버퍼
-	QGBUFFER_CONSTANT,										/// @brief 상수 버퍼			
+	QGBUFFER_CONSTANT,										/// @brief 상수 버퍼
 } QgBufferType;
 
 /// @brief 지우기 역할
@@ -774,27 +793,26 @@ typedef struct QGLAYOUTINPUT
 	QgLayoutStage		stage;								/// @brief 스테이지 구분
 	QgLayoutUsage		usage;								/// @brief 사용법
 	QgClrFmt			format;								/// @brief 포맷
-	cham				normalized;							/// @brief 정규화	
+	cham				normalized;							/// @brief 정규화
 } QgLayoutInput;
 
 /// @brief 레이아웃 데이터
 typedef struct QGLAYOUTDATA
 {
 	size_t				count;								/// @brief 요소 갯수
-	QgLayoutInput*		inputs;								///	@brief 요소 데이터 포인트
+	QgLayoutInput* inputs;								///	@brief 요소 데이터 포인트
 } QgLayoutData;
 
 /// @brief 코드 데이터
 typedef struct QGCODEDATA
 {
 	size_t				size;								/// @brief 코드 크기 (텍스트 타입이면 반드시 0이어야 한다!)
-	void*				code;								/// @brief 코드 데이터
+	void* code;								/// @brief 코드 데이터
 } QgCodeData;
 
 /// @brief 세이더 속성
 typedef struct QGPROPSHADER
 {
-	QgLayoutData		layout;
 	QgCodeData			vertex;
 	QgCodeData			pixel;
 	//QgCodeData		geometry;
@@ -840,11 +858,7 @@ typedef struct QGPROPRENDER
 /// @brief 세이더 변수
 typedef struct QGVARSHADER
 {
-#ifdef _QN_64_
-	char				name[64 + 4];						/// @brief 변수 이름
-#else
-	char				name[64];							/// @brief 변수 이름
-#endif
+	char				name[64 QN_ON64(+4)];				/// @brief 변수 이름
 	size_t				hash;								/// @brief 변수 이름 해시
 
 	ushort				offset;								/// @brief 변수 옵셋
@@ -883,6 +897,7 @@ typedef struct QGCAMCTRL
 	QikKey				rot_pitch_up;						/// @brief 위로 회전하는 키
 	QikKey				rot_pitch_down;						/// @brief 아래로 회전하는 키
 	QimButton			rot_button;							/// @brief 회전 버튼
+	cham				dist_wheel;							/// @brief 휠로 거리 조절
 } QgCamCtrl;
 
 /// @brief 키 상태
@@ -978,7 +993,7 @@ typedef union QGEVENT
 		uint				mesg;							/// @brief 메시지
 		nuint				wparam;							/// @brief WPARAM
 		nint				lparam;							/// @brief LPARAM
-		void*				hwnd;							/// @brief 윈도우 핸들
+		void* hwnd;							/// @brief 윈도우 핸들
 	}					windows;
 #endif
 	struct QGEVENT_ACTIVE
@@ -1032,7 +1047,7 @@ typedef union QGEVENT
 	{
 		QgEventType			ev;
 		int					len;							/// @brief 데이타의 길이
-		char*				data;							/// @brief 테이타 포인터. 데이터의 유효기간은 다음 loop 까지
+		char* data;							/// @brief 테이타 포인터. 데이터의 유효기간은 다음 loop 까지
 	}					drop;
 	struct QGEVENT_WINDOWEVENT
 	{
@@ -1152,8 +1167,8 @@ QSAPI void qg_set_key_state(QikKey key, bool down);
 QSAPI bool qg_get_key_state(QikKey key);
 
 /// @brief 키가 눌려졌는가 테스트 한다 (키 반복 X)
-/// @param key 
-/// @return 
+/// @param key
+/// @return
 QSAPI bool qg_get_key_press(const QikKey key);
 
 /// @brief 키가 눌렸다 떼졌나 테스트 한다
@@ -1228,7 +1243,8 @@ QSAPI void qg_reset_timer(void);
 QSAPI void qg_set_aspect(const int width, const int height);
 
 /// @brief 스터브 크기를 얻는다
-QSAPI void qg_get_size(_Out_ QmSize* size);
+/// @return 스터브 크기
+QSAPI const QmSize qg_get_size(void);
 
 /// @brief 프로그램 종료 키를 설정한다
 /// @param key 종료 키
@@ -1261,14 +1277,14 @@ QSAPI void qg_main_loop(paramfunc_t func, void* data);
 
 /// @brief 스터브 루프를 탈출한다
 /// @see qg_poll
-/// 
+///
 /// 다만, 바로 프로그램을 종료하는 것은 아니며.실제로 이벤트를 처리하지 않도록 하는 역할을 한다
 QSAPI void qg_exit_loop(void);
 
 /// @brief 스터브 이벤트 콜백을 등록한다
 /// @param func 콜백 함수
 /// @param data 콜백 함수 사용자 데이터
-/// @return 등록 키. 이 키로 qg_unregister_event_callback 로 등록을 해제할 수 있다 
+/// @return 등록 키. 이 키로 qg_unregister_event_callback 로 등록을 해제할 수 있다
 QSAPI nint qg_register_event_callback(QgEventCallback func, void* data);
 
 /// @brief 스터브 이벤트 콜백의 등록을 해제한다
@@ -1391,19 +1407,31 @@ QSAPI void qg_clear_render(QgClear clear);
 
 /// @brief 세이더 diffuse 파라미터 설정
 /// @param diffuse diffuse 색깔
-QSAPI void qg_set_param_diffuse(const QMVEC* diffuse);
+QSAPI void qg_set_diffuse(const QMVEC* diffuse);
 
 /// @brief 세이더 specular 파라미터 설정
 /// @param specular specular 색깔
-QSAPI void qg_set_param_specular(const QMVEC* specular);
+QSAPI void qg_set_specular(const QMVEC* specular);
 
 /// @brief 세이더 ambient 파라미터 설정
 /// @param ambient ambient 색깔
-QSAPI void qg_set_param_ambient(const QMVEC* ambient);
+QSAPI void qg_set_ambient(const QMVEC* ambient);
 
 /// @brief 세이더 emissive 파라미터 설정
 /// @param emissive emissive 색깔
-QSAPI void qg_set_param_emissive(const QMVEC* emissive);
+QSAPI void qg_set_emissive(const QMVEC* emissive);
+
+/// @brief 항성의 방향을 설정한다
+/// @param dir 항성의 위치 (널이면 기본 PTC시간을 사용)
+QSAPI void qg_set_constant_dir(const QMVEC* dir);
+
+/// @brief 항성의 색깔을 설정한다
+/// @param color 항성의 색깔
+QSAPI void qg_set_constant_color(const QMVEC* color);
+
+/// @brief 항성의 방향을 얻는다
+/// @return 항성의 방향
+QSAPI const QMVEC qg_get_constant_dir(void);
 
 /// @brief 세이더 vec4 타입 파라미터 설정
 /// @param at 0부터 3까지 총 4가지
@@ -1520,7 +1548,7 @@ QSAPI void qg_draw_glyph(const QmRect* bound, QgTexture* texture, const QmKolor 
 /// @brief 버퍼
 struct QGBUFFER
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	QgBufferType		type;
 	uint				size;
@@ -1531,13 +1559,13 @@ struct QGBUFFER
 	bool				dynamic;
 };
 
-QN_DECL_VTABLE(QGBUFFER)
+typedef struct QGBUFFER_VTABLE
 {
-	QN_DECL_VTABLE(QNGAMBASE)	base;
-	void*(*map)(void*, bool);
+	QnVtableGam			base;
+	void* (*map)(void*, bool);
 	bool (*unmap)(void*);
 	bool (*data)(void*, int, const void*);
-};
+} QgVtableBuffer;
 
 /// @brief 버퍼를 만든다
 /// @param type 버퍼 타입
@@ -1570,19 +1598,21 @@ QSAPI bool qg_buffer_data(QgBuffer* g, int size, const void* data);
 
 
 /// @brief 렌더 파이프라인 상태
-struct QGRENDERSTATE
+struct QGRENDER_STATE
 {
-	QN_GAM_BASE(QNGAMNODE);
+	QnNodeGam			base;
 
 	nuint				ref;
+	QgLayoutData		layout;
 };
 
 /// @brief 렌더 파이프라인을 만든다
 /// @param name 렌더 이름 (이름을 지정하면 캐시한다)
 /// @param render 렌더 파이프라인 속성
+/// @param layout 레이아웃 속성
 /// @param shader 세이더 속성
 /// @return 만들어진 렌더 파이프라인
-QSAPI QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgPropShader* shader);
+QSAPI QgRenderState* qg_create_render_state(const char* name, const QgPropRender* render, const QgLayoutData* layout, const QgPropShader* shader);
 
 /// @brief 렌더 파이프라인을 만든다
 /// @param name 렌더 이름 (이름을 지정하면 캐시한다)
@@ -1594,11 +1624,29 @@ QSAPI QgRenderState* qg_create_render_state(const char* name, const QgPropRender
 /// @return 만들어진 렌더 파이프라인
 QSAPI QgRenderState* qg_create_render_state_vsps(const char* name, const QgPropRender* render, const QgLayoutData* layout, int mount, const char* vsfile, const char* psfile);
 
+/// @brief 렌더 파이프라인을 만든다
+/// @param name 렌더 이름 (이름을 지정하면 캐시한다)
+/// @param render 렌더 파이프라인 속성
+/// @param layout 미리 정의된 레이아웃 속성
+/// @param shader 세이더 속성
+/// @return 만들어진 렌더 파이프라인
+QSAPI QgRenderState* qg_create_render_state_decl(const char* name, const QgPropRender* render, QgLayoutDecl layout, const QgPropShader* shader);
+
+/// @brief 렌더 파이프라인을 만든다
+/// @param name 렌더 이름 (이름을 지정하면 캐시한다)
+/// @param render 렌더 파이프라인 속성
+/// @param layout 미리 정의된 렠이아웃 속성
+/// @param mount 마운트 번호
+/// @param vsfile 정점 세이더 파일
+/// @param psfile 픽셀 세이더 파일
+/// @return 만들어진 렌더 파이프라인
+QSAPI QgRenderState* qg_create_render_state_decl_vsps(const char* name, const QgPropRender* render, QgLayoutDecl layout, int mount, const char* vsfile, const char* psfile);
+
 
 /// @brief 텍스쳐
 struct QGTEXTURE
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	QgPropPixel			prop;
 	int					width;
@@ -1607,16 +1655,16 @@ struct QGTEXTURE
 	QgTexFlag			flags;
 };
 
-QN_DECL_VTABLE(QGTEXTURE)
+typedef struct QGTEXTURE_VTABLE
 {
-	QN_DECL_VTABLE(QNGAMBASE)	base;
+	QnVtableGam			base;
 	bool (*bind)(QgTexture*, int);
-};
+} QgVtableTexture;
 
 /// @brief 텍스쳐를 만든다
 /// @param name 텍스쳐 이름
 /// @param image 이미지
-/// @param flags 텍스쳐 플래그 
+/// @param flags 텍스쳐 플래그
 /// @return 만들어진 텍스쳐
 QSAPI QgTexture* qg_create_texture(const char* name, const QgImage* image, QgTexFlag flags);
 
@@ -1634,7 +1682,7 @@ QSAPI QgTexture* qg_load_texture(int mount, const char* filename, QgTexFlag flag
 // 이미지
 struct QGIMAGE
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	QgPropPixel			prop;
 	int					width;
@@ -1655,7 +1703,7 @@ QSAPI QgImage* qg_create_image(QgClrFmt fmt, int width, int height);
 /// @param fmt 이미지 포맷
 /// @param width 이미지 너비
 /// @param height 이미지 높이
-/// @param data 이미지 데이터 
+/// @param data 이미지 데이터
 /// @return 만들어진 이미지
 /// @warning 각 인수에 대해 유효성을 검사하지 않는다! 즉, 안전하지 않은 함수이다. 한편,
 /// 이미지 데이터는 이미지가 관리하기 때문에 해제하면 안된다. 임시 메모리를 전달해도 안되며 반드시 할당한 데이터 일 것
@@ -1715,7 +1763,7 @@ QSAPI bool qg_image_set_pixel(const QgImage* self, int x, int y, const QMVEC* co
 // 글꼴
 struct QGFONT
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	QgFontFlag			flags;
 	int					size;
@@ -1723,13 +1771,13 @@ struct QGFONT
 	QmSize				step;
 };
 
-QN_DECL_VTABLE(QGFONT)
+typedef struct QGFONT_VTABLE
 {
-	QN_GAM_VTABLE(QNGAMBASE);
+	QnVtableGam			base;
 	void (*set_size)(QnGam, int);
 	void (*draw)(QnGam, const QmRect*, const char*);
-	QmPoint (*calc)(QnGam, const char*);
-};
+	QmPoint(*calc)(QnGam, const char*);
+} QgVtableFont;
 
 /// @brief 글꼴을 만든다
 /// @param mount 마운트 번호
@@ -1822,6 +1870,13 @@ QSAPI bool qg_load_def_font(int mount, const char* filename);
 /// @return 기본 글꼴
 QSAPI QgFont* qg_get_def_font(void);
 
+/// @brief 기본 글꼴의 크기를 얻는다
+QSAPI int qg_get_def_font_size(void);
+
+/// @brief 기본 글꼴 크기를 설정한다
+/// @param size 글꼴 크기
+QSAPI void qg_set_def_font_size(int size);
+
 /// @brief 기본 글꼴로 그린다
 /// @param x,y x,y 좌표
 /// @param text 문자열
@@ -1833,17 +1888,20 @@ QSAPI void qg_draw_text(int x, int y, const char* text);
 /// @param ... 가변 인수
 QSAPI void qg_draw_text_format(int x, int y, const char* fmt, ...);
 
+/// @brief 글꼴 크기 기준으로 위치값을 설정한다
+#define QG_FGS(x)		(0xFFFF0000 | (x))
+
 
 //////////////////////////////////////////////////////////////////////////
 // 노드
 
 struct QGDPCT
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	char				name[64];
 	size_t				hash;
-	QgDpct*				parent;
+	QgDpct* parent;
 
 	struct
 	{
@@ -1863,15 +1921,15 @@ struct QGDPCT
 	}					bound;
 };
 
-QN_DECL_VTABLE(QGDPCT)
+typedef struct QGDPCT_VTABLE
 {
-	QN_GAM_VTABLE(QNGAMBASE);
+	QnVtableGam			base;
 	bool (*update)(QnGam, float);
 	void (*draw)(QnGam);
 	void (*set_loc)(QnGam, const QMVEC*);
 	void (*set_rot)(QnGam, const QMVEC*);
 	void (*set_scl)(QnGam, const QMVEC*);
-};
+} QgVtableDpct;
 
 QSAPI bool qg_dpct_update(QNGAM dpct, float advance);
 QSAPI void qg_dpct_draw(QNGAM dpct);
@@ -1893,13 +1951,13 @@ INLINE size_t qg_dpct_get_hash(QNGAM dpct) { return qn_cast_type(dpct, QgDpct)->
 // 광선
 struct QGRAY
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	QmVec4				location;
 	QmVec4				direction;
 	QmVec4				origin;
 
-	QgCamera*			camera;
+	QgCamera* camera;
 };
 
 /// @brief 광선을 만든다
@@ -1945,7 +2003,7 @@ QSAPI QMVEC qg_ray_get_loc(const QgRay* self, float dist);
 // 카메라
 struct QGCAMERA
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	QgCameraFlag		flags;								/// @brief 카메라 플래그
 
@@ -1957,10 +2015,11 @@ struct QGCAMERA
 		float			zfar;								/// @brief 먼 평면
 
 		float			dist;								/// @brief 카메라와의 거리
-		QmVec4			smove;								/// @brief 이동 속도
-		QmVec4			srot;								/// @brief 회전 속도
+		float			sdist;								/// @brief 카메라와의 거리 속도
 		QmVec4			dmove;								/// @brief 이동 거리
+		QmVec4			smove;								/// @brief 이동 속도
 		QmVec4			drot;								/// @brief 회전 거리
+		QmVec4			srot;								/// @brief 회전 속도
 
 		QmVec4			angle;								/// @brief 회전 (roll/pitch/yaw => 벡터3)
 		QmVec4			eye;								/// @brief 시점 (벡터3)
@@ -1975,12 +2034,12 @@ struct QGCAMERA
 	}					mat;
 };
 
-QN_DECL_VTABLE(QGCAMERA)
+typedef struct QGCAMERA_VTABLE
 {
-	QN_GAM_VTABLE(QNGAMBASE);
+	QnVtableGam			base;
 	void (*update)(QnGam);
 	void (*control)(QnGam, const QgCamCtrl*, float);
-};
+} QgVtableCamera;
 
 /// @brief 카메라를 만든다
 /// @return 만들어진 카메라
@@ -2002,7 +2061,7 @@ QSAPI void qg_camera_set_proj_param(QgCamera* self, float ascpect, float fov, fl
 /// @param self 카메라
 /// @param pos 위치
 /// @note 기본 카메라는 시점의 위치, 마야 카메라는 시선의	위치를 설정한다
-QSAPI void qg_camera_set_position(QgCamera* self, const QMVEC* pos);
+QSAPI void qg_camera_set_pos(QgCamera* self, const QMVEC* pos);
 
 /// @brief 카메라 각도를 설정한다
 /// @param self 카메라
@@ -2013,6 +2072,11 @@ QSAPI void qg_camera_set_angle(QgCamera* self, const QMVEC* angle);
 /// @param self 카메라
 /// @param rot 회전
 QSAPI void qg_camera_set_angle(QgCamera* self, const QMVEC* angle);
+
+/// @brief 카메라 거리 조절 속도를 설정한다 (마야 카메라)
+/// @param self 카메라
+/// @param s 거리 조절 속도
+QSAPI void qg_camera_set_dist_speed(QgCamera* self, float s);
 
 /// @brief 카메라 이동 속도를 설정한다 (마야/FPS 카메라)
 /// @param self 카메라
@@ -2027,7 +2091,7 @@ QSAPI void qg_camera_set_rot_speed(QgCamera* self, const QMVEC* s);
 /// @brief 카메라 위치를 설정한다
 /// @param self 카메라
 /// @param x,y,z 위치
-QSAPI void qg_camera_set_position_param(QgCamera* self, float x, float y, float z);
+QSAPI void qg_camera_set_pos_param(QgCamera* self, float x, float y, float z);
 
 /// @brief 카메라 각도를 설정한다
 /// @param self 카메라
@@ -2084,11 +2148,9 @@ QSAPI void qg_camera_control(QgCamera* self, const QgCamCtrl* ctrl, float advanc
 /// @brief 메시
 struct QGMESH
 {
-	QN_GAM_BASE(QGDPCT);
+	QgDpct				base;
 
 	QgPropMesh			mesh;
-	QgLayoutData		layout;
-
 	QgBuffer*			vbuffers[QGLOS_MAX_VALUE];
 	QgBuffer*			ibuffer;
 };
@@ -2100,13 +2162,9 @@ QSAPI QgMesh* qg_create_mesh(const char* name);
 
 /// @brief 메시를 빌드한다
 /// @param self 메시
+/// @param rs 렌더 상태
 /// @return 빌드에 성공하면 참
-QSAPI bool qg_mesh_build(QgMesh* self);
-
-/// @brief 레이아웃을 설정한다
-/// @param self 메시
-/// @param lo 레이아웃 데이터
-QSAPI void qg_mesh_set_layout(QgMesh* self, const QgLayoutData* lo);
+QSAPI bool qg_mesh_build(QgMesh* self, const QgRenderState* rs);
 
 /// @brief 사면체 메시를 만든다
 /// @param self 메시
@@ -2183,3 +2241,11 @@ QSAPI bool qg_mesh_gen_torus(QgMesh* self, float radius, float size, int segment
 		.blend.separate = false,\
 		.blend.rb[0] = QGBLEND_BLEND,\
 	}
+
+/// @brief 기본 렌더 프로퍼티를 얻는다
+/// @return 렌더 프로퍼티 포인터
+INLINE const QgPropRender* qg_get_prop_render_default(void) { static const QgPropRender prop = QG_DEFAULT_PROP_RENDER; return &prop; }
+
+/// @brief 알파 블렌드 렌더 프로퍼티를 얻는다
+/// @return 렌더 프로퍼티 포인터
+INLINE const QgPropRender* qg_get_prop_render_blend(void) { static const QgPropRender prop = QGL_PROP_RENDER_BLEND; return &prop; }

@@ -133,7 +133,7 @@ typedef enum QNMODFLAG
 // 단위 모듈 내용
 struct QNMODULE
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	size_t				hash;
 	char				name[64];
@@ -254,7 +254,7 @@ static void qn_mod_dispose(QnGam gam)
 }
 
 //
-static QN_DECL_VTABLE(QNGAMBASE) qn_mod_vt =
+static const QnVtableGam qn_mod_vt =
 {
 	"MODULE",
 	qn_mod_dispose,

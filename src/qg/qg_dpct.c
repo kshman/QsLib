@@ -246,7 +246,7 @@ QgRay* qg_create_ray(QgCamera* camera)
 {
 	QgRay* self = qn_alloc_zero_1(QgRay);
 	self->camera = qn_loadc(camera, QgCamera);
-	static const QN_DECL_VTABLE(QNGAMBASE) vt_qg_ray =
+	static const QnVtableGam vt_qg_ray =
 	{
 		"Ray",
 		qg_ray_dispose,
@@ -268,7 +268,7 @@ void qg_camera_set_proj_param(QgCamera* self, float ascpect, float fov, float zn
 }
 
 //
-void qg_camera_set_position(QgCamera* self, const QMVEC* pos)
+void qg_camera_set_pos(QgCamera* self, const QMVEC* pos)
 {
 	if (QN_TMASK(self->flags, QGCAMF_MAYA))
 		self->param.at.s = *pos;
@@ -280,6 +280,12 @@ void qg_camera_set_position(QgCamera* self, const QMVEC* pos)
 void qg_camera_set_angle(QgCamera* self, const QMVEC* angle)
 {
 	self->param.angle.s = *angle;
+}
+
+//
+void qg_camera_set_dist_speed(QgCamera* self, float s)
+{
+	self->param.sdist = s;
 }
 
 //
@@ -295,7 +301,7 @@ void qg_camera_set_rot_speed(QgCamera* self, const QMVEC* s)
 }
 
 //
-void qg_camera_set_position_param(QgCamera* self, float x, float y, float z)
+void qg_camera_set_pos_param(QgCamera* self, float x, float y, float z)
 {
 	if (QN_TMASK(self->flags, QGCAMF_MAYA))
 		self->param.at.s = qm_vec3(x, y, z);
@@ -401,7 +407,7 @@ static void _camera_internal_control(QnGam g, const QgCamCtrl* ctrl, float advan
 	{
 		QIK_W, QIK_S, QIK_A, QIK_D, QIK_R, QIK_F,
 		QIK_LEFT, QIK_RIGHT, QIK_UP, QIK_DOWN,
-		QIM_RIGHT,
+		QIM_LEFT, true,
 	};
 	QgCamera* self = qn_cast_type(g, QgCamera);
 	const QgCamCtrl* c = ctrl != NULL ? ctrl : &def_ctrl;
@@ -452,6 +458,7 @@ static void _camera_init(QgCamera* self)
 	self->param.zfar = tm->Far;
 
 	self->param.dist = 10.0f;
+	self->param.sdist = 10.0f;
 	self->param.smove.s = qm_vec3(10.0f, 10.0f, 10.0f);
 	self->param.srot.s = qm_vec3(QM_TAU_H, QM_TAU_H, QM_TAU_H);
 
@@ -478,7 +485,7 @@ QgCamera* qg_create_camera(void)
 	QN_SMASK(self->flags, QGCAMF_FPS, true);
 	_camera_internal_update(self);
 
-	static const QN_DECL_VTABLE(QGCAMERA) vt_qg_camera =
+	static const QgVtableCamera vt_qg_camera =
 	{
 		{
 			"Camera",
@@ -500,7 +507,7 @@ QgCamera* qg_create_maya_camera(void)
 	QN_SMASK(self->flags, QGCAMF_MAYA, true);
 	_camera_internal_update(self);
 
-	static const QN_DECL_VTABLE(QGCAMERA) vt_qg_camera =
+	static const QgVtableCamera vt_qg_camera =
 	{
 		{
 			"MayaCamera",

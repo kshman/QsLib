@@ -694,7 +694,7 @@ static QnStream* _mem_stream_init(MemStream* self, QnMount* mount, const char* n
 	self->loc = 0;
 	qn_set_gam_desc(self, data);
 
-	static const QN_DECL_VTABLE(QNSTREAM) _mem_stream_vt =
+	static const struct QNSTREAM_VTABLE _mem_stream_vt =
 	{
 		.base.name = "MemoryStream",
 		.base.dispose = _mem_stream_dispose,
@@ -1062,7 +1062,7 @@ static void _file_stream_dispose(QnGam g)
 static QnStream* _file_stream_dup(QnGam g);
 
 //
-static const QN_DECL_VTABLE(QNSTREAM) _file_stream_vt =
+static const struct QNSTREAM_VTABLE _file_stream_vt =
 {
 	.base.name = "FileStream",
 	.base.dispose = _file_stream_dispose,
@@ -1271,7 +1271,7 @@ static void _indirect_stream_dispose(QnGam g)
 static QnStream* _indirect_stream_dup(QnGam g);
 
 //
-static const QN_DECL_VTABLE(QNSTREAM) _indirect_stream_vt =
+static const struct QNSTREAM_VTABLE _indirect_stream_vt =
 {
 	.base.name = "IndirectStream",
 	.base.dispose = _indirect_stream_dispose,
@@ -1571,7 +1571,7 @@ static QnDir* _disk_list_open(_In_ QnMount* mount, const char* directory, const 
 	qn_set_gam_desc(self, dir);
 #endif
 
-	static const QN_DECL_VTABLE(QNDIR) _disk_list_vt =
+	static const struct QNDIR_VTABLE _disk_list_vt =
 	{
 		.base.name = "DiskList",
 		.base.dispose = _disk_list_dispose,
@@ -1761,7 +1761,7 @@ static QnMount* _create_diskfs(char* path)
 #endif
 
 	//
-	static const QN_DECL_VTABLE(QNMOUNT) _disk_fs_vt =
+	static const struct QNMOUNT_VTABLE _disk_fs_vt =
 	{
 		.base.name = "DiskFS",
 		.base.dispose = _disk_fs_dispose,
@@ -1922,8 +1922,8 @@ static void _hfs_make_directory_name(QnPathStr* dir, const char* name)
 			return;
 		}
 	}
-	_path_str_append(dir, name);
-	_path_str_append_char(dir, '/');
+	_path_str_add(dir, name);
+	_path_str_add_char(dir, '/');
 }
 
 // 디렉토리 찾기
@@ -1954,7 +1954,7 @@ static bool _hfs_chdir(QnGam g, const char* directory)
 
 	if (_hfs_infos_is_have(&self->infos))
 	{
-		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, 0);
+		const HfsInfo* info = _hfs_infos_ptr_nth(&self->infos, 0);
 		qn_stream_seek(stream, info->file.source.seek, QNSEEK_BEGIN);
 	}
 
@@ -2066,7 +2066,7 @@ static bool _hfs_mkdir(QnGam g, const char* directory)
 	size_t i;
 	QN_CTNR_FOREACH(self->infos, 1, i)	// 0번은 현재 디렉토리
 	{
-		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
+		const HfsInfo* info = _hfs_infos_ptr_nth(&self->infos, i);
 		if (hash == info->file.hash && name.LENGTH == info->file.source.len && _path_str_icmp(&name, info->name) == 0)
 		{
 			// UNDONE: 옛날 주석에 의하면 패스 잡는 방법이 틀혔다고 함
@@ -2090,11 +2090,11 @@ static bool _hfs_mkdir(QnGam g, const char* directory)
 	_hfs_write_directory(stream, ".", 1, 0, stc, subp, (uint)(subp + sizeof(HfsFile) + 1));
 
 	// ".." 디렉토리
-	const HfsInfo* parent = _hfs_infos_nth_ptr(&self->infos, 0);
+	const HfsInfo* parent = _hfs_infos_ptr_nth(&self->infos, 0);
 	_hfs_write_directory(stream, "..", 2, 0, parent->file.stc.stamp, parent->file.source.seek, 0);
 
 	// 지금꺼 갱신
-	const HfsInfo* last = _hfs_infos_inv_ptr(&self->infos, 0);
+	const HfsInfo* last = _hfs_infos_ptr_inv(&self->infos, 0);
 	qn_stream_seek(stream, HFSAT_NEXT + last->file.source.seek, QNSEEK_BEGIN);
 	qn_stream_write(stream, &next, 0, (int)sizeof(uint));
 
@@ -2142,7 +2142,7 @@ static bool _hfs_remove(QnGam g, const char* path)
 	size_t i;
 	QN_CTNR_FOREACH(self->infos, 1, i)	// 0번은 현재 디렉토리
 	{
-		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
+		const HfsInfo* info = _hfs_infos_ptr_nth(&self->infos, i);
 		if (hash == info->file.hash && name.LENGTH == info->file.source.len && _path_str_icmp(&name, info->name) == 0)
 		{
 			found = info;
@@ -2156,7 +2156,7 @@ static bool _hfs_remove(QnGam g, const char* path)
 	}
 
 	const uint next = found->file.next;
-	const HfsInfo* prev = _hfs_infos_nth_ptr(&self->infos, i - 1);
+	const HfsInfo* prev = _hfs_infos_ptr_nth(&self->infos, i - 1);
 	if (qn_stream_seek(stream, HFSAT_NEXT + prev->file.source.seek, QNSEEK_BEGIN) <= 0 ||
 		qn_stream_write(stream, &next, 0, sizeof(uint)) != sizeof(uint))
 	{
@@ -2250,7 +2250,7 @@ static void* _hfs_alloc(QnGam g, const char* filename, int* size)
 	size_t i;
 	QN_CTNR_FOREACH(self->infos, 1, i)	// 0번은 현재 디렉토리
 	{
-		HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
+		HfsInfo* info = _hfs_infos_ptr_nth(&self->infos, i);
 		if (hash == info->file.hash && name.LENGTH == info->file.source.len && _path_str_icmp(&name, info->name) == 0)
 		{
 			found = info;
@@ -2313,7 +2313,7 @@ static QnStream* _hfs_stream(QnGam g, const char* filename, const char* mode)
 	size_t i;
 	QN_CTNR_FOREACH(self->infos, 1, i)	// 0번은 현재 디렉토리
 	{
-		HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
+		HfsInfo* info = _hfs_infos_ptr_nth(&self->infos, i);
 		if (hash == info->file.hash && name.LENGTH == info->file.source.len && _path_str_icmp(&name, info->name) == 0)
 		{
 			found = info;
@@ -2356,7 +2356,7 @@ static QnFileAttr _hfs_attr(QnGam g, const char* path)
 	size_t i;
 	QN_CTNR_FOREACH(self->infos, 1, i)	// 0번은 현재 디렉토리
 	{
-		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
+		const HfsInfo* info = _hfs_infos_ptr_nth(&self->infos, i);
 		if (hash == info->file.hash && name.LENGTH == info->file.source.len && _path_str_icmp(&name, info->name) == 0)
 		{
 			attr = info->file.source.attr;
@@ -2373,7 +2373,7 @@ static const HfsInfo* _hfs_list_internal_read_info(HfsDir* self)
 {
 	if (self->base.base.desc >= _hfs_infos_count(&self->infos))
 		return NULL;
-	return _hfs_infos_nth_ptr(&self->infos, self->base.base.desc++);
+	return _hfs_infos_ptr_nth(&self->infos, self->base.base.desc++);
 }
 
 //
@@ -2446,9 +2446,9 @@ static QnDir* _hfs_list(_In_ QnGam g, const char* directory, const char* mask)
 		size_t i;
 		QN_ARRAY_FOREACH(hfs->infos, 0, i)
 		{
-			HfsInfo* info = _hfs_infos_nth_ptr(&hfs->infos, i);
+			HfsInfo* info = _hfs_infos_ptr_nth(&hfs->infos, i);
 			if (qn_striwcm(info->name, mask))
-				_hfs_infos_add_ptr(&self->infos, info);
+				_hfs_infos_ptr_add(&self->infos, info);
 		}
 	}
 
@@ -2458,7 +2458,7 @@ static QnDir* _hfs_list(_In_ QnGam g, const char* directory, const char* mask)
 
 	_hfs_restore_dir(hfs, &save);
 
-	static const QN_DECL_VTABLE(QNDIR) _hfs_list_vt =
+	static const struct QNDIR_VTABLE _hfs_list_vt =
 	{
 		.base.name = "HfsList",
 		.base.dispose = _hfs_list_dispose,
@@ -2676,7 +2676,7 @@ static QnMount* _create_hfs(const char* filename, const char* mode)
 	qn_set_gam_desc(self, stream);
 	_hfs_chdir(qn_cast_type(self, QnMount), "/");
 
-	static const QN_DECL_VTABLE(QNMOUNT) _hfs_vt =
+	static const struct QNMOUNT_VTABLE _hfs_vt =
 	{
 		.base.name = "Hfs",
 		.base.dispose = _hfs_dispose,
@@ -2724,7 +2724,7 @@ static bool _hfs_store_buffer(Hfs* self, const char* filename, const void* data,
 	size_t i;
 	QN_CTNR_FOREACH(self->infos, 1, i)	// 0번은 현재 디렉토리
 	{
-		const HfsInfo* info = _hfs_infos_nth_ptr(&self->infos, i);
+		const HfsInfo* info = _hfs_infos_ptr_nth(&self->infos, i);
 		if (hash == info->file.hash && name.LENGTH == info->file.source.len && _path_str_icmp(&name, info->name) == 0)
 		{
 			_hfs_restore_dir(self, &save);
@@ -2798,7 +2798,7 @@ static bool _hfs_store_buffer(Hfs* self, const char* filename, const void* data,
 	}
 
 	// 지금꺼 갱신
-	HfsInfo* last = _hfs_infos_inv_ptr(&self->infos, 0);
+	HfsInfo* last = _hfs_infos_ptr_inv(&self->infos, 0);
 	last->file.next = next;
 	qn_stream_seek(stream, HFSAT_NEXT + last->file.source.seek, QNSEEK_BEGIN);
 	qn_stream_write(stream, &next, 0, (int)sizeof(uint));
@@ -2982,7 +2982,7 @@ static bool _hfs_optimize_process(HfsOptimizeData* od)
 	size_t i;
 	QN_CTNR_FOREACH(infos, 1, i)	// 0번은 현재 디렉토리
 	{
-		HfsInfo* info = _hfs_infos_nth_ptr(&infos, i);
+		HfsInfo* info = _hfs_infos_ptr_nth(&infos, i);
 		if (info->name[0] == '.')
 			continue;
 		if (QN_TMASK(info->file.source.attr, QNFATTR_DIR))
@@ -3036,7 +3036,7 @@ static bool _hfs_optimize_process(HfsOptimizeData* od)
 			}
 			qn_free(data);
 
-			HfsInfo* last = _hfs_infos_inv_ptr(&output->infos, 0);
+			HfsInfo* last = _hfs_infos_ptr_inv(&output->infos, 0);
 			last->file.next = next;
 			qn_stream_seek(stream, HFSAT_NEXT + last->file.source.seek, QNSEEK_BEGIN);
 			qn_stream_write(stream, &next, 0, (int)sizeof(uint));
@@ -3167,14 +3167,15 @@ INLINE void _hfs_unload_ptr(Hfs** hfs)
 }
 
 // 파일 소스 해시
-QN_DECLIMPL_MUKUM(FsMukum, char*, FuseSource, qn_str_phash, qn_str_peqv, (void), (void), _fs_mukum);
+QN_DECLIMPL_MUKUM(FsMukum, char*, FuseSource, qn_strphash, qn_strpcmp, (void), (void), _fs_mukum);
 // 마운트 해시
-QN_DECLIMPL_MUKUM(HfsMukum, char*, Hfs*, qn_str_phash, qn_str_peqv, (void), _hfs_unload_ptr, _hfs_mukum);
+QN_DECLIMPL_MUKUM(HfsMukum, char*, Hfs*, qn_strphash, qn_strpcmp, (void), _hfs_unload_ptr, _hfs_mukum);
 
 // 퓨즈
 typedef struct FUSE
 {
-	QN_GAM_BASE(QNMOUNT);
+	QnMount				base;
+
 	HfsMukum			hfss;
 	FsMukum				fss;
 	QnSpinLock			lock;
@@ -3304,14 +3305,14 @@ static void _fuse_parse_hfs(Fuse* self, Hfs* hfs, const char* dir)
 	size_t i;
 	QN_ARRAY_FOREACH(infos, 1, i)	// 0번은 현재 디렉토리
 	{
-		HfsInfo* info = _hfs_infos_nth_ptr(&infos, i);
+		HfsInfo* info = _hfs_infos_ptr_nth(&infos, i);
 		if (info->name[0] == '.')
 			continue;
 
-		_path_str_append(&bs, info->name);
+		_path_str_add(&bs, info->name);
 		if (QN_TMASK(info->file.source.attr, QNFATTR_DIR))
 		{
-			_path_str_append_char(&bs, '/');
+			_path_str_add_char(&bs, '/');
 			_hfs_chdir(hfs, bs.DATA);
 			_fuse_parse_hfs(self, hfs, bs.DATA);
 			_hfs_chdir(hfs, "..");
@@ -3323,7 +3324,7 @@ static void _fuse_parse_hfs(Fuse* self, Hfs* hfs, const char* dir)
 			node->VALUE.source = info->file.source;
 			qn_strcpy(node->VALUE.name, bs.DATA);
 			node->KEY = node->VALUE.name;
-			if (!_fs_mukum_node_add(&self->fss, node))
+			if (!_fs_mukum_add(&self->fss, node))
 				qn_free(node);
 		}
 		_path_str_trunc(&bs, bpos);
@@ -3341,7 +3342,7 @@ static bool _fuse_add_hfs(Fuse* self, const char* name)
 	Hfs* hfs = (Hfs*)_create_hfs(name, "f");
 	if (hfs == NULL)
 		return false;
-	_hfs_mukum_add(&self->hfss, hfs->base.name, hfs);
+	_hfs_mukum_set(&self->hfss, hfs->base.name, hfs);
 	_fuse_parse_hfs(self, hfs, "/");
 	return true;
 }
@@ -3424,7 +3425,7 @@ QnMount* qn_create_fuse(const char* path, bool diskfs, bool loadall)
 	self->diskfs = diskfs;
 
 	//
-	static const QN_DECL_VTABLE(QNMOUNT) _fuse_vt =
+	static const struct QNMOUNT_VTABLE _fuse_vt =
 	{
 		.base.name = "DiskFS",
 		.base.dispose = _fuse_dispose,

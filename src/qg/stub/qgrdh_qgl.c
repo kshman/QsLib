@@ -287,7 +287,7 @@ static void qgl_rdh_draw_sprite_ex(const QmRect* bound, float angle, void* textu
 static void qgl_rdh_draw_glyph(const QmRect* bound, void* texture, QmKolor color, const QMVEC* coord);
 
 static QgBuffer* qgl_create_buffer(QgBufferType type, uint count, uint stride, const void* initial_data);
-static QgRenderState* qgl_create_render(const char* name, const QgPropRender* prop, const QgPropShader* shader);
+static QgRenderState* qgl_create_render(const char* name, const QgPropRender* prop, const QgLayoutData* layout, const QgPropShader* shader);
 static QgTexture* qgl_create_texture(const char* name, const QgImage* image, QgTexFlag flags);
 
 static void* qgl_buffer_map(void* g, bool synchronized);
@@ -302,7 +302,7 @@ static void qgl_batch_ortho_flush(QglBatchStream* batch);
 static void qg_batch_ortho_draw_rect(QglBatchStream* batch, OrthoVertex* v4, QglTexture* tex);
 static void qg_batch_ortho_draw_glyph(QglBatchStream* batch, OrthoVertex* v4, QglTexture* tex);
 
-QN_DECL_VTABLE(RDHBASE) vt_qgl_rdh =
+static const RdhVtable vt_qgl_rdh =
 {
 	{
 		/* name */			VAR_CHK_NAME,
@@ -650,43 +650,36 @@ static void qgl_rdh_reset(void)
 #endif
 
 	// 리소스
-	static char vs_ortho[] = \
-		"uniform mat4 OrthoProj;" \
-		"attribute vec3 aPosition;" \
-		"attribute vec2 aCoord;" \
-		"attribute vec4 aColor;" \
-		"varying vec2 vCoord;" \
-		"varying vec4 vColor;" \
-		"void main()" \
-		"{" \
-		"	gl_Position = OrthoProj * vec4(aPosition.xyz, 1.0);" \
-		"	vCoord = aCoord;"\
-		"	vColor = aColor;" \
-		"}";
-	static char ps_ortho[] = \
-		"uniform sampler2D Texture;" \
-		"varying vec2 vCoord;" \
-		"varying vec4 vColor;" \
-		"void main()" \
-		"{" \
+	static char vs_ortho[] = /*vertex shader:*/\
+		"uniform mat4 OrthoProj;\n" \
+		"attribute vec3 aPosition;\n" \
+		"attribute vec2 aCoord;\n" \
+		"attribute vec4 aColor;\n" \
+		"varying vec2 vCoord;\n" \
+		"varying vec4 vColor;\n" \
+		"void main()\n" \
+		"{\n" \
+		"	gl_Position = OrthoProj * vec4(aPosition.xyz, 1.0);\n" \
+		"	vCoord = aCoord;\n" \
+		"	vColor = aColor;\n" \
+		"}\n";
+	static char ps_ortho[] = /*fragment shader:*/\
+		"uniform sampler2D Texture;\n" \
+		"varying vec2 vCoord;\n" \
+		"varying vec4 vColor;\n" \
+		"void main()\n" \
+		"{\n" \
 		"	gl_FragColor = texture2D(Texture, vCoord) * vColor;\n" \
-		"}";
-	static char ps_glyph[] = \
-		"uniform sampler2D Texture;" \
-		"varying vec2 vCoord;" \
-		"varying vec4 vColor;" \
-		"void main()" \
-		"{" \
-		"	float a = texture2D(Texture, vCoord).a;"\
-		"	gl_FragColor = vec4(vColor.bgr, vColor.a * a);" \
-		"}";
-	static QgLayoutInput inputs_ortho[] =
-	{
-		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
-		{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
-		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
-	};
-	static QgPropRender render_ortho = QGL_PROP_RENDER_BLEND;
+		"}\n";
+	static char ps_glyph[] = /*fragment shader:*/\
+		"uniform sampler2D Texture;\n" \
+		"varying vec2 vCoord;\n" \
+		"varying vec4 vColor;\n" \
+		"void main()\n" \
+		"{\n" \
+		"	float a = texture2D(Texture, vCoord).a;\n"\
+		"	gl_FragColor = vec4(vColor.bgr, vColor.a * a);\n" \
+		"}\n";
 
 	// 텍스쳐 => 리셋하면 다시 만들어야 함
 	QglResource* res = QGL_RESOURCE;
@@ -696,16 +689,16 @@ static void qgl_rdh_reset(void)
 	// 평면용 렌더 스테이트 => 한번만 만들어도 됨
 	if (res->ortho_render == NULL)
 	{
-		const QgPropShader shader_ortho = { { QN_COUNTOF(inputs_ortho), inputs_ortho }, { 0, vs_ortho }, { 0, ps_ortho } };
-		res->ortho_render = (QglRenderState*)qg_create_render_state("qg_ortho", &render_ortho, &shader_ortho);
+		const QgPropShader shader_ortho = { { 0, vs_ortho }, { 0, ps_ortho } };
+		res->ortho_render = (QglRenderState*)qg_create_render_state_decl("qg_ortho", qg_get_prop_render_blend(), QGLAYOUT_1PTK, &shader_ortho);
 		qn_unload(res->ortho_render);
 	}
 
 	// 평면용 글자 스테이트 => 한번만 만들어도 됨
 	if (res->ortho_glyph == NULL)
 	{
-		const QgPropShader shader_glyph = { { QN_COUNTOF(inputs_ortho), inputs_ortho }, { 0, vs_ortho }, { 0, ps_glyph } };
-		res->ortho_glyph = (QglRenderState*)qg_create_render_state("qg_glyph", &render_ortho, &shader_glyph);
+		const QgPropShader shader_glyph = { { 0, vs_ortho }, { 0, ps_glyph } };
+		res->ortho_glyph = (QglRenderState*)qg_create_render_state_decl("qg_glyph", qg_get_prop_render_blend(), QGLAYOUT_1PTK, &shader_glyph);
 		qn_unload(res->ortho_glyph);
 	}
 
@@ -937,6 +930,12 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->proj.f));
 			break;
+		case QGSCA_WORLD_VIEW:
+		{
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			const QMMAT m = qm_mat4_mul(tm->view.s, tm->world.s);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, ((const QmMat4*)&m)->f));
+		}break;
 		case QGSCA_VIEW_PROJ:
 			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->vwpr.f));
@@ -945,6 +944,12 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->prvw.f));
 			break;
+		case QGSCA_INV_WORLD:
+		{
+			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
+			const QMMAT m = qm_mat4_tinv(tm->world.s);
+			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, ((const QmMat4*)&m)->f));
+		} break;
 		case QGSCA_INV_VIEW:
 			qn_debug_verify(var->sctype == QGSCT_FLOAT16 && var->size == 1);
 			GLDEBUG(glUniformMatrix4fv(var->offset, 1, false, tm->invv.f));
@@ -1029,6 +1034,18 @@ static void qgl_process_shader_variable(const QgVarShader* var)
 			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
 			GLDEBUG(glUniform4fv(var->offset, 1, param->emissive.f));
 			break;
+		case QGSCA_CONSTANT_DIR:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->constant_dir.f));
+			break;
+		case QGSCA_CONSTANT_COLOR:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, param->constant_color.f));
+			break;
+		case QGSCA_VIEW_POS:
+			qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
+			GLDEBUG(glUniform4fv(var->offset, 1, &tm->view._41));
+			break;
 			/*
 			case QGSCA_LIGHT_POS:
 				qn_debug_verify(var->sctype == QGSCT_FLOAT4 && var->size == 1);
@@ -1085,7 +1102,7 @@ static bool qgl_commit_shader_layout(const QglRenderState* rdr)
 	size_t s, i;
 	QN_CTNR_FOREACH(rdr->shader.uniforms, 0, i)
 	{
-		const QgVarShader* var = qgl_uni_ctnr_nth_ptr(&rdr->shader.uniforms, i);
+		const QgVarShader* var = qgl_uni_ctn_ptr_nth(&rdr->shader.uniforms, i);
 		qgl_process_shader_variable(var);
 	}
 
@@ -1848,7 +1865,7 @@ static QgBuffer* qgl_create_buffer(QgBufferType type, uint count, uint stride, c
 	self->gl_type = gl_type;
 
 	// VT 여기서 설정
-	static QN_DECL_VTABLE(QGBUFFER) vt_qgl_buffer =
+	static const QgVtableBuffer vt_qgl_buffer =
 	{
 		.base.name = VAR_CHK_NAME,
 		.base.dispose = qgl_buffer_dispose,
@@ -1897,9 +1914,12 @@ static void qgl_render_dispose(QnGam g)
 	QglRenderState* self = qn_cast_type(g, QglRenderState);
 
 	qgl_render_delete_shader(self, true);
-	qgl_uni_ctnr_dispose(&self->shader.uniforms);
-	qgl_attr_ctnr_dispose(&self->shader.attrs);
-	qgl_layout_ctnr_dispose(&self->layout.inputs);
+	qgl_uni_ctn_dispose(&self->shader.uniforms);
+	qgl_attr_ctn_dispose(&self->shader.attrs);
+	qgl_layout_ctn_dispose(&self->layout.inputs);
+
+	if (self->base.layout.count != 0)
+		qn_free(self->base.layout.inputs);
 
 	rdh_internal_unlink_node(RDHNODE_RENDER, self);
 	qn_free(self);
@@ -2068,7 +2088,7 @@ static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData* verte
 	gl_count = qgl_get_program_iv(self->shader.program, GL_ACTIVE_UNIFORMS);
 	if (gl_count > 0)
 	{
-		qgl_uni_ctnr_init(&self->shader.uniforms, gl_count);
+		qgl_uni_ctn_init(&self->shader.uniforms, gl_count);
 		for (index = i = 0; i < gl_count; i++)
 		{
 			GLDEBUG(glGetActiveUniform(self->shader.program, i, QN_COUNTOF(sz), NULL, &gl_size, &gl_type, sz));
@@ -2083,7 +2103,7 @@ static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData* verte
 			if (sctype == QGSCT_UNKNOWN)
 				qn_mesgfb(VAR_CHK_NAME, "unsupported uniform type: %s (type: %X)", sz, gl_type);
 
-			QgVarShader* var = qgl_uni_ctnr_nth_ptr(&self->shader.uniforms, index++);
+			QgVarShader* var = qgl_uni_ctn_ptr_nth(&self->shader.uniforms, index++);
 			qn_strcpy(var->name, sz);
 			var->hash = qn_strihash(sz);
 			var->offset = (ushort)glGetUniformLocation(self->shader.program, sz); GLDEBUG((void)0);
@@ -2100,7 +2120,7 @@ static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData* verte
 	gl_count = qgl_get_program_iv(self->shader.program, GL_ACTIVE_ATTRIBUTES);
 	if (gl_count > 0)
 	{
-		qgl_attr_ctnr_init(&self->shader.attrs, gl_count);
+		qgl_attr_ctn_init(&self->shader.attrs, gl_count);
 		for (index = i = 0; i < gl_count; i++)
 		{
 			GLDEBUG(glGetActiveAttrib(self->shader.program, i, QN_COUNTOF(sz), NULL, &gl_size, &gl_type, sz));
@@ -2115,7 +2135,7 @@ static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData* verte
 			if (sctype == QGSCT_UNKNOWN)
 				qn_mesgfb(VAR_CHK_NAME, "unsupported attribute type: %s (type: %X)", sz, gl_type);
 
-			QglVarAttr* var = qgl_attr_ctnr_nth_ptr(&self->shader.attrs, index++);
+			QglVarAttr* var = qgl_attr_ctn_ptr_nth(&self->shader.attrs, index++);
 			qn_strcpy(var->name, sz);
 			var->hash = qn_strihash(sz);
 			var->attrib = gl_index;
@@ -2184,8 +2204,8 @@ static bool qgl_render_bind_layout_input(QglRenderState* self, const QgLayoutDat
 	}
 
 	// 레이아웃
-	qgl_layout_ctnr_init(&self->layout.inputs, layout->count);
-	QglVarLayout* pstage = qgl_layout_ctnr_data(&self->layout.inputs);
+	qgl_layout_ctn_init(&self->layout.inputs, layout->count);
+	QglVarLayout* pstage = qgl_layout_ctn_data(&self->layout.inputs);
 	QglVarLayout* stages[QGLOS_MAX_VALUE];
 	for (i = 0; i < QGLOS_MAX_VALUE; i++)
 	{
@@ -2255,18 +2275,21 @@ static void qgl_render_set_rasterizer(QglRasterizerDesc* rasz, const QgPropRaste
 }
 
 // 렌더 만들기. 오류 처리는 다하고 왔을 것이다
-QgRenderState* qgl_create_render(const char* name, const QgPropRender* prop, const QgPropShader* shader)
+static QgRenderState* qgl_create_render(const char* name, const QgPropRender* prop, const QgLayoutData* layout, const QgPropShader* shader)
 {
 	QglRenderState* self = qn_alloc_zero_1(QglRenderState);
-	qn_node_set_name(qn_cast_type(self, QnGamNode), name);
+	qn_node_set_name(qn_cast_type(self, QnNodeGam), name);
 
 	// 세이더
 	if (qgl_render_bind_shader(self, &shader->vertex, &shader->pixel) == false)
 		goto pos_error;
 
 	// 레이아웃
-	if (qgl_render_bind_layout_input(self, &shader->layout) == false)
+	if (qgl_render_bind_layout_input(self, layout) == false)
 		goto pos_error;
+
+	self->base.layout.count = layout->count;
+	self->base.layout.inputs = qn_memdup(layout->inputs, sizeof(QgLayoutInput) * layout->count);
 
 	// 속성
 	self->depth = prop->depth;
@@ -2276,7 +2299,7 @@ QgRenderState* qgl_create_render(const char* name, const QgPropRender* prop, con
 	qgl_render_set_rasterizer(&self->rasz, &prop->rasterizer);
 
 	//
-	static QN_DECL_VTABLE(QNGAMBASE) vt_es_render =
+	static const QnVtableGam vt_es_render =
 	{
 		.name = VAR_CHK_NAME,
 		.dispose = qgl_render_dispose,
@@ -2288,9 +2311,9 @@ QgRenderState* qgl_create_render(const char* name, const QgPropRender* prop, con
 
 pos_error:
 	qgl_render_delete_shader(self, false);
-	qgl_uni_ctnr_dispose(&self->shader.uniforms);
-	qgl_attr_ctnr_dispose(&self->shader.attrs);
-	qgl_layout_ctnr_dispose(&self->layout.inputs);
+	qgl_uni_ctn_dispose(&self->shader.uniforms);
+	qgl_attr_ctn_dispose(&self->shader.attrs);
+	qgl_layout_ctn_dispose(&self->layout.inputs);
 	qn_free(self);
 	return NULL;
 }
@@ -2501,7 +2524,7 @@ static QgTexture* qgl_create_texture(const char* name, const QgImage* image, QgT
 		QN_SMASK(self->base.flags, QGTEXF_DISCARD_IMAGE, false);
 	}
 
-	static QN_DECL_VTABLE(QGTEXTURE) vt_qgl_texture =
+	static const QgVtableTexture vt_qgl_texture =
 	{
 		.base.name = VAR_CHK_NAME,
 		.base.dispose = qgl_texture_dispose,

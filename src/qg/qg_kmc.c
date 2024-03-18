@@ -208,48 +208,53 @@ static struct QGSHADERCONSTAUTOMAP
 	size_t			hash;
 } QgScAutoMap[] =
 {
-	{ QGSCA_ORTHO_PROJ,		"orthoproj",	0 },
-	{ QGSCA_WORLD,			"world",		0 },
-	{ QGSCA_VIEW,			"view",			0 },
-	{ QGSCA_PROJ,			"proj",			0 },
-	{ QGSCA_VIEW_PROJ,		"viewproj",		0 },
-	{ QGSCA_PROJ_VIEW,		"projview",		0 },
-	{ QGSCA_INV_VIEW,		"invview",		0 },
-	{ QGSCA_MVP,			"mvp",			0 },
-	{ QGSCA_TEX1,			"texture",		0 },
-	{ QGSCA_TEX1,			"texture1",		0 },
-	{ QGSCA_TEX2,			"texture2",		0 },
-	{ QGSCA_TEX3,			"texture3",		0 },
-	{ QGSCA_TEX4,			"texture4",		0 },
-	{ QGSCA_TEX5,			"texture5",		0 },
-	{ QGSCA_TEX6,			"texture6",		0 },
-	{ QGSCA_TEX7,			"texture7",		0 },
-	{ QGSCA_TEX8,			"texture8",		0 },
-	{ QGSCA_PROP_VEC1,		"propvec",		0 },
-	{ QGSCA_PROP_VEC1,		"propvec1",		0 },
-	{ QGSCA_PROP_VEC2,		"propvec2",		0 },
-	{ QGSCA_PROP_VEC3,		"propvec3",		0 },
-	{ QGSCA_PROP_VEC4,		"propvec4",		0 },
-	{ QGSCA_PROP_MAT1,		"propmat",		0 },
-	{ QGSCA_PROP_MAT1,		"propmat1",		0 },
-	{ QGSCA_PROP_MAT2,		"propmat2",		0 },
-	{ QGSCA_PROP_MAT3,		"propmat3",		0 },
-	{ QGSCA_PROP_MAT4,		"propmat4",		0 },
-	{ QGSCA_MAT_PALETTE,	"matpalette",	0 },
-	{ QGSCA_DIFFUSE,		"diffuse",		0 },
-	{ QGSCA_SPECULAR,		"specular",		0 },
-	{ QGSCA_AMBIENT,		"ambient",		0 },
-	{ QGSCA_EMISSIVE,		"emissive",		0 },
+	{ QGSCA_ORTHO_PROJ,		"orthoproj",		0 },
+	{ QGSCA_WORLD,			"world",			0 },
+	{ QGSCA_VIEW,			"view",				0 },
+	{ QGSCA_PROJ,			"proj",				0 },
+	{ QGSCA_WORLD_VIEW,		"worldview",		0 },
+	{ QGSCA_VIEW_PROJ,		"viewproj",			0 },
+	{ QGSCA_PROJ_VIEW,		"projview",			0 },
+	{ QGSCA_INV_WORLD,		"invworld",			0 },
+	{ QGSCA_INV_VIEW,		"invview",			0 },
+	{ QGSCA_MVP,			"mvp",				0 },
+	{ QGSCA_TEX1,			"texture",			0 },
+	{ QGSCA_TEX1,			"texture1",			0 },
+	{ QGSCA_TEX2,			"texture2",			0 },
+	{ QGSCA_TEX3,			"texture3",			0 },
+	{ QGSCA_TEX4,			"texture4",			0 },
+	{ QGSCA_TEX5,			"texture5",			0 },
+	{ QGSCA_TEX6,			"texture6",			0 },
+	{ QGSCA_TEX7,			"texture7",			0 },
+	{ QGSCA_TEX8,			"texture8",			0 },
+	{ QGSCA_PROP_VEC1,		"propvec",			0 },
+	{ QGSCA_PROP_VEC1,		"propvec1",			0 },
+	{ QGSCA_PROP_VEC2,		"propvec2",			0 },
+	{ QGSCA_PROP_VEC3,		"propvec3",			0 },
+	{ QGSCA_PROP_VEC4,		"propvec4",			0 },
+	{ QGSCA_PROP_MAT1,		"propmat",			0 },
+	{ QGSCA_PROP_MAT1,		"propmat1",			0 },
+	{ QGSCA_PROP_MAT2,		"propmat2",			0 },
+	{ QGSCA_PROP_MAT3,		"propmat3",			0 },
+	{ QGSCA_PROP_MAT4,		"propmat4",			0 },
+	{ QGSCA_MAT_PALETTE,	"matpalette",		0 },
+	{ QGSCA_DIFFUSE,		"diffuse",			0 },
+	{ QGSCA_SPECULAR,		"specular",			0 },
+	{ QGSCA_AMBIENT,		"ambient",			0 },
+	{ QGSCA_EMISSIVE,		"emissive",			0 },
+	{ QGSCA_CONSTANT_DIR,	"constantdir",		0 },
+	{ QGSCA_CONSTANT_COLOR,	"constantcolor",	0 },
+	{ QGSCA_VIEW_POS,		"viewpos",			0 },
 	// 별명
-	{ QGSCA_TEX1,			"tex",			0 },
-	{ QGSCA_TEX1,			"tex1",			0 },
-	{ QGSCA_TEX2,			"tex2",			0 },
-	{ QGSCA_TEX3,			"tex3",			0 },
-	{ QGSCA_TEX4,			"tex4",			0 },
-	{ QGSCA_TEX5,			"tex5",			0 },
-	{ QGSCA_TEX6,			"tex6",			0 },
-	{ QGSCA_TEX7,			"tex7",			0 },
-	{ QGSCA_TEX8,			"tex8",			0 },
+	{ QGSCA_TEX1,			"tex",				0 },
+	{ QGSCA_TEX1,			"tex1",				0 },
+	{ QGSCA_TEX2,			"tex2",				0 },
+	{ QGSCA_TEX3,			"tex3",				0 },
+	{ QGSCA_TEX4,			"tex4",				0 },
+	{ QGSCA_TEX5,			"tex5",				0 },
+	{ QGSCA_TEX6,			"tex6",				0 },
+	{ QGSCA_TEX7,			"tex7",				0 },
+	{ QGSCA_TEX8,			"tex8",				0 },
 };
 
 //
@@ -417,6 +422,68 @@ const char* qg_shader_const_auto_to_str(const QgScAuto sca)
 			return QgScAutoMap[i].name;
 	}
 	return qn_p_unknown(sca, false);
+}
+
+//
+const QgLayoutData* qg_get_layout_data(QgLayoutDecl layout)
+{
+	static QgLayoutInput layout_1p[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+	};
+	static QgLayoutInput layout_1pn[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
+	};
+	static QgLayoutInput layout_1pt[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
+	};
+	static QgLayoutInput layout_1pnt[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
+		{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
+	};
+	static QgLayoutInput layout_1pk[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
+	};
+	static QgLayoutInput layout_1pnk[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
+		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
+	};
+	static QgLayoutInput layout_1ptk[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
+		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
+	};
+	static QgLayoutInput layout_1pntk[] =
+	{
+		{ QGLOS_1, QGLOU_POSITION, QGLOT_FLOAT3, false },
+		{ QGLOS_1, QGLOU_NORMAL1, QGLOT_FLOAT3, false},
+		{ QGLOS_1, QGLOU_COORD1, QGLOT_FLOAT2, false },
+		{ QGLOS_1, QGLOU_COLOR1, QGLOT_BYTE4, true },
+	};
+	static QgLayoutData layouts[QGLAYOUT_MAX_VALUE] =
+	{
+		[QGLAYOUT_1P] = { QN_COUNTOF(layout_1p), layout_1p },
+		[QGLAYOUT_1PN] = { QN_COUNTOF(layout_1pn), layout_1pn },
+		[QGLAYOUT_1PT] = { QN_COUNTOF(layout_1pt), layout_1pt },
+		[QGLAYOUT_1PNT] = { QN_COUNTOF(layout_1pnt), layout_1pnt },
+		[QGLAYOUT_1PK] = { QN_COUNTOF(layout_1pk), layout_1pk },
+		[QGLAYOUT_1PNK] = { QN_COUNTOF(layout_1pnk), layout_1pnk },
+		[QGLAYOUT_1PTK] = { QN_COUNTOF(layout_1ptk), layout_1ptk },
+		[QGLAYOUT_1PNTK] = { QN_COUNTOF(layout_1pntk), layout_1pntk },
+	};
+	qn_return_when_fail((size_t)layout < QGLAYOUT_MAX_VALUE, NULL);
+	return &layouts[layout];
 }
 
 
