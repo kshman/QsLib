@@ -32,7 +32,7 @@ static const QglConfig* qgl_detect_config(_In_ const QglConfig* wanted, _In_ con
 	size_t i;
 	QN_CTNR_FOREACH(*configs, 0, i)
 	{
-		const QglConfig* c = qgl_cfg_ctnr_nth_ptr(configs, i);
+		const QglConfig* c = qgl_cfg_ctn_ptr_nth(configs, i);
 		if (c->handle == NULL)
 			continue;
 
@@ -308,9 +308,9 @@ static bool egl_choose_config(_In_ EGLDisplay display, _In_ const QglConfig* wan
 	else
 	{
 		QglCtnConfig qgl_configs;
-		qgl_cfg_ctnr_init(&qgl_configs, config_count);
+		qgl_cfg_ctn_init(&qgl_configs, config_count);
 		for (i = 0; i < config_count; i++)
-			egl_get_config(qgl_cfg_ctnr_nth_ptr(&qgl_configs, i), display, configs[i], wanted_config);
+			egl_get_config(qgl_cfg_ctn_ptr_nth(&qgl_configs, i), display, configs[i], wanted_config);
 
 		const QglConfig* found = qgl_detect_config(wanted_config, &qgl_configs);
 		if (found == NULL)
@@ -320,7 +320,7 @@ static bool egl_choose_config(_In_ EGLDisplay display, _In_ const QglConfig* wan
 			memcpy(found_config, found, sizeof(QglConfig));
 			ret = true;
 		}
-		qgl_cfg_ctnr_dispose(&qgl_configs);
+		qgl_cfg_ctn_dispose(&qgl_configs);
 	}
 	return ret;
 }
@@ -859,10 +859,10 @@ _Success_(return) static bool wgl_choose_arb_pixel_format(_In_ HDC hdc, _In_ con
 	else
 	{
 		QglCtnConfig qgl_configs;
-		qgl_cfg_ctnr_init(&qgl_configs, config_count);
+		qgl_cfg_ctn_init(&qgl_configs, config_count);
 		for (UINT i = 0; i < config_count; i++)
 		{
-			QglConfig* c = qgl_cfg_ctnr_nth_ptr(&qgl_configs, i);
+			QglConfig* c = qgl_cfg_ctn_ptr_nth(&qgl_configs, i);
 			if (wglGetPixelFormatAttribivARB(hdc, pixel_formats[i], 0, attr_count, attrs, values) == FALSE)
 			{
 				c->handle = NULL;
@@ -879,7 +879,7 @@ _Success_(return) static bool wgl_choose_arb_pixel_format(_In_ HDC hdc, _In_ con
 			memcpy(found_config, found, sizeof(QglConfig));
 			ret = true;
 		}
-		qgl_cfg_ctnr_dispose(&qgl_configs);
+		qgl_cfg_ctn_dispose(&qgl_configs);
 	}
 	return ret;
 }

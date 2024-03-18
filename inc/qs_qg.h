@@ -30,7 +30,7 @@
 // typedef
 
 typedef struct QGBUFFER			QgBuffer;						/// @brief 버퍼
-typedef struct QGRENDERSTATE	QgRenderState;					/// @brief 렌더 파이프라인
+typedef struct QGRENDER_STATE	QgRenderState;					/// @brief 렌더 파이프라인
 typedef struct QGTEXTURE		QgTexture;						/// @brief 텍스쳐
 typedef struct QGIMAGE			QgImage;						/// @brief 이미지
 typedef struct QGFONT			QgFont;							/// @brief 폰트
@@ -800,14 +800,14 @@ typedef struct QGLAYOUTINPUT
 typedef struct QGLAYOUTDATA
 {
 	size_t				count;								/// @brief 요소 갯수
-	QgLayoutInput*		inputs;								///	@brief 요소 데이터 포인트
+	QgLayoutInput* inputs;								///	@brief 요소 데이터 포인트
 } QgLayoutData;
 
 /// @brief 코드 데이터
 typedef struct QGCODEDATA
 {
 	size_t				size;								/// @brief 코드 크기 (텍스트 타입이면 반드시 0이어야 한다!)
-	void*				code;								/// @brief 코드 데이터
+	void* code;								/// @brief 코드 데이터
 } QgCodeData;
 
 /// @brief 세이더 속성
@@ -858,11 +858,7 @@ typedef struct QGPROPRENDER
 /// @brief 세이더 변수
 typedef struct QGVARSHADER
 {
-#ifdef _QN_64_
-	char				name[64 + 4];						/// @brief 변수 이름
-#else
-	char				name[64];							/// @brief 변수 이름
-#endif
+	char				name[64 QN_ON64(+4)];				/// @brief 변수 이름
 	size_t				hash;								/// @brief 변수 이름 해시
 
 	ushort				offset;								/// @brief 변수 옵셋
@@ -997,7 +993,7 @@ typedef union QGEVENT
 		uint				mesg;							/// @brief 메시지
 		nuint				wparam;							/// @brief WPARAM
 		nint				lparam;							/// @brief LPARAM
-		void*				hwnd;							/// @brief 윈도우 핸들
+		void* hwnd;							/// @brief 윈도우 핸들
 	}					windows;
 #endif
 	struct QGEVENT_ACTIVE
@@ -1051,7 +1047,7 @@ typedef union QGEVENT
 	{
 		QgEventType			ev;
 		int					len;							/// @brief 데이타의 길이
-		char*				data;							/// @brief 테이타 포인터. 데이터의 유효기간은 다음 loop 까지
+		char* data;							/// @brief 테이타 포인터. 데이터의 유효기간은 다음 loop 까지
 	}					drop;
 	struct QGEVENT_WINDOWEVENT
 	{
@@ -1552,7 +1548,7 @@ QSAPI void qg_draw_glyph(const QmRect* bound, QgTexture* texture, const QmKolor 
 /// @brief 버퍼
 struct QGBUFFER
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	QgBufferType		type;
 	uint				size;
@@ -1563,13 +1559,13 @@ struct QGBUFFER
 	bool				dynamic;
 };
 
-QN_DECL_VTABLE(QGBUFFER)
+typedef struct QGBUFFER_VTABLE
 {
-	QN_DECL_VTABLE(QNGAMBASE)	base;
-	void*(*map)(void*, bool);
+	QnVtableGam			base;
+	void* (*map)(void*, bool);
 	bool (*unmap)(void*);
 	bool (*data)(void*, int, const void*);
-};
+} QgVtableBuffer;
 
 /// @brief 버퍼를 만든다
 /// @param type 버퍼 타입
@@ -1602,9 +1598,9 @@ QSAPI bool qg_buffer_data(QgBuffer* g, int size, const void* data);
 
 
 /// @brief 렌더 파이프라인 상태
-struct QGRENDERSTATE
+struct QGRENDER_STATE
 {
-	QN_GAM_BASE(QNGAMNODE);
+	QnNodeGam			base;
 
 	nuint				ref;
 	QgLayoutData		layout;
@@ -1650,7 +1646,7 @@ QSAPI QgRenderState* qg_create_render_state_decl_vsps(const char* name, const Qg
 /// @brief 텍스쳐
 struct QGTEXTURE
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	QgPropPixel			prop;
 	int					width;
@@ -1659,11 +1655,11 @@ struct QGTEXTURE
 	QgTexFlag			flags;
 };
 
-QN_DECL_VTABLE(QGTEXTURE)
+typedef struct QGTEXTURE_VTABLE
 {
-	QN_DECL_VTABLE(QNGAMBASE)	base;
+	QnVtableGam			base;
 	bool (*bind)(QgTexture*, int);
-};
+} QgVtableTexture;
 
 /// @brief 텍스쳐를 만든다
 /// @param name 텍스쳐 이름
@@ -1686,7 +1682,7 @@ QSAPI QgTexture* qg_load_texture(int mount, const char* filename, QgTexFlag flag
 // 이미지
 struct QGIMAGE
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	QgPropPixel			prop;
 	int					width;
@@ -1767,7 +1763,7 @@ QSAPI bool qg_image_set_pixel(const QgImage* self, int x, int y, const QMVEC* co
 // 글꼴
 struct QGFONT
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	QgFontFlag			flags;
 	int					size;
@@ -1775,13 +1771,13 @@ struct QGFONT
 	QmSize				step;
 };
 
-QN_DECL_VTABLE(QGFONT)
+typedef struct QGFONT_VTABLE
 {
-	QN_GAM_VTABLE(QNGAMBASE);
+	QnVtableGam			base;
 	void (*set_size)(QnGam, int);
 	void (*draw)(QnGam, const QmRect*, const char*);
-	QmPoint (*calc)(QnGam, const char*);
-};
+	QmPoint(*calc)(QnGam, const char*);
+} QgVtableFont;
 
 /// @brief 글꼴을 만든다
 /// @param mount 마운트 번호
@@ -1901,11 +1897,11 @@ QSAPI void qg_draw_text_format(int x, int y, const char* fmt, ...);
 
 struct QGDPCT
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	char				name[64];
 	size_t				hash;
-	QgDpct*				parent;
+	QgDpct* parent;
 
 	struct
 	{
@@ -1925,15 +1921,15 @@ struct QGDPCT
 	}					bound;
 };
 
-QN_DECL_VTABLE(QGDPCT)
+typedef struct QGDPCT_VTABLE
 {
-	QN_GAM_VTABLE(QNGAMBASE);
+	QnVtableGam			base;
 	bool (*update)(QnGam, float);
 	void (*draw)(QnGam);
 	void (*set_loc)(QnGam, const QMVEC*);
 	void (*set_rot)(QnGam, const QMVEC*);
 	void (*set_scl)(QnGam, const QMVEC*);
-};
+} QgVtableDpct;
 
 QSAPI bool qg_dpct_update(QNGAM dpct, float advance);
 QSAPI void qg_dpct_draw(QNGAM dpct);
@@ -1955,13 +1951,13 @@ INLINE size_t qg_dpct_get_hash(QNGAM dpct) { return qn_cast_type(dpct, QgDpct)->
 // 광선
 struct QGRAY
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	QmVec4				location;
 	QmVec4				direction;
 	QmVec4				origin;
 
-	QgCamera*			camera;
+	QgCamera* camera;
 };
 
 /// @brief 광선을 만든다
@@ -2007,7 +2003,7 @@ QSAPI QMVEC qg_ray_get_loc(const QgRay* self, float dist);
 // 카메라
 struct QGCAMERA
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	QgCameraFlag		flags;								/// @brief 카메라 플래그
 
@@ -2038,12 +2034,12 @@ struct QGCAMERA
 	}					mat;
 };
 
-QN_DECL_VTABLE(QGCAMERA)
+typedef struct QGCAMERA_VTABLE
 {
-	QN_GAM_VTABLE(QNGAMBASE);
+	QnVtableGam			base;
 	void (*update)(QnGam);
 	void (*control)(QnGam, const QgCamCtrl*, float);
-};
+} QgVtableCamera;
 
 /// @brief 카메라를 만든다
 /// @return 만들어진 카메라
@@ -2152,7 +2148,7 @@ QSAPI void qg_camera_control(QgCamera* self, const QgCamCtrl* ctrl, float advanc
 /// @brief 메시
 struct QGMESH
 {
-	QN_GAM_BASE(QGDPCT);
+	QgDpct				base;
 
 	QgPropMesh			mesh;
 	QgBuffer*			vbuffers[QGLOS_MAX_VALUE];

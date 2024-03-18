@@ -15,7 +15,7 @@ typedef struct STUBEVENTCALLBACK
 
 // 컨테이너
 QN_DECLIMPL_LIST(StubListEventCb, StubEventCallback, eventcb_list);
-QN_DECLIMPL_CTNR(StubMonitorCtnr, QgUdevMonitor*, monitor_ctnr);
+QN_DECLIMPL_CTN(StubMonitorCtn, QgUdevMonitor*, monitor_ctn);
 
 // 스터브 베이스
 typedef struct STUBBASE
@@ -41,7 +41,7 @@ typedef struct STUBBASE
 
 	QgUimKey			key;
 	QgUimMouse			mouse;
-	StubMonitorCtnr		monitors;
+	StubMonitorCtn		monitors;
 	QikKey				key_exit;
 	QikKey				key_fullscreen;
 
@@ -130,7 +130,7 @@ extern void stub_initialize(StubBase* stub, QgFlag flags);
 // 렌더 디바이스
 
 // 렌더 노드 창고 번호
-typedef enum RENDERNODESHED
+typedef enum RENDER_NODE_SHED
 {
 	RDHNODE_NONE,
 	RDHNODE_RENDER,
@@ -139,7 +139,7 @@ typedef enum RENDERNODESHED
 } RenderNodeShed;
 
 // 렌더러 정보
-typedef struct RENDERERINFO
+typedef struct RENDERER_INFO
 {
 	char				name[64];
 	char				renderer[64];						// 렌더러 이름
@@ -163,7 +163,7 @@ typedef struct RENDERERINFO
 } RendererInfo;
 
 // 렌더 추적 정보
-typedef struct RENDERERINVOKE
+typedef struct RENDERER_INVOKE
 {
 	uint				frames;
 	uint				creations;
@@ -182,7 +182,7 @@ typedef struct RENDERERINVOKE
 } RendererInvoke;
 
 // 렌더 트랜스포메이션
-typedef struct RENDERERTRANSFORM
+typedef struct RENDERER_TRANSFORM
 {
 	QmSize				size;
 	float				Near, Far;
@@ -199,7 +199,7 @@ typedef struct RENDERERTRANSFORM
 } RendererTransform;
 
 // 렌더 인수
-typedef struct RENDERERPARAM
+typedef struct RENDERE_RPARAM
 {
 	QmVec4				bgc;
 
@@ -222,9 +222,9 @@ typedef struct RENDERERPARAM
 } RendererParam;
 
 // 렌더러 디바이스
-typedef struct RDHBASE
+typedef struct RDH_BASE
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	RendererInfo		info;
 	RendererTransform	tm;
@@ -235,9 +235,10 @@ typedef struct RDHBASE
 	QgFont*				font;
 } RdhBase;
 
-QN_DECL_VTABLE(RDHBASE)
+typedef struct RDH_VTABLE
 {
-	QN_DECL_VTABLE(QNGAMBASE)	base;
+	QnVtableGam			base;
+
 	void (*layout)(void);
 	void (*reset)(void);
 	void (*clear)(QgClear);
@@ -260,7 +261,7 @@ QN_DECL_VTABLE(RDHBASE)
 	void (*draw_sprite)(const QmRect*, void/*QgTexture*/*, const QmKolor, const QMVEC*);
 	void (*draw_sprite_ex)(const QmRect*, float, void/*QgTexture*/*, const QmKolor, const QMVEC*);
 	void (*draw_glyph)(const QmRect*, void/*QgTexture*/*, const QmKolor, const QMVEC*);
-};
+} RdhVtable;
 
 // 렌더 디바이스
 extern RdhBase* qg_instance_rdh;
@@ -317,7 +318,6 @@ extern const char* qg_shader_const_auto_to_str(const QgScAuto sca);
 extern const QgLayoutData* qg_get_layout_data(QgLayoutDecl layout);
 
 
-
 //////////////////////////////////////////////////////////////////////////
 // 인라인
 
@@ -333,10 +333,10 @@ INLINE size_t qg_calc_image_block_size(const QgPropPixel* prop, int width, int h
 		case QGCF_EXT2:
 		case QGCF_ASTC4:
 		case QGCF_ASTC8:
-			return ((width + 3) / 4) * ((height + 3) / 4) * prop->tbp;
+			return (size_t)(((width + 3) / 4) * ((height + 3) / 4) * prop->tbp);
 		default:
 			break;
 	}
 	// 그냥 계산
-	return width * height * prop->tbp;
+	return (size_t)(width * height * prop->tbp);
 }

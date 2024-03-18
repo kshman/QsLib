@@ -86,7 +86,7 @@ QgMesh* qg_create_mesh(const char* name)
 {
 	QgMesh* self = qn_alloc_zero_1(QgMesh);
 	_dpct_init(qn_cast_type(self, QgDpct), name, NULL);
-	static const QN_DECL_VTABLE(QGDPCT) vt_qg_mesh =
+	static const QgVtableDpct vt_qg_mesh =
 	{
 		{
 			VAR_CHK_NAME,

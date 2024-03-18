@@ -5,7 +5,7 @@
 #define _Inout_opt_z_
 #define _Inout_opt_z_ _SAL2_Source_(_Inout_opt_z_, (), _Prepost_opt_z_)
 #define qn_cast_type(g,type)		((type*)(g))
-#define qn_cast_vtable(g,TYPE)		((QN_DECL_VTABLE(TYPE)*)((QnGamBase*)(g))->vt)
+#define qn_cast_vtable(g,TYPE)		((QN_DECL_VTABLE(TYPE)*)((QnBaseGam*)(g))->vt)
 #define QN_DECL_VTABLE(TYPE)		struct _VT_##TYPE
 #define QN_GAM_BASE(TYPE)			struct TYPE base
 #define QN_GAM_VTABLE(TYPE)			struct _VT_##TYPE base

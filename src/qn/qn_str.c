@@ -582,7 +582,7 @@ uint qn_strshash(const char* p)
 }
 
 //
-size_t qn_str_phash(const char** p)
+size_t qn_strphash(const char** p)
 {
 	return qn_strhash(*p);
 }
@@ -631,6 +631,12 @@ int qn_stricmp(const char* p1, const char* p2)
 	} while (f && (f == l));
 	return (f - l);
 #endif
+}
+
+//
+int qn_strpcmp(const char** p1, const char** p2)
+{
+	return qn_strcmp(*p1, *p2);
 }
 
 //
@@ -758,12 +764,6 @@ bool qn_streqv(const char* p1, const char* p2)
 bool qn_strieqv(const char* p1, const char* p2)
 {
 	return p1 == p2 ? true : qn_stricmp(p1, p2) == 0;
-}
-
-//
-bool qn_str_peqv(const char** p1, const char** p2)
-{
-	return qn_streqv(*p1, *p2);
 }
 
 //

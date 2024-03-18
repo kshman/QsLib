@@ -35,7 +35,7 @@ typedef struct SYMDATA
 	char			key[64];
 	nint			value;
 } SymData;
-QN_DECLIMPL_MUKUM(SymMukum, char*, SymData, qn_str_phash, qn_str_peqv, (void), (void), _sym_mukum);
+QN_DECLIMPL_MUKUM(SymMukum, char*, SymData, qn_strphash, qn_strpcmp, (void), (void), _sym_mukum);
 QN_DECLIMPL_ARRAY(SymArray, SymMukumNode*, _sym_array);
 
 // 프로퍼티
@@ -47,7 +47,7 @@ typedef struct PROPDATA
 	char			intern[64];
 	bool			alloc;
 } PropData;
-QN_DECLIMPL_MUKUM(PropMukum, nint, PropData, qn_nint_phash, qn_nint_peqv, (void), _prop_data_dispose, _prop_mukum);
+QN_DECLIMPL_MUKUM_INT_TYPE(PropMukum, nint, PropData, _prop_data_dispose, _prop_mukum);
 
 // 닫아라
 typedef struct CLOSURE
@@ -173,7 +173,7 @@ static void qn_runtime_up(void)
 #endif
 }
 
-// 
+//
 void qn_runtime(const char* tag)
 {
 	qn_return_on_ok(runtime_impl.inited,/*void*/);
@@ -260,7 +260,7 @@ static nint _sym_set(const char* name)
 	node->VALUE.value = sym;
 	qn_strcpy(node->VALUE.key, name);
 	node->KEY = node->VALUE.key;
-	if (!_sym_mukum_node_add(&runtime_impl.symbols, node))
+	if (!_sym_mukum_add(&runtime_impl.symbols, node))
 	{
 		qn_free(node);
 		return 0;
@@ -358,7 +358,7 @@ static void _prop_set(nint key, const char* value)
 		node->VALUE.intern[0] = '\0';
 		node->VALUE.alloc = true;
 	}
-	_prop_mukum_node_add(&runtime_impl.props, node);
+	_prop_mukum_add(&runtime_impl.props, node);
 }
 
 // 프로퍼티 얻기

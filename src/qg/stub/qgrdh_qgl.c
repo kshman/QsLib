@@ -302,7 +302,7 @@ static void qgl_batch_ortho_flush(QglBatchStream* batch);
 static void qg_batch_ortho_draw_rect(QglBatchStream* batch, OrthoVertex* v4, QglTexture* tex);
 static void qg_batch_ortho_draw_glyph(QglBatchStream* batch, OrthoVertex* v4, QglTexture* tex);
 
-QN_DECL_VTABLE(RDHBASE) vt_qgl_rdh =
+static const RdhVtable vt_qgl_rdh =
 {
 	{
 		/* name */			VAR_CHK_NAME,
@@ -1102,7 +1102,7 @@ static bool qgl_commit_shader_layout(const QglRenderState* rdr)
 	size_t s, i;
 	QN_CTNR_FOREACH(rdr->shader.uniforms, 0, i)
 	{
-		const QgVarShader* var = qgl_uni_ctnr_nth_ptr(&rdr->shader.uniforms, i);
+		const QgVarShader* var = qgl_uni_ctn_ptr_nth(&rdr->shader.uniforms, i);
 		qgl_process_shader_variable(var);
 	}
 
@@ -1865,7 +1865,7 @@ static QgBuffer* qgl_create_buffer(QgBufferType type, uint count, uint stride, c
 	self->gl_type = gl_type;
 
 	// VT 여기서 설정
-	static QN_DECL_VTABLE(QGBUFFER) vt_qgl_buffer =
+	static const QgVtableBuffer vt_qgl_buffer =
 	{
 		.base.name = VAR_CHK_NAME,
 		.base.dispose = qgl_buffer_dispose,
@@ -1914,9 +1914,9 @@ static void qgl_render_dispose(QnGam g)
 	QglRenderState* self = qn_cast_type(g, QglRenderState);
 
 	qgl_render_delete_shader(self, true);
-	qgl_uni_ctnr_dispose(&self->shader.uniforms);
-	qgl_attr_ctnr_dispose(&self->shader.attrs);
-	qgl_layout_ctnr_dispose(&self->layout.inputs);
+	qgl_uni_ctn_dispose(&self->shader.uniforms);
+	qgl_attr_ctn_dispose(&self->shader.attrs);
+	qgl_layout_ctn_dispose(&self->layout.inputs);
 
 	if (self->base.layout.count != 0)
 		qn_free(self->base.layout.inputs);
@@ -2088,7 +2088,7 @@ static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData* verte
 	gl_count = qgl_get_program_iv(self->shader.program, GL_ACTIVE_UNIFORMS);
 	if (gl_count > 0)
 	{
-		qgl_uni_ctnr_init(&self->shader.uniforms, gl_count);
+		qgl_uni_ctn_init(&self->shader.uniforms, gl_count);
 		for (index = i = 0; i < gl_count; i++)
 		{
 			GLDEBUG(glGetActiveUniform(self->shader.program, i, QN_COUNTOF(sz), NULL, &gl_size, &gl_type, sz));
@@ -2103,7 +2103,7 @@ static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData* verte
 			if (sctype == QGSCT_UNKNOWN)
 				qn_mesgfb(VAR_CHK_NAME, "unsupported uniform type: %s (type: %X)", sz, gl_type);
 
-			QgVarShader* var = qgl_uni_ctnr_nth_ptr(&self->shader.uniforms, index++);
+			QgVarShader* var = qgl_uni_ctn_ptr_nth(&self->shader.uniforms, index++);
 			qn_strcpy(var->name, sz);
 			var->hash = qn_strihash(sz);
 			var->offset = (ushort)glGetUniformLocation(self->shader.program, sz); GLDEBUG((void)0);
@@ -2120,7 +2120,7 @@ static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData* verte
 	gl_count = qgl_get_program_iv(self->shader.program, GL_ACTIVE_ATTRIBUTES);
 	if (gl_count > 0)
 	{
-		qgl_attr_ctnr_init(&self->shader.attrs, gl_count);
+		qgl_attr_ctn_init(&self->shader.attrs, gl_count);
 		for (index = i = 0; i < gl_count; i++)
 		{
 			GLDEBUG(glGetActiveAttrib(self->shader.program, i, QN_COUNTOF(sz), NULL, &gl_size, &gl_type, sz));
@@ -2135,7 +2135,7 @@ static bool qgl_render_bind_shader(QglRenderState* self, const QgCodeData* verte
 			if (sctype == QGSCT_UNKNOWN)
 				qn_mesgfb(VAR_CHK_NAME, "unsupported attribute type: %s (type: %X)", sz, gl_type);
 
-			QglVarAttr* var = qgl_attr_ctnr_nth_ptr(&self->shader.attrs, index++);
+			QglVarAttr* var = qgl_attr_ctn_ptr_nth(&self->shader.attrs, index++);
 			qn_strcpy(var->name, sz);
 			var->hash = qn_strihash(sz);
 			var->attrib = gl_index;
@@ -2204,8 +2204,8 @@ static bool qgl_render_bind_layout_input(QglRenderState* self, const QgLayoutDat
 	}
 
 	// 레이아웃
-	qgl_layout_ctnr_init(&self->layout.inputs, layout->count);
-	QglVarLayout* pstage = qgl_layout_ctnr_data(&self->layout.inputs);
+	qgl_layout_ctn_init(&self->layout.inputs, layout->count);
+	QglVarLayout* pstage = qgl_layout_ctn_data(&self->layout.inputs);
 	QglVarLayout* stages[QGLOS_MAX_VALUE];
 	for (i = 0; i < QGLOS_MAX_VALUE; i++)
 	{
@@ -2278,7 +2278,7 @@ static void qgl_render_set_rasterizer(QglRasterizerDesc* rasz, const QgPropRaste
 static QgRenderState* qgl_create_render(const char* name, const QgPropRender* prop, const QgLayoutData* layout, const QgPropShader* shader)
 {
 	QglRenderState* self = qn_alloc_zero_1(QglRenderState);
-	qn_node_set_name(qn_cast_type(self, QnGamNode), name);
+	qn_node_set_name(qn_cast_type(self, QnNodeGam), name);
 
 	// 세이더
 	if (qgl_render_bind_shader(self, &shader->vertex, &shader->pixel) == false)
@@ -2299,7 +2299,7 @@ static QgRenderState* qgl_create_render(const char* name, const QgPropRender* pr
 	qgl_render_set_rasterizer(&self->rasz, &prop->rasterizer);
 
 	//
-	static QN_DECL_VTABLE(QNGAMBASE) vt_es_render =
+	static const QnVtableGam vt_es_render =
 	{
 		.name = VAR_CHK_NAME,
 		.dispose = qgl_render_dispose,
@@ -2311,9 +2311,9 @@ static QgRenderState* qgl_create_render(const char* name, const QgPropRender* pr
 
 pos_error:
 	qgl_render_delete_shader(self, false);
-	qgl_uni_ctnr_dispose(&self->shader.uniforms);
-	qgl_attr_ctnr_dispose(&self->shader.attrs);
-	qgl_layout_ctnr_dispose(&self->layout.inputs);
+	qgl_uni_ctn_dispose(&self->shader.uniforms);
+	qgl_attr_ctn_dispose(&self->shader.attrs);
+	qgl_layout_ctn_dispose(&self->layout.inputs);
 	qn_free(self);
 	return NULL;
 }
@@ -2524,7 +2524,7 @@ static QgTexture* qgl_create_texture(const char* name, const QgImage* image, QgT
 		QN_SMASK(self->base.flags, QGTEXF_DISCARD_IMAGE, false);
 	}
 
-	static QN_DECL_VTABLE(QGTEXTURE) vt_qgl_texture =
+	static const QgVtableTexture vt_qgl_texture =
 	{
 		.base.name = VAR_CHK_NAME,
 		.base.dispose = qgl_texture_dispose,

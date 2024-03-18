@@ -92,7 +92,7 @@ typedef struct QGLVARATTR
 	GLint				size;
 
 	QgLayoutUsage		usage : 8;			// 최대 24(2024-01-20 시점)으로 괜춘
-	QgScType			sctype : 8;			// 최대 22(2032-01-20 시점)으로 괜춘		
+	QgScType			sctype : 8;			// 최대 22(2032-01-20 시점)으로 괜춘
 } QglVarAttr;
 
 // 컬러 포맷을 텍스쳐 포맷으로 구조체
@@ -165,13 +165,13 @@ typedef struct QGLBATCHORTHO
 } QglBatchOrtho;
 
 // 컨터이너
-QN_DECLIMPL_CTNR(QglCtnConfig, QglConfig, qgl_cfg_ctnr);			// 컨피그
-QN_DECLIMPL_CTNR(QglCtnLayout, QglVarLayout, qgl_layout_ctnr);		// 레이아웃 입력
-QN_DECLIMPL_CTNR(QglCtnUniform, QgVarShader, qgl_uni_ctnr);			// 세이더 유니폼
-QN_DECLIMPL_CTNR(QglCtnAttr, QglVarAttr, qgl_attr_ctnr);			// 세이더 어트리뷰트
+QN_DECLIMPL_CTN(QglCtnConfig, QglConfig, qgl_cfg_ctn);			// 컨피그
+QN_DECLIMPL_CTN(QglCtnLayout, QglVarLayout, qgl_layout_ctn);		// 레이아웃 입력
+QN_DECLIMPL_CTN(QglCtnUniform, QgVarShader, qgl_uni_ctn);			// 세이더 유니폼
+QN_DECLIMPL_CTN(QglCtnAttr, QglVarAttr, qgl_attr_ctn);			// 세이더 어트리뷰트
 
 // 세션 데이터 => 주로 디바이스의 상태 값을 저장한다
-typedef struct QGLSESSION
+typedef struct QGLRDH_SESSION
 {
 	struct // 세이더 상태
 	{
@@ -203,7 +203,7 @@ typedef struct QGLSESSION
 } QglSession;
 
 // 펜딩 데이터 => 주로 라이브러리 개체 상태 값을 저장한다
-typedef struct QGLPENDING
+typedef struct QGLRDH_PENDING
 {
 	struct // 렌더 데이터
 	{
@@ -223,7 +223,7 @@ typedef struct QGLPENDING
 } QglPending;
 
 // 리소스 => 라이브러리 내부에서 사용하는 리소스를 가지고 있다
-typedef struct QGLRESOURCE
+typedef struct QGLRDH_RESOURCE
 {
 	char				hdr_vertex[256];
 	char				hdr_fragment[256];

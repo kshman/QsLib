@@ -447,7 +447,7 @@ QnTimer* qn_create_timer(void)
 	real->base_time = now;
 	real->last_time = now;
 
-	static QN_DECL_VTABLE(QNGAMBASE) qn_timer_vt =
+	static const QnVtableGam qn_timer_vt =
 	{
 		"TIMER",
 		qn_timer_dispose,
@@ -461,9 +461,6 @@ void qn_timer_reset(QnTimer* self)
 	QnRealTimer* real = qn_cast_type(self, QnRealTimer);
 	llong now = qn_cycle();
 
-	real->base.runtime = 0.0;
-	real->base.elapsed = 0.0;
-	real->base.advance = 0.0;
 	real->base.fps = 0.0f;
 	real->base.afps = 0.0f;
 	real->base.pause = false;

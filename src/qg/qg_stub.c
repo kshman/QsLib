@@ -93,7 +93,7 @@ static void shed_event_dispose(void)
 	qn_return_when_fail(shed_event.mutex != NULL, /*void*/);
 
 	// 예약 메모리
-	reserved_mems_foreach_1(&shed_event.reserved_mems, qn_mem_free_ptr);
+	reserved_mems_loop(&shed_event.reserved_mems, qn_mem_free_ptr);
 	reserved_mems_dispose(&shed_event.reserved_mems);
 	// 우선 순위 큐
 	event_lnode_dispose_callback(&shed_event.prior, qn_mem_free);
@@ -147,7 +147,7 @@ static void shed_event_prior_queue(const size_t key, const QgEvent* e)
 	qn_return_when_fail(shed_event.mutex, /*void*/);
 	qn_mutex_enter(shed_event.mutex);
 
-	EventNode* node = event_lnode_find(&shed_event.prior, shed_event_prior_queue_key_callback, (void*)key);
+	EventNode* node = event_lnode_find_callback(&shed_event.prior, shed_event_prior_queue_key_callback, (void*)key);
 
 	if (node == NULL)
 	{
@@ -231,12 +231,12 @@ static void shed_event_flush(void)
 	qn_mutex_enter(shed_event.mutex);
 	if (event_lnode_is_have(&shed_event.prior))
 	{
-		event_lnode_foreach_1(&shed_event.prior, shed_event_flush_callback);
+		event_lnode_loop(&shed_event.prior, shed_event_flush_callback);
 		event_lnode_reset(&shed_event.prior);
 	}
 	if (event_lnode_is_have(&shed_event.queue))
 	{
-		event_lnode_foreach_1(&shed_event.queue, shed_event_flush_callback);
+		event_lnode_loop(&shed_event.queue, shed_event_flush_callback);
 		event_lnode_reset(&shed_event.queue);
 	}
 	qn_mutex_leave(shed_event.mutex);
@@ -256,7 +256,7 @@ static void shed_event_clear_reserved_mem(void)
 	qn_mutex_enter(shed_event.mutex);
 	if (reserved_mems_is_have(&shed_event.reserved_mems))
 	{
-		reserved_mems_foreach_1(&shed_event.reserved_mems, qn_mem_free_ptr);
+		reserved_mems_loop(&shed_event.reserved_mems, qn_mem_free_ptr);
 		reserved_mems_clear(&shed_event.reserved_mems);
 	}
 	qn_mutex_leave(shed_event.mutex);
@@ -330,7 +330,7 @@ void stub_initialize(StubBase* stub, QgFlag flags)
 	stub->key_exit = QIK_ESC;
 #endif
 
-	monitor_ctnr_init(&stub->monitors, 0);
+	monitor_ctn_init(&stub->monitors, 0);
 	eventcb_list_init(&stub->callbacks);
 }
 
@@ -344,8 +344,8 @@ void qg_close_stub(void)
 
 	size_t i;
 	QN_CTNR_FOREACH(self->monitors, 0, i)
-		qn_free(monitor_ctnr_nth(&self->monitors, i));
-	monitor_ctnr_dispose(&self->monitors);
+		qn_free(monitor_ctn_nth(&self->monitors, i));
+	monitor_ctn_dispose(&self->monitors);
 	eventcb_list_dispose(&self->callbacks);
 
 	qn_delete_mutex(self->mutex);
@@ -491,17 +491,17 @@ QnMount* qg_get_mount(int index)
 const QgUdevMonitor* qg_get_monitor(int index)
 {
 	const StubBase* stub = qg_instance_stub;
-	qn_return_when_fail((size_t)index < monitor_ctnr_count(&stub->monitors), NULL);
-	return monitor_ctnr_nth(&stub->monitors, index);
+	qn_return_when_fail((size_t)index < monitor_ctn_count(&stub->monitors), NULL);
+	return monitor_ctn_nth(&stub->monitors, index);
 }
 
 //
 const QgUdevMonitor* qg_get_current_monitor(void)
 {
 	const StubBase* stub = qg_instance_stub;
-	qn_debug_assert(monitor_ctnr_is_have(&stub->monitors), "아니 왜 모니터가 없어");
-	const uint index = stub->display < monitor_ctnr_count(&stub->monitors) ? stub->display : 0;
-	return monitor_ctnr_nth(&stub->monitors, index);
+	qn_debug_assert(monitor_ctn_is_have(&stub->monitors), "아니 왜 모니터가 없어");
+	const uint index = stub->display < monitor_ctn_count(&stub->monitors) ? stub->display : 0;
+	return monitor_ctn_nth(&stub->monitors, index);
 }
 
 //
@@ -1023,21 +1023,21 @@ bool stub_event_on_monitor(QgUdevMonitor* monitor, bool connected, bool primary,
 	if (connected)
 	{
 		if (primary)
-			monitor_ctnr_ins(&stub->monitors, 0, monitor);
+			monitor_ctn_ins(&stub->monitors, 0, monitor);
 		else
-			monitor_ctnr_add(&stub->monitors, monitor);
+			monitor_ctn_add(&stub->monitors, monitor);
 	}
 	else
 	{
-		size_t nth = monitor_ctnr_contains(&stub->monitors, monitor);
+		size_t nth = monitor_ctn_find(&stub->monitors, monitor);
 		if (nth != (size_t)-1)
-			monitor_ctnr_remove_nth(&stub->monitors, nth);
+			monitor_ctn_remove_nth(&stub->monitors, nth);
 	}
 
 	// 모니터 번호 재할당
 	size_t i;
 	QN_CTNR_FOREACH(stub->monitors, 0, i)
-		monitor_ctnr_nth(&stub->monitors, i)->no = (int)i;
+		monitor_ctn_nth(&stub->monitors, i)->no = (int)i;
 
 	// 이벤트
 	bool ret = true;
@@ -1168,18 +1168,18 @@ bool stub_event_on_window_event(const QgWindowEventType type, const int param1, 
 			if (stub->bound.Left == param1 && stub->bound.Top == param2)
 				return false;
 			stub->bound = qm_rect_move(stub->bound, param1, param2);
-			if (monitor_ctnr_count(&stub->monitors) > 1)
+			if (monitor_ctn_count(&stub->monitors) > 1)
 			{
 				size_t i;
 				QN_CTNR_FOREACH(stub->monitors, 0, i)
 				{
-					const QgUdevMonitor* mon = monitor_ctnr_nth(&stub->monitors, i);
+					const QgUdevMonitor* mon = monitor_ctn_nth(&stub->monitors, i);
 					const QmRect bound = qm_rect_size((int)mon->x, (int)mon->y, (int)mon->width, (int)mon->height);
 					if (qm_rect_include(bound, stub->bound))
 						break;
 				}
-				if (i < monitor_ctnr_count(&stub->monitors))
-					stub_event_on_active_monitor(monitor_ctnr_nth(&stub->monitors, i));
+				if (i < monitor_ctn_count(&stub->monitors))
+					stub_event_on_active_monitor(monitor_ctn_nth(&stub->monitors, i));
 			}
 			break;
 
@@ -1579,8 +1579,8 @@ bool qg_open_rdh(const char* driver, const char* title, int display, int width, 
 		qn_node_mukum_init_fast(&rdh->mukums[i]);
 
 	//
-	qn_cast_vtable(rdh, RDHBASE)->layout();					// 레이아웃 재설정
-	qn_cast_vtable(rdh, RDHBASE)->reset();					// 장치 리셋
+	qn_cast_vtable(rdh, RDH)->layout();					// 레이아웃 재설정
+	qn_cast_vtable(rdh, RDH)->reset();					// 장치 리셋
 	qn_timer_reset(STUB->timer);							// 타이머도 리셋해둔다
 	return true;
 }
@@ -1671,7 +1671,7 @@ void rdh_internal_check_layout(void)
 	const int height = (int)rdh->tm.size.Height;
 	if (size.Width == width && size.Height == height)
 		return;
-	qn_cast_vtable(rdh, RDHBASE)->layout();
+	qn_cast_vtable(rdh, RDH)->layout();
 }
 
 //
@@ -1679,7 +1679,7 @@ void rdh_internal_add_node(RenderNodeShed shed, void* node)
 {
 	VAR_CHK_IF_MAX(shed, RDHNODE_MAX_VALUE, );
 	RdhBase* rdh = RDH;
-	qn_node_mukum_set(&rdh->mukums[shed], qn_loadu(node, QnGamNode));
+	qn_node_mukum_set(&rdh->mukums[shed], qn_loadu(node, QnNodeGam));
 }
 
 //
@@ -1687,7 +1687,7 @@ void rdh_internal_unlink_node(RenderNodeShed shed, void* node)
 {
 	VAR_CHK_IF_MAX(shed, RDHNODE_MAX_VALUE, );
 	RdhBase* rdh = RDH;
-	qn_node_mukum_unlink(&rdh->mukums[shed], qn_cast_type(node, QnGamNode));
+	qn_node_mukum_unlink(&rdh->mukums[shed], qn_cast_type(node, QnNodeGam));
 }
 
 //
@@ -1708,7 +1708,7 @@ bool qg_begin_render(bool clear)
 	RendererTransform* tm = &rdh->tm;
 	tm->vwpr.s = qm_mat4_mul(tm->view.s, tm->proj.s);
 	tm->prvw.s = qm_mat4_mul(tm->proj.s, tm->view.s);
-	return qn_cast_vtable(rdh, RDHBASE)->begin(clear);
+	return qn_cast_vtable(rdh, RDH)->begin(clear);
 }
 
 //
@@ -1718,9 +1718,9 @@ void qg_end_render(bool flush)
 	rdh->invokes.invokes++;
 	rdh->invokes.ends++;
 	rdh->invokes.flush = true;
-	qn_cast_vtable(rdh, RDHBASE)->end();
+	qn_cast_vtable(rdh, RDH)->end();
 	if (flush)
-		qn_cast_vtable(rdh, RDHBASE)->flush();
+		qn_cast_vtable(rdh, RDH)->flush();
 }
 
 //
@@ -1732,7 +1732,7 @@ void qg_flush(void)
 		qn_mesgb("RDH", "call end() before flush");
 		qg_end_render(false);
 	}
-	qn_cast_vtable(rdh, RDHBASE)->flush();
+	qn_cast_vtable(rdh, RDH)->flush();
 	rdh->invokes.invokes++;
 	rdh->invokes.frames++;
 }
@@ -1742,7 +1742,7 @@ void qg_rdh_reset(void)
 {
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	qn_cast_vtable(rdh, RDHBASE)->reset();
+	qn_cast_vtable(rdh, RDH)->reset();
 }
 
 //
@@ -1750,7 +1750,7 @@ void qg_clear_render(QgClear clear)
 {
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	qn_cast_vtable(rdh, RDHBASE)->clear(clear);
+	qn_cast_vtable(rdh, RDH)->clear(clear);
 }
 
 //
@@ -1912,7 +1912,7 @@ QgBuffer* qg_create_buffer(QgBufferType type, uint count, uint stride, const voi
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->create_buffer(type, count, stride, initial_data);
+	return qn_cast_vtable(rdh, RDH)->create_buffer(type, count, stride, initial_data);
 }
 
 //
@@ -1938,7 +1938,7 @@ QgRenderState* qg_create_render_state(const char* name, const QgPropRender* rend
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, layout, shader);
+	return qn_cast_vtable(rdh, RDH)->create_render(name, render, layout, shader);
 }
 
 //
@@ -1975,7 +1975,7 @@ QgRenderState* qg_create_render_state_vsps(const char* name, const QgPropRender*
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	QgRenderState* rs = qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, layout, &shader);
+	QgRenderState* rs = qn_cast_vtable(rdh, RDH)->create_render(name, render, layout, &shader);
 	qn_free(shader.vertex.code);
 	qn_free(shader.pixel.code);
 	return rs;
@@ -2003,7 +2003,7 @@ QgRenderState* qg_create_render_state_decl(const char* name, const QgPropRender*
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
 	const QgLayoutData* layout_data = qg_get_layout_data(layout);
-	return qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, layout_data, shader);
+	return qn_cast_vtable(rdh, RDH)->create_render(name, render, layout_data, shader);
 }
 
 //
@@ -2039,7 +2039,7 @@ QgRenderState* qg_create_render_state_decl_vsps(const char* name, const QgPropRe
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
 	const QgLayoutData* layout_data = qg_get_layout_data(layout);
-	QgRenderState* rs = qn_cast_vtable(rdh, RDHBASE)->create_render(name, render, layout_data, &shader);
+	QgRenderState* rs = qn_cast_vtable(rdh, RDH)->create_render(name, render, layout_data, &shader);
 	qn_free(shader.vertex.code);
 	qn_free(shader.pixel.code);
 	return rs;
@@ -2053,7 +2053,7 @@ QgTexture* qg_create_texture(const char* name, const QgImage* image, QgTexFlag f
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->create_texture(name, image, flags);
+	return qn_cast_vtable(rdh, RDH)->create_texture(name, image, flags);
 }
 
 //
@@ -2067,7 +2067,7 @@ QgTexture* qg_load_texture(int mount, const char* filename, QgTexFlag flags)
 	RdhBase* rdh = RDH;
 	rdh->invokes.creations++;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->create_texture(filename, image, flags | QGTEXF_DISCARD_IMAGE);
+	return qn_cast_vtable(rdh, RDH)->create_texture(filename, image, flags | QGTEXF_DISCARD_IMAGE);
 }
 
 //
@@ -2108,7 +2108,7 @@ bool qg_set_index(QgBuffer* buffer)
 	VAR_CHK_IF_COND(buffer->type != QGBUFFER_INDEX, "cannot set non-index buffer as index buffer", false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->set_index(buffer);
+	return qn_cast_vtable(rdh, RDH)->set_index(buffer);
 }
 
 //
@@ -2119,7 +2119,7 @@ bool qg_set_vertex(QgLayoutStage stage, QgBuffer* buffer)
 	VAR_CHK_IF_MAX(stage, QGLOS_MAX_VALUE, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->set_vertex(stage, buffer);
+	return qn_cast_vtable(rdh, RDH)->set_vertex(stage, buffer);
 }
 
 //
@@ -2128,7 +2128,7 @@ bool qg_set_render_state(QgRenderState* render)
 	VAR_CHK_IF_NULL(render, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->set_render(render);
+	return qn_cast_vtable(rdh, RDH)->set_render(render);
 }
 
 //
@@ -2138,7 +2138,7 @@ bool qg_set_render_named(const char* name)
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	QgRenderState* rdr = qn_node_mukum_get(&rdh->mukums[RDHNODE_RENDER], name);
-	return rdr == NULL ? false : qn_cast_vtable(rdh, RDHBASE)->set_render(rdr);
+	return rdr == NULL ? false : qn_cast_vtable(rdh, RDH)->set_render(rdr);
 }
 
 //
@@ -2147,7 +2147,7 @@ bool qg_set_texture(int stage, QgTexture* texture)
 	VAR_CHK_IF_MAX(stage, 8/*RDH_INFO->max_tex_count*/, false);
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
-	return qn_cast_vtable(rdh, RDHBASE)->set_texture(stage, texture);
+	return qn_cast_vtable(rdh, RDH)->set_texture(stage, texture);
 }
 
 //
@@ -2158,7 +2158,7 @@ bool qg_draw(QgTopology tpg, int vertices)
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	return qn_cast_vtable(rdh, RDHBASE)->draw(tpg, vertices);
+	return qn_cast_vtable(rdh, RDH)->draw(tpg, vertices);
 }
 
 //
@@ -2169,7 +2169,7 @@ bool qg_draw_indexed(QgTopology tpg, int indices)
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	return qn_cast_vtable(rdh, RDHBASE)->draw_indexed(tpg, indices);
+	return qn_cast_vtable(rdh, RDH)->draw_indexed(tpg, indices);
 }
 
 //
@@ -2181,7 +2181,7 @@ void qg_draw_sprite(const QmRect* bound, QgTexture* texture, const QmKolor color
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	qn_cast_vtable(rdh, RDHBASE)->draw_sprite(bound, texture, color, coord);
+	qn_cast_vtable(rdh, RDH)->draw_sprite(bound, texture, color, coord);
 }
 
 //
@@ -2193,7 +2193,7 @@ void qg_draw_sprite_ex(const QmRect* bound, float angle, QgTexture* texture, con
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	qn_cast_vtable(rdh, RDHBASE)->draw_sprite_ex(bound, angle, texture, color, coord);
+	qn_cast_vtable(rdh, RDH)->draw_sprite_ex(bound, angle, texture, color, coord);
 }
 
 //
@@ -2205,7 +2205,7 @@ void qg_draw_glyph(const QmRect* bound, QgTexture* texture, const QmKolor color,
 	RdhBase* rdh = RDH;
 	rdh->invokes.invokes++;
 	rdh->invokes.draws++;
-	qn_cast_vtable(rdh, RDHBASE)->draw_glyph(bound, texture, color, coord);
+	qn_cast_vtable(rdh, RDH)->draw_glyph(bound, texture, color, coord);
 }
 
 

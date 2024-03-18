@@ -246,7 +246,7 @@ QgRay* qg_create_ray(QgCamera* camera)
 {
 	QgRay* self = qn_alloc_zero_1(QgRay);
 	self->camera = qn_loadc(camera, QgCamera);
-	static const QN_DECL_VTABLE(QNGAMBASE) vt_qg_ray =
+	static const QnVtableGam vt_qg_ray =
 	{
 		"Ray",
 		qg_ray_dispose,
@@ -485,7 +485,7 @@ QgCamera* qg_create_camera(void)
 	QN_SMASK(self->flags, QGCAMF_FPS, true);
 	_camera_internal_update(self);
 
-	static const QN_DECL_VTABLE(QGCAMERA) vt_qg_camera =
+	static const QgVtableCamera vt_qg_camera =
 	{
 		{
 			"Camera",
@@ -507,7 +507,7 @@ QgCamera* qg_create_maya_camera(void)
 	QN_SMASK(self->flags, QGCAMF_MAYA, true);
 	_camera_internal_update(self);
 
-	static const QN_DECL_VTABLE(QGCAMERA) vt_qg_camera =
+	static const QgVtableCamera vt_qg_camera =
 	{
 		{
 			"MayaCamera",

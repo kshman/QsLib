@@ -941,7 +941,7 @@ QSAPI uint qn_strshash(const char* p);
 /// @brief 문자열 해시 (문자열 포인터용)
 /// @param[in] p 해시할 문자열
 /// @return 해시 값
-QSAPI size_t qn_str_phash(const char** p);
+QSAPI size_t qn_strphash(const char** p);
 
 /// @brief 문자열 비교
 /// @param p1 문자열1
@@ -961,6 +961,12 @@ QSAPI int qn_strncmp(const char* p1, const char* p2, size_t len);
 /// @param p2 문자열2
 /// @return 문자열 비교 값 (0보다 작으면 문자열1이, 0보다 크면 문자열2가 크다. 0이면 같음)
 QSAPI int qn_stricmp(const char* p1, const char* p2);
+
+/// @brief 문자열을 포인터로 비교
+/// @param p1 문자열 포인터1
+/// @param p2 문자열 포인터2
+/// @return 문자열 비교 값 (0보다 작으면 문자열1이, 0보다 크면 문자열2가 크다. 0이면 같음)
+QSAPI int qn_strpcmp(const char** p1, const char** p2);
 
 /// @brief 문자열을 길이 만큼 대소문자 구별없이 비교
 /// @param p1 문자열1
@@ -1002,12 +1008,6 @@ QSAPI bool qn_streqv(const char* p1, const char* p2);
 /// @param p2 오른쪽 문자열
 /// @return 서로 같으면 참을 반환
 QSAPI bool qn_strieqv(const char* p1, const char* p2);
-
-/// @brief 문자열이 서로 같은지 비교 (포인터용)
-/// @param p1 왼쪽 문자열
-/// @param p2 오른쪽 문자열
-/// @return 서로 같으면 참을 반환
-QSAPI bool qn_str_peqv(const char** p1, const char** p2);
 
 /// @brief 문자열에서 문자열을 찾는다
 /// @param[in] p 대상 문자열
@@ -1399,7 +1399,7 @@ QSAPI uchar4 qn_hangul_josa(uchar4 code, int josa_type);
 
 
 //////////////////////////////////////////////////////////////////////////
-// 컨테이너
+// container traits
 
 #ifdef _MSC_VER
 /// @brief 컨테이너 foreach
@@ -1433,24 +1433,10 @@ QSAPI uchar4 qn_hangul_josa(uchar4 code, int josa_type);
 	for (size_t mukum_iter = 0; mukum_iter < (mukum).BUCKET; ++mukum_iter)							\
 		for ((node) = (mukum).NODES[mukum_iter]; (node); (node) = (node)->SIB)
 
-/// @brief 해시 함수 만들기 (정수형)
-#define QN_DECL_HASH_FUNC(TYPE, PFX)																\
-	FINLINE bool PFX##_peqv(const TYPE* left, const TYPE* right) { return *left == *right; }		\
-	FINLINE size_t PFX##_phash(const TYPE* pkey) { return (size_t)*pkey; }
-/// @brief 해시용 정수 비교
-QN_DECL_HASH_FUNC(int, qn_int);
-/// @brief 해시용 부호없는 정수 비교
-QN_DECL_HASH_FUNC(uint, qn_uint);
-/// @brief 해시용 플랫폼 정수 비교
-QN_DECL_HASH_FUNC(nint, qn_nint);
-/// @brief 해시용 플랫폼 부호없는 정수 비교
-QN_DECL_HASH_FUNC(nuint, qn_nuint);
-/// @brief 해시용 긴 정수 비교
-QN_DECL_HASH_FUNC(llong, qn_llong);
-/// @brief 해시용 부호없는 긴 정수 비교
-QN_DECL_HASH_FUNC(ullong, qn_ullong);
-/// @brief 해시용 size_t 비교
-QN_DECL_HASH_FUNC(size_t, qn_size);
+/// @brief integer type hash
+#define qn_int_type_phash(ptr)		((size_t)*(ptr))
+/// @brief integer type compare
+#define qn_int_type_pcmp(l,r)		(*(l) == *(r))
 
 
 /// @brief 파랑 문자열 인라인
@@ -1529,12 +1515,7 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 		bstr->LENGTH = len;																			\
 		bstr->DATA[len] = '\0';																		\
 	}																								\
-	FINLINE void PFX##_zero(NAME* bstr)																\
-	{																								\
-		bstr->LENGTH = 0;																			\
-		bstr->DATA[0] = '\0';																		\
-	}																								\
-	FINLINE bool PFX##_eq(const NAME* left, const char* right)										\
+	FINLINE int PFX##_eq(const NAME* left, const char* right)										\
 	{																								\
 		return qn_strcmp(left->DATA, right) == 0;													\
 	}																								\
@@ -1576,34 +1557,34 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 		bstr->DATA[len] = '\0';																		\
 		bstr->LENGTH = len;																			\
 	}																								\
-	FINLINE void PFX##_append(NAME* bstr, const char* src)											\
+	FINLINE void PFX##_add(NAME* bstr, const char* src)												\
 	{																								\
 		const char* ptr = qn_stpcpy(bstr->DATA + bstr->LENGTH, src);								\
 		bstr->LENGTH = ptr - bstr->DATA;															\
 	}																								\
-	FINLINE void PFX##_append_char(NAME* bstr, char ch)												\
+	FINLINE void PFX##_add_char(NAME* bstr, char ch)												\
 	{																								\
 		bstr->DATA[bstr->LENGTH] = ch;																\
 		bstr->DATA[++bstr->LENGTH] = '\0';															\
 	}																								\
-	FINLINE void PFX##_append_len(NAME* bstr, const char* src, size_t len)							\
+	FINLINE void PFX##_add_len(NAME* bstr, const char* src, size_t len)								\
 	{																								\
 		memcpy(bstr->DATA + bstr->LENGTH, src, len);												\
 		bstr->DATA[bstr->LENGTH + len] = '\0';														\
 		bstr->LENGTH += len;																		\
 	}																								\
-	FINLINE void PFX##_append_fill(NAME* bstr, char ch, size_t len)									\
+	FINLINE void PFX##_add_fill(NAME* bstr, char ch, size_t len)									\
 	{																								\
 		memset(bstr->DATA + bstr->LENGTH, ch, len);													\
 		bstr->DATA[bstr->LENGTH + len] = '\0';														\
 		bstr->LENGTH += len;																		\
 	}																								\
-	FINLINE void PFX##_append_bstr(NAME* bstr, const NAME* src)										\
+	FINLINE void PFX##_add_bstr(NAME* bstr, const NAME* src)										\
 	{																								\
 		memcpy(bstr->DATA + bstr->LENGTH, src->DATA, src->LENGTH + 1);								\
 		bstr->LENGTH += src->LENGTH;																\
 	}																								\
-	FINLINE void PFX##_append_bstr_len(NAME* bstr, const NAME* src, size_t len)						\
+	FINLINE void PFX##_add_bstr_len(NAME* bstr, const NAME* src, size_t len)						\
 	{																								\
 		memcpy(bstr->DATA + bstr->LENGTH, src->DATA, len);											\
 		bstr->DATA[bstr->LENGTH + len] = '\0';														\
@@ -1676,27 +1657,27 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 		qn_strtrm(bstr->DATA);																		\
 		bstr->LENGTH = strlen(bstr->DATA);															\
 	}																								\
-	FINLINE void PFX##_format_va(NAME* bstr, const char* fmt, va_list args)							\
+	FINLINE void PFX##_fmt_va(NAME* bstr, const char* fmt, va_list args)							\
 	{																								\
 		bstr->LENGTH = qn_vsnprintf(bstr->DATA, SIZE, fmt, args);									\
 	}																								\
-	FINLINE void PFX##_format(NAME* bstr, const char* fmt, ...)										\
+	FINLINE void PFX##_fmt(NAME* bstr, const char* fmt, ...)										\
 	{																								\
 		va_list args;																				\
 		va_start(args, fmt);																		\
-		PFX##_format_va(bstr, fmt, args);															\
+		PFX##_fmt_va(bstr, fmt, args);																\
 		va_end(args);																				\
 	}																								\
-	FINLINE void PFX##_append_format_va(NAME* bstr, const char* fmt, va_list args)					\
+	FINLINE void PFX##_add_fmt_va(NAME* bstr, const char* fmt, va_list args)						\
 	{																								\
 		int len = qn_vsnprintf(bstr->DATA + bstr->LENGTH, SIZE - bstr->LENGTH, fmt, args);			\
 		bstr->LENGTH += len;																		\
 	}																								\
-	FINLINE void PFX##_append_format(NAME* bstr, const char* fmt, ...)								\
+	FINLINE void PFX##_add_fmt(NAME* bstr, const char* fmt, ...)									\
 	{																								\
 		va_list args;																				\
 		va_start(args, fmt);																		\
-		PFX##_append_format_va(bstr, fmt, args);													\
+		PFX##_add_fmt_va(bstr, fmt, args);															\
 		va_end(args);																				\
 	}																								\
 	FINLINE int PFX##_has_chars(const NAME* bstr, const char* chs)									\
@@ -1750,12 +1731,12 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 		return self->DATA[self->COUNT - index - 1];													\
 	}																								\
 	/* @brief 컨테이너 항목 얻기 */																	\
-	FINLINE TYPE* PFX##_nth_ptr(const NAME* self, size_t index)										\
+	FINLINE TYPE* PFX##_ptr_nth(const NAME* self, size_t index)										\
 	{																								\
 		return &self->DATA[index];																	\
 	}																								\
 	/* @brief 컨테이너 항목 뒤에서 부터 얻기 */															\
-	FINLINE TYPE* PFX##_inv_ptr(const NAME* self, size_t index)										\
+	FINLINE TYPE* PFX##_ptr_inv(const NAME* self, size_t index)										\
 	{																								\
 		return &self->DATA[self->COUNT - index - 1];												\
 	}																								\
@@ -1837,7 +1818,7 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 		}																							\
 	}																								\
 	/* @brief 컨테이너에 아이템이 몇번째 있나 조사 */													\
-	FINLINE size_t PFX##_contains(const NAME* self, TYPE value)										\
+	FINLINE size_t PFX##_find(const NAME* self, TYPE value)											\
 	{																								\
 		TYPE* ptr = self->DATA;																		\
 		TYPE* end = ptr + self->COUNT;																\
@@ -1849,7 +1830,7 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 		return (size_t)-1;																			\
 	}																								\
 	/* @brief 컨테이너에서 찾기 (콜백 사용) */															\
-	FINLINE size_t PFX##_find(const NAME* self, eqcfunc_t func, void* context)						\
+	FINLINE size_t PFX##_find_callback(const NAME* self, eqcfunc_t func, void* context)				\
 	{																								\
 		TYPE* ptr = self->DATA;																		\
 		TYPE* end = ptr + self->COUNT;																\
@@ -1860,8 +1841,8 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 		}																							\
 		return (size_t)-1;																			\
 	}																								\
-	/* @brief 컨테이너 포인터 foreach (콜백 사용) */													\
-	FINLINE void PFX##_foreach_1(const NAME* self, paramfunc_t func)								\
+	/* @brief 컨테이너 포인터 loop (콜백 사용) */														\
+	FINLINE void PFX##_loop(const NAME* self, paramfunc_t func)										\
 	{																								\
 		TYPE* ptr = self->DATA;																		\
 		TYPE* end = ptr + self->COUNT;																\
@@ -1871,7 +1852,7 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 		}																							\
 	}																								\
 	/* @brief 컨테이너 포인터 foreach (콜백 사용) */													\
-	FINLINE void PFX##_foreach_2(const NAME* self, paramfunc2_t func, void* context)				\
+	FINLINE void PFX##_foreach(const NAME* self, paramfunc2_t func, void* context)					\
 	{																								\
 		TYPE* ptr = self->DATA;																		\
 		TYPE* end = ptr + self->COUNT;																\
@@ -1885,7 +1866,7 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 /// @brief 컨테이너 인라인
 /// @param NAME 컨테이너 이름
 /// @param TYPE 데이터 타입
-#define QN_DECL_CTNR(NAME, TYPE)																	\
+#define QN_DECL_CTN(NAME, TYPE)																		\
 	typedef struct NAME {																			\
 		size_t COUNT;																				\
 		TYPE* DATA;																					\
@@ -1895,7 +1876,7 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 /// @param NAME 컨테이너 이름
 /// @param TYPE 데이터 타입
 /// @param PFX 함수 접두사
-#define QN_IMPL_CTNR(NAME, TYPE, PFX)																\
+#define QN_IMPL_CTN(NAME, TYPE, PFX)																\
 	QN_IMPL_CTNR_COMMON(NAME, TYPE, PFX)															\
 	/* @brief 컨테이너 초기화 */																		\
 	FINLINE void PFX##_init(NAME* self, size_t count)												\
@@ -1973,13 +1954,13 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 		self->DATA[nth] = value;																	\
 	}																								\
 	/* @brief 컨테이너에 항목 추가 */																	\
-	FINLINE void PFX##_add_ptr(NAME* self, TYPE* pvalue)											\
+	FINLINE void PFX##_ptr_add(NAME* self, TYPE* pvalue)											\
 	{																								\
 		PFX##_expand(self, 1);																		\
 		self->DATA[self->COUNT - 1] = *pvalue;														\
 	}																								\
 	/* @brief 컨테이너에 항목 삽입 */																	\
-	FINLINE void PFX##_ins_ptr(NAME* self, size_t nth, TYPE* pvalue)								\
+	FINLINE void PFX##_ptr_ins(NAME* self, size_t nth, TYPE* pvalue)								\
 	{																								\
 		qn_debug_assert(nth <= self->COUNT, "index overflow");										\
 		PFX##_expand(self, 1);																		\
@@ -1992,12 +1973,12 @@ QN_DECL_HASH_FUNC(size_t, qn_size);
 	typedef NAME NAME##Type
 
 /// @brief 컨테이너 인라인 선언 및 구현
-#define QN_DECLIMPL_CTNR(NAME, TYPE, PFX)															\
-	QN_DECL_CTNR(NAME, TYPE);																		\
-	QN_IMPL_CTNR(NAME, TYPE, PFX)
+#define QN_DECLIMPL_CTN(NAME, TYPE, PFX)															\
+	QN_DECL_CTN(NAME, TYPE);																		\
+	QN_IMPL_CTN(NAME, TYPE, PFX)
 
 /// @brief 포인터 컨테이너
-QN_DECL_CTNR(QnPtrCtn, pointer_t);
+QN_DECL_CTN(QnPtrCtn, pointer_t);
 
 
 /// @brief 배열 인라인
@@ -2050,7 +2031,7 @@ QN_DECL_CTNR(QnPtrCtn, pointer_t);
 		self->DATA = data;																			\
 	}																								\
 	/* @brief 내부적으로 배열 확장 */																	\
-	FINLINE void PFX##_sp_expand(NAME* self, size_t capa)											\
+	FINLINE void inl_##PFX##_expand(NAME* self, size_t capa)											\
 	{																								\
 		capa += self->COUNT;																		\
 		if (self->CAPA < capa) {																	\
@@ -2063,21 +2044,21 @@ QN_DECL_CTNR(QnPtrCtn, pointer_t);
 	FINLINE void PFX##_resize(NAME* self, size_t count)												\
 	{																								\
 		if (self->COUNT != count) {																	\
-			PFX##_sp_expand(self, count);															\
+			inl_##PFX##_expand(self, count);															\
 			self->COUNT = count;																	\
 		}																							\
 	}																								\
 	/* @brief 배열에 항목 추가 */																		\
 	FINLINE void PFX##_add(NAME* self, TYPE value)													\
 	{																								\
-		PFX##_sp_expand(self, 1);																	\
+		inl_##PFX##_expand(self, 1);																	\
 		self->DATA[self->COUNT++] = value;															\
 	}																								\
 	/* @brief 배열에 항목 삽입 */																		\
 	FINLINE void PFX##_ins(NAME* self, size_t nth, TYPE value)										\
 	{																								\
 		qn_debug_assert(nth <= self->COUNT, "index overflow");										\
-		PFX##_sp_expand(self, 1);																	\
+		inl_##PFX##_expand(self, 1);																	\
 		if (nth != self->COUNT - 1) {																\
 			TYPE* ptr = self->DATA + nth;															\
 			memmove(ptr + 1, ptr, sizeof(TYPE) * (self->COUNT - nth));								\
@@ -2086,16 +2067,16 @@ QN_DECL_CTNR(QnPtrCtn, pointer_t);
 		self->COUNT++;																				\
 	}																								\
 	/* @brief 배열에 항목 추가 */																		\
-	FINLINE void PFX##_add_ptr(NAME* self, TYPE* pvalue)											\
+	FINLINE void PFX##_ptr_add(NAME* self, TYPE* pvalue)											\
 	{																								\
-		PFX##_sp_expand(self, 1);																	\
+		inl_##PFX##_expand(self, 1);																	\
 		self->DATA[self->COUNT++] = *pvalue;														\
 	}																								\
 	/* @brief 배열에 항목 삽입 */																		\
-	FINLINE void PFX##_ins_ptr(NAME* self, size_t nth, TYPE* pvalue)								\
+	FINLINE void PFX##_ptr_ins(NAME* self, size_t nth, TYPE* pvalue)								\
 	{																								\
 		qn_debug_assert(nth <= self->COUNT, "index overflow");										\
-		PFX##_sp_expand(self, 1);																	\
+		inl_##PFX##_expand(self, 1);																	\
 		if (nth != self->COUNT - 1) {																\
 			TYPE* ptr = self->DATA + nth;															\
 			memmove(ptr + 1, ptr, sizeof(TYPE) * (self->COUNT - nth));								\
@@ -2254,26 +2235,26 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 			}																						\
 		}																							\
 	}																								\
-	FINLINE NAME##Node* PFX##_contains(const NAME *list, TYPE data)									\
+	FINLINE NAME##Node* PFX##_find(const NAME *list, TYPE data)										\
 	{																								\
 		for (NAME##Node *node = list->HEAD; node; node = node->NEXT)								\
 			if (memcmp(&node->DATA, &data, sizeof(TYPE)))											\
 				return node;																		\
 		return NULL;																				\
 	}																								\
-	FINLINE NAME##Node* PFX##_find(const NAME *list, eqcfunc_t func, void* context)					\
+	FINLINE NAME##Node* PFX##_find_callback(const NAME *list, eqcfunc_t func, void* context)		\
 	{																								\
 		for (NAME##Node *node = list->HEAD; node; node = node->NEXT)								\
 			if (func(context, &node->DATA))															\
 				return node;																		\
 		return NULL;																				\
 	}																								\
-	FINLINE void PFX##_foreach_1(const NAME *list, paramfunc_t func)								\
+	FINLINE void PFX##_loop(const NAME *list, paramfunc_t func)										\
 	{																								\
 		for (NAME##Node *node = list->HEAD; node; node = node->NEXT)								\
 			func(&node->DATA);																		\
 	}																								\
-	FINLINE void PFX##_foreach_2(const NAME *list, paramfunc2_t func, void* context)				\
+	FINLINE void PFX##_foreach(const NAME *list, paramfunc2_t func, void* context)					\
 	{																								\
 		for (NAME##Node *node = list->HEAD; node; node = node->NEXT)								\
 			func(context, &node->DATA);																\
@@ -2439,21 +2420,21 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 		list->HEAD = node;																			\
 		list->COUNT++;																				\
 	}																								\
-	FINLINE NODETYPE* PFX##_contains(const NAME *list, NODETYPE* dest)								\
+	FINLINE NODETYPE* PFX##_find(const NAME *list, NODETYPE* dest)									\
 	{																								\
 		for (NODETYPE *node = list->HEAD; node; node = node->NEXT)									\
 			if (node == dest)																		\
 				return node;																		\
 		return NULL;																				\
 	}																								\
-	FINLINE NODETYPE* PFX##_find(const NAME *list, eqcfunc_t func, void* context)					\
+	FINLINE NODETYPE* PFX##_find_callback(const NAME *list, eqcfunc_t func, void* context)			\
 	{																								\
 		for (NODETYPE *node = list->HEAD; node; node = node->NEXT)									\
 			if (func(context, node))																\
 				return node;																		\
 		return NULL;																				\
 	}																								\
-	FINLINE void PFX##_foreach_1(const NAME *list, paramfunc_t func)								\
+	FINLINE void PFX##_loop(const NAME *list, paramfunc_t func)										\
 	{																								\
 		for (NODETYPE *next, *node = list->HEAD; node; node = next)									\
 		{																							\
@@ -2461,7 +2442,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 			func(node);																				\
 		}																							\
 	}																								\
-	FINLINE void PFX##_foreach_2(const NAME *list, paramfunc2_t func, void* context)				\
+	FINLINE void PFX##_foreach(const NAME *list, paramfunc2_t func, void* context)					\
 	{																								\
 		for (NODETYPE *next, *node = list->HEAD; node; node = next)									\
 		{																							\
@@ -2478,14 +2459,12 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 
 
 // 해시 공용
-#define QN_IMPL_HASH_COMMON(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PFX)		\
+#define QN_IMPL_HASH_COMMON(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYCMP, KEYFREE, VALUEFREE, PFX)		\
 	typedef bool(*PFX##_find_t)(void*, KEYTYPE*, void*);											\
-	typedef void(*PFX##_each2_t)(KEYTYPE*, void*);													\
-	typedef void(*PFX##_each3_t)(void*, KEYTYPE*, void*);											\
-	FINLINE void PFX##_sp_erase_all(NAME* hash);													\
-	FINLINE void PFX##_sp_erase_node(NAME* hash, NAME##Node** en);									\
-	FINLINE void PFX##_sp_set(NAME* hash, KEYTYPE* pkey, VALUETYPE* pvalue, bool replace);			\
-	FINLINE VALUETYPE* PFX##_sp_ins(NAME* hash, KEYTYPE* pkey, bool replace);						\
+	typedef void(*PFX##_each_t)(void*, KEYTYPE*, void*);											\
+	typedef void(*PFX##_loop_t)(KEYTYPE*, void*);													\
+	FINLINE void inl_##PFX##_erase_node(NAME* hash, NAME##Node** en);								\
+	FINLINE VALUETYPE* inl_##PFX##_insert(NAME* hash, KEYTYPE* pkey);								\
 	FINLINE size_t PFX##_count(const NAME *hash)													\
 	{																								\
 		return hash->COUNT;																			\
@@ -2506,7 +2485,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 	{																								\
 		return hash->COUNT == 0;																	\
 	}																								\
-	FINLINE void PFX##_sp_test_size(NAME *hash)														\
+	FINLINE void inl_##PFX##_test_size(NAME *hash)													\
 	{																								\
 		if ((hash->BUCKET >= 3 * hash->COUNT && hash->BUCKET > QN_MIN_HASH) ||						\
 			(3 * hash->BUCKET <= hash->COUNT && hash->BUCKET < QN_MAX_HASH)) {						\
@@ -2526,102 +2505,76 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 			hash->BUCKET = new_bucket;																\
 		}																							\
 	}																								\
-	FINLINE NAME##Node** PFX##_sp_lookup(const NAME* hash, const KEYTYPE* pkey)						\
+	FINLINE NAME##Node** inl_##PFX##_look_up(const NAME* hash, const KEYTYPE* pkey)					\
 	{																								\
 		const size_t lh = KEYHASH(pkey);															\
 		NAME##Node *lnn, **ln = &hash->NODES[lh % hash->BUCKET];									\
 		while ((lnn = *ln) != NULL) {																\
-			if (lnn->HASH == lh && KEYEQ((const KEYTYPE*)&lnn->KEY, pkey))							\
+			if (lnn->HASH == lh && KEYCMP((const KEYTYPE*)&lnn->KEY, pkey) == 0)					\
 				break;																				\
 			ln = &lnn->SIB;																			\
 		}																							\
 		return ln;																					\
 	}																								\
-	FINLINE NAME##Node** PFX##_sp_lookhash(const NAME* hash, const KEYTYPE* pkey, size_t* ret)		\
+	FINLINE NAME##Node** inl_##PFX##_look_hash(const NAME* hash, const KEYTYPE* pkey, size_t* ret)	\
 	{																								\
 		const size_t lh = KEYHASH(pkey);															\
 		NAME##Node *lnn, **ln = &hash->NODES[lh % hash->BUCKET];									\
 		while ((lnn = *ln) != NULL) {																\
-			if (lnn->HASH == lh && KEYEQ((const KEYTYPE*)&lnn->KEY, pkey))							\
+			if (lnn->HASH == lh && KEYCMP((const KEYTYPE*)&lnn->KEY, pkey) == 0)					\
 				break;																				\
 			ln = &lnn->SIB;																			\
 		}																							\
 		*ret = lh;																					\
 		return ln;																					\
 	}																								\
-	FINLINE bool PFX##_sp_erase(NAME* hash, const KEYTYPE* pkey)									\
+	FINLINE bool inl_##PFX##_erase(NAME* hash, const KEYTYPE* pkey)									\
 	{																								\
-		NAME##Node** rn = PFX##_sp_lookup(hash, pkey);												\
+		NAME##Node** rn = inl_##PFX##_look_up(hash, pkey);											\
 		if (*rn == NULL)																			\
 			return false;																			\
-		PFX##_sp_erase_node(hash, rn);																\
+		inl_##PFX##_erase_node(hash, rn);															\
 		return true;																				\
-	}																								\
-	FINLINE void PFX##_clear(NAME* hash)															\
-	{																								\
-		PFX##_sp_erase_all(hash);																	\
-		PFX##_sp_test_size(hash);																	\
-	}																								\
-	FINLINE void PFX##_remove_node(NAME* hash, NAME##Node* node)									\
-	{																								\
-		PFX##_sp_erase_node(hash, &node);															\
-		PFX##_sp_test_size(hash);																	\
 	}																								\
 	FINLINE bool PFX##_remove(NAME* hash, const KEYTYPE key)										\
 	{																								\
-		if (PFX##_sp_erase(hash, &key) == false)													\
+		if (inl_##PFX##_erase(hash, &key) == false)													\
 			return false;																			\
-		PFX##_sp_test_size(hash);																	\
 		return true;																				\
 	}																								\
-	FINLINE bool PFX##_remove_ptr(NAME* hash, const KEYTYPE* pkey)									\
+	FINLINE bool PFX##_ptr_remove(NAME* hash, const KEYTYPE* pkey)									\
 	{																								\
-		if (PFX##_sp_erase(hash, pkey) == false)													\
+		if (inl_##PFX##_erase(hash, pkey) == false)													\
 			return false;																			\
-		PFX##_sp_test_size(hash);																	\
 		return true;																				\
 	}																								\
 	FINLINE VALUETYPE* PFX##_get(const NAME* hash, const KEYTYPE key)								\
 	{																								\
-		NAME##Node** gn = PFX##_sp_lookup(hash, &key);												\
+		NAME##Node** gn = inl_##PFX##_look_up(hash, &key);											\
 		return *gn ? &(*gn)->VALUE : NULL;															\
 	}																								\
-	FINLINE VALUETYPE* PFX##_get_ptr(const NAME* hash, const KEYTYPE* pkey)							\
+	FINLINE VALUETYPE* PFX##_ptr_get(const NAME* hash, const KEYTYPE* pkey)							\
 	{																								\
-		NAME##Node** gn = PFX##_sp_lookup(hash, pkey);												\
+		NAME##Node** gn = inl_##PFX##_look_up(hash, pkey);											\
 		return *gn ? &(*gn)->VALUE : NULL;															\
-	}																								\
-	FINLINE void PFX##_add(NAME* hash, KEYTYPE key, VALUETYPE value)								\
-	{																								\
-		PFX##_sp_set(hash, &key, &value, false);													\
 	}																								\
 	FINLINE void PFX##_set(NAME* hash, KEYTYPE key, VALUETYPE value)								\
 	{																								\
-		PFX##_sp_set(hash, &key, &value, true);														\
-	}																								\
-	FINLINE void PFX##_add_ptr(NAME* hash, KEYTYPE* pkey, VALUETYPE* pvalue)						\
-	{																								\
-		PFX##_sp_set(hash, pkey, pvalue, false);													\
+		VALUETYPE* sv = inl_##PFX##_insert(hash, &key);												\
+		*sv = value;																				\
 	}																								\
 	FINLINE void PFX##_set_ptr(NAME* hash, KEYTYPE* pkey, VALUETYPE* pvalue)						\
 	{																								\
-		PFX##_sp_set(hash, pkey, pvalue, true);														\
+		VALUETYPE* sv = inl_##PFX##_insert(hash, pkey);												\
+		*sv = *pvalue;																				\
 	}																								\
-	FINLINE VALUETYPE* PFX##_add_key(NAME* hash, KEYTYPE key)										\
+	FINLINE VALUETYPE* PFX##_ins(NAME* hash, KEYTYPE key)											\
 	{																								\
-		return PFX##_sp_ins(hash, &key, false);														\
+		return inl_##PFX##_insert(hash, &key);														\
 	}																								\
-	FINLINE VALUETYPE* PFX##_set_key(NAME* hash, KEYTYPE key)										\
+	FINLINE VALUETYPE* PFX##_ptr_ins(NAME* hash, KEYTYPE* pkey)										\
 	{																								\
-		return PFX##_sp_ins(hash, &key, true);														\
-	}																								\
-	FINLINE VALUETYPE* PFX##_add_key_ptr(NAME* hash, KEYTYPE* pkey)									\
-	{																								\
-		return PFX##_sp_ins(hash, pkey, false);														\
-	}																								\
-	FINLINE VALUETYPE* PFX##_set_key_ptr(NAME* hash, KEYTYPE* pkey)									\
-	{																								\
-		return PFX##_sp_ins(hash, pkey, true);														\
+		return inl_##PFX##_insert(hash, pkey);														\
 	}
 
 
@@ -2646,12 +2599,12 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 ///	@param KEYTYPE 키 타입
 ///	@param VALUETYPE 값 타입
 ///	@param KEYHASH 키 해시 함수
-///	@param KEYEQ 키 비교 함수
+///	@param KEYCMP 키 비교 함수
 ///	@param KEYFREE 키 해제 함수
 ///	@param VALUEFREE 값 해제 함수
 ///	@param PFX 함수 접두사
-#define QN_IMPL_HASH(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PFX)				\
-	QN_IMPL_HASH_COMMON(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PFX)			\
+#define QN_IMPL_HASH(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYCMP, KEYFREE, VALUEFREE, PFX)			\
+	QN_IMPL_HASH_COMMON(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYCMP, KEYFREE, VALUEFREE, PFX)			\
 	FINLINE void PFX##_init(NAME *hash)																\
 	{																								\
 		hash->COUNT = hash->REVISION = 0;															\
@@ -2683,117 +2636,69 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 	{																								\
 		return hash->TAIL;																			\
 	}																								\
-	FINLINE bool PFX##_node_add(NAME* hash, NAME##Node* node)										\
+	FINLINE bool PFX##_add(NAME* hash, NAME##Node* node)											\
 	{																								\
 		size_t ah;																					\
-		NAME##Node** an = PFX##_sp_lookhash(hash, (const KEYTYPE*)&node->KEY, &ah);					\
+		NAME##Node** an = inl_##PFX##_look_hash(hash, (const KEYTYPE*)&node->KEY, &ah);				\
 		NAME##Node* ann = *an;																		\
-		if (ann != NULL)																			\
-			return false;																			\
-		else {																						\
-			ann = node;																				\
-			ann->SIB = NULL;																		\
-			ann->HASH = ah;																			\
-			ann->NEXT = NULL;																		\
-			ann->PREV = hash->TAIL;																	\
-			if (hash->TAIL)																			\
-				hash->TAIL->NEXT = ann;																\
-			else																					\
-				hash->HEAD = ann;																	\
-			hash->TAIL = ann;																		\
-			*an = ann;																				\
-			hash->REVISION++;																		\
-			hash->COUNT++;																			\
-			PFX##_sp_test_size(hash);																\
-			return true;																			\
-		}																							\
+		if (ann != NULL) return false;																\
+		ann = node;																					\
+		ann->SIB = NULL;																			\
+		ann->HASH = ah;																				\
+		ann->NEXT = NULL;																			\
+		ann->PREV = hash->TAIL;																		\
+		if (hash->TAIL) hash->TAIL->NEXT = ann;														\
+		else hash->HEAD = ann;																		\
+		hash->TAIL = ann;																			\
+		*an = ann;																					\
+		hash->REVISION++;																			\
+		hash->COUNT++;																				\
+		inl_##PFX##_test_size(hash);																\
+		return true;																				\
 	}																								\
-	FINLINE VALUETYPE* PFX##_sp_ins(NAME* hash, KEYTYPE* pkey, bool replace)						\
+	FINLINE VALUETYPE* inl_##PFX##_insert(NAME* hash, KEYTYPE* pkey)								\
 	{																								\
 		size_t ah;																					\
-		NAME##Node** an = PFX##_sp_lookhash(hash, (const KEYTYPE*)pkey, &ah);						\
+		NAME##Node** an = inl_##PFX##_look_hash(hash, (const KEYTYPE*)pkey, &ah);					\
 		NAME##Node* ann = *an;																		\
 		if (ann != NULL) {																			\
 			KEYFREE(pkey);																			\
-			if (replace == false)																	\
-				return NULL;																		\
-			else {																					\
-				VALUEFREE(&ann->VALUE);																\
-				return &ann->VALUE;																	\
-			}																						\
-		} else {																					\
-			ann = qn_alloc_1(NAME##Node);															\
-			ann->SIB = NULL;																		\
-			ann->HASH = ah;																			\
-			ann->KEY = *pkey;																		\
-			ann->NEXT = NULL;																		\
-			ann->PREV = hash->TAIL;																	\
-			if (hash->TAIL)																			\
-				hash->TAIL->NEXT = ann;																\
-			else																					\
-				hash->HEAD = ann;																	\
-			hash->TAIL = ann;																		\
-			*an = ann;																				\
-			hash->REVISION++;																		\
-			hash->COUNT++;																			\
-			PFX##_sp_test_size(hash);																\
+			VALUEFREE(&ann->VALUE);																	\
 			return &ann->VALUE;																		\
 		}																							\
+		ann = qn_alloc_1(NAME##Node);																\
+		ann->HASH = ah;																				\
+		ann->KEY = *pkey;																			\
+		ann->SIB = NULL;																			\
+		ann->NEXT = NULL;																			\
+		ann->PREV = hash->TAIL;																		\
+		if (hash->TAIL) hash->TAIL->NEXT = ann;														\
+		else hash->HEAD = ann;																		\
+		hash->TAIL = ann;																			\
+		*an = ann;																					\
+		hash->REVISION++;																			\
+		hash->COUNT++;																				\
+		inl_##PFX##_test_size(hash);																\
+		return &ann->VALUE;																			\
 	}																								\
-	FINLINE void PFX##_sp_set(NAME* hash, KEYTYPE* pkey, VALUETYPE* pvalue, bool replace)			\
-	{																								\
-		size_t ah;																					\
-		NAME##Node** an = PFX##_sp_lookhash(hash, (const KEYTYPE*)pkey, &ah);						\
-		NAME##Node* ann = *an;																		\
-		if (ann != NULL) {																			\
-			KEYFREE(pkey);																			\
-			if (replace == false)																	\
-				VALUEFREE(pvalue);																	\
-			else {																					\
-				VALUEFREE(&ann->VALUE);																\
-				ann->VALUE = *pvalue;																\
-			}																						\
-		} else {																					\
-			ann = qn_alloc_1(NAME##Node);															\
-			ann->SIB = NULL;																		\
-			ann->HASH = ah;																			\
-			ann->KEY = *pkey;																		\
-			ann->VALUE = *pvalue;																	\
-			ann->NEXT = NULL;																		\
-			ann->PREV = hash->TAIL;																	\
-			if (hash->TAIL)																			\
-				hash->TAIL->NEXT = ann;																\
-			else																					\
-				hash->HEAD = ann;																	\
-			hash->TAIL = ann;																		\
-			*an = ann;																				\
-			hash->REVISION++;																		\
-			hash->COUNT++;																			\
-			PFX##_sp_test_size(hash);																\
-		}																							\
-	}																								\
-	FINLINE void PFX##_sp_erase_node(NAME* hash, NAME##Node** en)									\
+	FINLINE void inl_##PFX##_erase_node(NAME* hash, NAME##Node** en)								\
 	{																								\
 		NAME##Node* enn = *en;																		\
 		*en = enn->SIB;																				\
-		if (enn->PREV)																				\
-			enn->PREV->NEXT = enn->NEXT;															\
-		else																						\
-			hash->HEAD = enn->NEXT;																	\
-		if (enn->NEXT)																				\
-			enn->NEXT->PREV = enn->PREV;															\
-		else																						\
-			hash->TAIL = enn->PREV;																	\
+		if (enn->PREV) enn->PREV->NEXT = enn->NEXT;													\
+		else hash->HEAD = enn->NEXT;																\
+		if (enn->NEXT) enn->NEXT->PREV = enn->PREV;													\
+		else hash->TAIL = enn->PREV;																\
 		const size_t ebk = enn->HASH % hash->BUCKET;												\
-		if (hash->NODES[ebk] == enn)																\
-			hash->NODES[ebk] = NULL;																\
+		if (hash->NODES[ebk] == enn) hash->NODES[ebk] = NULL;										\
 		KEYFREE(&enn->KEY);																			\
 		VALUEFREE(&enn->VALUE);																		\
 		qn_free(enn);																				\
 		hash->REVISION++;																			\
 		hash->COUNT--;																				\
+		inl_##PFX##_test_size(hash);																\
 	}																								\
-	FINLINE void PFX##_sp_erase_all(NAME* hash)														\
+	FINLINE void PFX##_clear(NAME* hash)															\
 	{																								\
 		for (NAME##Node *next, *node = hash->HEAD; node; node = next) {								\
 			next = node->NEXT;																		\
@@ -2806,7 +2711,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 		hash->COUNT = 0;																			\
 		memset(hash->NODES, 0, hash->BUCKET * sizeof(NAME##Node*));									\
 	}																								\
-	FINLINE KEYTYPE* PFX##_find(const NAME* hash, PFX##_find_t func, void* context)					\
+	FINLINE KEYTYPE* PFX##_find_callback(const NAME* hash, PFX##_find_t func, void* context)		\
 	{																								\
 		for (NAME##Node *node = hash->HEAD; node; node = node->NEXT) {								\
 			if (func(context, &node->KEY, &node->VALUE))											\
@@ -2814,12 +2719,12 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 		}																							\
 		return NULL;																				\
 	}																								\
-	FINLINE void PFX##_foreach_2(const NAME* hash, PFX##_each2_t func)								\
+	FINLINE void PFX##_loop(const NAME* hash, PFX##_loop_t func, void* context)						\
 	{																								\
 		for (NAME##Node *node = hash->HEAD; node; node = node->NEXT)								\
 			func(&node->KEY, &node->VALUE);															\
 	}																								\
-	FINLINE void PFX##_foreach_3(const NAME* hash, PFX##_each3_t func, void* context)				\
+	FINLINE void PFX##_foreach(const NAME* hash, PFX##_each_t func, void* context)					\
 	{																								\
 		for (NAME##Node *node = hash->HEAD; node; node = node->NEXT)								\
 			func(context, &node->KEY, &node->VALUE);												\
@@ -2827,39 +2732,29 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 	typedef NAME NAME##Type
 
 /// @brief 해시 해시 선언 및 구현
-#define QN_DECLIMPL_HASH(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PFX)			\
+#define QN_DECLIMPL_HASH(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYCMP, KEYFREE, VALUEFREE, PFX)		\
 	QN_DECL_HASH(NAME, KEYTYPE, VALUETYPE);															\
-	QN_IMPL_HASH(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PFX)
+	QN_IMPL_HASH(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYCMP, KEYFREE, VALUEFREE, PFX)
 
-// 키 정수
-#define QN_DECLIMPL_INT_HASH(NAME, VALUETYPE, VALUEFREE, PFX)										\
-	QN_DECLIMPL_HASH(NAME, int, VALUETYPE, qn_int_phash, qn_int_peqv, (void), VALUEFREE, PFX)
+// 키 정수 타입
+#define QN_DECLIMPL_HASH_INT_TYPE(NAME, KEYTYPE, VALUETYPE, VALUEFREE, PFX)							\
+	QN_DECLIMPL_HASH(NAME, KEYTYPE, VALUETYPE, qn_int_type_phash, qn_int_type_pcmp, (void), VALUEFREE, PFX)
 // 키 정수 / 값 정수
-#define QN_DECLIMPL_INT_INT_HASH(NAME, PFX)															\
-	QN_DECLIMPL_INT_HASH(NAME, int, (void), PFX)
+#define QN_DECLIMPL_HASH_INT_AND_INT_TYPE(NAME, KEYTYPE, VALUETYPE, PFX)							\
+	QN_DECLIMPL_HASH_INT_TYPE(NAME, KEYTYPE, VALUETYPE, (void), PFX)
 // 키 정수 / 값 문자열
-#define QN_DECLIMPL_INT_PCHAR_HASH(NAME, PFX)														\
-	QN_DECLIMPL_INT_HASH(NAME, char*, qn_mem_free_ptr, PFX)
-
-// 키 부호없는 정수
-#define QN_DECLIMPL_UINT_HASH(NAME, VALUETYPE, VALUEFREE, PFX)										\
-	QN_DECLIMPL_HASH(NAME, uint, VALUETYPE, qn_uint_phash, qn_uint_peqv, (void), VALUEFREE, PFX)
-// 키 부호없는 정수 / 값 부호없는 정수
-#define QN_DECLIMPL_UINT_UINT_HASH(NAME, PFX)														\
-	QN_DECLIMPL_UINT_HASH(NAME, uint, (void), PFX)
-// 키 부호없는 정수 / 값 문자열
-#define QN_DECLIMPL_UINT_PCHAR_HASH(NAME, PFX)														\
-	QN_DECLIMPL_UINT_HASH(NAME, char*, qn_mem_free_ptr, PFX)
+#define QN_DECLIMPL_HASH_INT_TYPE_AND_PCHAR(NAME, PFX)												\
+	QN_DECLIMPL_HASH_INT_TYPE(NAME, char*, qn_mem_free_ptr, PFX)
 
 // 키 문자열
-#define QN_DECLIMPL_PCHAR_HASH(NAME, VALUETYPE, VALUEFREE, PFX)										\
-	QN_DECLIMPL_HASH(NAME, char*, VALUETYPE, qn_str_phash, qn_str_peqv, qn_mem_free_ptr, VALUEFREE, PFX)
+#define QN_DECLIMPL_HASH_PCHAR(NAME, VALUETYPE, VALUEFREE, PFX)										\
+	QN_DECLIMPL_HASH(NAME, char*, VALUETYPE, qn_strphash, qn_strpcmp, qn_mem_free_ptr, VALUEFREE, PFX)
 // 키 문자열 / 값 정수
-#define QN_DECLIMPL_PCHAR_INT_HASH(NAME, PFX)														\
-	QN_DECLIMPL_PCHAR_HASH(NAME, int, (void), PFX)
+#define QN_DECLIMPL_HASH_PCHAR_AND_INT_TYPE(NAME, VALUETYPE, PFX)									\
+	QN_DECLIMPL_HASH_PCHAR(NAME, VALUETYPE, (void), PFX)
 // 키 문자열 / 값 문자열
-#define QN_DECLIMPL_PCHAR_PCHAR_HASH(NAME, PFX)														\
-	QN_DECLIMPL_PCHAR_HASH(NAME, char*, qn_mem_free_ptr, PFX)
+#define QN_DECLIMPL_HASH_PCHAR_AND_PCHAR(NAME, PFX)													\
+	QN_DECLIMPL_HASH_PCHAR_AND_INT_TYPE(NAME, char*, qn_mem_free_ptr, PFX)
 
 
 /// @brief 묶음 인라인
@@ -2883,12 +2778,12 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 /// @param KEYTYPE 키 타입
 /// @param VALUETYPE 값 타입
 /// @param KEYHASH 키 해시 함수
-/// @param KEYEQ 키 비교 함수
+/// @param KEYCMP 키 비교 함수
 /// @param KEYFREE 키 해제 함수
 /// @param VALUEFREE 값 해제 함수
 /// @param PFX 함수 접두사
-#define QN_IMPL_MUKUM(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PFX)			\
-	QN_IMPL_HASH_COMMON(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PFX)			\
+#define QN_IMPL_MUKUM(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYCMP, KEYFREE, VALUEFREE, PFX)			\
+	QN_IMPL_HASH_COMMON(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYCMP, KEYFREE, VALUEFREE, PFX)			\
 	FINLINE void PFX##_init(NAME *mukum)															\
 	{																								\
 		mukum->COUNT = mukum->REVISION = 0;															\
@@ -2913,88 +2808,55 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 		}																							\
 		qn_free(mukum->NODES);																		\
 	}																								\
-	FINLINE bool PFX##_node_add(NAME* mukum, NAME##Node* node)										\
+	FINLINE bool PFX##_add(NAME* mukum, NAME##Node* node)											\
 	{																								\
 		size_t ah;																					\
-		NAME##Node** an = PFX##_sp_lookhash(mukum, (const KEYTYPE*)&node->KEY, &ah);				\
+		NAME##Node** an = inl_##PFX##_look_hash(mukum, (const KEYTYPE*)&node->KEY, &ah);			\
 		NAME##Node* ann = *an;																		\
-		if (ann != NULL)																			\
-			return false;																			\
-		else {																						\
-			ann = node;																				\
-			ann->SIB = NULL;																		\
-			ann->HASH = ah;																			\
-			*an = ann;																				\
-			mukum->REVISION++;																		\
-			mukum->COUNT++;																			\
-			PFX##_sp_test_size(mukum);																\
-			return true;																			\
-		}																							\
+		if (ann != NULL) return false;																\
+		ann = node;																					\
+		ann->SIB = NULL;																			\
+		ann->HASH = ah;																				\
+		*an = ann;																					\
+		mukum->REVISION++;																			\
+		mukum->COUNT++;																				\
+		inl_##PFX##_test_size(mukum);																\
+		return true;																				\
 	}																								\
-	FINLINE VALUETYPE* PFX##_sp_ins(NAME* mukum, KEYTYPE* pkey, bool replace)						\
+	FINLINE VALUETYPE* inl_##PFX##_insert(NAME* mukum, KEYTYPE* pkey)									\
 	{																								\
 		size_t ah;																					\
-		NAME##Node** an = PFX##_sp_lookhash(mukum, (const KEYTYPE*)pkey, &ah);						\
+		NAME##Node** an = inl_##PFX##_look_hash(mukum, (const KEYTYPE*)pkey, &ah);					\
 		NAME##Node* ann = *an;																		\
 		if (ann != NULL) {																			\
 			KEYFREE(pkey);																			\
-			if (replace == false)																	\
-				return NULL;																		\
-			else {																					\
-				VALUEFREE(&ann->VALUE);																\
-				return &ann->VALUE;																	\
-			}																						\
-		} else {																					\
-			ann = qn_alloc_1(NAME##Node);															\
-			ann->SIB = NULL;																		\
-			ann->HASH = ah;																			\
-			ann->KEY = *pkey;																		\
-			*an = ann;																				\
-			mukum->REVISION++;																		\
-			mukum->COUNT++;																			\
-			PFX##_sp_test_size(mukum);																\
+			VALUEFREE(&ann->VALUE);																	\
 			return &ann->VALUE;																		\
 		}																							\
+		ann = qn_alloc_1(NAME##Node);																\
+		ann->SIB = NULL;																			\
+		ann->HASH = ah;																				\
+		ann->KEY = *pkey;																			\
+		*an = ann;																					\
+		mukum->REVISION++;																			\
+		mukum->COUNT++;																				\
+		inl_##PFX##_test_size(mukum);																\
+		return &ann->VALUE;																			\
 	}																								\
-	FINLINE void PFX##_sp_set(NAME* mukum, KEYTYPE* pkey, VALUETYPE* pvalue, bool replace)			\
-	{																								\
-		size_t ah;																					\
-		NAME##Node** an = PFX##_sp_lookhash(mukum, (const KEYTYPE*)pkey, &ah);						\
-		NAME##Node* ann = *an;																		\
-		if (ann != NULL) {																			\
-			KEYFREE(pkey);																			\
-			if (replace == false)																	\
-				VALUEFREE(pvalue);																	\
-			else {																					\
-				VALUEFREE(&ann->VALUE);																\
-				ann->VALUE = *pvalue;																\
-			}																						\
-		} else {																					\
-			ann = qn_alloc_1(NAME##Node);															\
-			ann->SIB = NULL;																		\
-			ann->HASH = ah;																			\
-			ann->KEY = *pkey;																		\
-			ann->VALUE = *pvalue;																	\
-			*an = ann;																				\
-			mukum->REVISION++;																		\
-			mukum->COUNT++;																			\
-			PFX##_sp_test_size(mukum);																\
-		}																							\
-	}																								\
-	FINLINE void PFX##_sp_erase_node(NAME* mukum, NAME##Node** en)									\
+	FINLINE void inl_##PFX##_erase_node(NAME* mukum, NAME##Node** en)								\
 	{																								\
 		NAME##Node* enn = *en;																		\
 		*en = enn->SIB;																				\
 		const size_t ebk = enn->HASH % mukum->BUCKET;												\
-		if (mukum->NODES[ebk] == enn)																\
-			mukum->NODES[ebk] = NULL;																\
+		if (mukum->NODES[ebk] == enn) mukum->NODES[ebk] = NULL;										\
 		KEYFREE(enn->KEY);																			\
 		VALUEFREE(&enn->VALUE);																		\
 		qn_free(enn);																				\
 		mukum->REVISION++;																			\
 		mukum->COUNT--;																				\
+		inl_##PFX##_test_size(mukum);																\
 	}																								\
-	FINLINE void PFX##_sp_erase_all(NAME* mukum)													\
+	FINLINE void PFX##_clear(NAME* mukum)															\
 	{																								\
 		for (size_t i = 0; i < mukum->BUCKET; ++i) {												\
 			for (NAME##Node *next = NULL, *node = mukum->NODES[i]; node; node = next) {				\
@@ -3008,7 +2870,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 		mukum->COUNT = 0;																			\
 		memset(mukum->NODES, 0, mukum->BUCKET * sizeof(NAME##Node*));								\
 	}																								\
-	FINLINE KEYTYPE* PFX##_find(const NAME* mukum, PFX##_find_t func, void* context)				\
+	FINLINE KEYTYPE* PFX##_find_callback(const NAME* mukum, PFX##_find_t func, void* context)		\
 	{																								\
 		for (size_t i = 0; i < mukum->BUCKET; ++i)													\
 			for (NAME##Node *next = NULL, *node = mukum->NODES[i]; node; node = next) {				\
@@ -3018,7 +2880,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 			}																						\
 		return NULL;																				\
 	}																								\
-	FINLINE void PFX##_foreach_2(const NAME* mukum, PFX##_each2_t func)								\
+	FINLINE void PFX##_loop(const NAME* mukum, PFX##_loop_t func)									\
 	{																								\
 		for (size_t i = 0; i < mukum->BUCKET; ++i)													\
 			for (NAME##Node *next = NULL, *node = mukum->NODES[i]; node; node = next) {				\
@@ -3026,7 +2888,7 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 				func(&node->KEY, &node->VALUE);														\
 			}																						\
 	}																								\
-	FINLINE void PFX##_foreach_3(const NAME* mukum, PFX##_each3_t func, void* context)				\
+	FINLINE void PFX##_foreach(const NAME* mukum, PFX##_each_t func, void* context)					\
 	{																								\
 		for (size_t i = 0; i < mukum->BUCKET; ++i)													\
 			for (NAME##Node *next = NULL, *node = mukum->NODES[i]; node; node = next) {				\
@@ -3037,77 +2899,60 @@ QN_DECL_ARRAY(QnPtrArray, pointer_t);
 	typedef NAME NAME##Type
 
 /// @brief 묶음 선언 및 구현
-#define QN_DECLIMPL_MUKUM(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PFX)		\
+#define QN_DECLIMPL_MUKUM(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYCMP, KEYFREE, VALUEFREE, PFX)		\
 	QN_DECL_MUKUM(NAME, KEYTYPE, VALUETYPE);														\
-	QN_IMPL_MUKUM(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYEQ, KEYFREE, VALUEFREE, PFX)
+	QN_IMPL_MUKUM(NAME, KEYTYPE, VALUETYPE, KEYHASH, KEYCMP, KEYFREE, VALUEFREE, PFX)
 
-// 키 정수
-#define QN_DECLIMPL_INT_MUKUM(NAME, VALUETYPE, VALUEFREE, PFX)										\
-	QN_DECLIMPL_MUKUM(NAME, int, VALUETYPE, qn_int_phash, qn_int_peqv, (void), VALUEFREE, PFX)
+// 키 정수 타입
+#define QN_DECLIMPL_MUKUM_INT_TYPE(NAME, KEYTYPE, VALUETYPE, VALUEFREE, PFX)						\
+	QN_DECLIMPL_MUKUM(NAME, KEYTYPE, VALUETYPE, qn_int_type_phash, qn_int_type_pcmp, (void), VALUEFREE, PFX)
 // 키 정수 / 값 정수
-#define QN_DECLIMPL_INT_INT_MUKUM(NAME, PFX)														\
-	QN_DECLIMPL_INT_MUKUM(NAME, int, (void), PFX)
+#define QN_DECLIMPL_MUKUM_INT_AND_INT_TYPE(NAME, KEYTYPE, VALUETYPE, PFX)							\
+	QN_DECLIMPL_MUKUM_INT_TYPE(NAME, KEYTYPE, VALUETYPE, (void), PFX)
 // 키 정수 / 값 문자열
-#define QN_DECLIMPL_INT_PCHAR_MUKUM(NAME, PFX)														\
-	QN_DECLIMPL_INT_MUKUM(NAME, char*, qn_mem_free_ptr, PFX)
-
-// 키 부호없는 정수
-#define QN_DECLIMPL_UINT_MUKUM(NAME, VALUETYPE, VALUEFREE, PFX)										\
-	QN_DECLIMPL_MUKUM(NAME, uint, VALUETYPE, qn_uint_phash, qn_uint_peqv, (void), VALUEFREE, PFX)
-// 키 부호없는 정수 / 값 부호없는 정수
-#define QN_DECLIMPL_UINT_UINT_MUKUM(NAME, PFX)														\
-	QN_DECLIMPL_UINT_MUKUM(NAME, uint, (void), PFX)
-// 키 부호없는 정수 / 값 문자열
-#define QN_DECLIMPL_UINT_PCHAR_MUKUM(NAME, PFX)		
-	QN_DECLIMPL_UINT_MUKUM(NAME, char*, qn_mem_free_ptr, PFX)
+#define QN_DECLIMPL_MUKUM_INT_TYPE_AND_PCHAR(NAME, PFX)												\
+	QN_DECLIMPL_MUKUM_INT_TYPE(NAME, char*, qn_mem_free_ptr, PFX)
 
 // 키 문자열
-#define QN_DECLIMPL_PCHAR_MUKUM(NAME, VALUETYPE, VALUEFREE, PFX)									\
-	QN_DECLIMPL_MUKUM(NAME, char*, VALUETYPE, qn_str_phash, qn_str_peqv, qn_mem_free_ptr, VALUEFREE, PFX)
+#define QN_DECLIMPL_MUKUM_PCHAR(NAME, VALUETYPE, VALUEFREE, PFX)									\
+	QN_DECLIMPL_MUKUM(NAME, char*, VALUETYPE, qn_strphash, qn_strpcmp, qn_mem_free_ptr, VALUEFREE, PFX)
 // 키 문자열 / 값 정수
-#define QN_DECLIMPL_PCHAR_INT_MUKUM(NAME, PFX)														\
-	QN_DECLIMPL_PCHAR_MUKUM(NAME, int, (void), PFX)
+#define QN_DECLIMPL_MUKUM_PCHAR_AND_INT_TYPE(NAME, VALUETYPE, PFX)									\
+	QN_DECLIMPL_MUKUM_PCHAR(NAME, VALUETYPE, (void), PFX)
 // 키 문자열 / 값 문자열
-#define QN_DECLIMPL_PCHAR_PCHAR_MUKUM(NAME, PFX)													\
-	QN_DECLIMPL_PCHAR_MUKUM(NAME, char*, qn_mem_free_ptr, PFX)
+#define QN_DECLIMPL_MUKUM_PCHAR_AND_PCHAR(NAME, PFX)												\
+	QN_DECLIMPL_MUKUM_PCHAR_AND_INT_TYPE(NAME, char*, qn_mem_free_ptr, PFX)
 
 
 //////////////////////////////////////////////////////////////////////////
 // gam
 
-/// @brief GAM 가상 테이블 이름을 얻는다
-#define QN_DECL_VTABLE(TYPE)		struct _VT_##TYPE
-/// @brief GAME 부모 선언
-#define QN_GAM_BASE(TYPE)			struct TYPE base
-/// @brief GAM 가상 테이블 부모 선언
-#define QN_GAM_VTABLE(TYPE)			struct _VT_##TYPE base
-
 /// @brief GAM 포인터를 다른 타입으로 캐스팅한다
 #define qn_cast_type(g,type)		((type*)(g))
 /// @brief GAM 가상 테이블로 GAM 포인터를 캐스팅한다
-#define qn_cast_vtable(g,TYPE)		((QN_DECL_VTABLE(TYPE)*)((QnGamBase*)(g))->vt)
+#define qn_cast_vtable(g,TYPE)		((struct TYPE##_VTABLE*)((QnBaseGam*)(g))->vt)
 
 /// @brief GAM 포인터
 typedef void *QNGAM, *QnGam;
 
 /// @brief GAM 할거리를 의미. 영어로 OBJECT 개념
-typedef struct QNGAMBASE			QnGamBase;
+typedef struct QNGAM_BASE			QnBaseGam;
 /// @brief GAM 함수 테이블
-typedef struct _VT_QNGAMBASE		QnGamBaseVT;
+typedef struct QNGAM_VTABLE			QnVtableGam;
 
 //
-QN_DECL_VTABLE(QNGAMBASE)
+struct QNGAM_BASE
 {
-	const char* name;
-	void (*dispose)(QnGam);
+	const QnVtableGam*	vt;
+	volatile nint		ref;
+	nuint				desc;
 };
 
 //
-struct QNGAMBASE
+struct QNGAM_VTABLE
 {
-	const QnGamBaseVT*	vt;
-	volatile nint		ref;
-	nuint				desc;
+	const char* name;
+	void (*dispose)(QnGam);
 };
 
 /// @brief GAM 가상 테이블을 초기화하고 GAM 포인터 반환
@@ -3171,37 +3016,40 @@ QSAPI nuint qn_sc_set_desc(QnGam g, nuint ptr);
 /// @brief 정수를 표현자로 읽는다
 #define qn_get_gam_desc_int(p)		qn_get_gam_desc(p,int)
 
-
-typedef struct QNGAMNODE	QnGamNode;
-typedef struct QNNODEMUKUM	QnNodeMukum;
+/// @brief GAM 노드
+typedef struct QNGAMNODE			QnNodeGam;
+/// @brief GAM 묶음
+typedef struct QNNODEMUKUM			QnNodeMukum;
 
 /// @brief 노드
 struct QNGAMNODE
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
+
 	char				NAME[64];
 	size_t				HASH;
-	QnGamNode*			NEXT;
-	QnGamNode*			PREV;
-	QnGamNode*			SIB;
+	QnNodeGam*			NEXT;
+	QnNodeGam*			PREV;
+	QnNodeGam*			SIB;
 };
 
 /// @brief 노드 이름 설정
 /// @param self 노드
 /// @param name 이름
-QSAPI void qn_node_set_name(QnGamNode* self, const char* name);
+QSAPI void qn_node_set_name(QnNodeGam* self, const char* name);
 
 
 /// @brief 노드 묶음
 struct QNNODEMUKUM
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
+
 	size_t				REVISION;
 	size_t				BUCKET;
 	size_t				COUNT;
-	QnGamNode**			NODES;
-	QnGamNode*			HEAD;
-	QnGamNode*			TAIL;
+	QnNodeGam**			NODES;
+	QnNodeGam*			HEAD;
+	QnNodeGam*			TAIL;
 };
 
 /// @brief 노드 묶음 foreach
@@ -3240,12 +3088,12 @@ QSAPI void* qn_node_mukum_get(const QnNodeMukum* mukum, const char* name);
 /// @brief 노드 추가, 참조 처리 하지 않는다!
 /// @param mukum 묶음
 /// @param node 노드
-QSAPI void qn_node_mukum_add(QnNodeMukum* mukum, QnGamNode* node);
+QSAPI void qn_node_mukum_add(QnNodeMukum* mukum, QnNodeGam* node);
 
 /// @brief 노드 설정, 참조 처리 하지 않는다!
 /// @param mukum 묶음
 /// @param node 노드
-QSAPI void qn_node_mukum_set(QnNodeMukum* mukum, QnGamNode* node);
+QSAPI void qn_node_mukum_set(QnNodeMukum* mukum, QnNodeGam* node);
 
 /// @brief 노드 제거, 실제 노드를 제거한다!
 /// @param mukum 묶음
@@ -3255,7 +3103,7 @@ QSAPI void qn_node_mukum_remove(QnNodeMukum* mukum, const char* name);
 /// @brief 링크를 제거한다, 노드를 제거하지 않는다! (노드 dispose에서 호출용)
 /// @param mukum 묶음
 /// @param node 노드
-QSAPI void qn_node_mukum_unlink(QnNodeMukum* mukum, QnGamNode* node);
+QSAPI void qn_node_mukum_unlink(QnNodeMukum* mukum, QnNodeGam* node);
 
 /// @brief 찾기
 /// @param mukum 묶음
@@ -3402,9 +3250,12 @@ QSAPI double qn_diffts(QnTimeStamp left, QnTimeStamp right);
 
 
 /// @brief timer
-typedef struct QNTIMER
+typedef struct QNTIMER		QnTimer;
+
+/// @brief timer
+struct QNTIMER
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
 
 	double				runtime;			/// @brief 타이머 수행 시간
 	double				elapsed;			/// @brief 타이머 경과 시간 (포즈 영향 없음)
@@ -3417,7 +3268,7 @@ typedef struct QNTIMER
 	halfcham			pause;				/// @brief 정지 여부
 
 	uint				frame;				/// @brief 프레임 수
-} QnTimer;
+};
 
 /// @brief 타이머 만들기
 /// @return	문제가 있거나 실패하면 널값을 반환, 성공할 때 반환값은 만들어진 타이머
@@ -3630,15 +3481,16 @@ QN_DECL_BSTR(QnPathStr, QN_MAX_PATH);
 /// @brief 스트림 타입
 struct QNSTREAM
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
+
 	QnMount*			mount;
 	char*				name;
 	QnFileFlag			flags;
 };
 
-QN_DECL_VTABLE(QNSTREAM)
+struct QNSTREAM_VTABLE
 {
-	QN_GAM_VTABLE(QNGAMBASE);
+	QnVtableGam			base;
 	int (*stream_read)(/*QnStream*/QnGam, void*, int, int);
 	int (*stream_write)(/*QnStream*/QnGam, const void*, int, int);
 	llong(*stream_seek)(/*QnStream*/QnGam, llong, QnSeek);
@@ -3651,14 +3503,15 @@ QN_DECL_VTABLE(QNSTREAM)
 /// @brief 디렉토리 정보
 struct QNDIR
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
+
 	QnMount*			mount;
 	char*				name;
 };
 
-QN_DECL_VTABLE(QNDIR)
+struct QNDIR_VTABLE
 {
-	QN_GAM_VTABLE(QNGAMBASE);
+	QnVtableGam			base;
 	const char* (*dir_read)(/*QnDir*/QnGam);
 	bool (*dir_read_info)(/*QnDir*/QnGam, QnFileInfo*);
 	void (*dir_rewind)(/*QnDir*/QnGam);
@@ -3667,16 +3520,17 @@ QN_DECL_VTABLE(QNDIR)
 /// @brief 마운트 타입
 struct QNMOUNT
 {
-	QN_GAM_BASE(QNGAMBASE);
+	QnBaseGam			base;
+
 	char*				name;
 	size_t				name_len;
 	QnPathStr			path;
 	QnMountFlag			flags;
 };
 
-QN_DECL_VTABLE(QNMOUNT)
+struct QNMOUNT_VTABLE
 {
-	QN_GAM_VTABLE(QNGAMBASE);
+	QnVtableGam			base;
 	char* (*mount_cwd)(/*QnMount*/QnGam);
 	bool (*mount_chdir)(/*QnMount*/QnGam, const char*);
 	bool (*mount_mkdir)(/*QnMount*/QnGam, const char*);
